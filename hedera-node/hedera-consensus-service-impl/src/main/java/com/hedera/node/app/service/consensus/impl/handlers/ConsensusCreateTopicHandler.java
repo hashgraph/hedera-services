@@ -148,8 +148,9 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             builder.autoRenewAccountId(effectiveExpiryMeta.autoRenewAccountId());
 
             /* --- Add topic id to topic builder --- */
-            builder.topicId(
-                    TopicID.newBuilder().topicNum(handleContext.newEntityNum()).build());
+            builder.topicId(TopicID.newBuilder()
+                    .topicNum(handleContext.entityNumGenerator().newEntityNum())
+                    .build());
 
             builder.runningHash(Bytes.wrap(new byte[RUNNING_HASH_BYTE_ARRAY_SIZE]));
 
@@ -159,7 +160,8 @@ public class ConsensusCreateTopicHandler implements TransactionHandler {
             topicStore.put(topic);
 
             /* --- Build the record with newly created topic --- */
-            final var recordBuilder = handleContext.recordBuilder(ConsensusCreateTopicRecordBuilder.class);
+            final var recordBuilder =
+                    handleContext.recordBuilders().getOrCreate(ConsensusCreateTopicRecordBuilder.class);
 
             recordBuilder.topicID(topic.topicId());
         } catch (final HandleException e) {

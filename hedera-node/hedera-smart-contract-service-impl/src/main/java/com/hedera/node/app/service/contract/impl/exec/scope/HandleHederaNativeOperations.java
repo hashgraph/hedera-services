@@ -138,7 +138,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.finalizeHollowAccountAsContract(hollowAccountId);
         // FUTURE: For temporary backward-compatibility with mono-service, consume an entity id
-        context.newEntityNum();
+        context.entityNumGenerator().newEntityNum();
     }
 
     /**

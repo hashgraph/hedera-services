@@ -16,12 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
@@ -63,7 +60,6 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.consensus.ConsensusSubmitMessageTransactionBody;
-import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -73,13 +69,10 @@ import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
-import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -89,15 +82,17 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
@@ -105,7 +100,6 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
@@ -156,19 +150,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class DispatchHandleContextTest extends StateTestBase implements Scenarios {
-    private static final long GAS_LIMIT = 456L;
     private static final Fees FEES = new Fees(1L, 2L, 3L);
     public static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
     private static final AccountID PAYER_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(1_234).build();
     private static final AccountID NODE_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(3).build();
-    private static final TransactionBody CONTRACT_CALL_TXN_BODY = TransactionBody.newBuilder()
-            .transactionID(
-                    TransactionID.newBuilder().accountID(PAYER_ACCOUNT_ID).build())
-            .contractCall(
-                    ContractCallTransactionBody.newBuilder().gas(GAS_LIMIT).build())
-            .build();
     private static final SignatureVerification FAILED_VERIFICATION =
             new SignatureVerificationImpl(Key.DEFAULT, Bytes.EMPTY, false);
     private static final TransactionBody MISSING_FUNCTION_TXN_BODY = TransactionBody.newBuilder()
@@ -182,11 +169,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .build();
     private static final TransactionInfo CRYPTO_TRANSFER_TXN_INFO = new TransactionInfo(
             Transaction.DEFAULT, CRYPTO_TRANSFER_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CRYPTO_TRANSFER);
-    private static final TransactionInfo CONTRACT_CALL_TXN_INFO = new TransactionInfo(
-            Transaction.DEFAULT, CONTRACT_CALL_TXN_BODY, SignatureMap.DEFAULT, Bytes.EMPTY, CONTRACT_CALL);
 
     @Mock
-    private KeyVerifier verifier;
+    private AppKeyVerifier verifier;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -219,19 +204,13 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private SignatureVerification verification;
 
     @Mock
-    private NetworkUtilizationManager networkUtilizationManager;
+    private ThrottleAdviser throttleAdviser;
 
     @Mock
     private StoreMetricsService storeMetricsService;
 
     @Mock
-    private WritableEntityIdStore entityIdStore;
-
-    @Mock
-    private SingleTransactionRecordBuilderImpl oneChildBuilder;
-
-    @Mock
-    private SingleTransactionRecordBuilderImpl twoChildBuilder;
+    private EntityNumGenerator entityNumGenerator;
 
     @Mock
     private Provider<ChildDispatchComponent.Factory> childDispatchProvider;
@@ -267,16 +246,13 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private SavepointStackImpl stack;
 
     @Mock
-    private WrappedHederaState wrappedHederaState;
-
-    @Mock
     private WritableStoreFactory writableStoreFactory;
 
     @Mock
-    private WritableAccountStore writableAccountStore;
+    private VerificationAssistant assistant;
 
     @Mock
-    private VerificationAssistant assistant;
+    private RecordBuilders recordBuilders;
 
     private ServiceApiFactory apiFactory;
     private ReadableStoreFactory readableStoreFactory;
@@ -401,16 +377,16 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Key.newBuilder().build(),
             exchangeRateManager,
             stack,
-            entityIdStore,
+            entityNumGenerator,
             dispatcher,
             recordCache,
             networkInfo,
-            parentRecordBuilder,
+            recordBuilders,
             childDispatchProvider,
             childDispatchFactory,
             parentDispatch,
             dispatchProcessor,
-            networkUtilizationManager
+            throttleAdviser
         };
 
         final var constructor = DispatchHandleContext.class.getConstructors()[0];
@@ -430,92 +406,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         }
     }
 
-    @Nested
-    @DisplayName("Handling of record list checkpoint creation")
-    final class RevertRecordFromCheckPointTest {
-        @Test
-        void successCreateRecordListCheckPoint() {
-            var precedingRecord = createRecordBuilder();
-            var childRecord = createRecordBuilder();
-            given(recordListBuilder.precedingRecordBuilders()).willReturn(List.of(precedingRecord));
-            given(recordListBuilder.childRecordBuilders()).willReturn(List.of(childRecord));
-
-            final var actual = subject.createRecordListCheckPoint();
-
-            assertThat(actual).isEqualTo(new RecordListCheckPoint(precedingRecord, childRecord));
-        }
-
-        @Test
-        void successCreateRecordListCheckPoint_MultipleRecords() {
-            var precedingRecord = createRecordBuilder();
-            var precedingRecord1 = createRecordBuilder();
-            var childRecord = createRecordBuilder();
-            var childRecord1 = createRecordBuilder();
-
-            given(recordListBuilder.precedingRecordBuilders()).willReturn(List.of(precedingRecord, precedingRecord1));
-            given(recordListBuilder.childRecordBuilders()).willReturn(List.of(childRecord, childRecord1));
-
-            final var actual = subject.createRecordListCheckPoint();
-
-            assertThat(actual).isEqualTo(new RecordListCheckPoint(precedingRecord1, childRecord1));
-        }
-
-        @Test
-        void success_createRecordListCheckPoint_null_values() {
-            final var actual = subject.createRecordListCheckPoint();
-            assertThat(actual).isEqualTo(new RecordListCheckPoint(null, null));
-        }
-
-        private static SingleTransactionRecordBuilderImpl createRecordBuilder() {
-            return new SingleTransactionRecordBuilderImpl(Instant.EPOCH);
-        }
-    }
-
-    @Nested
-    @DisplayName("Handling new EntityNumber")
-    final class EntityIdNumTest {
-        @Test
-        void testNewEntityNumWithInitialState() {
-            when(entityIdStore.incrementAndGet()).thenReturn(1L);
-            final var actual = subject.newEntityNum();
-
-            assertThat(actual).isEqualTo(1L);
-            verify(entityIdStore).incrementAndGet();
-        }
-
-        @Test
-        void testPeekingAtNewEntityNumWithInitialState() {
-            when(entityIdStore.peekAtNextNumber()).thenReturn(1L);
-            final var actual = subject.peekAtNewEntityNum();
-
-            assertThat(actual).isEqualTo(1L);
-
-            verify(entityIdStore).peekAtNextNumber();
-        }
-
-        @Test
-        void testNewEntityNum() {
-            when(entityIdStore.incrementAndGet()).thenReturn(43L);
-
-            final var actual = subject.newEntityNum();
-
-            assertThat(actual).isEqualTo(43L);
-            verify(entityIdStore).incrementAndGet();
-            verify(entityIdStore, never()).peekAtNextNumber();
-        }
-
-        @Test
-        void testPeekingAtNewEntityNum() {
-            when(entityIdStore.peekAtNextNumber()).thenReturn(43L);
-
-            final var actual = subject.peekAtNewEntityNum();
-
-            assertThat(actual).isEqualTo(43L);
-            verify(entityIdStore).peekAtNextNumber();
-            verify(entityIdStore, never()).incrementAndGet();
-        }
-    }
-
     @Test
     void getsExpectedValues() {
         assertThat(subject.body()).isSameAs(txBody);
@@ -527,6 +417,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         assertThat(subject.configuration()).isEqualTo(configuration);
         assertThat(subject.authorizer()).isEqualTo(authorizer);
         assertThat(subject.storeFactory()).isEqualTo(storeFactory);
+        assertThat(subject.entityNumGenerator()).isEqualTo(entityNumGenerator);
+        assertThat(subject.recordBuilders()).isEqualTo(recordBuilders);
+        assertThat(subject.keyVerifier()).isEqualTo(verifier);
     }
 
     @Nested
@@ -537,38 +430,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             final var context = createContext(txBody);
             final var actual = context.savepointStack();
             assertThat(actual).isEqualTo(stack);
-        }
-    }
-
-    @Nested
-    @DisplayName("Handling of verification data")
-    final class VerificationDataTest {
-        @SuppressWarnings("ConstantConditions")
-        @Test
-        void testVerificationForWithInvalidParameters() {
-            final var context = createContext(txBody);
-
-            assertThatThrownBy(() -> context.verificationFor((Key) null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.verificationFor((Bytes) null)).isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
-        void testVerificationForKey() {
-            when(verifier.verificationFor(Key.DEFAULT)).thenReturn(verification);
-            final var context = createContext(txBody);
-
-            final var actual = context.verificationFor(Key.DEFAULT);
-
-            assertThat(actual).isEqualTo(verification);
-        }
-
-        @Test
-        void testVerificationForAlias() {
-            when(verifier.verificationFor(ERIN.account().alias())).thenReturn(verification);
-            final var context = createContext(txBody);
-            final var actual = context.verificationFor(ERIN.account().alias());
-
-            assertThat(actual).isEqualTo(verification);
         }
     }
 
@@ -662,51 +523,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     void failsAsExpectedWithoutAvailableApi() {
         assertThrows(
                 IllegalArgumentException.class, () -> subject.storeFactory().serviceApi(Object.class));
-    }
-
-    @Nested
-    @DisplayName("Handling of record builder")
-    final class RecordBuilderTest {
-        @SuppressWarnings("ConstantConditions")
-        @Test
-        void testMethodsWithInvalidParameters() {
-            final var context = createContext(txBody);
-
-            assertThatThrownBy(() -> context.recordBuilder(null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.recordBuilder(List.class)).isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> context.addChildRecordBuilder(null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.addChildRecordBuilder(List.class))
-                    .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> context.addRemovableChildRecordBuilder(null))
-                    .isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> context.addRemovableChildRecordBuilder(List.class))
-                    .isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        void testGetRecordBuilder() {
-            final var context = createContext(txBody);
-            final var actual = context.recordBuilder(CryptoCreateRecordBuilder.class);
-            assertThat(actual).isEqualTo(parentRecordBuilder);
-        }
-
-        @Test
-        void testAddChildRecordBuilder(@Mock final SingleTransactionRecordBuilderImpl childRecordBuilder) {
-            when(recordListBuilder.addChild(any(), any())).thenReturn(childRecordBuilder);
-            final var context = createContext(txBody);
-            final var actual = context.addChildRecordBuilder(CryptoCreateRecordBuilder.class);
-            assertThat(actual).isEqualTo(childRecordBuilder);
-        }
-
-        @Test
-        void testAddRemovableChildRecordBuilder(@Mock final SingleTransactionRecordBuilderImpl childRecordBuilder) {
-            when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
-            final var context = createContext(txBody);
-
-            final var actual = context.addRemovableChildRecordBuilder(CryptoCreateRecordBuilder.class);
-
-            assertThat(actual).isEqualTo(childRecordBuilder);
-        }
     }
 
     @Nested
@@ -908,7 +724,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Test
     void usesAssistantInVerification() {
         given(verifier.verificationFor(Key.DEFAULT, assistant)).willReturn(FAILED_VERIFICATION);
-        assertThat(subject.verificationFor(Key.DEFAULT, assistant)).isSameAs(FAILED_VERIFICATION);
+        assertThat(subject.keyVerifier().verificationFor(Key.DEFAULT, assistant))
+                .isSameAs(FAILED_VERIFICATION);
     }
 
     @Test
@@ -916,51 +733,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         given(authorizer.hasPrivilegedAuthorization(payerId, txnInfo.functionality(), txnInfo.txBody()))
                 .willReturn(IMPERMISSIBLE);
         assertThat(subject.hasPrivilegedAuthorization()).isSameAs(IMPERMISSIBLE);
-    }
-
-    @Test
-    void revertsAsExpected() {
-        final var checkpoint = new RecordListCheckPoint(null, null);
-        given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
-        subject.revertRecordsFrom(checkpoint);
-        verify(recordListBuilder).revertChildrenFrom(checkpoint);
-    }
-
-    @Test
-    void dispatchesThrottlingN() {
-        subject.shouldThrottleNOfUnscaled(2, CRYPTO_TRANSFER);
-        verify(networkUtilizationManager).shouldThrottleNOfUnscaled(2, CRYPTO_TRANSFER, CONSENSUS_NOW);
-    }
-
-    @Test
-    void allowsThrottleCapacityForChildrenIfNoneShouldThrottle() {
-        given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
-        given(recordListBuilder.childRecordBuilders()).willReturn(List.of(oneChildBuilder, twoChildBuilder));
-        given(oneChildBuilder.status()).willReturn(SUCCESS);
-        given(oneChildBuilder.transaction()).willReturn(CRYPTO_TRANSFER_TXN_INFO.transaction());
-        given(oneChildBuilder.transactionBody()).willReturn(CRYPTO_TRANSFER_TXN_INFO.txBody());
-        given(twoChildBuilder.status()).willReturn(REVERTED_SUCCESS);
-        given(parentDispatch.stack()).willReturn(stack);
-        given(stack.peek()).willReturn(wrappedHederaState);
-
-        assertThat(subject.hasThrottleCapacityForChildTransactions()).isTrue();
-    }
-
-    @Test
-    void doesntAllowThrottleCapacityForChildrenIfOneShouldThrottle() {
-        given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
-        given(recordListBuilder.childRecordBuilders()).willReturn(List.of(oneChildBuilder, twoChildBuilder));
-        given(oneChildBuilder.status()).willReturn(SUCCESS);
-        given(oneChildBuilder.transaction()).willReturn(CONTRACT_CALL_TXN_INFO.transaction());
-        given(oneChildBuilder.transactionBody()).willReturn(CONTRACT_CALL_TXN_INFO.txBody());
-        given(twoChildBuilder.status()).willReturn(SUCCESS);
-        given(twoChildBuilder.transaction()).willReturn(CRYPTO_TRANSFER_TXN_INFO.transaction());
-        given(twoChildBuilder.transactionBody()).willReturn(CRYPTO_TRANSFER_TXN_INFO.txBody());
-        given(networkUtilizationManager.shouldThrottle(any(), eq(wrappedHederaState), eq(CONSENSUS_NOW)))
-                .willReturn(true);
-        given(parentDispatch.stack()).willReturn(stack);
-        given(stack.peek()).willReturn(wrappedHederaState);
-        assertThat(subject.hasThrottleCapacityForChildTransactions()).isFalse();
     }
 
     private DispatchHandleContext createContext(final TransactionBody txBody) {
@@ -993,16 +765,16 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 Key.DEFAULT,
                 exchangeRateManager,
                 stack,
-                entityIdStore,
+                entityNumGenerator,
                 dispatcher,
                 recordCache,
                 networkInfo,
-                parentRecordBuilder,
+                recordBuilders,
                 childDispatchProvider,
                 childDispatchFactory,
                 parentDispatch,
                 dispatchProcessor,
-                networkUtilizationManager);
+                throttleAdviser);
     }
 
     private void mockNeeded() {

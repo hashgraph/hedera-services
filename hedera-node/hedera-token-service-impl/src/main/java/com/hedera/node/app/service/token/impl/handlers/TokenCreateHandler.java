@@ -127,7 +127,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
         final var tokenRelationStore = storeFactory.writableStore(WritableTokenRelationStore.class);
 
-        final var recordBuilder = context.recordBuilder(TokenCreateRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(TokenCreateRecordBuilder.class);
 
         /* Validate if the current token can be created */
         validateTrue(
@@ -139,7 +139,7 @@ public class TokenCreateHandler extends BaseTokenHandler implements TransactionH
         final var resolvedExpiryMeta = validateSemantics(context, accountStore, op, tokensConfig);
 
         // build a new token
-        final var newTokenNum = context.newEntityNum();
+        final var newTokenNum = context.entityNumGenerator().newEntityNum();
         final var newTokenId = TokenID.newBuilder().tokenNum(newTokenNum).build();
         final var newToken = buildToken(newTokenNum, op, resolvedExpiryMeta);
 
