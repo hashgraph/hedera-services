@@ -57,7 +57,6 @@ import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -97,16 +96,12 @@ public class TokenAirdropsHandler implements TransactionHandler {
 
     private final TokenAirdropValidator validator;
 
-    private final AssetsLoader assetsLoader;
-
     /**
      * Default constructor for injection.
      */
     @Inject
-    public TokenAirdropsHandler(
-            @NonNull final TokenAirdropValidator validator, @NonNull final AssetsLoader assetsLoader) {
+    public TokenAirdropsHandler(@NonNull final TokenAirdropValidator validator) {
         this.validator = validator;
-        this.assetsLoader = requireNonNull(assetsLoader, "The supplied argument 'assetsLoader' must not be null");
     }
 
     @Override
