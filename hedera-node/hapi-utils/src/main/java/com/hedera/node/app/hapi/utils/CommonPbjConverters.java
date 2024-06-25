@@ -312,6 +312,8 @@ public class CommonPbjConverters {
             case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UncheckedSubmit -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
+            case TokenReject -> HederaFunctionality.TOKEN_REJECT;
+            case TokenAirdrop -> HederaFunctionality.TOKEN_AIRDROP;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
         };
     }
@@ -664,6 +666,9 @@ public class CommonPbjConverters {
             case FQDN_SIZE_TOO_LARGE -> ResponseCodeEnum.FQDN_SIZE_TOO_LARGE;
             case INVALID_ENDPOINT -> ResponseCodeEnum.INVALID_ENDPOINT;
             case GOSSIP_ENDPOINTS_EXCEEDED_LIMIT -> ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
+            case TOKEN_REFERENCE_REPEATED -> ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
+            case INVALID_OWNER_ID -> ResponseCodeEnum.INVALID_OWNER_ID;
+            case TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED -> ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
             case SERVICE_ENDPOINTS_EXCEEDED_LIMIT -> ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
             case INVALID_IPV4_ADDRESS -> ResponseCodeEnum.INVALID_IPV4_ADDRESS;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
