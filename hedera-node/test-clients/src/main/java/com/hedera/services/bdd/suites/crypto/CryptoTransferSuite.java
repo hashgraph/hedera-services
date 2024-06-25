@@ -2400,10 +2400,11 @@ public class CryptoTransferSuite {
                         }))
                 .when(withOpContext((spec, opLog) -> {
                     // Create a hollow account
-                    var hollowCreate = cryptoCreate(hollowAccountKey)
-                            .key(hollowAccountKey)
-                            .maxAutomaticTokenAssociations(0)
-                            .alias(hollowAccountAlias.get())
+                    var hollowCreate = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
+                                    .addAccountAmounts(aaWith(treasuryAlias.get(), -3 * ONE_HBAR))
+                                    .addAccountAmounts(aaWith(hollowAccountAlias.get(), +3 * ONE_HBAR))))
+                            .payingWith(TREASURY)
+                            .signedBy(TREASURY)
                             .via(transferHBARSToHollowAccountTxn);
 
                     final HapiGetTxnRecord hapiGetTxnRecord = getTxnRecord(transferHBARSToHollowAccountTxn)
@@ -2418,10 +2419,10 @@ public class CryptoTransferSuite {
                         spec.registry().saveAccountId(hollowAccountKey, newAccountID);
                     }
                     // Verify maxAutomaticAssociations is set to 0
-                    var getInfo = getAccountInfo(hollowAccountKey)
+                    var getInfo = getAliasedAccountInfo(hollowAccountAlias.get())
+                            .has(accountWith().hasEmptyKey().maxAutoAssociations(-1))
                             .hasAlreadyUsedAutomaticAssociations(0)
-                            .has(accountWith().key(hollowAccountKey))
-                            .hasMaxAutomaticAssociations(0)
+                            .hasMaxAutomaticAssociations(-1)
                             .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id));
 
                     // Delete the account
@@ -2438,7 +2439,7 @@ public class CryptoTransferSuite {
                             .via(transferHBARSToHollowAccountTxn);
 
                     // Verify new hollow account is created and has no associations
-                    var getInfo2 = getAliasedAccountInfo(hollowAccountKey)
+                    var getInfo2 = getAliasedAccountInfo(hollowAccountAlias.get())
                             .has(accountWith().hasEmptyKey())
                             .hasAlreadyUsedAutomaticAssociations(0)
                             .hasMaxAutomaticAssociations(-1)
@@ -2452,7 +2453,12 @@ public class CryptoTransferSuite {
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey))
                             .via(transferHBARSToHollowAccountTxn);
 
-                    allRunFor(spec, hollowCreate2, getInfo2, hollowAccountTransferHBAR);
+                    // Verify hollow account is completed
+                    var getInfo3 = getAliasedAccountInfo(hollowAccountKey)
+                            .hasAlreadyUsedAutomaticAssociations(0)
+                            .hasMaxAutomaticAssociations(-1);
+
+                    allRunFor(spec, hollowCreate2, getInfo2, hollowAccountTransferHBAR, getInfo3);
                 }))
                 .then();
     }
@@ -2489,10 +2495,11 @@ public class CryptoTransferSuite {
                         }))
                 .when(withOpContext((spec, opLog) -> {
                     // Create a hollow account
-                    var hollowCreate = cryptoCreate(hollowAccountKey)
-                            .key(hollowAccountKey)
-                            .maxAutomaticTokenAssociations(0)
-                            .alias(hollowAccountAlias.get())
+                    var hollowCreate = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
+                                    .addAccountAmounts(aaWith(treasuryAlias.get(), -3 * ONE_HBAR))
+                                    .addAccountAmounts(aaWith(hollowAccountAlias.get(), +3 * ONE_HBAR))))
+                            .payingWith(TREASURY)
+                            .signedBy(TREASURY)
                             .via(transferFtToHollowAccountTxn);
 
                     final HapiGetTxnRecord hapiGetTxnRecord = getTxnRecord(transferFtToHollowAccountTxn)
@@ -2509,8 +2516,8 @@ public class CryptoTransferSuite {
                     // Verify maxAutomaticAssociations is set to 0
                     var getInfo = getAccountInfo(hollowAccountKey)
                             .hasAlreadyUsedAutomaticAssociations(0)
-                            .has(accountWith().key(hollowAccountKey))
-                            .hasMaxAutomaticAssociations(0)
+                            .has(accountWith().hasEmptyKey())
+                            .hasMaxAutomaticAssociations(-1)
                             .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id));
 
                     // Delete the account
