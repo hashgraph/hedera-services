@@ -30,6 +30,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.WorkflowCheck.INGEST;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
@@ -59,7 +60,6 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionChecker.RequireMinValidLifetimeBuffer;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -225,7 +225,7 @@ public final class IngestChecker {
                 numSigs,
                 dispatcher);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
-        solvencyPreCheck.checkSolvency(txInfo, payer, fees, WorkflowCheck.INGEST);
+        solvencyPreCheck.checkSolvency(txInfo, payer, fees, INGEST);
 
         return txInfo;
     }

@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
@@ -84,6 +85,7 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
@@ -168,6 +170,7 @@ import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -198,6 +201,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1384,6 +1388,56 @@ public class UtilVerbs {
         return withOpContext((spec, ctxLog) -> {
             ByteString bt = ByteString.copyFrom(spec.registry().getBytes(registryEntry));
             CustomSpecAssert.allRunFor(spec, updateLargeFile(payer, fileName, bt, false, OptionalLong.of(0L)));
+        });
+    }
+
+    /**
+     * Returns a {@link CustomSpecAssert} that asserts that the provided contract creation has the
+     * expected maxAutoAssociations value.
+     *
+     * @param txn the contract create transaction which resulted in contract creation.
+     * @param creationNum the index of the contract creation in the transaction. If we have nested contract create, the top-level contract creation is at index 0.
+     * @param maxAutoAssociations the expected maxAutoAssociations value.
+     * @return a {@link CustomSpecAssert}
+     */
+    public static CustomSpecAssert assertCreationMaxAssociations(
+            final String txn, final int creationNum, final int maxAutoAssociations) {
+        return assertCreationMaxAssociationsCommon(
+                txn, creationNum, maxAutoAssociations, TransactionRecord::getContractCreateResult);
+    }
+
+    /**
+     * Returns a {@link CustomSpecAssert} that asserts that the provided contract creation has the
+     * expected maxAutoAssociations value.
+     *
+     * @param txn the contract call transaction which resulted in contract creation.
+     * @param creationNum the index of the contract creation in the transaction.
+     * @param maxAutoAssociations the expected maxAutoAssociations value.
+     * @return a {@link CustomSpecAssert}
+     */
+    public static CustomSpecAssert assertCreationViaCallMaxAssociations(
+            final String txn, final int creationNum, final int maxAutoAssociations) {
+        return assertCreationMaxAssociationsCommon(
+                txn, creationNum, maxAutoAssociations, TransactionRecord::getContractCallResult);
+    }
+
+    private static CustomSpecAssert assertCreationMaxAssociationsCommon(
+            final String txn,
+            final int creationNum,
+            final int maxAutoAssociations,
+            final Function<TransactionRecord, ContractFunctionResult> resultExtractor) {
+        return assertionsHold((spec, opLog) -> {
+            final var op = getTxnRecord(txn);
+            allRunFor(spec, op);
+            final var creationResult = resultExtractor.apply(op.getResponseRecord());
+            final var createdIds = creationResult.getCreatedContractIDsList().stream()
+                    .sorted(Comparator.comparing(ContractID::getContractNum))
+                    .toList();
+            final var accDetails = getContractInfo(CommonUtils.hex(
+                            asEvmAddress(createdIds.get(creationNum).getContractNum())))
+                    .has(contractWith().maxAutoAssociations(maxAutoAssociations))
+                    .logged();
+            allRunFor(spec, accDetails);
         });
     }
 

@@ -28,8 +28,8 @@ import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
-import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
@@ -49,7 +49,7 @@ import com.hedera.node.app.workflows.handle.flow.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchScope;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -65,7 +65,7 @@ import java.util.Set;
 /**
  * The module that provides the dependencies for the user dispatch.
  */
-@Module(subcomponents = {})
+@Module
 public interface UserDispatchModule {
     @Binds
     @UserDispatchScope
@@ -111,7 +111,7 @@ public interface UserDispatchModule {
 
     @Provides
     @UserDispatchScope
-    static KeyVerifier provideKeyVerifier(
+    static AppKeyVerifier provideKeyVerifier(
             @NonNull final HederaConfig hederaConfig,
             @NonNull final TransactionInfo txnInfo,
             @NonNull final PreHandleResult preHandleResult) {
