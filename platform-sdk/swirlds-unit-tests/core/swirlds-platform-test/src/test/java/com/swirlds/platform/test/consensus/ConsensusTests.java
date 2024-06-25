@@ -297,7 +297,6 @@ class ConsensusTests extends PlatformTest {
     @Tag(TestComponentTags.PLATFORM)
     @Tag(TestComponentTags.CONSENSUS)
     @DisplayName("Remove a node from the address book at restart")
-    @Disabled("Disabled until the implementation of the test properly simulates removing a node.")
     void nodeRemoveTest(final ConsensusTestParams params) {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::removeNode)

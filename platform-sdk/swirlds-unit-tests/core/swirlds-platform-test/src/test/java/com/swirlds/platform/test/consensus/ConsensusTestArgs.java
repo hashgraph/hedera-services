@@ -214,6 +214,6 @@ public class ConsensusTestArgs {
 
     public static Stream<Arguments> nodeRemoveTestParams() {
         return Stream.of(
-                Arguments.of(new ConsensusTestParams(DEFAULT_PLATFORM_CONTEXT, 4, RANDOM, RANDOM_WEIGHT_DESC, 2836910334346903534L)));
+                Arguments.of(new ConsensusTestParams(DEFAULT_PLATFORM_CONTEXT, 4, RANDOM, RANDOM_WEIGHT_DESC)));
     }
 }
