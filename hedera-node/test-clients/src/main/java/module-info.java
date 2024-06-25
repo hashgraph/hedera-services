@@ -41,9 +41,11 @@ module com.hedera.node.test.clients {
 
     requires transitive com.hedera.node.app.hapi.fees;
     requires transitive com.hedera.node.app.hapi.utils;
+    requires transitive com.hedera.node.app.hapi.utils.test.fixtures;
     requires transitive com.hedera.node.app.test.fixtures;
     requires transitive com.hedera.node.app;
     requires transitive com.hedera.node.hapi;
+    requires transitive com.hedera.node.hapi.test.fixtures;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.state.api;
     requires transitive com.fasterxml.jackson.annotation;

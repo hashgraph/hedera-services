@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import java.time.Instant;
 
 public interface PricesAndFeesProvider {

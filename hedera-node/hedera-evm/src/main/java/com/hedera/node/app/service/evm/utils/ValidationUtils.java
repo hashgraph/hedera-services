@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.evm.utils;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.function.Supplier;
 
 /**

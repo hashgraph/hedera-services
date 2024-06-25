@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.evm.store.contracts.precompile.proxy;
 
-import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hedera.hapi.node.base.Timestamp;
 
 @FunctionalInterface
 public interface ViewGasCalculator {

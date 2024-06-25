@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.evm.exceptions;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;
 
 /**
