@@ -75,7 +75,6 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
@@ -108,7 +107,6 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
-import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -119,6 +117,7 @@ import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import com.swirlds.platform.test.fixtures.state.MapReadableStates;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
@@ -127,6 +126,7 @@ import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -137,7 +137,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import javax.inject.Provider;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -221,6 +220,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private NetworkUtilizationManager networkUtilizationManager;
 
     @Mock
+    private PlatformState platformState;
+
+    @Mock
     private StoreMetricsService storeMetricsService;
 
     @Mock
@@ -233,13 +235,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private SingleTransactionRecordBuilderImpl twoChildBuilder;
 
     @Mock
-    private Provider<ChildDispatchComponent.Factory> childDispatchProvider;
-
-    @Mock
     private ChildDispatchFactory childDispatchFactory;
-
-    @Mock
-    private Dispatch parentDispatch;
 
     @Mock
     private Dispatch childDispatch;
@@ -272,7 +268,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private WritableStoreFactory writableStoreFactory;
 
     @Mock
-    private WritableAccountStore writableAccountStore;
+    private NodeInfo creatorInfo;
 
     @Mock
     private VerificationAssistant assistant;
@@ -391,6 +387,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     void testConstructorWithInvalidArguments() {
         final var allArgs = new Object[] {
             CONSENSUS_NOW,
+            creatorInfo,
             txnInfo,
             configuration,
             authorizer,
@@ -400,6 +397,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             storeFactory,
             payerId,
             verifier,
+            platformState,
+            CONTRACT_CALL,
             Key.newBuilder().build(),
             exchangeRateManager,
             stack,
@@ -408,10 +407,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             recordCache,
             networkInfo,
             recordBuilders,
-            childDispatchProvider,
             childDispatchFactory,
-            parentDispatch,
             dispatchProcessor,
+            recordListBuilder,
             networkUtilizationManager
         };
 
@@ -769,13 +767,11 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Test
     void allowsThrottleCapacityForChildrenIfNoneShouldThrottle() {
-        given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
         given(recordListBuilder.childRecordBuilders()).willReturn(List.of(oneChildBuilder, twoChildBuilder));
         given(oneChildBuilder.status()).willReturn(SUCCESS);
         given(oneChildBuilder.transaction()).willReturn(CRYPTO_TRANSFER_TXN_INFO.transaction());
         given(oneChildBuilder.transactionBody()).willReturn(CRYPTO_TRANSFER_TXN_INFO.txBody());
         given(twoChildBuilder.status()).willReturn(REVERTED_SUCCESS);
-        given(parentDispatch.stack()).willReturn(stack);
         given(stack.peek()).willReturn(wrappedHederaState);
 
         assertThat(subject.hasThrottleCapacityForChildTransactions()).isTrue();
@@ -783,7 +779,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Test
     void doesntAllowThrottleCapacityForChildrenIfOneShouldThrottle() {
-        given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
         given(recordListBuilder.childRecordBuilders()).willReturn(List.of(oneChildBuilder, twoChildBuilder));
         given(oneChildBuilder.status()).willReturn(SUCCESS);
         given(oneChildBuilder.transaction()).willReturn(CONTRACT_CALL_TXN_INFO.transaction());
@@ -793,7 +788,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         given(twoChildBuilder.transactionBody()).willReturn(CRYPTO_TRANSFER_TXN_INFO.txBody());
         given(networkUtilizationManager.shouldThrottle(any(), eq(wrappedHederaState), eq(CONSENSUS_NOW)))
                 .willReturn(true);
-        given(parentDispatch.stack()).willReturn(stack);
         given(stack.peek()).willReturn(wrappedHederaState);
         assertThat(subject.hasThrottleCapacityForChildTransactions()).isFalse();
     }
@@ -813,9 +807,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
         final TransactionInfo txnInfo = new TransactionInfo(
                 Transaction.newBuilder().body(txBody).build(), txBody, SignatureMap.DEFAULT, Bytes.EMPTY, function);
-        lenient().when(parentDispatch.txnCategory()).thenReturn(category);
         return new DispatchHandleContext(
                 CONSENSUS_NOW,
+                creatorInfo,
                 txnInfo,
                 configuration,
                 authorizer,
@@ -825,6 +819,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 storeFactory,
                 payerId,
                 verifier,
+                platformState,
+                CRYPTO_TRANSFER,
                 Key.DEFAULT,
                 exchangeRateManager,
                 stack,
@@ -833,18 +829,16 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 recordCache,
                 networkInfo,
                 recordBuilders,
-                childDispatchProvider,
                 childDispatchFactory,
-                parentDispatch,
                 dispatchProcessor,
+                recordListBuilder,
                 networkUtilizationManager);
     }
 
     private void mockNeeded() {
-        lenient().when(parentDispatch.recordListBuilder()).thenReturn(recordListBuilder);
-        lenient().when(parentDispatch.recordBuilder()).thenReturn(parentRecordBuilder);
         lenient()
-                .when(childDispatchFactory.createChildDispatch(any(), any(), any(), any(), any(), any(), any(), any()))
+                .when(childDispatchFactory.createChildDispatch(
+                        any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(childDispatch);
         lenient().when(childDispatch.recordListBuilder()).thenReturn(recordListBuilder);
         lenient().when(childDispatch.recordBuilder()).thenReturn(childRecordBuilder);

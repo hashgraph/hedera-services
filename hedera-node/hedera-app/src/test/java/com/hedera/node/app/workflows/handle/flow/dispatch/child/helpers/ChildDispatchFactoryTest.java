@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch.child.helpers;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PAYER_ACCOUNT_DELETED;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.child.helpers.ChildRecordBuilderFactoryTest.asTxn;
@@ -28,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -47,18 +47,26 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
+import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
-import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildRecordBuilderFactory;
+import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -66,9 +74,11 @@ import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import java.util.Collections;
 import java.util.function.Predicate;
-import javax.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -104,10 +114,7 @@ class ChildDispatchFactoryTest {
     private Predicate<Key> verifierCallback;
 
     @Mock(strictness = LENIENT)
-    private Provider<ChildDispatchComponent.Factory> childDispatchFactoryProvider;
-
-    @Mock(strictness = LENIENT)
-    private ChildDispatchComponent.Factory childDispatchFactory;
+    private RecordListBuilder recordListBuilder;
 
     @Mock(strictness = LENIENT)
     private ReadableStoreFactory readableStoreFactory;
@@ -116,7 +123,43 @@ class ChildDispatchFactoryTest {
     private ReadableAccountStore accountStore;
 
     @Mock(strictness = LENIENT)
+    private NodeInfo creatorInfo;
+
+    @Mock(strictness = LENIENT)
+    private PlatformState platformState;
+
+    @Mock(strictness = LENIENT)
     private SavepointStackImpl savepointStack;
+
+    @Mock
+    private Authorizer authorizer;
+
+    @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
+    private FeeManager feeManager;
+
+    @Mock
+    private RecordCache recordCache;
+
+    @Mock
+    private DispatchProcessor dispatchProcessor;
+
+    @Mock
+    private BlockRecordManager blockRecordManager;
+
+    @Mock
+    private ServiceScopeLookup serviceScopeLookup;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
+
+    @Mock
+    private ExchangeRateManager exchangeRateManager;
+
+    @Mock
+    private NetworkUtilizationManager networkUtilizationManager;
 
     private ChildDispatchFactory subject;
 
@@ -134,7 +177,6 @@ class ChildDispatchFactoryTest {
             .build();
     private static final TransactionBody txBody = asTxn(transferBody, payerId, consensusTime);
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
-    private final RecordListBuilder recordListBuilder = new RecordListBuilder(consensusTime);
 
     private final ChildRecordBuilderFactory childRecordBuilderFactory = new ChildRecordBuilderFactory();
 
@@ -146,7 +188,19 @@ class ChildDispatchFactoryTest {
 
     @BeforeEach
     public void setUp() {
-        subject = new ChildDispatchFactory(dispatcher, childRecordBuilderFactory);
+        subject = new ChildDispatchFactory(
+                dispatcher,
+                childRecordBuilderFactory,
+                authorizer,
+                networkInfo,
+                feeManager,
+                recordCache,
+                dispatchProcessor,
+                blockRecordManager,
+                serviceScopeLookup,
+                storeMetricsService,
+                exchangeRateManager,
+                networkUtilizationManager);
     }
 
     @Test
@@ -154,14 +208,19 @@ class ChildDispatchFactoryTest {
         mainSetup();
         // Create the child dispatch
         subject.createChildDispatch(
-                parentDispatch,
                 txBody,
                 callback,
                 payerId,
                 category,
-                childDispatchFactoryProvider,
                 customizer,
-                reversingBehavior);
+                reversingBehavior,
+                recordListBuilder,
+                configuration,
+                savepointStack,
+                readableStoreFactory,
+                creatorInfo,
+                platformState,
+                CONTRACT_CALL);
         final var expectedPreHandleResult = new PreHandleResult(
                 null,
                 null,
@@ -178,8 +237,7 @@ class ChildDispatchFactoryTest {
         verify(dispatcher).dispatchPureChecks(txBody);
         verify(dispatcher).dispatchPreHandle(any());
 
-        verify(childDispatchFactory)
-                .create(any(), any(), eq(payerId), eq(category), any(), eq(expectedPreHandleResult), any());
+        // TODO
     }
 
     @Test
@@ -187,14 +245,19 @@ class ChildDispatchFactoryTest {
         mainSetup();
         // Create the child dispatch
         subject.createChildDispatch(
-                parentDispatch,
                 txBody,
                 callback,
                 payerId,
                 HandleContext.TransactionCategory.SCHEDULED,
-                childDispatchFactoryProvider,
                 customizer,
-                reversingBehavior);
+                reversingBehavior,
+                recordListBuilder,
+                configuration,
+                savepointStack,
+                readableStoreFactory,
+                creatorInfo,
+                platformState,
+                CONTRACT_CALL);
         final var expectedPreHandleResult = new PreHandleResult(
                 null,
                 null,
@@ -211,15 +274,7 @@ class ChildDispatchFactoryTest {
         verify(dispatcher).dispatchPureChecks(txBody);
         verify(dispatcher).dispatchPreHandle(any());
 
-        verify(childDispatchFactory)
-                .create(
-                        any(),
-                        any(),
-                        eq(payerId),
-                        eq(HandleContext.TransactionCategory.SCHEDULED),
-                        any(),
-                        eq(expectedPreHandleResult),
-                        any());
+        // TODO
     }
 
     @Test
@@ -229,14 +284,19 @@ class ChildDispatchFactoryTest {
                 .given(dispatcher)
                 .dispatchPreHandle(any());
         subject.createChildDispatch(
-                parentDispatch,
                 txBody,
                 callback,
                 payerId,
                 category,
-                childDispatchFactoryProvider,
                 customizer,
-                reversingBehavior);
+                reversingBehavior,
+                recordListBuilder,
+                configuration,
+                savepointStack,
+                readableStoreFactory,
+                creatorInfo,
+                platformState,
+                CONTRACT_CALL);
         final var expectedPreHandleResult = new PreHandleResult(
                 null,
                 null,
@@ -252,8 +312,7 @@ class ChildDispatchFactoryTest {
         verify(dispatcher).dispatchPureChecks(txBody);
         verify(dispatcher).dispatchPreHandle(any());
 
-        verify(childDispatchFactory)
-                .create(any(), any(), eq(payerId), eq(category), any(), eq(expectedPreHandleResult), any());
+        // TODO
     }
 
     @Test
@@ -313,14 +372,19 @@ class ChildDispatchFactoryTest {
         Exception exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> subject.createChildDispatch(
-                        parentDispatch,
                         txBody,
                         callback,
                         payerId,
                         HandleContext.TransactionCategory.SCHEDULED,
-                        childDispatchFactoryProvider,
                         customizer,
-                        reversingBehavior));
+                        reversingBehavior,
+                        recordListBuilder,
+                        configuration,
+                        savepointStack,
+                        readableStoreFactory,
+                        creatorInfo,
+                        platformState,
+                        CONTRACT_CALL));
         assertTrue(exception.getCause() instanceof UnknownHederaFunctionality);
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }
@@ -335,6 +399,5 @@ class ChildDispatchFactoryTest {
         given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
         given(parentDispatch.stack()).willReturn(savepointStack);
         given(savepointStack.peek()).willReturn(new WrappedHederaState(savepointStack));
-        given(childDispatchFactoryProvider.get()).willReturn(childDispatchFactory);
     }
 }

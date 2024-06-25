@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -30,28 +31,43 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
+import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DelegateKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.flow.dispatch.ChildDispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.function.Predicate;
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
@@ -64,78 +80,131 @@ public class ChildDispatchFactory {
 
     private final TransactionDispatcher dispatcher;
     private final ChildRecordBuilderFactory recordBuilderFactory;
+    private final Authorizer authorizer;
+    private final NetworkInfo networkInfo;
+    private final FeeManager feeManager;
+    private final RecordCache recordCache;
+    private final DispatchProcessor dispatchProcessor;
+    private final BlockRecordManager blockRecordManager;
+    private final ServiceScopeLookup serviceScopeLookup;
+    private final StoreMetricsService storeMetricsService;
+    private final ExchangeRateManager exchangeRateManager;
+    private final NetworkUtilizationManager networkUtilizationManager;
 
     @Inject
     public ChildDispatchFactory(
-            final TransactionDispatcher dispatcher, final ChildRecordBuilderFactory recordBuilderFactory) {
-        this.dispatcher = dispatcher;
-        this.recordBuilderFactory = recordBuilderFactory;
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final ChildRecordBuilderFactory recordBuilderFactory,
+            @NonNull final Authorizer authorizer,
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final FeeManager feeManager,
+            @NonNull final RecordCache recordCache,
+            @NonNull final DispatchProcessor dispatchProcessor,
+            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+        this.dispatcher = requireNonNull(dispatcher);
+        this.recordBuilderFactory = requireNonNull(recordBuilderFactory);
+        this.authorizer = requireNonNull(authorizer);
+        this.networkInfo = requireNonNull(networkInfo);
+        this.feeManager = requireNonNull(feeManager);
+        this.recordCache = requireNonNull(recordCache);
+        this.dispatchProcessor = requireNonNull(dispatchProcessor);
+        this.blockRecordManager = requireNonNull(blockRecordManager);
+        this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
+        this.storeMetricsService = requireNonNull(storeMetricsService);
+        this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
     }
 
     /**
      * Creates a child dispatch. This method computes the transaction info and initializes record builder for the child
      * transaction.
-     * @param parentDispatch the parent dispatch
+     *
      * @param txBody the transaction body
      * @param callback the key verifier for child dispatch
-     * @param syntheticPayerId  the synthetic payer id
+     * @param syntheticPayerId the synthetic payer id
      * @param category the transaction category
-     * @param childDispatchFactory the child dispatch factory
      * @param customizer the externalized record customizer
      * @param reversingBehavior the reversing behavior
+     * @param recordListBuilder the record list builder
+     * @param config the configuration
+     * @param stack the savepoint stack
+     * @param readableStoreFactory the readable store factory
+     * @param creatorInfo the node info of the creator
+     * @param platformState the platform state
+     * @param topLevelFunction the top level functionality
      * @return the child dispatch
      */
     public Dispatch createChildDispatch(
-            @NonNull final Dispatch parentDispatch,
             @NonNull final TransactionBody txBody,
             @Nullable final Predicate<Key> callback,
             @NonNull final AccountID syntheticPayerId,
             @NonNull final HandleContext.TransactionCategory category,
-            @NonNull final Provider<ChildDispatchComponent.Factory> childDispatchFactory,
             @NonNull final ExternalizedRecordCustomizer customizer,
-            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior) {
-        final var preHandleResult = dispatchPreHandleForChildTxn(parentDispatch, txBody, syntheticPayerId);
+            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
+            @NonNull final RecordListBuilder recordListBuilder,
+            @NonNull final Configuration config,
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final ReadableStoreFactory readableStoreFactory,
+            @NonNull final NodeInfo creatorInfo,
+            @NonNull final PlatformState platformState,
+            @NonNull final HederaFunctionality topLevelFunction) {
+        final var preHandleResult =
+                dispatchPreHandleForChildTxn(txBody, syntheticPayerId, config, readableStoreFactory);
         final var childTxnInfo = getTxnInfoFrom(txBody);
         final var recordBuilder = recordBuilderFactory.recordBuilderFor(
+                childTxnInfo, recordListBuilder, config, category, reversingBehavior, customizer);
+        final var childStack = new SavepointStackImpl(stack.peek());
+        return ChildDispatch.from(
+                recordBuilder,
                 childTxnInfo,
-                parentDispatch.recordListBuilder(),
-                parentDispatch.handleContext().configuration(),
+                syntheticPayerId,
                 category,
-                reversingBehavior,
-                customizer);
-        final var childStack = new SavepointStackImpl(parentDispatch.stack().peek());
-        return childDispatchFactory
-                .get()
-                .create(
-                        recordBuilder,
-                        childTxnInfo,
-                        syntheticPayerId,
-                        category,
-                        childStack,
-                        preHandleResult,
-                        getKeyVerifier(callback));
+                childStack,
+                preHandleResult,
+                getKeyVerifier(callback),
+                recordBuilder.consensusNow(),
+                creatorInfo,
+                config,
+                platformState,
+                recordListBuilder,
+                topLevelFunction,
+                authorizer,
+                networkInfo,
+                feeManager,
+                recordCache,
+                dispatchProcessor,
+                blockRecordManager,
+                serviceScopeLookup,
+                storeMetricsService,
+                exchangeRateManager,
+                this,
+                dispatcher,
+                networkUtilizationManager);
     }
 
     /**
      * Dispatches the pre-handle checks for the child transaction. This runs pureChecks and then dispatches pre-handle
      * for child transaction.
-     * @param parentDispatch the parent dispatch
+     *
      * @param txBody the transaction body
      * @param syntheticPayerId the synthetic payer id
+     * @param config the configuration
+     * @param readableStoreFactory the readable store factory
      * @return the pre-handle result
      */
     private PreHandleResult dispatchPreHandleForChildTxn(
-            final @NonNull Dispatch parentDispatch,
-            final @NonNull TransactionBody txBody,
-            final @NonNull AccountID syntheticPayerId) {
+            @NonNull final TransactionBody txBody,
+            @NonNull final AccountID syntheticPayerId,
+            @NonNull final Configuration config,
+            @NonNull final ReadableStoreFactory readableStoreFactory) {
         try {
             dispatcher.dispatchPureChecks(txBody);
-            final var preHandleContext = new PreHandleContextImpl(
-                    parentDispatch.readableStoreFactory(),
-                    txBody,
-                    syntheticPayerId,
-                    parentDispatch.handleContext().configuration(),
-                    dispatcher);
+            final var preHandleContext =
+                    new PreHandleContextImpl(readableStoreFactory, txBody, syntheticPayerId, config, dispatcher);
             dispatcher.dispatchPreHandle(preHandleContext);
             return new PreHandleResult(
                     null,
@@ -203,6 +272,7 @@ public class ChildDispatchFactory {
      * {@link NoOpKeyVerifier}. Otherwise, it returns a {@link DelegateKeyVerifier} with the callback.
      * The callback is null if the signature verification is not required. This is the case for hollow account
      * completion and auto account creation.
+     *
      * @param callback the callback
      * @return the key verifier
      */
@@ -240,6 +310,7 @@ public class ChildDispatchFactory {
 
     /**
      * Provides the transaction information for the given dispatched transaction body.
+     *
      * @param txBody the transaction body
      * @return the transaction information
      */
@@ -267,6 +338,7 @@ public class ChildDispatchFactory {
 
     /**
      * Provides the functionality of the transaction body.
+     *
      * @param txBody the transaction body
      * @return the functionality
      */

@@ -66,17 +66,18 @@ import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
-import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
 import dagger.Reusable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -87,7 +88,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import javax.inject.Inject;
-import javax.inject.Provider;
 
 /**
  * The HandleContext Implementation
@@ -95,8 +95,9 @@ import javax.inject.Provider;
 @Reusable
 public class DispatchHandleContext implements HandleContext, FeeContext {
     private final Instant consensusNow;
+    private final NodeInfo creatorInfo;
     private final TransactionInfo txnInfo;
-    private final Configuration configuration;
+    private final Configuration config;
     private final Authorizer authorizer;
     private final BlockRecordManager blockRecordManager;
     private final ResourcePriceCalculator resourcePriceCalculator;
@@ -104,6 +105,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final StoreFactoryImpl storeFactory;
     private final AccountID syntheticPayer;
     private final AppKeyVerifier verifier;
+    private final PlatformState platformState;
+    private final HederaFunctionality topLevelFunction;
     private final Key payerKey;
     private final ExchangeRateManager exchangeRateManager;
     private final SavepointStackImpl stack;
@@ -114,18 +117,18 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final RecordCache recordCache;
     private final NetworkInfo networkInfo;
     private final RecordBuilders recordBuilders;
-    private final Provider<ChildDispatchComponent.Factory> childDispatchProvider;
     private final ChildDispatchFactory childDispatchFactory;
-    private final Dispatch currentDispatch;
     private final DispatchProcessor dispatchProcessor;
+    private final RecordListBuilder recordListBuilder;
     private final NetworkUtilizationManager networkUtilizationManager;
     private Map<AccountID, Long> dispatchPaidRewards;
 
     @Inject
     public DispatchHandleContext(
             @NonNull final Instant consensusNow,
+            @NonNull final NodeInfo creatorInfo,
             @NonNull final TransactionInfo transactionInfo,
-            @NonNull final Configuration configuration,
+            @NonNull final Configuration config,
             @NonNull final Authorizer authorizer,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final ResourcePriceCalculator resourcePriceCalculator,
@@ -133,6 +136,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final StoreFactoryImpl storeFactory,
             @NonNull final AccountID syntheticPayer,
             @NonNull final AppKeyVerifier verifier,
+            @NonNull final PlatformState platformState,
+            @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final Key payerKey,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final SavepointStackImpl stack,
@@ -141,14 +146,14 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final RecordCache recordCache,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final RecordBuilders recordBuilders,
-            @NonNull final Provider<ChildDispatchComponent.Factory> childDispatchProvider,
             @NonNull final ChildDispatchFactory childDispatchLogic,
-            @NonNull final Dispatch parentDispatch,
             @NonNull final DispatchProcessor dispatchProcessor,
+            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
         this.consensusNow = requireNonNull(consensusNow);
+        this.creatorInfo = requireNonNull(creatorInfo);
         this.txnInfo = requireNonNull(transactionInfo);
-        this.configuration = requireNonNull(configuration);
+        this.config = requireNonNull(config);
         this.authorizer = requireNonNull(authorizer);
         this.blockRecordManager = requireNonNull(blockRecordManager);
         this.resourcePriceCalculator = requireNonNull(resourcePriceCalculator);
@@ -156,14 +161,15 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.storeFactory = requireNonNull(storeFactory);
         this.syntheticPayer = requireNonNull(syntheticPayer);
         this.verifier = requireNonNull(verifier);
+        this.platformState = requireNonNull(platformState);
+        this.topLevelFunction = requireNonNull(topLevelFunction);
         this.payerKey = requireNonNull(payerKey);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.stack = requireNonNull(stack);
         this.entityNumGenerator = requireNonNull(entityNumGenerator);
-        this.childDispatchProvider = requireNonNull(childDispatchProvider);
         this.childDispatchFactory = requireNonNull(childDispatchLogic);
-        this.currentDispatch = requireNonNull(parentDispatch);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
+        this.recordListBuilder = requireNonNull(recordListBuilder);
         this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);
@@ -194,7 +200,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public Configuration configuration() {
-        return configuration;
+        return config;
     }
 
     @Nullable
@@ -476,7 +482,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public boolean hasThrottleCapacityForChildTransactions() {
         var isAllowed = true;
-        final var childRecords = currentDispatch.recordListBuilder().childRecordBuilders();
+        final var childRecords = recordListBuilder.childRecordBuilders();
         @Nullable List<ThrottleUsageSnapshot> snapshotsIfNeeded = null;
 
         for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
@@ -504,8 +510,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                         childTx.sigMapOrElse(SignatureMap.DEFAULT),
                         childTx.signedTransactionBytes(),
                         childTxFunctionality);
-                final var shouldThrottleTxn = networkUtilizationManager.shouldThrottle(
-                        childTxInfo, currentDispatch.stack().peek(), consensusNow);
+                final var shouldThrottleTxn =
+                        networkUtilizationManager.shouldThrottle(childTxInfo, stack.peek(), consensusNow);
                 if (shouldThrottleTxn) {
                     isAllowed = false;
                 }
@@ -533,14 +539,19 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
             final boolean commitStack) {
         final var childDispatch = childDispatchFactory.createChildDispatch(
-                currentDispatch,
                 childTxBody,
                 childVerifier,
                 syntheticPayer,
                 category,
-                childDispatchProvider,
                 customizer,
-                reversingBehavior);
+                reversingBehavior,
+                recordListBuilder,
+                config,
+                stack,
+                storeFactory.asReadOnly(),
+                creatorInfo,
+                platformState,
+                topLevelFunction);
         dispatchProcessor.processDispatch(childDispatch);
         if (commitStack) {
             stack.commitFullStack();
