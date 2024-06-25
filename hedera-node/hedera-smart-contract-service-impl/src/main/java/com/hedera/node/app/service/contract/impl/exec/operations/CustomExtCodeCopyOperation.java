@@ -63,20 +63,18 @@ public class CustomExtCodeCopyOperation extends ExtCodeCopyOperation {
             final var numBytes = clampedToLong(frame.getStackItem(3));
             final long cost = cost(frame, memOffset, numBytes, false);
             if (isDeficientGas(frame, cost)) {
-                return new OperationResult(
-                        cost(frame, memOffset, numBytes, true), ExceptionalHaltReason.INSUFFICIENT_GAS);
+                return new OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
             }
 
             // Special behavior for long-zero addresses below 0.0.1001
             if (addressChecks.isNonUserAccount(address)) {
                 frame.writeMemory(memOffset, sourceOffset, numBytes, Bytes.EMPTY);
                 frame.popStackItems(4);
-                return new OperationResult(cost(frame, memOffset, numBytes, true), null);
+                return new OperationResult(cost, null);
             }
             // Otherwise the address must be present
             if (contractRequired(frame, address, featureFlags) && !addressChecks.isPresent(address, frame)) {
-                return new OperationResult(
-                        cost(frame, memOffset, numBytes, true), CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
+                return new OperationResult(cost, CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);
         } catch (UnderflowException ignore) {
