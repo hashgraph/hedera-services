@@ -16,23 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
-import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
-import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.ThrottleException;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.FEES_ONLY;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.USER_TRANSACTION;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -49,10 +32,28 @@ import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.ThrottleException;
+import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.FEES_ONLY;
+import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.USER_TRANSACTION;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class has the common logic that is executed for a user dispatch and a child dispatch transactions.

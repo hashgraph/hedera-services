@@ -163,8 +163,8 @@ public class HollowAccountCompletions {
                     ethTxVerification != null && hollowAccount.alias().equals(ethTxVerification.evmAlias())
                             ? ethTxVerification
                             : requireNonNull(
-                                    verifier.verificationFor(hollowAccount.alias()),
-                                    "Required hollow account verified signature did not exist");
+                            verifier.verificationFor(hollowAccount.alias()),
+                            "Required hollow account verified signature did not exist");
             if (verification.key() != null) {
                 if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
                     logger.error("Hollow account {} has a key other than the sentinel key", hollowAccount);

@@ -340,15 +340,15 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     void getsFeeCalculator(@Mock FeeCalculator feeCalculator) {
         given(verifier.numSignaturesVerified()).willReturn(2);
         given(feeManager.createFeeCalculator(
-                        any(),
-                        eq(Key.DEFAULT),
-                        eq(CRYPTO_TRANSFER_TXN_INFO.functionality()),
-                        eq(2),
-                        eq(0),
-                        eq(CONSENSUS_NOW),
-                        eq(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES),
-                        eq(false),
-                        eq(readableStoreFactory)))
+                any(),
+                eq(Key.DEFAULT),
+                eq(CRYPTO_TRANSFER_TXN_INFO.functionality()),
+                eq(2),
+                eq(0),
+                eq(CONSENSUS_NOW),
+                eq(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES),
+                eq(false),
+                eq(readableStoreFactory)))
                 .willReturn(feeCalculator);
         final var factory = subject.feeCalculatorFactory();
         assertThat(factory.feeCalculator(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
@@ -369,31 +369,31 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Test
     void testConstructorWithInvalidArguments() {
         final var allArgs = new Object[] {
-            CONSENSUS_NOW,
-            creatorInfo,
-            txnInfo,
-            configuration,
-            authorizer,
-            blockRecordManager,
-            resourcePriceCalculator,
-            feeManager,
-            storeFactory,
-            payerId,
-            verifier,
-            platformState,
-            CONTRACT_CALL,
-            Key.newBuilder().build(),
-            exchangeRateManager,
-            stack,
-            entityNumGenerator,
-            dispatcher,
-            recordCache,
-            networkInfo,
-            recordBuilders,
-            childDispatchFactory,
-            dispatchProcessor,
-            recordListBuilder,
-            throttleAdviser
+                CONSENSUS_NOW,
+                creatorInfo,
+                txnInfo,
+                configuration,
+                authorizer,
+                blockRecordManager,
+                resourcePriceCalculator,
+                feeManager,
+                storeFactory,
+                payerId,
+                verifier,
+                platformState,
+                CONTRACT_CALL,
+                Key.newBuilder().build(),
+                exchangeRateManager,
+                stack,
+                entityNumGenerator,
+                dispatcher,
+                recordCache,
+                networkInfo,
+                recordBuilders,
+                childDispatchFactory,
+                dispatchProcessor,
+                recordListBuilder,
+                throttleAdviser
         };
 
         final var constructor = DispatchHandleContext.class.getConstructors()[0];
@@ -404,10 +404,10 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 continue;
             }
             assertThatThrownBy(() -> {
-                        final var argsWithNull = Arrays.copyOf(allArgs, allArgs.length);
-                        argsWithNull[index] = null;
-                        constructor.newInstance(argsWithNull);
-                    })
+                final var argsWithNull = Arrays.copyOf(allArgs, allArgs.length);
+                argsWithNull[index] = null;
+                constructor.newInstance(argsWithNull);
+            })
                     .isInstanceOf(InvocationTargetException.class)
                     .hasCauseInstanceOf(NullPointerException.class);
         }
@@ -455,11 +455,11 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         @Test
         void testAllKeysForTransactionSuccess() throws PreCheckException {
             doAnswer(invocation -> {
-                        final var innerContext = invocation.getArgument(0, PreHandleContext.class);
-                        innerContext.requireKey(BOB.account().key());
-                        innerContext.optionalKey(CAROL.account().key());
-                        return null;
-                    })
+                final var innerContext = invocation.getArgument(0, PreHandleContext.class);
+                innerContext.requireKey(BOB.account().key());
+                innerContext.optionalKey(CAROL.account().key());
+                return null;
+            })
                     .when(dispatcher)
                     .dispatchPreHandle(any());
 
@@ -568,15 +568,15 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                     .thenReturn(MapWritableStates.builder().state(accountsState).build());
 
             doAnswer(invocation -> {
-                        final var childContext = invocation.getArgument(0, HandleContext.class);
-                        final var childStack = (SavepointStackImpl) childContext.savepointStack();
-                        childStack
-                                .peek()
-                                .getWritableStates(FOOD_SERVICE)
-                                .get(FRUIT_STATE_KEY)
-                                .put(A_KEY, ACAI);
-                        return null;
-                    })
+                final var childContext = invocation.getArgument(0, HandleContext.class);
+                final var childStack = (SavepointStackImpl) childContext.savepointStack();
+                childStack
+                        .peek()
+                        .getWritableStates(FOOD_SERVICE)
+                        .get(FRUIT_STATE_KEY)
+                        .put(A_KEY, ACAI);
+                return null;
+            })
                     .when(dispatcher)
                     .dispatchHandle(any());
         }
@@ -585,26 +585,26 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         @Test
         void testDispatchWithInvalidArguments() {
             assertThatThrownBy(() -> subject.dispatchPrecedingTransaction(
-                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT))
+                    null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() ->
-                            subject.dispatchPrecedingTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
+                    subject.dispatchPrecedingTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchChildTransaction(
-                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
+                    null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() ->
-                            subject.dispatchChildTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
+                    subject.dispatchChildTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
-                            null,
-                            SingleTransactionRecordBuilder.class,
-                            VERIFIER_CALLBACK,
-                            AccountID.DEFAULT,
-                            NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
+                    null,
+                    SingleTransactionRecordBuilder.class,
+                    VERIFIER_CALLBACK,
+                    AccountID.DEFAULT,
+                    NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
-                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
+                    txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
                     .isInstanceOf(NullPointerException.class);
         }
 

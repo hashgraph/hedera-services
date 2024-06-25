@@ -108,8 +108,8 @@ public class DispatchValidator {
             final var duplicateCheckResult = category != USER
                     ? NO_DUPLICATE
                     : recordCache.hasDuplicate(
-                            dispatch.txnInfo().txBody().transactionIDOrThrow(),
-                            dispatch.creatorInfo().nodeId());
+                    dispatch.txnInfo().txBody().transactionIDOrThrow(),
+                    dispatch.creatorInfo().nodeId());
             return switch (duplicateCheckResult) {
                 case NO_DUPLICATE -> finalPayerValidationReport(payer, DuplicateStatus.NO_DUPLICATE, dispatch);
                 case SAME_NODE -> creatorValidationReport(dispatch.creatorInfo().accountId(), DUPLICATE_TRANSACTION);
@@ -159,7 +159,7 @@ public class DispatchValidator {
             case NO_DUPLICATE -> dispatch.preHandleResult().status() == SO_FAR_SO_GOOD
                     ? successReport(creatorId, payer)
                     : payerUniqueValidationReport(
-                            creatorId, payer, dispatch.preHandleResult().responseCode());
+                    creatorId, payer, dispatch.preHandleResult().responseCode());
         };
     }
 

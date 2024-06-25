@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.dispatch;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static java.util.Collections.emptySet;
-
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -30,12 +27,16 @@ import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static java.util.Collections.emptySet;
 
 /**
  * Finalizes the record based on the transaction category. The record

@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.dispatch;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -27,8 +24,12 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Provider of the child record builder based on the dispatched child transaction category

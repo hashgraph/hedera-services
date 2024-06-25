@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.workflows.handle.dispatch;
 
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.state.token.Account;
+import org.junit.jupiter.api.Test;
+
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
@@ -27,10 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.state.token.Account;
-import org.junit.jupiter.api.Test;
 
 public class ValidationResultTest {
     private static final AccountID CREATOR_ACCOUNT_ID =
