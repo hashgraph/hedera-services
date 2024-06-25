@@ -2,7 +2,7 @@
 
 ## Summary
 
-Provide necessary pieces for signing messages using a TSS scheme.
+Provide necessary components for signing messages using a TSS scheme.
 
 | Metadata           | Entities                                               | 
 |--------------------|--------------------------------------------------------|
@@ -19,17 +19,17 @@ and it can be used to verify the aggregate of a set of partial signatures produc
 
 This is important for producing proofs that are easily consumable and verifiable by external entities.
 
-This proposal covers the implementation of all necessary pieces to provide the consensus node and block node with
+This proposal covers the implementation of all necessary components to provide the consensus node and block node with
 the functionality to sign and verify blocks using a Threshold Signature Scheme (TSS) and EC Cryptography.
 
 The related proposal, TSS-Ledger-Id, provides an overview of the process and background for TSS and how it impacts the platform’s functionality.
 
 This proposal assumes no relation with the platform and defines a generic solution that any consumer can adopt.
-It only assumes that there exists a channel to connect participant, where the identity of the message sender has been previously validated.
+It only assumes that there exists a channel to connect participants, where the identity of the message sender has been previously validated.
 
 The process of sending messages through that channel and receiving the responses is outside the scope of this proposal.
 Additionally, participants will need access to each other's public key. While the generation of the public/private keys is included in this proposal,
-the distribution aspect, the loading, and the in-memory interpretation from each participant are outside the scope of this proposal, too.
+the distribution aspect, the loading, and the in-memory interpretation from each participant are outside the scope of this proposal.
 
 ### Glossary
 - **TSS (Threshold Signature Scheme)**: A cryptographic signing scheme in which a minimum number of parties (reconstruction threshold) must collaborate
@@ -146,7 +146,7 @@ A threshold:
 `t = 5`
 
 First, a `shareId`: `sid` is generated for each share. It's a unique identifier for each existent share. It is deterministic because the function we use to generate it is deterministic.
-It is only necessary that they are values: a) are unique per share, b) non-0, and c) can be used in the polynomial (They are from the same field of the selected curve)
+It is necessary to assure they are values that: a) are unique per share, b) non-0, and c) can be used as input for the polynomial (They are from the same field of the selected curve)
 
 
 And an ownership map: `ShareId`->`Participant`:
@@ -169,31 +169,31 @@ In the bootstrap process, each participant creates a random EC Private Key `k` o
 `n`  -  The number of total shares across all participants
 `s`  -  One of the total shares
 `sidₛ`- The shareId of the share s
-`xₛ` -  One of many points in a polynomial for share s
-`Pₖ` -  A polynomial with certain properties given a specific private key k
+`Xₖ` -  A polynomial with certain properties given a specific secret k
+`xₛ` -  A point in the polynomial Xₖ for sidₛ
 ```
 
-Then, each shareholder will produce `n` (n=total number of shares) values `xₛ` by evaluating a polynomial Pₖ at each `ShareId`: `sidₛ` in the ownership map.
+Then, each shareholder will produce `n` (n=total number of shares) values `Xₛ` by evaluating a polynomial Xₖ at each `ShareId`: `sidₛ` in the ownership map.
 
-The polynomial `Pₖ` is a polynomial with degree `t-1` (t=threshold) with the form:
-`Pₖ = aₒ + a₁x + ...aₜ₋₁xᵗ⁻¹`[ having: `a₁...aₜ₋₁`: random coefficients from `SignatureScheme.publicKeyGroup` and `aₒ`: `k`'s EC field element. x is a field element, thus allowing the polynomial to be evaluated for each share id]
-```
-   xₛ=Pₖ(sidₛ) for privateKey: k and each ShareId: sidₛ
-```
-Each `xₛ` constitutes a point on the polynomial.
+The polynomial `Xₖ` is a polynomial with degree `t-1` (t=threshold) with the form:
+`Xₖ = k + a₁x + ...aₜ₋₁xᵗ⁻¹`[ having: `a₁...aₜ₋₁`: random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element. x is a field element, thus allowing the polynomial to be evaluated for each share id]
+
+Each `xₛ = Xₖ(sidₛ)` constitutes a point on the polynomial.
 
 Once the `xₛ` value has been calculated for each `ShareId`: `sidₛ`, the value: `Mₛ` will be produced by encrypting the `xₛ` using the `sidₛ` owner's public key.
-
-![img_4.png](img_4.png)
-
-A TssMessage:
+The TssMessage will contain all the encrypted values for all shares.
 
 ![img.png](img.png)
+
+
+A TssMessage class diagram:
+
+![img_3.png](img_3.png)
 
 ##### Outside of scope
 Using an established channel, each participant will broadcast a single message to be received by all participants
 while waiting to receive other participants' messages. This functionality is critical for the protocol to work but needs to be handled outside the library.
-Each participant will validate the received message against the commitment and the zk-SNARKs proof. Invalid messages will be discarded.
+Each participant will validate the received message against the commitment and the zk-SNARKs proof. Invalid messages needs to be discarded.
 
 ##### 2. Validation of TssMessage
 Each message can be validated against the commitment and the zk-SNARKs proof.
@@ -202,15 +202,14 @@ The validation is produced over the content of the message and does not include 
 
 ##### 3. Processing of TssMessage
 Given Participant's persistent EC PrivateKey and precisely `t` number of validated messages (t=threshold)
-
-Each participant will decrypt all `Mₛ` to generate an aggregated value `xₛ` that will become a  `SecretShare(sidₛ, xₛ)` for each `ShareId`: `sidₛ` owned by the participant.
+each participant will decrypt all `Mₛ` to generate an aggregated value `xₛ` that will become a  `SecretShare(sidₛ, xₛ)` for each `ShareId`: `sidₛ` owned by the participant.
 
 **Note:** All participants must choose the same set of valid `TssMessages’ and have a threshold number of valid messages.
 
-![img_3.png](img_3.png)
+![img_1.png](img_1.png)
 
 Also, we will extract a `PublicShare` for each `ShareId`: `sidₛ` in the directory from the list of valid messages.
-The PublicShare for share s is computed by evaluating each polynomial commitment in the common set of messages at sidₛ and then aggregating the results.
+The PublicShare for share `s` is computed by evaluating each polynomial commitment in the common set of messages at `sidₛ` and then aggregating the results.
 
 At this point, the participant executing the scheme can start signing, sharing signatures, and validating individual signatures produced by other parties in the scheme.
 
@@ -221,46 +220,16 @@ This Section describes the rekey process executed each time some of the scheme�
 The rekeying process can happen, too, if the parameters are the same as the genesis procedure.
 
 
-E.g., In a scheme distributing 10 shares over 4 participants
-Assuming Current Participant: (P₁;  P₁_EC_PrivateKey)
+The rekeying process is similar to the bootstrap process, but it starts with the previous list of owned private `SecretShare`.
+The main difference with the genesis stage is that every participant generates a `TssMessage` out of each previously owned `SecretShare`.
 
-Given
+![img_4.png](img_4.png)
 
-Latest participants directory:
-```
-P   # shares
------------------------------
-P₁  3        P₁_EC_PublicKey
-P₂  2        P₂_EC_PublicKey
-P₃  1        P₃_EC_PublicKey
-P₄  2        P₄_EC_PublicKey
-P₅  1        P₅_EC_PublicKey
-P₆  1        P₆_EC_PublicKey
-```
-A threshold:
-`5`
-
-An old ownership map: `ShareId`->`Participant`:
-```
-sid₁	sid₂	sid₃	sid₄	sid₅	sid₆	sid₇	sid₈	sid₉	sid₁₀
-P₁  	P₁  	P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄  
-```
-
-And a new ownership map: `ShareId`->`Participant`:
-```
-sid₁	sid₂	sid₃	sid₄	sid₅	sid₆	sid₇	sid₈	sid₉	sid₁₀
-P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄  	P₅  	P₆  
-```
-The rekeying process is similar to the bootstrap process, but it starts with both an old and a new ownership map.
-Each participant generates a `TssMessage` out of each `SecretShare` owned by the participant in the old ownership map.
-
-![img_1.png](img_1.png)
-
-Once finished, the list of `SecretShare`s will be updated.
+Once finished, the list of `SecretShare`s will be updated but the previously generated aggregate public key remains the same.
 
 
 #####  Sign Stage
-After genesis keying or rekeying stages, the library can sign any message.
+After genesis or rekeying stages, the library can sign any message.
 Using each `SecretShare` owned by the participant, a message can be signed, producing a `TssSignature`
 
 Multiple signatures can be aggregated to create an aggregate `TssSignature`. An aggregate `TssSignature` can be validated against the LedgerId if
@@ -313,7 +282,8 @@ To implement the functionality detailed in the previous section, the following c
 ##### Overview
 This library implements the Groth21 TSS-specific primitives.
 
-Two options are presented, while the first focus on usability from the client perspective, the second one proposes operations that are more atomic focusing on providing clients with the ability of concurrently handle the library's operation.
+Two options are presented, the first provides service-oriented approach with coarse-grain operations and focus on reducing the interactions from client's perspective. 
+The second one proposes an object-oriented approach with fine-grain operations that are easier to concurrently call outside the library. 
 
 ##### Constraints
 Once built, this library will depend on artifacts constructed in other repositories.
@@ -322,7 +292,7 @@ This library would accept Integer.MAX_VALUE -1 participants.
 ##### Option 1 - Overview:
 This option focuses on simplify user-library interactions by centralizing all operations into a TssService class.
 A ParticipantDirectory class is created to hold all library's needed data in order to perform the operations.
-Objects returned by this option are silly (meaning they are used to hold information and they provide no operations), they are created using the library's operation and then handed back to the library for follow up operations.
+Objects returned by this option are used to hold information, and they provide no operations. They are created using the library's operation and then handed back to the library for follow-up operations.
 In this option, all iterations and "business logic" of groth21 implementation is handled inside the library.
 
 
@@ -417,26 +387,27 @@ In this option, all iterations and "business logic" of groth21 implementation is
 ######  Aggregate Signatures
 
 ```java
-
+static {
     List<TssShareSignature> signatures = Requirements.loadSignatures();
 
     //Validation of individual signatures
     List<TssShareSignature> validSignatures = new ArrayList<>(signatures.size());
-    for(TssShareSignature s:signatures){
-        if(service.verify(participantDirectory, publicShares, s)){
+    for (TssShareSignature s : signatures) {
+        if (service.verify(participantDirectory, publicShares, s)) {
             validSignatures.add(s);
         }
     }
-    
+
     //Producing an aggregate signature
     PairingSignature aggregateSignature = service.aggregate(participantDirectory, validSignatures);
-
+}
 ```
 
 ##### Option 2 - Overview:
-This option focuses in providing atomic operations. By doing that, concurrency can be provided outside the scope of this library.
+This option focuses in providing fine-grain operations. By doing that, concurrency can be provided outside the scope of this library.
 In this option, objects returned by the library are more intelligent in the sense that once returned, they can be used to continue the flow of the operations needed.
 Clients are also responsible for dealing with part of the business logic of the groth21 implementation, and some of the necessary iterations are shifted to client code.
+
 ##### Option 2 - Public API:
 ###### `ShareClaims`
 
@@ -477,29 +448,31 @@ Clients are also responsible for dealing with part of the business logic of the 
 ######  Creating TssShareClaims
 
 ```java
-PairingPublicKey p1PbK = Requirements.loadECPublicKey("P1");
-PairingPublicKey p2PbK = Requirements.loadECPublicKey("P2");
+static{
+    PairingPublicKey p1PbK = Requirements.loadECPublicKey("P1");
+    PairingPublicKey p2PbK = Requirements.loadECPublicKey("P2");
+    
+    int p1Shares = Requirements.numberOfShares("P1");
+    int p2Shares = Requirements.numberOfShares("P2");
+    List<TssShareClaim> claims = new ArrayList<>();
 
-int p1Shares = Requirements.numberOfShares("P1");
-int p2Shares = Requirements.numberOfShares("P2");
-List<TssShareClaim> claims = new ArrayList<>(p1Shares + p2Shares);
+    for(i=0; i<= p1Shares ; i++){
+        TssShareId id= new TssShareId(signatureSchema.getField().getElementFromLong(i));
+        claims.add(new TssShareClaim(id), p1PbK);
+    }
 
-int i = 0;
-for(; i<= p1Shares ; i++){
- claimss.add(new TssShareClaim(new TssShareId(signatureSchema.getField().getElementFromLong(i)), p1PbK));    
+    for(int i= p1Shares; i<= p1Shares + p2Shares ; i++){
+        TssShareId id= new TssShareId(signatureSchema.getField().getElementFromLong(i));
+        claimss.add(new TssShareClaim(id), p2PbK);
+    }
+    TssShareClaims tssShareClaims = new TssShareClaims(claims);
 }
-
-for(int i= 0; i<= p1Shares + p2Shares ; i++){
-    claimss.add(new TssShareClaim(new TssShareId(signatureSchema.getField().getElementFromLong(i)), p2PbK));
-}
-
-TssShareClaims tssShareClaims = new TssShareClaims(claims);
 ```
 ###### Generate Node's TssPrivateShare
 ```java
 //Load the keys:
 PairingPrivateKey currentNodePrivateKey = Requirements.loadECKey();
-TssShareId shareId = tssImpl.createShareId(currentNodeIndex) ;
+TssShareId shareId= new TssShareId(signatureSchema.getField().getRandomElement(RANDOM));
 TssPrivateShare privateShare = new TssPrivateShare(shareId, currentNodePrivateKey);
 ```
 
@@ -526,35 +499,39 @@ List<TssPublicShare> publicShares = tssShareClaims.claims()
 ```
 ######  Signing messages
 ```java
-//for each private share of the node:
-for (TssPrivateShare share : privateShares){
-    TssSignature signature = share.sign(blockHash);
-    Platform.send(signature);
-}
+static {
+   //for each private share of the node:
+    for (TssPrivateShare share : privateShares) {
+        TssSignature signature = share.sign(blockHash);
+        Platform.send(signature);
+    }
 
-//collect signatures
-List<TssShareSignature> collectedSignatures = Requirements.collectTssSignatures();
-List<TssShareSignature> validSignatures = new ArrayList<>();
-for (TssShareSignature signature : collectedSignatures){
-    if(signature.signature().verifySignature(tssShareIdTssPublicShareMap.get(signature.shareId()).publicKey(),
-blockHash)){
-        validSignatures.add(signature);
-            }
+    //collect signatures
+    List<TssShareSignature> collectedSignatures = Requirements.collectTssSignatures();
+    List<TssShareSignature> validSignatures = new ArrayList<>();
+    for (TssShareSignature signature : collectedSignatures) {
+        if (signature.signature().verifySignature(tssShareIdTssPublicShareMap.get(signature.shareId()).publicKey(),
+                blockHash)) {
+            validSignatures.add(signature);
+        }
+    }
 }
 ```
 ######  Aggregate Signatures
 ```java
-//collect signatures
-List<TssShareSignature> collectedSignatures = Requirements.collectTssSignatures();
-List<TssShareSignature> validSignatures = new ArrayList<>();
-for (TssShareSignature signature : collectedSignatures){
-    if(signature.signature().verifySignature(tssShareIdTssPublicShareMap.get(signature.shareId()).publicKey(),
-blockHash)){
-        validSignatures.add(signature);
-            }
-}
+static {
+    //collect signatures
+    List<TssShareSignature> collectedSignatures = Requirements.collectTssSignatures();
+    List<TssShareSignature> validSignatures = new ArrayList<>();
+    for (TssShareSignature signature : collectedSignatures) {
+        if (signature.signature().verifySignature(tssShareIdTssPublicShareMap.get(signature.shareId()).publicKey(),
+                blockHash)) {
+            validSignatures.add(signature);
+        }
+    }
 
-PairingSignature value = Tss.aggregateSignatures(validSignatures);
+    PairingSignature value = Tss.aggregateSignatures(validSignatures);
+}
 ```
 
 
@@ -600,8 +577,6 @@ SignatureSchema signatureSchema = SignatureSchema.from(Curve.ALT_BN128, GroupAss
 ```
 ###### Generating a Private Key
 ```java
-   import java.security.SecureRandom;
-
    PairingPrivateKey pk = PairingPrivateKey.create(signatureSchema, new SecureRandom());
    
 ```
