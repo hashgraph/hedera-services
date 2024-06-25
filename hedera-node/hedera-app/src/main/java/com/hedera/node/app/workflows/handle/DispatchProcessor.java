@@ -25,12 +25,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.workflows.handle.DispatchProcessor.WorkDone.FEES_ONLY;
-import static com.hedera.node.app.workflows.handle.DispatchProcessor.WorkDone.USER_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.ThrottleException;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.ThrottleException;
+import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.FEES_ONLY;
+import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.USER_TRANSACTION;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -38,15 +38,15 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
+import com.hedera.node.app.workflows.handle.dispatch.ValidationResult;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager;
-import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
-import com.hedera.node.app.workflows.handle.dispatch.ValidationResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -98,9 +98,9 @@ public class DispatchProcessor {
      * business logic for the given dispatch, guaranteeing that the changes committed
      * to its stack are exactly reflected in its recordBuilder. At the end, it will
      * finalize the record and commit the stack. The WorkDone returned will be used
-     * to track the network utilization. It will be {@link WorkDone#FEES_ONLY} if
+     * to track the network utilization. It will be {@link DispatchUsageManager.WorkDone#FEES_ONLY} if
      * the transaction has node errors, otherwise it will be
-     * {@link WorkDone#USER_TRANSACTION}.
+     * {@link DispatchUsageManager.WorkDone#USER_TRANSACTION}.
      *
      * @param dispatch the dispatch to be processed
      */
@@ -132,7 +132,8 @@ public class DispatchProcessor {
      * @param validationResult the due diligence report for the dispatch
      * @return the work done by the dispatch
      */
-    private WorkDone tryHandle(@NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
+    private DispatchUsageManager.WorkDone tryHandle(
+            @NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
         try {
             dispatchUsageManager.screenForCapacity(dispatch);
             dispatcher.dispatchHandle(dispatch.handleContext());
@@ -196,7 +197,7 @@ public class DispatchProcessor {
      * @return the work done in handling the exception
      */
     @NonNull
-    private WorkDone nonHandleWorkDone(
+    private DispatchUsageManager.WorkDone nonHandleWorkDone(
             @NonNull final Dispatch dispatch,
             @NonNull final ValidationResult validationResult,
             @NonNull final RecordListBuilder recordListBuilder,
@@ -339,15 +340,5 @@ public class DispatchProcessor {
             }
         }
         return false;
-    }
-
-    /**
-     * The work done by the dispatch. It can be either {@link WorkDone#FEES_ONLY} or {@link WorkDone#USER_TRANSACTION}.
-     * {@link WorkDone#FEES_ONLY} is returned when the transaction has node or user errors. Otherwise, it will be
-     * {@link WorkDone#USER_TRANSACTION}.
-     */
-    public enum WorkDone {
-        FEES_ONLY,
-        USER_TRANSACTION
     }
 }

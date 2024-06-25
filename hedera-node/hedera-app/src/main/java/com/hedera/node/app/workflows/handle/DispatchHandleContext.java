@@ -16,6 +16,14 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static java.util.Collections.emptyMap;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -72,20 +80,12 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.util.HapiUtils.functionOf;
-import static java.util.Collections.emptyMap;
-import static java.util.Objects.requireNonNull;
 
 /**
  * The {@link HandleContext} implementation.
@@ -285,7 +285,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             dispatcher.dispatchPreHandle(nestedContext);
         } catch (final PreCheckException ignored) {
             // We must ignore/translate the exception here, as this is key gathering, not transaction validation.
-            throw new PreCheckException(ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS);
+            throw new PreCheckException(UNRESOLVABLE_REQUIRED_SIGNERS);
         }
         return nestedContext;
     }

@@ -16,6 +16,16 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
@@ -58,23 +68,13 @@ import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
-import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
-import static java.util.Objects.requireNonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The handle workflow that is responsible for handling the next {@link Round} of transactions.
@@ -132,7 +132,7 @@ public class HandleWorkflow {
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final PreHandleWorkflow preHandleWorkflow) {
-        this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
+        this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.authorizer = requireNonNull(authorizer);
         this.feeManager = requireNonNull(feeManager);
@@ -140,13 +140,13 @@ public class HandleWorkflow {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
         this.childDispatchFactory = requireNonNull(childDispatchFactory);
         this.dispatcher = requireNonNull(dispatcher);
-        this.networkUtilizationManager = networkUtilizationManager;
+        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
         this.configProvider = requireNonNull(configProvider);
         this.storeMetricsService = requireNonNull(storeMetricsService);
-        this.blockRecordManager = requireNonNull(blockRecordManager, "recordManager must not be null");
-        this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
-        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
-        this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
+        this.blockRecordManager = requireNonNull(blockRecordManager);
+        this.cacheWarmer = requireNonNull(cacheWarmer);
+        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
+        this.throttleServiceManager = requireNonNull(throttleServiceManager);
         this.version = requireNonNull(version);
         this.initTrigger = requireNonNull(initTrigger);
         this.hollowAccountCompletions = requireNonNull(hollowAccountCompletions);
@@ -165,15 +165,11 @@ public class HandleWorkflow {
      */
     public void handleRound(
             @NonNull final HederaState state, @NonNull final PlatformState platformState, @NonNull final Round round) {
-        // Keep track of whether any user transactions were handled. If so, then we will need to close the round
-        // with the block record manager.
+        // We only close the round with the block record manager after user transactions
         final var userTransactionsHandled = new AtomicBoolean(false);
-        // log start of round to transaction state log
         logStartRound(round);
-        // warm the cache
         cacheWarmer.warm(state, round);
-        // handle each event in the round
-        for (final ConsensusEvent event : round) {
+        for (final var event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
                 // We were given an event for a node that *does not exist in the address book*. This will be logged as
@@ -307,10 +303,10 @@ public class HandleWorkflow {
                 updateNodeStakes(userTxn);
                 blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 expireSchedules(userTxn);
-                logUserTxn(userTxn);
-                final var userDispatch = dispatchFor(userTxn);
-                hollowAccountCompletions.completeHollowAccounts(userTxn, userDispatch);
-                dispatchProcessor.processDispatch(userDispatch);
+                logPreDispatch(userTxn);
+                final var dispatch = dispatchFor(userTxn);
+                hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
+                dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
             }
             return finalRecordStream(userTxn);
@@ -336,22 +332,21 @@ public class HandleWorkflow {
     }
 
     /**
-     * Does nothing but has the side effect of adding a {@link ResponseCodeEnum#BUSY}
-     * record to the transaction's record stream.
+     * Has the side effect of adding a {@link ResponseCodeEnum#BUSY} record to
+     * the transaction's record stream, but skips any other execution.
      *
      * @param userTxn the user transaction to skip
      */
     private void skip(@NonNull final UserTxn userTxn) {
-        final TransactionInfo transactionInfo = userTxn.txnInfo();
-        // Initialize record builder list and place a BUSY record in the cache
+        final TransactionInfo txnInfo = userTxn.txnInfo();
         userTxn.recordListBuilder()
                 .userTransactionRecordBuilder()
-                .transaction(transactionInfo.transaction())
-                .transactionBytes(transactionInfo.signedBytes())
-                .transactionID(transactionInfo.txBody().transactionIDOrElse(TransactionID.DEFAULT))
+                .transaction(txnInfo.transaction())
+                .transactionBytes(txnInfo.signedBytes())
+                .transactionID(txnInfo.txBody().transactionIDOrElse(TransactionID.DEFAULT))
                 .exchangeRate(exchangeRateManager.exchangeRates())
-                .memo(transactionInfo.txBody().memo())
-                .status(ResponseCodeEnum.BUSY);
+                .memo(txnInfo.txBody().memo())
+                .status(BUSY);
     }
 
     /**
@@ -445,11 +440,11 @@ public class HandleWorkflow {
      * @param txnInfo the transaction info
      */
     private SingleTransactionRecordBuilderImpl initializeUserRecord(
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
-            @NonNull final TransactionInfo txnInfo) {
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder, @NonNull final TransactionInfo txnInfo) {
         final var transaction = txnInfo.transaction();
-        // If the transaction uses the legacy body bytes field instead of explicitly setting
-        // its signed bytes, the record will have the hash of its bytes as serialized by PBJ
+        // If the transaction uses the legacy body bytes field instead of explicitly
+        // setting its signed bytes, the record will have the hash of its bytes as
+        // serialized by PBJ
         final Bytes transactionBytes;
         if (transaction.signedTransactionBytes().length() > 0) {
             transactionBytes = transaction.signedTransactionBytes();
@@ -468,12 +463,14 @@ public class HandleWorkflow {
         try {
             nodeStakeUpdates.process(userTxn.stack(), userTxn.tokenContextImpl());
         } catch (final Exception e) {
-            // If anything goes wrong, we log the error and continue
+            // We don't propagate a failure here to avoid a catastrophic scenario
+            // where we are "stuck" trying to process node stake updates and never
+            // get back to user transactions
             logger.error("Failed to process staking period time hook", e);
         }
     }
 
-    private void logUserTxn(@NonNull final UserTxn userTxn) {
+    private static void logPreDispatch(@NonNull final UserTxn userTxn) {
         if (logger.isDebugEnabled()) {
             logStartUserTransaction(
                     userTxn.platformTxn(),
@@ -499,7 +496,7 @@ public class HandleWorkflow {
             final var firstSecondToExpire = lastHandledTxnTime.getEpochSecond();
             final var lastSecondToExpire = userTxn.consensusNow().getEpochSecond() - 1;
             final var scheduleStore = new WritableStoreFactory(
-                    userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
+                            userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
                     .getStore(WritableScheduleStore.class);
             scheduleStore.purgeExpiredSchedulesBetween(firstSecondToExpire, lastSecondToExpire);
             userTxn.stack().commitFullStack();

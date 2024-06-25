@@ -26,7 +26,6 @@ import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxDat
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoAssociate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
-import static com.hedera.node.app.workflows.handle.DispatchProcessor.WorkDone;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -221,6 +220,16 @@ public class DispatchUsageManager {
      */
     public static boolean isContractOperation(@NonNull Dispatch dispatch) {
         return CONTRACT_OPERATIONS.contains(dispatch.txnInfo().functionality());
+    }
+
+    /**
+     * The work done by the dispatch. It can be either {@link WorkDone#FEES_ONLY} or {@link WorkDone#USER_TRANSACTION}.
+     * {@link WorkDone#FEES_ONLY} is returned when the transaction has node or user errors. Otherwise, it will be
+     * {@link WorkDone#USER_TRANSACTION}.
+     */
+    public enum WorkDone {
+        FEES_ONLY,
+        USER_TRANSACTION
     }
 
     /**

@@ -16,25 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.dispatch;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
-import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
-import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.workflows.SolvencyPreCheck;
-import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.handle.Dispatch;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
@@ -52,6 +33,24 @@ import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.pay
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerValidationReport;
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.successReport;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.InsufficientNonFeeDebitsException;
+import com.hedera.node.app.spi.workflows.InsufficientServiceFeeException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.workflows.SolvencyPreCheck;
+import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.handle.Dispatch;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * A class that reports errors that occurred during the processing of a transaction.
