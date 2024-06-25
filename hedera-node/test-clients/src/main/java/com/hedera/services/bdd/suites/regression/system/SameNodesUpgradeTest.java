@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.junit.TestTags.UPGRADE;
 import static com.hedera.services.bdd.junit.hedera.MarkerFile.EXEC_IMMEDIATE_MF;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipWith;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
@@ -63,7 +62,6 @@ public class SameNodesUpgradeTest implements LifecycleTest {
                         DEFAULT_UPGRADE_ZIP_LOC,
                         TxnUtils.BYTES_4K,
                         upgradeFileAppendsPerBurst())),
-                nodeDelete("2"),
                 // Issue PREPARE_UPGRADE; need sourcing() here because we want to hash only after creating the ZIP
                 sourcing(() -> prepareUpgrade()
                         .withUpdateFile(DEFAULT_UPGRADE_FILE_ID)

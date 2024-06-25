@@ -187,6 +187,10 @@ public class GrpcUtils {
                     .updateNfts(transaction);
             case NodeDelete -> clients.getAddressBookSvcStub(nodeAccountId, false)
                     .deleteNode(transaction);
+            case NodeCreate -> clients.getAddressBookSvcStub(nodeAccountId, false)
+                    .createNode(transaction);
+            case NodeUpdate -> clients.getAddressBookSvcStub(nodeAccountId, false)
+                    .updateNode(transaction);
             default -> throw new IllegalArgumentException(functionality + " is not a transaction");
         };
     }

@@ -49,6 +49,7 @@ public record ChannelStubs(
         Objects.requireNonNull(scheduleSvcStubs);
         Objects.requireNonNull(scSvcStubs);
         Objects.requireNonNull(utilSvcStubs);
+        Objects.requireNonNull(addressBookSvcStubs);
     }
 
     public void shutdown() {

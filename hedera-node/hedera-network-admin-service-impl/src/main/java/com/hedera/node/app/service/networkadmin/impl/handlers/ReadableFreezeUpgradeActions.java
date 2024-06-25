@@ -243,8 +243,25 @@ public class ReadableFreezeUpgradeActions {
         try (final var fw = new FileWriter(configTxt.toFile());
                 final var bw = new BufferedWriter(fw)) {
             activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
+            writeNextNodeId(activeNodes, bw);
         } catch (final IOException e) {
             log.error("Failed to generate {} with exception : {}", configTxt, e);
+        }
+    }
+
+    private void writeNextNodeId(final List<ActiveNode> activeNodes, final BufferedWriter bw) {
+        requireNonNull(activeNodes);
+        requireNonNull(bw);
+        // find max nodeId of all nodes and write nextNodeId as maxNodeId + 1
+        final var maxNodeId = activeNodes.stream()
+                .map(ActiveNode::node)
+                .map(Node::nodeId)
+                .max(Long::compareTo)
+                .orElse(-1L);
+        try {
+            bw.write("nextNodeId, " + maxNodeId + 1);
+        } catch (IOException e) {
+            log.error("Failed to write nextNodeId {} with exception : {}", maxNodeId, e);
         }
     }
 
