@@ -33,7 +33,6 @@ import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mock;
 
 public class TokenAirdropHandlerTestBase extends StepsBase {
 
@@ -64,9 +63,6 @@ public class TokenAirdropHandlerTestBase extends StepsBase {
     protected TokenAirdropsHandler subject;
     protected TokenAirdropValidator validator;
     protected AssetsLoader assetsLoader;
-
-    @Mock
-    private AssetsLoader assetsLoader;
 
     @BeforeEach
     public void setUp() {
