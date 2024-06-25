@@ -122,6 +122,11 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         return queryMutation != null ? queryMutation.apply(query, spec) : query;
     }
 
+    public T withUnknownFieldIn(final UnknownFieldLocation location) {
+        unknownFieldLocation = location;
+        return self();
+    }
+
     protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
         return 0L;
     }
