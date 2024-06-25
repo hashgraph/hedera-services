@@ -109,8 +109,6 @@ The process restarts whenever the number of participants or the shares assigned 
 However, the initially generated group public key remains unchanged to maintain consistency. New secret information for shares is created using existing data, ensuring that the aggregate signature can still be verified with the original group public key.
 
 #### Implementation details
-The following section describes the TSS process in a scheme distributing 10 shares over 4 participants, from a particular participant P₁ point of view, after the key distribution is complete:
-
 Before starting, all participants should agree on a `SignatureSchema` they will use.
 The `SignatureSchema` defines the type of Curve and which Group of the Pairing is used for PublicKey Generation.
 
@@ -133,6 +131,7 @@ Given
 
 A participants directory:
 ```
+e.g:
 P   # shares
 -----------------------------
 P₁  5        P₁_EC_PublicKey
@@ -142,8 +141,8 @@ P₄  2        P₄_EC_PublicKey
 
 ```
 
-A threshold:
-`t = 5`
+A threshold value:
+`e.g: t = 5`
 
 First, a `shareId`: `sid` is generated for each share. It's a unique identifier for each existent share. It is deterministic because the function we use to generate it is deterministic.
 It is necessary to assure they are values that: a) are unique per share, b) non-0, and c) can be used as input for the polynomial (They are from the same field of the selected curve)
@@ -152,6 +151,7 @@ It is necessary to assure they are values that: a) are unique per share, b) non-
 And an ownership map: `ShareId`->`Participant`:
 
 ```
+e.g:
 sid₁	sid₂	sid₃	sid₄	sid₅	sid₆	sid₇	sid₈	sid₉	sid₁₀
 P₁  	P₁  	P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄  
 ```
@@ -184,7 +184,6 @@ Once the `xₛ` value has been calculated for each `ShareId`: `sidₛ`, the valu
 The TssMessage will contain all the encrypted values for all shares.
 
 ![img.png](img.png)
-
 
 A TssMessage class diagram:
 
@@ -382,7 +381,9 @@ SignatureSchema signatureSchema = SignatureSchema.from(Curve.ALT_BN128, GroupAss
 ```
 ###### Verifying a Signature
 ```java
+static{
     s.verify(pbk, message);
+}
 ```
 ##### Constraints
 This module will not depend on hedera-services artifacts, so it cannot include logging, metrics, configuration, or any other helper module from that repo.
@@ -613,12 +614,12 @@ A record of 3 elements that defines the name of the binary file of the library t
 
 **Example**:
 ```java
-    new LibraryDescriptionEntry(OSs.MAC_OS, Archs.ARC_64, "libhedera_bls_jni.dylib");
+    LibraryDescriptionEntry entry = new LibraryDescriptionEntry(OSs.MAC_OS, Archs.ARC_64, "libhedera_bls_jni.dylib");
 ```
 ###### `LibraryDescription`
 **Description**: A description of the library in all possible systems.
 ```java
-    static final LibraryDescription LIB_HEDERA_BLS = new LibraryDescription(new LibraryDescriptionEntry(OSs.MAC_OS, Archs.ARC_64, "libhedera_bls_jni.dylib"), new LibraryDescriptionEntry(OSs.LINUX,  Archs.AMD_64, "libhedera_bls_jni.so"), ...);
+    static final LibraryDescription LIB_HEDERA_BLS = new LibraryDescription(new LibraryDescriptionEntry(OSs.MAC_OS, Archs.ARC_64, "libhedera_bls_jni.dylib"), new LibraryDescriptionEntry(OSs.LINUX,  Archs.AMD_64, "libhedera_bls_jni.so") /*,... Others*/);
 ```
 If the library name is the same for all system architectures with the only change of the extension, one can configure:
 ```java
@@ -676,10 +677,11 @@ One of the components that can be unit-tested is native support. SPI loading and
 Limitations: native-support-library tests must be executed in different environments to provide comprehensive code validation.
 
 ### Performance Testing
-TBD
+JMH benchmarks should be provided for signature generation and aggregation.
+TssMessage validation, and public key aggregation.
 
 ## Security Audit
-TBD
+After this proposal is accepted we will invite security team to define the necessary steps for auditing the code.
 
 ## Implementation and Delivery Plan
 
@@ -691,7 +693,9 @@ TBD
     * Implementation of the public API for Pairings API
     * Implementation of native-support library
     * Work on the test plan and validation
-    * Enable a mock implementation for the TSS library so it can be used on the platform side
+    * Enable a mock implementation for the TSS library so it can be used on the platform side.
+    * Define Test plan
+    * Define security plan
 2. Stage 2
     * Preconditions
         * Gradle multilanguage module with rust compilation plugin
