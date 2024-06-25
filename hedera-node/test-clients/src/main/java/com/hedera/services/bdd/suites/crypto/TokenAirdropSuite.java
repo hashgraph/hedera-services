@@ -499,10 +499,12 @@ public class TokenAirdropSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN))
                 .when(cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
-                .then(tokenAirdrop(moving(99, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                        .payingWith(OWNER)
-                        .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS)
-                        .via("ownerNotEnoughBalance"),
+                .then(
+                        tokenAirdrop(moving(99, FUNGIBLE_TOKEN)
+                                        .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                                .payingWith(OWNER)
+                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS)
+                                .via("ownerNotEnoughBalance"),
                         getTxnRecord("ownerNotEnoughBalance").logged());
     }
 

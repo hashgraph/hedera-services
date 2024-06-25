@@ -313,8 +313,9 @@ public class CommonPbjConverters {
             case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UncheckedSubmit -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
-            case TokenReject -> null;
-            case TokenAirdrop -> null;
+            case TokenReject -> HederaFunctionality.TOKEN_REJECT;
+            case TokenAirdrop -> HederaFunctionality.TOKEN_AIRDROP;
+            case TokenCancelAirdrop -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
         };
     }

@@ -32,7 +32,7 @@ tasks.cloneHederaProtobufs {
     // uncomment below to use a specific tag
     //    tag = "v0.51.0"
     // uncomment below to use a specific branch
-    branch = "hip-904-register-airdrop-proto"
+    branch = "hip-904-cancel-airdrop-proto"
 }
 
 sourceSets {

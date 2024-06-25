@@ -110,6 +110,7 @@ public interface HandlersInjectionModule {
                 tokenHandlers.tokenUnpauseHandler(),
                 tokenHandlers.tokenUpdateNftsHandler(),
                 tokenHandlers.tokenAirdropsHandler(),
+                tokenHandlers.tokenCancelAirdropHandler(),
                 utilHandlers.prngHandler(),
                 addressBookHandlers.nodeCreateHandler(),
                 addressBookHandlers.nodeDeleteHandler(),

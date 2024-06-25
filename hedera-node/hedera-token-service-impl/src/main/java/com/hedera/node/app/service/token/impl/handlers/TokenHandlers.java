@@ -64,6 +64,7 @@ public class TokenHandlers {
     private final TokenGetNftInfosHandler tokenGetNftInfosHandler;
     private final TokenUpdateNftsHandler tokenUpdateNftsHandler;
     private final TokenAirdropsHandler tokenAirdropsHandler;
+    private final TokenCancelAirdropHandler tokenCancelAirdropHandler;
 
     /**
      * Constructor for the TokenHandlers.
@@ -100,6 +101,8 @@ public class TokenHandlers {
      * @param tokenGetNftInfoHandler token get nft info handler
      * @param tokenGetNftInfosHandler token get nft infos handler
      * @param tokenUpdateNftsHandler token update nfts handler
+     * @param tokenAirdropsHandler token airdrops handler
+     * @param tokenCancelAirdropHandler token cancel airdrop handler
      */
     @Inject
     public TokenHandlers(
@@ -135,8 +138,9 @@ public class TokenHandlers {
             @NonNull final TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler,
             @NonNull final TokenGetNftInfoHandler tokenGetNftInfoHandler,
             @NonNull final TokenGetNftInfosHandler tokenGetNftInfosHandler,
-            TokenUpdateNftsHandler tokenUpdateNftsHandler,
-            @NonNull final TokenAirdropsHandler tokenAirdropsHandler) {
+            @NonNull final TokenUpdateNftsHandler tokenUpdateNftsHandler,
+            @NonNull final TokenAirdropsHandler tokenAirdropsHandler,
+            @NonNull final TokenCancelAirdropHandler tokenCancelAirdropHandler) {
         this.cryptoCreateHandler = Objects.requireNonNull(cryptoCreateHandler, "cryptoCreateHandler must not be null");
         this.cryptoUpdateHandler = Objects.requireNonNull(cryptoUpdateHandler, "cryptoUpdateHandler must not be null");
         this.cryptoTransferHandler =
@@ -194,6 +198,8 @@ public class TokenHandlers {
                 Objects.requireNonNull(tokenUpdateNftsHandler, "tokenUpdateNftsHandler must not be null");
         this.tokenAirdropsHandler =
                 Objects.requireNonNull(tokenAirdropsHandler, "tokenAirdropsHandler must not be null");
+        this.tokenCancelAirdropHandler =
+                Objects.requireNonNull(tokenCancelAirdropHandler, "tokenCancelAirdropHandler must not be null");
     }
 
     /**
@@ -493,7 +499,21 @@ public class TokenHandlers {
         return tokenUpdateNftsHandler;
     }
 
+    /**
+     * Gets the tokenAirdropsHandler.
+     *
+     * @return the tokenAirdropsHandler
+     */
     public TokenAirdropsHandler tokenAirdropsHandler() {
         return tokenAirdropsHandler;
+    }
+
+    /**
+     * Gets the tokenCancelAirdropHandler.
+     *
+     * @return the tokenCancelAirdropHandler
+     */
+    public TokenCancelAirdropHandler tokenCancelAirdropHandler() {
+        return tokenCancelAirdropHandler;
     }
 }
