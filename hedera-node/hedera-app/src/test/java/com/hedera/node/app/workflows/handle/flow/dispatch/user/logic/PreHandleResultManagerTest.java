@@ -25,8 +25,8 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.info.NodeInfoImpl;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
@@ -73,7 +73,7 @@ class PreHandleResultManagerTest {
     @Test
     void getCurrentPreHandleResultWithPreviousResult() {
         given(platformTxn.getMetadata()).willReturn(previousResult);
-        final var result = subject.getCurrentPreHandleResult(creator, platformTxn, storeFactory);
+        subject.getCurrentPreHandleResult(creator, platformTxn, storeFactory);
         verify(preHandleWorkflow)
                 .preHandleTransaction(
                         eq(creator.accountId()),
@@ -86,7 +86,7 @@ class PreHandleResultManagerTest {
     @Test
     void getCurrentPreHandleResultWithoutPreviousResult() {
         given(platformTxn.getMetadata()).willReturn(null);
-        PreHandleResult result = subject.getCurrentPreHandleResult(creator, platformTxn, storeFactory);
+        subject.getCurrentPreHandleResult(creator, platformTxn, storeFactory);
         verify(preHandleWorkflow, times(1))
                 .preHandleTransaction(
                         eq(creator.accountId()), eq(storeFactory), eq(accountStore), eq(platformTxn), eq(null));
@@ -97,7 +97,7 @@ class PreHandleResultManagerTest {
         Object wrongMetadata = new Object();
         given(platformTxn.getMetadata()).willReturn(wrongMetadata);
 
-        PreHandleResult result = subject.getCurrentPreHandleResult(creator, platformTxn, storeFactory);
+        subject.getCurrentPreHandleResult(creator, platformTxn, storeFactory);
         verify(preHandleWorkflow, times(1))
                 .preHandleTransaction(
                         eq(creator.accountId()), eq(storeFactory), eq(accountStore), eq(platformTxn), eq(null));

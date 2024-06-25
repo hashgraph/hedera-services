@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
@@ -148,8 +148,8 @@ public class SyncValidator {
                 e -> e.getBaseEvent().getAncientIndicator(ancientMode) < caller.getCurrentAncientThreshold());
 
         // Get the events each received from the other in the sync
-        final List<GossipEvent> callerReceivedEvents = caller.getReceivedEvents();
-        final List<GossipEvent> listenerReceivedEvents = listener.getReceivedEvents();
+        final List<PlatformEvent> callerReceivedEvents = caller.getReceivedEvents();
+        final List<PlatformEvent> listenerReceivedEvents = listener.getReceivedEvents();
 
         if (enableLogging) {
             printEvents("Caller's last added events", caller.getGeneratedEvents());
@@ -175,7 +175,7 @@ public class SyncValidator {
             final boolean strictCompare,
             @NonNull final AncientMode ancientMode) {
 
-        Collection<GossipEvent> actualList = receiver.getReceivedEvents();
+        Collection<PlatformEvent> actualList = receiver.getReceivedEvents();
 
         if (expectedList == null && actualList == null) {
             return;
@@ -197,7 +197,7 @@ public class SyncValidator {
         for (final IndexedEvent expected : expectedList) {
             boolean foundMatch = false;
 
-            for (final GossipEvent actual : actualList) {
+            for (final PlatformEvent actual : actualList) {
                 if (expected.getBaseEvent().equalsGossipedData(actual)) {
                     foundMatch = true;
                     break;

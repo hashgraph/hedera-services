@@ -22,7 +22,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.sequence.map.SequenceMap;
@@ -39,8 +39,8 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Takes as input an unordered stream of {@link GossipEvent GossipEvent}s and emits a stream
- * of {@link GossipEvent GossipEvent}s in topological order.
+ * Takes as input an unordered stream of {@link PlatformEvent}s and emits a stream
+ * of {@link PlatformEvent}s in topological order.
  */
 public class DefaultOrphanBuffer implements OrphanBuffer {
     /**
@@ -118,7 +118,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
      */
     @Override
     @NonNull
-    public List<GossipEvent> handleEvent(@NonNull final GossipEvent event) {
+    public List<PlatformEvent> handleEvent(@NonNull final PlatformEvent event) {
         if (eventWindow.isAncient(event)) {
             // Ancient events can be safely ignored.
             intakeEventCounter.eventExitedIntakePipeline(event.getSenderId());
@@ -145,7 +145,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
      */
     @Override
     @NonNull
-    public List<GossipEvent> setEventWindow(@NonNull final EventWindow eventWindow) {
+    public List<PlatformEvent> setEventWindow(@NonNull final EventWindow eventWindow) {
         this.eventWindow = Objects.requireNonNull(eventWindow);
 
         eventsWithParents.shiftWindow(eventWindow.getAncientThreshold());
@@ -158,7 +158,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
                 eventWindow.getAncientThreshold(),
                 (parent, orphans) -> ancientParents.add(new ParentAndOrphans(parent, orphans)));
 
-        final List<GossipEvent> unorphanedEvents = new ArrayList<>();
+        final List<PlatformEvent> unorphanedEvents = new ArrayList<>();
         ancientParents.forEach(
                 parentAndOrphans -> unorphanedEvents.addAll(missingParentBecameAncient(parentAndOrphans)));
 
@@ -174,8 +174,8 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
      * @return the list of events that are no longer orphans as a result of this parent becoming ancient
      */
     @NonNull
-    private List<GossipEvent> missingParentBecameAncient(@NonNull final ParentAndOrphans parentAndOrphans) {
-        final List<GossipEvent> unorphanedEvents = new ArrayList<>();
+    private List<PlatformEvent> missingParentBecameAncient(@NonNull final ParentAndOrphans parentAndOrphans) {
+        final List<PlatformEvent> unorphanedEvents = new ArrayList<>();
 
         final EventDescriptor parentDescriptor = parentAndOrphans.parent();
 
@@ -197,7 +197,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
      * @return the list of missing parents, empty if no parents are missing
      */
     @NonNull
-    private List<EventDescriptor> getMissingParents(@NonNull final GossipEvent event) {
+    private List<EventDescriptor> getMissingParents(@NonNull final PlatformEvent event) {
         final List<EventDescriptor> missingParents = new ArrayList<>();
 
         for (final EventDescriptor parent : event.getAllParents()) {
@@ -218,10 +218,10 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
      * @return the list of events that are no longer orphans as a result of this event not being an orphan
      */
     @NonNull
-    private List<GossipEvent> eventIsNotAnOrphan(@NonNull final GossipEvent event) {
-        final List<GossipEvent> unorphanedEvents = new ArrayList<>();
+    private List<PlatformEvent> eventIsNotAnOrphan(@NonNull final PlatformEvent event) {
+        final List<PlatformEvent> unorphanedEvents = new ArrayList<>();
 
-        final Deque<GossipEvent> nonOrphanStack = new LinkedList<>();
+        final Deque<PlatformEvent> nonOrphanStack = new LinkedList<>();
         nonOrphanStack.push(event);
 
         // When a missing parent is found, there may be many descendants of that parent who end up
@@ -230,7 +230,7 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
         while (!nonOrphanStack.isEmpty()) {
             currentOrphanCount--;
 
-            final GossipEvent nonOrphan = nonOrphanStack.pop();
+            final PlatformEvent nonOrphan = nonOrphanStack.pop();
             final EventDescriptor nonOrphanDescriptor = nonOrphan.getDescriptor();
 
             if (eventWindow.isAncient(nonOrphan)) {

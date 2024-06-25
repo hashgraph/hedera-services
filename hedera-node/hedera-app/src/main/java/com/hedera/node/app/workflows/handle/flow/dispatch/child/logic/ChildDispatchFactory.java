@@ -23,12 +23,11 @@ import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DelegateKeyVerifier;
-import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -101,16 +100,15 @@ public class ChildDispatchFactory {
                 category,
                 reversingBehavior,
                 customizer);
-
+        final var childStack = new SavepointStackImpl(parentDispatch.stack().peek());
         return childDispatchFactory
                 .get()
                 .create(
                         recordBuilder,
                         childTxnInfo,
-                        isScheduled(category),
                         syntheticPayerId,
                         category,
-                        new SavepointStackImpl(parentDispatch.stack().peek()),
+                        childStack,
                         preHandleResult,
                         getKeyVerifier(callback));
     }
@@ -165,22 +163,10 @@ public class ChildDispatchFactory {
     }
 
     /**
-     * Returns whether the transaction is scheduled or not.
-     * @param category the transaction category
-     * @return the compute dispatch fees as top level
-     */
-    @NonNull
-    private static ComputeDispatchFeesAsTopLevel isScheduled(final HandleContext.TransactionCategory category) {
-        return category == HandleContext.TransactionCategory.SCHEDULED
-                ? ComputeDispatchFeesAsTopLevel.YES
-                : ComputeDispatchFeesAsTopLevel.NO;
-    }
-
-    /**
-     * A {@link KeyVerifier} that always returns {@link SignatureVerificationImpl} with a
+     * A {@link AppKeyVerifier} that always returns {@link SignatureVerificationImpl} with a
      * passed verification.
      */
-    static class NoOpKeyVerifier implements KeyVerifier {
+    static class NoOpKeyVerifier implements AppKeyVerifier {
         private static final SignatureVerification PASSED_VERIFICATION =
                 new SignatureVerificationImpl(Key.DEFAULT, Bytes.EMPTY, true);
 
@@ -210,18 +196,18 @@ public class ChildDispatchFactory {
     }
 
     /**
-     * Returns a {@link KeyVerifier} based on the callback. If the callback is null, then it returns a
+     * Returns a {@link AppKeyVerifier} based on the callback. If the callback is null, then it returns a
      * {@link NoOpKeyVerifier}. Otherwise, it returns a {@link DelegateKeyVerifier} with the callback.
      * The callback is null if the signature verification is not required. This is the case for hollow account
      * completion and auto account creation.
      * @param callback the callback
      * @return the key verifier
      */
-    static KeyVerifier getKeyVerifier(@Nullable Predicate<Key> callback) {
+    static AppKeyVerifier getKeyVerifier(@Nullable Predicate<Key> callback) {
         return callback == null
                 ? NO_OP_KEY_VERIFIER
-                : new KeyVerifier() {
-                    private final KeyVerifier verifier = new DelegateKeyVerifier(callback);
+                : new AppKeyVerifier() {
+                    private final AppKeyVerifier verifier = new DelegateKeyVerifier(callback);
 
                     @NonNull
                     @Override

@@ -18,7 +18,7 @@ package com.swirlds.platform.event.branching;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -64,7 +64,7 @@ public class DefaultBranchDetector implements BranchDetector {
      */
     @Nullable
     @Override
-    public GossipEvent checkForBranches(@NonNull final GossipEvent event) {
+    public PlatformEvent checkForBranches(@NonNull final PlatformEvent event) {
         if (currentEventWindow == null) {
             throw new IllegalStateException("Event window must be set before adding events");
         }

@@ -27,5 +27,12 @@ public class TestTags {
     public static final String LONG_RUNNING = "LONG_RUNNING";
     public static final String TOKEN = "TOKEN";
     public static final String RESTART = "RESTART";
+    /**
+     * Annotates a test that should MUST be run in embedded mode, either because
+     * it directly submits duplicate or invalid transactions to non-default nodes;
+     * or because it uses direct state access only available in embedded mode.
+     */
+    public static final String EMBEDDED = "EMBEDDED";
+
     public static final String ND_RECONNECT = "ND_RECONNECT";
 }

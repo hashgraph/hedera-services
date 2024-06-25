@@ -16,11 +16,13 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.events.BaseEventHashedData;
@@ -29,8 +31,11 @@ import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 
 public class RandomEventUtils {
     public static final Instant DEFAULT_FIRST_EVENT_TIME_CREATED = Instant.ofEpochMilli(1588771316678L);
@@ -55,7 +60,7 @@ public class RandomEventUtils {
         final byte[] sig = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(sig);
 
-        return new IndexedEvent(new GossipEvent(hashedData, sig), selfParent, otherParent);
+        return new IndexedEvent(new PlatformEvent(hashedData, sig), selfParent, otherParent);
     }
 
     /**
@@ -87,6 +92,13 @@ public class RandomEventUtils {
                         otherParent.getGeneration(),
                         otherParent.getBaseEvent().getBirthRound());
 
+        final List<OneOf<PayloadOneOfType>> convertedTransactions = new ArrayList<>();
+        if (transactions != null) {
+            Stream.of(transactions)
+                    .map(ConsensusTransactionImpl::getPayload)
+                    .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, one.as()))
+                    .forEach(convertedTransactions::add);
+        }
         final BaseEventHashedData hashedData = new BaseEventHashedData(
                 new BasicSoftwareVersion(1),
                 creatorId,
@@ -94,7 +106,7 @@ public class RandomEventUtils {
                 otherDescriptor == null ? Collections.emptyList() : Collections.singletonList(otherDescriptor),
                 birthRound,
                 timestamp,
-                transactions);
+                convertedTransactions);
 
         if (fakeHash) {
             hashedData.setHash(RandomUtils.randomHash(random));
