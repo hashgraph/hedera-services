@@ -20,6 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.contract.ContractService;
@@ -61,6 +63,9 @@ public class WritableStoreFactory {
 
     private static Map<Class<?>, StoreEntry> createFactoryMap() {
         final Map<Class<?>, StoreEntry> newMap = new HashMap<>();
+        // AddressBookService
+        newMap.put(WritableNodeStore.class, new StoreEntry(AddressBookService.NAME, WritableNodeStore::new));
+
         // ConsensusService
         newMap.put(WritableTopicStore.class, new StoreEntry(ConsensusService.NAME, WritableTopicStore::new));
         // TokenService
@@ -96,6 +101,7 @@ public class WritableStoreFactory {
                 new StoreEntry(EntityIdService.NAME, (states, config, metrics) -> new WritableEntityIdStore(states)));
         // Schedule Service
         newMap.put(WritableScheduleStore.class, new StoreEntry(ScheduleService.NAME, WritableScheduleStoreImpl::new));
+        newMap.put(WritableNodeStore.class, new StoreEntry(AddressBookService.NAME, WritableNodeStore::new));
         return Collections.unmodifiableMap(newMap);
     }
 

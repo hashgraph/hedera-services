@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
@@ -63,6 +64,7 @@ class ReadableStoreFactoryTest {
                 ReadableScheduleStore.class,
                 ReadableFileStore.class,
                 ReadableFreezeStore.class,
+                ReadableNodeStore.class,
                 ReadableTokenRelationStore.class
             })
     void returnCorrectStoreClass(final Class<?> storeClass) {
