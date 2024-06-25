@@ -48,7 +48,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -89,7 +89,7 @@ class ErrorReporterTest {
     private NodeInfo creatorInfo;
 
     @Mock
-    private KeyVerifier keyVerifier;
+    private AppKeyVerifier keyVerifier;
 
     @Mock
     private SolvencyPreCheck solvencyPreCheck;

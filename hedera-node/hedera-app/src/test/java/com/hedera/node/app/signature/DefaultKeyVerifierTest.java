@@ -1265,7 +1265,7 @@ class DefaultKeyVerifierTest {
         }
     }
 
-    private KeyVerifier createVerifier(@NonNull final Map<Key, SignatureVerificationFuture> map) {
+    private AppKeyVerifier createVerifier(@NonNull final Map<Key, SignatureVerificationFuture> map) {
         return new DefaultKeyVerifier(LEGACY_FEE_CALC_NETWORK_VPT, HEDERA_CONFIG, map);
     }
 
