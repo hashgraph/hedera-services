@@ -57,10 +57,10 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     private ExpiryValidator expiryValidator;
 
     @Mock
-    private RecordBuilders recordBuilders;
+    private TokenServiceApi tokenServiceApi;
 
     @Mock
-    private TokenServiceApi tokenServiceApi;
+    private RecordBuilders recordBuilders;
 
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
@@ -95,6 +95,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
     @Test
     void autoAssociateWithDispatchComputeFees() {
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
         final var modifiedConfiguration = HederaTestConfigBuilder.create()
                 .withValue("entities.unlimitedAutoAssociationsEnabled", true)
                 .getOrCreateConfig();
@@ -127,7 +128,6 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(ResponseCodeEnum.OK);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
     }
 
     private AccountAmount adjustFrom(AccountID account, long amount) {
