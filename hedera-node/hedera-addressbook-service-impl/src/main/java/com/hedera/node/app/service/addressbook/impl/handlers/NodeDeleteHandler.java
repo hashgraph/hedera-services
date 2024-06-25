@@ -92,8 +92,12 @@ public class NodeDeleteHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        final var feeCalculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
-        final var exchangeRateInfo = feeContext.exchangeRateInfo();
-        return null;
+        final var calculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
+        calculator.resetUsage();
+        // The price of node delete should be increased based on number of signatures.
+        // The first signature is free and is accounted in the base price, so we only need to add
+        // the price of the rest of the signatures.
+        calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
+        return calculator.calculate();
     }
 }
