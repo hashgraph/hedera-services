@@ -19,10 +19,17 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.helpers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_DURATION;
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.NO_DUPLICATE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+========
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.DuplicateStatus.DUPLICATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.DuplicateStatus.NO_DUPLICATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -33,7 +40,11 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.workflows.handle.dispatch.ValidationResult;
 import org.junit.jupiter.api.Test;
 
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
 public class ValidationResultTest {
+========
+public class ValidationReportTest {
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
     private static final AccountID CREATOR_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(10L).build();
     private static final Account PAYER_ACCOUNT_ID = Account.newBuilder()
@@ -42,8 +53,13 @@ public class ValidationResultTest {
 
     @Test
     public void testCreatorErrorReport() {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
         ValidationResult report =
                 ValidationResult.creatorValidationReport(CREATOR_ACCOUNT_ID, INVALID_TRANSACTION_DURATION);
+========
+        ValidationReport report =
+                ValidationReport.creatorValidationReport(CREATOR_ACCOUNT_ID, INVALID_TRANSACTION_DURATION);
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
 
         assertEquals(CREATOR_ACCOUNT_ID, report.creatorId());
         assertEquals(INVALID_TRANSACTION_DURATION, report.creatorError());
@@ -57,7 +73,11 @@ public class ValidationResultTest {
 
     @Test
     public void testPayerDuplicateErrorReport() {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
         ValidationResult report = ValidationResult.payerDuplicateErrorReport(CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID);
+========
+        ValidationReport report = ValidationReport.payerDuplicateErrorReport(CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID);
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
 
         assertEquals(CREATOR_ACCOUNT_ID, report.creatorId());
         assertNull(report.creatorError());
@@ -71,7 +91,11 @@ public class ValidationResultTest {
 
     @Test
     public void testPayerUniqueErrorReport() {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
         ValidationResult report = ValidationResult.payerUniqueValidationReport(
+========
+        ValidationReport report = ValidationReport.payerUniqueValidationReport(
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
                 CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE);
 
         assertEquals(CREATOR_ACCOUNT_ID, report.creatorId());
@@ -86,7 +110,11 @@ public class ValidationResultTest {
 
     @Test
     public void testPayerErrorReport() {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
         ValidationResult report = ValidationResult.payerValidationReport(
+========
+        ValidationReport report = ValidationReport.payerValidationReport(
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
                 CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE, UNABLE_TO_PAY_SERVICE_FEE, DUPLICATE);
 
         assertEquals(CREATOR_ACCOUNT_ID, report.creatorId());
@@ -101,7 +129,11 @@ public class ValidationResultTest {
 
     @Test
     public void testErrorFreeReport() {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
         ValidationResult report = ValidationResult.successReport(CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID);
+========
+        ValidationReport report = ValidationReport.successReport(CREATOR_ACCOUNT_ID, PAYER_ACCOUNT_ID);
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
 
         assertEquals(CREATOR_ACCOUNT_ID, report.creatorId());
         assertNull(report.creatorError());
@@ -115,7 +147,11 @@ public class ValidationResultTest {
 
     @Test
     public void testIsCreatorError() {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
         ValidationResult report = new ValidationResult(
+========
+        ValidationReport report = new ValidationReport(
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
                 CREATOR_ACCOUNT_ID, INVALID_TRANSACTION_DURATION, null, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
 
         assertTrue(report.isCreatorError());
@@ -123,7 +159,11 @@ public class ValidationResultTest {
 
     @Test
     public void testIsPayerError() {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
         ValidationResult report = new ValidationResult(
+========
+        ValidationReport report = new ValidationReport(
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
                 CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
 
         assertTrue(report.isPayerError());
@@ -131,7 +171,11 @@ public class ValidationResultTest {
 
     @Test
     public void testPayerErrorOrThrow() {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
         ValidationResult report = new ValidationResult(
+========
+        ValidationReport report = new ValidationReport(
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
                 CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, INVALID_PAYER_SIGNATURE, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
 
         assertEquals(INVALID_PAYER_SIGNATURE, report.payerErrorOrThrow());
@@ -139,7 +183,11 @@ public class ValidationResultTest {
 
     @Test
     public void testCreatorErrorOrThrow() {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
         ValidationResult report = new ValidationResult(
+========
+        ValidationReport report = new ValidationReport(
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
                 CREATOR_ACCOUNT_ID, INVALID_TRANSACTION_DURATION, null, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
 
         assertEquals(INVALID_TRANSACTION_DURATION, report.creatorErrorOrThrow());
@@ -147,7 +195,11 @@ public class ValidationResultTest {
 
     @Test
     public void testPayerOrThrow() {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
         ValidationResult report = new ValidationResult(
+========
+        ValidationReport report = new ValidationReport(
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
                 CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
 
         assertEquals(PAYER_ACCOUNT_ID, report.payerOrThrow());
@@ -155,9 +207,15 @@ public class ValidationResultTest {
 
     @Test
     public void testWithoutServiceFee() {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationResultTest.java
         ValidationResult report = new ValidationResult(
                 CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
         ValidationResult reportWithoutServiceFee = report.withoutServiceFee();
+========
+        ValidationReport report = new ValidationReport(
+                CREATOR_ACCOUNT_ID, null, PAYER_ACCOUNT_ID, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
+        ValidationReport reportWithoutServiceFee = report.withoutServiceFee();
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReportTest.java
 
         assertEquals(UNABLE_TO_PAY_SERVICE_FEE, reportWithoutServiceFee.serviceFeeStatus());
     }

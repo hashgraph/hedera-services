@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/ValidationResult.java
 package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
@@ -23,6 +24,17 @@ import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.Du
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+========
+package com.hedera.node.app.workflows.handle.flow.dispatch.helpers;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.DuplicateStatus;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.DuplicateStatus.DUPLICATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.DuplicateStatus.NO_DUPLICATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReport.java
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -42,7 +54,11 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param serviceFeeStatus whether the payer was unable to pay the service fee
  * @param duplicateStatus whether the transaction is a duplicate
  */
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/ValidationResult.java
 public record ValidationResult(
+========
+public record ValidationReport(
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReport.java
         @NonNull AccountID creatorId,
         @Nullable ResponseCodeEnum creatorError,
         @Nullable Account payer,
@@ -56,9 +72,15 @@ public record ValidationResult(
      * @return the error report
      */
     @NonNull
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/ValidationResult.java
     public static ValidationResult creatorValidationReport(
             @NonNull AccountID creatorId, @NonNull ResponseCodeEnum creatorError) {
         return new ValidationResult(creatorId, creatorError, null, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
+========
+    public static ValidationReport creatorValidationReport(
+            @NonNull AccountID creatorId, @NonNull ResponseCodeEnum creatorError) {
+        return new ValidationReport(creatorId, creatorError, null, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReport.java
     }
 
     /**
@@ -69,11 +91,19 @@ public record ValidationResult(
      * @return the error report
      */
     @NonNull
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/ValidationResult.java
     public static ValidationResult payerDuplicateErrorReport(
             @NonNull final AccountID creatorId, @NonNull final Account payer) {
         requireNonNull(payer);
         requireNonNull(creatorId);
         return new ValidationResult(creatorId, null, payer, DUPLICATE_TRANSACTION, CAN_PAY_SERVICE_FEE, DUPLICATE);
+========
+    public static ValidationReport payerDuplicateErrorReport(
+            @NonNull final AccountID creatorId, @NonNull final Account payer) {
+        requireNonNull(payer);
+        requireNonNull(creatorId);
+        return new ValidationReport(creatorId, null, payer, DUPLICATE_TRANSACTION, CAN_PAY_SERVICE_FEE, DUPLICATE);
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReport.java
     }
 
     /**
@@ -85,14 +115,22 @@ public record ValidationResult(
      * @return the error report
      */
     @NonNull
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/ValidationResult.java
     public static ValidationResult payerUniqueValidationReport(
+========
+    public static ValidationReport payerUniqueValidationReport(
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReport.java
             @NonNull final AccountID creatorId,
             @NonNull final Account payer,
             @NonNull final ResponseCodeEnum payerError) {
         requireNonNull(payer);
         requireNonNull(creatorId);
         requireNonNull(payerError);
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/ValidationResult.java
         return new ValidationResult(creatorId, null, payer, payerError, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
+========
+        return new ValidationReport(creatorId, null, payer, payerError, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReport.java
     }
 
     /**
@@ -105,13 +143,21 @@ public record ValidationResult(
      * @return the error report
      */
     @NonNull
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/ValidationResult.java
     public static ValidationResult payerValidationReport(
+========
+    public static ValidationReport payerValidationReport(
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReport.java
             @NonNull AccountID creatorId,
             @NonNull Account payer,
             @NonNull ResponseCodeEnum payerError,
             @NonNull ServiceFeeStatus serviceFeeStatus,
             @NonNull final DuplicateStatus duplicateStatus) {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/ValidationResult.java
         return new ValidationResult(creatorId, null, payer, payerError, serviceFeeStatus, duplicateStatus);
+========
+        return new ValidationReport(creatorId, null, payer, payerError, serviceFeeStatus, duplicateStatus);
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReport.java
     }
 
     /**
@@ -121,8 +167,13 @@ public record ValidationResult(
      * @return the error report
      */
     @NonNull
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/ValidationResult.java
     public static ValidationResult successReport(@NonNull AccountID creatorId, @NonNull Account payer) {
         return new ValidationResult(creatorId, null, payer, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
+========
+    public static ValidationReport successReport(@NonNull AccountID creatorId, @NonNull Account payer) {
+        return new ValidationReport(creatorId, null, payer, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReport.java
     }
 
     /**
@@ -173,8 +224,13 @@ public record ValidationResult(
      * @return the error report
      */
     @NonNull
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/ValidationResult.java
     public ValidationResult withoutServiceFee() {
         return new ValidationResult(
+========
+    public ValidationReport withoutServiceFee() {
+        return new ValidationReport(
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/ValidationReport.java
                 creatorId, creatorError, payer, payerError, UNABLE_TO_PAY_SERVICE_FEE, duplicateStatus);
     }
 }

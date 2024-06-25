@@ -16,23 +16,18 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
@@ -55,6 +50,7 @@ import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
@@ -64,7 +60,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.store.StoreFactoryImpl;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -82,9 +77,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -117,7 +110,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final ChildDispatchFactory childDispatchFactory;
     private final DispatchProcessor dispatchProcessor;
     private final RecordListBuilder recordListBuilder;
-    private final NetworkUtilizationManager networkUtilizationManager;
+    private final ThrottleAdviser throttleAdviser;
     private Map<AccountID, Long> dispatchPaidRewards;
 
     public DispatchHandleContext(
@@ -145,7 +138,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+            @NonNull final ThrottleAdviser throttleAdviser) {
         this.consensusNow = requireNonNull(consensusNow);
         this.creatorInfo = requireNonNull(creatorInfo);
         this.txnInfo = requireNonNull(transactionInfo);
@@ -166,7 +159,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.childDispatchFactory = requireNonNull(childDispatchLogic);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
         this.recordListBuilder = requireNonNull(recordListBuilder);
-        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
+        this.throttleAdviser = requireNonNull(throttleAdviser);
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);
         this.dispatcher = requireNonNull(dispatcher);
@@ -469,54 +462,10 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         return stack;
     }
 
+    @NonNull
     @Override
-    public boolean shouldThrottleNOfUnscaled(final int n, @NonNull final HederaFunctionality function) {
-        requireNonNull(function);
-        return networkUtilizationManager.shouldThrottleNOfUnscaled(n, function, consensusNow);
-    }
-
-    @Override
-    public boolean hasThrottleCapacityForChildTransactions() {
-        var isAllowed = true;
-        final var childRecords = recordListBuilder.childRecordBuilders();
-        @Nullable List<ThrottleUsageSnapshot> snapshotsIfNeeded = null;
-
-        for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
-            final var childRecord = childRecords.get(i);
-            if (Objects.equals(childRecord.status(), SUCCESS)) {
-                final var childTx = childRecord.transaction();
-                final var childTxBody = childRecord.transactionBody();
-                HederaFunctionality childTxFunctionality;
-                try {
-                    childTxFunctionality = functionOf(childTxBody);
-                } catch (UnknownHederaFunctionality e) {
-                    throw new IllegalStateException("Invalid transaction body " + childTxBody, e);
-                }
-
-                if (childTxFunctionality == CONTRACT_CREATE || childTxFunctionality == CONTRACT_CALL) {
-                    continue;
-                }
-                if (snapshotsIfNeeded == null) {
-                    snapshotsIfNeeded = networkUtilizationManager.getUsageSnapshots();
-                }
-
-                final var childTxInfo = TransactionInfo.from(
-                        childTx,
-                        childTxBody,
-                        childTx.sigMapOrElse(SignatureMap.DEFAULT),
-                        childTx.signedTransactionBytes(),
-                        childTxFunctionality);
-                final var shouldThrottleTxn =
-                        networkUtilizationManager.shouldThrottle(childTxInfo, stack.peek(), consensusNow);
-                if (shouldThrottleTxn) {
-                    isAllowed = false;
-                }
-            }
-        }
-        if (!isAllowed) {
-            networkUtilizationManager.resetUsageThrottlesTo(snapshotsIfNeeded);
-        }
-        return isAllowed;
+    public ThrottleAdviser throttleAdviser() {
+        return throttleAdviser;
     }
 
     @NonNull

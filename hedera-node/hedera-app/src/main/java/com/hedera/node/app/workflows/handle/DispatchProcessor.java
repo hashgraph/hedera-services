@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/DispatchProcessor.java
 package com.hedera.node.app.workflows.handle;
+========
+package com.hedera.node.app.workflows.handle.flow.dispatch.helpers;
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchProcessor.java
 
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
@@ -25,12 +29,21 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/DispatchProcessor.java
 import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
 import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.ThrottleException;
 import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.FEES_ONLY;
 import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.WorkDone.USER_TRANSACTION;
+========
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone.FEES_ONLY;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone.USER_TRANSACTION;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchUsageManager.ThrottleException;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.DuplicateStatus.DUPLICATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.txn.UserTxnWorkflow.ALERT_MESSAGE;
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchProcessor.java
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -38,9 +51,15 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/DispatchProcessor.java
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
 import com.hedera.node.app.workflows.handle.dispatch.ValidationResult;
+========
+import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
+import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
+import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchProcessor.java
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -129,11 +148,18 @@ public class DispatchProcessor {
      * the payer for the fees and return FEE_ONLY as work done.
      *
      * @param dispatch the dispatch to be processed
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/DispatchProcessor.java
      * @param validationResult the due diligence report for the dispatch
      * @return the work done by the dispatch
      */
     private DispatchUsageManager.WorkDone tryHandle(
             @NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
+========
+     * @param validationReport the due diligence report for the dispatch
+     * @return the work done by the dispatch
+     */
+    private WorkDone tryHandle(@NonNull final Dispatch dispatch, @NonNull final ValidationReport validationReport) {
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchProcessor.java
         try {
             dispatchUsageManager.screenForCapacity(dispatch);
             dispatcher.dispatchHandle(dispatch.handleContext());
@@ -152,16 +178,27 @@ public class DispatchProcessor {
                     dispatch.recordListBuilder(),
                     dispatch.recordBuilder());
             if (e.shouldRollbackStack()) {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/DispatchProcessor.java
                 chargePayer(dispatch, validationResult);
+========
+                chargePayer(dispatch, validationReport);
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchProcessor.java
             }
             // Since there is no easy way to say how much work was done in the failed dispatch,
             // and current throttling is very rough-grained, we just return USER_TRANSACTION here
             return USER_TRANSACTION;
         } catch (final ThrottleException e) {
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/DispatchProcessor.java
             return nonHandleWorkDone(dispatch, validationResult, dispatch.recordListBuilder(), e.getStatus());
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
             return nonHandleWorkDone(dispatch, validationResult, dispatch.recordListBuilder(), FAIL_INVALID);
+========
+            return nonHandleWorkDone(dispatch, validationReport, dispatch.recordListBuilder(), e.getStatus());
+        } catch (final Exception e) {
+            logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
+            return nonHandleWorkDone(dispatch, validationReport, dispatch.recordListBuilder(), FAIL_INVALID);
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchProcessor.java
         }
     }
 
@@ -191,12 +228,17 @@ public class DispatchProcessor {
      * the payer for the fees and return FEE_ONLY as work done.
      *
      * @param dispatch the dispatch to be processed
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/DispatchProcessor.java
      * @param validationResult the due diligence report for the dispatch
+========
+     * @param validationReport the due diligence report for the dispatch
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchProcessor.java
      * @param recordListBuilder the record list builder
      * @param status the status to set
      * @return the work done in handling the exception
      */
     @NonNull
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/DispatchProcessor.java
     private DispatchUsageManager.WorkDone nonHandleWorkDone(
             @NonNull final Dispatch dispatch,
             @NonNull final ValidationResult validationResult,
@@ -204,6 +246,15 @@ public class DispatchProcessor {
             @NonNull final ResponseCodeEnum status) {
         rollback(true, status, dispatch.stack(), recordListBuilder, dispatch.recordBuilder());
         chargePayer(dispatch, validationResult.withoutServiceFee());
+========
+    private WorkDone nonHandleWorkDone(
+            final @NonNull Dispatch dispatch,
+            final @NonNull ValidationReport validationReport,
+            final @NonNull RecordListBuilder recordListBuilder,
+            final ResponseCodeEnum status) {
+        rollback(true, status, dispatch.stack(), recordListBuilder, dispatch.recordBuilder());
+        chargePayer(dispatch, validationReport.withoutServiceFee());
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchProcessor.java
         return FEES_ONLY;
     }
 
@@ -213,7 +264,11 @@ public class DispatchProcessor {
      * @param dispatch the dispatch to be processed
      * @param report the due diligence report for the dispatch
      */
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/DispatchProcessor.java
     private void chargeCreator(@NonNull final Dispatch dispatch, @NonNull final ValidationResult report) {
+========
+    private void chargeCreator(@NonNull final Dispatch dispatch, @NonNull final ValidationReport report) {
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchProcessor.java
         dispatch.recordBuilder().status(report.creatorErrorOrThrow());
         dispatch.feeAccumulator()
                 .chargeNetworkFee(report.creatorId(), dispatch.fees().networkFee());
@@ -226,7 +281,11 @@ public class DispatchProcessor {
      * @param dispatch the dispatch to be processed
      * @param report the due diligence report for the dispatch
      */
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/DispatchProcessor.java
     private void chargePayer(@NonNull final Dispatch dispatch, @NonNull final ValidationResult report) {
+========
+    private void chargePayer(@NonNull final Dispatch dispatch, @NonNull final ValidationReport report) {
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchProcessor.java
         final var fees = dispatch.fees();
         if (fees.nothingToCharge()) {
             return;
@@ -280,12 +339,21 @@ public class DispatchProcessor {
      * Otherwise, it will return false.
      *
      * @param dispatch the dispatch to be processed
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/DispatchProcessor.java
      * @param validationResult the due diligence report for the dispatch
      * @return true if the transaction has already failed, false otherwise
      */
     private boolean alreadyFailed(@NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
         if (validationResult.isPayerError()) {
             dispatch.recordBuilder().status(validationResult.payerErrorOrThrow());
+========
+     * @param validationReport the due diligence report for the dispatch
+     * @return true if the transaction has already failed, false otherwise
+     */
+    private boolean alreadyFailed(@NonNull final Dispatch dispatch, @NonNull final ValidationReport validationReport) {
+        if (validationReport.isPayerError()) {
+            dispatch.recordBuilder().status(validationReport.payerErrorOrThrow());
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchProcessor.java
             return true;
         }
         final var authorizationFailure = maybeAuthorizationFailure(dispatch);
@@ -340,5 +408,15 @@ public class DispatchProcessor {
             }
         }
         return false;
+    }
+
+    /**
+     * The work done by the dispatch. It can be either {@link WorkDone#FEES_ONLY} or {@link WorkDone#USER_TRANSACTION}.
+     * {@link WorkDone#FEES_ONLY} is returned when the transaction has node or user errors. Otherwise, it will be
+     * {@link WorkDone#USER_TRANSACTION}.
+     */
+    public enum WorkDone {
+        FEES_ONLY,
+        USER_TRANSACTION
     }
 }

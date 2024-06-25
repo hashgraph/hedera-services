@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/throttle/DispatchUsageManager.java
 package com.hedera.node.app.workflows.handle.throttle;
+========
+package com.hedera.node.app.workflows.handle.flow.dispatch.helpers;
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchUsageManager.java
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_CREATE;
@@ -26,6 +30,10 @@ import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxDat
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoAssociate;
 import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/throttle/DispatchUsageManager.java
+========
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone;
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchUsageManager.java
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -38,7 +46,11 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/throttle/DispatchUsageManager.java
 import com.hedera.node.app.workflows.handle.Dispatch;
+========
+import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchUsageManager.java
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -223,6 +235,7 @@ public class DispatchUsageManager {
     }
 
     /**
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/throttle/DispatchUsageManager.java
      * The work done by the dispatch. It can be either {@link WorkDone#FEES_ONLY} or {@link WorkDone#USER_TRANSACTION}.
      * {@link WorkDone#FEES_ONLY} is returned when the transaction has node or user errors. Otherwise, it will be
      * {@link WorkDone#USER_TRANSACTION}.
@@ -233,6 +246,8 @@ public class DispatchUsageManager {
     }
 
     /**
+========
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchUsageManager.java
      * This class is used to throw a {@link ThrottleException} when a transaction is gas throttled.
      */
     public static class ThrottleException extends Exception {

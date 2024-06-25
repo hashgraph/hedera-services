@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/DispatchValidator.java
 package com.hedera.node.app.workflows.handle.dispatch;
+========
+package com.hedera.node.app.workflows.handle.flow.dispatch.helpers;
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchValidator.java
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
@@ -22,6 +26,7 @@ import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/DispatchValidator.java
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
 import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
@@ -32,6 +37,18 @@ import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.pay
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerUniqueValidationReport;
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerValidationReport;
 import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.successReport;
+========
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.WorkflowCheck.NOT_INGEST;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.creatorValidationReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerDuplicateErrorReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerUniqueValidationReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerValidationReport;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.successReport;
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchValidator.java
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -88,7 +105,11 @@ public class DispatchValidator {
      * @param dispatch the dispatch
      * @return the error report
      */
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/DispatchValidator.java
     public ValidationResult validationReportFor(@NonNull final Dispatch dispatch) {
+========
+    public ValidationReport validationReportFor(@NonNull final Dispatch dispatch) {
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchValidator.java
         final var creatorError = creatorErrorIfKnown(dispatch);
         if (creatorError != null) {
             return creatorValidationReport(dispatch.creatorInfo().accountId(), creatorError);
@@ -127,7 +148,11 @@ public class DispatchValidator {
      * @return the error report
      */
     @NonNull
+<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/DispatchValidator.java
     private ValidationResult finalPayerValidationReport(
+========
+    private ValidationReport finalPayerValidationReport(
+>>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/DispatchValidator.java
             @NonNull final Account payer,
             @NonNull final DuplicateStatus duplicateStatus,
             @NonNull final Dispatch dispatch) {
