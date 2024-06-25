@@ -173,7 +173,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      */
     public void serializeLegacyHashBytes(@NonNull final SerializableDataOutputStream out) throws IOException {
         Objects.requireNonNull(out);
-        unsignedEvent.serializeForHash(out);
+        unsignedEvent.serializeLegacyHashBytes(out);
     }
 
     @Override

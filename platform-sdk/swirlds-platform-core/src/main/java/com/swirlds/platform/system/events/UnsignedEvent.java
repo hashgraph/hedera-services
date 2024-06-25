@@ -64,6 +64,12 @@ public class UnsignedEvent extends AbstractHashable {
     private static final long STATE_SIGNATURE_CLASS_ID = 0xaf7024c653caabf4L;
     private static final int STATE_SIGNATURE_VERSION = 3;
 
+    /**
+     * Class IDs of permitted transaction types.
+     */
+    private static final Set<Long> TRANSACTION_TYPES =
+            Set.of(StateSignatureTransaction.CLASS_ID, SwirldTransaction.CLASS_ID);
+
     public static class ClassVersion {
         /**
          * Event descriptors replace the hashes and generation of the parents in the event. Multiple otherParents are
@@ -72,55 +78,41 @@ public class UnsignedEvent extends AbstractHashable {
          * @since 0.46.0
          */
         public static final int BIRTH_ROUND = 4;
-    }
 
-    ///////////////////////////////////////
-    // immutable, sent during normal syncs, affects the hash that is signed:
-    ///////////////////////////////////////
+    }
 
     /**
      * the software version of the node that created this event.
      */
-    private SoftwareVersion softwareVersion;
+    private final SoftwareVersion softwareVersion;
 
     /**
      * ID of this event's creator (translate before sending)
      */
-    private NodeId creatorId;
+    private final NodeId creatorId;
 
     /**
      * the self parent event descriptor
      */
-    private EventDescriptor selfParent;
+    private final EventDescriptor selfParent;
 
     /**
      * the other parents' event descriptors
      */
-    private List<EventDescriptor> otherParents;
+    private final List<EventDescriptor> otherParents;
 
     /** a combined list of all parents, selfParent + otherParents */
-    private List<EventDescriptor> allParents;
+    private final List<EventDescriptor> allParents;
 
     /**
      * creation time, as claimed by its creator
      */
-    private Instant timeCreated;
+    private final Instant timeCreated;
 
     /**
      * the payload: an array of transactions
      */
-    private ConsensusTransactionImpl[] transactions;
-
-    /**
-     * The event descriptor for this event. Is not itself hashed.
-     */
-    private EventDescriptor descriptor;
-
-    /**
-     * Class IDs of permitted transaction types.
-     */
-    private static final Set<Long> TRANSACTION_TYPES =
-            Set.of(StateSignatureTransaction.CLASS_ID, SwirldTransaction.CLASS_ID);
+    private final ConsensusTransactionImpl[] transactions;
 
     /**
      * The core event data.
@@ -131,6 +123,11 @@ public class UnsignedEvent extends AbstractHashable {
      * The payloads of the event.
      */
     private final List<EventPayload> payloads;
+
+    /**
+     * The event descriptor for this event. Is not itself hashed.
+     */
+    private EventDescriptor descriptor;
 
     /**
      * Create a UnsignedEvent object
@@ -183,12 +180,12 @@ public class UnsignedEvent extends AbstractHashable {
 
     /**
      * Serialize the event for the purpose of creating a hash.
+     * Since events are being migrated to protobuf, calculating the hash of an event will change.
      *
      * @param out the stream to which this object is to be written
-     *
      * @throws IOException if unsupported payload types are encountered
      */
-    public void serializeForHash(final SerializableDataOutputStream out) throws IOException {
+    public void serializeLegacyHashBytes(final SerializableDataOutputStream out) throws IOException {
         out.writeLong(CLASS_ID);
         serialize(out);
     }
@@ -258,9 +255,13 @@ public class UnsignedEvent extends AbstractHashable {
      * @return the deserialized event
      * @throws IOException if unsupported payload types are encountered
      */
-    public static UnsignedEvent deserialize(final SerializableDataInputStream in, final int version)
+    public static UnsignedEvent deserialize(final SerializableDataInputStream in)
             throws IOException {
-        in.readInt(); // read and ignore version
+        final int version = in.readInt();
+        if (version != ClassVersion.BIRTH_ROUND) {
+            throw new IOException("Unsupported version: " + version);
+        }
+
         final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
         Objects.requireNonNull(in, "The input stream must not be null");
         final SoftwareVersion softwareVersion =
