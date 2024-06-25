@@ -52,12 +52,12 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_REFERENCE_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
@@ -539,7 +539,7 @@ public class TokenRejectSuite {
                         // Rejecting with NFT reference with fungible token fails.
                         tokenReject(ACCOUNT, rejectingNFT(FUNGIBLE_TOKEN_B, 1L)).hasKnownStatus(INVALID_NFT_ID),
                         // Rejecting with 0 references fails.
-                        tokenReject(ACCOUNT).hasPrecheck(INVALID_TRANSACTION_BODY))))
+                        tokenReject(ACCOUNT).hasPrecheck(EMPTY_TOKEN_REFERENCE_LIST))))
                 .then(
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN_A, 2L)
                                 .hasAccountID(TOKEN_TREASURY)
