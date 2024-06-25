@@ -22,16 +22,18 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
-import com.hedera.node.app.signature.KeyVerifier;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -162,7 +164,7 @@ public interface UserDispatchModule {
      */
     @Provides
     @UserDispatchScope
-    static KeyVerifier provideKeyVerifier(
+    static AppKeyVerifier provideKeyVerifier(
             @NonNull final HederaConfig hederaConfig,
             @NonNull final TransactionInfo txnInfo,
             @NonNull final PreHandleResult preHandleResult) {
@@ -239,6 +241,10 @@ public interface UserDispatchModule {
                 new WritableStoreFactory(stack, EntityIdService.NAME, configuration, storeMetricsService);
         return entityIdsFactory.getStore(WritableEntityIdStore.class);
     }
+
+    @Binds
+    @UserDispatchScope
+    EntityNumGenerator bindEntityNumGenerator(@NonNull EntityNumGeneratorImpl entityNumGenerator);
 
     /**
      * Provides the WritableStoreFactory when requested in UserDispatchScope.

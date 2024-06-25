@@ -77,6 +77,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.fees.FakeFeeCalculator;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -133,6 +134,9 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private AttributeValidator attributeValidator;
 
+    @Mock
+    private EntityNumGenerator entityNumGenerator;
+
     private CryptoCreateHandler subject;
 
     private CryptoCreateValidator cryptoCreateValidator;
@@ -156,6 +160,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableStore);
 
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
+        lenient().when(handleContext.entityNumGenerator()).thenReturn(entityNumGenerator);
 
         cryptoCreateValidator = new CryptoCreateValidator();
         stakingValidator = new StakingValidator();
@@ -313,7 +318,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
 
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(handleContext.newEntityNum()).willReturn(1000L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1000L);
         given(handleContext.payer()).willReturn(id);
         setupConfig();
         setupExpiryValidator();
@@ -385,7 +390,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
         given(handleContext.payer()).willReturn(accountID(id.accountNum()));
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(handleContext.newEntityNum()).willReturn(1000L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1000L);
         setupConfig();
         setupExpiryValidator();
 
@@ -536,7 +541,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.payer()).willReturn(accountID(id.accountNum()));
 
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(handleContext.newEntityNum()).willReturn(1000L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1000L);
 
         setupConfig();
         setupExpiryValidator();
@@ -660,7 +665,7 @@ class CryptoCreateHandlerTest extends CryptoHandlerTestBase {
                 .build();
         given(handleContext.body()).willReturn(txn);
         given(handleContext.consensusNow()).willReturn(consensusInstant);
-        given(handleContext.newEntityNum()).willReturn(1000L);
+        given(entityNumGenerator.newEntityNum()).willReturn(1000L);
         given(handleContext.payer()).willReturn(id);
         setupConfig();
         setupExpiryValidator();
