@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.txn;
+package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
@@ -34,7 +34,8 @@ import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.Dispatch;
+import com.hedera.node.app.workflows.handle.UserTxn;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -52,13 +53,13 @@ import org.apache.logging.log4j.Logger;
  * Completes the hollow accounts by finalizing them.
  */
 @Singleton
-public class HollowAccountCompleter {
-    private static final Logger logger = LogManager.getLogger(HollowAccountCompleter.class);
+public class HollowAccountCompletions {
+    private static final Logger logger = LogManager.getLogger(HollowAccountCompletions.class);
 
     private final EthereumTransactionHandler ethereumTransactionHandler;
 
     @Inject
-    public HollowAccountCompleter(@NonNull final EthereumTransactionHandler ethereumTransactionHandler) {
+    public HollowAccountCompletions(@NonNull final EthereumTransactionHandler ethereumTransactionHandler) {
         // Dagger2
         this.ethereumTransactionHandler = requireNonNull(ethereumTransactionHandler);
     }
@@ -72,7 +73,7 @@ public class HollowAccountCompleter {
      * @param userTxn the user transaction component
      * @param dispatch the dispatch
      */
-    public void finalizeHollowAccounts(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
+    public void completeHollowAccounts(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
         requireNonNull(userTxn);
         requireNonNull(dispatch);
         // Any hollow accounts that must sign to have all needed signatures, need to be finalized
@@ -89,7 +90,7 @@ public class HollowAccountCompleter {
         }
         finalizeHollowAccounts(
                 dispatch.handleContext(),
-                userTxn.configuration(),
+                userTxn.config(),
                 hollowAccounts,
                 dispatch.keyVerifier(),
                 maybeEthTxVerification,
@@ -105,7 +106,7 @@ public class HollowAccountCompleter {
     private EthFinalization findEthHollowAccount(@NonNull final UserTxn userTxn) {
         final var fileStore = userTxn.readableStoreFactory().getStore(ReadableFileStore.class);
         final var maybeEthTxSigs = ethereumTransactionHandler.maybeEthTxSigsFor(
-                userTxn.txnInfo().txBody().ethereumTransactionOrThrow(), fileStore, userTxn.configuration());
+                userTxn.txnInfo().txBody().ethereumTransactionOrThrow(), fileStore, userTxn.config());
         if (maybeEthTxSigs != null) {
             final var alias = Bytes.wrap(maybeEthTxSigs.address());
             final var accountStore = userTxn.readableStoreFactory().getStore(ReadableAccountStore.class);

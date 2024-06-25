@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.workflows.handle.record;
 
-import static com.hedera.node.app.workflows.handle.TokenContextImpl.castRecordBuilder;
+import static com.hedera.node.app.workflows.handle.record.TokenContextImpl.castRecordBuilder;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.records.ChildFinalizeContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 

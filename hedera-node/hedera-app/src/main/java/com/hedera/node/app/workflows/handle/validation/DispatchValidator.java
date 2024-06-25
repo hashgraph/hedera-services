@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatch.helpers;
+package com.hedera.node.app.workflows.handle.validation;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
@@ -22,16 +22,16 @@ import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.WorkflowCheck.NOT_INGEST;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.creatorValidationReport;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerDuplicateErrorReport;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerUniqueValidationReport;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.payerValidationReport;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.ValidationReport.successReport;
+import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
+import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
+import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.WorkflowCheck.NOT_INGEST;
+import static com.hedera.node.app.workflows.handle.validation.ValidationReport.creatorValidationReport;
+import static com.hedera.node.app.workflows.handle.validation.ValidationReport.payerDuplicateErrorReport;
+import static com.hedera.node.app.workflows.handle.validation.ValidationReport.payerUniqueValidationReport;
+import static com.hedera.node.app.workflows.handle.validation.ValidationReport.payerValidationReport;
+import static com.hedera.node.app.workflows.handle.validation.ValidationReport.successReport;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -46,7 +46,7 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;

@@ -41,7 +41,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 @Module
-public interface HandleWorkflowInjectionModule {
+public interface HandleWorkflowModule {
     @Provides
     @Singleton
     static Supplier<ContractHandlers> provideContractHandlers() {

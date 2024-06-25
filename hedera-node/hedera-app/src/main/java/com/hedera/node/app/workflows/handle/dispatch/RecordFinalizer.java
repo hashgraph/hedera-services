@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.dispatch.helpers;
+package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Collections.emptySet;
@@ -26,7 +26,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
-import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
+import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -38,8 +38,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Finalizes the record based on the transaction category. The record finalization is delegated to the
- * parent or child record finalizer.
+ * Finalizes the record based on the transaction category. The record
+ * finalization is delegated to the parent or child record finalizer.
  */
 @Singleton
 public class RecordFinalizer {
@@ -100,7 +100,7 @@ public class RecordFinalizer {
      * @param recordBuilder the record builder
      * @return the set of extra account ids
      */
-    Set<AccountID> extraRewardReceivers(
+    public Set<AccountID> extraRewardReceivers(
             @Nullable final TransactionBody body,
             @NonNull final HederaFunctionality function,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {

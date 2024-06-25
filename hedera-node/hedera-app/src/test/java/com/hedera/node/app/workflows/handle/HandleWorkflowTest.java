@@ -39,14 +39,12 @@ import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.PreHandleResultManager;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
-import com.hedera.node.app.workflows.handle.flow.txn.DefaultHandleWorkflow;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisSetup;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
@@ -143,12 +141,6 @@ class HandleWorkflowTest extends AppTestBase {
     private ConsensusTransactionImpl txn;
 
     @Mock
-    private PreHandleResultManager preHandleResultManager;
-
-    @Mock
-    private UserRecordInitializer userRecordInitializer;
-
-    @Mock
     private SoftwareVersion version;
 
     @Mock
@@ -165,6 +157,9 @@ class HandleWorkflowTest extends AppTestBase {
 
     @Mock
     private ExchangeRateManager exchangeRateManager;
+
+    @Mock
+    private PreHandleWorkflow preHandleWorkflow;
 
     @Mock
     private ConfigProvider configProvider;
@@ -201,14 +196,13 @@ class HandleWorkflowTest extends AppTestBase {
                 cacheWarmer,
                 handleWorkflowMetrics,
                 throttleServiceManager,
-                userRecordInitializer,
-                preHandleResultManager,
                 version,
                 initTrigger,
                 defaultHandleWorkflow,
                 genesisSetup,
                 recordCache,
-                exchangeRateManager);
+                exchangeRateManager,
+                preHandleWorkflow);
     }
 
     @SuppressWarnings("ConstantConditions")

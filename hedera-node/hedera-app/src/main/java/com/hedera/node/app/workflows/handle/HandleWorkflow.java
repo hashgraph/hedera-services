@@ -23,22 +23,25 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.PreHandleResultManager;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
-import com.hedera.node.app.workflows.handle.flow.txn.DefaultHandleWorkflow;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTxn;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisSetup;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
@@ -62,8 +65,10 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class HandleWorkflow {
-    public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
+
+    public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
+
     private final NetworkInfo networkInfo;
     private final ConfigProvider configProvider;
     private final StoreMetricsService storeMetricsService;
@@ -71,14 +76,13 @@ public class HandleWorkflow {
     private final CacheWarmer cacheWarmer;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
-    private final PreHandleResultManager preHandleResultManager;
-    private final UserRecordInitializer userRecordInitializer;
     private final SoftwareVersion version;
     private final InitTrigger initTrigger;
     private final DefaultHandleWorkflow defaultHandleWorkflow;
     private final GenesisSetup genesisSetup;
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
+    private final PreHandleWorkflow preHandleWorkflow;
 
     @Inject
     public HandleWorkflow(
@@ -89,14 +93,13 @@ public class HandleWorkflow {
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final UserRecordInitializer userRecordInitializer,
-            @NonNull final PreHandleResultManager preHandleResultManager,
             @NonNull final SoftwareVersion version,
             @NonNull final InitTrigger initTrigger,
             @NonNull final DefaultHandleWorkflow defaultHandleWorkflow,
             @NonNull final GenesisSetup genesisSetup,
             @NonNull final HederaRecordCache recordCache,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final PreHandleWorkflow preHandleWorkflow) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
         this.configProvider = requireNonNull(configProvider);
         this.storeMetricsService = requireNonNull(storeMetricsService);
@@ -104,14 +107,13 @@ public class HandleWorkflow {
         this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
         this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
-        this.userRecordInitializer = requireNonNull(userRecordInitializer);
-        this.preHandleResultManager = requireNonNull(preHandleResultManager);
         this.version = requireNonNull(version);
         this.initTrigger = requireNonNull(initTrigger);
         this.defaultHandleWorkflow = requireNonNull(defaultHandleWorkflow);
         this.genesisSetup = requireNonNull(genesisSetup);
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
     }
 
     /**
@@ -208,6 +210,73 @@ public class HandleWorkflow {
     }
 
     /**
+     * This method gets all the verification data for the current transaction. If pre-handle was previously ran
+     * successfully, we only add the missing keys. If it did not run or an error occurred, we run it again.
+     * If there is a due diligence error, this method will return a CryptoTransfer to charge the node along with
+     * its verification data.
+     * @param creator the node that created the transaction
+     * @param platformTxn the transaction to be verified
+     * @param storeFactory the store factory
+     * @return the verification data for the transaction
+     */
+    @NonNull
+    public PreHandleResult getCurrentPreHandleResult(
+            @NonNull final NodeInfo creator,
+            @NonNull final ConsensusTransaction platformTxn,
+            final ReadableStoreFactory storeFactory) {
+        final var metadata = platformTxn.getMetadata();
+        final PreHandleResult previousResult;
+        if (metadata instanceof PreHandleResult result) {
+            previousResult = result;
+        } else {
+            // This should be impossible since the Platform contract guarantees that SwirldState.preHandle()
+            // is always called before SwirldState.handleTransaction(); and our preHandle() implementation
+            // always sets the metadata to a PreHandleResult
+            logger.error(
+                    "Received transaction without PreHandleResult metadata from node {} (was {})",
+                    creator.nodeId(),
+                    metadata);
+            previousResult = null;
+        }
+        // We do not know how long transactions are kept in memory. Clearing metadata to avoid keeping it for too long.
+        platformTxn.setMetadata(null);
+        return preHandleWorkflow.preHandleTransaction(
+                creator.accountId(),
+                storeFactory,
+                storeFactory.getStore(ReadableAccountStore.class),
+                platformTxn,
+                previousResult);
+    }
+
+    /**
+     * Initializes the user record with the transaction information. The record builder list is initialized with the
+     * transaction, transaction bytes, transaction ID, exchange rate, and memo.
+     * @param recordBuilder the record builder
+     * @param txnInfo the transaction info
+     */
+    // TODO: Guarantee that this never throws an exception
+    public SingleTransactionRecordBuilderImpl initializeUserRecord(
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder, @NonNull final TransactionInfo txnInfo) {
+        requireNonNull(txnInfo);
+        requireNonNull(recordBuilder);
+        final var transaction = txnInfo.transaction();
+        // If the transaction uses the legacy body bytes field instead of explicitly setting
+        // its signed bytes, the record will have the hash of its bytes as serialized by PBJ
+        final Bytes transactionBytes;
+        if (transaction.signedTransactionBytes().length() > 0) {
+            transactionBytes = transaction.signedTransactionBytes();
+        } else {
+            transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
+        }
+        return recordBuilder
+                .transaction(txnInfo.transaction())
+                .transactionBytes(transactionBytes)
+                .transactionID(txnInfo.txBody().transactionIDOrThrow())
+                .exchangeRate(exchangeRateManager.exchangeRates())
+                .memo(txnInfo.txBody().memo());
+    }
+
+    /**
      * Constructs a new {@link UserTxn} with the scope defined by the
      * current state, platform context, creator, and consensus time.
      *
@@ -237,7 +306,7 @@ public class HandleWorkflow {
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
-                preHandleResultManager);
+                this);
     }
 
     /**
@@ -261,7 +330,7 @@ public class HandleWorkflow {
                 skip(userTxn);
             } else {
                 if (userTxn.isGenesisTxn()) {
-                    genesisSetup.setupIn(userTxn.tokenContext());
+                    genesisSetup.setupIn(userTxn.tokenContextImpl());
                 }
                 defaultHandleWorkflow.execute(userTxn);
                 updateWorkflowMetrics(userTxn);
@@ -282,7 +351,7 @@ public class HandleWorkflow {
     private Stream<SingleTransactionRecord> failInvalidRecordStream(@NonNull final UserTxn userTxn) {
         final var failInvalidRecordListBuilder = new RecordListBuilder(userTxn.consensusNow());
         final var recordBuilder = failInvalidRecordListBuilder.userTransactionRecordBuilder();
-        userRecordInitializer.initializeUserRecord(recordBuilder, userTxn.txnInfo());
+        defaultHandleWorkflow.initializeUserRecord(recordBuilder, userTxn.txnInfo());
         recordBuilder.status(FAIL_INVALID);
         userTxn.stack().rollbackFullStack();
         return recordStream(userTxn, failInvalidRecordListBuilder);

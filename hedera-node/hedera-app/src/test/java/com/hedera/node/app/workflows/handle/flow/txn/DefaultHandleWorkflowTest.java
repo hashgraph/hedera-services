@@ -38,12 +38,12 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.DefaultHandleWorkflow;
+import com.hedera.node.app.workflows.handle.DispatchProcessor;
+import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
-import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
@@ -66,7 +66,7 @@ public class DefaultHandleWorkflowTest {
     private DispatchProcessor dispatchProcessor;
 
     @Mock
-    private HollowAccountCompleter hollowAccountFinalization;
+    private HollowAccountCompletions hollowAccountFinalization;
 
     @Mock
     private HederaState state;
@@ -82,12 +82,6 @@ public class DefaultHandleWorkflowTest {
 
     @Mock
     private WritableKVState schedulesById;
-
-    @Mock
-    private PreHandleResult preHandleResult;
-
-    @Mock
-    private UserRecordInitializer userRecordInitializer;
 
     @Mock
     private Authorizer authorizer;
@@ -130,7 +124,6 @@ public class DefaultHandleWorkflowTest {
                 dispatchProcessor,
                 hollowAccountFinalization,
                 storeMetricsService,
-                userRecordInitializer,
                 authorizer,
                 networkInfo,
                 feeManager,
@@ -169,7 +162,7 @@ public class DefaultHandleWorkflowTest {
 
         //        subject.execute(userTxn);
 
-        //        verify(stakingPeriodTimeHook).process(userTxn.stack(), userTxn.tokenContext());
+        //        verify(stakingPeriodTimeHook).process(userTxn.stack(), userTxn.tokenContextImpl());
         //        verify(blockRecordManager).advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
         // TODO
         // TODO

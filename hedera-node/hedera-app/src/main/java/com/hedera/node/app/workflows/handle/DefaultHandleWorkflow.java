@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.flow.txn;
+package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -32,12 +33,13 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.dispatch.UserDispatch;
-import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -55,9 +57,8 @@ public class DefaultHandleWorkflow {
     private final NodeStakeUpdates nodeStakeUpdates;
     private final BlockRecordManager blockRecordManager;
     private final DispatchProcessor dispatchProcessor;
-    private final HollowAccountCompleter hollowAccountFinalization;
+    private final HollowAccountCompletions hollowAccountCompletions;
     private final StoreMetricsService storeMetricsService;
-    private final UserRecordInitializer userRecordInitializer;
     private final Authorizer authorizer;
     private final NetworkInfo networkInfo;
     private final FeeManager feeManager;
@@ -73,9 +74,8 @@ public class DefaultHandleWorkflow {
             @NonNull final NodeStakeUpdates nodeStakeUpdates,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final DispatchProcessor dispatchProcessor,
-            @NonNull final HollowAccountCompleter hollowAccountFinalization,
+            @NonNull final HollowAccountCompletions hollowAccountCompletions,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final UserRecordInitializer userRecordInitializer,
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final FeeManager feeManager,
@@ -88,9 +88,8 @@ public class DefaultHandleWorkflow {
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.blockRecordManager = requireNonNull(blockRecordManager);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
-        this.hollowAccountFinalization = requireNonNull(hollowAccountFinalization);
+        this.hollowAccountCompletions = requireNonNull(hollowAccountCompletions);
         this.storeMetricsService = requireNonNull(storeMetricsService);
-        this.userRecordInitializer = requireNonNull(userRecordInitializer);
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
         this.feeManager = requireNonNull(feeManager);
@@ -103,32 +102,34 @@ public class DefaultHandleWorkflow {
     }
 
     /**
-     * Executes the handle workflow. This method is the entry point for handling a user transaction.
-     * It processes the staking period time hook, advances the consensus clock, expires schedules, logs the
-     * user transaction, finalizes hollow accounts, and processes the dispatch.
+     * Executes the handle workflow. This method is the entry point for handling a
+     * user transaction. It processes the staking period time hook, advances the
+     * consensus clock, expires schedules, logs the user transaction, finalizes
+     * hollow accounts, and processes the dispatch.
      *
      * @param userTxn the user transaction component
      */
     public void execute(@NonNull final UserTxn userTxn) {
         requireNonNull(userTxn);
-        processStakingPeriodTimeHook(userTxn);
+        updateNodeStakes(userTxn);
         blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
         expireSchedules(userTxn);
-
         if (logger.isDebugEnabled()) {
             logUserTxn(userTxn);
         }
+        final var userDispatch = dispatchFor(userTxn);
+        hollowAccountCompletions.completeHollowAccounts(userTxn, userDispatch);
+        dispatchProcessor.processDispatch(userDispatch);
+    }
 
-        final var userDispatch = UserDispatch.from(
-                userTxn.consensusNow(),
-                userTxn.stack(),
-                userTxn.preHandleResult(),
-                userTxn.creatorInfo(),
-                userTxn.configuration(),
-                userTxn.platformState(),
-                userTxn.tokenContext(),
-                userTxn.recordListBuilder(),
-                userRecordInitializer,
+    /**
+     * Returns the user dispatch for the given user transaction.
+     *
+     * @param userTxn the user transaction
+     * @return the user dispatch
+     */
+    private UserDispatch dispatchFor(@NonNull final UserTxn userTxn) {
+        return userTxn.dispatch(
                 authorizer,
                 networkInfo,
                 feeManager,
@@ -140,15 +141,45 @@ public class DefaultHandleWorkflow {
                 exchangeRateManager,
                 childDispatchFactory,
                 dispatcher,
+                initializeUserRecord(userTxn),
                 networkUtilizationManager);
-
-        hollowAccountFinalization.finalizeHollowAccounts(userTxn, userDispatch);
-        dispatchProcessor.processDispatch(userDispatch);
     }
 
-    private void processStakingPeriodTimeHook(@NonNull final UserTxn userTxn) {
+    public SingleTransactionRecordBuilderImpl initializeUserRecord(@NonNull final UserTxn userTxn) {
+        return initializeUserRecord(userTxn.recordListBuilder().userTransactionRecordBuilder(), userTxn.txnInfo());
+    }
+
+    /**
+     * Initializes the user record with the transaction information. The record builder list is initialized with the
+     * transaction, transaction bytes, transaction ID, exchange rate, and memo.
+     * @param recordBuilder the record builder
+     * @param txnInfo the transaction info
+     */
+    // TODO: Guarantee that this never throws an exception
+    public SingleTransactionRecordBuilderImpl initializeUserRecord(
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder, @NonNull final TransactionInfo txnInfo) {
+        requireNonNull(txnInfo);
+        requireNonNull(recordBuilder);
+        final var transaction = txnInfo.transaction();
+        // If the transaction uses the legacy body bytes field instead of explicitly setting
+        // its signed bytes, the record will have the hash of its bytes as serialized by PBJ
+        final Bytes transactionBytes;
+        if (transaction.signedTransactionBytes().length() > 0) {
+            transactionBytes = transaction.signedTransactionBytes();
+        } else {
+            transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
+        }
+        return recordBuilder
+                .transaction(txnInfo.transaction())
+                .transactionBytes(transactionBytes)
+                .transactionID(txnInfo.txBody().transactionIDOrThrow())
+                .exchangeRate(exchangeRateManager.exchangeRates())
+                .memo(txnInfo.txBody().memo());
+    }
+
+    private void updateNodeStakes(@NonNull final UserTxn userTxn) {
         try {
-            nodeStakeUpdates.process(userTxn.stack(), userTxn.tokenContext());
+            nodeStakeUpdates.process(userTxn.stack(), userTxn.tokenContextImpl());
         } catch (final Exception e) {
             // If anything goes wrong, we log the error and continue
             logger.error("Failed to process staking period time hook", e);
@@ -180,7 +211,7 @@ public class DefaultHandleWorkflow {
             final var firstSecondToExpire = lastHandledTxnTime.getEpochSecond();
             final var lastSecondToExpire = userTxn.consensusNow().getEpochSecond() - 1;
             final var scheduleStore = new WritableStoreFactory(
-                            userTxn.stack(), ScheduleService.NAME, userTxn.configuration(), storeMetricsService)
+                            userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
                     .getStore(WritableScheduleStore.class);
             scheduleStore.purgeExpiredSchedulesBetween(firstSecondToExpire, lastSecondToExpire);
             userTxn.stack().commitFullStack();
