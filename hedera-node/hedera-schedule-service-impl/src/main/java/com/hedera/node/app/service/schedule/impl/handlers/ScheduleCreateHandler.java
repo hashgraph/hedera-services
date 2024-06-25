@@ -174,7 +174,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(provisionalSchedule, context);
                 final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
                 final Set<Key> updatedSignatories = requiredKeysResult.updatedSignatories();
-                final long nextId = context.newEntityNum();
+                final long nextId = context.entityNumGenerator().newEntityNum();
                 Schedule finalSchedule =
                         HandlerUtility.completeProvisionalSchedule(provisionalSchedule, nextId, updatedSignatories);
                 if (tryToExecuteSchedule(
@@ -187,7 +187,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     finalSchedule = HandlerUtility.markExecuted(finalSchedule, currentConsensusTime);
                 }
                 scheduleStore.put(finalSchedule);
-                final ScheduleRecordBuilder scheduleRecords = context.recordBuilder(ScheduleRecordBuilder.class);
+                final ScheduleRecordBuilder scheduleRecords =
+                        context.recordBuilders().getOrCreate(ScheduleRecordBuilder.class);
                 scheduleRecords
                         .scheduleID(finalSchedule.scheduleId())
                         .scheduledTransactionID(HandlerUtility.transactionIdForScheduled(finalSchedule));
@@ -213,7 +214,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                             .copyBuilder()
                             .scheduled(true)
                             .build();
-                    context.recordBuilder(ScheduleRecordBuilder.class)
+                    context.recordBuilders()
+                            .getOrCreate(ScheduleRecordBuilder.class)
                             .scheduleID(candidate.scheduleId())
                             .scheduledTransactionID(scheduledTransactionID);
                     return true;

@@ -162,7 +162,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                             scheduleStore.put(HandlerUtility.replaceSignatories(scheduleToSign, updatedSignatories));
                         }
                         final ScheduleRecordBuilder scheduleRecords =
-                                context.recordBuilder(ScheduleRecordBuilder.class);
+                                context.recordBuilders().getOrCreate(ScheduleRecordBuilder.class);
                         scheduleRecords.scheduledTransactionID(
                                 HandlerUtility.transactionIdForScheduled(scheduleToSign));
                         // Based on fuzzy-record matching this field may not be set in mono-service records

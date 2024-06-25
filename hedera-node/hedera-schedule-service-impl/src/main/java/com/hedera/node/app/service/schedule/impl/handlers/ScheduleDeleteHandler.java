@@ -122,11 +122,11 @@ public class ScheduleDeleteHandler extends AbstractScheduleHandler implements Tr
                 final Schedule scheduleData = reValidate(scheduleStore, isLongTermEnabled, idToDelete);
                 if (scheduleData.hasAdminKey()) {
                     final SignatureVerification verificationResult =
-                            context.verificationFor(scheduleData.adminKeyOrThrow());
+                            context.keyVerifier().verificationFor(scheduleData.adminKeyOrThrow());
                     if (verificationResult.passed()) {
                         scheduleStore.delete(idToDelete, context.consensusNow());
                         final ScheduleRecordBuilder scheduleRecords =
-                                context.recordBuilder(ScheduleRecordBuilder.class);
+                                context.recordBuilders().getOrCreate(ScheduleRecordBuilder.class);
                         scheduleRecords.scheduleID(idToDelete);
                     } else {
                         throw new HandleException(ResponseCodeEnum.UNAUTHORIZED);
