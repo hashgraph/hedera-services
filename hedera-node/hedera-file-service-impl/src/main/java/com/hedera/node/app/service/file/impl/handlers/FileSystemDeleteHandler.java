@@ -103,7 +103,7 @@ public class FileSystemDeleteHandler implements TransactionHandler {
 
         final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
 
-        final var fileStore = handleContext.writableStore(WritableFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableFileStore.class);
         final File file = verifyNotSystemFile(ledgerConfig, fileStore, fileId);
 
         final var oldExpiration = file.expirationSecond();

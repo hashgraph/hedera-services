@@ -100,10 +100,11 @@ public class TokenRevokeKycFromAccountHandler implements TransactionHandler {
         final var op = handleContext.body().tokenRevokeKycOrThrow();
         final var tokenId = op.tokenOrThrow();
         final var accountId = op.accountOrElse(AccountID.DEFAULT);
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
         final var expiryValidator = handleContext.expiryValidator();
-        final var tokenStore = handleContext.readableStore(ReadableTokenStore.class);
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
         final var tokenRel =
                 validateSemantics(accountId, tokenId, tokenRelStore, accountStore, expiryValidator, tokenStore);
 

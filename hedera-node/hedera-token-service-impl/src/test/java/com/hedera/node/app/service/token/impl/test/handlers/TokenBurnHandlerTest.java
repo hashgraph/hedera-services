@@ -67,6 +67,7 @@ import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsVal
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -851,10 +852,12 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
             given(context.body()).willReturn(txn);
 
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-            given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+            final var storeFactory = mock(StoreFactory.class);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(storeFactory.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
             given(context.configuration()).willReturn(configuration);
 
             return context;

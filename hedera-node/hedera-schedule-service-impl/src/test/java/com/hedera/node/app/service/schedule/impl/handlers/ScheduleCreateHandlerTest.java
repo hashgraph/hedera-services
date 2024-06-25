@@ -206,7 +206,8 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
         final WritableScheduleStore fullStore = mock(WritableScheduleStore.class);
         given(fullStore.numSchedulesInState()).willReturn(scheduleConfig.maxNumber() + 1);
-        given(mockContext.writableStore(WritableScheduleStore.class)).willReturn(fullStore);
+        given(mockContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableScheduleStore.class)).willReturn(fullStore);
 
         for (final Schedule next : listOfScheduledOptions) {
             final TransactionBody createTransaction = next.originalCreateTransaction();

@@ -73,9 +73,10 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         requireNonNull(transferContext);
 
         final var handleContext = transferContext.getHandleContext();
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
 
         // two maps for aggregating the changes to the token balances and allowances.
         final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();

@@ -18,8 +18,8 @@ package com.hedera.node.app.workflows.handle.flow.txn;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.ActiveConfigModule;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.ContextModule;
