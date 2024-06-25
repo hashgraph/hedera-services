@@ -52,11 +52,39 @@ match the address given as an argument to `isAuthorizedRaw`.
 * If an Hedera account then it gets the account, looks in it to find a key _which it must
 have_ and which must be a _single key_ (otherwise: failure).  Then given the key and the
 signature verifies that the signature matches the message hash and is attested by 
-the account. This is an operation provided by `HandleContext` (which can be accessed via
-the `HederaWorldUpdater.Enhancement`).
+the account. Looking up the accounts is an operation provided by `HandleContext` (which can be accessed via
+the `HederaWorldUpdater.Enhancement`).  Validating the signature is done by directly using methods
+  from the platform.
   * Some fee will be charged to account for the signature verification cost, but it
 will have to be hard-coded (at this time) because we have no access to that fine-grained
 fee now.
+    * Current proposal is to charge a fixed fee (in dollars) derived from the cost of a 
+      crypto transfer of 1 tinybar signed with an EC key.
+
+A feature flag will control enabling `isAuthorizedRaw`.
+
+## Testing
+
+E2E testing necessary:
+
+### Positive
+
+(All with sufficient gas:)
+
+1. EVM address, valid hash+signature -> SUCCESS
+1. EVM address, _invalid_ hash+signature -> FAILED
+1. EVM address, valid hash+signature but recovered address does not match given address -> FAILED
+1. Hedera account w/ single ED key, valid hash+signature -> SUCCESS
+1. Hedera account w/ single ED key, _invalid_ hash+signature -> FAILED
+
+### Negative
+
+1. EVM address, insufficient gas -> FAILED
+1. Hedera account, insufficient gas -> FAILED
+1. Hedera account w/ 1 key which is EC -> FAILED
+1. Hedera account w/ >1 key -> FAILED
+
+__
 
 ## TBD
 
@@ -75,10 +103,11 @@ system contract calls, not to mention varying the fee for individual system cont
 methods.  (All existing system contract methods are either "cheap" - as in too small to
 charge for - or involve child transactions that themselves do incur fees.)  We _can_
 charge hard-coded fees.
-  * TBD #1: A fee schedule
-mechanism to charge fees for individual system contract methods 
-  * TBD #2: How do we choose the fee for the Hedera signature verification part of
-`isAuthorized` and `isAuthorizedRaw`?
+    
+* Need to have a way to get to signature verification via the `HandleContext` (instead of using
+  platform classes directly).
+
+
 
 
 
