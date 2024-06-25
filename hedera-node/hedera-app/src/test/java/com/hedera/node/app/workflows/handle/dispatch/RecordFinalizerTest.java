@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/dispatch/RecordFinalizerTest.java
 package com.hedera.node.app.workflows.handle.dispatch;
-========
-package com.hedera.node.app.workflows.handle.flow.dispatch.helpers;
->>>>>>>> origin/develop:hedera-node/hedera-app/src/test/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/RecordFinalizerTest.java
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MESSAGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;

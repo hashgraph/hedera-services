@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.dispatch;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -42,12 +39,12 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
@@ -63,8 +60,12 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 import java.util.Set;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
+import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
 
 /**
  * The dispatch context for a child transaction.
@@ -107,6 +108,7 @@ public record ChildDispatch(
             @NonNull final PlatformState platformState,
             @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final HederaFunctionality topLevelFunction,
+            @NonNull final ThrottleAdviser throttleAdviser,
             // @Singleton
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
@@ -118,8 +120,7 @@ public record ChildDispatch(
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ChildDispatchFactory childDispatchFactory,
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+            @NonNull final TransactionDispatcher dispatcher) {
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var writableStoreFactory = new WritableStoreFactory(
                 stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
@@ -151,7 +152,7 @@ public record ChildDispatch(
                 childDispatchFactory,
                 dispatchProcessor,
                 recordListBuilder,
-                networkUtilizationManager);
+                throttleAdviser);
         return new ChildDispatch(
                 recordBuilder,
                 config,

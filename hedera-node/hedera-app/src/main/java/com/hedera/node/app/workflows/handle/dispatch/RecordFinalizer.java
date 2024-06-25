@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/RecordFinalizer.java
 package com.hedera.node.app.workflows.handle.dispatch;
-========
-package com.hedera.node.app.workflows.handle.flow.dispatch.helpers;
->>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/helpers/RecordFinalizer.java
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Collections.emptySet;

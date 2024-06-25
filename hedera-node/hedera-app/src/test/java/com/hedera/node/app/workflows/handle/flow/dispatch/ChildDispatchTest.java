@@ -16,14 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
-
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
@@ -39,8 +32,8 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
@@ -51,17 +44,23 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Set;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 
 @ExtendWith(MockitoExtension.class)
 class ChildDispatchTest {
@@ -108,13 +107,10 @@ class ChildDispatchTest {
     private PlatformState platformState;
 
     @Mock
-    private Configuration config;
-
-    @Mock
-    private HederaFunctionality topLevelFunction;
-
-    @Mock
     private Authorizer authorizer;
+
+    @Mock
+    private ThrottleAdviser throttleAdviser;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -146,9 +142,6 @@ class ChildDispatchTest {
     @Mock
     private TransactionDispatcher dispatcher;
 
-    @Mock
-    private NetworkUtilizationManager networkUtilizationManager;
-
     private ChildDispatch subject;
 
     @Test
@@ -167,6 +160,7 @@ class ChildDispatchTest {
                 platformState,
                 recordListBuilder,
                 CRYPTO_TRANSFER,
+                throttleAdviser,
                 authorizer,
                 networkInfo,
                 feeManager,
@@ -177,7 +171,6 @@ class ChildDispatchTest {
                 storeMetricsService,
                 exchangeRateManager,
                 childDispatchFactory,
-                dispatcher,
-                networkUtilizationManager);
+                dispatcher);
     }
 }

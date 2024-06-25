@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/steps/HollowAccountCompletions.java
 package com.hedera.node.app.workflows.handle.steps;
-========
-package com.hedera.node.app.workflows.handle.flow.txn;
->>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/txn/HollowAccountCompleter.java
 
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
@@ -38,12 +34,8 @@ import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
-<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/steps/HollowAccountCompletions.java
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.UserTxn;
-========
-import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
->>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/txn/HollowAccountCompleter.java
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -81,11 +73,7 @@ public class HollowAccountCompletions {
      * @param userTxn the user transaction component
      * @param dispatch the dispatch
      */
-<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/steps/HollowAccountCompletions.java
     public void completeHollowAccounts(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
-========
-    public void finalizeHollowAccounts(@NonNull final UserTxnComponent userTxn, @NonNull final Dispatch dispatch) {
->>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/txn/HollowAccountCompleter.java
         requireNonNull(userTxn);
         requireNonNull(dispatch);
         // Any hollow accounts that must sign to have all needed signatures, need to be finalized
@@ -115,11 +103,7 @@ public class HollowAccountCompletions {
      * @return the hollow account that needs to be finalized for the Ethereum transaction
      */
     @Nullable
-<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/steps/HollowAccountCompletions.java
     private EthFinalization findEthHollowAccount(@NonNull final UserTxn userTxn) {
-========
-    private EthFinalization findEthHollowAccount(@NonNull final UserTxnComponent userTxn) {
->>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/txn/HollowAccountCompleter.java
         final var fileStore = userTxn.readableStoreFactory().getStore(ReadableFileStore.class);
         final var maybeEthTxSigs = ethereumTransactionHandler.maybeEthTxSigsFor(
                 userTxn.txnInfo().txBody().ethereumTransactionOrThrow(), fileStore, userTxn.config());

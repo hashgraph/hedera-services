@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/dispatch/ChildRecordBuilderFactory.java
 package com.hedera.node.app.workflows.handle.dispatch;
-========
-package com.hedera.node.app.workflows.handle.flow.dispatch.child;
->>>>>>>> origin/develop:hedera-node/hedera-app/src/main/java/com/hedera/node/app/workflows/handle/flow/dispatch/child/ChildRecordBuilderFactory.java
 
 import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
 import static java.util.Objects.requireNonNull;
