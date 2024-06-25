@@ -16,6 +16,12 @@
 
 package com.swirlds.platform.state.snapshot;
 
+import com.swirlds.common.io.streams.MerkleDataInputStream;
+import com.swirlds.platform.state.MerkleRoot;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.nio.file.Path;
+
 /**
  * Utility methods for dealing with signed states on disk.
  */
@@ -46,4 +52,15 @@ public final class SignedStateFileUtils {
     public static final int MAX_MERKLE_NODES_IN_STATE = Integer.MAX_VALUE;
 
     private SignedStateFileUtils() {}
+
+    /**
+     * A helper function to read state snapshots, assuming the merkle tree was serialized using
+     * {@link com.swirlds.common.io.SelfSerializable} mechanism. Used in {@link
+     * com.swirlds.platform.builder.PlatformBuilder}
+     */
+    @NonNull
+    public static MerkleRoot readState(@NonNull final MerkleDataInputStream in, @NonNull final Path dir)
+            throws IOException {
+        return in.readMerkleTree(dir, MAX_MERKLE_NODES_IN_STATE);
+    }
 }
