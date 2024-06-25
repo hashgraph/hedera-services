@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_AC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
@@ -62,7 +62,7 @@ public class TokenAirdropValidator {
     public void pureChecks(@NonNull final TokenAirdropTransactionBody op) throws PreCheckException {
         // Validate token transfers
         final var tokenTransfers = op.tokenTransfers();
-        validateTruePreCheck(tokenTransfers.size() <= MAX_TOKEN_TRANSFERS, INVALID_TRANSACTION);
+        validateTruePreCheck(tokenTransfers.size() <= MAX_TOKEN_TRANSFERS, INVALID_TRANSACTION_BODY);
 
         final var tokenIds = new HashSet<TokenID>();
         for (final TokenTransferList tokenTransfer : tokenTransfers) {

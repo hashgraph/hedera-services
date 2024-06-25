@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 
@@ -227,7 +227,7 @@ public class TokenAirdropHandlerPureChecksTest extends TokenAirdropHandlerTestBa
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
-                .has(responseCode(INVALID_TRANSACTION));
+                .has(responseCode(INVALID_TRANSACTION_BODY));
     }
 
     @Test

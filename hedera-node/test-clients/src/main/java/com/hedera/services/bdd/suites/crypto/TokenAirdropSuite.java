@@ -404,7 +404,7 @@ public class TokenAirdropSuite {
         return defaultHapiSpec("senderWithMissingAssociationFails")
                 .given(
                         newKeyNamed(NFT_SUPPLY_KEY),
-                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
                         cryptoCreate(TOKEN_TREASURY)
                                 .balance(100 * ONE_HUNDRED_HBARS)
@@ -416,12 +416,12 @@ public class TokenAirdropSuite {
                                 .maxSupply(10_000)
                                 .initialSupply(5000)
                                 .treasury(TOKEN_TREASURY))
-                .when(cryptoTransfer(moving(1000, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)))
+                .when()
                 .then(
                         tokenAirdrop(moving(50, FUNGIBLE_TOKEN)
                                         .between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                                 .payingWith(SENDER)
-                                .hasKnownStatus(AMOUNT_EXCEEDS_ALLOWANCE)
+                                .hasKnownStatus(INVALID_TRANSACTION)
                                 .via("senderWithMissingAssociation"),
                         getTxnRecord("senderWithMissingAssociation").logged());
     }
@@ -478,6 +478,32 @@ public class TokenAirdropSuite {
                         // Should be signed by spender as well
                         .signedBy(OWNER)
                         .hasPrecheck(INVALID_SIGNATURE));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> ownerNotEnoughBalanceFails() {
+        return defaultHapiSpec("ownerNotEnoughBalanceFails")
+                .given(
+                        newKeyNamed(NFT_SUPPLY_KEY),
+                        cryptoCreate(OWNER).maxAutomaticTokenAssociations(10),
+                        cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
+                        cryptoCreate(TOKEN_TREASURY)
+                                .balance(100 * ONE_HUNDRED_HBARS)
+                                .maxAutomaticTokenAssociations(10),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .supplyKey(NFT_SUPPLY_KEY)
+                                .maxSupply(10_000)
+                                .initialSupply(5000)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN))
+                .when(cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
+                .then(tokenAirdrop(moving(99, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                        .payingWith(OWNER)
+                        .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS)
+                        .via("ownerNotEnoughBalance"),
+                        getTxnRecord("ownerNotEnoughBalance").logged());
     }
 
     @HapiTest

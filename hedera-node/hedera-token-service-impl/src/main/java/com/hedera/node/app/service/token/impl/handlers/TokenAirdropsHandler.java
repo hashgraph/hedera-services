@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -35,6 +36,7 @@ import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.get
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -58,6 +60,7 @@ import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -412,6 +415,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
                         }
                         validateTruePreCheck(haveExistingAllowance, SPENDER_DOES_NOT_HAVE_ALLOWANCE);
                     } else {
+                        validateTruePreCheck(tokenRel.balance() >= Math.abs(accountAmount.amount()), INVALID_ACCOUNT_AMOUNTS);
                         // If the account is a hollow account, then we require a signature for it.
                         // It is possible that the hollow account has signed this transaction, in which case
                         // we need to finalize the hollow account by setting its key.
@@ -441,6 +445,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
 
         final var nftStore = context.createStore(ReadableNftStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
+        final var airdropStore = context.createStore(ReadableAirdropStore.class);
         final var tokenRelStore = context.createStore(ReadableTokenRelationStore.class);
         final var token = getIfUsable(tokenID, tokenStore);
 
@@ -467,6 +472,14 @@ public class TokenAirdropsHandler implements TransactionHandler {
             final var nft = nftStore.get(tokenID, nftTransfer.serialNumber());
             validateTrue(nft != null, INVALID_NFT_ID);
 
+            var pendingId = PendingAirdropId.newBuilder()
+                    .receiverId(receiverId)
+                    .senderId(senderId)
+                    .fungibleTokenType(tokenID)
+                    .build();
+            // TODO: add PENDING_NFT_AIRDROP_ALREADY_EXISTS to protos and replace this
+            validateFalsePreCheck(airdropStore.exists(pendingId), INVALID_TRANSACTION);
+
             if (nftTransfer.isApproval()) {
                 // If isApproval flag is set then the spender account must have paid for the transaction.
                 // The transfer list specifies the owner who granted allowance as sender
@@ -478,7 +491,6 @@ public class TokenAirdropsHandler implements TransactionHandler {
             if (nft.hasOwnerId()) {
                 validateTrue(nft.ownerId() != null, INVALID_NFT_ID);
                 validateTrue(nft.ownerId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-                //                validateTrue(senderAccount.ass);
             } else {
                 final var treasuryId = token.treasuryAccountId();
                 validateTrue(treasuryId != null, INVALID_ACCOUNT_ID);
