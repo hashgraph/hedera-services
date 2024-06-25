@@ -31,7 +31,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fees.FeeAccumulatorImpl;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.util.UtilService;
@@ -40,8 +40,8 @@ import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -165,7 +165,7 @@ class UserDispatchModuleTest {
     void providesFeeAccumulatorImpl() {
         given(serviceApiFactory.getApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         assertThat(UserDispatchModule.provideFeeAccumulator(recordBuilder, serviceApiFactory))
-                .isInstanceOf(FeeAccumulatorImpl.class);
+                .isInstanceOf(FeeAccumulator.class);
     }
 
     @Test

@@ -83,7 +83,7 @@ public record TransactionHandlers(
         @NonNull ContractDeleteHandler contractDeleteHandler,
         @NonNull ContractSystemDeleteHandler contractSystemDeleteHandler,
         @NonNull ContractSystemUndeleteHandler contractSystemUndeleteHandler,
-        @NonNull EthereumTransactionHandler etherumTransactionHandler,
+        @NonNull EthereumTransactionHandler ethereumTransactionHandler,
         @NonNull CryptoCreateHandler cryptoCreateHandler,
         @NonNull CryptoUpdateHandler cryptoUpdateHandler,
         @NonNull CryptoTransferHandler cryptoTransferHandler,

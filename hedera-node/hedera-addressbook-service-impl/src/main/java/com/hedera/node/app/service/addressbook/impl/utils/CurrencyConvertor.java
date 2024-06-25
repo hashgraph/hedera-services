@@ -16,15 +16,8 @@
 
 package com.hedera.node.app.service.addressbook.impl.utils;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.ExchangeRate;
-import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
-import java.math.BigDecimal;
 import java.math.BigInteger;
 
 /**
@@ -41,20 +34,5 @@ public class CurrencyConvertor {
                 .multiply(aMultiplier)
                 .divide(bDivisor)
                 .longValueExact();
-    }
-
-    public static long getFixedPriceInTinyCents(
-            HederaFunctionality hederaFunctionality, SubType subType, AssetsLoader assetsLoader) {
-        BigDecimal usdFee;
-        try {
-            usdFee = assetsLoader
-                    .loadCanonicalPrices()
-                    .get(fromPbj(hederaFunctionality))
-                    .get(fromPbj(subType));
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to load canonical prices", e);
-        }
-        final var usdToTinyCents = BigDecimal.valueOf(100 * 100_000_000L);
-        return usdToTinyCents.multiply(usdFee).longValue();
     }
 }

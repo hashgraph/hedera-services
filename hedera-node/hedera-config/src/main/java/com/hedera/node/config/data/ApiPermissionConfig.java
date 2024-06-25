@@ -51,7 +51,6 @@ import static com.hedera.hapi.node.base.HederaFunctionality.GET_VERSION_INFO;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_DELETE;
-import static com.hedera.hapi.node.base.HederaFunctionality.NODE_GET_INFO;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_DELETE;
@@ -85,7 +84,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_RECO
 import static com.hedera.hapi.node.base.HederaFunctionality.UTIL_PRNG;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
+import com.hedera.node.config.types.PermissionedAccountsRange;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -180,7 +179,6 @@ import java.util.function.Function;
  * @param createNode                   the permission for {@link HederaFunctionality#NODE_CREATE} functionality
  * @param updateNode                   the permission for {@link HederaFunctionality#NODE_UPDATE} functionality
  * @param deleteNode                   the permission for {@link HederaFunctionality#NODE_DELETE} functionality
- * @param getNodeInfo                   the permission for {@link HederaFunctionality#NODE_GET_INFO} functionality
  */
 @ConfigData
 public record ApiPermissionConfig(
@@ -324,7 +322,6 @@ public record ApiPermissionConfig(
         permissionKeys.put(NODE_CREATE, c -> c.createNode);
         permissionKeys.put(NODE_UPDATE, c -> c.updateNode);
         permissionKeys.put(NODE_DELETE, c -> c.deleteNode);
-        permissionKeys.put(NODE_GET_INFO, c -> c.getNodeInfo);
     }
 
     /**

@@ -21,6 +21,8 @@ plugins {
 
 description = "Default Hedera AddressBook Service Implementation"
 
+dependencies { implementation(project(mapOf("path" to ":app-hapi-fees"))) }
+
 // Remove the following line to enable all 'javac' lint checks that we have turned on by default
 // and then fix the reported issues.
 tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports,-static") }
@@ -29,7 +31,7 @@ mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {
     requires("com.hedera.node.app")
-    requires("com.hedera.node.app.service.mono")
+    requires("com.hedera.node.app.hapi.utils")
     requires("com.hedera.node.config.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.common")

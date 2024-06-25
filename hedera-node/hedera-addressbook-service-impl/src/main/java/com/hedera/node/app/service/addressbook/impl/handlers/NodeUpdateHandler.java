@@ -19,8 +19,6 @@ package com.hedera.node.app.service.addressbook.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
-import static com.hedera.node.app.service.addressbook.impl.utils.CurrencyConvertor.getFixedPriceInTinyCents;
-import static com.hedera.node.app.service.addressbook.impl.utils.CurrencyConvertor.getTinybarsFromTinyCents;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
@@ -33,7 +31,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -56,14 +53,10 @@ import javax.inject.Singleton;
 public class NodeUpdateHandler implements TransactionHandler {
     private final AddressBookValidator addressBookValidator;
 
-    private final AssetsLoader assetsLoader;
-
     @Inject
-    public NodeUpdateHandler(
-            @NonNull final AddressBookValidator addressBookValidator, @NonNull final AssetsLoader assetsLoader) {
+    public NodeUpdateHandler(@NonNull final AddressBookValidator addressBookValidator) {
         this.addressBookValidator =
                 requireNonNull(addressBookValidator, "The supplied argument 'addressBookValidator' must not be null");
-        this.assetsLoader = requireNonNull(assetsLoader, "The supplied argument 'assetsLoader' must not be null");
     }
 
     @Override
@@ -90,8 +83,9 @@ public class NodeUpdateHandler implements TransactionHandler {
 
         final var configuration = handleContext.configuration();
         final var nodeConfig = configuration.getConfigData(NodesConfig.class);
-        final var nodeStore = handleContext.writableStore(WritableNodeStore.class);
-        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var nodeStore = storeFactory.writableStore(WritableNodeStore.class);
+        final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
 
         final var existingNode = nodeStore.get(op.nodeId());
         validateFalse(existingNode == null, INVALID_NODE_ID);
@@ -112,18 +106,10 @@ public class NodeUpdateHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        final var feeCalculator = feeContext.feeCalculator(SubType.DEFAULT);
+        final var feeCalculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
         final var exchangeRateInfo = feeContext.exchangeRateInfo();
 
-        feeCalculator.resetUsage();
-        // The fees should be increased based on number of signatures.
-        final var price = getTinybarsFromTinyCents(
-                feeCalculator.getVptPrice(), exchangeRateInfo.activeRate(feeContext.consensusNow()));
-        var sigPrice = (feeContext.numTxnSignatures() - 1) * price;
-        var canonicalPrice = getFixedPriceInTinyCents(HederaFunctionality.NODE_UPDATE, SubType.DEFAULT, assetsLoader);
-        var canonicalPriceTinyBar =
-                getTinybarsFromTinyCents(canonicalPrice, exchangeRateInfo.activeRate(feeContext.consensusNow()));
-        return new Fees(0L, sigPrice + canonicalPriceTinyBar, 0L);
+        return null;
     }
 
     private Node.Builder updateNode(@NonNull final NodeUpdateTransactionBody op, @NonNull final Node node) {

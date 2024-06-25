@@ -7,7 +7,6 @@ module com.hedera.node.app {
     requires transitive com.hedera.node.app.service.consensus.impl;
     requires transitive com.hedera.node.app.service.contract.impl;
     requires transitive com.hedera.node.app.service.file.impl;
-    requires transitive com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.app.service.network.admin.impl;
     requires transitive com.hedera.node.app.service.schedule.impl;
     requires transitive com.hedera.node.app.service.schedule;
@@ -24,12 +23,10 @@ module com.hedera.node.app {
     requires transitive com.swirlds.state.api;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
-    requires transitive grpc.stub;
+    requires transitive io.grpc.stub;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;
-    requires com.hedera.node.app.service.addressbook.impl;
-    requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
     requires com.hedera.node.app.service.file;
@@ -45,7 +42,7 @@ module com.hedera.node.app {
     requires com.google.common;
     requires com.google.protobuf;
     requires com.hedera.evm;
-    requires grpc.netty;
+    requires io.grpc.netty;
     requires io.grpc;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
@@ -107,6 +104,7 @@ module com.hedera.node.app {
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.handle.flow.txn.modules to
             com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.store;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

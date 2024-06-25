@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -45,8 +46,10 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHand
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -257,9 +260,12 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         final var txnBody = givenMintTxn(nonFungibleTokenId, metadata, null);
 
         final var feeCalculator = mock(FeeCalculator.class);
+        final var feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         final var feeContext = mock(FeeContext.class);
         given(feeContext.body()).willReturn(txnBody);
-        given(feeContext.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(feeCalculator);
+        given(feeContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(feeCalculatorFactory.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE))
+                .willReturn(feeCalculator);
         final var numSigs = 5;
         given(feeContext.numTxnSignatures()).willReturn(numSigs);
 
@@ -291,7 +297,10 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(handleContext.recordBuilder(TokenMintRecordBuilder.class)).willReturn(recordBuilder);
+
+        final var recordBuilders = mock(RecordBuilders.class);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        lenient().when(recordBuilders.getOrCreate(TokenMintRecordBuilder.class)).thenReturn(recordBuilder);
 
         return txnBody;
     }

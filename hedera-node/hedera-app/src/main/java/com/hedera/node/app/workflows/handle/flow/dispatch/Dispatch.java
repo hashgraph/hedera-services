@@ -19,13 +19,13 @@ package com.hedera.node.app.workflows.handle.flow.dispatch;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.service.token.records.FinalizeContext;
-import com.hedera.node.app.signature.KeyVerifier;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -89,7 +89,7 @@ public interface Dispatch {
      * The key verifier for the transaction
      * @return the key verifier
      */
-    KeyVerifier keyVerifier();
+    AppKeyVerifier keyVerifier();
 
     /**
      * The creator node info of the transaction

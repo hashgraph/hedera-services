@@ -59,8 +59,9 @@ module com.hedera.node.test.clients {
     requires transitive org.testcontainers;
     requires transitive org.yaml.snakeyaml;
     requires transitive tuweni.bytes;
+    requires com.hedera.node.app.service.addressbook.impl;
+    requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.contract.impl;
-    requires com.hedera.node.app.service.mono;
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.spi.test.fixtures;
@@ -75,8 +76,8 @@ module com.hedera.node.test.clients {
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
     requires com.hedera.evm;
-    requires grpc.netty;
-    requires grpc.stub;
+    requires io.grpc.netty;
+    requires io.grpc.stub;
     requires io.netty.handler;
     requires java.desktop;
     requires java.net.http;

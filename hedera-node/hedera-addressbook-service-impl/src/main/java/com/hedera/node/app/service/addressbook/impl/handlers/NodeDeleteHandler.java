@@ -18,8 +18,6 @@ package com.hedera.node.app.service.addressbook.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NODE_DELETED;
-import static com.hedera.node.app.service.addressbook.impl.utils.CurrencyConvertor.getFixedPriceInTinyCents;
-import static com.hedera.node.app.service.addressbook.impl.utils.CurrencyConvertor.getTinybarsFromTinyCents;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -29,7 +27,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -47,12 +44,8 @@ import javax.inject.Singleton;
 @Singleton
 public class NodeDeleteHandler implements TransactionHandler {
 
-    private final AssetsLoader assetsLoader;
-
     @Inject
-    public NodeDeleteHandler(@NonNull final AssetsLoader assetsLoader) {
-        this.assetsLoader = requireNonNull(assetsLoader, "The supplied argument 'assetsLoader' must not be null");
-    }
+    public NodeDeleteHandler() {}
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
@@ -80,7 +73,7 @@ public class NodeDeleteHandler implements TransactionHandler {
         final NodeDeleteTransactionBody transactionBody = context.body().nodeDeleteOrThrow();
         var nodeId = transactionBody.nodeId();
 
-        final var nodeStore = context.writableStore(WritableNodeStore.class);
+        final var nodeStore = context.storeFactory().writableStore(WritableNodeStore.class);
 
         Node node = nodeStore.get(nodeId);
 
@@ -99,17 +92,8 @@ public class NodeDeleteHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        final var feeCalculator = feeContext.feeCalculator(SubType.DEFAULT);
+        final var feeCalculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
         final var exchangeRateInfo = feeContext.exchangeRateInfo();
-
-        feeCalculator.resetUsage();
-        // The fees should be increased based on number of signatures.
-        final var price = getTinybarsFromTinyCents(
-                feeCalculator.getVptPrice(), exchangeRateInfo.activeRate(feeContext.consensusNow()));
-        var sigPrice = (feeContext.numTxnSignatures() - 1) * price;
-        var canonicalPrice = getFixedPriceInTinyCents(HederaFunctionality.NODE_DELETE, SubType.DEFAULT, assetsLoader);
-        var canonicalPriceTinyBar =
-                getTinybarsFromTinyCents(canonicalPrice, exchangeRateInfo.activeRate(feeContext.consensusNow()));
-        return new Fees(0L, sigPrice + canonicalPriceTinyBar, 0L);
+        return null;
     }
 }

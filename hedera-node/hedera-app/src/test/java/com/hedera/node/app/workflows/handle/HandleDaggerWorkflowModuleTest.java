@@ -304,8 +304,8 @@ class HandleDaggerWorkflowModuleTest {
         given(tokenHandlers.tokenUnpauseHandler()).willReturn(tokenUnpauseHandler);
         given(utilHandlers.prngHandler()).willReturn(utilPrngHandler);
         given(addressBookHandlers.nodeCreateHandler()).willReturn(nodeCreateHandler);
-        given(addressBookHandlers.nodeUpdateHandler()).willReturn(nodeUpdateHandler);
         given(addressBookHandlers.nodeDeleteHandler()).willReturn(nodeDeleteHandler);
+        given(addressBookHandlers.nodeUpdateHandler()).willReturn(nodeUpdateHandler);
 
         final var handlers = HandlersInjectionModule.provideTransactionHandlers(
                 networkAdminHandlers,
