@@ -277,336 +277,6 @@ To implement the functionality detailed in the previous section, the following c
    The module will include Java and Rust codes that will be compiled for all possible system architectures and distributed in a jar under a predefined structure.
 
 ### Libraries Specifications
-
-#### Swirlds Crypto TSS Library
-##### Overview
-This library implements the Groth21 TSS-specific primitives.
-
-Two options are presented, the first provides service-oriented approach with coarse-grain operations and focus on reducing the interactions from client's perspective. 
-The second one proposes an object-oriented approach with fine-grain operations that are easier to concurrently call outside the library. 
-
-##### Constraints
-Once built, this library will depend on artifacts constructed in other repositories.
-This library would accept Integer.MAX_VALUE -1 participants.
-
-##### Option 1 - Overview:
-This option focuses on simplify user-library interactions by centralizing all operations into a TssService class.
-A ParticipantDirectory class is created to hold all library's needed data in order to perform the operations.
-Objects returned by this option are used to hold information, and they provide no operations. They are created using the library's operation and then handed back to the library for follow-up operations.
-In this option, all iterations and "business logic" of groth21 implementation is handled inside the library.
-
-
-##### Option 1 - Public API:
-###### `TssService`
-**Description**: This class handles all tss specific operations.
-
-**Link**: [TssService.java](tss-option1%2FTssService.java)
-
-###### `TssParticipantDirectory`
-**Description**: This class holds all information about the participants in the scheme. Including: participants' EC public keys, public shares, private shares, number of shares. 
-
-**Link**: [TssParticipantDirectory.java](tss-option1%2FTssParticipantDirectory.java)
-
-###### `TssMessage`
-**Description**: This class is used in the exchange of secret information between participants. Contains an encrypted message, a polynomial commitment, and a cryptographic proof that can be used to validate this message.
-
-**Link**:[TssMessage.java](tss-option1%2FTssMessage.java)
-
-###### `TssShareId`
-**Description**: This class represents the unique identification of a share in the system. It a FieldElement, so it can be used as input in the polynomial.
-
-**Link**:[TssShareId.java](tss-option1%2FTssShareId.java)
-
-###### `TssPrivateShare`
-**Description**: A record that contains a share ID, and the corresponding private key.
-
-**Link**:[TssPrivateShare.java](tss-option1%2FTssPrivateShare.java)
-
-###### `TssPublicShare`
-**Description**: A record that contains a share ID, and the corresponding public key.
-
-**Link**:[TssPublicShare.java](tss-option1%2FTssPublicShare.java)
-
-###### `TssShareSignature`
-**Description**: Represents a signature created from a TSSPrivateShare.
-
-**Link**:[TssShareSignature.java](tss-option1%2FTssShareSignature.java)
-
-##### Option 1 - Examples:
-###### 1. Bootstrapping
-```java
-   TssService service = new TssService(signatureScheme, new Random());
-   PairingPrivateKey persistentParticipantKey = Requirements.loadECPrivateKey();
-   List<PairingPublicKey> persistentPublicKeys = Requirements.loadECPublicKeys();
-   TssParticipantDirectory participantDirectory =
-           TssParticipantDirectory.createBuilder()
-           .self(/**/ 0, persistentParticipantKey)
-           .withParticipant(/*Identification:*/0, /*Number of Shares*/5, persistentPublicKeys.get(0))
-           .withParticipant(/*Identification:*/1, /*Number of Shares*/2, persistentPublicKeys.get(1))
-           .withParticipant(/*Identification:*/2, /*Number of Shares*/1, persistentPublicKeys.get(2))
-           .withParticipant(/*Identification:*/3, /*Number of Shares*/1, persistentPublicKeys.get(3))
-           .withThreshold(5)     
-          .build(signatureScheme);
-   
-   //One can then query the directory
-   int n = participantDirectory.getTotalNumberOfShares();
-   List<TssShareId> privateShares = directory.getOwnedSharesIds();
-   List<TssShareId> shareIds = directory.getShareIds();
-```
-###### 1. Create TssMessage
-```java
-   //Creates a TssMessage out of a randomly generated share 
-   TssMessage m = service.generateTssMessage(directory);
-```
-
-###### 2. Validation of TssMessage
-```java
-   List<TssMessage> messages = Requirements.receiveTssMessages();
-   for(TssMessage m : messages){
-     service.validate(participantDirectory, m);
-   }
-```
-###### 3. Processing of TssMessage
-```java
-    Set<TssMessage> agreedValidMessages = /*Some previously agreed upon same set of valid messages for all participants*/
-    //Get Private Shares    
-    List<TssPrivateShare> privateShares = service.decryptPrivateShares(participantDirectory, agreedValidMessages);
-
-    //Get Public Shares
-    List<TssPrivateShare> publicShares = service.computePublicShare(participantDirectory, agreedValidMessages);
-
-```
-######  Sign
-```java
-   byte[] message = Requirements.messageToSign();
-
-   List<TssShareSignature> signatures = service.sign(privateShares, message);
-
-```
-
-######  Aggregate Signatures
-
-```java
-static {
-    List<TssShareSignature> signatures = Requirements.loadSignatures();
-
-    //Validation of individual signatures
-    List<TssShareSignature> validSignatures = new ArrayList<>(signatures.size());
-    for (TssShareSignature s : signatures) {
-        if (service.verify(participantDirectory, publicShares, s)) {
-            validSignatures.add(s);
-        }
-    }
-
-    //Producing an aggregate signature
-    PairingSignature aggregateSignature = service.aggregate(participantDirectory, validSignatures);
-}
-```
-
-##### Option 2 - Overview:
-This option focuses in providing fine-grain operations. By doing that, concurrency can be provided outside the scope of this library.
-In this option, objects returned by the library are more intelligent in the sense that once returned, they can be used to continue the flow of the operations needed.
-Clients are also responsible for dealing with part of the business logic of the groth21 implementation, and some of the necessary iterations are shifted to client code.
-
-##### Option 2 - Public API:
-###### `ShareClaims`
-
-**Link**: [ShareClaims.java](tss-option2%2FShareClaims.java)
-
-###### `Tss`
-
-**Link**:[Tss.java](tss-option2%2FTss.java)
-
-###### `TssMessage`
-
-**Link**: [TssMessage.java](tss-option2%2FTssMessage.java)
-
-###### `TssPrivateShare`
-
-**Link**:[TssPrivateShare.java](tss-option2%2FTssPrivateShare.java)
-
-###### `TssPublicShare`
-
-**Link**:[TssPublicShare.java](tss-option2%2FTssPublicShare.java)
-
-###### `TssShareClaim`
-**Link**: [TssShareClaim.java](tss-option2%2FTssShareClaim.java)
-
-###### `TssShareId`
-**Link**: [TssShareId.java](tss-option2%2FTssShareId.java)
-
-###### `TssShareSignature`
-**Link**: [TssShareSignature.java](tss-option2%2FTssShareSignature.java)
-
-
-##### Option 2 - Examples:
-###### Get a concrete Tss Implementation out of a [SignatureSchema](#Swirlds-Cryptography-Pairings-Signature-Library)
-```java
-  Tss tssImpl = TSS.getFor(signatureSchema);
-```
-
-######  Creating TssShareClaims
-
-```java
-static{
-    PairingPublicKey p1PbK = Requirements.loadECPublicKey("P1");
-    PairingPublicKey p2PbK = Requirements.loadECPublicKey("P2");
-    
-    int p1Shares = Requirements.numberOfShares("P1");
-    int p2Shares = Requirements.numberOfShares("P2");
-    List<TssShareClaim> claims = new ArrayList<>();
-
-    for(i=0; i<= p1Shares ; i++){
-        TssShareId id= new TssShareId(signatureSchema.getField().getElementFromLong(i));
-        claims.add(new TssShareClaim(id), p1PbK);
-    }
-
-    for(int i= p1Shares; i<= p1Shares + p2Shares ; i++){
-        TssShareId id= new TssShareId(signatureSchema.getField().getElementFromLong(i));
-        claimss.add(new TssShareClaim(id), p2PbK);
-    }
-    TssShareClaims tssShareClaims = new TssShareClaims(claims);
-}
-```
-###### Generate Node's TssPrivateShare
-```java
-//Load the keys:
-PairingPrivateKey currentNodePrivateKey = Requirements.loadECKey();
-TssShareId shareId= new TssShareId(signatureSchema.getField().getRandomElement(RANDOM));
-TssPrivateShare privateShare = new TssPrivateShare(shareId, currentNodePrivateKey);
-```
-
-###### Generate TSSMessage
-```java
-int threshold = Requirements.threshold(); //This is an external parameter
-TssMessage message = tssImpl.generateTssMessage(RANDOM, tssShareClaims, privateShare,  threshold);
-```
-
-######  Processing TSSMessages
-```java
-//Once a list TSSMessages has been collected
-List<TssMessage> messageList = Requirements.collectTssMessages();
-//Filter valid messages
-List<TssMessages> validMessages = messageList.strem().filter(m-> m.verify(currentNodePublicKey, tssShareClaims)).toList();
-//Getting private shares. Will return null if fail
-List<TssPrivateShare> privateShares = tssImpl.decryptPrivateShares(currentNodeIndex, currentNodePrivateKey, tssShareClaims, threshold, validMessages);
-//Process public shares. Will return null if fail
-List<TssPublicShare> publicShares = tssShareClaims.claims()
-        .stream()
-        .map(claim -> tssImpl.computePublicShare(claim.shareId(), threshold, validMessages))
-        .filter(Objects::nonNull)
-        .toList();
-```
-######  Signing messages
-```java
-static {
-   //for each private share of the node:
-    for (TssPrivateShare share : privateShares) {
-        TssSignature signature = share.sign(blockHash);
-        Platform.send(signature);
-    }
-
-    //collect signatures
-    List<TssShareSignature> collectedSignatures = Requirements.collectTssSignatures();
-    List<TssShareSignature> validSignatures = new ArrayList<>();
-    for (TssShareSignature signature : collectedSignatures) {
-        if (signature.signature().verifySignature(tssShareIdTssPublicShareMap.get(signature.shareId()).publicKey(),
-                blockHash)) {
-            validSignatures.add(signature);
-        }
-    }
-}
-```
-######  Aggregate Signatures
-```java
-static {
-    //collect signatures
-    List<TssShareSignature> collectedSignatures = Requirements.collectTssSignatures();
-    List<TssShareSignature> validSignatures = new ArrayList<>();
-    for (TssShareSignature signature : collectedSignatures) {
-        if (signature.signature().verifySignature(tssShareIdTssPublicShareMap.get(signature.shareId()).publicKey(),
-                blockHash)) {
-            validSignatures.add(signature);
-        }
-    }
-
-    PairingSignature value = Tss.aggregateSignatures(validSignatures);
-}
-```
-
-
-#### Swirlds Crypto Pairings Signature Library
-##### Overview
-This module provides cryptography primitives to create EC PublicKeys, EC PrivateKeys, and Signatures.
-
-
-##### Public API
-###### `SignatureSchema`
-**Link**: [SignatureSchema.java](signature-lib%2FSignatureSchema.java)
-
-**Description**: A pairings signature scheme can be implemented with different types of curves and group assignment configurations.
-For example, two different configurations might consist of a BLS_12_381 curve using G1 of the pairing to generate public key elements or G2 for the same purpose.
-###### `PairingPrivateKey`
-**Link**: [PairingPrivateKey.java](signature-lib%2FPairingPrivateKey.java)
-
-**Description**: A private key generated using the pairings API
-
-###### `PairingPublicKey`
-**Link**: [PairingPublicKey.java](signature-lib%2FPairingPublicKey.java)
-
-**Description**: A public key generated using the pairings API
-###### `PairingSignature`
-**Link**: [PairingSignature.java](signature-lib%2FPairingSignature.java)
-
-**Description**: A signature generated with the private key that can be verified with the public key
-
-###### `GroupAssignment`
-**Link**: [GroupAssignment.java](signature-lib%2FGroupAssignment.java)
-
-**Description**: An enum to clarify which group public keys and signatures are in, for a given SignatureSchema
-
-
-##### Implementation Note
-The serialization of the elements in this module adds a byte to represent the combination of Curve type and group assignment.
-
-
-##### Examples
-###### Generating a SignatureSchema
-```java
-SignatureSchema signatureSchema = SignatureSchema.from(Curve.ALT_BN128, GroupAssignament.G1_PUBLIC_KEYS);
-```
-###### Generating a Private Key
-```java
-   PairingPrivateKey pk = PairingPrivateKey.create(signatureSchema, new SecureRandom());
-   
-```
-###### Generating a Public Key
-```java
-   PairingPublicKey pbk = PairingPublicKey.create(pk);
-   
-```
-###### Generating a Signature
-```java
-    byte[] message = new byte[]{};
-    PairingSignature s = PairingSignature.sign(pk, message );
-   
-```
-###### Verifying a Signature
-```java
-    s.verify(pbk, message);
-```
-##### Constraints
-This module will not depend on hedera-services artifacts, so it cannot include logging, metrics, configuration, or any other helper module from that repo.
-##### Dependencies
-swirlds-cryptography-pairings-API and runtime implementation
-##### Other considerations
-We analyzed the possibility of implementing [JCA](https://docs.oracle.com/en/java/javase/11/security/java-cryptography-architecture-jca-reference-guide.html#GUID-9A793484-AE6A-4513-A603-BFEAE887DD8B) (Java-Cryptography-architecture).
-Some unknowns are worth investigating in a follow-up task:
-* Should we parametrize the EC curve with: [`java.security.spec.EllipticCurve`](https://docs.oracle.com/javase/1.5.0/docs/api/java/security/spec/EllipticCurve.html)? Implications?
-* What is the serialization format supported by arkworks?  Raw Key Bytes are formatted with PKCS#8 for private keys and X.509 for public keys.
-  Should we define a custom format for bytes serialized with arkworks? Should we reformat? What do we do with our custom content?
-
-
 #### Swirlds Crypto Pairings API
 ##### Overview
 This API will expose general arithmetic operations to work with Bilinear Pairings and EC curves that implementations must provide.
@@ -655,6 +325,190 @@ This API will expose general arithmetic operations to work with Bilinear Pairing
 
 **Link**: [PairingResult.java](pairings-api%2FPairingResult.java)
 
+
+#### Swirlds Crypto Pairings Signature Library
+##### Overview
+This module provides cryptography primitives to create EC PublicKeys, EC PrivateKeys, and Signatures.
+
+##### Public API
+###### `SignatureSchema`
+**Link**: [SignatureSchema.java](signature-lib%2FSignatureSchema.java)
+
+**Description**: A pairings signature scheme can be implemented with different types of curves and group assignment configurations.
+For example, two different configurations might consist of a BLS_12_381 curve using G1 of the pairing to generate public key elements or G2 for the same purpose.
+###### `PairingPrivateKey`
+**Link**: [PairingPrivateKey.java](signature-lib%2FPairingPrivateKey.java)
+
+**Description**: A private key generated using the pairings API
+
+###### `PairingPublicKey`
+**Link**: [PairingPublicKey.java](signature-lib%2FPairingPublicKey.java)
+
+**Description**: A public key generated using the pairings API
+###### `PairingSignature`
+**Link**: [PairingSignature.java](signature-lib%2FPairingSignature.java)
+
+**Description**: A signature generated with the private key that can be verified with the public key
+
+###### `GroupAssignment`
+**Link**: [GroupAssignment.java](signature-lib%2FGroupAssignment.java)
+
+**Description**: An enum to clarify which group public keys and signatures are in, for a given SignatureSchema
+
+
+##### Implementation Note
+The serialization of the elements in this module adds a byte to represent the combination of Curve type and group assignment.
+
+##### Examples
+###### Generating a SignatureSchema
+```java
+SignatureSchema signatureSchema = SignatureSchema.from(Curve.ALT_BN128, GroupAssignament.G1_PUBLIC_KEYS);
+```
+###### Generating a Private Key
+```java
+   PairingPrivateKey pk = PairingPrivateKey.create(signatureSchema, new SecureRandom());
+   
+```
+###### Generating a Public Key
+```java
+   PairingPublicKey pbk = PairingPublicKey.create(pk);
+   
+```
+###### Generating a Signature
+```java
+    byte[] message = new byte[]{};
+    PairingSignature s = PairingSignature.sign(pk, message );
+   
+```
+###### Verifying a Signature
+```java
+    s.verify(pbk, message);
+```
+##### Constraints
+This module will not depend on hedera-services artifacts, so it cannot include logging, metrics, configuration, or any other helper module from that repo.
+##### Dependencies
+swirlds-cryptography-pairings-API and runtime implementation
+##### Other considerations
+We analyzed the possibility of implementing [JCA](https://docs.oracle.com/en/java/javase/11/security/java-cryptography-architecture-jca-reference-guide.html#GUID-9A793484-AE6A-4513-A603-BFEAE887DD8B) (Java-Cryptography-architecture).
+Some unknowns are worth investigating in a follow-up task:
+* Should we parametrize the EC curve with: [`java.security.spec.EllipticCurve`](https://docs.oracle.com/javase/1.5.0/docs/api/java/security/spec/EllipticCurve.html)? Implications?
+* What is the serialization format supported by arkworks?  Raw Key Bytes are formatted with PKCS#8 for private keys and X.509 for public keys.
+  Should we define a custom format for bytes serialized with arkworks? Should we reformat? What do we do with our custom content?
+
+#### Swirlds Crypto TSS Library
+##### Overview
+This library implements the Groth21 TSS-specific primitives.
+
+##### Constraints
+Once built, this library will depend on artifacts constructed in other repositories.
+This library would accept Integer.MAX_VALUE -1 participants.
+
+##### Public API:
+###### `TssService`
+**Description**: This class handles all tss specific operations.
+
+**Link**: [TssService.java](tss%2FTssService.java)
+
+###### `TssParticipantDirectory`
+**Description**: This class holds all information about the participants in the scheme. Including: participants' EC public keys, public shares, private shares, number of shares. 
+
+**Link**: [TssParticipantDirectory.java](tss%2FTssParticipantDirectory.java)
+
+###### `TssMessage`
+**Description**: This class is used in the exchange of secret information between participants. Contains an encrypted message, a polynomial commitment, and a cryptographic proof that can be used to validate this message.
+
+**Link**:[TssMessage.java](tss%2FTssMessage.java)
+
+###### `TssShareId`
+**Description**: This class represents the unique identification of a share in the system. It a FieldElement, so it can be used as input in the polynomial.
+
+**Link**:[TssShareId.java](tss%2FTssShareId.java)
+
+###### `TssPrivateShare`
+**Description**: A record that contains a share ID, and the corresponding private key.
+
+**Link**:[TssPrivateShare.java](tss%2FTssPrivateShare.java)
+
+###### `TssPublicShare`
+**Description**: A record that contains a share ID, and the corresponding public key.
+
+**Link**:[TssPublicShare.java](tss%2FTssPublicShare.java)
+
+###### `TssShareSignature`
+**Description**: Represents a signature created from a TSSPrivateShare.
+
+**Link**:[TssShareSignature.java](tss%2FTssShareSignature.java)
+
+##### Examples:
+###### 1. Bootstrapping
+```java
+   TssService service = new TssService(signatureScheme, new Random());
+   PairingPrivateKey persistentParticipantKey = Requirements.loadECPrivateKey();
+   List<PairingPublicKey> persistentPublicKeys = Requirements.loadECPublicKeys();
+   TssParticipantDirectory participantDirectory =
+           TssParticipantDirectory.createBuilder()
+           .self(/**/ 0, persistentParticipantKey)
+           .withParticipant(/*Identification:*/0, /*Number of Shares*/5, persistentPublicKeys.get(0))
+           .withParticipant(/*Identification:*/1, /*Number of Shares*/2, persistentPublicKeys.get(1))
+           .withParticipant(/*Identification:*/2, /*Number of Shares*/1, persistentPublicKeys.get(2))
+           .withParticipant(/*Identification:*/3, /*Number of Shares*/1, persistentPublicKeys.get(3))
+           .withThreshold(5)     
+          .build(signatureScheme);
+   
+   //One can then query the directory
+   int n = participantDirectory.getTotalNumberOfShares();
+   List<TssShareId> privateShares = directory.getOwnedSharesIds();
+   List<TssShareId> shareIds = directory.getShareIds();
+```
+###### 1. Create TssMessage
+```java
+   //Creates a TssMessage out of a randomly generated share 
+   TssMessage m = service.generateTssMessage(directory);
+```
+
+###### 2. Validation of TssMessage
+```java
+static {
+    List<TssMessage> messages = Requirements.receiveTssMessages();
+    for(TssMessage m : messages){
+        service.validate(participantDirectory, m);
+    }
+}
+```
+###### 3. Processing of TssMessage
+```java
+    Set<TssMessage> agreedValidMessages = /*Some previously agreed upon same set of valid messages for all participants*/
+    //Get Private Shares    
+    List<TssPrivateShare> privateShares = service.decryptPrivateShares(participantDirectory, agreedValidMessages);
+    //Get Public Shares
+    List<TssPrivateShare> publicShares = service.computePublicShare(participantDirectory, agreedValidMessages);
+
+```
+######  Sign
+```java
+   byte[] message = Requirements.messageToSign();
+   List<TssShareSignature> signatures = service.sign(privateShares, message);
+
+```
+
+######  Aggregate Signatures
+
+```java
+static {
+    List<TssShareSignature> signatures = Requirements.loadSignatures();
+
+    //Validation of individual signatures
+    List<TssShareSignature> validSignatures = new ArrayList<>(signatures.size());
+    for (TssShareSignature s : signatures) {
+        if (service.verify(participantDirectory, publicShares, s)) {
+            validSignatures.add(s);
+        }
+    }
+
+    //Producing an aggregate signature
+    PairingSignature aggregateSignature = service.aggregate(participantDirectory, validSignatures);
+}
+```
 
 #### Swirlds Crypto Pairings Impl
 ##### Overview
