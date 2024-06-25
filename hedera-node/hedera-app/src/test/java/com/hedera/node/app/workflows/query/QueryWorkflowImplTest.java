@@ -682,7 +682,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(1L, 20L, 300L));
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         when(queryChecker.estimateTxFees(
-                        null, // TODO: fix
+                        any(), // TODO: fix
                         any(),
                         any(),
                         eq(transactionInfo),
