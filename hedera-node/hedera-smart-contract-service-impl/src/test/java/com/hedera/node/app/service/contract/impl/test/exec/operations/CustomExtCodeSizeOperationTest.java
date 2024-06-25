@@ -110,7 +110,7 @@ class CustomExtCodeSizeOperationTest {
     @Test
     void delegatesForPresentAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
-            givenWellKnownFrameWith(Address.fromHexString("0x123"));
+            given(gasCalculator.getExtCodeSizeOperationGasCost()).willReturn(123L);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));

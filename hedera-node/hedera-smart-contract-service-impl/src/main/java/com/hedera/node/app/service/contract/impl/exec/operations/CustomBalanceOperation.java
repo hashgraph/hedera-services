@@ -48,11 +48,12 @@ public class CustomBalanceOperation extends BalanceOperation {
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
-            final var address = Words.toAddress(frame.getStackItem(0));
-            if (isDeficientGas(frame, gasCalculator(), this::cost)) {
+            final long cost = cost(false);
+            if (isDeficientGas(frame, cost)) {
                 return new OperationResult(cost(true), ExceptionalHaltReason.INSUFFICIENT_GAS);
             }
             // Make system contract balance invisible to EVM (added in v0.38)
+            final var address = Words.toAddress(frame.getStackItem(0));
             if (addressChecks.isSystemAccount(address)) {
                 frame.popStackItem();
                 frame.pushStackItem(UInt256.ZERO);

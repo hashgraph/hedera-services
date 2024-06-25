@@ -74,6 +74,7 @@ class CustomBalanceOperationTest {
     void catchesUnderflowWhenStackIsEmpty() {
         setupWarmGasCost();
         given(frame.getStackItem(0)).willThrow(UnderflowException.class);
+        given(frame.getRemainingGas()).willReturn(3L);
         final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         final var actual = subject.execute(frame, evm);
         assertSameResult(expected, actual);
@@ -112,7 +113,6 @@ class CustomBalanceOperationTest {
     void delegatesToSuperIfAllowCallFeatureFlagOn() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             setupWarmGasCost();
-            given(frame.getStackItem(0)).willReturn(NON_SYSTEM_LONG_ZERO_ADDRESS);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(3L, ExceptionalHaltReason.INSUFFICIENT_GAS);
             final var actual = subject.execute(frame, evm);

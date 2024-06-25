@@ -17,19 +17,10 @@
 package com.hedera.node.app.service.contract.impl.exec.utils;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.function.Function;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.Words;
 
 public class OperationUtils {
-    public static boolean isDeficientGas(
-            @NonNull final MessageFrame frame,
-            @NonNull final GasCalculator gasCalculator,
-            @NonNull final Function<Boolean, Long> cost) {
-        final Address address = Words.toAddress(frame.getStackItem(0));
-        final long totalCost = cost.apply(false);
-        return frame.getRemainingGas() < totalCost;
+    public static boolean isDeficientGas(@NonNull final MessageFrame frame, @NonNull final long cost) {
+        return frame.getRemainingGas() < cost;
     }
 }

@@ -52,7 +52,8 @@ public class CustomExtCodeSizeOperation extends ExtCodeSizeOperation {
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
-            if (isDeficientGas(frame, gasCalculator(), this::cost)) {
+            final long cost = cost(false);
+            if (isDeficientGas(frame, cost)) {
                 return new OperationResult(cost(true), ExceptionalHaltReason.INSUFFICIENT_GAS);
             }
             final var address = Words.toAddress(frame.getStackItem(0));

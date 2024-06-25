@@ -66,9 +66,9 @@ public class CustomCallOperation extends CallOperation {
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
-            final long cost = cost(frame);
+            final long cost = cost(frame, false);
             if (frame.getRemainingGas() < cost) {
-                return new OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
+                return new OperationResult(cost(frame, true), ExceptionalHaltReason.INSUFFICIENT_GAS);
             }
 
             final var toAddress = to(frame);
