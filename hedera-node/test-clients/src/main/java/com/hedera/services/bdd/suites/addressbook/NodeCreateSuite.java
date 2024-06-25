@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -54,6 +55,8 @@ public class NodeCreateSuite {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("validateFees")
                 .given(
+                        newKeyNamed("testKey"),
+                        newKeyNamed("randomAccount"),
                         cryptoCreate("payer").balance(10_000_000_000L),
                         // Submit to a different node so ingest check is skipped
                         nodeCreate("ntb")
@@ -73,7 +76,18 @@ public class NodeCreateSuite {
                         getTxnRecord("nodeCreation").logged(),
                         // But, note that the fee will not be charged for privileged payer
                         // The fee is charged here because the payer is not privileged
-                        validateChargedUsdWithin("nodeCreation", 0.0, 0.0));
+                        validateChargedUsdWithin("nodeCreation", 0.0, 0.0),
+
+                        // Submit with several signatures and the price should increase
+                        nodeCreate("ntb")
+                                .payingWith("payer")
+                                .signedBy("payer", "randomAccount", "testKey")
+                                .description(description)
+                                .setNode("0.0.4")
+                                .fee(ONE_HBAR)
+                                .hasKnownStatus(UNAUTHORIZED)
+                                .via("multipleSigsCreation"),
+                        validateChargedUsdWithin("multipleSigsCreation", 0.0011276316, 3.0));
     }
 
     @HapiTest

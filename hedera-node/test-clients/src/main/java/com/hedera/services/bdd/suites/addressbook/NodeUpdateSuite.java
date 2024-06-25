@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
@@ -59,6 +60,8 @@ public class NodeUpdateSuite {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("validateFees")
                 .given(
+                        newKeyNamed("testKey"),
+                        newKeyNamed("randomAccount"),
                         cryptoCreate("payer").balance(10_000_000_000L),
                         nodeCreate("node100").description(description).fee(ONE_HBAR),
                         // Submit to a different node so ingest check is skipped
@@ -80,7 +83,18 @@ public class NodeUpdateSuite {
                                 .via("updateNode"),
                         getTxnRecord("updateNode").logged(),
                         // The fee is not charged here because the payer is privileged
-                        validateChargedUsdWithin("updateNode", 0.0, 3.0));
+                        validateChargedUsdWithin("updateNode", 0.0, 3.0),
+
+                        // Submit with several signatures and the price should increase
+                        nodeUpdate("node100")
+                                .setNode("0.0.5")
+                                .payingWith("payer")
+                                .signedBy("payer", "payer", "randomAccount", "testKey")
+                                .accountId(asAccount("0.0.1000"))
+                                .fee(ONE_HBAR)
+                                .hasKnownStatus(UNAUTHORIZED)
+                                .via("failedUpdateMultipleSigs"),
+                        validateChargedUsdWithin("failedUpdateMultipleSigs", 0.0011276316, 3.0));
     }
 
     @HapiTest
