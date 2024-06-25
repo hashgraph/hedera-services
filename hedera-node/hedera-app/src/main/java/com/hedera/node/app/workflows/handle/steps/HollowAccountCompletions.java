@@ -35,7 +35,6 @@ import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.app.workflows.handle.UserTxn;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

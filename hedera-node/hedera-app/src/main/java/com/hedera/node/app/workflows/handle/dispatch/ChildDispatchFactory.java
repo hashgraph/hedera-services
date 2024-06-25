@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.workflows.handle.dispatch;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
 import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static java.util.Objects.requireNonNull;
@@ -32,13 +34,23 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.EntityNumGeneratorImpl;
+import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.records.RecordBuildersImpl;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DelegateKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
@@ -48,13 +60,18 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.store.ServiceApiFactory;
+import com.hedera.node.app.store.StoreFactoryImpl;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
+import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
+import com.hedera.node.app.workflows.handle.RecordDispatch;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.TriggeredFinalizeContext;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -65,6 +82,7 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.function.Predicate;
 import javax.inject.Inject;
@@ -89,7 +107,6 @@ public class ChildDispatchFactory {
     private final ServiceScopeLookup serviceScopeLookup;
     private final StoreMetricsService storeMetricsService;
     private final ExchangeRateManager exchangeRateManager;
-    private final NetworkUtilizationManager networkUtilizationManager;
 
     @Inject
     public ChildDispatchFactory(
@@ -103,8 +120,7 @@ public class ChildDispatchFactory {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         this.dispatcher = requireNonNull(dispatcher);
         this.recordBuilderFactory = requireNonNull(recordBuilderFactory);
         this.authorizer = requireNonNull(authorizer);
@@ -116,7 +132,113 @@ public class ChildDispatchFactory {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
-        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
+    }
+
+    private RecordDispatch newChildDispatch(
+            // @ChildDispatchScope
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final TransactionInfo txnInfo,
+            @NonNull final AccountID payerId,
+            @NonNull final HandleContext.TransactionCategory category,
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final PreHandleResult preHandleResult,
+            @NonNull final AppKeyVerifier keyVerifier,
+            @NonNull final Instant consensusNow,
+            // @UserTxnScope
+            @NonNull final NodeInfo creatorInfo,
+            @NonNull final Configuration config,
+            @NonNull final PlatformState platformState,
+            @NonNull final RecordListBuilder recordListBuilder,
+            @NonNull final HederaFunctionality topLevelFunction,
+            @NonNull final ThrottleAdviser throttleAdviser,
+            // @Singleton
+            @NonNull final Authorizer authorizer,
+            @NonNull final NetworkInfo networkInfo,
+            @NonNull final FeeManager feeManager,
+            @NonNull final RecordCache recordCache,
+            @NonNull final DispatchProcessor dispatchProcessor,
+            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final TransactionDispatcher dispatcher) {
+        final var readableStoreFactory = new ReadableStoreFactory(stack);
+        final var writableStoreFactory = new WritableStoreFactory(
+                stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
+        final var serviceApiFactory = new ServiceApiFactory(stack, config, storeMetricsService);
+        final var dispatchHandleContext = new DispatchHandleContext(
+                consensusNow,
+                creatorInfo,
+                txnInfo,
+                config,
+                authorizer,
+                blockRecordManager,
+                new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory),
+                feeManager,
+                new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory),
+                payerId,
+                keyVerifier,
+                platformState,
+                topLevelFunction,
+                Key.DEFAULT,
+                exchangeRateManager,
+                stack,
+                new EntityNumGeneratorImpl(
+                        new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
+                                .getStore(WritableEntityIdStore.class)),
+                dispatcher,
+                recordCache,
+                networkInfo,
+                new RecordBuildersImpl(recordBuilder, recordListBuilder, config),
+                this,
+                dispatchProcessor,
+                recordListBuilder,
+                throttleAdviser);
+        return new RecordDispatch(
+                recordBuilder,
+                config,
+                feesFrom(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo),
+                txnInfo,
+                payerId,
+                readableStoreFactory,
+                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), recordBuilder),
+                keyVerifier,
+                creatorInfo,
+                consensusNow,
+                preHandleResult.getRequiredKeys(),
+                preHandleResult.getHollowAccounts(),
+                dispatchHandleContext,
+                stack,
+                category,
+                new TriggeredFinalizeContext(
+                        readableStoreFactory,
+                        new WritableStoreFactory(stack, TokenService.NAME, config, storeMetricsService),
+                        recordBuilder,
+                        consensusNow,
+                        config),
+                recordListBuilder,
+                platformState,
+                preHandleResult);
+    }
+
+    private static Fees feesFrom(
+            @NonNull final FeeContext feeContext,
+            @NonNull final HandleContext.TransactionCategory childCategory,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final HederaFunctionality topLevelFunction,
+            @NonNull final TransactionInfo childTxnInfo) {
+        return switch (childCategory) {
+            case SCHEDULED -> dispatcher.dispatchComputeFees(feeContext).onlyServiceComponent();
+            case PRECEDING -> {
+                if (CONTRACT_OPERATIONS.contains(topLevelFunction) || childTxnInfo.functionality() == CRYPTO_UPDATE) {
+                    yield Fees.FREE;
+                } else {
+                    yield dispatcher.dispatchComputeFees(feeContext);
+                }
+            }
+            case CHILD -> Fees.FREE;
+            case USER -> throw new IllegalStateException("Should not dispatch child with user transaction category");
+        };
     }
 
     /**
@@ -159,7 +281,7 @@ public class ChildDispatchFactory {
         final var recordBuilder = recordBuilderFactory.recordBuilderFor(
                 childTxnInfo, recordListBuilder, config, category, reversingBehavior, customizer);
         final var childStack = new SavepointStackImpl(stack.peek());
-        return ChildDispatch.from(
+        return newChildDispatch(
                 recordBuilder,
                 childTxnInfo,
                 syntheticPayerId,
@@ -183,7 +305,6 @@ public class ChildDispatchFactory {
                 serviceScopeLookup,
                 storeMetricsService,
                 exchangeRateManager,
-                this,
                 dispatcher);
     }
 

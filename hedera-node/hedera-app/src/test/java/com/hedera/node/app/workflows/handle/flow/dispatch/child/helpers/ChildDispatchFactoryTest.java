@@ -202,8 +202,7 @@ class ChildDispatchFactoryTest {
                 blockRecordManager,
                 serviceScopeLookup,
                 storeMetricsService,
-                exchangeRateManager,
-                networkUtilizationManager);
+                exchangeRateManager);
     }
 
     @Test

@@ -46,14 +46,15 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.dispatch.UserDispatch;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisSetup;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
+import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
@@ -403,7 +404,7 @@ public class HandleWorkflow {
      * @param userTxn the user transaction
      * @return the user dispatch
      */
-    private UserDispatch dispatchFor(@NonNull final UserTxn userTxn) {
+    private Dispatch dispatchFor(@NonNull final UserTxn userTxn) {
         return userTxn.dispatch(
                 authorizer,
                 networkInfo,

@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.dispatch;
+package com.hedera.node.app.workflows.handle.steps;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
@@ -32,82 +30,102 @@ import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.RecordBuildersImpl;
-import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.signature.AppKeyVerifier;
+import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.fees.FeeContext;
-import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.spi.throttle.ThrottleAdviser;
-import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.throttle.AppThrottleAdviser;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
+import com.hedera.node.app.workflows.handle.HandleWorkflow;
+import com.hedera.node.app.workflows.handle.RecordDispatch;
+import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.app.workflows.handle.record.TriggeredFinalizeContext;
+import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Set;
 
-/**
- * The dispatch context for a child transaction.
- */
-public record ChildDispatch(
-        @NonNull SingleTransactionRecordBuilderImpl recordBuilder,
-        @NonNull Configuration config,
-        @NonNull Fees fees,
-        @NonNull TransactionInfo txnInfo,
-        @NonNull AccountID payerId,
-        @NonNull ReadableStoreFactory readableStoreFactory,
-        @NonNull FeeAccumulator feeAccumulator,
-        @NonNull AppKeyVerifier keyVerifier,
-        @NonNull NodeInfo creatorInfo,
+public record UserTxn(
+        boolean isGenesisTxn,
+        @NonNull HederaFunctionality functionality,
         @NonNull Instant consensusNow,
-        @NonNull Set<Key> requiredKeys,
-        @NonNull Set<Account> hollowAccounts,
-        @NonNull HandleContext handleContext,
-        @NonNull SavepointStackImpl stack,
-        @NonNull HandleContext.TransactionCategory txnCategory,
-        @NonNull FinalizeContext finalizeContext,
-        @NonNull RecordListBuilder recordListBuilder,
+        @NonNull HederaState state,
         @NonNull PlatformState platformState,
-        @NonNull PreHandleResult preHandleResult)
-        implements Dispatch {
+        @NonNull ConsensusEvent event,
+        @NonNull ConsensusTransaction platformTxn,
+        @NonNull RecordListBuilder recordListBuilder,
+        @NonNull TransactionInfo txnInfo,
+        @NonNull TokenContextImpl tokenContextImpl,
+        @NonNull SavepointStackImpl stack,
+        @NonNull PreHandleResult preHandleResult,
+        @NonNull ReadableStoreFactory readableStoreFactory,
+        @NonNull Configuration config,
+        @NonNull Instant lastHandledConsensusTime,
+        @NonNull NodeInfo creatorInfo) {
 
-    public static ChildDispatch from(
-            // @ChildDispatchScope
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
-            @NonNull final TransactionInfo txnInfo,
-            @NonNull final AccountID payerId,
-            @NonNull final HandleContext.TransactionCategory category,
-            @NonNull final SavepointStackImpl stack,
-            @NonNull final PreHandleResult preHandleResult,
-            @NonNull final AppKeyVerifier keyVerifier,
-            @NonNull final Instant consensusNow,
+    public static UserTxn from(
             // @UserTxnScope
-            @NonNull final NodeInfo creatorInfo,
-            @NonNull final Configuration config,
+            @NonNull final HederaState state,
             @NonNull final PlatformState platformState,
-            @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final HederaFunctionality topLevelFunction,
-            @NonNull final ThrottleAdviser throttleAdviser,
+            @NonNull final ConsensusEvent event,
+            @NonNull final NodeInfo creatorInfo,
+            @NonNull final ConsensusTransaction platformTxn,
+            @NonNull final Instant consensusNow,
+            @NonNull final Instant lastHandledConsensusTime,
+            // @Singleton
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final HandleWorkflow handleWorkflow) {
+        final var config = configProvider.getConfiguration();
+        final var stack = new SavepointStackImpl(state);
+        final var readableStoreFactory = new ReadableStoreFactory(stack);
+        final var preHandleResult =
+                handleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
+        final var txnInfo = requireNonNull(preHandleResult.txInfo());
+        final var recordListBuilder = new RecordListBuilder(consensusNow);
+        return new UserTxn(
+                lastHandledConsensusTime.equals(Instant.EPOCH),
+                txnInfo.functionality(),
+                consensusNow,
+                state,
+                platformState,
+                event,
+                platformTxn,
+                recordListBuilder,
+                txnInfo,
+                new TokenContextImpl(config, state, storeMetricsService, stack, recordListBuilder, blockRecordManager),
+                stack,
+                preHandleResult,
+                readableStoreFactory,
+                config,
+                lastHandledConsensusTime,
+                creatorInfo);
+    }
+
+    public Dispatch dispatch(
             // @Singleton
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
@@ -119,11 +137,19 @@ public record ChildDispatch(
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ChildDispatchFactory childDispatchFactory,
-            @NonNull final TransactionDispatcher dispatcher) {
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+        final var keyVerifier = new DefaultKeyVerifier(
+                txnInfo.signatureMap().sigPair().size(),
+                config.getConfigData(HederaConfig.class),
+                preHandleResult.getVerificationResults());
+
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var writableStoreFactory = new WritableStoreFactory(
                 stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
         final var serviceApiFactory = new ServiceApiFactory(stack, config, storeMetricsService);
+
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,
@@ -134,11 +160,11 @@ public record ChildDispatch(
                 new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory),
                 feeManager,
                 new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory),
-                payerId,
+                requireNonNull(txnInfo.payerID()),
                 keyVerifier,
                 platformState,
-                topLevelFunction,
-                Key.DEFAULT,
+                txnInfo.functionality(),
+                preHandleResult.payerKey() == null ? Key.DEFAULT : preHandleResult.payerKey(),
                 exchangeRateManager,
                 stack,
                 new EntityNumGeneratorImpl(
@@ -151,13 +177,13 @@ public record ChildDispatch(
                 childDispatchFactory,
                 dispatchProcessor,
                 recordListBuilder,
-                throttleAdviser);
-        return new ChildDispatch(
+                new AppThrottleAdviser(networkUtilizationManager, consensusNow, recordListBuilder, stack));
+        return new RecordDispatch(
                 recordBuilder,
                 config,
-                feesFrom(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo),
+                dispatcher.dispatchComputeFees(dispatchHandleContext),
                 txnInfo,
-                payerId,
+                requireNonNull(txnInfo.payerID()),
                 readableStoreFactory,
                 new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), recordBuilder),
                 keyVerifier,
@@ -167,35 +193,10 @@ public record ChildDispatch(
                 preHandleResult.getHollowAccounts(),
                 dispatchHandleContext,
                 stack,
-                category,
-                new TriggeredFinalizeContext(
-                        readableStoreFactory,
-                        new WritableStoreFactory(stack, TokenService.NAME, config, storeMetricsService),
-                        recordBuilder,
-                        consensusNow,
-                        config),
+                USER,
+                tokenContextImpl,
                 recordListBuilder,
                 platformState,
                 preHandleResult);
-    }
-
-    private static Fees feesFrom(
-            @NonNull final FeeContext feeContext,
-            @NonNull final HandleContext.TransactionCategory childCategory,
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final HederaFunctionality topLevelFunction,
-            @NonNull final TransactionInfo childTxnInfo) {
-        return switch (childCategory) {
-            case SCHEDULED -> dispatcher.dispatchComputeFees(feeContext).onlyServiceComponent();
-            case PRECEDING -> {
-                if (CONTRACT_OPERATIONS.contains(topLevelFunction) || childTxnInfo.functionality() == CRYPTO_UPDATE) {
-                    yield Fees.FREE;
-                } else {
-                    yield dispatcher.dispatchComputeFees(feeContext);
-                }
-            }
-            case CHILD -> Fees.FREE;
-            case USER -> throw new IllegalStateException("Should not dispatch child with user transaction category");
-        };
     }
 }
