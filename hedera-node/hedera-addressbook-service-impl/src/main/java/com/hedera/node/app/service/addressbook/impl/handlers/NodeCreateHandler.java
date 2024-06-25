@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.addressbook.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
@@ -75,11 +76,16 @@ public class NodeCreateHandler implements TransactionHandler {
                 op.gossipCaCertificate().length() == 0
                         || op.gossipCaCertificate().equals(Bytes.EMPTY),
                 INVALID_GOSSIP_CA_CERTIFICATE);
+
+        final var adminKey = op.adminKey();
+        addressBookValidator.validateAdminKey(adminKey);
     }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) {
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
+        final var op = context.body().nodeCreateOrThrow();
+        context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
     }
 
     @Override
@@ -100,6 +106,7 @@ public class NodeCreateHandler implements TransactionHandler {
         addressBookValidator.validateDescription(op.description(), nodeConfig);
         addressBookValidator.validateGossipEndpoint(op.gossipEndpoint(), nodeConfig);
         addressBookValidator.validateServiceEndpoint(op.serviceEndpoint(), nodeConfig);
+        addressBookValidator.validateAdminKeyInHandle(handleContext, op.adminKeyOrThrow());
 
         final var nodeBuilder = new Node.Builder()
                 .accountId(op.accountId())
@@ -109,7 +116,8 @@ public class NodeCreateHandler implements TransactionHandler {
                 .gossipEndpoint(op.gossipEndpoint())
                 .serviceEndpoint(op.serviceEndpoint())
                 .gossipCaCertificate(op.gossipCaCertificate())
-                .grpcCertificateHash(op.grpcCertificateHash());
+                .grpcCertificateHash(op.grpcCertificateHash())
+                .adminKey(op.adminKey());
         final var node = nodeBuilder.nodeId(getNextNodeID(nodeStore)).build();
 
         nodeStore.put(node);

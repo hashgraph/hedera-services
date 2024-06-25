@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.addressbook.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
@@ -30,6 +31,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -66,11 +68,26 @@ public class NodeUpdateHandler implements TransactionHandler {
         }
         if (op.hasGossipCaCertificate())
             validateFalsePreCheck(op.gossipCaCertificate().equals(Bytes.EMPTY), INVALID_GOSSIP_CA_CERTIFICATE);
+        if (op.hasAdminKey()) {
+            final var adminKey = op.adminKey();
+            addressBookValidator.validateAdminKey(adminKey);
+        }
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
+        final var op = context.body().nodeUpdateOrThrow();
+        final var nodeStore = context.createStore(ReadableNodeStore.class);
+
+        final var existingNode = nodeStore.get(op.nodeId());
+        validateFalse(existingNode == null, INVALID_NODE_ID);
+        validateFalsePreCheck(existingNode.deleted(), INVALID_NODE_ID);
+
+        context.requireKeyOrThrow(existingNode.adminKey(), INVALID_ADMIN_KEY);
+        if (op.hasAdminKey()) {
+            context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
+        }
     }
 
     @Override
@@ -95,6 +112,7 @@ public class NodeUpdateHandler implements TransactionHandler {
             addressBookValidator.validateGossipEndpoint(op.gossipEndpoint(), nodeConfig);
         if (!op.serviceEndpoint().isEmpty())
             addressBookValidator.validateServiceEndpoint(op.serviceEndpoint(), nodeConfig);
+        if (op.hasAdminKey()) addressBookValidator.validateAdminKeyInHandle(handleContext, op.adminKeyOrThrow());
 
         final var nodeBuilder = updateNode(op, existingNode);
         nodeStore.put(nodeBuilder.build());
@@ -119,6 +137,9 @@ public class NodeUpdateHandler implements TransactionHandler {
         }
         if (op.hasGrpcCertificateHash()) {
             nodeBuilder.grpcCertificateHash(op.grpcCertificateHash());
+        }
+        if (op.hasAdminKey()) {
+            nodeBuilder.adminKey(op.adminKey());
         }
         return nodeBuilder;
     }

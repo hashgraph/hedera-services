@@ -31,7 +31,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.Builder;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -65,6 +69,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,6 +83,31 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ReadableFreezeUpgradeActionsTest {
     private static final Timestamp then =
             Timestamp.newBuilder().seconds(1_234_567L).nanos(890).build();
+
+    private static final String A_NAME = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private static final String B_NAME = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
+    private static final Function<String, Builder> KEY_BUILDER =
+            value -> Key.newBuilder().ed25519(Bytes.wrap(value.getBytes()));
+    private static final Key A_THRESHOLD_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    KEY_BUILDER.apply(C_NAME).build())
+                            .build()))
+            .build();
+    private static final Key A_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_THRESHOLD_KEY)))
+            .build();
     private Path noiseFileLoc;
     private Path noiseSubFileLoc;
     private Path zipArchivePath; // path to valid.zip test zip file (in zipSourceDir directory)
@@ -345,7 +375,8 @@ class ReadableFreezeUpgradeActionsTest {
                         "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc1CertificateHash"),
                 2,
-                false);
+                false,
+                A_COMPLEX_KEY);
         final var node2 = new Node(
                 2,
                 asAccount(4),
@@ -358,7 +389,8 @@ class ReadableFreezeUpgradeActionsTest {
                         "e55c559975c1c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc2CertificateHash"),
                 4,
-                false);
+                false,
+                A_COMPLEX_KEY);
         final var node3 = new Node(
                 3,
                 asAccount(6),
@@ -371,7 +403,8 @@ class ReadableFreezeUpgradeActionsTest {
                         "e55c55997561c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc3CertificateHash"),
                 1,
-                true);
+                true,
+                A_COMPLEX_KEY);
         final var node4 = new Node(
                 4,
                 asAccount(8),
@@ -385,7 +418,8 @@ class ReadableFreezeUpgradeActionsTest {
                         "e55c559975c1c285c5262d6994262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc5CertificateHash"),
                 8,
-                false);
+                false,
+                A_COMPLEX_KEY);
         final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder("NODES")
                 .value(new EntityNumber(4), node4)
                 .value(new EntityNumber(2), node2)

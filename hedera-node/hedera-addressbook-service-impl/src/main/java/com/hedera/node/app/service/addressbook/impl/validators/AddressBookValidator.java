@@ -19,16 +19,26 @@ package com.hedera.node.app.service.addressbook.impl.validators;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FQDN_SIZE_TOO_LARGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.GOSSIP_ENDPOINT_CANNOT_HAVE_FQDN;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_IPV4_ADDRESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_DESCRIPTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -109,6 +119,31 @@ public class AddressBookValidator {
         validateFalse(endpointList.size() > nodesConfig.maxServiceEndpoint(), INVALID_SERVICE_ENDPOINT);
         for (final var endpoint : endpointList) {
             validateEndpoint(endpoint, nodesConfig);
+        }
+    }
+
+    /**
+     * Validates the admin key.
+     *
+     * @param key The key to validate
+     * @throws PreCheckException if the key is invalid
+     */
+    public void validateAdminKey(Key key) throws PreCheckException {
+        final var keyEmpty = isEmpty(key);
+        validateFalsePreCheck(key == null || keyEmpty, KEY_REQUIRED);
+        validateTruePreCheck(isValid(key), INVALID_ADMIN_KEY);
+    }
+
+    /**
+     * Validates the admin key in the handle.
+     * @param handleContext
+     * @param key
+     */
+    public void validateAdminKeyInHandle(@NonNull final HandleContext handleContext, @NonNull final Key key) {
+        try {
+            handleContext.attributeValidator().validateKey(key);
+        } catch (HandleException e) {
+            throw new HandleException(INVALID_ADMIN_KEY);
         }
     }
 
