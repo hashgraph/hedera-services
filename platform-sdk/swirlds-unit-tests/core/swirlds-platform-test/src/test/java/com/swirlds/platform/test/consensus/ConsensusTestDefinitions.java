@@ -605,7 +605,7 @@ public final class ConsensusTestDefinitions {
                         .get(314)
                 .getSnapshot());
         guiSource.generateEvents(
-                orchestrator1.getNodes().get(0).getOutput().getAddedEvents().size() - 30
+                orchestrator1.getNodes().get(0).getOutput().getAddedEvents().size() - 0
         );
         guiSource.runGui();
 

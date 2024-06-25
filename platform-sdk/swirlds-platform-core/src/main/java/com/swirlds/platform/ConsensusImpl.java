@@ -394,7 +394,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final RoundElections roundElections = rounds.getElectionRound();
         if (roundElections.isDecided() && noInitJudgesMissing()) {
             if(roundElections.getRound() == 317){
-                return null;
+                //return null;
             }
             // all famous witnesses for this round are now known. None will ever be added again. We
             // know this round has at least one witness. We know they all have fame decided. We
