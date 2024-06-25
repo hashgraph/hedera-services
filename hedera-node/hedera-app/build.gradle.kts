@@ -71,9 +71,9 @@ itestModuleInfo {
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.hedera.node.hapi")
     requires("com.swirlds.metrics.api")
-    requires("grpc.netty")
-    requires("grpc.stub")
     requires("io.grpc")
+    requires("io.grpc.netty")
+    requires("io.grpc.stub")
     requires("org.apache.logging.log4j")
     requires("org.assertj.core")
     requires("org.bouncycastle.provider")
@@ -85,7 +85,7 @@ itestModuleInfo {
 
 jmhModuleInfo {
     requires("com.hedera.node.app")
-    requires("com.hedera.node.app.service.mono")
+    requires("com.hedera.node.app.hapi.utils")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.app.test.fixtures")
     requires("com.hedera.node.hapi")

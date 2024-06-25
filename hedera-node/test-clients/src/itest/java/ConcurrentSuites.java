@@ -20,6 +20,7 @@ import com.hedera.services.bdd.suites.consensus.TopicCreateSuite;
 import com.hedera.services.bdd.suites.consensus.TopicDeleteSuite;
 import com.hedera.services.bdd.suites.consensus.TopicUpdateSuite;
 import com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite;
+import com.hedera.services.bdd.suites.contract.hapi.ContractCallHapiOnlySuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallLocalSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite;
 import com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite;
@@ -118,6 +119,7 @@ public class ConcurrentSuites {
             SelfDestructSuite::new,
             // contract.hapi
             ContractCallLocalSuite::new,
+            ContractCallHapiOnlySuite::new,
             ContractCallSuite::new,
             ContractCreateSuite::new,
             ContractDeleteSuite::new,

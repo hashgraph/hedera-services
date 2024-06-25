@@ -20,7 +20,6 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 import static com.swirlds.common.utility.CompareTo.isGreaterThanOrEqualTo;
 import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -30,6 +29,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -40,7 +42,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.creation.tipset.TipsetEventCreator;
@@ -54,8 +56,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -69,6 +70,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -151,7 +154,7 @@ class TipsetEventCreatorTests {
     private void validateNewEvent(
             @NonNull final Map<Hash, EventImpl> events,
             @NonNull final BaseEventHashedData newEvent,
-            @NonNull final ConsensusTransactionImpl[] expectedTransactions,
+            @NonNull final List<OneOf<PayloadOneOfType>> expectedTransactions,
             @NonNull final SimulatedNode simulatedNode,
             final boolean slowNode) {
 
@@ -165,7 +168,7 @@ class TipsetEventCreatorTests {
         if (selfParent == null) {
             // The only legal time to have a null self parent is genesis.
             for (final EventImpl event : events.values()) {
-                if (event.getHashedData().getHash().equals(newEvent.getHash())) {
+                if (event.getBaseEvent().getHash().equals(newEvent.getHash())) {
                     // comparing to self
                     continue;
                 }
@@ -192,7 +195,7 @@ class TipsetEventCreatorTests {
         // Timestamp must always increase by 1 nanosecond, and there must always be a unique timestamp
         // with nanosecond precision for transaction.
         if (selfParent != null) {
-            final int minimumIncrement = Math.max(1, selfParent.getTransactions().length);
+            final int minimumIncrement = Math.max(1, selfParent.getBaseEvent().getPayloadCount());
             final Instant minimumTimestamp = selfParent.getTimeCreated().plus(Duration.ofNanos(minimumIncrement));
             assertTrue(isGreaterThanOrEqualTo(newEvent.getTimeCreated(), minimumTimestamp));
         }
@@ -209,10 +212,19 @@ class TipsetEventCreatorTests {
             simulatedNode.tipsetWeightCalculator.addEventAndGetAdvancementWeight(descriptor);
         }
 
+        final List<OneOf<PayloadOneOfType>> convertedTransactions = Stream.of(newEvent.getTransactions())
+                .map(Transaction::getPayload)
+                .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, one.as()))
+                .toList();
         // We should see the expected transactions
-        assertArrayEquals(expectedTransactions, newEvent.getTransactions());
+        IntStream.range(0, expectedTransactions.size()).forEach(i -> {
+            final OneOf<PayloadOneOfType> expected = expectedTransactions.get(i);
+            final OneOf<PayloadOneOfType> actual = convertedTransactions.get(i);
+            assertEquals(expected.kind(), actual.kind(), "Transaction kind " + i + " mismatch");
+            assertEquals(expected.value(), actual.value(), "Transaction payload " + i + " mismatch");
+        });
 
-        assertDoesNotThrow(() -> simulatedNode.eventCreator.toString());
+        assertDoesNotThrow(simulatedNode.eventCreator::toString);
     }
 
     /**
@@ -240,7 +252,7 @@ class TipsetEventCreatorTests {
         final EventImpl selfParent = events.get(event.getSelfParentHash());
         final EventImpl otherParent = events.get(event.getOtherParentHash());
 
-        final EventImpl eventImpl = new EventImpl(new GossipEvent(event, new byte[0]), selfParent, otherParent);
+        final EventImpl eventImpl = new EventImpl(new PlatformEvent(event, new byte[0]), selfParent, otherParent);
         events.put(event.getHash(), eventImpl);
 
         return eventImpl;
@@ -264,15 +276,14 @@ class TipsetEventCreatorTests {
      * Generate a small number of random transactions.
      */
     @NonNull
-    private ConsensusTransactionImpl[] generateRandomTransactions(@NonNull final Random random) {
+    private List<OneOf<PayloadOneOfType>> generateRandomTransactions(@NonNull final Random random) {
         final int transactionCount = random.nextInt(0, 10);
-        final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[transactionCount];
+        final List<OneOf<PayloadOneOfType>> transactions = new ArrayList<>();
 
         for (int i = 0; i < transactionCount; i++) {
             final byte[] bytes = new byte[32];
             random.nextBytes(bytes);
-            final ConsensusTransactionImpl transaction = new SwirldTransaction(bytes);
-            transactions[i] = transaction;
+            transactions.add(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(bytes)));
         }
 
         return transactions;
@@ -294,7 +305,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -348,7 +359,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -416,7 +427,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random, time, addressBook, transactionSupplier::get, AncientMode.GENERATION_THRESHOLD);
@@ -491,7 +502,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -569,7 +580,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -666,7 +677,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -764,7 +775,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,
@@ -801,14 +812,14 @@ class TipsetEventCreatorTests {
     }
 
     @NonNull
-    private GossipEvent createTestEvent(
+    private PlatformEvent createTestEvent(
             @NonNull final Random random,
             @NonNull final NodeId creator,
             long selfParentGeneration,
             @Nullable final NodeId otherParentId,
             final long otherParentGeneration) {
 
-        final GossipEvent selfParent =
+        final PlatformEvent selfParent =
                 new TestingEventBuilder(random).setCreatorId(creator).build();
 
         final TestingEventBuilder eventBuilder = new TestingEventBuilder(random)
@@ -817,7 +828,7 @@ class TipsetEventCreatorTests {
                 .overrideSelfParentGeneration(selfParentGeneration);
 
         if (otherParentId != null) {
-            final GossipEvent otherParent =
+            final PlatformEvent otherParent =
                     new TestingEventBuilder(random).setCreatorId(otherParentId).build();
 
             eventBuilder.setOtherParent(otherParent).overrideOtherParentGeneration(otherParentGeneration);
@@ -852,18 +863,17 @@ class TipsetEventCreatorTests {
         final NodeId nodeD = addressBook.getNodeId(3);
 
         // All nodes except for node 0 are fully mocked. This test is testing how node 0 behaves.
-        final EventCreator eventCreator =
-                buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
+        final EventCreator eventCreator = buildEventCreator(random, time, addressBook, nodeA, Collections::emptyList);
 
         // Create some genesis events
         final BaseEventHashedData eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final GossipEvent eventB1 = createTestEvent(
+        final PlatformEvent eventB1 = createTestEvent(
                 random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventC1 = createTestEvent(
+        final PlatformEvent eventC1 = createTestEvent(
                 random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventD1 = createTestEvent(
+        final PlatformEvent eventD1 = createTestEvent(
                 random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
@@ -898,7 +908,7 @@ class TipsetEventCreatorTests {
             otherParentId = null;
         }
 
-        final GossipEvent legalOtherParent = createTestEvent(random, otherParentId, 0, nodeA, 0);
+        final PlatformEvent legalOtherParent = createTestEvent(random, otherParentId, 0, nodeA, 0);
 
         eventCreator.registerEvent(legalOtherParent);
 
@@ -932,20 +942,19 @@ class TipsetEventCreatorTests {
         final NodeId nodeE = new NodeId(nodeD.id() + 1);
 
         // All nodes except for node 0 are fully mocked. This test is testing how node 0 behaves.
-        final EventCreator eventCreator =
-                buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
+        final EventCreator eventCreator = buildEventCreator(random, time, addressBook, nodeA, Collections::emptyList);
 
         // Create some genesis events
         final BaseEventHashedData eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
-        final GossipEvent eventB1 = createTestEvent(
+        final PlatformEvent eventB1 = createTestEvent(
                 random, nodeB, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventC1 = createTestEvent(
+        final PlatformEvent eventC1 = createTestEvent(
                 random, nodeC, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventD1 = createTestEvent(
+        final PlatformEvent eventD1 = createTestEvent(
                 random, nodeD, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
-        final GossipEvent eventE1 = createTestEvent(
+        final PlatformEvent eventE1 = createTestEvent(
                 random, nodeE, EventConstants.GENERATION_UNDEFINED, null, EventConstants.GENERATION_UNDEFINED);
 
         eventCreator.registerEvent(eventB1);
@@ -996,8 +1005,7 @@ class TipsetEventCreatorTests {
 
         final NodeId nodeA = addressBook.getNodeId(0); // self
 
-        final EventCreator eventCreator =
-                buildEventCreator(random, time, addressBook, nodeA, () -> new ConsensusTransactionImpl[0]);
+        final EventCreator eventCreator = buildEventCreator(random, time, addressBook, nodeA, Collections::emptyList);
 
         eventCreator.setEventWindow(new EventWindow(
                 1,
@@ -1029,7 +1037,7 @@ class TipsetEventCreatorTests {
 
         final FakeTime time = new FakeTime();
 
-        final AtomicReference<ConsensusTransactionImpl[]> transactionSupplier = new AtomicReference<>();
+        final AtomicReference<List<OneOf<PayloadOneOfType>>> transactionSupplier = new AtomicReference<>();
 
         final Map<NodeId, SimulatedNode> nodes = buildSimulatedNodes(
                 random,

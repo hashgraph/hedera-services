@@ -23,7 +23,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -112,7 +112,7 @@ public class DefaultBranchReporter implements BranchReporter {
      * {@inheritDoc}
      */
     @Override
-    public void reportBranch(@NonNull final GossipEvent event) {
+    public void reportBranch(@NonNull final PlatformEvent event) {
         if (currentEventWindow == null) {
             throw new IllegalStateException("Event window must be set before reporting branches");
         }

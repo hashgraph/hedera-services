@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.addressbook.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
@@ -74,7 +74,7 @@ public class NodeCreateHandler implements TransactionHandler {
         validateFalsePreCheck(
                 op.gossipCaCertificate().length() == 0
                         || op.gossipCaCertificate().equals(Bytes.EMPTY),
-                INVALID_GOSSIP_CAE_CERTIFICATE);
+                INVALID_GOSSIP_CA_CERTIFICATE);
     }
 
     @Override
@@ -90,8 +90,9 @@ public class NodeCreateHandler implements TransactionHandler {
 
         final var configuration = handleContext.configuration();
         final var nodeConfig = configuration.getConfigData(NodesConfig.class);
-        final var nodeStore = handleContext.writableStore(WritableNodeStore.class);
-        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var nodeStore = storeFactory.writableStore(WritableNodeStore.class);
+        final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
         final var accountId = op.accountIdOrElse(AccountID.DEFAULT);
 
         validateFalse(nodeStore.sizeOfState() >= nodeConfig.maxNumber(), MAX_NODES_CREATED);
@@ -113,7 +114,7 @@ public class NodeCreateHandler implements TransactionHandler {
 
         nodeStore.put(node);
 
-        final var recordBuilder = handleContext.recordBuilder(NodeCreateRecordBuilder.class);
+        final var recordBuilder = handleContext.recordBuilders().getOrCreate(NodeCreateRecordBuilder.class);
 
         recordBuilder.nodeID(node.nodeId());
     }

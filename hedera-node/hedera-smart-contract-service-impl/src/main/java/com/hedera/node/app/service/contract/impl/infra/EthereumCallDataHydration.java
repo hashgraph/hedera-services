@@ -58,7 +58,7 @@ public class EthereumCallDataHydration {
     public HydratedEthTxData tryToHydrate(
             @NonNull final EthereumTransactionBody body,
             @NonNull final ReadableFileStore fileStore,
-            long firstUserEntityNum) {
+            final long firstUserEntityNum) {
         final var ethTxData = populateEthTxData(body.ethereumData().toByteArray());
         if (ethTxData == null) {
             return failureFrom(INVALID_ETHEREUM_TRANSACTION);

@@ -276,9 +276,8 @@ public class SteadyStateThrottlingCheck {
                         .deferStatusResolution()
                         .payingWith(CIVILIAN)
                         .hasPrecheckFrom(OK, BUSY)
-                        /* In my local environment spec has been flaky with the first few
-                        operations here...doesn't seem to happen with other specs? */
-                        .hasKnownStatusFrom(OK, SUCCESS);
+                        // The last "known status" can still be BUSY if we exhaust retries
+                        .hasKnownStatusFrom(BUSY, SUCCESS);
                 return Optional.of(op);
             }
         };
@@ -352,7 +351,8 @@ public class SteadyStateThrottlingCheck {
                         .deferStatusResolution()
                         .signedBy(TOKEN_TREASURY, SUPPLY)
                         .payingWith(TOKEN_TREASURY)
-                        .hasKnownStatusFrom(OK, SUCCESS)
+                        // The last "known status" can still be BUSY if we exhaust retries
+                        .hasKnownStatusFrom(BUSY, SUCCESS)
                         .hasPrecheckFrom(OK, BUSY);
                 return Optional.of(op);
             }
@@ -384,7 +384,8 @@ public class SteadyStateThrottlingCheck {
                         .deferStatusResolution()
                         .signedBy(TOKEN_TREASURY, SUPPLY)
                         .payingWith(TOKEN_TREASURY)
-                        .hasKnownStatusFrom(OK, SUCCESS)
+                        // The last "known status" can still be BUSY if we exhaust retries
+                        .hasKnownStatusFrom(BUSY, SUCCESS)
                         .hasPrecheckFrom(OK, BUSY);
                 return Optional.of(op);
             }

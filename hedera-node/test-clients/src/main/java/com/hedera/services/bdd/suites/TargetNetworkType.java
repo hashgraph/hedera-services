@@ -39,5 +39,9 @@ public enum TargetNetworkType {
     /**
      * A long-lived remote network
      */
-    REMOTE_NETWORK
+    REMOTE_NETWORK,
+    /**
+     * An embedded "network" with a single Hedera instance whose workflows invoked directly, without gRPC.
+     */
+    EMBEDDED_NETWORK,
 }

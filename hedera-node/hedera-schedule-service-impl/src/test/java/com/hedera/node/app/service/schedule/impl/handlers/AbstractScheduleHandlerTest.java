@@ -183,7 +183,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
         final AccountID payerAccountId = schedulerAccount.accountId();
         BDDMockito.given(mockContext.payer()).willReturn(payerAccountId);
         // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
-        BDDMockito.given((mockContext).verificationFor(any(), any())).will(new VerificationForAnswer(testKeys));
+        BDDMockito.given(keyVerifier.verificationFor(any(), any())).will(new VerificationForAnswer(testKeys));
         // For this test, Context must mock `payer()`, `allKeysForTransaction()`, and `verificationFor`
         // `verificationFor` is needed because we check verification in allKeysForTransaction to reduce
         // the required keys set (potentially to empty) during handle.  We must use an "Answer" for verification

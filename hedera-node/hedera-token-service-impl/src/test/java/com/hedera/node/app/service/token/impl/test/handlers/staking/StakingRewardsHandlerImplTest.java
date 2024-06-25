@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
-import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.roundedToHbar;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.totalStake;
 import static java.util.Collections.emptyMap;

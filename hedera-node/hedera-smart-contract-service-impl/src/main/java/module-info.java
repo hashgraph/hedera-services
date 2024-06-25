@@ -3,7 +3,6 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.contract;
     requires transitive com.hedera.node.app.service.file;
-    requires transitive com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
@@ -21,7 +20,6 @@ module com.hedera.node.app.service.contract.impl {
     requires transitive tuweni.units;
     requires com.swirlds.base;
     requires com.swirlds.common;
-    requires com.swirlds.platform.core;
     requires com.github.benmanes.caffeine;
     requires com.google.common;
     requires com.google.protobuf;
