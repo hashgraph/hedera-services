@@ -16,13 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.util.HapiUtils.functionOf;
-import static java.util.Collections.emptyMap;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -77,21 +70,26 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-import dagger.Reusable;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-import javax.inject.Inject;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
+import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static java.util.Collections.emptyMap;
+import static java.util.Objects.requireNonNull;
 
 /**
- * The HandleContext Implementation
+ * The {@link HandleContext} implementation.
  */
-@Reusable
 public class DispatchHandleContext implements HandleContext, FeeContext {
     private final Instant consensusNow;
     private final NodeInfo creatorInfo;
@@ -122,7 +120,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final NetworkUtilizationManager networkUtilizationManager;
     private Map<AccountID, Long> dispatchPaidRewards;
 
-    @Inject
     public DispatchHandleContext(
             @NonNull final Instant consensusNow,
             @NonNull final NodeInfo creatorInfo,

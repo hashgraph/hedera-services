@@ -37,8 +37,9 @@ import java.time.Instant;
 import java.util.Set;
 
 /**
- * The context needed for executing business logic of a service. This has two implementations - one for user transactions scope
- * and one for dispatched child transactions scope.
+ * The context needed for executing business logic of a service. This has two
+ * implementations - one for user transactions scope and one for dispatched
+ * child transactions scope.
  */
 public interface Dispatch {
     /**

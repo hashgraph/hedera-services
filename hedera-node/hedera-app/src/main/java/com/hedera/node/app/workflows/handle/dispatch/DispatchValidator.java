@@ -14,25 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.validation;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hedera.hapi.util.HapiUtils.isHollow;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.WorkflowCheck.NOT_INGEST;
-import static com.hedera.node.app.workflows.handle.validation.ValidationReport.creatorValidationReport;
-import static com.hedera.node.app.workflows.handle.validation.ValidationReport.payerDuplicateErrorReport;
-import static com.hedera.node.app.workflows.handle.validation.ValidationReport.payerUniqueValidationReport;
-import static com.hedera.node.app.workflows.handle.validation.ValidationReport.payerValidationReport;
-import static com.hedera.node.app.workflows.handle.validation.ValidationReport.successReport;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+package com.hedera.node.app.workflows.handle.dispatch;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -49,8 +31,27 @@ import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.OfferedFeeCheck.SKIP_OFFERED_FEE_CHECK;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck.NOT_INGEST;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.creatorValidationReport;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerDuplicateErrorReport;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerUniqueValidationReport;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.payerValidationReport;
+import static com.hedera.node.app.workflows.handle.dispatch.ValidationResult.successReport;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 
 /**
  * A class that reports errors that occurred during the processing of a transaction.
@@ -88,7 +89,7 @@ public class DispatchValidator {
      * @param dispatch the dispatch
      * @return the error report
      */
-    public ValidationReport validationReportFor(@NonNull final Dispatch dispatch) {
+    public ValidationResult validationReportFor(@NonNull final Dispatch dispatch) {
         final var creatorError = creatorErrorIfKnown(dispatch);
         if (creatorError != null) {
             return creatorValidationReport(dispatch.creatorInfo().accountId(), creatorError);
@@ -127,7 +128,7 @@ public class DispatchValidator {
      * @return the error report
      */
     @NonNull
-    private ValidationReport finalPayerValidationReport(
+    private ValidationResult finalPayerValidationReport(
             @NonNull final Account payer,
             @NonNull final DuplicateStatus duplicateStatus,
             @NonNull final Dispatch dispatch) {

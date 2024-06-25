@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.validation;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.DuplicateStatus;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.DuplicateStatus.DUPLICATE;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.DuplicateStatus.NO_DUPLICATE;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.ServiceFeeStatus;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
-import static java.util.Objects.requireNonNull;
+package com.hedera.node.app.workflows.handle.dispatch;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.DUPLICATE;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.DuplicateStatus.NO_DUPLICATE;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.CAN_PAY_SERVICE_FEE;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A report of errors that occurred during the processing of a transaction. This records the errors including the
@@ -42,7 +42,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param serviceFeeStatus whether the payer was unable to pay the service fee
  * @param duplicateStatus whether the transaction is a duplicate
  */
-public record ValidationReport(
+public record ValidationResult(
         @NonNull AccountID creatorId,
         @Nullable ResponseCodeEnum creatorError,
         @Nullable Account payer,
@@ -56,9 +56,9 @@ public record ValidationReport(
      * @return the error report
      */
     @NonNull
-    public static ValidationReport creatorValidationReport(
+    public static ValidationResult creatorValidationReport(
             @NonNull AccountID creatorId, @NonNull ResponseCodeEnum creatorError) {
-        return new ValidationReport(creatorId, creatorError, null, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
+        return new ValidationResult(creatorId, creatorError, null, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
     }
 
     /**
@@ -69,11 +69,11 @@ public record ValidationReport(
      * @return the error report
      */
     @NonNull
-    public static ValidationReport payerDuplicateErrorReport(
+    public static ValidationResult payerDuplicateErrorReport(
             @NonNull final AccountID creatorId, @NonNull final Account payer) {
         requireNonNull(payer);
         requireNonNull(creatorId);
-        return new ValidationReport(creatorId, null, payer, DUPLICATE_TRANSACTION, CAN_PAY_SERVICE_FEE, DUPLICATE);
+        return new ValidationResult(creatorId, null, payer, DUPLICATE_TRANSACTION, CAN_PAY_SERVICE_FEE, DUPLICATE);
     }
 
     /**
@@ -85,14 +85,14 @@ public record ValidationReport(
      * @return the error report
      */
     @NonNull
-    public static ValidationReport payerUniqueValidationReport(
+    public static ValidationResult payerUniqueValidationReport(
             @NonNull final AccountID creatorId,
             @NonNull final Account payer,
             @NonNull final ResponseCodeEnum payerError) {
         requireNonNull(payer);
         requireNonNull(creatorId);
         requireNonNull(payerError);
-        return new ValidationReport(creatorId, null, payer, payerError, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
+        return new ValidationResult(creatorId, null, payer, payerError, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
     }
 
     /**
@@ -105,13 +105,13 @@ public record ValidationReport(
      * @return the error report
      */
     @NonNull
-    public static ValidationReport payerValidationReport(
+    public static ValidationResult payerValidationReport(
             @NonNull AccountID creatorId,
             @NonNull Account payer,
             @NonNull ResponseCodeEnum payerError,
             @NonNull ServiceFeeStatus serviceFeeStatus,
             @NonNull final DuplicateStatus duplicateStatus) {
-        return new ValidationReport(creatorId, null, payer, payerError, serviceFeeStatus, duplicateStatus);
+        return new ValidationResult(creatorId, null, payer, payerError, serviceFeeStatus, duplicateStatus);
     }
 
     /**
@@ -121,8 +121,8 @@ public record ValidationReport(
      * @return the error report
      */
     @NonNull
-    public static ValidationReport successReport(@NonNull AccountID creatorId, @NonNull Account payer) {
-        return new ValidationReport(creatorId, null, payer, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
+    public static ValidationResult successReport(@NonNull AccountID creatorId, @NonNull Account payer) {
+        return new ValidationResult(creatorId, null, payer, null, CAN_PAY_SERVICE_FEE, NO_DUPLICATE);
     }
 
     /**
@@ -173,8 +173,8 @@ public record ValidationReport(
      * @return the error report
      */
     @NonNull
-    public ValidationReport withoutServiceFee() {
-        return new ValidationReport(
+    public ValidationResult withoutServiceFee() {
+        return new ValidationResult(
                 creatorId, creatorError, payer, payerError, UNABLE_TO_PAY_SERVICE_FEE, duplicateStatus);
     }
 }

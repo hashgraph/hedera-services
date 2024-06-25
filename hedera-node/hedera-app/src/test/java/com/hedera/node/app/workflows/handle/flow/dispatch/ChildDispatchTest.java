@@ -43,7 +43,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.ChildDispatch;
+import com.hedera.node.app.workflows.handle.dispatch.ChildDispatch;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;

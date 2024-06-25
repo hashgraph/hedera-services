@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -44,6 +41,7 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
+import com.hedera.node.app.workflows.handle.dispatch.UserDispatch;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
@@ -59,7 +57,11 @@ import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
+
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static java.util.Objects.requireNonNull;
 
 public record UserTxn(
         boolean isGenesisTxn,

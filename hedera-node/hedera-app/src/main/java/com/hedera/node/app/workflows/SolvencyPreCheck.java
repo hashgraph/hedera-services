@@ -22,10 +22,10 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALA
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_DIVISOR_FACTOR;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.OfferedFeeCheck;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.WorkflowCheck;
-import static com.hedera.node.app.workflows.handle.validation.DispatchValidator.WorkflowCheck.INGEST;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.OfferedFeeCheck;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.OfferedFeeCheck.CHECK_OFFERED_FEE;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck.INGEST;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;

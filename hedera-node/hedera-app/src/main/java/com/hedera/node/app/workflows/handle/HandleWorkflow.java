@@ -16,28 +16,34 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
-import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
+import com.hedera.node.app.workflows.handle.dispatch.UserDispatch;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisSetup;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
+import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
@@ -52,13 +58,23 @@ import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The handle workflow that is responsible for handling the next {@link Round} of transactions.
@@ -70,6 +86,14 @@ public class HandleWorkflow {
     public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
 
     private final NetworkInfo networkInfo;
+    private final NodeStakeUpdates nodeStakeUpdates;
+    private final Authorizer authorizer;
+    private final FeeManager feeManager;
+    private final DispatchProcessor dispatchProcessor;
+    private final ServiceScopeLookup serviceScopeLookup;
+    private final ChildDispatchFactory childDispatchFactory;
+    private final TransactionDispatcher dispatcher;
+    private final NetworkUtilizationManager networkUtilizationManager;
     private final ConfigProvider configProvider;
     private final StoreMetricsService storeMetricsService;
     private final BlockRecordManager blockRecordManager;
@@ -78,7 +102,7 @@ public class HandleWorkflow {
     private final ThrottleServiceManager throttleServiceManager;
     private final SoftwareVersion version;
     private final InitTrigger initTrigger;
-    private final DefaultHandleWorkflow defaultHandleWorkflow;
+    private final HollowAccountCompletions hollowAccountCompletions;
     private final GenesisSetup genesisSetup;
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
@@ -87,6 +111,14 @@ public class HandleWorkflow {
     @Inject
     public HandleWorkflow(
             @NonNull final NetworkInfo networkInfo,
+            @NonNull final NodeStakeUpdates nodeStakeUpdates,
+            @NonNull final Authorizer authorizer,
+            @NonNull final FeeManager feeManager,
+            @NonNull final DispatchProcessor dispatchProcessor,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final ChildDispatchFactory childDispatchFactory,
+            @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final BlockRecordManager blockRecordManager,
@@ -95,12 +127,20 @@ public class HandleWorkflow {
             @NonNull final ThrottleServiceManager throttleServiceManager,
             @NonNull final SoftwareVersion version,
             @NonNull final InitTrigger initTrigger,
-            @NonNull final DefaultHandleWorkflow defaultHandleWorkflow,
+            @NonNull final HollowAccountCompletions hollowAccountCompletions,
             @NonNull final GenesisSetup genesisSetup,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final PreHandleWorkflow preHandleWorkflow) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
+        this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
+        this.authorizer = requireNonNull(authorizer);
+        this.feeManager = requireNonNull(feeManager);
+        this.dispatchProcessor = requireNonNull(dispatchProcessor);
+        this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
+        this.childDispatchFactory = requireNonNull(childDispatchFactory);
+        this.dispatcher = requireNonNull(dispatcher);
+        this.networkUtilizationManager = networkUtilizationManager;
         this.configProvider = requireNonNull(configProvider);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.blockRecordManager = requireNonNull(blockRecordManager, "recordManager must not be null");
@@ -109,7 +149,7 @@ public class HandleWorkflow {
         this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
         this.version = requireNonNull(version);
         this.initTrigger = requireNonNull(initTrigger);
-        this.defaultHandleWorkflow = requireNonNull(defaultHandleWorkflow);
+        this.hollowAccountCompletions = requireNonNull(hollowAccountCompletions);
         this.genesisSetup = requireNonNull(genesisSetup);
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
@@ -128,13 +168,10 @@ public class HandleWorkflow {
         // Keep track of whether any user transactions were handled. If so, then we will need to close the round
         // with the block record manager.
         final var userTransactionsHandled = new AtomicBoolean(false);
-
         // log start of round to transaction state log
         logStartRound(round);
-
         // warm the cache
         cacheWarmer.warm(state, round);
-
         // handle each event in the round
         for (final ConsensusEvent event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
@@ -147,10 +184,8 @@ public class HandleWorkflow {
                 logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
                 return;
             }
-
             // log start of event to transaction state log
             logStartEvent(event, creator);
-
             // handle each transaction of the event
             for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
                 final var platformTxn = it.next();
@@ -168,10 +203,8 @@ public class HandleWorkflow {
                 }
             }
         }
-
         // Update all throttle metrics once per round
         throttleServiceManager.updateAllMetrics();
-
         // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per
@@ -191,7 +224,7 @@ public class HandleWorkflow {
      * @param creator the {@link NodeInfo} of the creator of the transaction
      * @param txn the {@link ConsensusTransaction} to be handled
      */
-    public void handlePlatformTransaction(
+    private void handlePlatformTransaction(
             @NonNull final HederaState state,
             @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent event,
@@ -249,67 +282,6 @@ public class HandleWorkflow {
     }
 
     /**
-     * Initializes the user record with the transaction information. The record builder list is initialized with the
-     * transaction, transaction bytes, transaction ID, exchange rate, and memo.
-     * @param recordBuilder the record builder
-     * @param txnInfo the transaction info
-     */
-    // TODO: Guarantee that this never throws an exception
-    public SingleTransactionRecordBuilderImpl initializeUserRecord(
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder, @NonNull final TransactionInfo txnInfo) {
-        requireNonNull(txnInfo);
-        requireNonNull(recordBuilder);
-        final var transaction = txnInfo.transaction();
-        // If the transaction uses the legacy body bytes field instead of explicitly setting
-        // its signed bytes, the record will have the hash of its bytes as serialized by PBJ
-        final Bytes transactionBytes;
-        if (transaction.signedTransactionBytes().length() > 0) {
-            transactionBytes = transaction.signedTransactionBytes();
-        } else {
-            transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
-        }
-        return recordBuilder
-                .transaction(txnInfo.transaction())
-                .transactionBytes(transactionBytes)
-                .transactionID(txnInfo.txBody().transactionIDOrThrow())
-                .exchangeRate(exchangeRateManager.exchangeRates())
-                .memo(txnInfo.txBody().memo());
-    }
-
-    /**
-     * Constructs a new {@link UserTxn} with the scope defined by the
-     * current state, platform context, creator, and consensus time.
-     *
-     * @param state the current state
-     * @param platformState the current platform state
-     * @param event the current consensus event
-     * @param creator the creator of the transaction
-     * @param txn the consensus transaction
-     * @param consensusNow the consensus time
-     * @return the new user transaction
-     */
-    private UserTxn newUserTxn(
-            @NonNull final HederaState state,
-            @NonNull final PlatformState platformState,
-            @NonNull final ConsensusEvent event,
-            @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction txn,
-            @NonNull final Instant consensusNow) {
-        return UserTxn.from(
-                state,
-                platformState,
-                event,
-                creator,
-                txn,
-                consensusNow,
-                blockRecordManager.consTimeOfLastHandledTxn(),
-                configProvider,
-                storeMetricsService,
-                blockRecordManager,
-                this);
-    }
-
-    /**
      * Executes the user transaction and returns a stream of records that capture all
      * side effects on state that are stipulated by the pre-block-stream contract with
      * mirror nodes.
@@ -332,7 +304,13 @@ public class HandleWorkflow {
                 if (userTxn.isGenesisTxn()) {
                     genesisSetup.setupIn(userTxn.tokenContextImpl());
                 }
-                defaultHandleWorkflow.execute(userTxn);
+                updateNodeStakes(userTxn);
+                blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+                expireSchedules(userTxn);
+                logUserTxn(userTxn);
+                final var userDispatch = dispatchFor(userTxn);
+                hollowAccountCompletions.completeHollowAccounts(userTxn, userDispatch);
+                dispatchProcessor.processDispatch(userDispatch);
                 updateWorkflowMetrics(userTxn);
             }
             return finalRecordStream(userTxn);
@@ -351,7 +329,7 @@ public class HandleWorkflow {
     private Stream<SingleTransactionRecord> failInvalidRecordStream(@NonNull final UserTxn userTxn) {
         final var failInvalidRecordListBuilder = new RecordListBuilder(userTxn.consensusNow());
         final var recordBuilder = failInvalidRecordListBuilder.userTransactionRecordBuilder();
-        defaultHandleWorkflow.initializeUserRecord(recordBuilder, userTxn.txnInfo());
+        initializeUserRecord(recordBuilder, userTxn.txnInfo());
         recordBuilder.status(FAIL_INVALID);
         userTxn.stack().rollbackFullStack();
         return recordStream(userTxn, failInvalidRecordListBuilder);
@@ -422,5 +400,143 @@ public class HandleWorkflow {
         recordCache.add(
                 userTxn.creatorInfo().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), result.records());
         return result.records().stream();
+    }
+
+    /**
+     * Returns the user dispatch for the given user transaction.
+     *
+     * @param userTxn the user transaction
+     * @return the user dispatch
+     */
+    private UserDispatch dispatchFor(@NonNull final UserTxn userTxn) {
+        return userTxn.dispatch(
+                authorizer,
+                networkInfo,
+                feeManager,
+                recordCache,
+                dispatchProcessor,
+                blockRecordManager,
+                serviceScopeLookup,
+                storeMetricsService,
+                exchangeRateManager,
+                childDispatchFactory,
+                dispatcher,
+                initializeUserRecord(userTxn),
+                networkUtilizationManager);
+    }
+
+    /**
+     * Initializes the user record with the transaction information. The record builder
+     * list is initialized with the transaction, transaction bytes, transaction ID,
+     * exchange rate, and memo.
+     *
+     * @param userTxn the user transaction whose record should be initialized
+     */
+    private SingleTransactionRecordBuilderImpl initializeUserRecord(@NonNull final UserTxn userTxn) {
+        return initializeUserRecord(userTxn.recordListBuilder().userTransactionRecordBuilder(), userTxn.txnInfo());
+    }
+
+    /**
+     * Initializes the user record with the transaction information. The record builder
+     * list is initialized with the transaction, transaction bytes, transaction ID,
+     * exchange rate, and memo.
+     *
+     * @param recordBuilder the record builder
+     * @param txnInfo the transaction info
+     */
+    private SingleTransactionRecordBuilderImpl initializeUserRecord(
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final TransactionInfo txnInfo) {
+        final var transaction = txnInfo.transaction();
+        // If the transaction uses the legacy body bytes field instead of explicitly setting
+        // its signed bytes, the record will have the hash of its bytes as serialized by PBJ
+        final Bytes transactionBytes;
+        if (transaction.signedTransactionBytes().length() > 0) {
+            transactionBytes = transaction.signedTransactionBytes();
+        } else {
+            transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
+        }
+        return recordBuilder
+                .transaction(txnInfo.transaction())
+                .transactionBytes(transactionBytes)
+                .transactionID(txnInfo.txBody().transactionIDOrThrow())
+                .exchangeRate(exchangeRateManager.exchangeRates())
+                .memo(txnInfo.txBody().memo());
+    }
+
+    private void updateNodeStakes(@NonNull final UserTxn userTxn) {
+        try {
+            nodeStakeUpdates.process(userTxn.stack(), userTxn.tokenContextImpl());
+        } catch (final Exception e) {
+            // If anything goes wrong, we log the error and continue
+            logger.error("Failed to process staking period time hook", e);
+        }
+    }
+
+    private void logUserTxn(@NonNull final UserTxn userTxn) {
+        if (logger.isDebugEnabled()) {
+            logStartUserTransaction(
+                    userTxn.platformTxn(),
+                    userTxn.txnInfo().txBody(),
+                    requireNonNull(userTxn.txnInfo().payerID()));
+            logStartUserTransactionPreHandleResultP2(userTxn.preHandleResult());
+            logStartUserTransactionPreHandleResultP3(userTxn.preHandleResult());
+        }
+    }
+
+    /**
+     * Expire schedules that are due to be executed between the last handled
+     * transaction time and the current consensus time.
+     *
+     * @param userTxn the user transaction
+     */
+    private void expireSchedules(@NonNull UserTxn userTxn) {
+        if (userTxn.isGenesisTxn()) {
+            return;
+        }
+        final var lastHandledTxnTime = userTxn.lastHandledConsensusTime();
+        if (userTxn.consensusNow().getEpochSecond() > lastHandledTxnTime.getEpochSecond()) {
+            final var firstSecondToExpire = lastHandledTxnTime.getEpochSecond();
+            final var lastSecondToExpire = userTxn.consensusNow().getEpochSecond() - 1;
+            final var scheduleStore = new WritableStoreFactory(
+                    userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
+                    .getStore(WritableScheduleStore.class);
+            scheduleStore.purgeExpiredSchedulesBetween(firstSecondToExpire, lastSecondToExpire);
+            userTxn.stack().commitFullStack();
+        }
+    }
+
+    /**
+     *
+     * Constructs a new {@link UserTxn} with the scope defined by the
+     * current state, platform context, creator, and consensus time.
+     *
+     * @param state the current state
+     * @param platformState the current platform state
+     * @param event the current consensus event
+     * @param creator the creator of the transaction
+     * @param txn the consensus transaction
+     * @param consensusNow the consensus time
+     * @return the new user transaction
+     */
+    private UserTxn newUserTxn(
+            @NonNull final HederaState state,
+            @NonNull final PlatformState platformState,
+            @NonNull final ConsensusEvent event,
+            @NonNull final NodeInfo creator,
+            @NonNull final ConsensusTransaction txn,
+            @NonNull final Instant consensusNow) {
+        return UserTxn.from(
+                state,
+                platformState,
+                event,
+                creator,
+                txn,
+                consensusNow,
+                blockRecordManager.consTimeOfLastHandledTxn(),
+                configProvider,
+                storeMetricsService,
+                blockRecordManager,
+                this);
     }
 }

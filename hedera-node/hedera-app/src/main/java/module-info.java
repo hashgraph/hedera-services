@@ -94,8 +94,7 @@ module com.hedera.node.app {
             com.hedera.node.test.clients;
     exports com.hedera.node.app.workflows.handle.throttle to
             com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.dispatch to
-            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.dispatch;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;
