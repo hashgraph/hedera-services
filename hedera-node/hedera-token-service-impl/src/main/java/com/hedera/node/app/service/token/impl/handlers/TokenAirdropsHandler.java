@@ -48,11 +48,12 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
-import com.hedera.hapi.node.transaction.ExchangeRate;
+import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
@@ -71,12 +72,12 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -274,11 +275,11 @@ public class TokenAirdropsHandler implements TransactionHandler {
                     .tokenTransfers(tokenTransferList)
                     .build();
 
-            final var syntheticCryptoTranferTxn = TransactionBody.newBuilder()
+            final var syntheticCryptoTransferTxn = TransactionBody.newBuilder()
                     .cryptoTransfer(cryptoTransferBody)
                     .build();
             context.dispatchChildTransaction(
-                    syntheticCryptoTranferTxn,
+                    syntheticCryptoTransferTxn,
                     CryptoTransferRecordBuilder.class,
                     null,
                     context.payer(),
@@ -289,103 +290,75 @@ public class TokenAirdropsHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        final var body = feeContext.body();
-        final var op = body.tokenAirdrop();
+        final var op = feeContext.body().tokenAirdrop();
 
         final var defaultAirdropFees =
                 feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT).calculate();
-        // TODO: add a comment why do we need that
-        final var cryptoTransferFees =
-                CryptoTransferHandler.calculateCryptoTransferFees(feeContext, null, op.tokenTransfers());
-        final var autoAccountCreationFees = calculateAccountAutoCreationFees(feeContext, op);
+        // TODO: add a comment why do we need that. This calculation includes the auto account creation + the crypto
+        // transfer fees
+        final var cryptoTransferFees = calculateCryptoTransferFees(feeContext, op.tokenTransfers());
         final var tokenAssociationFees = calculateTokenAssociationFees(feeContext, op);
-        // TODO: the combine fee is not working correctly?
-        return combineFees(defaultAirdropFees, cryptoTransferFees, autoAccountCreationFees, tokenAssociationFees);
+        return combineFees(List.of(defaultAirdropFees, cryptoTransferFees, tokenAssociationFees));
     }
 
+    // TODO: add documentation
+    private Fees calculateCryptoTransferFees(
+            @NonNull FeeContext feeContext, @NonNull List<TokenTransferList> tokenTransfers) {
+        var cryptoTransferBody = CryptoTransferTransactionBody.newBuilder()
+                .tokenTransfers(tokenTransfers)
+                .build();
+
+        final var syntheticCryptoTransferTxn = TransactionBody.newBuilder()
+                .cryptoTransfer(cryptoTransferBody)
+                .transactionID(feeContext.body().transactionID())
+                .build();
+        return feeContext.dispatchComputeFees(syntheticCryptoTransferTxn, feeContext.payer());
+    }
+
+    // TODO: add documentation
     private Fees calculateTokenAssociationFees(FeeContext feeContext, TokenAirdropTransactionBody op) {
-        return Fees.FREE;
-        //        var tokenAssociationsCount = 0;
-        //        final var tokenRelStore = feeContext.readableStore(ReadableTokenRelationStore.class);
-        //        for (var transferList : op.tokenTransfers()) {
-        //            final var tokenToTransfer = transferList.token();
-        //            for (var transfer : transferList.transfers()) {
-        //                if (tokenRelStore.get(transfer.accountID(), tokenToTransfer) == null) {
-        //                    tokenAssociationsCount++;
-        //                }
-        //            }
-        //            for (var nftTransfer : transferList.nftTransfers()) {
-        //                if (tokenRelStore.get(nftTransfer.receiverAccountID(), tokenToTransfer) == null) {
-        //                    tokenAssociationsCount++;
-        //                }
-        //            }
-        //        }
-        //
-        //        long cryptoCreateFixedPrice = getTinybarsFromTinyCents(
-        //                getFixedPriceInTinyCents(
-        //                        com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount),
-        //                feeContext.exchangeRateInfo().activeRate(feeContext.consensusNow()));
-        //
-        //        final var totalNetworkFeeForTokenAssociation = cryptoCreateFixedPrice * tokenAssociationsCount;
-        //        return new Fees(0, totalNetworkFeeForTokenAssociation, 0);
-    }
-
-    private Fees calculateAccountAutoCreationFees(FeeContext feeContext, TokenAirdropTransactionBody op) {
-        return Fees.FREE;
-        //        // Getting the count of non-existing account receivers
-        //        final var receivers = new ArrayList<AccountID>();
-        //        for (var transfer : op.tokenTransfers()) {
-        //            transfer.transfers().forEach(t -> receivers.add(t.accountID()));
-        //            transfer.nftTransfers().forEach(t -> receivers.add(t.receiverAccountID()));
-        //        }
-        //
-        //        var nonExistingAliasReceiversCount = 0;
-        //        final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
-        //        for (var receiver : receivers) {
-        //            // if the recipient does not exist and they are referred by their public ECDSA key or evm_address
-        //            if (AccountOneOfType.ALIAS.equals(receiver.account().kind())
-        //                    && accountStore.getAccountById(receiver) == null) {
-        //                nonExistingAliasReceiversCount++;
-        //            }
-        //        }
-        //
-        //        long cryptoCreateFixedPrice = getTinybarsFromTinyCents(
-        //                getFixedPriceInTinyCents(com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate),
-        //                feeContext.exchangeRateInfo().activeRate(feeContext.consensusNow()));
-        //
-        //        final var totalNetworkFeeForAutoAccountCreation = cryptoCreateFixedPrice *
-        // nonExistingAliasReceiversCount;
-        //        return new Fees(0, totalNetworkFeeForAutoAccountCreation, 0);
-    }
-
-    private long getTinybarsFromTinyCents(final long tinyCents, @NonNull final ExchangeRate rate) {
-        final var aMultiplier = BigInteger.valueOf(rate.hbarEquiv());
-        final var bDivisor = BigInteger.valueOf(rate.centEquiv());
-        return BigInteger.valueOf(tinyCents)
-                .multiply(aMultiplier)
-                .divide(bDivisor)
-                .longValueExact();
-    }
-
-    private long getFixedPriceInTinyCents(com.hederahashgraph.api.proto.java.HederaFunctionality functionality) {
-        BigDecimal usdFee;
-        try {
-            usdFee = assetsLoader
-                    .loadCanonicalPrices()
-                    .get(functionality)
-                    .get(com.hederahashgraph.api.proto.java.SubType.DEFAULT);
-        } catch (IOException e) {
-            throw new IllegalStateException("Unable to load canonical prices", e);
+        // Gather all the token associations that need to be created
+        var tokenAssociationsMap = new HashMap<AccountID, Set<TokenID>>();
+        final var tokenRelStore = feeContext.readableStore(ReadableTokenRelationStore.class);
+        for (var transferList : op.tokenTransfers()) {
+            final var tokenToTransfer = transferList.token();
+            for (var transfer : transferList.transfers()) {
+                if (tokenRelStore.get(transfer.accountID(), tokenToTransfer) == null) {
+                    var list = tokenAssociationsMap.getOrDefault(transfer.accountID(), new HashSet<>());
+                    list.add(tokenToTransfer);
+                    tokenAssociationsMap.put(transfer.accountID(), list);
+                }
+            }
+            for (var nftTransfer : transferList.nftTransfers()) {
+                if (tokenRelStore.get(nftTransfer.receiverAccountID(), tokenToTransfer) == null) {
+                    var list = tokenAssociationsMap.getOrDefault(nftTransfer.receiverAccountID(), new HashSet<>());
+                    list.add(tokenToTransfer);
+                    tokenAssociationsMap.put(nftTransfer.receiverAccountID(), list);
+                }
+            }
         }
 
-        final var usdToTinyCents = BigDecimal.valueOf(100 * 100_000_000L);
-        return usdToTinyCents.multiply(usdFee).longValue();
+        // Calculate the fees for each token association
+        var feeList = new ArrayList<Fees>();
+        for (var entry : tokenAssociationsMap.entrySet()) {
+            final var tokenAssociateBody = TokenAssociateTransactionBody.newBuilder()
+                    .account(entry.getKey())
+                    .tokens(new ArrayList<>(entry.getValue()))
+                    .build();
+
+            final var syntheticTxn = TransactionBody.newBuilder()
+                    .tokenAssociate(tokenAssociateBody)
+                    .transactionID(feeContext.body().transactionID())
+                    .build();
+
+            feeList.add(feeContext.dispatchComputeFees(syntheticTxn, feeContext.payer()));
+        }
+
+        return combineFees(feeList);
     }
 
-    private Fees combineFees(Fees... fees) {
-        long networkFee = 0;
-        long nodeFee = 0;
-        long serviceFee = 0;
+    private Fees combineFees(List<Fees> fees) {
+        long networkFee = 0, nodeFee = 0, serviceFee = 0;
         for (var fee : fees) {
             networkFee += fee.networkFee();
             nodeFee += fee.nodeFee();
