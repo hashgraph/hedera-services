@@ -1,10 +1,10 @@
-# Proposal Title Goes Here
+# Health Monitor Proposal
 
 ---
 
 ## Summary
 
-Give a 1-3 sentence summary of the capability in the design proposal.
+A replacement for the current hard backpressure mechanism using a health monitor.
 
 | Metadata           | Entities                            | 
 |--------------------|-------------------------------------|
