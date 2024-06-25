@@ -23,17 +23,20 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_IPV4_ADDRESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_DESCRIPTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -65,6 +68,8 @@ public class AddressBookValidator {
      * @param nodesConfig The nodes configuration
      */
     public void validateDescription(@Nullable final String description, @NonNull final NodesConfig nodesConfig) {
+        requireNonNull(nodesConfig);
+
         if (description == null || description.isEmpty()) {
             return;
         }
@@ -75,6 +80,8 @@ public class AddressBookValidator {
     }
 
     private boolean containsZeroByte(@NonNull final byte[] bytes) {
+        requireNonNull(bytes);
+
         boolean ret = false;
         for (final byte b : bytes) {
             if (b == 0) {
@@ -93,6 +100,8 @@ public class AddressBookValidator {
      */
     public void validateGossipEndpoint(
             @Nullable final List<ServiceEndpoint> endpointList, @NonNull final NodesConfig nodesConfig) {
+        requireNonNull(nodesConfig);
+
         validateFalse(endpointList == null || endpointList.isEmpty(), INVALID_GOSSIP_ENDPOINT);
         validateFalse(endpointList.size() > nodesConfig.maxGossipEndpoint(), GOSSIP_ENDPOINTS_EXCEEDED_LIMIT);
         // for phase 2: The first in the list is used as the Internal IP address in config.txt,
@@ -115,6 +124,8 @@ public class AddressBookValidator {
      */
     public void validateServiceEndpoint(
             @Nullable final List<ServiceEndpoint> endpointList, @NonNull final NodesConfig nodesConfig) {
+        requireNonNull(nodesConfig);
+
         validateFalse(endpointList == null || endpointList.isEmpty(), INVALID_SERVICE_ENDPOINT);
         validateFalse(endpointList.size() > nodesConfig.maxServiceEndpoint(), INVALID_SERVICE_ENDPOINT);
         for (final var endpoint : endpointList) {
@@ -128,7 +139,7 @@ public class AddressBookValidator {
      * @param key The key to validate
      * @throws PreCheckException if the key is invalid
      */
-    public void validateAdminKey(Key key) throws PreCheckException {
+    public void validateAdminKey(@Nullable Key key) throws PreCheckException {
         final var keyEmpty = isEmpty(key);
         validateFalsePreCheck(key == null || keyEmpty, KEY_REQUIRED);
         validateTruePreCheck(isValid(key), INVALID_ADMIN_KEY);
@@ -140,6 +151,9 @@ public class AddressBookValidator {
      * @param key
      */
     public void validateAdminKeyInHandle(@NonNull final HandleContext handleContext, @NonNull final Key key) {
+        requireNonNull(handleContext);
+        requireNonNull(key);
+
         try {
             handleContext.attributeValidator().validateKey(key);
         } catch (HandleException e) {
@@ -147,7 +161,21 @@ public class AddressBookValidator {
         }
     }
 
+    /**
+     * Validates the account ID.
+     *
+     * @param accountId The account ID to validate
+     * @throws PreCheckException if the account ID is invalid
+     */
+    public void validateAccountId(@Nullable AccountID accountId) throws PreCheckException {
+        validateAccountID(accountId, INVALID_NODE_ACCOUNT_ID);
+        validateFalsePreCheck(!accountId.hasAccountNum() && accountId.hasAlias(), INVALID_NODE_ACCOUNT_ID);
+    }
+
     private void validateEndpoint(@NonNull final ServiceEndpoint endpoint, @NonNull final NodesConfig nodesConfig) {
+        requireNonNull(endpoint);
+        requireNonNull(nodesConfig);
+
         validateFalse(endpoint.port() == 0, INVALID_ENDPOINT);
         validateFalse(
                 endpoint.ipAddressV4().length() == 0
@@ -163,6 +191,7 @@ public class AddressBookValidator {
 
     private boolean isIPv4(@NonNull final Bytes ip) {
         requireNonNull(ip);
+
         final var part = "(\\d{1,2}|(0|1)\\d{2}|2[0-4]\\d|25[0-5])";
         final var regex = part + "\\." + part + "\\." + part + "\\." + part;
         return ip.asUtf8String().matches(regex);

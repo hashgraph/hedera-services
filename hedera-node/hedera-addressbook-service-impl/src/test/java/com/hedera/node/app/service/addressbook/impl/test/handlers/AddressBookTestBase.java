@@ -87,6 +87,10 @@ public class AddressBookTestBase {
             .build();
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
+
+    final Key invalidKey = Key.newBuilder()
+            .ecdsaSecp256k1((Bytes.fromHex("0000000000000000000000000000000000000000")))
+            .build();
     protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
 
     protected final AccountID payerId = AccountID.newBuilder().accountNum(2).build();
@@ -227,6 +231,20 @@ public class AddressBookTestBase {
                 0,
                 deleted,
                 key);
+    }
+
+    protected void givenValidNodeWithAdminKey(Key adminKey) {
+        node = new Node(
+                nodeId.number(),
+                accountId,
+                "description",
+                null,
+                null,
+                Bytes.wrap(gossipCaCertificate),
+                Bytes.wrap(grpcCertificateHash),
+                0,
+                false,
+                adminKey);
     }
 
     protected Node createNode() {
