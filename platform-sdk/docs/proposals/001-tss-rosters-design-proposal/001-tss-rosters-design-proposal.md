@@ -24,17 +24,6 @@ management for TSS operations.
 This proposal attempts to provide a specification for the behavior of rosters starting from their creation from the CAB
 to their terminal state within the TSS specification.
 
-### Dependencies, Interactions, and Implications
-
-Dependencies: This proposal depends on the implementation of the TSS scheme and the associated cryptographic primitives.
-It also relies on the use of existing address book for initial roster creation.
-
-Interactions: The roster, after its creation, will be used by the platform code for exchanging and validating roster
-information.
-
-Implications: The adoption of rosters will enable TSS block signing, enhancing the security and decentralization of the
-Hedera network. It will also require modifications to the reconnect process to accommodate the new roster structure.
-
 ### Requirements
 
 - Immutability: Rosters must be immutable to ensure the integrity of the computed hash.
