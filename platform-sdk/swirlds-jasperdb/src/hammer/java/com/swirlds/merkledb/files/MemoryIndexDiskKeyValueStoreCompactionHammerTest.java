@@ -95,8 +95,9 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
         // Collection of database files and index
         final var serializer = new ExampleFixedSizeDataSerializer();
         LongListOffHeap storeIndex = new LongListOffHeap();
+        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
         final var store = new MemoryIndexDiskKeyValueStore<>(
-                ConfigurationHolder.getConfigData(MerkleDbConfig.class),
+                dbConfig,
                 testDirectory.resolve("megaMergeHammerTest"),
                 "megaMergeHammerTest",
                 null,
@@ -135,7 +136,7 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
 
         // Start a thread for merging files together. The future will throw an exception if one
         // occurs on the thread.
-        final Compactor compactor = new Compactor(store, storeIndex);
+        final Compactor compactor = new Compactor(dbConfig, store, storeIndex);
         final Future<Void> mergeFuture = executor.submit(compactor);
 
         // We need to terminate the test if an error occurs in fail-fast manner. So we will keep a
@@ -466,9 +467,12 @@ class MemoryIndexDiskKeyValueStoreCompactionHammerTest {
         private int iteration = 1;
         private final DataFileCompactor compactor;
 
-        Compactor(final MemoryIndexDiskKeyValueStore<long[]> coll, LongListOffHeap storeIndex) {
+        Compactor(
+                final MerkleDbConfig dbConfig,
+                final MemoryIndexDiskKeyValueStore<long[]> coll,
+                LongListOffHeap storeIndex) {
             compactor = new DataFileCompactor(
-                    "megaMergeHammerTest", coll.getFileCollection(), storeIndex, null, null, null, null);
+                    dbConfig, "megaMergeHammerTest", coll.getFileCollection(), storeIndex, null, null, null, null);
         }
 
         @Override

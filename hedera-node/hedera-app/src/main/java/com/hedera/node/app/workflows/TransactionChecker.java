@@ -30,7 +30,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_EXPIRED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_OVERSIZE;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -43,11 +42,10 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.util.HapiUtils;
+import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.annotations.NodeSelfId;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
-import com.hedera.node.app.spi.HapiUtils;
-import com.hedera.node.app.spi.UnknownHederaFunctionality;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.prehandle.DueDiligenceException;
 import com.hedera.node.config.ConfigProvider;
@@ -239,13 +237,18 @@ public class TransactionChecker {
         }
         if (!txBody.hasTransactionID()) {
             throw new PreCheckException(INVALID_TRANSACTION_ID);
+        } else {
+            final var txnId = txBody.transactionIDOrThrow();
+            if (!txnId.hasAccountID()) {
+                throw new PreCheckException(PAYER_ACCOUNT_NOT_FOUND);
+            }
         }
         return checkParsed(new TransactionInfo(tx, txBody, signatureMap, bodyBytes, functionality));
     }
 
     public TransactionInfo checkParsed(@NonNull final TransactionInfo txInfo) throws PreCheckException {
         try {
-            checkPrefixMismatch(txInfo.signatureMap().sigPairOrElse(emptyList()));
+            checkPrefixMismatch(txInfo.signatureMap().sigPair());
             checkTransactionBody(txInfo.txBody());
             return txInfo;
         } catch (PreCheckException e) {
@@ -321,6 +324,11 @@ public class TransactionChecker {
         }
     }
 
+    public enum RequireMinValidLifetimeBuffer {
+        YES,
+        NO
+    }
+
     /**
      * Checks whether the transaction duration is valid as per the configuration for valid durations
      * for the network, and whether the current node wall-clock time falls between the transaction
@@ -328,9 +336,13 @@ public class TransactionChecker {
      *
      * @param txBody The transaction body that needs to be checked.
      * @param consensusTime The consensus time used for comparison (either exact or an approximation)
+     * @param requireMinValidLifetimeBuffer Whether to require a minimum valid lifetime buffer
      * @throws PreCheckException if the transaction duration is invalid, or if the start time is too old, or in the future.
      */
-    public void checkTimeBox(@NonNull final TransactionBody txBody, @NonNull final Instant consensusTime)
+    public void checkTimeBox(
+            @NonNull final TransactionBody txBody,
+            @NonNull final Instant consensusTime,
+            @NonNull final RequireMinValidLifetimeBuffer requireMinValidLifetimeBuffer)
             throws PreCheckException {
         requireNonNull(txBody, "txBody must not be null");
 
@@ -342,7 +354,9 @@ public class TransactionChecker {
         final var config = props.getConfiguration().getConfigData(HederaConfig.class);
         final var min = config.transactionMinValidDuration();
         final var max = config.transactionMaxValidDuration();
-        final var minValidityBufferSecs = config.transactionMinValidityBufferSecs();
+        final var minValidityBufferSecs = requireMinValidLifetimeBuffer == RequireMinValidLifetimeBuffer.YES
+                ? config.transactionMinValidityBufferSecs()
+                : 0;
 
         // The transaction duration must not be longer than the configured maximum transaction duration
         // or less than the configured minimum transaction duration.
@@ -431,7 +445,7 @@ public class TransactionChecker {
 
     /**
      * This method calculates the valid duration given in seconds, which is the provided number of seconds minus a
-     * buffer defined in {@link GlobalDynamicProperties}. The result is limited to a value that, if added to the
+     * buffer defined in system configuration. The result is limited to a value that, if added to the
      * {@code validStart}, will not exceed {@link Instant#MAX}.
      *
      * @param validForSecs the duration in seconds

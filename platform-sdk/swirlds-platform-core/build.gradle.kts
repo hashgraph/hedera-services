@@ -15,20 +15,27 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.platform-maven-publish")
-    id("com.hedera.hashgraph.benchmark-conventions")
-    id("com.hedera.hashgraph.java-test-fixtures")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
+    id("com.hedera.gradle.benchmark")
+    id("com.hedera.gradle.java-test-fixtures")
+}
+
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-Xlint:-exports,-overloads,-text-blocks,-dep-ann,-varargs")
 }
 
 mainModuleInfo {
     annotationProcessor("com.swirlds.config.processor")
+    annotationProcessor("com.google.auto.service.processor")
     runtimeOnly("com.swirlds.config.impl")
 }
 
 jmhModuleInfo {
     requires("com.swirlds.base")
-    requires("com.swirlds.config.api")
+    requires("com.swirlds.common")
     requires("com.swirlds.platform.core")
     requires("com.swirlds.platform.test")
     requires("com.swirlds.common.test.fixtures")
@@ -37,15 +44,20 @@ jmhModuleInfo {
 }
 
 testModuleInfo {
-    requires("com.hedera.pbj.runtime")
     requires("com.swirlds.base.test.fixtures")
+    requires("com.swirlds.metrics.impl")
     requires("com.swirlds.common.test.fixtures")
-    requires("com.swirlds.config.api.test.fixtures")
+    requires("com.swirlds.logging.test.fixtures")
     requires("com.swirlds.platform.core")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.platform.core.test.fixtures")
+    requires("jakarta.inject")
     requires("org.assertj.core")
+    requires("io.github.classgraph")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
+    requires("org.mockito.junit.jupiter")
     requiresStatic("com.github.spotbugs.annotations")
 }

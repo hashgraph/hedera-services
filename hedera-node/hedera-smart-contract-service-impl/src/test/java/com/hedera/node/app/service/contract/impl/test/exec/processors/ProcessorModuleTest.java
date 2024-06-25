@@ -16,12 +16,14 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.processors;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HasSystemContract.HAS_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract.HTS_EVM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract.PRNG_PRECOMPILE_ADDRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.node.app.service.contract.impl.exec.processors.ProcessorModule;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.ExchangeRateSystemContract;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HasSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsSystemContract;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.PrngSystemContract;
 import org.hyperledger.besu.datatypes.Address;
@@ -41,15 +43,19 @@ class ProcessorModuleTest {
     @Mock
     private PrngSystemContract prngSystemContract;
 
+    @Mock
+    private HasSystemContract hasSystemContract;
+
     @Test
     void provideHederaSystemContracts() {
         final var hederaSystemContracts = ProcessorModule.provideHederaSystemContracts(
-                htsSystemContract, exchangeRateSystemContract, prngSystemContract);
+                htsSystemContract, exchangeRateSystemContract, prngSystemContract, hasSystemContract);
         assertThat(hederaSystemContracts)
                 .isNotNull()
-                .hasSize(3)
+                .hasSize(4)
                 .containsKey(Address.fromHexString(HTS_EVM_ADDRESS))
                 .containsKey(Address.fromHexString(ExchangeRateSystemContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS))
-                .containsKey(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS));
+                .containsKey(Address.fromHexString(PRNG_PRECOMPILE_ADDRESS))
+                .containsKey(Address.fromHexString(HAS_EVM_ADDRESS));
     }
 }

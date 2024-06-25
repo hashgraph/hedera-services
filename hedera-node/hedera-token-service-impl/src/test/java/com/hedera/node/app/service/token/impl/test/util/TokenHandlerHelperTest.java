@@ -281,7 +281,6 @@ class TokenHandlerHelperTest {
                 .willReturn(TokenRelation.newBuilder()
                         .accountId(ACCT_2300)
                         .tokenId(TOKEN_ID_45)
-                        .deleted(false)
                         .balance(0)
                         .build());
 

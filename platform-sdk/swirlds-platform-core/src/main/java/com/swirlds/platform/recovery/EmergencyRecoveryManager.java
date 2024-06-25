@@ -20,9 +20,9 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.system.SystemExitCode.EMERGENCY_RECOVERY_ERROR;
 
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.dispatch.triggers.control.ShutdownRequestedTrigger;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.Shutdown;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -36,23 +36,17 @@ import org.apache.logging.log4j.Logger;
 public class EmergencyRecoveryManager {
     private static final Logger logger = LogManager.getLogger(EmergencyRecoveryManager.class);
 
-    private final ShutdownRequestedTrigger shutdownRequestedTrigger;
     private final EmergencyRecoveryFile emergencyRecoveryFile;
     private final StateConfig stateConfig;
     private volatile boolean emergencyStateRequired;
 
     /**
-     * @param stateConfig              the state configuration from the platform
-     * @param shutdownRequestedTrigger a trigger that requests the platform to shut down
-     * @param emergencyRecoveryDir     the directory to look for an emergency recovery file in
+     * @param stateConfig          the state configuration from the platform
+     * @param emergencyRecoveryDir the directory to look for an emergency recovery file in
      */
-    public EmergencyRecoveryManager(
-            @NonNull final StateConfig stateConfig,
-            @NonNull final ShutdownRequestedTrigger shutdownRequestedTrigger,
-            @NonNull final Path emergencyRecoveryDir) {
+    public EmergencyRecoveryManager(@NonNull final StateConfig stateConfig, @NonNull final Path emergencyRecoveryDir) {
 
         this.stateConfig = stateConfig;
-        this.shutdownRequestedTrigger = shutdownRequestedTrigger;
         this.emergencyRecoveryFile = readEmergencyRecoveryFile(emergencyRecoveryDir);
         emergencyStateRequired = emergencyRecoveryFile != null;
     }
@@ -107,7 +101,8 @@ public class EmergencyRecoveryManager {
                     "Detected an emergency recovery file at {} but was unable to read it",
                     dir,
                     e);
-            shutdownRequestedTrigger.dispatch("Emergency Recovery Error", EMERGENCY_RECOVERY_ERROR);
+
+            new Shutdown().shutdown("Emergency Recovery Error", EMERGENCY_RECOVERY_ERROR);
             return null;
         }
     }

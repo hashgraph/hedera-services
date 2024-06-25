@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -44,6 +45,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BASIC_XFER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_TX_EXPIRY;
@@ -59,9 +68,9 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SHARED_KEY;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SOMEBODY;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TOKEN_A;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TWO_SIG_XFER;
+import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULED_TXN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_DEFAULT;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_MINIMUM;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -71,63 +80,38 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SCHEDULE_PENDI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SOME_SIGNATURES_WERE_INVALID;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class ScheduleSignSpecs extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ScheduleSignSpecs.class);
+public class ScheduleSignSpecs {
     private static final int SCHEDULE_EXPIRY_TIME_SECS = 10;
     private static final int SCHEDULE_EXPIRY_TIME_MS = SCHEDULE_EXPIRY_TIME_SECS * 1000;
 
-    public static void main(String... args) {
-        new ScheduleSignSpecs().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return withAndWithoutLongTermEnabled(() -> List.of(
-                suiteSetup(),
-                addingSignaturesToExecutedTxFails(),
-                addingSignaturesToNonExistingTxFails(),
-                basicSignatureCollectionWorks(),
-                changeInNestedSigningReqsRespected(),
-                nestedSigningReqsWorkAsExpected(),
-                okIfAdminKeyOverlapsWithActiveScheduleKey(),
-                overlappingKeysTreatedAsExpected(),
-                receiverSigRequiredNotConfusedByMultiSigSender(),
-                receiverSigRequiredNotConfusedByOrder(),
-                receiverSigRequiredUpdateIsRecognized(),
-                reductionInSigningReqsAllowsTxnToGoThrough(),
-                reductionInSigningReqsAllowsTxnToGoThroughWithRandomKey(),
-                retestsActivationOnSignWithEmptySigMap(),
-                scheduleAlreadyExecutedDoesntRepeatTransaction(),
-                scheduleAlreadyExecutedOnCreateDoesntRepeatTransaction(),
-                sharedKeyWorksAsExpected(),
-                signFailsDueToDeletedExpiration(),
-                signalsIrrelevantSig(),
-                signalsIrrelevantSigEvenAfterLinkedEntityUpdate(),
-                signingDeletedSchedulesHasNoEffect(),
-                triggersUponAdditionalNeededSig(),
-                triggersUponFinishingPayerSig(),
-                suiteCleanup()));
+    @HapiTest
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed(ADMIN),
+                        cryptoCreate(SENDER),
+                        scheduleCreate(VALID_SCHEDULED_TXN, cryptoTransfer(tinyBarsFromTo(SENDER, FUNDING, 1)))
+                                .adminKey(ADMIN))
+                .when()
+                .then(submitModified(withSuccessivelyVariedBodyIds(), () -> scheduleSign(VALID_SCHEDULED_TXN)
+                        .alsoSigningWith(SENDER)));
     }
 
     @HapiTest
     @Order(24)
-    private HapiSpec suiteCleanup() {
+    final Stream<DynamicTest> suiteCleanup() {
         return defaultHapiSpec("suiteCleanup")
                 .given()
                 .when()
@@ -140,7 +124,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(1)
-    private HapiSpec suiteSetup() {
+    final Stream<DynamicTest> suiteSetup() {
         return defaultHapiSpec("suiteSetup")
                 .given()
                 .when()
@@ -151,7 +135,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(21)
-    final HapiSpec signingDeletedSchedulesHasNoEffect() {
+    final Stream<DynamicTest> signingDeletedSchedulesHasNoEffect() {
         String sender = "X";
         String receiver = "Y";
         String schedule = "Z";
@@ -175,7 +159,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(5)
-    final HapiSpec changeInNestedSigningReqsRespected() {
+    final Stream<DynamicTest> changeInNestedSigningReqsRespected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
@@ -228,7 +212,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(12)
-    final HapiSpec reductionInSigningReqsAllowsTxnToGoThrough() {
+    final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThrough() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
@@ -269,7 +253,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(13)
-    final HapiSpec reductionInSigningReqsAllowsTxnToGoThroughWithRandomKey() {
+    final Stream<DynamicTest> reductionInSigningReqsAllowsTxnToGoThroughWithRandomKey() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(2, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(ON, ON, ON), sigs(OFF, OFF, OFF)));
@@ -322,7 +306,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(6)
-    final HapiSpec nestedSigningReqsWorkAsExpected() {
+    final Stream<DynamicTest> nestedSigningReqsWorkAsExpected() {
         var senderShape = threshOf(2, threshOf(1, 3), threshOf(1, 3), threshOf(1, 3));
         var sigOne = senderShape.signedWith(sigs(sigs(OFF, OFF, ON), sigs(OFF, OFF, OFF), sigs(OFF, OFF, OFF)));
         var sigTwo = senderShape.signedWith(sigs(sigs(OFF, OFF, OFF), sigs(OFF, ON, OFF), sigs(OFF, OFF, OFF)));
@@ -356,7 +340,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(10)
-    final HapiSpec receiverSigRequiredNotConfusedByOrder() {
+    final Stream<DynamicTest> receiverSigRequiredNotConfusedByOrder() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -394,7 +378,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(9)
-    final HapiSpec receiverSigRequiredNotConfusedByMultiSigSender() {
+    final Stream<DynamicTest> receiverSigRequiredNotConfusedByMultiSigSender() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -432,7 +416,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(11)
-    final HapiSpec receiverSigRequiredUpdateIsRecognized() {
+    final Stream<DynamicTest> receiverSigRequiredUpdateIsRecognized() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -474,7 +458,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(16)
-    final HapiSpec scheduleAlreadyExecutedOnCreateDoesntRepeatTransaction() {
+    final Stream<DynamicTest> scheduleAlreadyExecutedOnCreateDoesntRepeatTransaction() {
         var senderShape = threshOf(1, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -511,7 +495,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(15)
-    final HapiSpec scheduleAlreadyExecutedDoesntRepeatTransaction() {
+    final Stream<DynamicTest> scheduleAlreadyExecutedDoesntRepeatTransaction() {
         var senderShape = threshOf(2, 3);
         var sigOne = senderShape.signedWith(sigs(ON, OFF, OFF));
         var sigTwo = senderShape.signedWith(sigs(OFF, ON, OFF));
@@ -546,7 +530,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(4)
-    final HapiSpec basicSignatureCollectionWorks() {
+    final Stream<DynamicTest> basicSignatureCollectionWorks() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
         return defaultHapiSpec("BasicSignatureCollectionWorks")
@@ -561,7 +545,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(19)
-    final HapiSpec signalsIrrelevantSig() {
+    final Stream<DynamicTest> signalsIrrelevantSig() {
         var txnBody = cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1));
 
         return defaultHapiSpec("SignalsIrrelevantSig")
@@ -579,7 +563,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(20)
-    final HapiSpec signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
+    final Stream<DynamicTest> signalsIrrelevantSigEvenAfterLinkedEntityUpdate() {
         var txnBody = mintToken(TOKEN_A, 50000000L);
 
         return defaultHapiSpec("SignalsIrrelevantSigEvenAfterLinkedEntityUpdate")
@@ -590,7 +574,7 @@ public class ScheduleSignSpecs extends HapiSuite {
                         newKeyNamed("newMint"),
                         tokenCreate(TOKEN_A).adminKey(ADMIN).supplyKey("mint"),
                         scheduleCreate("tokenMintScheduled", txnBody))
-                .when(tokenUpdate(TOKEN_A).supplyKey("newMint"))
+                .when(tokenUpdate(TOKEN_A).supplyKey("newMint").signedByPayerAnd(ADMIN))
                 .then(
                         scheduleSign("tokenMintScheduled")
                                 .alsoSigningWith("mint")
@@ -607,7 +591,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(3)
-    final HapiSpec addingSignaturesToNonExistingTxFails() {
+    final Stream<DynamicTest> addingSignaturesToNonExistingTxFails() {
         return defaultHapiSpec("AddingSignaturesToNonExistingTxFails")
                 .given(cryptoCreate(SENDER), newKeyNamed(SOMEBODY))
                 .when()
@@ -620,7 +604,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(2)
-    final HapiSpec addingSignaturesToExecutedTxFails() {
+    final Stream<DynamicTest> addingSignaturesToExecutedTxFails() {
         var txnBody = cryptoCreate(SOMEBODY);
         var creation = "basicCryptoCreate";
 
@@ -635,7 +619,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(23)
-    public HapiSpec triggersUponFinishingPayerSig() {
+    final Stream<DynamicTest> triggersUponFinishingPayerSig() {
         return defaultHapiSpec("TriggersUponFinishingPayerSig")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -656,7 +640,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(22)
-    public HapiSpec triggersUponAdditionalNeededSig() {
+    final Stream<DynamicTest> triggersUponAdditionalNeededSig() {
         return defaultHapiSpec("TriggersUponAdditionalNeededSig")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -675,7 +659,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(17)
-    public HapiSpec sharedKeyWorksAsExpected() {
+    final Stream<DynamicTest> sharedKeyWorksAsExpected() {
         return defaultHapiSpec("RequiresSharedKeyToSignBothSchedulingAndScheduledTxns")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -696,7 +680,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(7)
-    public HapiSpec okIfAdminKeyOverlapsWithActiveScheduleKey() {
+    final Stream<DynamicTest> okIfAdminKeyOverlapsWithActiveScheduleKey() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
         var adminKey = "adminKey";
         var scheduledTxnKey = "scheduledTxnKey";
@@ -714,7 +698,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(8)
-    public HapiSpec overlappingKeysTreatedAsExpected() {
+    final Stream<DynamicTest> overlappingKeysTreatedAsExpected() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
 
         return defaultHapiSpec("OverlappingKeysTreatedAsExpected")
@@ -754,7 +738,7 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(14)
-    public HapiSpec retestsActivationOnSignWithEmptySigMap() {
+    final Stream<DynamicTest> retestsActivationOnSignWithEmptySigMap() {
         return defaultHapiSpec("RetestsActivationOnCreateWithEmptySigMap")
                 .given(newKeyNamed("a"), newKeyNamed("b"), newKeyListNamed("ab", List.of("a", "b")), newKeyNamed(ADMIN))
                 .when(
@@ -773,9 +757,10 @@ public class ScheduleSignSpecs extends HapiSuite {
 
     @HapiTest
     @Order(18)
-    public HapiSpec signFailsDueToDeletedExpiration() {
+    final Stream<DynamicTest> signFailsDueToDeletedExpiration() {
         final int FAST_EXPIRATION = 0;
-        return defaultHapiSpec("SignFailsDueToDeletedExpiration")
+        return propertyPreservingHapiSpec("SignFailsDueToDeletedExpiration")
+                .preserving(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, SCHEDULING_WHITELIST)
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
                         sleepFor(SCHEDULE_EXPIRY_TIME_MS), // await any other scheduled expiring
@@ -804,12 +789,6 @@ public class ScheduleSignSpecs extends HapiSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
                                 .hasKnownStatusFrom(INVALID_SCHEDULE_ID),
-                        getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID),
-                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, "" + DEFAULT_TX_EXPIRY));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+                        getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 }

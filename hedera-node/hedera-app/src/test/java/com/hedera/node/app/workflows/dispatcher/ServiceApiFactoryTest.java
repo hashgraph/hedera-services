@@ -18,14 +18,19 @@ package com.hedera.node.app.workflows.dispatcher;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,7 +51,7 @@ class ServiceApiFactoryTest {
 
     @BeforeEach
     void setUp() {
-        subject = new ServiceApiFactory(stack, DEFAULT_CONFIG);
+        subject = new ServiceApiFactory(stack, DEFAULT_CONFIG, mock(StoreMetricsService.class));
     }
 
     @Test
@@ -57,6 +62,7 @@ class ServiceApiFactoryTest {
     @Test
     void canCreateTokenServiceApi() {
         given(stack.getWritableStates(TokenService.NAME)).willReturn(writableStates);
+        given(writableStates.get(any())).willReturn(new MapWritableKVState<>("ACCOUNTS"));
         assertNotNull(subject.getApi(TokenServiceApi.class));
     }
 

@@ -23,21 +23,21 @@ import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYE
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.*;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
+import static com.hedera.services.bdd.suites.crypto.LeakyCryptoTestsSuite.*;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
 import static java.util.stream.Collectors.joining;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * We want to make this suite exercise all forms of identity a Hedera account may have, under all
@@ -45,27 +45,17 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>See <a href="https://github.com/hashgraph/hedera-services/issues/4565">#4565</a> for details.
  */
-@HapiTestSuite
-public class AddressAliasIdFuzzing extends HapiSuite {
+public class AddressAliasIdFuzzing {
     private static final Logger log = LogManager.getLogger(AddressAliasIdFuzzing.class);
 
     private static final String PROPERTIES = "id-fuzzing.properties";
     public static final String ATOMIC_CRYPTO_TRANSFER = "contracts.precompile.atomicCryptoTransfer.enabled";
-    private final AtomicInteger maxOpsPerSec = new AtomicInteger(1);
+    private final AtomicInteger maxOpsPerSec = new AtomicInteger(10);
     private final AtomicInteger maxPendingOps = new AtomicInteger(Integer.MAX_VALUE);
     private final AtomicInteger backoffSleepSecs = new AtomicInteger(Integer.MAX_VALUE);
 
-    public static void main(String... args) {
-        new AddressAliasIdFuzzing().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing());
-    }
-
     @HapiTest
-    final HapiSpec addressAliasIdFuzzing() {
+    final Stream<DynamicTest> addressAliasIdFuzzing() {
         final Map<String, String> existingProps = new LinkedHashMap<>();
         return propertyPreservingHapiSpec("AddressAliasIdFuzzing")
                 .preserving(
@@ -86,17 +76,12 @@ public class AddressAliasIdFuzzing extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferToKeyFuzzing() {
+    final Stream<DynamicTest> transferToKeyFuzzing() {
         return defaultHapiSpec("TransferToKeyFuzzing")
                 .given(cryptoCreate(UNIQUE_PAYER_ACCOUNT)
                         .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
                         .withRecharging())
                 .when()
                 .then(runWithProvider(idTransferToRandomKeyWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

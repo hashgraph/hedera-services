@@ -15,9 +15,17 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.platform-maven-publish")
-    id("com.hedera.hashgraph.java-test-fixtures")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
+    id("com.hedera.gradle.java-test-fixtures")
+}
+
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add(
+        "-Xlint:-exports,-lossy-conversions,-overloads,-dep-ann,-text-blocks,-varargs"
+    )
 }
 
 mainModuleInfo {
@@ -30,6 +38,7 @@ mainModuleInfo {
 testModuleInfo {
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.base.test.fixtures")
+    requires("com.swirlds.logging.test.fixtures")
     requires("com.swirlds.config.api.test.fixtures")
     requires("com.swirlds.config.extensions")
     requires("org.assertj.core")

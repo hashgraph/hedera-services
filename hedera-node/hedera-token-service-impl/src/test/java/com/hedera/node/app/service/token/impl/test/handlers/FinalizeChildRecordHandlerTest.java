@@ -714,12 +714,17 @@ class FinalizeChildRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         // Make fungible token changes
         final var fungible321Change = token321Rel.balance() - 25;
+        final var fungible654Change = token654Rel.balance() - 1;
         writableTokenRelStore.put(token321Rel.copyBuilder().balance(25).build());
         writableTokenRelStore.put(token321Rel
                 .copyBuilder()
                 .accountId(ACCOUNT_5656_ID)
                 .balance(fungible321Change)
                 .build());
+        writableTokenRelStore.put(
+                token654Rel.copyBuilder().balance(fungible654Change).build());
+        writableTokenRelStore.put(
+                token654Rel.copyBuilder().accountId(ACCOUNT_1212_ID).balance(1).build());
         // Make NFT changes
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
 

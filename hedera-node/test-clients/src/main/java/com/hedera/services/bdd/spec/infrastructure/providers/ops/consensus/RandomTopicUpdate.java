@@ -32,11 +32,12 @@ import java.util.Optional;
 
 public class RandomTopicUpdate implements OpProvider {
     private final EntityNameProvider<TopicID> topics;
-
+    private final ResponseCodeEnum[] customOutcomes;
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(TOPIC_EXPIRED, INVALID_TOPIC_ID);
 
-    public RandomTopicUpdate(EntityNameProvider<TopicID> topics) {
+    public RandomTopicUpdate(EntityNameProvider<TopicID> topics, ResponseCodeEnum[] customOutcomes) {
         this.topics = topics;
+        this.customOutcomes = customOutcomes;
     }
 
     @Override
@@ -52,8 +53,8 @@ public class RandomTopicUpdate implements OpProvider {
         }
 
         HapiTopicUpdate op = updateTopic(target.get())
-                .hasKnownStatusFrom(permissibleOutcomes)
-                .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS);
+                .hasPrecheckFrom(plus(STANDARD_PERMISSIBLE_PRECHECKS, customOutcomes))
+                .hasKnownStatusFrom(plus(permissibleOutcomes, customOutcomes));
         return Optional.of(op);
     }
 }

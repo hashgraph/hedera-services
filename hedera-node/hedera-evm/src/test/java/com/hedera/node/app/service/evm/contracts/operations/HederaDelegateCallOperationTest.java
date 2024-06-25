@@ -38,11 +38,13 @@ package com.hedera.node.app.service.evm.contracts.operations;
  *
  */
 
+import static com.hedera.node.app.service.evm.contracts.operations.AccountTemperature.ACCOUNT_IS_NOT_WARM;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
@@ -93,11 +95,22 @@ class HederaDelegateCallOperationTest {
         given(worldUpdater.get(any())).willReturn(acc);
     }
 
+    static final class FoobarException extends RuntimeException {}
+
     @Test
     void haltWithInvalidAddr() {
         given(worldUpdater.get(any())).willReturn(null);
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        anyBoolean()))
                 .willReturn(cost);
         given(evmMsgFrame.getStackItem(0)).willReturn(Bytes.EMPTY);
         given(evmMsgFrame.getStackItem(1)).willReturn(Bytes.EMPTY);
@@ -116,7 +129,16 @@ class HederaDelegateCallOperationTest {
     @Test
     void executesAsExpected() {
         given(calc.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        any(),
+                        eq(ACCOUNT_IS_NOT_WARM)))
                 .willReturn(cost);
         for (int i = 0; i < 10; i++) {
             lenient().when(evmMsgFrame.getStackItem(i)).thenReturn(Bytes.ofUnsignedInt(10));

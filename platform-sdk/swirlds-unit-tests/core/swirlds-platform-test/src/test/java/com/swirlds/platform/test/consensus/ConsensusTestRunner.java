@@ -51,13 +51,15 @@ public class ConsensusTestRunner {
             for (final long seed : params.seeds()) {
                 System.out.println("Running seed: " + seed);
 
-                test.accept(new TestInput(params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
+                test.accept(new TestInput(
+                        params.platformContext(), params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
             }
 
             for (int i = 0; i < iterations; i++) {
                 final long seed = new Random().nextLong();
                 System.out.println("Running seed: " + seed);
-                test.accept(new TestInput(params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
+                test.accept(new TestInput(
+                        params.platformContext(), params.numNodes(), params.weightGenerator(), seed, eventsToGenerate));
             }
         } catch (final Throwable e) {
             throw new RuntimeException(e);

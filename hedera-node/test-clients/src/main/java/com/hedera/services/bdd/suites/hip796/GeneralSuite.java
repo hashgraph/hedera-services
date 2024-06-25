@@ -32,19 +32,18 @@ import static com.hedera.services.bdd.suites.hip796.operations.TokenFeature.PART
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
-// @HapiTestSuite
 public class GeneralSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(GeneralSuite.class);
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(canCreateFungibleTokenWithLockingAndPartitioning(), canCreateNFTWithLockingAndPartitioning());
     }
 
@@ -55,8 +54,7 @@ public class GeneralSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canCreateFungibleTokenWithLockingAndPartitioning() {
+    final Stream<DynamicTest> canCreateFungibleTokenWithLockingAndPartitioning() {
         return defaultHapiSpec("CanCreateFungibleTokenWithLockingAndPartitioning")
                 .given(fungibleTokenWithFeatures(PARTITIONING, LOCKING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)
@@ -82,8 +80,7 @@ public class GeneralSuite extends HapiSuite {
      *
      * @return the HapiSpec for this HIP-796 user story
      */
-    @HapiTest
-    public HapiSpec canCreateNFTWithLockingAndPartitioning() {
+    final Stream<DynamicTest> canCreateNFTWithLockingAndPartitioning() {
         return defaultHapiSpec("CanCreateNFTWithLockingAndPartitioning")
                 .given(nonFungibleTokenWithFeatures(PARTITIONING, LOCKING)
                         .withPartitions(RED_PARTITION, BLUE_PARTITION)

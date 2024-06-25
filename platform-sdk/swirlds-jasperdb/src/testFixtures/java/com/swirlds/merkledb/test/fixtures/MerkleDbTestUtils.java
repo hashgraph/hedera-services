@@ -27,9 +27,9 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashBuilder;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.merkledb.MerkleDbDataSource;
@@ -188,9 +188,9 @@ public class MerkleDbTestUtils {
     }
 
     public static String toLongsString(final Hash hash) {
-        final byte[] bytes = hash.getValue();
-        final LongBuffer longBuf =
-                ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN).asLongBuffer();
+        final LongBuffer longBuf = ByteBuffer.wrap(hash.copyToByteArray())
+                .order(ByteOrder.BIG_ENDIAN)
+                .asLongBuffer();
         final long[] array = new long[longBuf.remaining()];
         longBuf.get(array);
         return Arrays.toString(array);
@@ -213,12 +213,11 @@ public class MerkleDbTestUtils {
     public static Hash hash(final int value) {
         final byte[] hardCoded =
                 new byte[] {(byte) (value >>> 24), (byte) (value >>> 16), (byte) (value >>> 8), (byte) value};
-        final Hash mutableHash = new Hash(DigestType.SHA_384);
-        final byte[] digest = mutableHash.getValue();
+        final byte[] digest = new byte[DigestType.SHA_384.digestLength()];
         for (int i = 0; i < 6; i++) {
             System.arraycopy(hardCoded, 0, digest, i * 6 + 4, 4);
         }
-        return mutableHash;
+        return new Hash(digest, DigestType.SHA_384);
     }
 
     public static void hexDump(final PrintStream out, final Path file) throws IOException {
@@ -308,11 +307,11 @@ public class MerkleDbTestUtils {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = new MetricKeyRegistry();
-        return new DefaultMetrics(
+        return new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.java") }
+plugins { id("com.hedera.gradle.java") }
 
 val sdkDir = layout.projectDirectory.dir("sdk")
 

@@ -21,25 +21,28 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableQueueState;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableQueueState;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.state.HederaState;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.merkle.StateUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableQueueState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableQueueState;
+import com.swirlds.state.spi.WritableSingletonState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,8 +50,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -68,34 +69,34 @@ class MerkleHederaStateTest extends MerkleTestBase {
 
     private final HederaLifecycles lifecycles = new HederaLifecycles() {
         @Override
-        public void onPreHandle(@NotNull Event event, @NotNull HederaState state) {
+        public void onPreHandle(@NonNull Event event, @NonNull HederaState state) {
             onPreHandleCalled.set(true);
         }
 
         @Override
-        public void onNewRecoveredState(@NotNull MerkleHederaState recoveredState) {
+        public void onNewRecoveredState(@NonNull MerkleHederaState recoveredState) {
             // No-op
         }
 
         @Override
         public void onHandleConsensusRound(
-                @NotNull Round round, @NotNull PlatformState platformState, @NotNull HederaState state) {
+                @NonNull Round round, @NonNull PlatformState platformState, @NonNull HederaState state) {
             onHandleCalled.set(true);
         }
 
         @Override
         public void onStateInitialized(
-                @NotNull MerkleHederaState state,
-                @NotNull Platform platform,
-                @NotNull PlatformState platformState,
-                @NotNull InitTrigger trigger,
+                @NonNull HederaState state,
+                @NonNull Platform platform,
+                @NonNull PlatformState platformState,
+                @NonNull InitTrigger trigger,
                 @Nullable SoftwareVersion previousVersion) {}
 
         @Override
         public void onUpdateWeight(
-                @NotNull MerkleHederaState state,
-                @NotNull AddressBook configAddressBook,
-                @NotNull PlatformContext context) {
+                @NonNull MerkleHederaState state,
+                @NonNull AddressBook configAddressBook,
+                @NonNull PlatformContext context) {
             onUpdateWeightCalled.set(true);
         }
     };

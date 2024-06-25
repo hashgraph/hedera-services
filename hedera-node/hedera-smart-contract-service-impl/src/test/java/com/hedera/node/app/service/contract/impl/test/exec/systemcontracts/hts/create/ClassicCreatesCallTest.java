@@ -36,7 +36,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.token.TokenCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -45,7 +44,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Addres
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.ClassicCreatesCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.create.CreateTranslator;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -56,7 +55,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-public class ClassicCreatesCallTest extends HtsCallTestBase {
+public class ClassicCreatesCallTest extends CallTestBase {
     private static final org.hyperledger.besu.datatypes.Address FRAME_SENDER_ADDRESS = EIP_1014_ADDRESS;
 
     @Mock
@@ -314,7 +313,6 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
     private void commonGivens(long baseCost, long value, boolean shouldBePreempted) {
         given(frame.getValue()).willReturn(Wei.of(value));
         given(gasCalculator.canonicalPriceInTinybars(any(), any())).willReturn(baseCost);
-        System.out.println(gasCalculator.canonicalPriceInTinybars(TransactionBody.DEFAULT, AccountID.DEFAULT));
         stack.push(frame);
         given(addressIdConverter.convert(asHeadlongAddress(FRAME_SENDER_ADDRESS)))
                 .willReturn(A_NEW_ACCOUNT_ID);
@@ -322,8 +320,7 @@ public class ClassicCreatesCallTest extends HtsCallTestBase {
         if (!shouldBePreempted) {
             given(frame.getMessageFrameStack()).willReturn(stack);
             given(frame.getContextVariable(CONFIG_CONTEXT_VARIABLE)).willReturn(DEFAULT_CONFIG);
-            given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID.accountNumOrThrow()))
-                    .willReturn(ALIASED_SOMEBODY);
+            given(nativeOperations.getAccount(A_NEW_ACCOUNT_ID)).willReturn(ALIASED_SOMEBODY);
             given(systemContractOperations.dispatch(
                             any(TransactionBody.class),
                             eq(verificationStrategy),

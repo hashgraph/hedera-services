@@ -16,16 +16,17 @@
 
 package com.hedera.node.app.version;
 
-import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.spi.HapiUtils;
+import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 /**
  * An implementation of {@link SoftwareVersion} which can be saved in state and holds information about the HAPI and
@@ -38,18 +39,30 @@ import java.io.IOException;
  * <p>The Services version is the version of the node software itself.
  */
 public class HederaSoftwareVersion implements SoftwareVersion {
+
     public static final long CLASS_ID = 0x6f2b1bc2df8cbd0cL;
     public static final int RELEASE_027_VERSION = 1;
+    public static final int RELEASE_048_VERSION = 2;
+    public static final Pattern ALPHA_PRE_PATTERN = Pattern.compile("alpha[.](\\d+)");
 
+    private int configVersion;
     private SemanticVersion hapiVersion;
     private SemanticVersion servicesVersion;
+
+    /**
+     * The version of this object that was deserialized. When serializing a software version, we need to write it
+     * to the stream using the same format as when it was deserialized.
+     */
+    private int deserializedVersion = RELEASE_048_VERSION;
 
     public HederaSoftwareVersion() {
         // For ConstructableRegistry. Do not use.
     }
 
-    public HederaSoftwareVersion(final SemanticVersion hapiVersion, final SemanticVersion servicesVersion) {
+    public HederaSoftwareVersion(
+            final SemanticVersion hapiVersion, final SemanticVersion servicesVersion, final int configVersion) {
         this.hapiVersion = hapiVersion;
+        this.configVersion = configVersion;
         this.servicesVersion = servicesVersion;
     }
 
@@ -68,7 +81,7 @@ public class HederaSoftwareVersion implements SoftwareVersion {
 
     @Override
     public int getVersion() {
-        return RELEASE_027_VERSION;
+        return deserializedVersion;
     }
 
     @Override
@@ -81,19 +94,27 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         // If the other software version is a HederaSoftwareVersion, then we can compare them directly.
         // If however, the other is null, or is not a HederaSoftwareVersion, then we will always sort
         // it before this one.
-        if (other instanceof HederaSoftwareVersion hsv) {
-            final var hapiComparison = SEMANTIC_VERSION_COMPARATOR.compare(hapiVersion, hsv.hapiVersion);
-            if (hapiComparison != 0) return hapiComparison;
-            return SEMANTIC_VERSION_COMPARATOR.compare(servicesVersion, hsv.servicesVersion);
+        if (other instanceof HederaSoftwareVersion that) {
+            final var servicesComparison = SEMANTIC_VERSION_COMPARATOR.compare(
+                    toUpgradeComparableSemVer(this.configVersion, this.servicesVersion),
+                    toUpgradeComparableSemVer(that.configVersion, that.servicesVersion));
+            return servicesComparison != 0
+                    ? servicesComparison
+                    : SEMANTIC_VERSION_COMPARATOR.compare(hapiVersion, that.hapiVersion);
         } else {
             return 1;
         }
     }
 
     @Override
-    public void deserialize(SerializableDataInputStream in, int i) throws IOException {
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
+        deserializedVersion = version;
+
         hapiVersion = deserializeSemVer(in);
         servicesVersion = deserializeSemVer(in);
+        if (version >= RELEASE_048_VERSION) {
+            configVersion = in.readInt();
+        }
     }
 
     private static SemanticVersion deserializeSemVer(final SerializableDataInputStream in) throws IOException {
@@ -112,6 +133,9 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     public void serialize(SerializableDataOutputStream out) throws IOException {
         serializeSemVer(hapiVersion, out);
         serializeSemVer(servicesVersion, out);
+        if (deserializedVersion >= RELEASE_048_VERSION) {
+            out.writeInt(configVersion);
+        }
     }
 
     private static void serializeSemVer(final SemanticVersion semVer, final SerializableDataOutputStream out)
@@ -152,6 +176,40 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         // This is called by the platform when printing information on saved states to logs
         return "HederaSoftwareVersion{" + "hapiVersion="
                 + HapiUtils.toString(hapiVersion) + ", servicesVersion="
-                + HapiUtils.toString(servicesVersion) + '}';
+                + HapiUtils.toString(servicesVersion) + (configVersion == 0 ? "" : "-c" + configVersion) + '}';
+    }
+
+    /**
+     * Given a semantic version, returns a modified form of which every part is either
+     * absent or a parsed that can be used to compare
+     * versions when detecting software upgrades.
+     *
+     * @param configVersion the numeric version of the configuration
+     * @param semVer the literal semantic version
+     * @return a comparable form of the given semantic version
+     */
+    private static SemanticVersion toUpgradeComparableSemVer(
+            final int configVersion, @NonNull final SemanticVersion semVer) {
+        final var builder = semVer.copyBuilder().pre(alphaNumberOrMaxValue(semVer.pre()) + "");
+        if (configVersion > 0) {
+            builder.build(configVersion + "");
+        } else {
+            builder.build("");
+        }
+        return builder.build();
+    }
+
+    private static int alphaNumberOrMaxValue(@Nullable final String pre) {
+        if (pre == null) {
+            return Integer.MAX_VALUE;
+        }
+        final var alphaMatch = ALPHA_PRE_PATTERN.matcher(pre);
+        // alpha versions come before everything else
+        return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
+    }
+
+    @Override
+    public SemanticVersion getPbjSemanticVersion() {
+        return toUpgradeComparableSemVer(configVersion, servicesVersion);
     }
 }

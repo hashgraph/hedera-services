@@ -65,23 +65,7 @@ public class TokenTupleUtils {
         return Tuple.of(
                 token.expirationSecond(),
                 headlongAddressOf(token.autoRenewAccountIdOrElse(ZERO_ACCOUNT_ID)),
-                token.autoRenewSeconds());
-    }
-
-    /**
-     * Returns a tuple of the {@code KeyValue} struct
-     * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L92">Link</a>
-     * @param key the key to get the tuple for
-     * @return Tuple encoding of the KeyValue
-     */
-    @NonNull
-    public static Tuple keyTupleFor(@NonNull final Key key) {
-        return Tuple.of(
-                false,
-                headlongAddressOf(key.contractIDOrElse(ZERO_CONTRACT_ID)),
-                key.ed25519OrElse(Bytes.EMPTY).toByteArray(),
-                key.ecdsaSecp256k1OrElse(Bytes.EMPTY).toByteArray(),
-                headlongAddressOf(key.delegatableContractIdOrElse(ZERO_CONTRACT_ID)));
+                Math.max(0, token.autoRenewSeconds()));
     }
 
     /**
@@ -247,7 +231,7 @@ public class TokenTupleUtils {
                 tokenInfoTupleFor(token, ledgerId),
                 serialNumber,
                 // The odd construct allowing a token to not have a treasury account set is to accommodate
-                // Token.DEFAULT being passed into this method, which a few HtsCall implementations do
+                // Token.DEFAULT being passed into this method, which a few Call implementations do
                 priorityAddressOf(nft.ownerIdOrElse(token.treasuryAccountIdOrElse(ZERO_ACCOUNT_ID)), nativeOperations),
                 nft.mintTimeOrElse(new Timestamp(0, 0)).seconds(),
                 nftMetaData,
@@ -259,7 +243,7 @@ public class TokenTupleUtils {
         requireNonNull(accountId);
         return (ZERO_ACCOUNT_ID == accountId)
                 ? ZERO_ADDRESS
-                : headlongAddressOf(requireNonNull(nativeOperations.getAccount(accountId.accountNumOrThrow())));
+                : headlongAddressOf(requireNonNull(nativeOperations.getAccount(accountId)));
     }
 
     /**

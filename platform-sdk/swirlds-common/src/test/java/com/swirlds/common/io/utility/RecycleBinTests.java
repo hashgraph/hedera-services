@@ -24,13 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.base.time.Time;
-import com.swirlds.common.config.StateCommonConfig_;
-import com.swirlds.common.io.config.RecycleBinConfig;
-import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -38,8 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -47,27 +40,16 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("RecycleBin Tests")
 class RecycleBinTests {
 
+    public static final Duration MAXIMUM_FILE_AGE = Duration.of(7, ChronoUnit.DAYS);
+    public static final Duration MINIMUM_PERIOD = Duration.of(1, ChronoUnit.DAYS);
     /**
      * Temporary directory provided by JUnit
      */
     @TempDir
-    Path testDirectory;
+    private Path recycleBinDirectory;
 
-    private Configuration configuration;
-
-    @BeforeEach
-    void beforeEach() throws IOException {
-        FileUtils.deleteDirectory(testDirectory);
-        configuration = new TestConfigBuilder()
-                .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
-                .getOrCreateConfig();
-    }
-
-    @AfterEach
-    void afterEach() throws IOException {
-        FileUtils.deleteDirectory(testDirectory);
-    }
-
+    @TempDir
+    private Path workDirectory;
     /**
      * Create a file and write a string to it.
      */
@@ -92,16 +74,15 @@ class RecycleBinTests {
     @Test
     @DisplayName("Recycle File Test")
     void recycleFileTest() throws IOException {
-        final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration, new NoOpMetrics(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+        final RecycleBin recycleBin = createRecycleBin(Time.getCurrent(), MINIMUM_PERIOD);
 
-        final Path path1 = testDirectory.resolve("file1.txt");
+        final Path path1 = workDirectory.resolve("file1.txt");
         writeFile(path1, "file1");
 
-        final Path path2 = testDirectory.resolve("file2.txt");
+        final Path path2 = workDirectory.resolve("file2.txt");
         writeFile(path2, "file2");
 
-        final Path path3 = testDirectory.resolve("file3.txt");
+        final Path path3 = workDirectory.resolve("file3.txt");
         writeFile(path3, "file3");
 
         recycleBin.recycle(path1);
@@ -109,28 +90,24 @@ class RecycleBinTests {
         recycleBin.recycle(path3);
 
         assertFalse(Files.exists(path1));
-        final Path recycledPath1 =
-                testDirectory.resolve("swirlds-recycle-bin").resolve("0").resolve("file1.txt");
+        final Path recycledPath1 = recycleBinDirectory.resolve("file1.txt");
         validateFile(recycledPath1, "file1");
 
         assertFalse(Files.exists(path2));
-        final Path recycledPath2 =
-                testDirectory.resolve("swirlds-recycle-bin").resolve("0").resolve("file2.txt");
+        final Path recycledPath2 = recycleBinDirectory.resolve("file2.txt");
         validateFile(recycledPath2, "file2");
 
         assertFalse(Files.exists(path3));
-        final Path recycledPath3 =
-                testDirectory.resolve("swirlds-recycle-bin").resolve("0").resolve("file3.txt");
+        final Path recycledPath3 = recycleBinDirectory.resolve("file3.txt");
         validateFile(recycledPath3, "file3");
     }
 
     @Test
     @DisplayName("Recycle Directory Test")
     void recycleDirectoryTest() throws IOException {
-        final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration, new NoOpMetrics(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+        final RecycleBin recycleBin = createRecycleBin(Time.getCurrent(), MINIMUM_PERIOD);
 
-        final Path directory = testDirectory.resolve("foo/bar/baz");
+        final Path directory = workDirectory.resolve("foo/bar/baz");
         Files.createDirectories(directory);
 
         final Path path1 = directory.resolve("file1.txt");
@@ -142,56 +119,41 @@ class RecycleBinTests {
         final Path path3 = directory.resolve("file3.txt");
         writeFile(path3, "file3");
 
-        recycleBin.recycle(testDirectory.resolve("foo"));
+        recycleBin.recycle(workDirectory.resolve("foo"));
 
         assertFalse(Files.exists(path1));
-        final Path recycledPath1 = testDirectory
-                .resolve("swirlds-recycle-bin")
-                .resolve("0")
-                .resolve("foo/bar/baz")
-                .resolve("file1.txt");
+        final Path recycledPath1 = recycleBinDirectory.resolve("foo/bar/baz").resolve("file1.txt");
         validateFile(recycledPath1, "file1");
 
         assertFalse(Files.exists(path2));
-        final Path recycledPath2 = testDirectory
-                .resolve("swirlds-recycle-bin")
-                .resolve("0")
-                .resolve("foo/bar/baz")
-                .resolve("file2.txt");
+        final Path recycledPath2 = recycleBinDirectory.resolve("foo/bar/baz").resolve("file2.txt");
         validateFile(recycledPath2, "file2");
 
         assertFalse(Files.exists(path3));
-        final Path recycledPath3 = testDirectory
-                .resolve("swirlds-recycle-bin")
-                .resolve("0")
-                .resolve("foo/bar/baz")
-                .resolve("file3.txt");
+        final Path recycledPath3 = recycleBinDirectory.resolve("foo/bar/baz").resolve("file3.txt");
         validateFile(recycledPath3, "file3");
     }
 
     @Test
     @DisplayName("Recycle Non-Existent File Test")
     void recycleNonExistentFileTest() throws IOException {
-        final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration, new NoOpMetrics(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+        final RecycleBin recycleBin = createRecycleBin(Time.getCurrent(), MINIMUM_PERIOD);
 
-        final Path path = testDirectory.resolve("file.txt");
+        final Path path = recycleBinDirectory.resolve("file.txt");
         recycleBin.recycle(path);
 
         final Path recycledPath =
-                testDirectory.resolve("swirlds-recycle-bin").resolve("0").resolve("file.txt");
+                recycleBinDirectory.resolve("swirlds-recycle-bin").resolve("0").resolve("file.txt");
         assertFalse(Files.exists(recycledPath));
     }
 
     @Test
     @DisplayName("Recycle Duplicate File Test")
     void recycleDuplicateFileTest() throws IOException {
-        final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration, new NoOpMetrics(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+        final RecycleBin recycleBin = createRecycleBin(Time.getCurrent(), MINIMUM_PERIOD);
 
-        final Path path = testDirectory.resolve("file.txt");
-        final Path recycledPath =
-                testDirectory.resolve("swirlds-recycle-bin").resolve("0").resolve("file.txt");
+        final Path path = workDirectory.resolve("file.txt");
+        final Path recycledPath = recycleBinDirectory.resolve("file.txt");
 
         writeFile(path, "foo");
         recycleBin.recycle(path);
@@ -213,41 +175,30 @@ class RecycleBinTests {
     @DisplayName("Files Deleted After Time Passes")
     void filesDeletedAfterTimePasses() throws IOException, InterruptedException {
         final FakeTime time = new FakeTime(Instant.now(), Duration.ZERO);
-
-        final Configuration customConfiguration = new TestConfigBuilder()
-                .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
-                .withValue(RecycleBinConfig_.COLLECTION_PERIOD, "1ns")
-                .getOrCreateConfig();
-
-        final Duration maximumFileAge =
-                customConfiguration.getConfigData(RecycleBinConfig.class).maximumFileAge();
-
-        final RecycleBinImpl recycleBin = new RecycleBinImpl(
-                customConfiguration, new NoOpMetrics(), getStaticThreadManager(), time, new NodeId(0));
+        final RecycleBinImpl recycleBin = createRecycleBin(time, Duration.of(1, ChronoUnit.NANOS));
         recycleBin.start();
 
         // Recycle some files.
-        final Path path1 = testDirectory.resolve("file1.txt");
+        final Path path1 = workDirectory.resolve("file1.txt");
         writeFile(path1, "file1");
 
-        final Path path2 = testDirectory.resolve("file2.txt");
+        final Path path2 = workDirectory.resolve("file2.txt");
         writeFile(path2, "file2");
 
-        final Path path3 = testDirectory.resolve("foo/bar/baz/file3.txt");
+        final Path path3 = workDirectory.resolve("foo/bar/baz/file3.txt");
         writeFile(path3, "file3");
 
         recycleBin.recycle(path1);
         recycleBin.recycle(path2);
-        recycleBin.recycle(testDirectory.resolve("foo"));
+        recycleBin.recycle(workDirectory.resolve("foo"));
 
         assertFalse(Files.exists(path1));
         assertFalse(Files.exists(path2));
         assertFalse(Files.exists(path3));
 
-        final Path recycleBinPath = testDirectory.resolve("swirlds-recycle-bin").resolve("0");
-        final Path recycledPath1 = recycleBinPath.resolve("file1.txt");
-        final Path recycledPath2 = recycleBinPath.resolve("file2.txt");
-        final Path recycledPath3 = recycleBinPath.resolve("foo/bar/baz/file3.txt");
+        final Path recycledPath1 = recycleBinDirectory.resolve("file1.txt");
+        final Path recycledPath2 = recycleBinDirectory.resolve("file2.txt");
+        final Path recycledPath3 = recycleBinDirectory.resolve("foo/bar/baz/file3.txt");
 
         // Wait some time. Although the recycle bin will have had time to delete files if it wanted to,
         // it won't have actually deleted them yet because not enough time has passed.
@@ -261,7 +212,7 @@ class RecycleBinTests {
         }
 
         // Advance time by the maximum file age. Now the recycle bin will be able to delete the files.
-        time.tick(maximumFileAge);
+        time.tick(MAXIMUM_FILE_AGE);
 
         assertEventuallyDoesNotThrow(
                 () -> {
@@ -280,37 +231,30 @@ class RecycleBinTests {
     void clearTest() throws IOException, InterruptedException {
         final FakeTime time = new FakeTime(Instant.now(), Duration.ZERO);
 
-        final Configuration customConfiguration = new TestConfigBuilder()
-                .withValue(StateCommonConfig_.SAVED_STATE_DIRECTORY, testDirectory.toString())
-                .withValue(RecycleBinConfig_.COLLECTION_PERIOD, "1ns")
-                .getOrCreateConfig();
-
-        final RecycleBinImpl recycleBin = new RecycleBinImpl(
-                customConfiguration, new NoOpMetrics(), getStaticThreadManager(), time, new NodeId(0));
+        final RecycleBinImpl recycleBin = createRecycleBin(time, Duration.of(1, ChronoUnit.NANOS));
         recycleBin.start();
 
         // Recycle some files.
-        final Path path1 = testDirectory.resolve("file1.txt");
+        final Path path1 = workDirectory.resolve("file1.txt");
         writeFile(path1, "file1");
 
-        final Path path2 = testDirectory.resolve("file2.txt");
+        final Path path2 = workDirectory.resolve("file2.txt");
         writeFile(path2, "file2");
 
-        final Path path3 = testDirectory.resolve("foo/bar/baz/file3.txt");
+        final Path path3 = workDirectory.resolve("foo/bar/baz/file3.txt");
         writeFile(path3, "file3");
 
         recycleBin.recycle(path1);
         recycleBin.recycle(path2);
-        recycleBin.recycle(testDirectory.resolve("foo"));
+        recycleBin.recycle(workDirectory.resolve("foo"));
 
         assertFalse(Files.exists(path1));
         assertFalse(Files.exists(path2));
         assertFalse(Files.exists(path3));
 
-        final Path recycleBinPath = testDirectory.resolve("swirlds-recycle-bin").resolve("0");
-        final Path recycledPath1 = recycleBinPath.resolve("file1.txt");
-        final Path recycledPath2 = recycleBinPath.resolve("file2.txt");
-        final Path recycledPath3 = recycleBinPath.resolve("foo/bar/baz/file3.txt");
+        final Path recycledPath1 = recycleBinDirectory.resolve("file1.txt");
+        final Path recycledPath2 = recycleBinDirectory.resolve("file2.txt");
+        final Path recycledPath3 = recycleBinDirectory.resolve("foo/bar/baz/file3.txt");
 
         // Wait some time. Although the recycle bin will have had time to delete files if it wanted to,
         // it won't have actually deleted them yet because not enough time has passed.
@@ -336,5 +280,15 @@ class RecycleBinTests {
                 "Files were not deleted after the maximum file age elapsed.");
 
         recycleBin.stop();
+    }
+
+    private RecycleBinImpl createRecycleBin(final Time time, final Duration minimumPeriod) {
+        return new RecycleBinImpl(
+                new NoOpMetrics(),
+                getStaticThreadManager(),
+                time,
+                recycleBinDirectory,
+                RecycleBinTests.MAXIMUM_FILE_AGE,
+                minimumPeriod);
     }
 }

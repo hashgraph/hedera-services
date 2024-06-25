@@ -26,6 +26,10 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED;
@@ -35,42 +39,23 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.List;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public class TokenManagementSpecsStateful extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenManagementSpecsStateful.class);
-
+public class TokenManagementSpecsStateful {
     private static final String TOKENS_NFTS_MAX_ALLOWED_MINTS = "tokens.nfts.maxAllowedMints";
     private static final String defaultMaxNftMints =
             HapiSpecSetup.getDefaultNodeProps().get(TOKENS_NFTS_MAX_ALLOWED_MINTS);
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
 
-    public static void main(String... args) {
-        new TokenManagementSpecsStateful().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            /* Stateful specs from TokenManagementSpecs */
-            freezeMgmtFailureCasesWork(),
-        });
-    }
-
     @HapiTest
-    public HapiSpec freezeMgmtFailureCasesWork() {
+    final Stream<DynamicTest> freezeMgmtFailureCasesWork() {
         var unfreezableToken = "without";
         var freezableToken = "withPlusDefaultTrue";
 
@@ -110,7 +95,7 @@ public class TokenManagementSpecsStateful extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nftMintingCapIsEnforced() {
+    final Stream<DynamicTest> nftMintingCapIsEnforced() {
         return defaultHapiSpec("NftMintingCapIsEnforced")
                 .given(
                         newKeyNamed("supplyKey"),
@@ -130,10 +115,5 @@ public class TokenManagementSpecsStateful extends HapiSuite {
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of(TOKENS_NFTS_MAX_ALLOWED_MINTS, "" + defaultMaxNftMints)),
                         mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Again, why not?"))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

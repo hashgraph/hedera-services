@@ -40,7 +40,7 @@ import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategies;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.DispatchForResponseCodeHtsCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
@@ -72,6 +72,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transf
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.Erc721TransferFromTranslator;
 import com.hedera.node.app.service.contract.impl.test.TestHelpers;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -83,7 +84,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 
-class HtsCallAttemptTest extends HtsCallTestBase {
+class HtsCallAttemptTest extends CallTestBase {
     @Mock
     private VerificationStrategies verificationStrategies;
 
@@ -102,7 +103,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
     @Mock
     private MintDecoder mintDecoder;
 
-    private List<HtsCallTranslator> callTranslators;
+    private List<CallTranslator> callTranslators;
 
     @BeforeEach
     void setUp() {
@@ -129,6 +130,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var subject = new HtsCallAttempt(
                 input,
                 EIP_1014_ADDRESS,
+                EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
                 DEFAULT_CONFIG,
@@ -149,6 +151,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var subject = new HtsCallAttempt(
                 input,
                 EIP_1014_ADDRESS,
+                EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
                 DEFAULT_CONFIG,
@@ -166,6 +169,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 DecimalsTranslator.DECIMALS.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
                 input,
+                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
@@ -185,6 +189,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var subject = new HtsCallAttempt(
                 input,
                 EIP_1014_ADDRESS,
+                EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
                 DEFAULT_CONFIG,
@@ -202,6 +207,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 OwnerOfTranslator.OWNER_OF.encodeCallWithArgs(BigInteger.ONE).array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
                 input,
+                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
@@ -223,6 +229,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
                 input,
+                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
@@ -246,6 +253,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var subject = new HtsCallAttempt(
                 input,
                 EIP_1014_ADDRESS,
+                EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
                 DEFAULT_CONFIG,
@@ -266,6 +274,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var subject = new HtsCallAttempt(
                 input,
                 EIP_1014_ADDRESS,
+                EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
                 DEFAULT_CONFIG,
@@ -283,6 +292,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 TotalSupplyTranslator.TOTAL_SUPPLY.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
                 input,
+                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
@@ -302,6 +312,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var subject = new HtsCallAttempt(
                 input,
                 EIP_1014_ADDRESS,
+                EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
                 DEFAULT_CONFIG,
@@ -319,6 +330,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 SymbolTranslator.SYMBOL.encodeCallWithArgs().array(), NON_SYSTEM_LONG_ZERO_ADDRESS);
         final var subject = new HtsCallAttempt(
                 input,
+                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),
@@ -349,6 +361,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var subject = new HtsCallAttempt(
                 input,
                 EIP_1014_ADDRESS,
+                EIP_1014_ADDRESS,
                 true,
                 mockEnhancement(),
                 DEFAULT_CONFIG,
@@ -378,6 +391,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
         final var subject = new HtsCallAttempt(
                 input,
                 EIP_1014_ADDRESS,
+                EIP_1014_ADDRESS,
                 true,
                 mockEnhancement(),
                 DEFAULT_CONFIG,
@@ -403,6 +417,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
                 .willReturn(strategy);
         final var subject = new HtsCallAttempt(
                 input,
+                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 true,
                 mockEnhancement(),
@@ -455,6 +470,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
 
         final var subject = new HtsCallAttempt(
                 input,
+                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 true,
                 mockEnhancement(),
@@ -517,6 +533,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
 
         final var subject = new HtsCallAttempt(
                 input,
+                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 true,
                 mockEnhancement(),
@@ -587,6 +604,7 @@ class HtsCallAttemptTest extends HtsCallTestBase {
 
         final var subject = new HtsCallAttempt(
                 input,
+                EIP_1014_ADDRESS,
                 EIP_1014_ADDRESS,
                 false,
                 mockEnhancement(),

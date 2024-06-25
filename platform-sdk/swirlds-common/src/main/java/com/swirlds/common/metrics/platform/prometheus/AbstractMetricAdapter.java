@@ -124,10 +124,10 @@ public abstract class AbstractMetricAdapter implements MetricAdapter {
         }
 
         /**
-         * identifies changes in the metrics name components (category, name, and unit). If a change is detected, error
+         * Identifies changes in the metrics name components (category, name, and unit). If a change is detected, error
          * log statements with the purpose of failing JRS are generated to inform developers that adjustments to the
          * metric name may be required.
-         * </p>
+         * <p>
          * It is not throwing exceptions in order to minimize the possibility for runtime errors produced by
          * non-critical misconfigurations
          *

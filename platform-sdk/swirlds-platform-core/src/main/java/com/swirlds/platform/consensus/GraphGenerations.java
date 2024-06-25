@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.consensus;
 
-import com.swirlds.platform.system.events.BaseEvent;
-import com.swirlds.platform.system.events.PlatformEvent;
+import com.swirlds.platform.event.PlatformEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface GraphGenerations {
     // FUTURE WORK: move this to EventConstants.java
@@ -25,7 +25,7 @@ public interface GraphGenerations {
 
     /**
      * @return The minimum judge generation number from the most recent fame-decided round, if there is one.
-     * 		Else this returns {@link #FIRST_GENERATION}.
+     * Else this returns {@link #FIRST_GENERATION}.
      */
     long getMaxRoundGeneration();
 
@@ -48,13 +48,13 @@ public interface GraphGenerations {
      * disk).
      *
      * @return The minimum generation of all the judges that are not ancient. If no judges are
-     *     ancient, returns {@link #FIRST_GENERATION}.
+     * ancient, returns {@link #FIRST_GENERATION}.
      */
     long getMinGenerationNonAncient();
 
     /**
      * @return The minimum judge generation number from the oldest non-expired round, if we have expired any rounds.
-     * 		Else this returns {@link #FIRST_GENERATION}.
+     * Else this returns {@link #FIRST_GENERATION}.
      */
     long getMinRoundGeneration();
 
@@ -72,29 +72,10 @@ public interface GraphGenerations {
      * Checks if the supplied event is ancient or not. An event is ancient if its generation is smaller than the round
      * generation of the oldest non-ancient round.
      *
-     * @param event
-     * 		the event to check
-     * @return true if its ancient, false otherwise
+     * @param event the event to check
+     * @return true if the event is ancient, false otherwise
      */
-    default boolean isAncient(final PlatformEvent event) {
+    default boolean isAncient(@NonNull final PlatformEvent event) {
         return event.getGeneration() < getMinGenerationNonAncient();
-    }
-
-    /**
-     * Same as {@link #isAncient(PlatformEvent)} but for {@link BaseEvent}
-     */
-    default boolean isAncient(final BaseEvent event) {
-        return event.getHashedData().getGeneration() < getMinGenerationNonAncient();
-    }
-
-    /**
-     * Checks if the supplied event is expired
-     *
-     * @param event
-     * 		the event to check
-     * @return true if it is expired, false if its not
-     */
-    default boolean isExpired(final BaseEvent event) {
-        return event.getHashedData().getGeneration() < getMinRoundGeneration();
     }
 }

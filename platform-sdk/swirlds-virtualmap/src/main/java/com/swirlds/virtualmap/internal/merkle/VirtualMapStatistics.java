@@ -97,7 +97,8 @@ public class VirtualMapStatistics {
      */
     public VirtualMapStatistics(final String label) {
         Objects.requireNonNull(label, "label must not be null");
-        this.label = label;
+        // "." may not appear in metric names
+        this.label = label.replace('.', '_');
     }
 
     /**

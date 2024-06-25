@@ -31,7 +31,8 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBuilder;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -52,8 +53,8 @@ class RosterDiffGeneratorTests {
                 TestPlatformContextBuilder.create().build();
         final RosterDiffGenerator generator = new RosterDiffGenerator(platformContext);
 
-        final AddressBook roster = new RandomAddressBookGenerator(random).build();
-        platformContext.getCryptography().digestSync(roster);
+        final AddressBook roster = RandomAddressBookBuilder.create(random).build();
+        roster.setHash(platformContext.getCryptography().digestSync(roster));
 
         // First round added should yield a null diff
         assertNull(generator.generateDiff(new UpdatedRoster(0, roster)));
@@ -84,8 +85,8 @@ class RosterDiffGeneratorTests {
         final RosterDiffGenerator generator = new RosterDiffGenerator(platformContext);
 
         AddressBook previousRoster =
-                new RandomAddressBookGenerator(random).setSize(8).build();
-        platformContext.getCryptography().digestSync(previousRoster);
+                RandomAddressBookBuilder.create(random).withSize(8).build();
+        previousRoster.setHash(platformContext.getCryptography().digestSync(previousRoster));
         assertNull(generator.generateDiff(new UpdatedRoster(0, previousRoster)));
 
         for (int round = 1; round < 1000; round++) {
@@ -149,9 +150,9 @@ class RosterDiffGeneratorTests {
                 final NodeId nodeToAdd = newRoster.getNextNodeId();
                 addedNodes.add(nodeToAdd);
 
-                final Address address = RandomAddressBookGenerator.addressWithRandomData(
-                        random, nodeToAdd, random.nextLong(1, 100_000_000));
-
+                final Address address = RandomAddressBuilder.create(random)
+                        .withNodeId(nodeToAdd)
+                        .build();
                 newRoster.add(address);
             }
 
@@ -160,7 +161,7 @@ class RosterDiffGeneratorTests {
                     membershipChanged || (modifiedNodeCount != 0 && modifyConsensusWeight);
             final boolean rosterIsIdentical = !membershipChanged && !consensusWeightChanged && modifiedNodeCount == 0;
 
-            platformContext.getCryptography().digestSync(newRoster);
+            newRoster.setHash(platformContext.getCryptography().digestSync(newRoster));
 
             final UpdatedRoster updatedRoster = new UpdatedRoster(round, newRoster);
             final RosterDiff diff = generator.generateDiff(updatedRoster);

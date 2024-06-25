@@ -24,7 +24,6 @@ import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -56,7 +55,7 @@ public class MigrationTestingToolMain implements SwirldMain {
     private double toCreate = 0;
     private long lastEventTime = System.nanoTime();
 
-    public static final long SOFTWARE_VERSION = 5L;
+    public static final int SOFTWARE_VERSION = 5;
     public static final BasicSoftwareVersion PREVIOUS_SOFTWARE_VERSION = new BasicSoftwareVersion(SOFTWARE_VERSION - 1);
     private final BasicSoftwareVersion softwareVersion = new BasicSoftwareVersion(SOFTWARE_VERSION);
 
@@ -73,7 +72,6 @@ public class MigrationTestingToolMain implements SwirldMain {
         maximumTransactionsPerNode = Integer.parseInt(parameters[1]);
 
         generator = new TransactionGenerator(seed);
-        GuiModel.getInstance().setAbout(platform.getSelfId(), "MigrationTestingApp");
 
         // Initialize application statistics
         initAppStats();
@@ -91,7 +89,8 @@ public class MigrationTestingToolMain implements SwirldMain {
                     maximumTransactionsPerNode,
                     seed);
 
-            final boolean isZeroWeight = platform.getSelfAddress().isZeroWeight();
+            final boolean isZeroWeight =
+                    platform.getAddressBook().getAddress(platform.getSelfId()).isZeroWeight();
             if (!isZeroWeight) {
                 while (transactionsCreated < maximumTransactionsPerNode) {
                     try {

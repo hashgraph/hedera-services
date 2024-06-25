@@ -17,80 +17,41 @@
 package com.swirlds.platform.test.components;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.test.fixtures.DummySystemTransaction;
-import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.system.transaction.SystemTransaction;
-import java.time.Instant;
+import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Utility functions for testing system transaction handling
  */
 public final class TransactionHandlingTestUtils {
-    /**
-     * Generate a new bare-bones event, containing DummySystemTransactions
-     *
-     * @param transactionCount the number of transactions to include in the event
-     * @return the new event
-     */
-    public static EventImpl newDummyEvent(final int transactionCount) {
-        SystemTransaction[] transactions = new SystemTransaction[transactionCount];
-
-        for (int index = 0; index < transactionCount; index++) {
-            transactions[index] = new DummySystemTransaction();
-        }
-
-        final EventDescriptor selfParent = new EventDescriptor(
-                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
-        final EventDescriptor otherParent = new EventDescriptor(
-                CryptographyHolder.get().getNullHash(), new NodeId(0), 0, EventConstants.BIRTH_ROUND_UNDEFINED);
-
-        return new EventImpl(
-                new BaseEventHashedData(
-                        new BasicSoftwareVersion(1),
-                        new NodeId(0),
-                        selfParent,
-                        Collections.singletonList(otherParent),
-                        EventConstants.BIRTH_ROUND_UNDEFINED,
-                        Instant.now(),
-                        transactions),
-                new BaseEventUnhashedData(new NodeId(0L), new byte[0]));
-    }
+    private TransactionHandlingTestUtils() {}
 
     /**
-     * Generates a new round, with specified number of events, containing DummySystemTransactions
+     * Generate a new bare-bones consensus round, containing DummySystemTransactions
      *
-     * @param roundContents a list of integers, where each list element results in an event being added the output
-     *                      round, and the element value specifies number of transactions to include in the event
-     * @return a new round, with specified contents
+     * @param eventCount           the number of events to include in the round
+     * @param transactionsPerEvent the number of transactions to include in each event
+     * @return a bare-bones consensus round
      */
-    public static ConsensusRound newDummyRound(final List<Integer> roundContents) {
+    public static ConsensusRound newDummyRound(
+            final Random random, final int eventCount, final int transactionsPerEvent) {
+        final ConsensusRound round = mock(ConsensusRound.class);
+
         final List<EventImpl> events = new ArrayList<>();
-        for (Integer transactionCount : roundContents) {
-            events.add(newDummyEvent(transactionCount));
+        for (int index = 0; index < eventCount; index++) {
+            events.add(EventImplTestUtils.createEventImpl(
+                    new TestingEventBuilder(random).setSystemTransactionCount(transactionsPerEvent), null, null));
         }
 
-        return new ConsensusRound(
-                mock(AddressBook.class),
-                events,
-                mock(EventImpl.class),
-                mock(GraphGenerations.class),
-                mock(NonAncientEventWindow.class),
-                mock(ConsensusSnapshot.class));
+        when(round.getConsensusEvents()).thenReturn(events);
+
+        return round;
     }
 }

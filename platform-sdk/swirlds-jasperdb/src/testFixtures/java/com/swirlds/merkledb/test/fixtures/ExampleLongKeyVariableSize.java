@@ -24,7 +24,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public class ExampleLongKeyVariableSize implements VirtualLongKey {
 
@@ -53,48 +52,12 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
         return this.hashCode;
     }
 
-    void serialize(final ByteBuffer byteBuffer) {
-        final int numOfBytes = computeNonZeroBytes(value);
-        byteBuffer.put((byte) numOfBytes);
-        for (int b = numOfBytes - 1; b >= 0; b--) {
-            byteBuffer.put((byte) (value >> (b * 8)));
-        }
-    }
-
     public void serialize(final WritableSequentialData out) {
         final int numOfBytes = computeNonZeroBytes(value);
         out.writeByte((byte) numOfBytes);
         for (int b = numOfBytes - 1; b >= 0; b--) {
             out.writeByte((byte) (value >> (b * 8)));
         }
-    }
-
-    // [0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 80,
-    // -69, 72, 20, 36,
-    // -106, -79, -64, -127, 4, 49, -84, -102, 77, -47, 70, -106, 113, -70, 8, -66, 43, 86, 116,
-    // -25, -12, -1, 75, 14,
-    // -122, -42, 65, 0, 0, +4,194,204 more]
-    // [0, 0, 0, 98, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0,
-    // 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, -82,
-    // 25, 2, 43, -51,
-    // 119, -30, 62, -66, 52, -42, -36, 32, 11, 0, -36, 48, 117, 27, -16, -81, 9, 126, -25, -116,
-    // -124, 27, 32, -44,
-    // 3, -49, 100]
-    void deserialize(final ByteBuffer buffer) {
-        byte numOfBytes = buffer.get();
-        long value = 0;
-        if (numOfBytes >= 8) value |= ((long) buffer.get() & 255) << 56;
-        if (numOfBytes >= 7) value |= ((long) buffer.get() & 255) << 48;
-        if (numOfBytes >= 6) value |= ((long) buffer.get() & 255) << 40;
-        if (numOfBytes >= 5) value |= ((long) buffer.get() & 255) << 32;
-        if (numOfBytes >= 4) value |= ((long) buffer.get() & 255) << 24;
-        if (numOfBytes >= 3) value |= ((long) buffer.get() & 255) << 16;
-        if (numOfBytes >= 2) value |= ((long) buffer.get() & 255) << 8;
-        if (numOfBytes >= 1) value |= ((long) buffer.get() & 255);
-        setValue(value);
     }
 
     public void deserialize(final ReadableSequentialData in) {
@@ -238,30 +201,11 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
             return 1 + computeNonZeroBytes(data.getKeyAsLong());
         }
 
-        /**
-         * Deserialize a data item from a byte buffer, that was written with given data version
-         *
-         * @param buffer The buffer to read from containing the data item including its header
-         * @return Deserialized data item
-         */
-        @Override
-        public ExampleLongKeyVariableSize deserialize(final ByteBuffer buffer, final long dataVersion)
-                throws IOException {
-            final ExampleLongKeyVariableSize key = new ExampleLongKeyVariableSize();
-            key.deserialize(buffer);
-            return key;
-        }
-
         @Override
         public ExampleLongKeyVariableSize deserialize(ReadableSequentialData in) {
             final ExampleLongKeyVariableSize key = new ExampleLongKeyVariableSize();
             key.deserialize(in);
             return key;
-        }
-
-        @Override
-        public void serialize(final ExampleLongKeyVariableSize data, final ByteBuffer buffer) throws IOException {
-            data.serialize(buffer);
         }
 
         @Override
@@ -293,21 +237,6 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
             if (numOfBytes >= 3) value |= ((long) buffer.readByte() & 255) << 16;
             if (numOfBytes >= 2) value |= ((long) buffer.readByte() & 255) << 8;
             if (numOfBytes >= 1) value |= ((long) buffer.readByte() & 255);
-            return value == keyToCompare.getKeyAsLong();
-        }
-
-        @Override
-        public boolean equals(ByteBuffer buffer, int dataVersion, ExampleLongKeyVariableSize keyToCompare) {
-            byte numOfBytes = buffer.get();
-            long value = 0;
-            if (numOfBytes >= 8) value |= ((long) buffer.get() & 255) << 56;
-            if (numOfBytes >= 7) value |= ((long) buffer.get() & 255) << 48;
-            if (numOfBytes >= 6) value |= ((long) buffer.get() & 255) << 40;
-            if (numOfBytes >= 5) value |= ((long) buffer.get() & 255) << 32;
-            if (numOfBytes >= 4) value |= ((long) buffer.get() & 255) << 24;
-            if (numOfBytes >= 3) value |= ((long) buffer.get() & 255) << 16;
-            if (numOfBytes >= 2) value |= ((long) buffer.get() & 255) << 8;
-            if (numOfBytes >= 1) value |= ((long) buffer.get() & 255);
             return value == keyToCompare.getKeyAsLong();
         }
 

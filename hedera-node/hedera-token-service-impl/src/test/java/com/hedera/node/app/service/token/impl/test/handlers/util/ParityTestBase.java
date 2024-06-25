@@ -16,20 +16,19 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.test.util.SigReqAdapterUtils;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.test.factories.scenarios.TxnHandlingScenario;
 import com.swirlds.config.api.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 
+/**
+ * Adds parity tests for Signature requirements from mono-service in mod-service.
+ */
 public class ParityTestBase {
     protected ReadableAccountStore readableAccountStore;
     protected WritableAccountStore writableAccountStore;
@@ -38,6 +37,9 @@ public class ParityTestBase {
     protected TokenID token = TokenID.newBuilder().tokenNum(1).build();
     protected Configuration configuration;
 
+    /**
+     * Sets up the test environment.
+     */
     @BeforeEach
     public void setUp() {
         readableAccountStore = SigReqAdapterUtils.wellKnownAccountStoreAt();
@@ -45,13 +47,5 @@ public class ParityTestBase {
         readableTokenStore = SigReqAdapterUtils.wellKnownTokenStoreAt();
         writableTokenRelStore = SigReqAdapterUtils.wellKnownTokenRelStoreAt();
         configuration = HederaTestConfigBuilder.createConfig();
-    }
-
-    protected TransactionBody txnFrom(final TxnHandlingScenario scenario) {
-        try {
-            return toPbj(scenario.platformTxn().getTxn());
-        } catch (final Throwable e) {
-            throw new RuntimeException(e);
-        }
     }
 }

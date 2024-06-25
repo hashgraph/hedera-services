@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.workflows.dispatcher;
 
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusCreateTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusDeleteTopicHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusSubmitMessageHandler;
@@ -61,6 +64,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccount
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUpdateHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenUpdateNftsHandler;
 import com.hedera.node.app.service.util.impl.handlers.UtilPrngHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -79,7 +83,7 @@ public record TransactionHandlers(
         @NonNull ContractDeleteHandler contractDeleteHandler,
         @NonNull ContractSystemDeleteHandler contractSystemDeleteHandler,
         @NonNull ContractSystemUndeleteHandler contractSystemUndeleteHandler,
-        @NonNull EthereumTransactionHandler etherumTransactionHandler,
+        @NonNull EthereumTransactionHandler ethereumTransactionHandler,
         @NonNull CryptoCreateHandler cryptoCreateHandler,
         @NonNull CryptoUpdateHandler cryptoUpdateHandler,
         @NonNull CryptoTransferHandler cryptoTransferHandler,
@@ -96,6 +100,9 @@ public record TransactionHandlers(
         @NonNull FileSystemUndeleteHandler fileSystemUndeleteHandler,
         @NonNull FreezeHandler freezeHandler,
         @NonNull NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler,
+        @NonNull NodeCreateHandler nodeCreateHandler,
+        @NonNull NodeDeleteHandler nodeDeleteHandler,
+        @NonNull NodeUpdateHandler nodeUpdateHandler,
         @NonNull ScheduleCreateHandler scheduleCreateHandler,
         @NonNull ScheduleSignHandler scheduleSignHandler,
         @NonNull ScheduleDeleteHandler scheduleDeleteHandler,
@@ -114,4 +121,5 @@ public record TransactionHandlers(
         @NonNull TokenFeeScheduleUpdateHandler tokenFeeScheduleUpdateHandler,
         @NonNull TokenPauseHandler tokenPauseHandler,
         @NonNull TokenUnpauseHandler tokenUnpauseHandler,
+        @NonNull TokenUpdateNftsHandler tokenUpdateNftsHandler,
         @NonNull UtilPrngHandler utilPrngHandler) {}

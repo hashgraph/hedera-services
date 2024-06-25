@@ -16,7 +16,9 @@
 
 package com.swirlds.common.wiring.wires.output;
 
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
+
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.transformers.AdvancedTransformation;
@@ -41,7 +43,7 @@ import java.util.function.Predicate;
  */
 public abstract class OutputWire<OUT> {
 
-    private final StandardWiringModel model;
+    private final TraceableWiringModel model;
     private final String name;
 
     /**
@@ -50,7 +52,7 @@ public abstract class OutputWire<OUT> {
      * @param model the wiring model containing this output wire
      * @param name  the name of the output wire
      */
-    public OutputWire(@NonNull final StandardWiringModel model, @NonNull final String name) {
+    public OutputWire(@NonNull final TraceableWiringModel model, @NonNull final String name) {
         this.model = Objects.requireNonNull(model);
         this.name = Objects.requireNonNull(name);
     }
@@ -72,7 +74,7 @@ public abstract class OutputWire<OUT> {
      * @return the wiring model
      */
     @NonNull
-    protected StandardWiringModel getModel() {
+    protected TraceableWiringModel getModel() {
         return model;
     }
 
@@ -128,6 +130,10 @@ public abstract class OutputWire<OUT> {
      * @param solderType the semantics of the soldering operation
      */
     public void solderTo(@NonNull final InputWire<OUT> inputWire, @NonNull final SolderType solderType) {
+        if (inputWire.getTaskSchedulerType() == NO_OP) {
+            return;
+        }
+
         model.registerEdge(name, inputWire.getTaskSchedulerName(), inputWire.getName(), solderType);
 
         switch (solderType) {
@@ -139,8 +145,8 @@ public abstract class OutputWire<OUT> {
     }
 
     /**
-     * Specify a consumer where output data should be forwarded. This method creates a direct task scheduler under
-     * the hood and forwards output data to it.
+     * Specify a consumer where output data should be forwarded. This method creates a direct task scheduler under the
+     * hood and forwards output data to it.
      *
      * <p>
      * Soldering is the act of connecting two wires together, usually by melting a metal alloy between them. See
@@ -165,7 +171,7 @@ public abstract class OutputWire<OUT> {
                 .cast();
 
         final BindableInputWire<OUT, Void> directSchedulerInputWire = directScheduler.buildInputWire(inputWireLabel);
-        directSchedulerInputWire.bind(handler);
+        directSchedulerInputWire.bindConsumer(handler);
 
         this.solderTo(directSchedulerInputWire);
     }
@@ -225,8 +231,8 @@ public abstract class OutputWire<OUT> {
      * @param transformerName      the name of the transformer
      * @param transformerInputName the label for the input wire going into the transformer
      * @param transformer          the function that transforms the output of this wire into the output of the
-     *                             transformer.
-     *                             Called once per data item. Null data returned by this method his not forwarded.
+     *                             transformer. Called once per data item. Null data returned by this method is not
+     *                             forwarded.
      * @param <NEW_OUT>            the output type of the transformer
      * @return the output wire of the transformer
      */

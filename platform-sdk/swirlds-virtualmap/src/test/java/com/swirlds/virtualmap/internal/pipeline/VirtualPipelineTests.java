@@ -31,9 +31,9 @@ import static org.mockito.Mockito.mock;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
@@ -236,11 +236,11 @@ class VirtualPipelineTests {
         final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
         final MetricKeyRegistry registry = new MetricKeyRegistry();
-        return new DefaultMetrics(
+        return new DefaultPlatformMetrics(
                 null,
                 registry,
                 mock(ScheduledExecutorService.class),
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
     }
 
@@ -661,9 +661,16 @@ class VirtualPipelineTests {
             // Every 11th copy should be flushed
             copy.setEstimatedSize(config.copyFlushThreshold() / 10 - 1);
         }
-        for (DummyVirtualRoot copy : copies) {
-            copy.release();
-        }
+        // Release all copies to make them mergeable / flushable. Note that when the first copy is
+        // released, a thread race between this thread and the pipeline thread starts. It may
+        // happen that the pipeline will check if a copy should be flushed before it's released,
+        // which would result in less than expected number of flushed copies. To avoid that,
+        // pause the pipeline until all copies are released
+        afterCopy.getPipeline().pausePipelineAndExecute("releaseAll", () -> {
+            for (DummyVirtualRoot copy : copies) {
+                copy.release();
+            }
+        });
         afterCopy.release();
         afterCopy.waitUntilFlushed();
         int flushedCount = 0;

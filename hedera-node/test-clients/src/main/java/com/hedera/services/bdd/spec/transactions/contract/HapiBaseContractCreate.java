@@ -57,7 +57,7 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
     protected boolean advertiseCreation = false;
     protected boolean shouldAlsoRegisterAsAccount = true;
     protected boolean useDeprecatedAdminKey = false;
-    protected final String contract;
+    protected String contract;
     protected OptionalLong gas = OptionalLong.empty();
     Optional<String> key = Optional.empty();
     Optional<Long> autoRenewPeriodSecs = Optional.empty();
@@ -176,5 +176,9 @@ public abstract class HapiBaseContractCreate<T extends HapiTxnOp<T>> extends Hap
         return Optional.ofNullable(lastReceipt)
                 .map(receipt -> receipt.getContractID().getContractNum())
                 .orElse(-1L);
+    }
+
+    public Optional<Key> getAdminKey() {
+        return (!omitAdminKey && !useDeprecatedAdminKey) ? Optional.of(adminKey) : Optional.empty();
     }
 }

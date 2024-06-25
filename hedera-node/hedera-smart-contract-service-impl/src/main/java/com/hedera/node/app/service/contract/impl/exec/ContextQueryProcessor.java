@@ -22,10 +22,12 @@ import com.hedera.node.app.service.contract.impl.annotations.QueryScope;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.infra.HevmStaticTransactionFactory;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
@@ -72,18 +74,30 @@ public class ContextQueryProcessor implements Callable<CallOutcome> {
 
     @Override
     public CallOutcome call() {
-        // Try to translate the HAPI operation to a Hedera EVM transaction, throw HandleException on failure
-        final var hevmTransaction = hevmStaticTransactionFactory.fromHapiQuery(context.query());
+        try {
+            // Try to translate the HAPI operation to a Hedera EVM transaction, throw HandleException on failure
+            final var hevmTransaction = hevmStaticTransactionFactory.fromHapiQuery(context.query());
 
-        final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
-        // Get the appropriate processor for the EVM version
-        final var processor = processors.get(EVM_VERSIONS.get(contractsConfig.evmVersion()));
+            final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
+            // Get the appropriate processor for the EVM version
+            final var processor = processors.get(EVM_VERSIONS.get(contractsConfig.evmVersion()));
 
-        // Process the transaction
-        final var result = processor.processTransaction(
-                hevmTransaction, worldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, context.configuration());
+            // Process the transaction
+            final var result = processor.processTransaction(
+                    hevmTransaction, worldUpdater, feesOnlyUpdater, hederaEvmContext, tracer, context.configuration());
 
-        // Return the outcome (which cannot include sidecars to be externalized, since this is a query)
-        return CallOutcome.fromResultsWithoutSidecars(result.asQueryResult(), result);
+            // Return the outcome (which cannot include sidecars to be externalized, since this is a query)
+            return CallOutcome.fromResultsWithoutSidecars(result.asQueryResult(), result);
+        } catch (final HandleException e) {
+            final var op = context.query().contractCallLocalOrThrow();
+            final var senderId = op.hasSenderId() ? op.senderIdOrThrow() : context.payer();
+
+            final var hevmTransaction = hevmStaticTransactionFactory.fromHapiQueryException(context.query(), e);
+            final var result = HederaEvmTransactionResult.fromAborted(
+                    senderId,
+                    hevmTransaction.contractId(),
+                    hevmTransaction.exception().getStatus());
+            return CallOutcome.fromResultsWithoutSidecars(result.asQueryResult(), result);
+        }
     }
 }

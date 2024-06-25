@@ -1,3 +1,6 @@
+import com.swirlds.config.api.ConfigurationExtension;
+import com.swirlds.platform.config.PlatformConfigurationExtension;
+
 /**
  * The Swirlds public API module used by platform applications.
  */
@@ -5,22 +8,12 @@ module com.swirlds.platform.core {
 
     /* Public Package Exports. This list should remain alphabetized. */
     exports com.swirlds.platform;
-    exports com.swirlds.platform.gossip.chatter;
-    exports com.swirlds.platform.gossip.chatter.communication;
+    exports com.swirlds.platform.builder;
     exports com.swirlds.platform.network.communication.handshake;
-    exports com.swirlds.platform.gossip.chatter.config;
-    exports com.swirlds.platform.gossip.chatter.protocol;
-    exports com.swirlds.platform.gossip.chatter.protocol.input;
-    exports com.swirlds.platform.gossip.chatter.protocol.messages;
-    exports com.swirlds.platform.gossip.chatter.protocol.output;
-    exports com.swirlds.platform.gossip.chatter.protocol.peer;
-    exports com.swirlds.platform.gossip.chatter.protocol.heartbeat;
     exports com.swirlds.platform.cli;
     exports com.swirlds.platform.components;
     exports com.swirlds.platform.components.appcomm;
     exports com.swirlds.platform.components.common.output;
-    exports com.swirlds.platform.components.common.query;
-    exports com.swirlds.platform.components.state;
     exports com.swirlds.platform.components.state.output;
     exports com.swirlds.platform.config;
     exports com.swirlds.platform.config.legacy;
@@ -44,6 +37,9 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.network.protocol;
     exports com.swirlds.platform.network.topology;
     exports com.swirlds.platform.recovery;
+    exports com.swirlds.platform.sequence;
+    exports com.swirlds.platform.sequence.map;
+    exports com.swirlds.platform.sequence.set;
     exports com.swirlds.platform.state;
     exports com.swirlds.platform.stats;
     exports com.swirlds.platform.stats.atomic;
@@ -53,6 +49,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.state.signed;
     exports com.swirlds.platform.state.address;
     exports com.swirlds.platform.gossip.sync;
+    exports com.swirlds.platform.scratchpad;
     exports com.swirlds.platform.system;
     exports com.swirlds.platform.system.address;
     exports com.swirlds.platform.system.events;
@@ -60,7 +57,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.system.state.notifications;
     exports com.swirlds.platform.system.status;
     exports com.swirlds.platform.system.status.actions;
-    exports com.swirlds.platform.threading;
     exports com.swirlds.platform.util;
 
     /* Targeted Exports to External Libraries */
@@ -78,28 +74,16 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test,
             com.hedera.node.test.clients,
             com.swirlds.platform.core.test.fixtures,
-            com.hedera.node.app.service.mono.test.fixtures;
+            com.hedera.node.app.test.fixtures;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
-            com.swirlds.platform.test;
+            com.swirlds.platform.test,
+            com.swirlds.platform.core.test.fixtures;
     exports com.swirlds.platform.state.notifications to
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.iss to
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.iss.internal to
-            com.swirlds.platform.test;
-    exports com.swirlds.platform.gossip.chatter.protocol.processing;
-    exports com.swirlds.platform.dispatch to
-            com.swirlds.platform.test,
-            com.swirlds.config.impl,
-            com.swirlds.common,
-            com.hedera.node.test.clients;
-    exports com.swirlds.platform.dispatch.types to
-            com.swirlds.platform.test;
-    exports com.swirlds.platform.dispatch.triggers.control to
-            com.swirlds.platform.test,
-            com.hedera.node.test.clients;
-    exports com.swirlds.platform.dispatch.triggers.error to
             com.swirlds.platform.test;
     exports com.swirlds.platform.reconnect.emergency to
             com.swirlds.platform.test;
@@ -134,20 +118,36 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.wiring.components;
     exports com.swirlds.platform.event.hashing;
     exports com.swirlds.platform.event.orphan;
+    exports com.swirlds.platform.state.merkle;
+    exports com.swirlds.platform.state.merkle.logging;
+    exports com.swirlds.platform.state.merkle.disk;
+    exports com.swirlds.platform.state.merkle.singleton;
+    exports com.swirlds.platform.state.merkle.memory;
+    exports com.swirlds.platform.state.merkle.queue;
+    exports com.swirlds.platform.state.spi;
+    exports com.swirlds.platform.publisher;
+    exports com.swirlds.platform.components.consensus;
+    exports com.swirlds.platform.pool;
+    exports com.swirlds.platform.state.snapshot;
 
+    requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
+    requires transitive com.swirlds.fcqueue;
+    requires transitive com.swirlds.merkle;
+    requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.metrics.api;
+    requires transitive com.swirlds.state.api;
+    requires transitive com.swirlds.virtualmap;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
-    requires com.swirlds.merkledb;
-    requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
     requires java.desktop;
@@ -157,5 +157,9 @@ module com.swirlds.platform.core {
     requires jdk.net;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-    requires static com.github.spotbugs.annotations;
+    requires static transitive com.github.spotbugs.annotations;
+    requires static transitive com.google.auto.service;
+
+    provides ConfigurationExtension with
+            PlatformConfigurationExtension;
 }

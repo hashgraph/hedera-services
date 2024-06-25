@@ -48,16 +48,15 @@ import com.hedera.hapi.node.token.TokenGetInfoResponse;
 import com.hedera.hapi.node.token.TokenInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.TokenGetInfoHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -109,8 +108,8 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validatesQueryIfInvalidToken() {
-        final var state = MapReadableKVState.<EntityNum, Token>builder(TOKENS).build();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(state);
+        final var state = MapReadableKVState.<TokenID, Token>builder(TOKENS).build();
+        given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(state);
         final var store = new ReadableTokenStoreImpl(readableStates);
 
         final var query = createTokenGetInfoQuery(fungibleTokenId);
@@ -124,8 +123,8 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void validatesQueryIfInvalidTokenInTrans() {
-        final var state = MapReadableKVState.<EntityNum, Token>builder(TOKENS).build();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(state);
+        final var state = MapReadableKVState.<TokenID, Token>builder(TOKENS).build();
+        given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(state);
         final var store = new ReadableTokenStoreImpl(readableStates);
 
         final var query = createEmptyTokenGetInfoQuery();
@@ -159,8 +158,8 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void getsResponseIfInvalidToken() {
-        final var state = MapReadableKVState.<EntityNum, Token>builder(TOKENS).build();
-        given(readableStates.<EntityNum, Token>get(TOKENS)).willReturn(state);
+        final var state = MapReadableKVState.<TokenID, Token>builder(TOKENS).build();
+        given(readableStates.<TokenID, Token>get(TOKENS)).willReturn(state);
         final var store = new ReadableTokenStoreImpl(readableStates);
 
         final var responseHeader = ResponseHeader.newBuilder()
@@ -281,6 +280,8 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .defaultKycStatus(fungibleToken.accountsKycGrantedByDefault() ? GRANTED : REVOKED)
                 .pauseStatus(fungibleToken.paused() ? PAUSED : UNPAUSED)
                 .customFees(fungibleToken.customFees())
+                .metadata(fungibleToken.metadata())
+                .metadataKey(fungibleToken.metadataKey())
                 .build();
     }
 
@@ -294,6 +295,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .adminKey((Key) null)
                 .feeScheduleKey((Key) null)
                 .pauseKey((Key) null)
+                .metadataKey((Key) null)
                 .defaultFreezeStatus(FREEZE_NOT_APPLICABLE)
                 .defaultKycStatus(KYC_NOT_APPLICABLE)
                 .pauseStatus(PAUSE_NOT_APPLICABLE)
@@ -319,6 +321,7 @@ class TokenGetInfoHandlerTest extends CryptoTokenHandlerTestBase {
                 .adminKey(Key.DEFAULT)
                 .feeScheduleKey(Key.DEFAULT)
                 .pauseKey(Key.DEFAULT)
+                .metadataKey(Key.DEFAULT)
                 .build();
     }
 

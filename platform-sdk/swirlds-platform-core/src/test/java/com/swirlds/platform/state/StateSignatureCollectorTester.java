@@ -16,17 +16,19 @@
 
 package com.swirlds.platform.state;
 
-import com.swirlds.common.metrics.noop.NoOpMetrics;
+import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.components.state.output.StateHasEnoughSignaturesConsumer;
 import com.swirlds.platform.components.state.output.StateLacksSignaturesConsumer;
 import com.swirlds.platform.components.transaction.system.ScopedSystemTransaction;
-import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.state.nexus.DefaultLatestCompleteStateNexus;
 import com.swirlds.platform.state.nexus.LatestCompleteStateNexus;
+import com.swirlds.platform.state.signed.DefaultStateSignatureCollector;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedStateMetrics;
-import com.swirlds.platform.state.signed.StateSignatureCollector;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -36,31 +38,31 @@ import java.util.Optional;
  * A StateSignatureCollector that is used for unit testing. In the future, these unit tests should become small
  * integration tests that test multiple components, this class should be removed once we have achieved that.
  */
-public class StateSignatureCollectorTester extends StateSignatureCollector {
+public class StateSignatureCollectorTester extends DefaultStateSignatureCollector {
     private final LatestCompleteStateNexus latestSignedState;
     private final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer;
     private final StateLacksSignaturesConsumer stateLacksSignaturesConsumer;
 
     private StateSignatureCollectorTester(
-            @NonNull final StateConfig stateConfig,
+            @NonNull final PlatformContext platformContext,
             @NonNull final SignedStateMetrics signedStateMetrics,
             @NonNull final LatestCompleteStateNexus latestSignedState,
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
-        super(stateConfig, signedStateMetrics);
+        super(platformContext, signedStateMetrics);
         this.latestSignedState = latestSignedState;
         this.stateHasEnoughSignaturesConsumer = stateHasEnoughSignaturesConsumer;
         this.stateLacksSignaturesConsumer = stateLacksSignaturesConsumer;
     }
 
     public static StateSignatureCollectorTester create(
-            @NonNull final StateConfig stateConfig,
+            @NonNull final PlatformContext platformContext,
             @NonNull final SignedStateMetrics signedStateMetrics,
             @NonNull final StateHasEnoughSignaturesConsumer stateHasEnoughSignaturesConsumer,
             @NonNull final StateLacksSignaturesConsumer stateLacksSignaturesConsumer) {
-        final LatestCompleteStateNexus latestSignedState = new LatestCompleteStateNexus(stateConfig, new NoOpMetrics());
+        final LatestCompleteStateNexus latestSignedState = new DefaultLatestCompleteStateNexus(platformContext);
         return new StateSignatureCollectorTester(
-                stateConfig,
+                platformContext,
                 signedStateMetrics,
                 latestSignedState,
                 stateHasEnoughSignaturesConsumer,
@@ -69,29 +71,36 @@ public class StateSignatureCollectorTester extends StateSignatureCollector {
 
     @Override
     public List<ReservedSignedState> addReservedState(@NonNull final ReservedSignedState reservedSignedState) {
-        latestSignedState.newIncompleteState(reservedSignedState.get().getRound());
+        final EventWindow window = new EventWindow(
+                reservedSignedState.get().getRound(),
+                1 /* ignored by this test */,
+                1 /* ignored by this test */,
+                AncientMode.GENERATION_THRESHOLD /* ignored by this test*/);
+
+        latestSignedState.updateEventWindow(window);
+
         return processStates(super.addReservedState(reservedSignedState));
     }
 
     @Override
     public List<ReservedSignedState> handlePreconsensusSignatures(
-            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+            @NonNull final List<ScopedSystemTransaction<StateSignaturePayload>> transactions) {
         return processStates(super.handlePreconsensusSignatures(transactions));
     }
 
     public void handlePreconsensusSignatureTransaction(
-            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction signatureTransaction) {
+            @NonNull final NodeId signerId, @NonNull final StateSignaturePayload signatureTransaction) {
         handlePreconsensusSignatures(List.of(new ScopedSystemTransaction<>(signerId, null, signatureTransaction)));
     }
 
     @Override
     public List<ReservedSignedState> handlePostconsensusSignatures(
-            @NonNull final List<ScopedSystemTransaction<StateSignatureTransaction>> transactions) {
+            @NonNull final List<ScopedSystemTransaction<StateSignaturePayload>> transactions) {
         return processStates(super.handlePostconsensusSignatures(transactions));
     }
 
     public void handlePostconsensusSignatureTransaction(
-            @NonNull final NodeId signerId, @NonNull final StateSignatureTransaction transaction) {
+            @NonNull final NodeId signerId, @NonNull final StateSignaturePayload transaction) {
         handlePostconsensusSignatures(List.of(new ScopedSystemTransaction<>(signerId, null, transaction)));
     }
 

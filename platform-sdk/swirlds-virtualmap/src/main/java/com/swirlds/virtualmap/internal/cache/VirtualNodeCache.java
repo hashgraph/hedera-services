@@ -148,32 +148,31 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     public static final Hash NULL_HASH = new Hash();
 
-    /**
-     * Since {@code com.swirlds.platform.Browser} populates settings, and it is loaded before any
-     * application classes that might instantiate a data source, the {@link ConfigurationHolder}
-     * holder will have been configured by the time this static initializer runs.
-     */
-    private static final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
+    private static Executor cleaningPool = null;
 
-    /**
-     * This thread pool contains the threads that purge unneeded key/mutation list pairs from the indexes.
-     * The "syncCleaningPool" property is used for testing.
-     */
-    private static final Executor CLEANING_POOL = Boolean.getBoolean("syncCleaningPool")
-            ? Runnable::run
-            : new ThreadPoolExecutor(
-                    config.getNumCleanerThreads(),
-                    config.getNumCleanerThreads(),
-                    60L,
-                    TimeUnit.SECONDS,
-                    new LinkedBlockingQueue<>(),
-                    new ThreadConfiguration(getStaticThreadManager())
-                            .setThreadGroup(new ThreadGroup("virtual-cache-cleaners"))
-                            .setComponent("virtual-map")
-                            .setThreadName("cache-cleaner")
-                            .setExceptionHandler((t, ex) -> logger.error(
-                                    EXCEPTION.getMarker(), "Failed to purge unneeded key/mutationList pairs", ex))
-                            .buildFactory());
+    private static synchronized Executor getCleaningPool() {
+        if (cleaningPool == null) {
+            final VirtualMapConfig config = ConfigurationHolder.getConfigData(VirtualMapConfig.class);
+            cleaningPool = Boolean.getBoolean("syncCleaningPool")
+                    ? Runnable::run
+                    : new ThreadPoolExecutor(
+                            config.getNumCleanerThreads(),
+                            config.getNumCleanerThreads(),
+                            60L,
+                            TimeUnit.SECONDS,
+                            new LinkedBlockingQueue<>(),
+                            new ThreadConfiguration(getStaticThreadManager())
+                                    .setThreadGroup(new ThreadGroup("virtual-cache-cleaners"))
+                                    .setComponent("virtual-map")
+                                    .setThreadName("cache-cleaner")
+                                    .setExceptionHandler((t, ex) -> logger.error(
+                                            EXCEPTION.getMarker(),
+                                            "Failed to purge unneeded key/mutationList pairs",
+                                            ex))
+                                    .buildFactory());
+        }
+        return cleaningPool;
+    }
 
     /**
      * The fast-copyable version of the cache. This version number is auto-incrementing and set
@@ -432,7 +431,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
         // Fire off the cleaning threads to go and clear out data in the indexes that doesn't need
         // to be there anymore.
-        CLEANING_POOL.execute(() -> {
+        getCleaningPool().execute(() -> {
             purge(dirtyLeaves, keyToDirtyLeafIndex);
             purge(dirtyLeafPaths, pathToDirtyLeafIndex);
             purge(dirtyHashes, pathToDirtyHashIndex);
@@ -835,7 +834,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         }
 
         final Map<K, VirtualLeafRecord<K, V>> leaves = new ConcurrentHashMap<>();
-        final StandardFuture<Void> result = dirtyLeaves.parallelTraverse(CLEANING_POOL, element -> {
+        final StandardFuture<Void> result = dirtyLeaves.parallelTraverse(getCleaningPool(), element -> {
             if (element.isDeleted()) {
                 final K key = element.key;
                 final Mutation<K, VirtualLeafRecord<K, V>> mutation = lookup(keyToDirtyLeafIndex.get(key));
@@ -1284,7 +1283,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     private static <K, V> void purge(final ConcurrentArray<Mutation<K, V>> array, final Map<K, Mutation<K, V>> index) {
         array.parallelTraverse(
-                CLEANING_POOL,
+                getCleaningPool(),
                 element -> index.compute(element.key, (key, mutation) -> {
                     if (mutation == null || element.equals(mutation)) {
                         // Already removed for a more recent mutation
@@ -1326,7 +1325,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             }
         };
         try {
-            array.parallelTraverse(CLEANING_POOL, action).getAndRethrow();
+            array.parallelTraverse(getCleaningPool(), action).getAndRethrow();
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);

@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.totalsupply;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,7 +26,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class TotalSupplyTranslator extends AbstractHtsCallTranslator {
+public class TotalSupplyTranslator extends AbstractCallTranslator<HtsCallAttempt> {
     public static final Function TOTAL_SUPPLY = new Function("totalSupply()", ReturnTypes.INT);
 
     @Inject

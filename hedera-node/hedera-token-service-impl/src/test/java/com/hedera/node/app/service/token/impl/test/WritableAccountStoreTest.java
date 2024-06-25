@@ -28,12 +28,15 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,8 +77,13 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void throwsIfNullValuesAsArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableAccountStore(null));
+    void throwsIfNullValuesAsArgs(@Mock StoreMetricsService storeMetricsService) {
+        final var configuration = HederaTestConfigBuilder.createConfig();
+        assertThrows(
+                NullPointerException.class, () -> new WritableAccountStore(null, configuration, storeMetricsService));
+        assertThrows(
+                NullPointerException.class, () -> new WritableAccountStore(writableStates, null, storeMetricsService));
+        assertThrows(NullPointerException.class, () -> new WritableAccountStore(writableStates, configuration, null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
@@ -113,13 +121,27 @@ class WritableAccountStoreTest extends CryptoHandlerTestBase {
     }
 
     @Test
-    void getForModifyLooksForAlias() {
+    void getForModifyDoesntLookForAlias() {
         assertEquals(0, writableStore.sizeOfAliasesState());
 
         writableStore.put(account);
         writableStore.putAlias(alias.alias(), id);
 
         final var readaccount = writableStore.getForModify(alias);
+
+        assertThat(readaccount).isNull();
+        assertEquals(1, writableStore.sizeOfAliasesState());
+        assertEquals(Set.of(edKeyAlias), writableStore.modifiedAliasesInState());
+    }
+
+    @Test
+    void getWithAliasedIdLooksForAlias() {
+        assertEquals(0, writableStore.sizeOfAliasesState());
+
+        writableStore.put(account);
+        writableStore.putAlias(alias.alias(), id);
+
+        final var readaccount = writableStore.getAliasedAccountById(alias);
 
         assertThat(readaccount).isNotNull();
         assertThat(account).isEqualTo(readaccount);

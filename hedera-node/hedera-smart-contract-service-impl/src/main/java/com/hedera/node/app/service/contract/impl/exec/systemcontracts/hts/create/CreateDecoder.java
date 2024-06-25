@@ -367,7 +367,7 @@ public class CreateDecoder {
                 isFreezeDefault,
                 tokenKeys,
                 tokenExpiry);
-        tokenCreateWrapper.setAllInheritedKeysTo(nativeOperations.getAccountKey(senderId.accountNumOrThrow()));
+        tokenCreateWrapper.setAllInheritedKeysTo(nativeOperations.getAccountKey(senderId));
         return tokenCreateWrapper;
     }
 

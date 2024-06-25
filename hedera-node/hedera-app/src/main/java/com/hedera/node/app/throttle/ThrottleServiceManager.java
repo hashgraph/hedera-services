@@ -17,38 +17,38 @@
 package com.hedera.node.app.throttle;
 
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.throttle.CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY;
-import static com.hedera.node.app.throttle.CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
+import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
+import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
 import static com.hedera.node.app.util.FileUtilities.createFileID;
 import static com.hedera.node.app.util.FileUtilities.getFileContent;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -136,6 +136,24 @@ public class ThrottleServiceManager {
         return validatedThrottles.successStatus();
     }
 
+    public int numImplicitCreations(
+            @NonNull final TransactionBody body, @NonNull final ReadableAccountStore accountStore) {
+        return backendThrottle.getImplicitCreationsCount(body, accountStore);
+    }
+
+    public int numAutoAssociations(
+            @NonNull final TransactionBody body, @NonNull final ReadableTokenRelationStore relationStore) {
+        return backendThrottle.getAutoAssociationsCount(body, relationStore);
+    }
+
+    /**
+     * Updates all metrics for the throttles.
+     */
+    public void updateAllMetrics() {
+        ingestThrottle.updateAllMetrics();
+        backendThrottle.updateAllMetrics();
+    }
+
     private void saveThrottleSnapshotsTo(@NonNull final WritableStates serviceStates) {
         final var hapiThrottles = backendThrottle.allActiveThrottles();
         final List<ThrottleUsageSnapshot> hapiThrottleSnapshots;
@@ -144,12 +162,12 @@ public class ThrottleServiceManager {
         } else {
             hapiThrottleSnapshots = new ArrayList<>();
             for (final var throttle : hapiThrottles) {
-                hapiThrottleSnapshots.add(toPbj(throttle.usageSnapshot()));
+                hapiThrottleSnapshots.add(throttle.usageSnapshot());
             }
         }
 
         final var gasThrottle = backendThrottle.gasLimitThrottle();
-        final var gasThrottleSnapshot = toPbj(gasThrottle.usageSnapshot());
+        final var gasThrottleSnapshot = gasThrottle.usageSnapshot();
 
         final WritableSingletonState<ThrottleUsageSnapshots> throttleSnapshots =
                 serviceStates.getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
@@ -199,10 +217,27 @@ public class ThrottleServiceManager {
     }
 
     private void resetThrottlesFromUsageSnapshots(@NonNull final ReadableStates serviceStates) {
-        final var usageSnapshots = UsageSnapshots.from(serviceStates.getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY));
-        safeResetThrottles(backendThrottle.allActiveThrottles(), usageSnapshots.hapiUsageSnapshots());
-        if (usageSnapshots.gasUsageSnapshot() != null) {
-            backendThrottle.gasLimitThrottle().resetUsageTo(usageSnapshots.gasUsageSnapshot());
+        final ReadableSingletonState<ThrottleUsageSnapshots> usageSnapshotsState =
+                serviceStates.getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY);
+        final var usageSnapshots = requireNonNull(usageSnapshotsState.get());
+        safeResetThrottles(backendThrottle.allActiveThrottles(), usageSnapshots.tpsThrottles());
+        if (usageSnapshots.hasGasThrottle()) {
+            backendThrottle.gasLimitThrottle().resetUsageTo(usageSnapshots.gasThrottleOrThrow());
+        }
+    }
+
+    /**
+     * Reclaims the capacity used for throttling the given number of implicit creations or auto associations
+     * on the frontend.
+     *
+     * @param numCapacity the number of implicit creations or auto associations
+     */
+    public void reclaimFrontendThrottleCapacity(final int numCapacity, final HederaFunctionality hederaFunctionality) {
+        try {
+            ingestThrottle.leakCapacityForNOfUnscaled(numCapacity, hederaFunctionality);
+        } catch (Exception ignore) {
+            // Ignore if the frontend bucket has already leaked all the capacity
+            // used for throttling the transaction on the frontend
         }
     }
 
@@ -213,24 +248,8 @@ public class ThrottleServiceManager {
                 @NonNull final ReadableSingletonState<CongestionLevelStarts> congestionLevelStarts) {
             final var sourceStarts = requireNonNull(congestionLevelStarts.get());
             return new CongestionStarts(
-                    asMultiplierStarts(sourceStarts.genericLevelStartsOrElse(emptyList())),
-                    asMultiplierStarts(sourceStarts.gasLevelStartsOrElse(emptyList())));
-        }
-    }
-
-    private record UsageSnapshots(
-            List<DeterministicThrottle.UsageSnapshot> hapiUsageSnapshots,
-            @Nullable DeterministicThrottle.UsageSnapshot gasUsageSnapshot) {
-        static UsageSnapshots from(
-                @NonNull final ReadableSingletonState<ThrottleUsageSnapshots> throttleUsageSnapshots) {
-            final var sourceSnapshots = requireNonNull(throttleUsageSnapshots.get());
-            return new UsageSnapshots(
-                    sourceSnapshots.tpsThrottlesOrElse(emptyList()).stream()
-                            .map(PbjConverter::fromPbj)
-                            .toList(),
-                    Optional.ofNullable(sourceSnapshots.gasThrottle())
-                            .map(PbjConverter::fromPbj)
-                            .orElse(null));
+                    asMultiplierStarts(sourceStarts.genericLevelStarts()),
+                    asMultiplierStarts(sourceStarts.gasLevelStarts()));
         }
     }
 
@@ -243,7 +262,7 @@ public class ThrottleServiceManager {
     }
 
     private static void safeResetThrottles(
-            final List<DeterministicThrottle> throttles, final List<DeterministicThrottle.UsageSnapshot> snapshots) {
+            final List<DeterministicThrottle> throttles, final List<ThrottleUsageSnapshot> snapshots) {
         // No-op if we don't have a snapshot for every throttle
         if (throttles.size() != snapshots.size()) {
             return;
@@ -266,8 +285,7 @@ public class ThrottleServiceManager {
     }
 
     private static void resetUnconditionally(
-            final List<DeterministicThrottle> throttles,
-            final List<DeterministicThrottle.UsageSnapshot> knownCompatible) {
+            final List<DeterministicThrottle> throttles, final List<ThrottleUsageSnapshot> knownCompatible) {
         for (int i = 0, n = knownCompatible.size(); i < n; i++) {
             throttles.get(i).resetUsageTo(knownCompatible.get(i));
         }

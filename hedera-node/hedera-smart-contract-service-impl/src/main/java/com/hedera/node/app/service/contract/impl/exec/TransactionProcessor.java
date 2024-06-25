@@ -43,6 +43,7 @@ import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
+import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -94,6 +95,15 @@ public class TransactionProcessor {
     }
 
     /**
+     * Returns the feature flags used by this processor.
+     *
+     * @return the feature flags
+     */
+    public FeatureFlags featureFlags() {
+        return featureFlags;
+    }
+
+    /**
      * Process the given transaction, returning the result of running it to completion
      * and committing to the given updater.
      *
@@ -113,7 +123,7 @@ public class TransactionProcessor {
             @NonNull final HederaEvmContext context,
             @NonNull final ActionSidecarContentTracer tracer,
             @NonNull final Configuration config) {
-        final var parties = safeComputeInvolvedParties(transaction, updater, config, context);
+        final var parties = computeInvolvedPartiesOrAbort(transaction, updater, config);
         try {
             return processTransactionWithParties(
                     transaction, updater, feesOnlyUpdater, context, tracer, config, parties);
@@ -162,11 +172,10 @@ public class TransactionProcessor {
         return safeCommit(result, transaction, updater, feesOnlyUpdater, context, config);
     }
 
-    private InvolvedParties safeComputeInvolvedParties(
+    private InvolvedParties computeInvolvedPartiesOrAbort(
             @NonNull final HederaEvmTransaction transaction,
             @NonNull final HederaWorldUpdater updater,
-            @NonNull final Configuration config,
-            @NonNull final HederaEvmContext context) {
+            @NonNull final Configuration config) {
         try {
             return computeInvolvedParties(transaction, updater, config);
         } catch (AbortException e) {
@@ -271,7 +280,8 @@ public class TransactionProcessor {
         final var maybeGrandfatheredNumber =
                 (to == null) ? null : to.isTokenFacade() ? null : to.hederaId().accountNumOrThrow();
 
-        return featureFlags.isAllowCallsToNonContractAccountsEnabled(config, maybeGrandfatheredNumber);
+        return featureFlags.isAllowCallsToNonContractAccountsEnabled(
+                config.getConfigData(ContractsConfig.class), maybeGrandfatheredNumber);
     }
 
     private InvolvedParties partiesWhenContractRequired(
@@ -317,8 +327,6 @@ public class TransactionProcessor {
                         new InvolvedParties(sender, relayer, contractIDToBesuAddress(transaction.contractIdOrThrow()));
             }
         } else {
-            // In order to be EVM equivalent, we need to gracefully handle calls to potentially non-existent contracts
-            // and thus create a receiver address even if it may not exist in the ledger
             updater.setContractNotRequired();
             parties = new InvolvedParties(
                     sender,

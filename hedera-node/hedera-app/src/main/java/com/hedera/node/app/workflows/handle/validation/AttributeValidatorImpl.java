@@ -23,8 +23,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
@@ -92,7 +92,8 @@ public class AttributeValidatorImpl implements AttributeValidator {
                 context.configuration().getConfigData(EntitiesConfig.class).maxLifetime();
         final var now = context.consensusNow().getEpochSecond();
         final var expiryGivenMaxLifetime = now + maxEntityLifetime;
-        validateTrue(expiry > now && expiry < expiryGivenMaxLifetime, INVALID_EXPIRATION_TIME);
+        final var impliedExpiry = expiry == NA ? expiryGivenMaxLifetime : expiry;
+        validateTrue(impliedExpiry > now && impliedExpiry <= expiryGivenMaxLifetime, INVALID_EXPIRATION_TIME);
     }
 
     /**
@@ -114,12 +115,10 @@ public class AttributeValidatorImpl implements AttributeValidator {
         }
         if (!key.hasThresholdKey() && !key.hasKeyList()) {
             validateSimple(key);
-        } else if (key.hasThresholdKey()
-                && key.thresholdKeyOrThrow().hasKeys()
-                && key.thresholdKeyOrThrow().keysOrThrow().hasKeys()) {
-            key.thresholdKeyOrThrow().keysOrThrow().keysOrThrow().forEach(k -> validateKeyAtLevel(k, level + 1));
-        } else if (key.keyListOrThrow().hasKeys()) {
-            key.keyListOrThrow().keysOrThrow().forEach(k -> validateKeyAtLevel(k, level + 1));
+        } else if (key.hasThresholdKey() && key.thresholdKeyOrThrow().hasKeys()) {
+            key.thresholdKeyOrThrow().keysOrThrow().keys().forEach(k -> validateKeyAtLevel(k, level + 1));
+        } else {
+            key.keyListOrThrow().keys().forEach(k -> validateKeyAtLevel(k, level + 1));
         }
     }
 
@@ -142,12 +141,5 @@ public class AttributeValidatorImpl implements AttributeValidator {
             }
         }
         return false;
-    }
-
-    @Override
-    public boolean isImmutableKey(@NonNull final Key key) {
-        requireNonNull(key);
-        return key.hasKeyList()
-                && requireNonNull(key.keyList()).keysOrElse(emptyList()).isEmpty();
     }
 }

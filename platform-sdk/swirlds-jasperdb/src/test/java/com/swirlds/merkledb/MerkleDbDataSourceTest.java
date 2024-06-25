@@ -37,11 +37,14 @@ import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.Metric.ValueType;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -77,7 +80,7 @@ class MerkleDbDataSourceTest {
 
     @BeforeAll
     static void setup() throws Exception {
-        testDirectory = TemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceTest");
+        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceTest");
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 
@@ -644,6 +647,38 @@ class MerkleDbDataSourceTest {
                 assertEquals(i + 5, leaf.getPath(), "Leaf path mismatch at path " + i);
                 assertEquals(keys.get(i), leaf.getKey(), "Wrong key at path " + i);
                 assertEquals(values.get(i), leaf.getValue(), "Wrong value at path " + i);
+            }
+        });
+    }
+
+    @Test
+    void copyStatisticsTest() throws Exception {
+        // This test simulates what happens on reconnect and makes sure that MerkleDb stats are reported
+        // for the copy correctly
+        final String label = "copyStatisticsTest";
+        final TestType testType = TestType.variable_variable;
+        final Metrics metrics = testType.getMetrics();
+        createAndApplyDataSource(testDirectory, label, testType, 1000, dataSource -> {
+            dataSource.registerMetrics(metrics);
+            assertEquals(
+                    1L,
+                    metrics.getMetric(MerkleDbStatistics.STAT_CATEGORY, "merkledb_count")
+                            .get(ValueType.VALUE));
+            dataSource.saveRecords(4, 8, Stream.of(), Stream.of(), Stream.of(), false);
+            final IntegerGauge sourceCounter = (IntegerGauge)
+                    metrics.getMetric(MerkleDbStatistics.STAT_CATEGORY, "ds_files_leavesStoreFileCount_" + label);
+            assertEquals(1L, sourceCounter.get());
+            final var copy = dataSource.getDatabase().copyDataSource(dataSource, true);
+            try {
+                assertEquals(
+                        2L, metrics.getMetric("merkle_db", "merkledb_count").get(ValueType.VALUE));
+                copy.copyStatisticsFrom(dataSource);
+                copy.saveRecords(4, 8, Stream.of(), Stream.of(), Stream.of(), false);
+                final IntegerGauge copyCounter = (IntegerGauge)
+                        metrics.getMetric(MerkleDbStatistics.STAT_CATEGORY, "ds_files_leavesStoreFileCount_" + label);
+                assertEquals(2L, copyCounter.get());
+            } finally {
+                copy.close();
             }
         });
     }

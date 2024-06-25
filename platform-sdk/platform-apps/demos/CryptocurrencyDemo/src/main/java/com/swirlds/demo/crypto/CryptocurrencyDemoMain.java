@@ -36,7 +36,6 @@ import com.swirlds.common.threading.framework.config.StoppableThreadConfiguratio
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -143,9 +142,8 @@ public class CryptocurrencyDemoMain implements SwirldMain {
     public void init(final Platform platform, final NodeId id) {
         this.platform = platform;
         this.selfId = id;
-        final int winNum = GuiModel.getInstance().getInstanceNumber(selfId);
+        final int winNum = (int) selfId.id();
         this.console = createConsole(platform, winNum, true); // create the window, make it visible
-        GuiModel.getInstance().setAbout(platform.getSelfId(), "Cryptocurrency and stock market demo v. 1.0\n");
         this.console.addKeyListener(keyListener);
     }
 

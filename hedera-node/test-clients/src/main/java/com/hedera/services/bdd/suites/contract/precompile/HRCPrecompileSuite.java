@@ -26,7 +26,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWit
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -39,6 +41,8 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asHexedAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -49,23 +53,20 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
+import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
+import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class HRCPrecompileSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(HRCPrecompileSuite.class);
+public class HRCPrecompileSuite {
     private static final String MULTI_KEY = "multikey";
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String FUNGIBLE_TOKEN_2 = "fungibleToken2";
@@ -85,28 +86,73 @@ public class HRCPrecompileSuite extends HapiSuite {
     private static final String ASSOCIATE = "associate";
     private static final String DISSOCIATE = "dissociate";
 
-    public static void main(String... args) {
-        new HRCPrecompileSuite().runSuiteAsync();
-    }
+    @HapiTest
+    final Stream<DynamicTest> hrcCanDissociateFromDeletedToken() {
+        final AtomicReference<String> nonfungibleTokenNum = new AtomicReference<>();
 
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                hrcNftAndFungibleTokenAssociateFromEOA(),
-                hrcNFTAndFungibleTokenAssociateFromContract(),
-                hrcTokenAssociateFromSameEOATwiceShouldFail(),
-                hrcTokenDissociateWhenNotAssociatedShouldFail(),
-                hrcTokenDissociateWhenBalanceNotZeroShouldFail(),
-                hrcTooManyTokenAssociateShouldFail());
+        return defaultHapiSpec("hrcCanDissociateFromDeletedToken", NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .name(TOKEN_NAME)
+                                .symbol(TOKEN_SYMBOL)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .exposingCreatedIdTo(nonfungibleTokenNum::set),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("PRICELESS")))
+                                .payingWith(ACCOUNT)
+                                .via("mintTxn"),
+                        uploadInitCode(HRC),
+                        contractCreate(HRC))
+                .when(withOpContext((spec, opLog) -> {
+                    var nonfungibleTokenAddress = asHexedSolidityAddress(asToken(nonfungibleTokenNum.get()));
+                    allRunFor(
+                            spec,
+                            // Associate non-fungible token
+                            contractCallWithFunctionAbi(
+                                            nonfungibleTokenAddress,
+                                            getABIFor(Utils.FunctionType.FUNCTION, ASSOCIATE, HRC))
+                                    .payingWith(ACCOUNT)
+                                    .gas(1_000_000)
+                                    .via(ASSOCIATE_TXN_2),
+                            cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1)
+                                    .between(TOKEN_TREASURY, ACCOUNT)),
+                            tokenDelete(NON_FUNGIBLE_TOKEN).via("deleteTxn"),
+                            // Dissociate non-fungible token
+                            contractCallWithFunctionAbi(
+                                            nonfungibleTokenAddress,
+                                            getABIFor(Utils.FunctionType.FUNCTION, DISSOCIATE, HRC))
+                                    .payingWith(ACCOUNT)
+                                    .gas(1_000_000)
+                                    .via(DISSOCIATE_TXN_2));
+                }))
+                .then(withOpContext((spec, ignore) -> allRunFor(
+                        spec,
+                        childRecordsCheck(
+                                ASSOCIATE_TXN_2,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        childRecordsCheck(
+                                DISSOCIATE_TXN_2,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))))));
     }
 
     @HapiTest
-    final HapiSpec hrcNftAndFungibleTokenAssociateFromEOA() {
+    final Stream<DynamicTest> hrcNftAndFungibleTokenAssociateFromEOA() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
         final AtomicReference<String> nonfungibleTokenNum = new AtomicReference<>();
 
@@ -218,7 +264,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcNFTAndFungibleTokenAssociateFromContract() {
+    final Stream<DynamicTest> hrcNFTAndFungibleTokenAssociateFromContract() {
         return defaultHapiSpec(
                         "hrcNFTAndFungibleTokenAssociateFromContract",
                         NONDETERMINISTIC_TRANSACTION_FEES,
@@ -329,7 +375,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcTokenAssociateFromSameEOATwiceShouldFail() {
+    final Stream<DynamicTest> hrcTokenAssociateFromSameEOATwiceShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -398,7 +444,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcTokenDissociateWhenNotAssociatedShouldFail() {
+    final Stream<DynamicTest> hrcTokenDissociateWhenNotAssociatedShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec("hrcTokenDissociateWhenNotAssociatedShouldFail", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -446,7 +492,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcTokenDissociateWhenBalanceNotZeroShouldFail() {
+    final Stream<DynamicTest> hrcTokenDissociateWhenBalanceNotZeroShouldFail() {
         final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
 
         return defaultHapiSpec(
@@ -517,7 +563,7 @@ public class HRCPrecompileSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hrcTooManyTokenAssociateShouldFail() {
+    final Stream<DynamicTest> hrcTooManyTokenAssociateShouldFail() {
         final AtomicReference<String> fungibleTokenNum1 = new AtomicReference<>();
         final AtomicReference<String> fungibleTokenNum2 = new AtomicReference<>();
         final AtomicReference<String> fungibleTokenNum3 = new AtomicReference<>();
@@ -626,10 +672,5 @@ public class HRCPrecompileSuite extends HapiSuite {
                                                 .contractCallResult(resultWith()
                                                         .contractCallResult(htsPrecompileResult()
                                                                 .withStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED)))))));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

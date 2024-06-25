@@ -31,13 +31,25 @@ public interface ReadableAccountStore {
 
     /**
      * Fetches an {@link Account} object from state with the given {@link AccountID}. If the account could not be
-     * fetched because the given account doesn't exist, returns {@code null}.
+     * fetched because the given account doesn't exist, returns {@code null}. It doesn't look up in alias state
+     * to find the account.
+     *
+     * @param accountID given account id
+     * @return {@link Account} object if successfully fetched or {@code null} if the account doesn't exist
+     */
+    @Nullable
+    Account getAccountById(@NonNull final AccountID accountID);
+
+    /**
+     * Fetches an {@link Account} object from state with the given {@link AccountID}. If the account could not be
+     * fetched because the given account doesn't exist, returns {@code null}. It looks up in alias state
+     * to find the account.
      *
      * @param accountID given account id or alias
      * @return {@link Account} object if successfully fetched or {@code null} if the account doesn't exist
      */
     @Nullable
-    Account getAccountById(@NonNull final AccountID accountID);
+    Account getAliasedAccountById(@NonNull final AccountID accountID);
 
     /**
      * Fetches an {@link Account} object from state with the given alias. If the account could not be
@@ -61,6 +73,7 @@ public interface ReadableAccountStore {
     /**
      * Returns true if the given account ID exists in state.
      * @param accountID the ID to check
+     * @return true if the account exists in state
      */
     boolean contains(@NonNull final AccountID accountID);
 
@@ -93,10 +106,14 @@ public interface ReadableAccountStore {
             builder.accountNum(contractID.contractNumOrElse(0L));
         }
 
-        final var account = getAccountById(builder.build());
+        final var account = getAliasedAccountById(builder.build());
         return account == null || !account.smartContract() ? null : account;
     }
 
+    /**
+     * Returns the number of entities in the account state.
+     * @return the size of the account state
+     */
     long sizeOfAccountState();
 
     /**

@@ -492,7 +492,7 @@ public class HTSPrecompileResult implements ContractCallResult {
         final var feeScheduleKeyToConvert = tokenInfo.getFeeScheduleKey();
         final var pauseKeyToConvert = tokenInfo.getPauseKey();
 
-        final Tuple[] tokenKeys = new Tuple[TokenKeyType.values().length];
+        final Tuple[] tokenKeys = new Tuple[TokenKeyType.values().length - 1];
         tokenKeys[0] = getKeyTuple(BigInteger.valueOf(TokenKeyType.ADMIN_KEY.value()), adminKeyToConvert);
         tokenKeys[1] = getKeyTuple(BigInteger.valueOf(TokenKeyType.KYC_KEY.value()), kycKeyToConvert);
         tokenKeys[2] = getKeyTuple(BigInteger.valueOf(TokenKeyType.FREEZE_KEY.value()), freezeKeyToConvert);

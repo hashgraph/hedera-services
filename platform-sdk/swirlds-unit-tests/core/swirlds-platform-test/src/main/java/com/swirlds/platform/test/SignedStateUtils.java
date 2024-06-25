@@ -20,6 +20,7 @@ import static com.swirlds.platform.test.PlatformStateUtils.randomPlatformState;
 
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SwirldState;
@@ -38,8 +39,14 @@ public class SignedStateUtils {
         root.setSwirldState(state);
         root.setPlatformState(randomPlatformState(random));
         boolean shouldSaveToDisk = random.nextBoolean();
-        SignedState signedState =
-                new SignedState(TestPlatformContextBuilder.create().build(), root, "test", shouldSaveToDisk);
+        SignedState signedState = new SignedState(
+                TestPlatformContextBuilder.create().build(),
+                CryptoStatic::verifySignature,
+                root,
+                "test",
+                shouldSaveToDisk,
+                false,
+                false);
         signedState.getState().setHash(RandomUtils.randomHash(random));
         return signedState;
     }

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state.merkle;
 
-import static com.hedera.node.app.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.lenient;
@@ -24,23 +24,23 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.spi.fixtures.state.NoOpGenesisRecordsBuilder;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDb;
+import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,8 +49,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -73,7 +71,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         // We don't need a real registry, and the unit tests are much
         // faster if we use a mocked one
         registry = mock(ConstructableRegistry.class);
-        schemaRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, new NoOpGenesisRecordsBuilder());
+        schemaRegistry = new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications());
         config = mock(Configuration.class);
         networkInfo = mock(NetworkInfo.class);
         final var hederaConfig = mock(HederaConfig.class);
@@ -87,7 +85,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("A null ConstructableRegistry throws")
         void nullRegistryThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(null, FIRST_SERVICE, mock(GenesisRecordsBuilder.class)))
+            assertThatThrownBy(() ->
+                            new MerkleSchemaRegistry(null, FIRST_SERVICE, DEFAULT_CONFIG, new SchemaApplications()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -95,15 +94,15 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         @DisplayName("A null serviceName throws")
         void nullServiceNameThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, null, mock(GenesisRecordsBuilder.class)))
+            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, null, DEFAULT_CONFIG, new SchemaApplications()))
                     .isInstanceOf(NullPointerException.class);
         }
 
         @Test
-        @DisplayName("A null genesisRecordsBuilder throws")
-        void nullGenesisRecordsBuilderThrows() {
+        @DisplayName("A null schemaUseAnalysis throws")
+        void nullSchemaUseAnalysisBuilderThrows() {
             //noinspection ConstantConditions
-            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, FIRST_SERVICE, null))
+            assertThatThrownBy(() -> new MerkleSchemaRegistry(registry, FIRST_SERVICE, DEFAULT_CONFIG, null))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -172,7 +171,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     version(10, 0, 0),
                     config,
                     networkInfo,
-                    mock(WritableEntityIdStore.class));
+                    mock(Metrics.class),
+                    mock(WritableEntityIdStore.class),
+                    new HashMap<>());
         }
     }
 
@@ -198,7 +199,14 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         void nullMerkleThrows() {
             //noinspection ConstantConditions
             assertThatThrownBy(() -> schemaRegistry.migrate(
-                            null, versions[0], versions[1], config, networkInfo, mock(WritableEntityIdStore.class)))
+                            null,
+                            versions[0],
+                            versions[1],
+                            config,
+                            networkInfo,
+                            mock(Metrics.class),
+                            mock(WritableEntityIdStore.class),
+                            new HashMap<>()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -207,7 +215,14 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         void nullCurrentVersionThrows() {
             //noinspection ConstantConditions
             assertThatThrownBy(() -> schemaRegistry.migrate(
-                            merkleTree, versions[0], null, config, networkInfo, mock(WritableEntityIdStore.class)))
+                            merkleTree,
+                            versions[0],
+                            null,
+                            config,
+                            networkInfo,
+                            mock(Metrics.class),
+                            mock(WritableEntityIdStore.class),
+                            new HashMap<>()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -216,7 +231,14 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         void nullConfigVersionThrows() {
             //noinspection ConstantConditions
             assertThatThrownBy(() -> schemaRegistry.migrate(
-                            merkleTree, versions[0], versions[1], null, networkInfo, mock(WritableEntityIdStore.class)))
+                            merkleTree,
+                            versions[0],
+                            versions[1],
+                            null,
+                            networkInfo,
+                            mock(Metrics.class),
+                            mock(WritableEntityIdStore.class),
+                            new HashMap<>()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -225,7 +247,30 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
         void nullNetworkInfoThrows() {
             //noinspection ConstantConditions
             assertThatThrownBy(() -> schemaRegistry.migrate(
-                            merkleTree, versions[0], versions[1], config, null, mock(WritableEntityIdStore.class)))
+                            merkleTree,
+                            versions[0],
+                            versions[1],
+                            config,
+                            null,
+                            mock(Metrics.class),
+                            mock(WritableEntityIdStore.class),
+                            new HashMap<>()))
+                    .isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        @DisplayName("Calling migrate with a null metrics throws NPE")
+        void nullMetricsThrows() {
+            //noinspection ConstantConditions
+            assertThatThrownBy(() -> schemaRegistry.migrate(
+                            merkleTree,
+                            versions[0],
+                            versions[1],
+                            config,
+                            networkInfo,
+                            null,
+                            mock(WritableEntityIdStore.class),
+                            new HashMap<>()))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -239,7 +284,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                             versions[4],
                             config,
                             networkInfo,
-                            mock(WritableEntityIdStore.class)))
+                            mock(Metrics.class),
+                            mock(WritableEntityIdStore.class),
+                            new HashMap<>()))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
@@ -252,77 +299,63 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
             // When it is registered twice and migrate is called
             schemaRegistry.register(schema);
             schemaRegistry.migrate(
-                    merkleTree, versions[1], versions[1], config, networkInfo, mock(WritableEntityIdStore.class));
+                    merkleTree,
+                    versions[1],
+                    versions[1],
+                    config,
+                    networkInfo,
+                    mock(Metrics.class),
+                    mock(WritableEntityIdStore.class),
+                    new HashMap<>());
 
             // Then nothing happens
             Mockito.verify(schema, Mockito.times(0)).migrate(Mockito.any());
         }
 
-        @ParameterizedTest(name = "From ({0}, {1}]")
-        @CsvSource(
-                textBlock =
-                        """
-                    0, 1
-                    0, 2
-                    0, 3
-                    0, 4
-                    1, 2
-                    1, 3
-                    1, 4
-                    2, 3
-                    2, 4
-                    3, 4
-                    0, 9
-                    """)
-        @DisplayName("Migration applies to all versions up to and including the currentVersion")
-        void migrate(int firstVersion, int lastVersion) {
-            // We will place into this list each schema as it is called
-            final var called = new LinkedList<SemanticVersion>();
+        @Test
+        @DisplayName("Considered as Restart of schema version is before current software version")
+        void considersAsRestartIfSchemaVersionIsBeforeCurrentVersion() {
+            // Given a schema
+            final var schema = Mockito.spy(new TestSchema(versions[1]));
 
-            // Given a schema for each version
-            // versions = [null, 1, 2, 3, 4, ... ]
-            // schemas = [null, 1, 2, 3, 4, ... ]
-            final var schemas = new Schema[versions.length];
-            for (int i = 1; i < schemas.length; i++) {
-                final var ver = versions[i];
-                final var schema = Mockito.spy(new TestSchema(ver, () -> called.add(ver)));
-                schemas[i] = schema;
-                schemaRegistry.register(schema);
-            }
-
-            // When we migrate
+            // When it is registered twice and migrate is called
+            schemaRegistry.register(schema);
             schemaRegistry.migrate(
                     merkleTree,
-                    versions[firstVersion],
-                    versions[lastVersion],
+                    versions[1],
+                    versions[5],
                     config,
                     networkInfo,
-                    mock(WritableEntityIdStore.class));
+                    mock(Metrics.class),
+                    mock(WritableEntityIdStore.class),
+                    new HashMap<>());
 
-            // Then each schema less than or equal to firstVersion are not called
-            for (int i = 1; i <= firstVersion; i++) {
-                Mockito.verify(schemas[i], Mockito.times(0)).migrate(Mockito.any());
-            }
+            // Then migration doesn't happen but restart is called
+            Mockito.verify(schema, Mockito.times(0)).migrate(Mockito.any());
+            Mockito.verify(schema, Mockito.times(1)).restart(Mockito.any());
+        }
 
-            // And each schema greater than firstVersion and less than or equal to lastVersion are
-            // called
-            for (int i = firstVersion + 1; i <= lastVersion; i++) {
-                Mockito.verify(schemas[i], Mockito.times(1)).migrate(Mockito.any());
-            }
+        @Test
+        @DisplayName("Considered as Migration if previous version is null")
+        void considersAsMigrationIfPreviousVersionIsNull() {
+            // Given a schema
+            final var schema = Mockito.spy(new TestSchema(versions[1]));
 
-            // And each schema greater than lastVersion are not called
-            for (int i = lastVersion + 1; i < versions.length; i++) {
-                Mockito.verify(schemas[i], Mockito.times(0)).migrate(Mockito.any());
-            }
+            // When it is registered twice and migrate is called
+            schemaRegistry.register(schema);
+            schemaRegistry.migrate(
+                    merkleTree,
+                    null,
+                    versions[5],
+                    config,
+                    networkInfo,
+                    mock(Metrics.class),
+                    mock(WritableEntityIdStore.class),
+                    new HashMap<>());
 
-            // And each called schema was called in order
-            final var itr = called.iterator();
-            var prev = itr.next();
-            while (itr.hasNext()) {
-                final var ver = itr.next();
-                assertThat(SEMANTIC_VERSION_COMPARATOR.compare(ver, prev)).isPositive();
-                prev = ver;
-            }
+            // Then migration doesn't happen but restart is called
+            Mockito.verify(schema, Mockito.times(1)).migrate(Mockito.any());
+            Mockito.verify(schema, Mockito.times(1)).restart(Mockito.any());
         }
 
         @Test
@@ -342,7 +375,14 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
 
             // When we migrate from v0 to v7
             schemaRegistry.migrate(
-                    merkleTree, null, versions[7], config, networkInfo, mock(WritableEntityIdStore.class));
+                    merkleTree,
+                    null,
+                    versions[7],
+                    config,
+                    networkInfo,
+                    mock(Metrics.class),
+                    mock(WritableEntityIdStore.class),
+                    new HashMap<>());
 
             // Then each of v1, v4, and v6 are called
             assertThat(called).hasSize(3);
@@ -374,7 +414,7 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @Override
                     public void migrate(@NonNull final MigrationContext ctx) {
                         assertThat(ctx).isNotNull();
-                        assertThat(ctx.previousStates().isEmpty()).isTrue();
+                        assertThat(ctx.previousVersion()).isNull();
                         assertThat(ctx.newStates().size()).isEqualTo(1);
                         final WritableKVState<String, String> fruit =
                                 ctx.newStates().get(FRUIT_STATE_KEY);
@@ -502,7 +542,14 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                 // When we migrate
                 schemaRegistry.register(schemaV1);
                 schemaRegistry.migrate(
-                        merkleTree, versions[0], versions[1], config, networkInfo, mock(WritableEntityIdStore.class));
+                        merkleTree,
+                        versions[0],
+                        versions[1],
+                        config,
+                        networkInfo,
+                        mock(Metrics.class),
+                        mock(WritableEntityIdStore.class),
+                        new HashMap<>());
 
                 // Then we see that the values for A, B, and C are available
                 final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
@@ -522,7 +569,14 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                 schemaRegistry.register(schemaV1);
                 schemaRegistry.register(schemaV2);
                 schemaRegistry.migrate(
-                        merkleTree, versions[0], versions[2], config, networkInfo, mock(WritableEntityIdStore.class));
+                        merkleTree,
+                        versions[0],
+                        versions[2],
+                        config,
+                        networkInfo,
+                        mock(Metrics.class),
+                        mock(WritableEntityIdStore.class),
+                        new HashMap<>());
 
                 // We should see the v2 state (the delta from v2 after applied atop v1)
                 final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
@@ -553,7 +607,14 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                 schemaRegistry.register(schemaV2);
                 schemaRegistry.register(schemaV3);
                 schemaRegistry.migrate(
-                        merkleTree, versions[0], versions[3], config, networkInfo, mock(WritableEntityIdStore.class));
+                        merkleTree,
+                        versions[0],
+                        versions[3],
+                        config,
+                        networkInfo,
+                        mock(Metrics.class),
+                        mock(WritableEntityIdStore.class),
+                        new HashMap<>());
 
                 // We should see the v3 state (the delta from v3 after applied atop v2 and v1)
                 final var readableStates = merkleTree.getReadableStates(FIRST_SERVICE);
@@ -594,7 +655,9 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                                 versions[2],
                                 config,
                                 networkInfo,
-                                mock(WritableEntityIdStore.class)))
+                                mock(Metrics.class),
+                                mock(WritableEntityIdStore.class),
+                                new HashMap<>()))
                         .isInstanceOf(RuntimeException.class)
                         .hasMessage("Bad");
 

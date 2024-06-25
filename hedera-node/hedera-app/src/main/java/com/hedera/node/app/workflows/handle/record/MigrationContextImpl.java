@@ -18,44 +18,44 @@ package com.hedera.node.app.workflows.handle.record;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.spi.workflows.record.GenesisRecordsBuilder;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Map;
 
 /**
  * An implementation of {@link MigrationContext}.
  *
- * @param previousStates The previous states.
- * @param newStates The new states, preloaded with any new state definitions.
- * @param configuration The configuration to use
- * @param genesisRecordsBuilder The instance responsible for genesis records
+ * @param previousStates        The previous states.
+ * @param newStates             The new states, preloaded with any new state definitions.
+ * @param configuration         The configuration to use
  * @param writableEntityIdStore The instance responsible for generating new entity IDs (ONLY during
  *                              migrations). Note that this is nullable only because it cannot exist
  *                              when the entity ID service itself is being migrated
+ * @param previousVersion
  */
 public record MigrationContextImpl(
         @NonNull ReadableStates previousStates,
         @NonNull WritableStates newStates,
         @NonNull Configuration configuration,
         @NonNull NetworkInfo networkInfo,
-        @NonNull GenesisRecordsBuilder genesisRecordsBuilder,
-        @Nullable WritableEntityIdStore writableEntityIdStore)
+        @Nullable WritableEntityIdStore writableEntityIdStore,
+        @Nullable SemanticVersion previousVersion,
+        @NonNull Map<String, Object> sharedValues)
         implements MigrationContext {
-
     public MigrationContextImpl {
         requireNonNull(previousStates);
         requireNonNull(newStates);
         requireNonNull(configuration);
         requireNonNull(networkInfo);
-        requireNonNull(genesisRecordsBuilder);
     }
 
     @Override
@@ -67,7 +67,9 @@ public record MigrationContextImpl(
     @Override
     public void copyAndReleaseOnDiskState(@NonNull final String stateKey) {
         requireNonNull(stateKey);
-        if (newStates instanceof FilteredWritableStates filteredWritableStates
+        if (newStates instanceof MerkleHederaState.MerkleWritableStates merkleWritableStates) {
+            merkleWritableStates.copyAndReleaseVirtualMap(stateKey);
+        } else if (newStates instanceof FilteredWritableStates filteredWritableStates
                 && filteredWritableStates.getDelegate()
                         instanceof MerkleHederaState.MerkleWritableStates merkleWritableStates) {
             merkleWritableStates.copyAndReleaseVirtualMap(stateKey);

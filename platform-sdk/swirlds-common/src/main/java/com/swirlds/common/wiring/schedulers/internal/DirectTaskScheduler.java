@@ -16,9 +16,11 @@
 
 package com.swirlds.common.wiring.schedulers.internal;
 
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerBuilder.UNLIMITED_CAPACITY;
+
 import com.swirlds.common.metrics.extensions.FractionalTimer;
 import com.swirlds.common.wiring.counters.ObjectCounter;
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -51,7 +53,7 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
      * @param threadsafe               true if the work scheduled by this object is threadsafe
      */
     public DirectTaskScheduler(
-            @NonNull final StandardWiringModel model,
+            @NonNull final TraceableWiringModel model,
             @NonNull final String name,
             @NonNull final UncaughtExceptionHandler uncaughtExceptionHandler,
             @NonNull final ObjectCounter onRamp,
@@ -79,6 +81,15 @@ public class DirectTaskScheduler<OUT> extends TaskScheduler<OUT> {
     @Override
     public long getUnprocessedTaskCount() {
         return onRamp.getCount();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public long getCapacity() {
+        // Direct schedulers have no concept of capacity.
+        return UNLIMITED_CAPACITY;
     }
 
     /**

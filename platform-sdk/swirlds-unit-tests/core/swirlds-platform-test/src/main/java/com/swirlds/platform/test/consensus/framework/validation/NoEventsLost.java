@@ -16,9 +16,11 @@
 
 package com.swirlds.platform.test.consensus.framework.validation;
 
+import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,8 +41,8 @@ public final class NoEventsLost {
      */
     public static void validateNoEventsAreLost(
             @NonNull final ConsensusOutput output, @NonNull final ConsensusOutput ignored) {
-        final Map<Hash, EventImpl> stale =
-                output.getStaleEvents().stream().collect(Collectors.toMap(EventImpl::getBaseHash, e -> e));
+        final Map<Hash, PlatformEvent> stale =
+                output.getStaleEvents().stream().collect(Collectors.toMap(AbstractHashable::getHash, e -> e));
         final Map<Hash, EventImpl> cons = output.getConsensusRounds().stream()
                 .flatMap(r -> r.getConsensusEvents().stream())
                 .collect(Collectors.toMap(EventImpl::getBaseHash, e -> e));
@@ -53,19 +55,19 @@ public final class NoEventsLost {
                 .getSnapshot()
                 .getMinimumGenerationNonAncient(CONFIG.roundsNonAncient());
 
-        for (final EventImpl event : output.getAddedEvents()) {
+        for (final PlatformEvent event : output.getAddedEvents()) {
             if (event.getGeneration() >= nonAncientGen) {
                 // non-ancient events are not checked
                 continue;
             }
-            if (stale.containsKey(event.getBaseHash()) == cons.containsKey(event.getBaseHash())) {
+            if (stale.containsKey(event.getHash()) == cons.containsKey(event.getHash())) {
                 Assertions.fail(String.format(
                         "An ancient event should be either stale or consensus, but not both!\n"
                                 + "nonAncientGen=%d, Event %s, stale=%s, consensus=%s",
                         nonAncientGen,
-                        event.toShortString(),
-                        stale.containsKey(event.getBaseHash()),
-                        cons.containsKey(event.getBaseHash())));
+                        event.getDescriptor(),
+                        stale.containsKey(event.getHash()),
+                        cons.containsKey(event.getHash())));
             }
         }
     }

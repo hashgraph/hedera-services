@@ -31,15 +31,15 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.NetworkUtilizationManagerImpl;
 import com.hedera.node.app.throttle.ThrottleAccumulator;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableStates;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,18 +108,17 @@ class NetworkUtilizationManagerImplTest {
     @Test
     void verifyTrackFeePayments() {
         // given
-        final var payer = AccountID.newBuilder().accountNum(1234L).build();
         final var expectedTxnToBeChargedFor = new TransactionInfo(
                 Transaction.DEFAULT,
                 TransactionBody.DEFAULT,
                 TransactionID.DEFAULT,
-                payer,
+                AccountID.DEFAULT,
                 SignatureMap.DEFAULT,
                 Bytes.EMPTY,
                 CRYPTO_TRANSFER);
 
         // when
-        subject.trackFeePayments(payer, consensusNow, state);
+        subject.trackFeePayments(consensusNow, state);
 
         // then
         verify(throttleAccumulator).shouldThrottle(expectedTxnToBeChargedFor, consensusNow, state);

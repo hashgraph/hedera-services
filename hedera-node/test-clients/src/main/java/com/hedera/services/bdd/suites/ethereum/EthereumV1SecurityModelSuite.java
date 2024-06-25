@@ -56,7 +56,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -68,10 +67,12 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 
 @SuppressWarnings("java:S5960")
 public class EthereumV1SecurityModelSuite extends HapiSuite {
@@ -96,7 +97,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 etx007FungibleTokenCreateWithFeesHappyPath(),
                 etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn(),
@@ -104,7 +105,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                 setApproveForAllUsingLocalNodeSetupPasses());
     }
 
-    final HapiSpec setApproveForAllUsingLocalNodeSetupPasses() {
+    final Stream<DynamicTest> setApproveForAllUsingLocalNodeSetupPasses() {
         final AtomicReference<String> spenderAutoCreatedAccountId = new AtomicReference<>();
         final AtomicReference<String> tokenCreateContractID = new AtomicReference<>();
         final AtomicReference<String> erc721ContractID = new AtomicReference<>();
@@ -310,7 +311,7 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                 .then(withOpContext((spec, opLog) -> {}));
     }
 
-    final HapiSpec etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn() {
+    final Stream<DynamicTest> etx012PrecompileCallSucceedsWhenNeededSignatureInEthTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = TOKEN;
         final String mintTxn = MINT_TXN;
@@ -358,14 +359,14 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                                                 .logs(inOrder())
                                                 .senderId(spec.registry()
                                                         .getAccountID(spec.registry()
-                                                                .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                 .getAlias()
                                                                 .toStringUtf8())))
                                         .ethereumHash(ByteString.copyFrom(
                                                 spec.registry().getBytes(ETH_HASH_KEY)))))));
     }
 
-    final HapiSpec etx013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn() {
+    final Stream<DynamicTest> etx013PrecompileCallSucceedsWhenNeededSignatureInHederaTxn() {
         final AtomicReference<TokenID> fungible = new AtomicReference<>();
         final String fungibleToken = TOKEN;
         final String mintTxn = MINT_TXN;
@@ -416,14 +417,14 @@ public class EthereumV1SecurityModelSuite extends HapiSuite {
                                                 .logs(inOrder())
                                                 .senderId(spec.registry()
                                                         .getAccountID(spec.registry()
-                                                                .aliasIdFor(SECP_256K1_SOURCE_KEY)
+                                                                .keyAliasIdFor(SECP_256K1_SOURCE_KEY)
                                                                 .getAlias()
                                                                 .toStringUtf8())))
                                         .ethereumHash(ByteString.copyFrom(
                                                 spec.registry().getBytes(ETH_HASH_KEY)))))));
     }
 
-    final HapiSpec etx007FungibleTokenCreateWithFeesHappyPath() {
+    final Stream<DynamicTest> etx007FungibleTokenCreateWithFeesHappyPath() {
         final var createdTokenNum = new AtomicLong();
         final var feeCollectorAndAutoRenew = "feeCollectorAndAutoRenew";
         final var contract = "TokenCreateContract";

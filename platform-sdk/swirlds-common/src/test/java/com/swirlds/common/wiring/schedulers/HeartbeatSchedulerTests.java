@@ -25,10 +25,10 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
-import com.swirlds.common.wiring.wires.input.Bindable;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
+import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -38,17 +38,19 @@ class HeartbeatSchedulerTests {
 
     @Test
     void heartbeatByFrequencyTest() throws InterruptedException {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
-        final WiringModel model = WiringModel.create(platformContext, fakeTime, ForkJoinPool.commonPool());
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().withTime(fakeTime).build();
+        final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
-        final Bindable<Instant, Void> heartbeatBindable = scheduler.buildHeartbeatInputWire("heartbeat", 100);
+
+        final BindableInputWire<Instant, Void> heartbeatBindable = scheduler.buildInputWire("heartbeat");
+        model.buildHeartbeatWire(100).solderTo(heartbeatBindable);
 
         final AtomicLong counter = new AtomicLong(0);
-        heartbeatBindable.bind((time) -> {
+        heartbeatBindable.bindConsumer((time) -> {
             assertEquals(time, fakeTime.now());
             counter.incrementAndGet();
         });
@@ -65,18 +67,19 @@ class HeartbeatSchedulerTests {
 
     @Test
     void heartbeatByPeriodTest() throws InterruptedException {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
-        final WiringModel model = WiringModel.create(platformContext, fakeTime, ForkJoinPool.commonPool());
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().withTime(fakeTime).build();
+        final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
-        final Bindable<Instant, Void> heartbeatBindable =
-                scheduler.buildHeartbeatInputWire("heartbeat", Duration.ofMillis(10));
+
+        final BindableInputWire<Instant, Void> heartbeatBindable = scheduler.buildInputWire("heartbeat");
+        model.buildHeartbeatWire(Duration.ofMillis(10)).solderTo(heartbeatBindable);
 
         final AtomicLong counter = new AtomicLong(0);
-        heartbeatBindable.bind((time) -> {
+        heartbeatBindable.bindConsumer((time) -> {
             assertEquals(time, fakeTime.now());
             counter.incrementAndGet();
         });
@@ -93,33 +96,36 @@ class HeartbeatSchedulerTests {
 
     @Test
     void heartbeatsAtDifferentRates() throws InterruptedException {
-        final PlatformContext platformContext =
-                TestPlatformContextBuilder.create().build();
         final FakeTime fakeTime = new FakeTime();
-        final WiringModel model = WiringModel.create(platformContext, fakeTime, ForkJoinPool.commonPool());
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().withTime(fakeTime).build();
+        final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
         final TaskScheduler<Void> scheduler =
                 model.schedulerBuilder("test").build().cast();
-        final Bindable<Instant, Void> heartbeatBindableA = scheduler.buildHeartbeatInputWire("heartbeatA", 100);
-        final Bindable<Instant, Void> heartbeatBindableB =
-                scheduler.buildHeartbeatInputWire("heartbeatB", Duration.ofMillis(5));
-        final Bindable<Instant, Void> heartbeatBindableC =
-                scheduler.buildHeartbeatInputWire("heartbeatC", Duration.ofMillis(50));
+
+        final BindableInputWire<Instant, Void> heartbeatBindableA = scheduler.buildInputWire("heartbeatA");
+        final BindableInputWire<Instant, Void> heartbeatBindableB = scheduler.buildInputWire("heartbeatB");
+        final BindableInputWire<Instant, Void> heartbeatBindableC = scheduler.buildInputWire("heartbeatC");
+
+        model.buildHeartbeatWire(100).solderTo(heartbeatBindableA);
+        model.buildHeartbeatWire(Duration.ofMillis(5)).solderTo(heartbeatBindableB);
+        model.buildHeartbeatWire(Duration.ofMillis(50)).solderTo(heartbeatBindableC);
 
         final AtomicLong counterA = new AtomicLong(0);
-        heartbeatBindableA.bind((time) -> {
+        heartbeatBindableA.bindConsumer((time) -> {
             assertEquals(time, fakeTime.now());
             counterA.incrementAndGet();
         });
 
         final AtomicLong counterB = new AtomicLong(0);
-        heartbeatBindableB.bind((time) -> {
+        heartbeatBindableB.bindConsumer((time) -> {
             assertEquals(time, fakeTime.now());
             counterB.incrementAndGet();
         });
 
         final AtomicLong counterC = new AtomicLong(0);
-        heartbeatBindableC.bind((time) -> {
+        heartbeatBindableC.bindConsumer((time) -> {
             assertEquals(time, fakeTime.now());
             counterC.incrementAndGet();
         });

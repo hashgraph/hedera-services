@@ -20,14 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.node.app.services.ServicesRegistry;
+import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,8 @@ final class NettyGrpcServerManagerTest {
 
         this.configProvider = () -> new VersionedConfigImpl(config, 1);
         this.metrics = metrics;
-        this.services = Set::of; // An empty set of services
+        this.services =
+                new ServicesRegistryImpl(ConstructableRegistry.getInstance(), config); // An empty set of services
         this.ingestWorkflow = (req, res) -> {};
         this.queryWorkflow = (req, res) -> {};
     }

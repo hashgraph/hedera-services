@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.test.exec;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.VERSION_046;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITHOUT_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.ETH_DATA_WITH_TO_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HEVM_CREATION;
@@ -28,6 +27,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT_WITH_SIGNER_NONCE;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.processorsForAllCurrentEvmVersions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -52,7 +52,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import java.util.Map;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -99,7 +98,6 @@ class ContextTransactionProcessorTest {
     @Test
     void callsComponentInfraAsExpectedForValidEthTx() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var hydratedEthTxData = HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS);
         final var subject = new ContextTransactionProcessor(
                 hydratedEthTxData,
@@ -111,7 +109,7 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         givenSenderAccount();
@@ -137,7 +135,6 @@ class ContextTransactionProcessorTest {
     @Test
     void callsComponentInfraAsExpectedForValidEthTxWithoutTo() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var hydratedEthTxData = HydratedEthTxData.successFrom(ETH_DATA_WITHOUT_TO_ADDRESS);
         final var subject = new ContextTransactionProcessor(
                 hydratedEthTxData,
@@ -149,7 +146,7 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         givenSenderAccount();
@@ -175,7 +172,6 @@ class ContextTransactionProcessorTest {
     @Test
     void callsComponentInfraAsExpectedForNonEthTx() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
@@ -186,7 +182,7 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         given(context.body()).willReturn(TransactionBody.DEFAULT);
@@ -205,7 +201,7 @@ class ContextTransactionProcessorTest {
     @Test
     void stillChargesHapiFeesOnAbort() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
+        final var processors = processorsForAllCurrentEvmVersions(processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
@@ -216,7 +212,7 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         given(context.body()).willReturn(TransactionBody.DEFAULT);
@@ -234,7 +230,6 @@ class ContextTransactionProcessorTest {
     @Test
     void stillChargesHapiFeesOnHevmException() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
@@ -245,7 +240,7 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
@@ -262,7 +257,6 @@ class ContextTransactionProcessorTest {
     @Test
     void stillChargesHapiFeesOnExceptionThrown() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
@@ -273,7 +267,7 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
@@ -292,7 +286,6 @@ class ContextTransactionProcessorTest {
     @Test
     void reThrowsExceptionWhenNotContractCall() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 null,
                 context,
@@ -303,7 +296,7 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         given(context.body()).willReturn(transactionBody);
@@ -321,7 +314,6 @@ class ContextTransactionProcessorTest {
     @Test
     void failsImmediatelyIfEthTxInvalid() {
         final var contractsConfig = CONFIGURATION.getConfigData(ContractsConfig.class);
-        final var processors = Map.of(VERSION_046, processor);
         final var subject = new ContextTransactionProcessor(
                 HydratedEthTxData.failureFrom(INVALID_ETHEREUM_TRANSACTION),
                 context,
@@ -332,7 +324,7 @@ class ContextTransactionProcessorTest {
                 rootProxyWorldUpdater,
                 hevmTransactionFactory,
                 feesOnlyUpdater,
-                processors,
+                processor,
                 customGasCharging);
 
         assertFailsWith(INVALID_ETHEREUM_TRANSACTION, subject::call);

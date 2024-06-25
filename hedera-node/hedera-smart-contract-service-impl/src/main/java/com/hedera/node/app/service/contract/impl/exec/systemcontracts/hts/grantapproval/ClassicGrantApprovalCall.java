@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grant
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asLongZeroAddress;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -33,7 +33,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.LogBui
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater.Enhancement;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.math.BigInteger;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
@@ -48,7 +47,7 @@ public class ClassicGrantApprovalCall extends AbstractGrantApprovalCall {
             @NonNull final AccountID senderId,
             @NonNull final TokenID token,
             @NonNull final AccountID spender,
-            @NonNull final BigInteger amount,
+            final long amount,
             @NonNull final TokenType tokenType) {
         super(gasCalculator, enhancement, verificationStrategy, senderId, token, spender, amount, tokenType, false);
     }

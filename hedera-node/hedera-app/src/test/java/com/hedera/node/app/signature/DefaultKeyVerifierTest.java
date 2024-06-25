@@ -1038,7 +1038,7 @@ class DefaultKeyVerifierTest {
          */
         static Stream<Arguments> provideThresholdKeys() {
             return keyListPermutations().entrySet().stream().map(entry -> {
-                final var keys = entry.getValue().keysOrThrow();
+                final var keys = entry.getValue().keys();
                 final var threshold = Math.max(1, keys.size() / 2);
                 final var thresholdKey = Key.newBuilder()
                         .thresholdKey(ThresholdKey.newBuilder()
@@ -1121,7 +1121,7 @@ class DefaultKeyVerifierTest {
 
         /** Creates a {@link SignatureVerification} for each key in the key list */
         private static Map<Key, SignatureVerificationFuture> allVerifications(@NonNull final KeyList key) {
-            return key.keysOrThrow().stream()
+            return key.keys().stream()
                     .map(FindingSignatureVerificationWithCompoundKeyTests::allVerifications)
                     .flatMap(map -> map.entrySet().stream())
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -1143,7 +1143,7 @@ class DefaultKeyVerifierTest {
                     // A Key list cannot have ANY removed and still pass. So we only remove a single key's worth of
                     // verifications if we are removing too many.
                     if (removeTooMany) {
-                        final var subKeys = key.keyListOrThrow().keysOrThrow();
+                        final var subKeys = key.keyListOrThrow().keys();
                         final var subKey = subKeys.get(0);
                         removeVerificationsFrom(subKey, map, true);
                     }
@@ -1152,7 +1152,7 @@ class DefaultKeyVerifierTest {
                     // We remove verifications associated with keys. If we are removing too many, we remove one more
                     // than is supported by the threshold. Otherwise, we just remove down to the threshold
                     final var threshold = key.thresholdKeyOrThrow().threshold();
-                    final var subKeys = key.thresholdKeyOrThrow().keysOrThrow().keysOrThrow();
+                    final var subKeys = key.thresholdKeyOrThrow().keysOrThrow().keys();
                     final var numToRemove = subKeys.size() - threshold + (removeTooMany ? 1 : 0);
                     for (int i = 0; i < numToRemove; i++) {
                         final var subKey = subKeys.get(i);
@@ -1177,7 +1177,7 @@ class DefaultKeyVerifierTest {
                     // A Key list cannot have ANY failed and still pass. So we only fail a single key's worth of
                     // verifications if we are failing too many.
                     if (failTooMany) {
-                        final var subKeys = key.keyListOrThrow().keysOrThrow();
+                        final var subKeys = key.keyListOrThrow().keys();
                         final var subKey = subKeys.get(0);
                         failVerificationsIn(subKey, map, true);
                     }
@@ -1186,7 +1186,7 @@ class DefaultKeyVerifierTest {
                     // We fail verifications associated with keys. If we are failing too many, we fail one more
                     // than is supported by the threshold. Otherwise, we just fail down to the threshold
                     final var threshold = key.thresholdKeyOrThrow().threshold();
-                    final var subKeys = key.thresholdKeyOrThrow().keysOrThrow().keysOrThrow();
+                    final var subKeys = key.thresholdKeyOrThrow().keysOrThrow().keys();
                     final var numToFail = subKeys.size() - threshold + (failTooMany ? 1 : 0);
                     for (int i = 0; i < numToFail; i++) {
                         final var subKey = subKeys.get(i);
@@ -1265,7 +1265,7 @@ class DefaultKeyVerifierTest {
         }
     }
 
-    private KeyVerifier createVerifier(@NonNull final Map<Key, SignatureVerificationFuture> map) {
+    private AppKeyVerifier createVerifier(@NonNull final Map<Key, SignatureVerificationFuture> map) {
         return new DefaultKeyVerifier(LEGACY_FEE_CALC_NETWORK_VPT, HEDERA_CONFIG, map);
     }
 

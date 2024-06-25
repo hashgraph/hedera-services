@@ -22,6 +22,8 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 import com.swirlds.base.time.Time;
 import com.swirlds.benchmark.BenchmarkKey;
 import com.swirlds.benchmark.BenchmarkValue;
+import com.swirlds.benchmark.reconnect.lag.BenchmarkSlowLearningSynchronizer;
+import com.swirlds.benchmark.reconnect.lag.BenchmarkSlowTeachingSynchronizer;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
@@ -34,6 +36,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.network.SocketConfig;
 import com.swirlds.virtualmap.VirtualMap;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -42,16 +45,25 @@ import java.util.function.Function;
  */
 public class MerkleBenchmarkUtils {
 
-    public static MerkleInternal createTreeForMap(final VirtualMap<BenchmarkKey, BenchmarkValue> map) {
+    public static MerkleInternal createTreeForMaps(final List<VirtualMap<BenchmarkKey, BenchmarkValue>> maps) {
         final BenchmarkMerkleInternal tree = new BenchmarkMerkleInternal("root");
         initializeTreeAfterCopy(tree);
-        tree.setChild(0, map);
+        for (int i = 0; i < maps.size(); i++) {
+            tree.setChild(i, maps.get(i));
+        }
         tree.reserve();
         return tree;
     }
 
     public static <T extends MerkleNode> T hashAndTestSynchronization(
-            final MerkleNode startingTree, final MerkleNode desiredTree, final Configuration configuration)
+            final MerkleNode startingTree,
+            final MerkleNode desiredTree,
+            final long randomSeed,
+            final long delayStorageMicroseconds,
+            final double delayStorageFuzzRangePercent,
+            final long delayNetworkMicroseconds,
+            final double delayNetworkFuzzRangePercent,
+            final Configuration configuration)
             throws Exception {
         System.out.println("------------");
         System.out.println("starting: " + startingTree);
@@ -65,7 +77,16 @@ public class MerkleBenchmarkUtils {
         if (desiredTree != null && desiredTree.getHash() == null) {
             MerkleCryptoFactory.getInstance().digestTreeSync(desiredTree);
         }
-        return testSynchronization(startingTree, desiredTree, configuration, reconnectConfig);
+        return testSynchronization(
+                startingTree,
+                desiredTree,
+                randomSeed,
+                delayStorageMicroseconds,
+                delayStorageFuzzRangePercent,
+                delayNetworkMicroseconds,
+                delayNetworkFuzzRangePercent,
+                configuration,
+                reconnectConfig);
     }
 
     /**
@@ -75,6 +96,11 @@ public class MerkleBenchmarkUtils {
     private static <T extends MerkleNode> T testSynchronization(
             final MerkleNode startingTree,
             final MerkleNode desiredTree,
+            final long randomSeed,
+            final long delayStorageMicroseconds,
+            final double delayStorageFuzzRangePercent,
+            final long delayNetworkMicroseconds,
+            final double delayNetworkFuzzRangePercent,
             final Configuration configuration,
             final ReconnectConfig reconnectConfig)
             throws Exception {
@@ -82,36 +108,76 @@ public class MerkleBenchmarkUtils {
             final LearningSynchronizer learner;
             final TeachingSynchronizer teacher;
 
-            learner = new LearningSynchronizer(
-                    getStaticThreadManager(),
-                    streams.getLearnerInput(),
-                    streams.getLearnerOutput(),
-                    startingTree,
-                    () -> {
-                        try {
-                            streams.disconnect();
-                        } catch (final IOException e) {
-                            // test code, no danger
-                            e.printStackTrace();
-                        }
-                    },
-                    reconnectConfig);
-            teacher = new TeachingSynchronizer(
-                    configuration,
-                    Time.getCurrent(),
-                    getStaticThreadManager(),
-                    streams.getTeacherInput(),
-                    streams.getTeacherOutput(),
-                    desiredTree,
-                    () -> {
-                        try {
-                            streams.disconnect();
-                        } catch (final IOException e) {
-                            // test code, no danger
-                            e.printStackTrace();
-                        }
-                    },
-                    reconnectConfig);
+            if (delayStorageMicroseconds == 0 && delayNetworkMicroseconds == 0) {
+                learner = new LearningSynchronizer(
+                        getStaticThreadManager(),
+                        streams.getLearnerInput(),
+                        streams.getLearnerOutput(),
+                        startingTree,
+                        () -> {
+                            try {
+                                streams.disconnect();
+                            } catch (final IOException e) {
+                                // test code, no danger
+                                e.printStackTrace();
+                            }
+                        },
+                        reconnectConfig);
+                teacher = new TeachingSynchronizer(
+                        configuration,
+                        Time.getCurrent(),
+                        getStaticThreadManager(),
+                        streams.getTeacherInput(),
+                        streams.getTeacherOutput(),
+                        desiredTree,
+                        () -> {
+                            try {
+                                streams.disconnect();
+                            } catch (final IOException e) {
+                                // test code, no danger
+                                e.printStackTrace();
+                            }
+                        },
+                        reconnectConfig);
+            } else {
+                learner = new BenchmarkSlowLearningSynchronizer(
+                        streams.getLearnerInput(),
+                        streams.getLearnerOutput(),
+                        startingTree,
+                        randomSeed,
+                        delayStorageMicroseconds,
+                        delayStorageFuzzRangePercent,
+                        delayNetworkMicroseconds,
+                        delayNetworkFuzzRangePercent,
+                        () -> {
+                            try {
+                                streams.disconnect();
+                            } catch (final IOException e) {
+                                // test code, no danger
+                                e.printStackTrace();
+                            }
+                        },
+                        reconnectConfig);
+                teacher = new BenchmarkSlowTeachingSynchronizer(
+                        configuration,
+                        streams.getTeacherInput(),
+                        streams.getTeacherOutput(),
+                        desiredTree,
+                        randomSeed,
+                        delayStorageMicroseconds,
+                        delayStorageFuzzRangePercent,
+                        delayNetworkMicroseconds,
+                        delayNetworkFuzzRangePercent,
+                        () -> {
+                            try {
+                                streams.disconnect();
+                            } catch (final IOException e) {
+                                // test code, no danger
+                                e.printStackTrace();
+                            }
+                        },
+                        reconnectConfig);
+            }
 
             final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
             final Function<Throwable, Boolean> exceptionListener = t -> {

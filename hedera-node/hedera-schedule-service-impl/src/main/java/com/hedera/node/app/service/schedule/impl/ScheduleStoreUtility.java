@@ -18,21 +18,35 @@ package com.hedera.node.app.service.schedule.impl;
 
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Objects;
 
-final class ScheduleStoreUtility {
+/**
+ * Provides utility methods for the schedule store.
+ * Used to calculate the hash of a schedule which is then used to store the schedule in the schedule store.
+ * */
+public final class ScheduleStoreUtility {
     private ScheduleStoreUtility() {}
 
-    // @todo('7773') This requires rebuilding the equality virtual map on migration,
-    //      because it's different from ScheduleVirtualValue (and must be, due to PBJ shift)
+    /**
+     * Calculate bytes hash of a schedule based on the schedule's memo, admin key, scheduled transaction, expiration
+     * time, and wait for expiry flag.
+     *
+     * @param scheduleToHash the schedule to hash
+     * @return the bytes
+     */
     @SuppressWarnings("UnstableApiUsage")
-    static String calculateStringHash(@NonNull final Schedule scheduleToHash) {
+    public static Bytes calculateBytesHash(@NonNull final Schedule scheduleToHash) {
         Objects.requireNonNull(scheduleToHash);
         final Hasher hasher = Hashing.sha256().newHasher();
         if (scheduleToHash.memo() != null) {
@@ -49,7 +63,7 @@ final class ScheduleStoreUtility {
         //               differential testing completes
         hasher.putLong(scheduleToHash.providedExpirationSecond());
         hasher.putBoolean(scheduleToHash.waitForExpiry());
-        return hasher.hash().toString();
+        return Bytes.wrap(hasher.hash().asBytes());
     }
 
     @SuppressWarnings("UnstableApiUsage")
@@ -60,17 +74,51 @@ final class ScheduleStoreUtility {
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    private static void addToHash(final Hasher hasher, final AccountID accountToAdd) {
-        final byte[] accountIdBytes = AccountID.PROTOBUF.toBytes(accountToAdd).toByteArray();
-        hasher.putInt(accountIdBytes.length);
-        hasher.putBytes(accountIdBytes);
-    }
-
-    @SuppressWarnings("UnstableApiUsage")
     private static void addToHash(final Hasher hasher, final SchedulableTransactionBody transactionToAdd) {
         final byte[] bytes =
                 SchedulableTransactionBody.PROTOBUF.toBytes(transactionToAdd).toByteArray();
         hasher.putInt(bytes.length);
         hasher.putBytes(bytes);
+    }
+
+    private static boolean isScheduleInList(final ScheduleID scheduleId, final ScheduleList scheduleList) {
+        return scheduleList.schedules().stream()
+                .anyMatch(s -> s.scheduleIdOrThrow().equals(scheduleId));
+    }
+
+    /**
+     * Adds a {@link Schedule} to a {@link ScheduleList}, replacing it if it already exists.
+     *
+     * <p>This method checks if the provided {@code Schedule} is already present in the {@code ScheduleList}.
+     * If it is, the existing {@code Schedule} is replaced with the new one. If it isn't, the {@code Schedule}
+     * is added to the list. This allows for updating entries within a {@code ScheduleList} without needing to
+     * manually manage duplicates or replacements.
+     *
+     * @param schedule The {@link Schedule} to add or replace in the {@code ScheduleList}. Must not be {@code null},
+     *     unless the {@code ScheduleList} is also {@code null}.
+     * @param scheduleList The {@link ScheduleList} to which the {@code Schedule} will be added or replaced. May be
+     *     {@code null}, in which case a new {@link ScheduleList} containing only the provided
+     *     {@code Schedule} is returned.
+     * @return A new {@link ScheduleList} containing the {@code Schedule} either added or replacing an existing one.
+     *     Never returns {@code null}.
+     */
+    static ScheduleList addOrReplace(final Schedule schedule, @Nullable final ScheduleList scheduleList) {
+        if (scheduleList == null) {
+            return new ScheduleList(Collections.singletonList(schedule));
+        }
+        final var newScheduleList = scheduleList.copyBuilder();
+        final var scheduleId = schedule.scheduleIdOrThrow();
+        final var schedules = new ArrayList<>(scheduleList.schedules());
+        if (!isScheduleInList(scheduleId, scheduleList)) {
+            schedules.add(schedule);
+        } else {
+            for (int i = 0; i < schedules.size(); i++) {
+                final var existingSchedule = schedules.get(i);
+                if (existingSchedule.scheduleIdOrThrow().equals(scheduleId)) {
+                    schedules.set(i, schedule);
+                }
+            }
+        }
+        return newScheduleList.schedules(schedules).build();
     }
 }

@@ -17,11 +17,12 @@
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer;
 
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.SpecialRewardReceivers.SPECIAL_REWARD_RECEIVERS;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -33,7 +34,7 @@ import javax.inject.Singleton;
  * Translates ERC-721 {@code transferFrom()} calls to the HTS system contract.
  */
 @Singleton
-public class Erc721TransferFromTranslator extends AbstractHtsCallTranslator {
+public class Erc721TransferFromTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     public static final Function ERC_721_TRANSFER_FROM = new Function("transferFrom(address,address,uint256)");
 
@@ -51,7 +52,7 @@ public class Erc721TransferFromTranslator extends AbstractHtsCallTranslator {
     }
 
     @Override
-    public HtsCall callFrom(@NonNull final HtsCallAttempt attempt) {
+    public Call callFrom(@NonNull final HtsCallAttempt attempt) {
         final var call = Erc721TransferFromTranslator.ERC_721_TRANSFER_FROM.decodeCall(
                 attempt.input().toArrayUnsafe());
         return new Erc721TransferFromCall(
@@ -63,6 +64,7 @@ public class Erc721TransferFromTranslator extends AbstractHtsCallTranslator {
                 attempt.enhancement(),
                 attempt.systemContractGasCalculator(),
                 attempt.senderId(),
-                attempt.addressIdConverter());
+                attempt.addressIdConverter(),
+                SPECIAL_REWARD_RECEIVERS);
     }
 }

@@ -19,18 +19,13 @@ package com.swirlds.platform.recovery.internal;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.platform.crypto.CryptoStatic.initNodeSecurity;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.common.AutoCloseableNonThrowing;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Signature;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
@@ -84,11 +79,9 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
             keysAndCerts = null;
         }
 
-        final Metrics metrics = new NoOpMetrics();
-
         notificationEngine = NotificationEngine.buildEngine(getStaticThreadManager());
 
-        context = new DefaultPlatformContext(configuration, metrics, CryptographyHolder.get(), Time.getCurrent());
+        context = PlatformContext.create(configuration);
 
         setLatestState(initialState);
     }
@@ -118,6 +111,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public PlatformContext getContext() {
         return context;
     }
@@ -126,6 +120,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public NotificationEngine getNotificationEngine() {
         return notificationEngine;
     }
@@ -134,6 +129,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public AddressBook getAddressBook() {
         return addressBook;
     }
@@ -142,6 +138,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      * {@inheritDoc}
      */
     @Override
+    @NonNull
     public NodeId getSelfId() {
         return selfId;
     }
@@ -151,6 +148,7 @@ public class RecoveryPlatform implements Platform, AutoCloseableNonThrowing {
      */
     @SuppressWarnings("unchecked")
     @Override
+    @NonNull
     public synchronized <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(
             @NonNull final String reason) {
         final ReservedSignedState reservedSignedState = immutableState.getAndReserve(reason);

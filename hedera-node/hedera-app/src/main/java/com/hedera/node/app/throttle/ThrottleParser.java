@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXP
 import static com.hedera.hapi.node.base.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNPARSEABLE_THROTTLE_DEFINITIONS;
 import static java.util.Collections.disjoint;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -98,8 +97,8 @@ public class ThrottleParser {
      */
     private boolean allExpectedOperations(ThrottleDefinitions throttleDefinitions) {
         final Set<HederaFunctionality> customizedOps = EnumSet.noneOf(HederaFunctionality.class);
-        for (final var bucket : throttleDefinitions.throttleBucketsOrElse(emptyList())) {
-            for (final var group : bucket.throttleGroupsOrElse(emptyList())) {
+        for (final var bucket : throttleDefinitions.throttleBuckets()) {
+            for (final var group : bucket.throttleGroups()) {
                 customizedOps.addAll(group.operations());
             }
         }
@@ -110,8 +109,8 @@ public class ThrottleParser {
      * Checks if there are throttle groups defined with zero operations per second.
      */
     private void checkForZeroOpsPerSec(ThrottleDefinitions throttleDefinitions) {
-        for (var bucket : throttleDefinitions.throttleBucketsOrElse(emptyList())) {
-            for (var group : bucket.throttleGroupsOrElse(emptyList())) {
+        for (var bucket : throttleDefinitions.throttleBuckets()) {
+            for (var group : bucket.throttleGroups()) {
                 if (group.milliOpsPerSec() == 0) {
                     throw new HandleException(THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC);
                 }
@@ -123,9 +122,9 @@ public class ThrottleParser {
      * Checks if an operation was assigned to more than one throttle group in a given bucket.
      */
     private void checkForRepeatedOperations(ThrottleDefinitions throttleDefinitions) {
-        for (var bucket : throttleDefinitions.throttleBucketsOrElse(emptyList())) {
+        for (var bucket : throttleDefinitions.throttleBuckets()) {
             final Set<HederaFunctionality> seenSoFar = new HashSet<>();
-            for (var group : bucket.throttleGroupsOrElse(emptyList())) {
+            for (var group : bucket.throttleGroups()) {
                 final var functions = group.operations();
                 if (!disjoint(seenSoFar, functions)) {
                     throw new HandleException(OPERATION_REPEATED_IN_BUCKET_GROUPS);

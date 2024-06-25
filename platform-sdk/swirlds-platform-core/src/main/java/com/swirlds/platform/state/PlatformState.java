@@ -22,7 +22,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.consensus.RoundCalculationUtils;
+import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.uptime.UptimeDataImpl;
@@ -31,7 +31,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
@@ -48,6 +47,18 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
 
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
+        /**
+         * Added state to allow for birth round migration.
+         */
+        public static final int BIRTH_ROUND_MIGRATION_PATHWAY = 2;
+        /**
+         * Added the new running event hash algorithm.
+         */
+        public static final int RUNNING_EVENT_HASH = 3;
+        /**
+         * Removed the running event hash algorithm.
+         */
+        public static final int REMOVED_EVENT_HASH = 4;
     }
 
     /**
@@ -69,10 +80,10 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     private long round = GENESIS_ROUND;
 
     /**
-     * The running hash of the hashes of all events have reached consensus up through the round that this SignedState
-     * represents.
+     * The running event hash computed by the consensus event stream. This should be deleted once the consensus event
+     * stream is retired.
      */
-    private Hash runningEventHash;
+    private Hash legacyRunningEventHash;
 
     /**
      * the consensus timestamp for this signed state
@@ -120,6 +131,23 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     private UptimeDataImpl uptimeData = new UptimeDataImpl();
 
+    /**
+     * Null if birth round migration has not yet happened, otherwise the software version that was first used when the
+     * birth round migration was performed.
+     */
+    private SoftwareVersion firstVersionInBirthRoundMode;
+
+    /**
+     * The last round before the birth round mode was enabled, or -1 if birth round mode has not yet been enabled.
+     */
+    private long lastRoundBeforeBirthRoundMode = -1;
+
+    /**
+     * The lowest judge generation before the birth round mode was enabled, or -1 if birth round mode has not yet been
+     * enabled.
+     */
+    private long lowestJudgeGenerationBeforeBirthRoundMode = -1;
+
     public PlatformState() {}
 
     /**
@@ -132,7 +160,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         this.addressBook = that.addressBook == null ? null : that.addressBook.copy();
         this.previousAddressBook = that.previousAddressBook == null ? null : that.previousAddressBook.copy();
         this.round = that.round;
-        this.runningEventHash = that.runningEventHash;
+        this.legacyRunningEventHash = that.legacyRunningEventHash;
         this.consensusTimestamp = that.consensusTimestamp;
         this.creationSoftwareVersion = that.creationSoftwareVersion;
         this.epochHash = that.epochHash;
@@ -142,6 +170,9 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         this.freezeTime = that.freezeTime;
         this.lastFrozenTime = that.lastFrozenTime;
         this.uptimeData = that.uptimeData.copy();
+        this.firstVersionInBirthRoundMode = that.firstVersionInBirthRoundMode;
+        this.lastRoundBeforeBirthRoundMode = that.lastRoundBeforeBirthRoundMode;
+        this.lowestJudgeGenerationBeforeBirthRoundMode = that.lowestJudgeGenerationBeforeBirthRoundMode;
     }
 
     /**
@@ -176,7 +207,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeSerializable(addressBook, false);
         out.writeSerializable(previousAddressBook, true);
         out.writeLong(round);
-        out.writeSerializable(runningEventHash, false);
+        out.writeSerializable(legacyRunningEventHash, false);
         out.writeInstant(consensusTimestamp);
         out.writeSerializable(creationSoftwareVersion, true);
         out.writeSerializable(epochHash, false);
@@ -185,6 +216,9 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeInstant(freezeTime);
         out.writeInstant(lastFrozenTime);
         out.writeSerializable(uptimeData, false);
+        out.writeSerializable(firstVersionInBirthRoundMode, true);
+        out.writeLong(lastRoundBeforeBirthRoundMode);
+        out.writeLong(lowestJudgeGenerationBeforeBirthRoundMode);
     }
 
     /**
@@ -195,7 +229,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         addressBook = in.readSerializable(false, AddressBook::new);
         previousAddressBook = in.readSerializable(true, AddressBook::new);
         round = in.readLong();
-        runningEventHash = in.readSerializable(false, Hash::new);
+        legacyRunningEventHash = in.readSerializable(false, Hash::new);
         consensusTimestamp = in.readInstant();
         creationSoftwareVersion = in.readSerializable();
         epochHash = in.readSerializable(false, Hash::new);
@@ -204,6 +238,14 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         freezeTime = in.readInstant();
         lastFrozenTime = in.readInstant();
         uptimeData = in.readSerializable(false, UptimeDataImpl::new);
+        if (version >= ClassVersion.BIRTH_ROUND_MIGRATION_PATHWAY) {
+            firstVersionInBirthRoundMode = in.readSerializable();
+            lastRoundBeforeBirthRoundMode = in.readLong();
+            lowestJudgeGenerationBeforeBirthRoundMode = in.readLong();
+        }
+        if (version == ClassVersion.RUNNING_EVENT_HASH) {
+            in.readSerializable(false, Hash::new);
+        }
     }
 
     /**
@@ -211,7 +253,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.ORIGINAL;
+        return ClassVersion.REMOVED_EVENT_HASH;
     }
 
     /**
@@ -227,7 +269,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      *
      * @return the creation version
      */
-    @Nullable
+    @NonNull
     public SoftwareVersion getCreationSoftwareVersion() {
         return creationSoftwareVersion;
     }
@@ -294,22 +336,22 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the running hash of all events that have been applied to this state since the beginning of time.
+     * Get the legacy running event hash. Used by the consensus event stream.
      *
      * @return a running hash of events
      */
     @Nullable
-    public Hash getRunningEventHash() {
-        return runningEventHash;
+    public Hash getLegacyRunningEventHash() {
+        return legacyRunningEventHash;
     }
 
     /**
-     * Set the running hash of all events that have been applied to this state since the beginning of time.
+     * Set the legacy running event hash. Used by the consensus event stream.
      *
-     * @param runningEventHash a running hash of events
+     * @param legacyRunningEventHash a running hash of events
      */
-    public void setRunningEventHash(@Nullable final Hash runningEventHash) {
-        this.runningEventHash = runningEventHash;
+    public void setLegacyRunningEventHash(@Nullable final Hash legacyRunningEventHash) {
+        this.legacyRunningEventHash = legacyRunningEventHash;
     }
 
     /**
@@ -334,53 +376,31 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the minimum event generation for each node within this state.
+     * For the oldest non-ancient round, get the lowest ancient indicator out of all of those round's judges. This is
+     * the ancient threshold at the moment after this state's round reached consensus. All events with an ancient
+     * indicator that is greater than or equal to this value are non-ancient. All events with an ancient indicator less
+     * than this value are ancient.
      *
-     * @return minimum generation info list, or null if this is a genesis state
-     */
-    @Nullable
-    public List<MinGenInfo> getMinGenInfo() {
-        return snapshot == null ? null : snapshot.minGens();
-    }
-
-    /**
-     * The minimum generation of famous witnesses for the round specified. This method only looks at non-ancient rounds
-     * contained within this state.
+     * <p>
+     * When running in {@link AncientMode#GENERATION_THRESHOLD}, this value is the minimum generation non-ancient. When
+     * running in {@link AncientMode#BIRTH_ROUND_THRESHOLD}, this value is the minimum birth round non-ancient.
+     * </p>
      *
-     * @param round the round whose minimum generation will be returned
-     * @return the minimum generation for the round specified
-     * @throws NoSuchElementException if the generation information for this round is not contained withing this state
+     * @return the ancient threshold after this round has reached consensus
      */
-    public long getMinGen(final long round) {
-        final List<MinGenInfo> minGenInfo = getMinGenInfo();
-        if (minGenInfo == null) {
-            throw new IllegalStateException("No MinGen info found in state for round " + round);
+    public long getAncientThreshold() {
+        if (snapshot == null) {
+            throw new IllegalStateException(
+                    "No minimum judge info found in state for round " + round + ", snapshot is null");
         }
 
-        for (final MinGenInfo info : minGenInfo) {
-            if (info.round() == round) {
-                return info.minimumGeneration();
-            }
-        }
-        throw new NoSuchElementException("No minimum generation found for round: " + round);
-    }
-
-    /**
-     * Return the round generation of the oldest round in this state
-     *
-     * @return the generation of the oldest round
-     */
-    public long getMinRoundGeneration() {
-
-        final List<MinGenInfo> minGenInfo = getMinGenInfo();
-        if (minGenInfo == null) {
-            throw new IllegalStateException("No MinGen info found in state for round " + round);
+        final List<MinimumJudgeInfo> minimumJudgeInfo = snapshot.getMinimumJudgeInfoList();
+        if (minimumJudgeInfo.isEmpty()) {
+            throw new IllegalStateException(
+                    "No minimum judge info found in state for round " + round + ", list is empty");
         }
 
-        return getMinGenInfo().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No MinGen info found in state"))
-                .minimumGeneration();
+        return minimumJudgeInfo.getFirst().minimumJudgeAncientThreshold();
     }
 
     /**
@@ -437,15 +457,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public int getRoundsNonAncient() {
         return roundsNonAncient;
-    }
-
-    /**
-     * Gets the minimum generation of non-ancient events.
-     *
-     * @return the minimum generation of non-ancient events
-     */
-    public long getMinimumGenerationNonAncient() {
-        return RoundCalculationUtils.getMinGenNonAncient(roundsNonAncient, round, this::getMinGen);
     }
 
     /**
@@ -520,5 +531,63 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public void setUptimeData(@NonNull final UptimeDataImpl uptimeData) {
         this.uptimeData = Objects.requireNonNull(uptimeData);
+    }
+
+    /**
+     * Get the first software version where the birth round migration happened, or null if birth round migration has not
+     * yet happened.
+     *
+     * @return the first software version where the birth round migration happened
+     */
+    @Nullable
+    public SoftwareVersion getFirstVersionInBirthRoundMode() {
+        return firstVersionInBirthRoundMode;
+    }
+
+    /**
+     * Set the first software version where the birth round migration happened.
+     *
+     * @param firstVersionInBirthRoundMode the first software version where the birth round migration happened
+     */
+    public void setFirstVersionInBirthRoundMode(final SoftwareVersion firstVersionInBirthRoundMode) {
+        this.firstVersionInBirthRoundMode = firstVersionInBirthRoundMode;
+    }
+
+    /**
+     * Get the last round before the birth round mode was enabled, or -1 if birth round mode has not yet been enabled.
+     *
+     * @return the last round before the birth round mode was enabled
+     */
+    public long getLastRoundBeforeBirthRoundMode() {
+        return lastRoundBeforeBirthRoundMode;
+    }
+
+    /**
+     * Set the last round before the birth round mode was enabled.
+     *
+     * @param lastRoundBeforeBirthRoundMode the last round before the birth round mode was enabled
+     */
+    public void setLastRoundBeforeBirthRoundMode(final long lastRoundBeforeBirthRoundMode) {
+        this.lastRoundBeforeBirthRoundMode = lastRoundBeforeBirthRoundMode;
+    }
+
+    /**
+     * Get the lowest judge generation before the birth round mode was enabled, or -1 if birth round mode has not yet
+     * been enabled.
+     *
+     * @return the lowest judge generation before the birth round mode was enabled
+     */
+    public long getLowestJudgeGenerationBeforeBirthRoundMode() {
+        return lowestJudgeGenerationBeforeBirthRoundMode;
+    }
+
+    /**
+     * Set the lowest judge generation before the birth round mode was enabled.
+     *
+     * @param lowestJudgeGenerationBeforeBirthRoundMode the lowest judge generation before the birth round mode was
+     *                                                  enabled
+     */
+    public void setLowestJudgeGenerationBeforeBirthRoundMode(final long lowestJudgeGenerationBeforeBirthRoundMode) {
+        this.lowestJudgeGenerationBeforeBirthRoundMode = lowestJudgeGenerationBeforeBirthRoundMode;
     }
 }

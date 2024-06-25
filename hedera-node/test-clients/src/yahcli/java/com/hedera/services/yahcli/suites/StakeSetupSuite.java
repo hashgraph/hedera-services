@@ -24,14 +24,16 @@ import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.crypto.staking.StakingSuite;
+import com.hedera.services.bdd.suites.staking.StakingSuite;
 import com.hedera.services.yahcli.config.ConfigManager;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class StakeSetupSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(StakeSetupSuite.class);
@@ -60,11 +62,11 @@ public class StakeSetupSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(startStakingAndExportCreatedStakers());
     }
 
-    private HapiSpec startStakingAndExportCreatedStakers() {
+    final Stream<DynamicTest> startStakingAndExportCreatedStakers() {
         return HapiSpec.customHapiSpec("StartStakingAndExportCreatedStakers")
                 .withProperties(specConfig)
                 .given(

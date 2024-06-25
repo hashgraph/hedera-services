@@ -18,6 +18,7 @@ package com.swirlds.platform.consensus;
 
 import static org.mockito.Mockito.when;
 
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
@@ -69,26 +70,13 @@ class RoundCalculationUtilsTest {
         final Map<Long, Long> map =
                 LongStream.range(1, 50).collect(HashMap::new, (m, l) -> m.put(l, l * 10), HashMap::putAll);
         final SignedState signedState = Mockito.mock(SignedState.class);
-        final State state = Mockito.mock(State.class);
+        final MerkleRoot state = Mockito.mock(State.class);
         final PlatformState platformState = Mockito.mock(PlatformState.class);
         when(signedState.getState()).thenReturn(state);
         when(state.getPlatformState()).thenReturn(platformState);
 
         final AtomicLong lastRoundDecided = new AtomicLong();
         when(signedState.getRound()).thenAnswer(a -> lastRoundDecided.get());
-        when(signedState.getMinGen(Mockito.anyLong())).thenAnswer(a -> map.get(a.getArgument(0, Long.class)));
         when(platformState.getRound()).thenAnswer(a -> lastRoundDecided.get());
-        when(platformState.getMinGen(Mockito.anyLong())).thenAnswer(a -> map.get(a.getArgument(0, Long.class)));
-
-        lastRoundDecided.set(10);
-        Assertions.assertEquals(
-                60,
-                RoundCalculationUtils.getMinGenNonAncient(5, signedState),
-                "if the oldest non-ancient round is 6, then the generation should 60");
-        lastRoundDecided.set(5);
-        Assertions.assertEquals(
-                10,
-                RoundCalculationUtils.getMinGenNonAncient(10, signedState),
-                "if no rounds are ancient yet, then the minGenNonAncient is the first round generation");
     }
 }

@@ -17,7 +17,6 @@
 package com.swirlds.platform.test.network;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -34,6 +33,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class ConnectionServerTest {
+
     @Test
     void createConnectionTest() throws IOException, InterruptedException {
         final Socket socket = mock(Socket.class);
@@ -48,11 +48,11 @@ class ConnectionServerTest {
                 .when(serverSocket)
                 .accept();
         final SocketFactory socketFactory = mock(SocketFactory.class);
-        doAnswer(i -> serverSocket).when(socketFactory).createServerSocket(any(), anyInt());
+        doAnswer(i -> serverSocket).when(socketFactory).createServerSocket(anyInt());
         final AtomicReference<Socket> connectionHandler = new AtomicReference<>(null);
 
         final ConnectionServer server =
-                new ConnectionServer(getStaticThreadManager(), null, 0, socketFactory, connectionHandler::set);
+                new ConnectionServer(getStaticThreadManager(), 0, socketFactory, connectionHandler::set);
 
         server.run();
         Assertions.assertSame(

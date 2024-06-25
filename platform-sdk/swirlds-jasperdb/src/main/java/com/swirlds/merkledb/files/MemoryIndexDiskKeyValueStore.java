@@ -18,13 +18,14 @@ package com.swirlds.merkledb.files;
 
 import static com.swirlds.logging.legacy.LogMarker.MERKLE_DB;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.FileStatisticAware;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.Snapshotable;
 import com.swirlds.merkledb.collections.LongList;
 import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.merkledb.files.DataFileCollection.LoadedDataCallback;
-import com.swirlds.merkledb.serialize.DataItemSerializer;
+import com.swirlds.merkledb.serialize.BaseSerializer;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -90,7 +91,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
             final Path storeDir,
             final String storeName,
             final String legacyStoreName,
-            final DataItemSerializer<D> dataItemSerializer,
+            final BaseSerializer<D> dataItemSerializer,
             final LoadedDataCallback<D> loadedDataCallback,
             final LongList keyToDiskLocationIndex)
             throws IOException {
@@ -199,8 +200,7 @@ public class MemoryIndexDiskKeyValueStore<D> implements AutoCloseable, Snapshota
      * @return Array of serialization version for data if the value was read or null if not found
      * @throws IOException If there was a problem reading the value from file
      */
-    // https://github.com/hashgraph/hedera-services/issues/8344: change return type to BufferedData
-    public Object getBytes(final long key) throws IOException {
+    public BufferedData getBytes(final long key) throws IOException {
         if (!checkKeyInRange(key)) {
             return null;
         }

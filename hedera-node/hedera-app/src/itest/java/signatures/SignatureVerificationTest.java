@@ -459,7 +459,7 @@ class SignatureVerificationTest implements Scenarios {
                 case ED25519 -> shortHex(key.ed25519OrThrow());
                 case ECDSA_SECP256K1 -> shortHex(key.ecdsaSecp256k1OrThrow());
                 case KEY_LIST -> {
-                    final var keyList = key.keyListOrThrow().keysOrThrow();
+                    final var keyList = key.keyListOrThrow().keys();
                     yield "KeyList("
                             + keyList.stream().map(TestCaseBuilder::asString).collect(Collectors.joining(", ")) + ")";
                 }
@@ -467,7 +467,7 @@ class SignatureVerificationTest implements Scenarios {
                     final var thresholdKey = key.thresholdKeyOrThrow();
                     final var threshold = thresholdKey.threshold();
                     yield "ThresholdKey(" + threshold + ", "
-                            + thresholdKey.keysOrThrow().keysOrThrow().stream()
+                            + thresholdKey.keysOrThrow().keys().stream()
                                     .map(TestCaseBuilder::asString)
                                     .collect(Collectors.joining(", "))
                             + ")";

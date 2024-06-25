@@ -181,6 +181,24 @@ public class Utils {
         return topicAddress;
     }
 
+    /**
+     * Returns the bytecode of the contract by the name of the contract from the classpath resource.
+     *
+     * @param contractName the name of the contract
+     * @return the bytecode of the contract
+     * @throws IllegalArgumentException if the contract is not found
+     * @throws UncheckedIOException if an I/O error occurs
+     */
+    public static ByteString getInitcodeOf(@NonNull final String contractName) {
+        final var path = getResourcePath(contractName, ".bin");
+        try {
+            final var bytes = Files.readAllBytes(relocatedIfNotPresentInWorkingDir(Path.of(path)));
+            return ByteString.copyFrom(bytes);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public static ByteString extractByteCode(String path) {
         try {
             final var bytes = Files.readAllBytes(relocatedIfNotPresentInWorkingDir(Path.of(path)));
@@ -353,6 +371,10 @@ public class Utils {
         return captureChildCreate2MetaFor(1, 0, desc, creation2, mirrorAddr, create2Addr);
     }
 
+    /**
+     * This method captures the meta information of a CREATE2 operation. It extracts the mirror and the create2 addresses.
+     * Additionally, it verifies the number of children
+     */
     public static HapiSpecOperation captureChildCreate2MetaFor(
             final int givenNumExpectedChildren,
             final int givenChildOfInterest,
@@ -367,6 +389,15 @@ public class Utils {
             final var numRecords = response.getChildTransactionRecordsCount();
             int numExpectedChildren = givenNumExpectedChildren;
             int childOfInterest = givenChildOfInterest;
+
+            // if we use ethereum transaction for contract creation, we have one additional child record
+            var creation2ContractId =
+                    lookup.getResponseRecord().getContractCreateResult().getContractID();
+            if (spec.registry().hasEVMAddress(String.valueOf(creation2ContractId.getContractNum()))) {
+                numExpectedChildren++;
+                childOfInterest++;
+            }
+
             if (numRecords == numExpectedChildren + 1
                     && TxnUtils.isEndOfStakingPeriodRecord(response.getChildTransactionRecords(0))) {
                 // This transaction may have had a preceding record for the end-of-day

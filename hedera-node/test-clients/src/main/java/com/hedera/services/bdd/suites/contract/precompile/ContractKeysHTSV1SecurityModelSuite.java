@@ -56,7 +56,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -68,8 +67,10 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
 
@@ -106,14 +107,14 @@ public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return List.of(
                 delegateCallForTransferWithContractKey(),
                 transferWithKeyAsPartOf2OfXThreshold(),
                 burnTokenWithFullPrefixAndPartialPrefixKeys());
     }
 
-    final HapiSpec transferWithKeyAsPartOf2OfXThreshold() {
+    final Stream<DynamicTest> transferWithKeyAsPartOf2OfXThreshold() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -178,7 +179,7 @@ public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 1));
     }
 
-    final HapiSpec delegateCallForTransferWithContractKey() {
+    final Stream<DynamicTest> delegateCallForTransferWithContractKey() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> receiverID = new AtomicReference<>();
@@ -240,7 +241,7 @@ public class ContractKeysHTSV1SecurityModelSuite extends HapiSuite {
                         getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 0));
     }
 
-    final HapiSpec burnTokenWithFullPrefixAndPartialPrefixKeys() {
+    final Stream<DynamicTest> burnTokenWithFullPrefixAndPartialPrefixKeys() {
         final var firstBurnTxn = "firstBurnTxn";
         final var secondBurnTxn = "secondBurnTxn";
         final var amount = 99L;

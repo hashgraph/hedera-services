@@ -16,24 +16,21 @@
 
 package com.hedera.node.app.workflows.ingest;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_ADD_LIVE_HASH;
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_DELETE_LIVE_HASH;
+import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
+import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
+import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.populateEthTxData;
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.INTRINSIC_GAS_LOWER_BOUND;
-import static com.hedera.node.app.spi.HapiUtils.isHollow;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
-import static java.util.Collections.emptyList;
-import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -55,21 +52,25 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionChecker.RequireMinValidLifetimeBuffer;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LazyCreationConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -79,6 +80,10 @@ import org.apache.logging.log4j.Logger;
  */
 public final class IngestChecker {
     private static final Logger logger = LogManager.getLogger(IngestChecker.class);
+    private static final Set<HederaFunctionality> UNSUPPORTED_TRANSACTIONS =
+            EnumSet.of(CRYPTO_ADD_LIVE_HASH, CRYPTO_DELETE_LIVE_HASH);
+    private static final Set<HederaFunctionality> PRIVILEGED_TRANSACTIONS =
+            EnumSet.of(FREEZE, SYSTEM_DELETE, SYSTEM_UNDELETE);
 
     private final CurrentPlatformStatus currentPlatformStatus;
     private final TransactionChecker transactionChecker;
@@ -163,34 +168,13 @@ public final class IngestChecker {
         final var txBody = txInfo.txBody();
         final var functionality = txInfo.functionality();
 
-        // Temporary ingest checks needed for specifically ContractCall and EthereumTransaction
-        // as long as it is being charged exclusively in gas
-        // We cannot submit transactions that offer no gas or the work done gossiping
-        // and reaching consensus on the transaction will be completely uncompensated; the
-        // minimum threshold here is chosen for mono-service compatibility
-        if (functionality == CONTRACT_CALL) {
-            validateTruePreCheck(txBody.contractCallOrThrow().gas() >= INTRINSIC_GAS_LOWER_BOUND, INSUFFICIENT_GAS);
-
-            // If the fee offered does not cover the gas cost of the transaction, then
-            // we would again end up with uncompensated work
-            final var gasCost = solvencyPreCheck.estimateAdditionalCosts(txBody, CONTRACT_CALL, consensusTime)
-                    - txBody.contractCallOrThrow().amount();
-            validateTruePreCheck(txBody.transactionFee() >= gasCost, INSUFFICIENT_TX_FEE);
-        } else if (functionality == ETHEREUM_TRANSACTION) {
-            final var ethTxData = populateEthTxData(
-                    requireNonNull(txBody.ethereumTransactionOrThrow().ethereumData())
-                            .toByteArray());
-            validateTruePreCheck(nonNull(ethTxData), INVALID_ETHEREUM_TRANSACTION);
-            validateTruePreCheck(requireNonNull(ethTxData.gasLimit()) >= INTRINSIC_GAS_LOWER_BOUND, INSUFFICIENT_GAS);
-        }
-
         // 1a. Verify the transaction has been sent to *this* node
         if (!nodeAccount.equals(txBody.nodeAccountID())) {
             throw new PreCheckException(INVALID_NODE_ACCOUNT);
         }
 
         // 2. Check the time box of the transaction
-        transactionChecker.checkTimeBox(txBody, consensusTime);
+        transactionChecker.checkTimeBox(txBody, consensusTime, RequireMinValidLifetimeBuffer.YES);
 
         // This should never happen, because HapiUtils#checkFunctionality() will throw
         // UnknownHederaFunctionality if it cannot map to a proper value, and WorkflowOnset
@@ -203,9 +187,13 @@ public final class IngestChecker {
         }
 
         // 4. Check throttles
+        assertThrottlingPreconditions(txInfo, configuration);
         if (synchronizedThrottleAccumulator.shouldThrottle(txInfo, state)) {
             throw new PreCheckException(BUSY);
         }
+
+        // 4a. Run pure checks
+        dispatcher.dispatchPureChecks(txBody);
 
         // 5. Get payer account
         final var storeFactory = new ReadableStoreFactory(state);
@@ -224,7 +212,7 @@ public final class IngestChecker {
         verifyPayerSignature(txInfo, payer, configuration);
 
         // 7. Check payer solvency
-        final var numSigs = txInfo.signatureMap().sigPairOrElse(emptyList()).size();
+        final var numSigs = txInfo.signatureMap().sigPair().size();
         final FeeContext feeContext = new FeeContextImpl(
                 consensusTime,
                 txInfo,
@@ -234,11 +222,33 @@ public final class IngestChecker {
                 storeFactory,
                 configuration,
                 authorizer,
-                numSigs);
+                numSigs,
+                dispatcher);
         final var fees = dispatcher.dispatchComputeFees(feeContext);
-        solvencyPreCheck.checkSolvency(txInfo, payer, fees, true);
+        solvencyPreCheck.checkSolvency(txInfo, payer, fees, WorkflowCheck.INGEST);
 
         return txInfo;
+    }
+
+    private void assertThrottlingPreconditions(
+            @NonNull final TransactionInfo txInfo, @NonNull final Configuration configuration)
+            throws PreCheckException {
+        if (UNSUPPORTED_TRANSACTIONS.contains(txInfo.functionality())) {
+            throw new PreCheckException(NOT_SUPPORTED);
+        }
+        if (PRIVILEGED_TRANSACTIONS.contains(txInfo.functionality())) {
+            final var payerNum =
+                    txInfo.payerID() == null ? Long.MAX_VALUE : txInfo.payerID().accountNumOrElse(Long.MAX_VALUE);
+            final var hederaConfig = configuration.getConfigData(HederaConfig.class);
+            // This adds a mild restriction that privileged transactions can only
+            // be issued by system accounts; (FUTURE) consider giving non-trivial
+            // minimum fees to privileged transactions that fail with NOT_SUPPORTED
+            // at consensus, and adding them to normal throttle buckets, c.f.
+            // https://github.com/hashgraph/hedera-services/issues/12559
+            if (payerNum >= hederaConfig.firstUserEntity()) {
+                throw new PreCheckException(NOT_SUPPORTED);
+            }
+        }
     }
 
     private void verifyPayerSignature(
@@ -248,7 +258,7 @@ public final class IngestChecker {
             throws PreCheckException {
         final var payerKey = payer.key();
         final var hederaConfig = configuration.getConfigData(HederaConfig.class);
-        final var sigPairs = txInfo.signatureMap().sigPairOrElse(List.of());
+        final var sigPairs = txInfo.signatureMap().sigPair();
 
         // Expand the signatures
         final var expandedSigs = new HashSet<ExpandedSignaturePair>();
@@ -257,7 +267,7 @@ public final class IngestChecker {
             signatureExpander.expand(payerKey, sigPairs, expandedSigs);
         } else {
             // If the payer is hollow, then we need to expand the signature for the payer
-            final var originals = txInfo.signatureMap().sigPairOrElse(emptyList()).stream()
+            final var originals = txInfo.signatureMap().sigPair().stream()
                     .filter(SignaturePair::hasEcdsaSecp256k1)
                     .filter(pair -> Bytes.wrap(EthSigsUtils.recoverAddressFromPubKey(
                                     pair.pubKeyPrefix().toByteArray()))

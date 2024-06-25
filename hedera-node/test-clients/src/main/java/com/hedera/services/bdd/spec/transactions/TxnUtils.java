@@ -23,6 +23,7 @@ import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.HRS_DIVISOR;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asEntityNumber;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asFile;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSchedule;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
@@ -30,12 +31,15 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopic;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersForConstructor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.lang.System.arraycopy;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -47,11 +51,13 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
@@ -60,6 +66,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EntityNumber;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -79,8 +86,10 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -101,6 +110,7 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.tuweni.bytes.Bytes;
 
 public class TxnUtils {
     private static final Logger log = LogManager.getLogger(TxnUtils.class);
@@ -117,6 +127,9 @@ public class TxnUtils {
             Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build();
     public static Key EMPTY_KEY_LIST =
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
+    public static Key ALL_ZEROS_INVALID_KEY = Key.newBuilder()
+            .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000"))
+            .build();
 
     public static Key netOf(
             final HapiSpec spec,
@@ -124,6 +137,15 @@ public class TxnUtils {
             final Optional<? extends SigControl> keyShape,
             final Optional<Supplier<KeyGenerator>> keyGenSupplier) {
         return netOf(spec, keyName, keyShape, Optional.empty(), keyGenSupplier);
+    }
+
+    public static void turnLoggingOff(@NonNull final SpecOperation op) {
+        requireNonNull(op);
+        if (op instanceof HapiTxnOp<?> txnOp) {
+            txnOp.noLogging();
+        } else if (op instanceof HapiQueryOp<?> queryOp) {
+            queryOp.noLogging();
+        }
     }
 
     public static List<Function<HapiSpec, Key>> defaultUpdateSigners(
@@ -218,6 +240,16 @@ public class TxnUtils {
 
     public static FileID asFileId(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s) ? asFile(s) : lookupSpec.registry().getFileId(s);
+    }
+
+    public static EntityNumber asNodeId(final String s, final HapiSpec lookupSpec) {
+        return isIdLiteral(s) ? asEntityNumber(s) : lookupSpec.registry().getNodeId(s);
+    }
+
+    public static long asNodeIdLong(final String s, final HapiSpec lookupSpec) {
+        return isIdLiteral(s)
+                ? asEntityNumber(s).getNumber()
+                : lookupSpec.registry().getNodeId(s).getNumber();
     }
 
     public static ContractID asContractId(final String s, final HapiSpec lookupSpec) {
@@ -632,5 +664,37 @@ public class TxnUtils {
 
     public static boolean isNotEndOfStakingPeriodRecord(final TransactionRecord record) {
         return !isEndOfStakingPeriodRecord(record);
+    }
+
+    public static ByteString constructorArgsToByteString(final String abi, final Object[] args) {
+        var params = encodeParametersForConstructor(args, abi);
+
+        var paramsAsHex = Bytes.wrap(params).toHexString();
+        // remove the 0x prefix
+        var paramsToUse = paramsAsHex.substring(2);
+
+        try {
+            return ByteString.copyFrom(paramsToUse, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    /**
+     * Calculates the duration until the start of the next staking period.
+     *
+     * @param now the current time
+     * @param stakePeriodMins the duration of a staking period in minutes
+     * @return the duration until the start of the next staking period
+     */
+    public static java.time.Duration timeUntilNextPeriod(@NonNull final Instant now, final long stakePeriodMins) {
+        final var stakePeriodMillis = stakePeriodMins * 60 * 1000L;
+        final var currentPeriod = getPeriod(now, stakePeriodMillis);
+        final var nextPeriod = currentPeriod + 1;
+        return java.time.Duration.between(now, Instant.ofEpochMilli(nextPeriod * stakePeriodMillis));
+    }
+
+    public static Instant instantOf(@NonNull final Timestamp timestamp) {
+        return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
 }

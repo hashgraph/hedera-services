@@ -40,6 +40,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class CryptoGetLiveHashHandler extends FreeQueryHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public CryptoGetLiveHashHandler() {
         // Exists for injection

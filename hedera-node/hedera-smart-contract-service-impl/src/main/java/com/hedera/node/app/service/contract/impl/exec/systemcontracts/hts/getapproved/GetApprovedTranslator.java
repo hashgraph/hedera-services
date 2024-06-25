@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.as
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.fromHeadlongAddress;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,7 +29,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class GetApprovedTranslator extends AbstractHtsCallTranslator {
+public class GetApprovedTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
     public static final Function HAPI_GET_APPROVED = new Function("getApproved(address,uint256)", "(int32,address)");
     public static final Function ERC_GET_APPROVED = new Function("getApproved(uint256)", ReturnTypes.ADDRESS);

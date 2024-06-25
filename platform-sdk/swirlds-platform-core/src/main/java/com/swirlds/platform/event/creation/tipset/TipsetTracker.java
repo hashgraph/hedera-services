@@ -21,11 +21,11 @@ import static com.swirlds.platform.event.creation.tipset.Tipset.merge;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.sequence.map.StandardSequenceMap;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.sequence.map.SequenceMap;
+import com.swirlds.platform.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -61,7 +61,7 @@ public class TipsetTracker {
     private final AddressBook addressBook;
 
     private final AncientMode ancientMode;
-    private NonAncientEventWindow nonAncientEventWindow;
+    private EventWindow eventWindow;
 
     private final RateLimitedLogger ancientEventLogger;
 
@@ -88,27 +88,27 @@ public class TipsetTracker {
         ancientEventLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
         this.ancientMode = Objects.requireNonNull(ancientMode);
-        this.nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
     }
 
     /**
-     * Set the non-ancient event window.
+     * Set the event window.
      *
-     * @param nonAncientEventWindow the minimum non-ancient generation, all lower generations are ancient
+     * @param eventWindow the current event window
      */
-    public void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow) {
-        this.nonAncientEventWindow = Objects.requireNonNull(nonAncientEventWindow);
-        tipsets.shiftWindow(nonAncientEventWindow.getAncientThreshold());
+    public void setEventWindow(@NonNull final EventWindow eventWindow) {
+        this.eventWindow = Objects.requireNonNull(eventWindow);
+        tipsets.shiftWindow(eventWindow.getAncientThreshold());
     }
 
     /**
-     * Get the current non-ancient event window (from this class's perspective).
+     * Get the current event window (from this class's perspective).
      *
-     * @return the non-ancient event window
+     * @return the event window
      */
     @NonNull
-    public NonAncientEventWindow getNonAncientEventWindow() {
-        return nonAncientEventWindow;
+    public EventWindow getEventWindow() {
+        return eventWindow;
     }
 
     /**
@@ -122,16 +122,16 @@ public class TipsetTracker {
     public Tipset addEvent(
             @NonNull final EventDescriptor eventDescriptor, @NonNull final List<EventDescriptor> parents) {
 
-        if (nonAncientEventWindow.isAncient(eventDescriptor)) {
+        if (eventWindow.isAncient(eventDescriptor)) {
             // Note: although we don't immediately return from this method, the tipsets.put()
             // will not update the data structure for an ancient event. We should never
             // enter this bock of code. This log is here as a canary to alert us if we somehow do.
             ancientEventLogger.error(
                     EXCEPTION.getMarker(),
-                    "Rejecting ancient event from {} with generation {}. Current non-ancient event window is {}",
+                    "Rejecting ancient event from {} with generation {}. Current event window is {}",
                     eventDescriptor.getCreator(),
                     eventDescriptor.getGeneration(),
-                    nonAncientEventWindow);
+                    eventWindow);
         }
 
         final List<Tipset> parentTipsets = new ArrayList<>(parents.size());
@@ -188,7 +188,7 @@ public class TipsetTracker {
      * Reset the tipset tracker to its initial state.
      */
     public void clear() {
-        nonAncientEventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         latestGenerations = new Tipset(addressBook);
         tipsets.clear();
     }

@@ -16,13 +16,13 @@
 
 package com.hedera.node.app.service.contract.impl.test.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.EIP_1014_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.REQUIRED_GAS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SYSTEM_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertSameResult;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -125,26 +125,12 @@ class CustomCallOperationTest {
     @Test
     void withSystemAccountContinuesAsExpected() {
         given(frame.getStackItem(1)).willReturn(SYSTEM_ADDRESS);
-        given(frame.getStackItem(2)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(0)));
         given(addressChecks.isSystemAccount(SYSTEM_ADDRESS)).willReturn(true);
 
         final var expected = new Operation.OperationResult(0, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         final var actual = subject.execute(frame, evm);
 
         assertSameResult(expected, actual);
-    }
-
-    @Test
-    void withLongZeroRejectsMissingAddress() {
-        try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
-            givenWellKnownFrameWith(1L, TestHelpers.NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
-            frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
-
-            final var expected = new Operation.OperationResult(REQUIRED_GAS, INVALID_ALIAS_KEY);
-            final var actual = subject.execute(frame, evm);
-
-            assertSameResult(expected, actual);
-        }
     }
 
     @Test
@@ -206,7 +192,16 @@ class CustomCallOperationTest {
         given(frame.getStackItem(5)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(5)));
         given(frame.getStackItem(6)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(6)));
         given(gasCalculator.callOperationGasCost(
-                        any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), eq(to)))
+                        any(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        anyLong(),
+                        any(),
+                        any(),
+                        eq(to),
+                        anyBoolean()))
                 .willReturn(REQUIRED_GAS);
     }
 }

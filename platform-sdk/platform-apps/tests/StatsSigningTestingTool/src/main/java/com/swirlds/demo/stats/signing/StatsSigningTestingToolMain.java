@@ -42,7 +42,6 @@ import com.swirlds.demo.stats.signing.algorithms.X25519SigningAlgorithm;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -171,11 +170,6 @@ public class StatsSigningTestingToolMain implements SwirldMain {
             // they shouldn't both be -1, so set one of them
             transPerEventMax = 1024;
         }
-        GuiModel.getInstance()
-                .setAbout(
-                        platform.getSelfId(),
-                        "Stats Signing Demo v. 1.3\nThis writes statistics to a log file,"
-                                + " such as the number of transactions per second.");
 
         sttTransactionPool = new SttTransactionPool(
                 platform.getSelfId(),

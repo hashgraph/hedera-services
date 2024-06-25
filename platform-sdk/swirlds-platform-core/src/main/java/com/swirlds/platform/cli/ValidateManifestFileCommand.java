@@ -20,6 +20,7 @@ import com.swirlds.cli.PlatformCli;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.logging.legacy.LogMarker;
 import com.swirlds.platform.config.DefaultConfiguration;
 import com.swirlds.platform.config.StateConfig;
@@ -52,7 +53,7 @@ public class ValidateManifestFileCommand extends AbstractCommand {
 
     @Override
     public @NonNull Integer call() throws IOException {
-        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration();
+        final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         final StateConfig stateConfig = configuration.getConfigData(StateConfig.class);
 
         EmergencyRecoveryFile.read(stateConfig, dir, true);

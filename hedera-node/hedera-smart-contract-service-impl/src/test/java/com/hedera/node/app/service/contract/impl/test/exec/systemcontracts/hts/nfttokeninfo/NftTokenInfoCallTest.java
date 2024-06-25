@@ -39,7 +39,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo.NftTokenInfoCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.nfttokeninfo.NftTokenInfoTranslator;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import com.hedera.node.config.data.LedgerConfig;
 import com.swirlds.config.api.Configuration;
 import java.util.Collections;
@@ -51,7 +51,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class NftTokenInfoCallTest extends HtsCallTestBase {
+class NftTokenInfoCallTest extends CallTestBase {
     @Mock
     private Configuration config;
 
@@ -66,10 +66,8 @@ class NftTokenInfoCallTest extends HtsCallTestBase {
         when(nativeOperations.getNft(FUNGIBLE_EVERYTHING_TOKEN.tokenId().tokenNum(), 2L))
                 .thenReturn(CIVILIAN_OWNED_NFT);
 
-        when(nativeOperations.getAccount(CIVILIAN_OWNED_NFT.ownerIdOrThrow().accountNumOrThrow()))
-                .thenReturn(SOMEBODY);
-        when(nativeOperations.getAccount(CIVILIAN_OWNED_NFT.spenderIdOrThrow().accountNumOrThrow()))
-                .thenReturn(OPERATOR);
+        when(nativeOperations.getAccount(CIVILIAN_OWNED_NFT.ownerIdOrThrow())).thenReturn(SOMEBODY);
+        when(nativeOperations.getAccount(CIVILIAN_OWNED_NFT.spenderIdOrThrow())).thenReturn(OPERATOR);
 
         final var subject =
                 new NftTokenInfoCall(gasCalculator, mockEnhancement(), false, FUNGIBLE_EVERYTHING_TOKEN, 2L, config);

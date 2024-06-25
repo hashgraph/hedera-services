@@ -73,5 +73,12 @@ public enum TaskSchedulerType {
      * There is no enforcement mechanism in the framework to ensure that the task is actually threadsafe. It is advised
      * that this scheduler type be used with caution, as improper use can lead to can lead to nasty race conditions.
      */
-    DIRECT_THREADSAFE
+    DIRECT_THREADSAFE,
+    /**
+     * A scheduler that does nothing. All wires into and out of this scheduler are effectively non-existent at runtime.
+     * Useful for testing and debugging, or for when the ability to toggle a scheduler on/off via configuration is
+     * desired. For a deeper dive into why this is a useful concept, see
+     * <a href='https://www.youtube.com/watch?v=6h58uT_BGV4'>this explanation</a>.
+     */
+    NO_OP
 }

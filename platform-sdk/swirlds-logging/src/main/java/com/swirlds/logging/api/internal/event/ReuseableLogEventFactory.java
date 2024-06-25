@@ -49,7 +49,7 @@ public class ReuseableLogEventFactory implements LogEventFactory {
             @NonNull LogMessage message,
             @Nullable Throwable throwable,
             @Nullable Marker marker,
-            @NonNull Map<String, String> context) {
+            @Nullable Map<String, String> context) {
         final Map<String, String> mergedContext = new HashMap<>();
         if (context != null) {
             mergedContext.putAll(context);

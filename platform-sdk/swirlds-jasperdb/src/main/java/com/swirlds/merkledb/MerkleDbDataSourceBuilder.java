@@ -18,7 +18,7 @@ package com.swirlds.merkledb;
 
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
@@ -36,7 +36,7 @@ import java.util.Objects;
  * the data source is hosted in the specified database. Full data source path is therefore
  * databaseDir + "/" + dataSource.label. To make sure there are no folder name conflicts
  * between data sources with the same label, e.g. on copy or snapshot, MerkleDb builders
- * use different database directories, usually managed using {@link TemporaryFileBuilder}.
+ * use different database directories, usually managed using {@link LegacyTemporaryFileBuilder}.
  *
  * @param <K>
  *     Virtual key type

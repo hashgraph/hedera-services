@@ -15,9 +15,9 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.platform-maven-publish")
-    id("com.hedera.hashgraph.benchmark-conventions")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
+    id("com.hedera.gradle.benchmark")
 }
 
 mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
@@ -25,10 +25,12 @@ mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
 testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
+    requires("com.swirlds.common")
+    requires("com.swirlds.config.api.test.fixtures")
+    runtimeOnly("com.swirlds.platform.core")
 }
 
 jmhModuleInfo {
-    requires("com.swirlds.common")
     requires("com.swirlds.config.api")
     requires("com.swirlds.config.extensions")
     requires("jmh.core")

@@ -41,41 +41,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class ExtCodeSizeOperationSuite extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(ExtCodeSizeOperationSuite.class);
-
-    public static void main(String[] args) {
-        new ExtCodeSizeOperationSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(verifiesExistence(), testExtCodeSizeWithSystemAccounts());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
+public class ExtCodeSizeOperationSuite {
     @SuppressWarnings("java:S5960")
     @HapiTest
-    HapiSpec verifiesExistence() {
+    final Stream<DynamicTest> verifiesExistence() {
         final var contract = "ExtCodeOperationsChecker";
         final var invalidAddress = "0x0000000000000000000000000000000000123456";
         final var sizeOf = "sizeOf";
@@ -132,11 +110,11 @@ public class ExtCodeSizeOperationSuite extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec testExtCodeSizeWithSystemAccounts() {
+    final Stream<DynamicTest> testExtCodeSizeWithSystemAccounts() {
         final var contract = "ExtCodeOperationsChecker";
         final var sizeOf = "sizeOf";
         final var account = "account";
-        final HapiSpecOperation[] opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
+        final var opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
 
         for (int i = 0; i < systemAccounts.size(); i++) {
             // add contract call for all accounts in the list
@@ -156,10 +134,5 @@ public class ExtCodeSizeOperationSuite extends HapiSuite {
                 .given(uploadInitCode(contract), contractCreate(contract), cryptoCreate(account))
                 .when()
                 .then(opsArray);
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

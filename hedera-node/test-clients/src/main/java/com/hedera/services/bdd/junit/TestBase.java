@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.junit;
 
-import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static com.hedera.services.bdd.suites.SuiteRunner.SUITE_NAME_WIDTH;
 import static com.hedera.services.bdd.suites.SuiteRunner.rightPadded;
@@ -25,11 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-import com.hedera.services.bdd.junit.validators.HgcaaLogValidator;
-import com.hedera.services.bdd.junit.validators.QueryLogValidator;
+import com.hedera.services.bdd.junit.support.RecordStreamValidator;
+import com.hedera.services.bdd.junit.support.validators.HgcaaLogValidator;
+import com.hedera.services.bdd.junit.support.validators.QueryLogValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.records.ClosingTime;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -102,16 +102,6 @@ public abstract class TestBase {
 
     protected final DynamicTest queriesLogValidation(final String loc) {
         return dynamicTest("queriesLogValidation", () -> new QueryLogValidator(loc).validate());
-    }
-
-    @SuppressWarnings("java:S1181")
-    protected final DynamicTest recordStreamValidation(final String loc, final RecordStreamValidator... validators) {
-        return dynamicTest("recordStreamValidation", () -> {
-            final var closingTimeSpecs = TestBase.extractContextualizedSpecsFrom(
-                    List.of(ClosingTime::new), TestBase::contextualizedSpecsFromConcurrent);
-            concurrentExecutionOf(closingTimeSpecs);
-            assertValidatorsPass(loc, Arrays.asList(validators));
-        });
     }
 
     @SuppressWarnings("java:S1181")

@@ -87,7 +87,7 @@ class DirectTaskSchedulerTests {
         });
 
         final AtomicInteger countB = new AtomicInteger(0);
-        inB.bind(x -> {
+        inB.bindConsumer(x -> {
             assertEquals(Thread.currentThread(), mainThread);
             assertEquals(1, counter.getCount());
             countB.set(hash32(countB.get(), x));
@@ -141,7 +141,7 @@ class DirectTaskSchedulerTests {
         final BindableInputWire<Integer, Void> in = scheduler.buildInputWire("in");
 
         final AtomicInteger count = new AtomicInteger(0);
-        in.bind(x -> {
+        in.bindConsumer(x -> {
             assertEquals(Thread.currentThread(), mainThread);
 
             if (x == 50) {

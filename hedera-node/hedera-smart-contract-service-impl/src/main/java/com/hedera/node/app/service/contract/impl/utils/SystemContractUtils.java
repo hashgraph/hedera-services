@@ -34,13 +34,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * Utilities for system contracts.
  */
 public final class SystemContractUtils {
-
-    /*
-    The contractFunctionResultSuccessFor is called from Prgn contract and we are setting the HTS address - this is done
-    to mirror the current mono behaviour(PrngSystemPrecompiledContract.computePrecompile > createSuccessfulChildRecord >
-    addContractCallResultToRecord > PrecompileUtils.addContractCallResultToRecord). This will be
-    fixed after the differential testing in this story https://github.com/hashgraph/hedera-services/issues/10552
-     */
     public static final String HTS_PRECOMPILED_CONTRACT_ADDRESS = "0x167";
     public static final ContractID HTS_PRECOMPILE_MIRROR_ID = contractIdFromEvmAddress(
             Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS).toArrayUnsafe());
@@ -115,41 +108,32 @@ public final class SystemContractUtils {
     /**
      * Create an error contract function result.
      *
-     * @param gasUsed Report the gas used.
+     * @param fullResult The result of the failed contract call
      * @param errorMsg The error message to report back to the caller.
      * @param contractID The contract ID.
      * @return The created contract function result when for a failed call.
      */
-    @NonNull
-    public static ContractFunctionResult contractFunctionResultFailedFor(
-            final long gasUsed, final String errorMsg, final ContractID contractID) {
-        return ContractFunctionResult.newBuilder()
-                .gasUsed(gasUsed)
-                .errorMessage(errorMsg)
-                .contractID(contractID)
-                .build();
+    public static @NonNull ContractFunctionResult contractFunctionResultFailedFor(
+            @NonNull final AccountID senderId,
+            @NonNull final FullResult fullResult,
+            final String errorMsg,
+            final ContractID contractID) {
+        return contractFunctionResultFailedFor(
+                senderId, fullResult.result().getOutput(), fullResult.gasRequirement(), errorMsg, contractID);
     }
 
-    /**
-     * Create an error contract function result.
-     *
-     * @param gasUsed Report the gas used.
-     * @param errorMsg The error message to report back to the caller.
-     * @param contractID The contract ID.
-     * @param contractCallResult Bytes representation of the contract call result error
-     * @return The created contract function result when for a failed call.
-     */
-    @NonNull
-    public static ContractFunctionResult contractFunctionResultFailedForProto(
-            final long gasUsed,
+    public static @NonNull ContractFunctionResult contractFunctionResultFailedFor(
+            @NonNull final AccountID senderId,
+            @NonNull final Bytes result,
+            final long gasRequirement,
             final String errorMsg,
-            final ContractID contractID,
-            final com.hedera.pbj.runtime.io.buffer.Bytes contractCallResult) {
+            final ContractID contractID) {
         return ContractFunctionResult.newBuilder()
-                .gasUsed(gasUsed)
-                .contractID(contractID)
+                .gasUsed(gasRequirement)
+                .contractCallResult(tuweniToPbjBytes(result))
+                .senderId(senderId)
                 .errorMessage(errorMsg)
-                .contractCallResult(contractCallResult)
+                .contractID(contractID)
                 .build();
     }
 

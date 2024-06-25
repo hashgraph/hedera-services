@@ -19,9 +19,11 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.hexedEvmAddressOf;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.summarizeStakingInfo;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.tokenRelationshipsOf;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -36,6 +38,7 @@ import com.hedera.hapi.node.contract.ContractInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
+import com.hedera.node.app.hapi.fees.usage.contract.ContractGetInfoUsage;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
@@ -105,6 +108,23 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
         return Response.newBuilder().contractGetInfo(contractGetInfo).build();
     }
 
+    @NonNull
+    @Override
+    public Fees computeFees(@NonNull final QueryContext context) {
+        return context.feeCalculator().legacyCalculate(sigValueObj -> {
+            final var contract = contractFrom(context);
+            if (contract == null) {
+                return CONSTANT_FEE_DATA;
+            } else {
+                return ContractGetInfoUsage.newEstimate(fromPbj(context.query()))
+                        .givenCurrentKey(fromPbj(contract.keyOrThrow()))
+                        .givenCurrentMemo(contract.memo())
+                        .givenCurrentTokenAssocs(contract.numberAssociations())
+                        .get();
+            }
+        });
+    }
+
     private ContractInfo infoFor(
             @NonNull final Account contract,
             @NonNull final TokensConfig tokensConfig,
@@ -148,11 +168,5 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
         final var contractId = context.query().contractGetInfoOrThrow().contractIDOrElse(ContractID.DEFAULT);
         final var contract = accountsStore.getContractById(contractId);
         return (contract == null || !contract.smartContract()) ? null : contract;
-    }
-
-    @NonNull
-    @Override
-    public Fees computeFees(@NonNull final QueryContext context) {
-        return context.feeCalculator().calculate();
     }
 }

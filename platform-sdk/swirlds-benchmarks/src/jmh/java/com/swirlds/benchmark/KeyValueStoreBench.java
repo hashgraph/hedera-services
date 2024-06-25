@@ -47,8 +47,9 @@ public class KeyValueStoreBench extends BaseBench {
 
         final BenchmarkRecord[] map = new BenchmarkRecord[verify ? maxKey : 0];
         LongListOffHeap keyToDiskLocationIndex = new LongListOffHeap();
+        final MerkleDbConfig dbConfig = getConfig(MerkleDbConfig.class);
         final var store = new MemoryIndexDiskKeyValueStore<>(
-                getConfig(MerkleDbConfig.class),
+                dbConfig,
                 getTestDir(),
                 storeName,
                 null,
@@ -56,7 +57,7 @@ public class KeyValueStoreBench extends BaseBench {
                 (dataLocation, dataValue) -> {},
                 keyToDiskLocationIndex);
         final DataFileCompactor<BenchmarkRecord> compactor = new DataFileCompactor<>(
-                storeName, store.getFileCollection(), keyToDiskLocationIndex, null, null, null, null);
+                dbConfig, storeName, store.getFileCollection(), keyToDiskLocationIndex, null, null, null, null);
 
         // Write files
         long start = System.currentTimeMillis();

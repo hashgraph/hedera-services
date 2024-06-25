@@ -21,8 +21,10 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.HALT_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SUCCESS_RESULT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.assertFailsWith;
+import static com.hedera.node.app.service.contract.impl.test.handlers.ContractCallHandlerTest.INTRINSIC_GAS_FOR_0_ARG_METHOD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -40,9 +42,11 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractCreateHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractCreateRecordBuilder;
 import com.hedera.node.app.service.contract.impl.state.RootProxyWorldUpdater;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import java.util.List;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -67,11 +71,17 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
     @Mock
     private ContractCreateRecordBuilder recordBuilder;
 
+    @Mock
+    private RecordBuilders recordBuilders;
+
+    @Mock
+    private GasCalculator gasCalculator;
+
     private ContractCreateHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new ContractCreateHandler(() -> factory);
+        subject = new ContractCreateHandler(() -> factory, gasCalculator);
     }
 
     @Test
@@ -79,7 +89,8 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         given(factory.create(handleContext, HederaFunctionality.CONTRACT_CREATE))
                 .willReturn(component);
         given(component.contextTransactionProcessor()).willReturn(processor);
-        given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(ContractCreateRecordBuilder.class)).willReturn(recordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult = SUCCESS_RESULT.asProtoResultOf(baseProxyWorldUpdater);
         System.out.println(expectedResult);
@@ -99,7 +110,8 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         given(factory.create(handleContext, HederaFunctionality.CONTRACT_CREATE))
                 .willReturn(component);
         given(component.contextTransactionProcessor()).willReturn(processor);
-        given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(recordBuilder);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(ContractCreateRecordBuilder.class)).willReturn(recordBuilder);
         final var expectedResult = HALT_RESULT.asProtoResultOf(baseProxyWorldUpdater);
         final var expectedOutcome =
                 new CallOutcome(expectedResult, HALT_RESULT.finalStatus(), null, HALT_RESULT.gasPrice(), null, null);
@@ -173,6 +185,16 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         // meta.requiredNonPayerKeys());
     }
 
+    @Test
+    @DisplayName("validate checks in pureChecks()")
+    void validatePureChecks() {
+        // check at least intrinsic gas
+        final var txn1 = contractCreateTransactionWithInsufficientGas();
+        given(gasCalculator.transactionIntrinsicGasCost(org.apache.tuweni.bytes.Bytes.wrap(new byte[0]), true))
+                .willReturn(INTRINSIC_GAS_FOR_0_ARG_METHOD);
+        assertThrows(PreCheckException.class, () -> subject.pureChecks(txn1));
+    }
+
     private TransactionBody contractCreateTransaction(final Key adminKey, final AccountID autoRenewId) {
         final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
         final var createTxnBody = ContractCreateTransactionBody.newBuilder().memo("Create Contract");
@@ -192,6 +214,15 @@ class ContractCreateHandlerTest extends ContractHandlerTestBase {
         return TransactionBody.newBuilder()
                 .transactionID(transactionID)
                 .contractCreateInstance(createTxnBody)
+                .build();
+    }
+
+    private TransactionBody contractCreateTransactionWithInsufficientGas() {
+        final var transactionID = TransactionID.newBuilder().accountID(payer).transactionValidStart(consensusTimestamp);
+        return TransactionBody.newBuilder()
+                .transactionID(transactionID)
+                .contractCreateInstance(
+                        ContractCreateTransactionBody.newBuilder().gas(INTRINSIC_GAS_FOR_0_ARG_METHOD - 1))
                 .build();
     }
 }

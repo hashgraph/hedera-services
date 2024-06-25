@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
-import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.hasStakeMetaChanges;
 import static java.util.Objects.requireNonNull;
@@ -32,6 +32,7 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,8 +48,14 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class StakingRewardsHelper {
     private static final Logger log = LogManager.getLogger(StakingRewardsHelper.class);
+    /**
+     * The maximum pending rewards that can be paid out in a single staking period, which is 50B hbar.
+     */
     public static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public StakingRewardsHelper() {
         // Exists for Dagger injection
@@ -59,25 +66,48 @@ public class StakingRewardsHelper {
      * and has stakedId or stakedToMe or balance or declineReward changed in this transaction.
      *
      * @param writableAccountStore The store to write to for updated values and original values
-     * @param specialRewardReceivers The accounts which are staked to a node and are special reward receivers
+     * @param stakeToMeRewardReceivers The accounts which are staked to a node and are special reward receivers
+     * @param explicitRewardReceivers Extra accounts to consider for rewards
      * @return A list of accounts which are staked to a node and could possibly receive a reward
      */
     public static Set<AccountID> getAllRewardReceivers(
-            final WritableAccountStore writableAccountStore, final Set<AccountID> specialRewardReceivers) {
-        final var possibleRewardReceivers = new LinkedHashSet<>(specialRewardReceivers);
-        for (final AccountID id : writableAccountStore.modifiedAccountsInState()) {
-            final var modifiedAcct = writableAccountStore.get(id);
-            final var originalAcct = writableAccountStore.getOriginalValue(id);
-            // It is possible that original account is null if the account was created in this transaction
-            // In that case it is not a reward situation
-            // If the account existed before this transaction and is staked to a node,
-            // and the current transaction modified the stakedToMe field or declineReward or
-            // the stakedId field, then it is a reward situation
-            if (isRewardSituation(modifiedAcct, originalAcct)) {
-                possibleRewardReceivers.add(id);
+            final WritableAccountStore writableAccountStore,
+            final Set<AccountID> stakeToMeRewardReceivers,
+            @NonNull final Set<AccountID> explicitRewardReceivers) {
+        final var possibleRewardReceivers = new LinkedHashSet<>(stakeToMeRewardReceivers);
+        addIdsInRewardSituation(
+                writableAccountStore,
+                writableAccountStore.modifiedAccountsInState(),
+                possibleRewardReceivers,
+                FilterType.IS_CANONICAL_REWARD_SITUATION);
+        addIdsInRewardSituation(
+                writableAccountStore, explicitRewardReceivers, possibleRewardReceivers, FilterType.IS_STAKED_TO_NODE);
+        return possibleRewardReceivers;
+    }
+
+    private enum FilterType {
+        IS_CANONICAL_REWARD_SITUATION,
+        IS_STAKED_TO_NODE
+    }
+
+    private static void addIdsInRewardSituation(
+            @NonNull final WritableAccountStore writableAccountStore,
+            @NonNull final Collection<AccountID> ids,
+            @NonNull final Set<AccountID> possibleRewardReceivers,
+            @NonNull final FilterType filterType) {
+        for (final AccountID id : ids) {
+            if (filterType == FilterType.IS_CANONICAL_REWARD_SITUATION) {
+                final var modifiedAcct = requireNonNull(writableAccountStore.get(id));
+                final var originalAcct = writableAccountStore.getOriginalValue(id);
+                if (isRewardSituation(modifiedAcct, originalAcct)) {
+                    possibleRewardReceivers.add(id);
+                }
+            } else {
+                if (isCurrentlyStakedToNode(writableAccountStore.get(id))) {
+                    possibleRewardReceivers.add(id);
+                }
             }
         }
-        return possibleRewardReceivers;
     }
 
     /**
@@ -100,9 +130,7 @@ public class StakingRewardsHelper {
         // in previous step
         final var hasBalanceChange = modifiedAccount.tinybarBalance() != originalAccount.tinybarBalance();
         final var hasStakeMetaChanges = hasStakeMetaChanges(originalAccount, modifiedAccount);
-        // We do this for backward compatibility with mono-service
-        final var isCalledContract = modifiedAccount.smartContract();
-        return (isCalledContract || hasBalanceChange || hasStakeMetaChanges);
+        return hasBalanceChange || hasStakeMetaChanges;
     }
 
     /**
@@ -146,7 +174,8 @@ public class StakingRewardsHelper {
             log.error(
                     "Pending rewards decreased by {} to a meaningless {}, fixing to zero hbar",
                     amount,
-                    newPendingRewards);
+                    newPendingRewards,
+                    nodeId);
             newPendingRewards = 0;
         }
         final var stakingRewards = stakingRewardsStore.get();
@@ -181,7 +210,7 @@ public class StakingRewardsHelper {
      * @param currStakingInfo    The current staking info
      * @return The clamped pending rewards
      */
-    StakingNodeInfo increasePendingRewardsBy(
+    public StakingNodeInfo increasePendingRewardsBy(
             final WritableNetworkStakingRewardsStore stakingRewardsStore,
             long amount,
             final StakingNodeInfo currStakingInfo) {
@@ -192,8 +221,8 @@ public class StakingRewardsHelper {
         long newNodePendingRewards;
         // Only increase the pending rewards if the node is not deleted
         if (!currStakingInfo.deleted()) {
-            newNetworkPendingRewards = currentPendingRewards + amount;
-            newNodePendingRewards = nodePendingRewards + amount;
+            newNetworkPendingRewards = clampedAdd(currentPendingRewards, amount);
+            newNodePendingRewards = clampedAdd(nodePendingRewards, amount);
         } else {
             newNetworkPendingRewards = currentPendingRewards;
             newNodePendingRewards = 0L;
@@ -209,8 +238,8 @@ public class StakingRewardsHelper {
             log.error(
                     "Pending rewards increased by {} to an un-payable {} for node {}, fixing to 50B hbar",
                     amount,
-                    newNetworkPendingRewards,
-                    nodePendingRewards);
+                    newNodePendingRewards,
+                    currStakingInfo.nodeNumber());
             newNodePendingRewards = MAX_PENDING_REWARDS;
         }
         final var stakingRewards = stakingRewardsStore.get();
@@ -244,5 +273,20 @@ public class StakingRewardsHelper {
         }
         accountAmounts.sort(ACCOUNT_AMOUNT_COMPARATOR);
         return accountAmounts;
+    }
+
+    private static boolean isCurrentlyStakedToNode(@Nullable final Account account) {
+        // Null check here because it's possible for the contract service to naively
+        // list the id of an account that doesn't exist in the store, but was created
+        // and then reverted inside an overall successful transaction
+        return account != null && account.stakedNodeIdOrElse(SENTINEL_NODE_ID) != SENTINEL_NODE_ID;
+    }
+
+    private static long clampedAdd(final long a, final long b) {
+        try {
+            return Math.addExact(a, b);
+        } catch (final ArithmeticException ae) {
+            return a > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
+        }
     }
 }

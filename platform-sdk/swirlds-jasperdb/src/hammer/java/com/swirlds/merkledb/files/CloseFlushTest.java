@@ -17,7 +17,7 @@
 package com.swirlds.merkledb.files;
 
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
@@ -63,7 +63,7 @@ public class CloseFlushTest {
 
     @BeforeAll
     public static void setup() throws IOException {
-        tmpFileDir = TemporaryFileBuilder.buildTemporaryFile();
+        tmpFileDir = LegacyTemporaryFileBuilder.buildTemporaryFile();
         Configurator.setRootLevel(Level.WARN);
     }
 

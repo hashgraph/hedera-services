@@ -20,6 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 
 import com.swirlds.common.utility.StackTrace;
+import com.swirlds.logging.legacy.payload.FatalErrorPayload;
 import com.swirlds.logging.legacy.payload.SystemExitPayload;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -85,5 +86,20 @@ public final class SystemExitUtils {
      */
     public static void exitSystem(@NonNull final SystemExitCode exitCode) {
         exitSystem(exitCode, null, false);
+    }
+
+    /**
+     * Shutdown the JVM as the result of a fatal error.
+     */
+    public static void handleFatalError(
+            @Nullable final String msg, @Nullable final Throwable throwable, @NonNull final SystemExitCode exitCode) {
+        logger.fatal(
+                EXCEPTION.getMarker(),
+                "{}\nCaller stack trace:\n{}\nThrowable provided:",
+                new FatalErrorPayload("Fatal error, node will shut down. Reason: " + msg),
+                StackTrace.getStackTrace().toString(),
+                throwable);
+
+        SystemExitUtils.exitSystem(exitCode, msg);
     }
 }

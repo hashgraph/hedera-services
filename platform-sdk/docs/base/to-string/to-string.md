@@ -1,3 +1,5 @@
+[⇧ Platform Base](../base.md)
+
 # `ToStringBuilder` Utility
 
 Our project utilizes a custom implementation of the `ToStringBuilder` similar to what's available in `org.apache.commons.lang3.builder.ToStringBuilder`. The primary objective behind this is to ensure consistent formatting for our `toString()` methods throughout the application.

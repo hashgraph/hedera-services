@@ -43,11 +43,12 @@ public interface FinalizeContext extends ChildFinalizeContext {
     Configuration configuration();
 
     /**
-     * Indicates whether or not the transaction has any child records.
+     * Indicates whether the transaction has any child or preceding records.
+     * This is true only for the user transaction that triggered the dispatch.
      *
-     * @return {@code true} if the transaction has child records; otherwise {@code false}
+     * @return {@code true} if the transaction has child ore preceding records; otherwise {@code false}
      */
-    boolean hasChildRecords();
+    boolean hasChildOrPrecedingRecords();
 
     /**
      * This method can be used to iterate over all child records.
@@ -59,4 +60,13 @@ public interface FinalizeContext extends ChildFinalizeContext {
      * @throws IllegalArgumentException if the record builder type is unknown to the app
      */
     <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer);
+
+    /**
+     * Whether this context represents a {@code SCHEDULED} dispatch, which should defer
+     * updating stake metadata for modified accounts until the triggering {@code SCHEDULE_SIGN}
+     * or {@code SCHEDULE_CREATE} transaction is finalized.
+     *
+     * @return {@code true} if this context represents a scheduled dispatch; otherwise {@code false}
+     */
+    boolean isScheduleDispatch();
 }

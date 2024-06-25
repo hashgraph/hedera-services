@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.creation.tipset.Tipset;
 import com.swirlds.platform.event.creation.tipset.TipsetTracker;
@@ -34,7 +34,7 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -69,7 +69,7 @@ class TipsetTrackerTests {
 
         final int nodeCount = random.nextInt(10, 20);
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+                RandomAddressBookBuilder.create(random).withSize(nodeCount).build();
 
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
         final Map<EventDescriptor, Tipset> expectedTipsets = new HashMap<>();
@@ -152,10 +152,10 @@ class TipsetTrackerTests {
                 : EventConstants.FIRST_GENERATION;
         while (tracker.size() > 0) {
             ancientThreshold += random.nextInt(1, 5);
-            final NonAncientEventWindow nonAncientEventWindow =
-                    new NonAncientEventWindow(1, ancientThreshold, 1 /* ignored in this context */, ancientMode);
-            tracker.setNonAncientEventWindow(nonAncientEventWindow);
-            assertEquals(nonAncientEventWindow, tracker.getNonAncientEventWindow());
+            final EventWindow eventWindow =
+                    new EventWindow(1, ancientThreshold, 1 /* ignored in this context */, ancientMode);
+            tracker.setEventWindow(eventWindow);
+            assertEquals(eventWindow, tracker.getEventWindow());
             for (final EventDescriptor fingerprint : expectedTipsets.keySet()) {
                 if (fingerprint.getAncientIndicator(ancientMode) < ancientThreshold) {
                     assertNull(tracker.getTipset(fingerprint));

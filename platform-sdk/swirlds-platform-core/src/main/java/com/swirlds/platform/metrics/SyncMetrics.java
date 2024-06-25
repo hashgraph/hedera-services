@@ -26,7 +26,7 @@ import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.metrics.RunningAverageMetric;
 import com.swirlds.common.metrics.extensions.CountPerSecond;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.gossip.shadowgraph.ShadowgraphSynchronizer;
 import com.swirlds.platform.gossip.shadowgraph.SyncResult;
 import com.swirlds.platform.gossip.shadowgraph.SyncTiming;
@@ -44,10 +44,6 @@ import java.time.temporal.ChronoUnit;
  * Interface to update relevant sync statistics
  */
 public class SyncMetrics {
-    private static final RunningAverageMetric.Config PERMITS_AVAILABLE_CONFIG = new RunningAverageMetric.Config(
-                    PLATFORM_CATEGORY, "syncPermitsAvailable")
-            .withDescription("number of sync permits available");
-    private final RunningAverageMetric permitsAvailable;
 
     private static final RunningAverageMetric.Config AVG_BYTES_PER_SEC_SYNC_CONFIG = new RunningAverageMetric.Config(
                     PLATFORM_CATEGORY, "bytes_per_sec_sync")
@@ -260,8 +256,6 @@ public class SyncMetrics {
                 PlatformStatNames.MULTI_TIPS_PER_SYNC,
                 "the number of creators that have more than one tip at the start of each sync",
                 "%5d");
-
-        permitsAvailable = metrics.getOrCreate(PERMITS_AVAILABLE_CONFIG);
     }
 
     /**
@@ -270,7 +264,7 @@ public class SyncMetrics {
      * @param self  event window of our graph at the start of the sync
      * @param other event window of their graph at the start of the sync
      */
-    public void eventWindow(@NonNull final NonAncientEventWindow self, @NonNull final NonAncientEventWindow other) {
+    public void eventWindow(@NonNull final EventWindow self, @NonNull final EventWindow other) {
         syncIndicatorDiff.update(self.getAncientThreshold() - other.getAncientThreshold());
     }
 
@@ -358,15 +352,6 @@ public class SyncMetrics {
      */
     public void updateTipsPerSync(final int tipCount) {
         tipsPerSync.update(tipCount);
-    }
-
-    /**
-     * Updates the number of permits available for syncs
-     *
-     * @param permits the number of permits available
-     */
-    public void updateSyncPermitsAvailable(final int permits) {
-        permitsAvailable.update(permits);
     }
 
     /**

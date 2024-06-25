@@ -23,7 +23,6 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * An interface to serialize keys used in virtual maps. Virtual keys are serializable in themselves,
@@ -55,26 +54,6 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
     default KeyIndexType getIndexType() {
         return getSerializedSize() == Long.BYTES ? KeyIndexType.SEQUENTIAL_INCREMENTING_LONGS : KeyIndexType.GENERIC;
     }
-
-    /**
-     * Compare keyToCompare's data to that contained in the given ByteBuffer. The data in the buffer
-     * is assumed to be starting at the current buffer position and in the format written by this
-     * class's serialize() method. The reason for this rather than just deserializing then doing an
-     * object equals is performance. By doing the comparison here you can fail fast on the first
-     * byte that does not match. As this is used in a tight loop in searching a hash map bucket for
-     * a match performance is critical.
-     *
-     * <p>Deprecation note: this method is only used by MerkleDb, when it checks data in
-     * JDB format. This format will be eventually removed.
-     *
-     * @param buffer The buffer to read from and compare to
-     * @param dataVersion The serialization version of the data in the buffer
-     * @param keyToCompare The key to compare with the data in the file.
-     * @return true if the content of the buffer matches this class's data
-     * @throws IOException If there was a problem reading from the buffer
-     */
-    @Deprecated
-    boolean equals(ByteBuffer buffer, int dataVersion, K keyToCompare) throws IOException;
 
     /**
      * Compare keyToCompare's data to that contained in the given buffer. The data in the buffer

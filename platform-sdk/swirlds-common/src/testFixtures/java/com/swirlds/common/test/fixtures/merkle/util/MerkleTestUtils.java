@@ -43,6 +43,7 @@ import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf2;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -990,42 +991,99 @@ public final class MerkleTestUtils {
             final TeachingSynchronizer teacher;
 
             if (latencyMilliseconds == 0) {
-                learner = new LearningSynchronizer(
-                        getStaticThreadManager(),
-                        streams.getLearnerInput(),
-                        streams.getLearnerOutput(),
-                        startingTree,
-                        streams::disconnect,
-                        reconnectConfig);
+                learner =
+                        new LearningSynchronizer(
+                                getStaticThreadManager(),
+                                streams.getLearnerInput(),
+                                streams.getLearnerOutput(),
+                                startingTree,
+                                streams::disconnect,
+                                reconnectConfig) {
+
+                            @Override
+                            protected StandardWorkGroup createStandardWorkGroup(
+                                    ThreadManager threadManager,
+                                    Runnable breakConnection,
+                                    Function<Throwable, Boolean> reconnectExceptionListener) {
+                                return new StandardWorkGroup(
+                                        threadManager,
+                                        "test-learning-synchronizer",
+                                        breakConnection,
+                                        reconnectExceptionListener,
+                                        true);
+                            }
+                        };
                 final PlatformContext platformContext =
                         TestPlatformContextBuilder.create().build();
-                teacher = new TeachingSynchronizer(
-                        platformContext.getConfiguration(),
-                        Time.getCurrent(),
-                        getStaticThreadManager(),
-                        streams.getTeacherInput(),
-                        streams.getTeacherOutput(),
-                        desiredTree,
-                        streams::disconnect,
-                        reconnectConfig);
+                teacher =
+                        new TeachingSynchronizer(
+                                platformContext.getConfiguration(),
+                                Time.getCurrent(),
+                                getStaticThreadManager(),
+                                streams.getTeacherInput(),
+                                streams.getTeacherOutput(),
+                                desiredTree,
+                                streams::disconnect,
+                                reconnectConfig) {
+                            @Override
+                            protected StandardWorkGroup createStandardWorkGroup(
+                                    ThreadManager threadManager,
+                                    Runnable breakConnection,
+                                    Function<Throwable, Boolean> exceptionListener) {
+                                return new StandardWorkGroup(
+                                        threadManager,
+                                        "test-teaching-synchronizer",
+                                        breakConnection,
+                                        exceptionListener,
+                                        true);
+                            }
+                        };
             } else {
-                learner = new LaggingLearningSynchronizer(
-                        streams.getLearnerInput(),
-                        streams.getLearnerOutput(),
-                        startingTree,
-                        latencyMilliseconds,
-                        streams::disconnect,
-                        reconnectConfig);
+                learner =
+                        new LaggingLearningSynchronizer(
+                                streams.getLearnerInput(),
+                                streams.getLearnerOutput(),
+                                startingTree,
+                                latencyMilliseconds,
+                                streams::disconnect,
+                                reconnectConfig) {
+                            @Override
+                            protected StandardWorkGroup createStandardWorkGroup(
+                                    ThreadManager threadManager,
+                                    Runnable breakConnection,
+                                    Function<Throwable, Boolean> reconnectExceptionListener) {
+                                return new StandardWorkGroup(
+                                        threadManager,
+                                        "test-learning-synchronizer",
+                                        breakConnection,
+                                        reconnectExceptionListener,
+                                        true);
+                            }
+                        };
                 final PlatformContext platformContext =
                         TestPlatformContextBuilder.create().build();
-                teacher = new LaggingTeachingSynchronizer(
-                        platformContext,
-                        streams.getTeacherInput(),
-                        streams.getTeacherOutput(),
-                        desiredTree,
-                        latencyMilliseconds,
-                        streams::disconnect,
-                        reconnectConfig);
+                teacher =
+                        new LaggingTeachingSynchronizer(
+                                platformContext,
+                                streams.getTeacherInput(),
+                                streams.getTeacherOutput(),
+                                desiredTree,
+                                latencyMilliseconds,
+                                streams::disconnect,
+                                reconnectConfig) {
+                            @Override
+                            protected StandardWorkGroup createStandardWorkGroup(
+                                    ThreadManager threadManager,
+                                    Runnable breakConnection,
+                                    Function<Throwable, Boolean> reconnectExceptionListener) {
+                                return new StandardWorkGroup(
+                                        threadManager,
+                                        "test-teaching-synchronizer",
+                                        breakConnection,
+                                        reconnectExceptionListener,
+                                        true);
+                            }
+                        };
             }
 
             final AtomicReference<Throwable> firstReconnectException = new AtomicReference<>();
@@ -1033,8 +1091,8 @@ public final class MerkleTestUtils {
                 firstReconnectException.compareAndSet(null, t);
                 return false;
             };
-            final StandardWorkGroup workGroup =
-                    new StandardWorkGroup(getStaticThreadManager(), "synchronization-test", null, exceptionListener);
+            final StandardWorkGroup workGroup = new StandardWorkGroup(
+                    getStaticThreadManager(), "synchronization-test", null, exceptionListener, true);
             workGroup.execute("teaching-synchronizer-main", () -> teachingSynchronizerThread(teacher));
             workGroup.execute("learning-synchronizer-main", () -> learningSynchronizerThread(learner));
 

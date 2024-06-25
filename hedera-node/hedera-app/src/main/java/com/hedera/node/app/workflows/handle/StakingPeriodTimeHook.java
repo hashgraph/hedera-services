@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
-import static com.hedera.node.app.service.mono.utils.Units.MINUTES_TO_MILLISECONDS;
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
@@ -44,6 +42,9 @@ import org.apache.logging.log4j.Logger;
 public class StakingPeriodTimeHook {
     private static final Logger logger = LogManager.getLogger(StakingPeriodTimeHook.class);
 
+    private static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
+    private static final long MINUTES_TO_MILLISECONDS = 60_000L;
+
     private final EndOfStakingPeriodUpdater stakingCalculator;
     private final ExchangeRateManager exchangeRateManager;
 
@@ -63,8 +64,9 @@ public class StakingPeriodTimeHook {
      * <p>The only exception to this rule is when {@code consensusTimeOfLastHandledTxn} is null,
      * <b>which should only happen on node startup.</b> The node should therefore run this process
      * to catch up on updates and distributions when first coming online.
+     * @param stack the savepoint stack
      */
-    void process(@NonNull final SavepointStackImpl stack, @NonNull final TokenContext tokenContext) {
+    public void process(@NonNull final SavepointStackImpl stack, @NonNull final TokenContext tokenContext) {
         requireNonNull(stack, "stack must not be null");
         requireNonNull(tokenContext, "tokenContext must not be null");
         final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);

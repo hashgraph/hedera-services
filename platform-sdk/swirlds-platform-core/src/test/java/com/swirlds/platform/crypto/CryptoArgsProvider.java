@@ -17,11 +17,17 @@
 package com.swirlds.platform.crypto;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.common.test.fixtures.io.ResourceLoader;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
-import java.time.Duration;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.net.URISyntaxException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.UnrecoverableKeyException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -35,28 +41,27 @@ public class CryptoArgsProvider {
     private static final char[] PASSWORD = "password".toCharArray();
 
     /**
-     * @return 2 sets of arguments, 1 generated and 1 loaded from files
+     * @return 3 sets of arguments, 1 generated, 1 loaded from files, and 1 that generates agreement keys if they are
+     * not loaded from files.
      */
     static Stream<Arguments> basicTestArgs() throws Exception {
         Instant start = Instant.now();
-        final AddressBook loadedAB = createAddressBook();
-        final Map<NodeId, KeysAndCerts> loadedC =
-                CryptoStatic.loadKeysAndCerts(loadedAB, ResourceLoader.getFile("preGeneratedKeysAndCerts/"), PASSWORD);
-        System.out.println(
-                "Key loading took " + Duration.between(start, Instant.now()).toMillis());
-
+        final AddressBookAndCerts addressBookAndCerts = loadAddressBookWithKeys(NUMBER_OF_ADDRESSES);
         start = Instant.now();
-        final AddressBook genAB = createAddressBook();
+        final AddressBook genAB = createAddressBook(NUMBER_OF_ADDRESSES);
         final Map<NodeId, KeysAndCerts> genC = CryptoStatic.generateKeysAndCerts(genAB);
-        System.out.println(
-                "Key generating took " + Duration.between(start, Instant.now()).toMillis());
-        return Stream.of(Arguments.of(loadedAB, loadedC), Arguments.of(genAB, genC));
+        start = Instant.now();
+        final AddressBookAndCerts addressBookAndCerts2 = createAddressBookLoadSigKeysCreateAgrKeys(NUMBER_OF_ADDRESSES);
+        return Stream.of(
+                Arguments.of(addressBookAndCerts.addressBook(), addressBookAndCerts.nodeIdKeysAndCertsMap()),
+                Arguments.of(genAB, genC),
+                Arguments.of(addressBookAndCerts2.addressBook(), addressBookAndCerts2.nodeIdKeysAndCertsMap()));
     }
 
-    private static AddressBook createAddressBook() {
-        final AddressBook addresses = new RandomAddressBookGenerator()
-                .setSize(NUMBER_OF_ADDRESSES)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+    public static AddressBook createAddressBook(final int size) {
+        final AddressBook addresses = RandomAddressBookBuilder.create(Randotron.create())
+                .withSize(size)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         for (int i = 0; i < addresses.getSize(); i++) {
@@ -66,6 +71,36 @@ public class CryptoArgsProvider {
         }
 
         return addresses;
+    }
+
+    /**
+     * returns a record with the addressBook and keys loaded from file.
+     *
+     * @param size the size of the required address book
+     */
+    @NonNull
+    public static AddressBookAndCerts loadAddressBookWithKeys(final int size)
+            throws URISyntaxException, UnrecoverableKeyException, KeyLoadingException, KeyStoreException,
+                    NoSuchAlgorithmException, KeyGeneratingException, NoSuchProviderException {
+        final AddressBook createdAB = createAddressBook(size);
+        final Map<NodeId, KeysAndCerts> loadedC =
+                CryptoStatic.loadKeysAndCerts(createdAB, ResourceLoader.getFile("preGeneratedKeysAndCerts/"), PASSWORD);
+        return new AddressBookAndCerts(createdAB, loadedC);
+    }
+
+    /**
+     * returns a record with the addressBook and signing keys loaded from file with generated agreement keys.
+     *
+     * @param size the size of the required address book
+     */
+    @NonNull
+    public static AddressBookAndCerts createAddressBookLoadSigKeysCreateAgrKeys(final int size)
+            throws URISyntaxException, UnrecoverableKeyException, KeyLoadingException, KeyStoreException,
+                    NoSuchAlgorithmException, KeyGeneratingException, NoSuchProviderException {
+        final AddressBook createdAB = createAddressBook(size);
+        final Map<NodeId, KeysAndCerts> loadedC = CryptoStatic.loadKeysAndCerts(
+                createdAB, ResourceLoader.getFile("preGenKeysAndCertsNoAgrKey/"), PASSWORD);
+        return new AddressBookAndCerts(createdAB, loadedC);
     }
 
     private static String memberName(int num) {

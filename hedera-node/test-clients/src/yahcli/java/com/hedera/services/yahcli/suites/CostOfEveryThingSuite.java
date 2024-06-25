@@ -16,6 +16,7 @@
 
 package com.hedera.services.yahcli.suites;
 
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getTransactionFee;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class CostOfEveryThingSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CostOfEveryThingSuite.class);
@@ -80,7 +82,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
         return Stream.of(
                         Optional.ofNullable(
                                 ServiceTypes.contains(Utils.ServiceType.CRYPTO) ? canonicalCryptoOps() : null),
@@ -97,8 +99,8 @@ public class CostOfEveryThingSuite extends HapiSuite {
                 .collect(Collectors.toList());
     }
 
-    HapiSpec canonicalContractOps() {
-        return HapiSpec.customHapiSpec("canonicalContractOps")
+    final Stream<DynamicTest> canonicalContractOps() {
+        return customHapiSpec("canonicalContractOps")
                 .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         UtilVerbs.newKeyNamed("key").shape(KeyShape.SIMPLE),
@@ -154,12 +156,12 @@ public class CostOfEveryThingSuite extends HapiSuite {
                         getTransactionFee("canonicalContractDelete", feeTableBuilder, "contractDelete"));
     }
 
-    HapiSpec canonicalFileOps() {
+    final Stream<DynamicTest> canonicalFileOps() {
         int fileSize = 1000;
         final byte[] first = TxnUtils.randomUtf8Bytes(fileSize);
         final byte[] next = TxnUtils.randomUtf8Bytes(fileSize);
 
-        return HapiSpec.customHapiSpec("canonicalFileOps")
+        return customHapiSpec("canonicalFileOps")
                 .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         UtilVerbs.newKeyNamed("key").shape(KeyShape.SIMPLE),
@@ -202,8 +204,8 @@ public class CostOfEveryThingSuite extends HapiSuite {
                         getTransactionFee("canonicalFileDelete", feeTableBuilder, "fileDelete"));
     }
 
-    HapiSpec canonicalTopicOps() {
-        return HapiSpec.customHapiSpec("canonicalTopicOps")
+    final Stream<DynamicTest> canonicalTopicOps() {
+        return customHapiSpec("canonicalTopicOps")
                 .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         UtilVerbs.newKeyNamed("key").shape(KeyShape.SIMPLE),
@@ -238,8 +240,8 @@ public class CostOfEveryThingSuite extends HapiSuite {
                         getTransactionFee("canonicalTopicDelete", feeTableBuilder, "consensusDeleteTopic"));
     }
 
-    HapiSpec canonicalTokenOps() {
-        return HapiSpec.customHapiSpec("canonicalTokenOps")
+    final Stream<DynamicTest> canonicalTokenOps() {
+        return customHapiSpec("canonicalTokenOps")
                 .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         UtilVerbs.newKeyNamed("key").shape(KeyShape.SIMPLE),
@@ -350,9 +352,9 @@ public class CostOfEveryThingSuite extends HapiSuite {
                         getTransactionFee("canonicalTokenDelete", feeTableBuilder, "tokenDelete"));
     }
 
-    HapiSpec canonicalCryptoOps() {
+    final Stream<DynamicTest> canonicalCryptoOps() {
 
-        return HapiSpec.customHapiSpec("canonicalCryptoOps")
+        return customHapiSpec("canonicalCryptoOps")
                 .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         UtilVerbs.newKeyNamed("key").shape(KeyShape.SIMPLE),
@@ -397,8 +399,8 @@ public class CostOfEveryThingSuite extends HapiSuite {
                         getTransactionFee("canonicalCryptoDeletion", feeTableBuilder, "cryptoDelete"));
     }
 
-    HapiSpec canonicalScheduleOps() {
-        return HapiSpec.customHapiSpec("canonicalScheduleOps")
+    final Stream<DynamicTest> canonicalScheduleOps() {
+        return customHapiSpec("canonicalScheduleOps")
                 .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
                 .given(
                         TxnVerbs.cryptoCreate(PAYING_SENDER).balance(HapiSuite.ONE_HUNDRED_HBARS),

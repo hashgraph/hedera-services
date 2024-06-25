@@ -19,15 +19,13 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.logging.legacy.LogMarker.SIGNED_STATE;
-import static com.swirlds.platform.state.PlatformData.GENESIS_ROUND;
+import static com.swirlds.platform.state.PlatformState.GENESIS_ROUND;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.ReferenceCounter;
@@ -35,19 +33,20 @@ import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.crypto.SignatureVerifier;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
+import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -100,7 +99,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * The root of the merkle state.
      */
-    private final State state;
+    private final MerkleRoot state;
 
     /**
      * The timestamp of when this object was created.
@@ -112,11 +111,6 @@ public class SignedState implements SignedStateInfo {
      * state should be written to disk
      */
     private StateToDiskReason stateToDiskReason;
-
-    /**
-     * Signed states are deleted on this background thread.
-     */
-    private SignedStateGarbageCollector signedStateGarbageCollector;
 
     /**
      * Indicates whether this signed state has been saved to disk.
@@ -146,48 +140,59 @@ public class SignedState implements SignedStateInfo {
     /**
      * Keeps track of reservations on this object.
      */
-    private final ReferenceCounter reservations = new ReferenceCounter(this::destroy, this::onReferenceCountException);
+    private final ReferenceCounter reservations =
+            new ReferenceCounter(this::markEligibleForDeletion, this::onReferenceCountException);
+
+    /**
+     * The signature verifier used to verify signatures.
+     */
+    private final SignatureVerifier signatureVerifier;
+
+    private final AtomicBoolean eligibleForDeletion = new AtomicBoolean(false);
+
+    /**
+     * If false, delete signed states on the thread that removes the last reference count. Otherwise, let the background
+     * deletion handler delete the state.
+     */
+    private final boolean deleteOnBackgroundThread;
+
+    /**
+     * True if this round reached consensus during the replaying of the preconsensus event stream.
+     */
+    private final boolean pcesRound;
 
     /**
      * Instantiate a signed state.
      *
-     * @param platformContext the platform context
-     * @param state           a fast copy of the state resulting from all transactions in consensus order from all
-     *                        events with received rounds up through the round this SignedState represents
-     * @param reason          a short description of why this SignedState is being created. Each location where a
-     *                        SignedState is created should attempt to use a unique reason, as this makes debugging
-     *                        reservation bugs easier.
-     * @param freezeState     specifies whether this state is the last one saved before the freeze
+     * @param platformContext          the platform context
+     * @param signatureVerifier        the signature verifier
+     * @param state                    a fast copy of the state resulting from all transactions in consensus order from
+     *                                 all events with received rounds up through the round this SignedState represents
+     * @param reason                   a short description of why this SignedState is being created. Each location where
+     *                                 a SignedState is created should attempt to use a unique reason, as this makes
+     *                                 debugging reservation bugs easier.
+     * @param freezeState              specifies whether this state is the last one saved before the freeze
+     * @param deleteOnBackgroundThread if true, delete this state on the background thread, otherwise delete on the
+     *                                 thread that removes the last reference count. Should only be set to true for
+     *                                 states that have been sent to the state garbage collector.
+     * @param pcesRound                true if this round reached consensus during the replaying of the preconsensus
+     *                                 event stream
      */
     public SignedState(
             @NonNull final PlatformContext platformContext,
-            @NonNull final State state,
+            @NonNull final SignatureVerifier signatureVerifier,
+            @NonNull final MerkleRoot state,
             @NonNull final String reason,
-            final boolean freezeState) {
-        this(platformContext.getConfiguration().getConfigData(StateConfig.class), state, reason, freezeState);
-    }
-
-    /**
-     * Instantiate a signed state.
-     *
-     * @param stateConfig state configuration
-     * @param state       a fast copy of the state resulting from all transactions in consensus order from all events
-     *                    with received rounds up through the round this SignedState represents
-     * @param reason      a short description of why this SignedState is being created. Each location where a
-     *                    SignedState is created should attempt to use a unique reason, as this makes debugging
-     *                    reservation bugs easier.
-     * @param freezeState specifies whether this state is the last one saved before the freeze
-     */
-    public SignedState(
-            @NonNull final StateConfig stateConfig,
-            @NonNull final State state,
-            @NonNull final String reason,
-            final boolean freezeState) {
+            final boolean freezeState,
+            final boolean deleteOnBackgroundThread,
+            final boolean pcesRound) {
 
         state.reserve();
 
+        this.signatureVerifier = Objects.requireNonNull(signatureVerifier);
         this.state = state;
 
+        final StateConfig stateConfig = platformContext.getConfiguration().getConfigData(StateConfig.class);
         if (stateConfig.stateHistoryEnabled()) {
             history = new SignedStateHistory(Time.getCurrent(), getRound(), stateConfig.debugStackTracesEnabled());
             history.recordAction(CREATION, getReservationCount(), reason, null);
@@ -199,14 +204,8 @@ public class SignedState implements SignedStateInfo {
         sigSet = new SigSet();
 
         this.freezeState = freezeState;
-    }
-
-    /**
-     * Set a garbage collector, used to delete states on a background thread.
-     */
-    public synchronized void setGarbageCollector(
-            @NonNull final SignedStateGarbageCollector signedStateGarbageCollector) {
-        this.signedStateGarbageCollector = signedStateGarbageCollector;
+        this.deleteOnBackgroundThread = deleteOnBackgroundThread;
+        this.pcesRound = pcesRound;
     }
 
     /**
@@ -269,7 +268,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the state contained in the signed state
      */
-    public @NonNull State getState() {
+    public @NonNull MerkleRoot getState() {
         return state;
     }
 
@@ -278,6 +277,15 @@ public class SignedState implements SignedStateInfo {
      */
     public boolean isFreezeState() {
         return freezeState;
+    }
+
+    /**
+     * Returns true if ths round reached consensus during the replaying of the preconsensus event stream.
+     *
+     * @return true if this round reached consensus during the replaying of the preconsensus event stream
+     */
+    public boolean isPcesRound() {
+        return pcesRound;
     }
 
     /**
@@ -334,19 +342,23 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
-     * Add this state to the queue to be deleted on a background thread.
+     * Mark this state as eligible for deletion. If configured to delete on the calling thread, then this method will
+     * also delete the state.
      */
-    private void destroy() {
-        if (signedStateGarbageCollector == null
-                || !signedStateGarbageCollector.executeOnGarbageCollectionThread(this::delete)) {
-            logger.warn(
-                    SIGNED_STATE.getMarker(),
-                    "unable to enqueue state for deletion, " + "will delete state on calling thread {}",
-                    Thread.currentThread().getName());
-            synchronized (this) {
-                delete();
-            }
+    private void markEligibleForDeletion() {
+        eligibleForDeletion.set(true);
+        if (!deleteOnBackgroundThread) {
+            delete();
         }
+    }
+
+    /**
+     * Check if this state should be deleted on the background thread.
+     *
+     * @return true if this state should be deleted on the background thread
+     */
+    boolean shouldDeleteOnBackgroundThread() {
+        return deleteOnBackgroundThread;
     }
 
     /**
@@ -360,6 +372,16 @@ public class SignedState implements SignedStateInfo {
     }
 
     /**
+     * Check if this state is eligible for deletion. Once a state becomes eligible for deletion, this method will return
+     * true even after the state has been deleted.
+     *
+     * @return true if this state is eligible for deletion
+     */
+    boolean isEligibleForDeletion() {
+        return eligibleForDeletion.get();
+    }
+
+    /**
      * <p>
      * Perform deletion on this signed state.
      * </p>
@@ -370,9 +392,7 @@ public class SignedState implements SignedStateInfo {
      * that, this method must be synchronized.
      * </p>
      */
-    private synchronized void delete() {
-        final Instant start = Instant.now();
-
+    synchronized void delete() {
         if (reservations.isDestroyed()) {
             if (!deleted) {
                 try {
@@ -383,10 +403,6 @@ public class SignedState implements SignedStateInfo {
                     }
                     registryRecord.release();
                     state.release();
-
-                    if (signedStateGarbageCollector != null) {
-                        signedStateGarbageCollector.reportDeleteTime(Duration.between(start, Instant.now()));
-                    }
                 } catch (final Throwable ex) {
                     logger.error(EXCEPTION.getMarker(), "exception while attempting to delete signed state", ex);
                 }
@@ -456,36 +472,6 @@ public class SignedState implements SignedStateInfo {
      */
     public @NonNull SwirldState getSwirldState() {
         return state.getSwirldState();
-    }
-
-    /**
-     * Get the hash of the consensus events in this state.
-     *
-     * @return the hash of the consensus events in this state
-     */
-    public @NonNull Hash getHashEventsCons() {
-        return state.getPlatformState().getRunningEventHash();
-    }
-
-    /**
-     * The minimum generation of famous witnesses for the round specified. This method only looks at non-ancient rounds
-     * contained within this state.
-     *
-     * @param round the round whose minimum generation will be returned
-     * @return the minimum generation for the round specified
-     * @throws NoSuchElementException if the generation information for this round is not contained withing this state
-     */
-    public long getMinGen(final long round) {
-        return getState().getPlatformState().getMinGen(round);
-    }
-
-    /**
-     * Return the round generation of the oldest round in this state
-     *
-     * @return the generation of the oldest round
-     */
-    public long getMinRoundGeneration() {
-        return getState().getPlatformState().getMinRoundGeneration();
     }
 
     /**
@@ -622,7 +608,8 @@ public class SignedState implements SignedStateInfo {
             return false;
         }
 
-        return signature.verifySignature(state.getHash().getValue(), address.getSigPublicKey());
+        return signatureVerifier.verifySignature(
+                state.getHash().getBytes(), signature.getBytes(), address.getSigPublicKey());
     }
 
     /**

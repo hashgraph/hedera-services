@@ -22,8 +22,9 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
+import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
@@ -41,8 +42,8 @@ public class ReadableContractStateStore implements ContractStateStore {
 
     public ReadableContractStateStore(@NonNull final ReadableStates states) {
         requireNonNull(states);
-        this.storage = states.get(InitialModServiceContractSchema.STORAGE_KEY);
-        this.bytecode = states.get(InitialModServiceContractSchema.BYTECODE_KEY);
+        this.storage = states.get(V0490ContractSchema.STORAGE_KEY);
+        this.bytecode = states.get(V0490ContractSchema.BYTECODE_KEY);
     }
 
     @Override

@@ -29,8 +29,10 @@ import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class TokenValidationSuite extends HapiSuite {
     private static final Logger log = LogManager.getLogger(TokenValidationSuite.class);
@@ -42,13 +44,11 @@ public class TokenValidationSuite extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            validateTokens(),
-        });
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
+        return List.of(validateTokens());
     }
 
-    private HapiSpec validateTokens() {
+    final Stream<DynamicTest> validateTokens() {
         AtomicLong initialTreasuryBalance = new AtomicLong();
         return HapiSpec.customHapiSpec("validateTokens")
                 .withProperties(specConfig)

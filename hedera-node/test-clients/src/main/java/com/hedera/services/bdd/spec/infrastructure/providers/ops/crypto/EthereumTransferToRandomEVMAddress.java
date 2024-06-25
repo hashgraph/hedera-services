@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 
 import static com.hedera.services.bdd.suites.HapiSuite.*;
-import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.PAY_TXN;
+import static com.hedera.services.bdd.suites.crypto.LeakyCryptoTestsSuite.PAY_TXN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.google.protobuf.ByteString;
@@ -70,7 +70,7 @@ public class EthereumTransferToRandomEVMAddress implements OpProvider {
                 // Since the receiver _could_ have receiverSigRequired=true (c.f. the
                 // InitialAccountIdentifiers.customize() method), INVALID_SIGNATURE is a valid
                 // response code
-                .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE);
+                .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE, WRONG_NONCE);
 
         incrementNonce();
 

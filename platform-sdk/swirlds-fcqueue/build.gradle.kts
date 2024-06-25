@@ -15,15 +15,15 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.platform-maven-publish")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
 }
 
 testModuleInfo {
+    requires("com.hedera.pbj.runtime")
     requires("com.swirlds.base")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.api")
-    requires("com.swirlds.config.api.test.fixtures")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")

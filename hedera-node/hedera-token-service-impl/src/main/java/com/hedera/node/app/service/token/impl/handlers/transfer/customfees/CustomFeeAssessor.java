@@ -18,8 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers.transfer.customfees;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
+import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenType;
@@ -43,6 +42,12 @@ public class CustomFeeAssessor extends BaseTokenHandler {
     private final CustomRoyaltyFeeAssessor royaltyFeeAssessor;
     private int initialNftChanges = 0;
 
+    /**
+     * Constructs a {@link CustomFeeAssessor} instance.
+     * @param fixedFeeAssessor the fixed fee assessor
+     * @param fractionalFeeAssessor the fractional fee assessor
+     * @param royaltyFeeAssessor the royalty fee assessor
+     */
     @Inject
     public CustomFeeAssessor(
             @NonNull final CustomFixedFeeAssessor fixedFeeAssessor,
@@ -54,14 +59,27 @@ public class CustomFeeAssessor extends BaseTokenHandler {
     }
 
     private int numNftTransfers(final CryptoTransferTransactionBody op) {
-        final var tokenTransfers = op.tokenTransfersOrElse(emptyList());
+        final var tokenTransfers = op.tokenTransfers();
         var nftTransfers = 0;
         for (final var xfer : tokenTransfers) {
-            nftTransfers += xfer.nftTransfersOrElse(emptyList()).size();
+            nftTransfers += xfer.nftTransfers().size();
         }
         return nftTransfers;
     }
 
+    /**
+     * Assesses custom fees for a given crypto transfer transaction. The fees are assessed in the following order:
+     * 1. Fixed fees
+     * 2. Fractional fees (for fungible common tokens)
+     * 3. Royalty fees (for non-fungible unique tokens)
+     * @param sender the sender account ID
+     * @param feeMeta the custom fee metadata
+     * @param receiver the receiver account ID
+     * @param result the assessment result
+     * @param tokenRelStore the token relation store
+     * @param accountStore the account store
+     * @param autoCreationTest the auto-creation test
+     */
     public void assess(
             final AccountID sender,
             final CustomFeeMeta feeMeta,
@@ -85,6 +103,16 @@ public class CustomFeeAssessor extends BaseTokenHandler {
         revalidateAssessmentResult(result, tokenRelStore, accountStore, autoCreationTest);
     }
 
+    /**
+     * Validates the assessment result after each type of fees assessment(fixed fees, fractional fees, royalty fees).
+     * The validation consists of two steps:
+     * 1. Ensures that the sender account has sufficient balance to pay the custom fee
+     * 2. Ensures that the sender account is associated with the token
+     * @param result the assessment result
+     * @param tokenRelStore the token relation store
+     * @param accountStore the account store
+     * @param autoCreationTest the auto-creation test
+     */
     private void revalidateAssessmentResult(
             final AssessmentResult result,
             final ReadableTokenRelationStore tokenRelStore,
@@ -92,14 +120,10 @@ public class CustomFeeAssessor extends BaseTokenHandler {
             @NonNull final Predicate<AccountID> autoCreationTest) {
         result.getHbarAdjustments().forEach((k, v) -> {
             if (v < 0) {
-                final var currentAccount = accountStore.getAccountById(k);
-                // mono-service refuses to let an auto-created account pay a custom fee, even
-                // if technically it is receiving sufficient credits in the same transaction
-                validateTrue(currentAccount != null, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
-                final var finalBalance = currentAccount.tinybarBalance()
-                        + v
-                        + result.getImmutableInputHbarAdjustments().getOrDefault(k, 0L);
-                validateTrue(finalBalance >= 0, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
+                // (FUTURE) This is here for mono-service fidelity, which refused to let an
+                // auto-created account pay a custom fee, even if technically it is
+                // receiving sufficient credits in the same transaction; consider removing.
+                validateFalse(autoCreationTest.test(k), INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
             }
         });
         for (final var entry : result.getHtsAdjustments().entrySet()) {
@@ -115,8 +139,9 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                     final var tokenRel = tokenRelStore.get(accountId, entry.getKey());
                     final var precedingChanges =
                             result.getImmutableInputTokenAdjustments().get(entry.getKey());
-                    final long precedingCredit =
-                            precedingChanges == null ? 0 : Math.max(0L, precedingChanges.getOrDefault(accountId, 0L));
+                    final var precedingAdjustment =
+                            precedingChanges == null ? 0 : precedingChanges.getOrDefault(accountId, 0L);
+                    final long precedingCredit = Math.max(0L, precedingAdjustment);
                     if (tokenRel == null) {
                         if (autoCreationTest.test(accountId)) {
                             // mono-service refuses to let an auto-created account pay a custom fee, even
@@ -135,34 +160,9 @@ public class CustomFeeAssessor extends BaseTokenHandler {
                                 throw new HandleException(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
                             }
                         }
-                    } else {
-                        final var finalTokenRelBalance = tokenRel.balance() + htsBalanceChange + precedingCredit;
-                        validateTrue(finalTokenRelBalance >= 0, INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
                     }
                 }
             }
-        }
-
-        for (final var fee : result.getAssessedCustomFees()) {
-            final var effectivePayers = fee.effectivePayerAccountId();
-            effectivePayers.forEach(payer -> {
-                if (fee.tokenId() != null) {
-                    final var tokenRel = tokenRelStore.get(payer, fee.tokenId());
-                    for (final var entry :
-                            result.getMutableInputBalanceAdjustments().entrySet()) {
-                        if (entry.getKey().equals(fee.tokenId())) {
-                            entry.getValue().forEach((accId, v) -> {
-                                if (v < 0 && accId.equals(payer)) {
-                                    final var finalTokenRelBalance = tokenRel.balance() + v;
-                                    validateTrue(
-                                            finalTokenRelBalance >= 0,
-                                            INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE);
-                                }
-                            });
-                        }
-                    }
-                }
-            });
         }
     }
 
@@ -176,6 +176,9 @@ public class CustomFeeAssessor extends BaseTokenHandler {
         initialNftChanges = numNftTransfers(op);
     }
 
+    /**
+     * Resets the initial NFT changes for the transaction.
+     */
     public void resetInitialNftChanges() {
         initialNftChanges = 0;
     }

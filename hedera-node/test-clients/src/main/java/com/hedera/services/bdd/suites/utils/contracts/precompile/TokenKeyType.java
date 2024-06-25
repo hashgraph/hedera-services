@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.suites.utils.contracts.precompile;
 
+import java.math.BigInteger;
+
 /** All key types in one place for easy review. */
 public enum TokenKeyType {
     ADMIN_KEY(1),
@@ -24,7 +26,8 @@ public enum TokenKeyType {
     WIPE_KEY(8),
     SUPPLY_KEY(16),
     FEE_SCHEDULE_KEY(32),
-    PAUSE_KEY(64);
+    PAUSE_KEY(64),
+    METADATA_KEY(128);
 
     private final int value;
 
@@ -34,5 +37,9 @@ public enum TokenKeyType {
 
     public int value() {
         return value;
+    }
+
+    public BigInteger asBigInteger() {
+        return BigInteger.valueOf(value);
     }
 }

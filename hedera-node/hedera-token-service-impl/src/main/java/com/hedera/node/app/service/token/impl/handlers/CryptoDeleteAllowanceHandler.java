@@ -20,14 +20,15 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_ALLOWANCES;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_ACCOUNT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.LONG_SIZE;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.NFT_DELETE_ALLOWANCE_SIZE;
 import static com.hedera.node.app.service.token.impl.validators.AllowanceValidator.isValidOwner;
 import static com.hedera.node.app.service.token.impl.validators.ApproveAllowanceValidator.getEffectiveOwner;
+import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -64,6 +65,10 @@ import javax.inject.Singleton;
 public class CryptoDeleteAllowanceHandler implements TransactionHandler {
     private final DeleteAllowanceValidator deleteAllowanceValidator;
 
+    /**
+     * Default constructor for injection.
+     * @param validator the validator for validating a delete allowance transaction
+     */
     @Inject
     public CryptoDeleteAllowanceHandler(@NonNull final DeleteAllowanceValidator validator) {
         this.deleteAllowanceValidator = validator;
@@ -73,9 +78,10 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn);
         final var op = txn.cryptoDeleteAllowanceOrThrow();
-        final var allowances = op.nftAllowancesOrThrow();
+        final var allowances = op.nftAllowances();
         validateTruePreCheck(!allowances.isEmpty(), EMPTY_ALLOWANCES);
         for (final var allowance : allowances) {
+            mustExist(allowance.tokenId(), INVALID_TOKEN_ID);
             validateTruePreCheck(!allowance.serialNumbers().isEmpty(), EMPTY_ALLOWANCES);
         }
     }
@@ -86,12 +92,12 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         final var txn = context.body();
         final var op = txn.cryptoDeleteAllowanceOrThrow();
         // Every owner whose allowances are being removed should sign (or the payer, if there is no owner)
-        for (final var allowance : op.nftAllowancesOrElse(emptyList())) {
+        for (final var allowance : op.nftAllowances()) {
             if (allowance.hasOwner()) {
                 final var store = context.createStore(ReadableAccountStore.class);
                 final var ownerId = allowance.ownerOrThrow();
                 final var owner = store.getAccountById(ownerId);
-                final var approvedForAll = owner.approveForAllNftAllowancesOrElse(emptyList()).stream()
+                final var approvedForAll = owner.approveForAllNftAllowances().stream()
                         .anyMatch(approveForAll -> approveForAll.tokenId().equals(allowance.tokenId())
                                 && approveForAll.spenderId().equals(context.payer()));
                 if (!context.payer().equals(ownerId) && !approvedForAll) {
@@ -105,7 +111,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
     public void handle(@NonNull final HandleContext context) throws HandleException {
         final var payer = context.payer();
 
-        final var accountStore = context.writableStore(WritableAccountStore.class);
+        final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         // validate payer account exists
         final var payerAccount = accountStore.getAccountById(payer);
         validateTrue(payerAccount != null, INVALID_PAYER_ACCOUNT_ID);
@@ -138,10 +144,11 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         requireNonNull(accountStore);
 
         final var op = context.body().cryptoDeleteAllowanceOrThrow();
-        final var nftAllowances = op.nftAllowancesOrElse(emptyList());
+        final var nftAllowances = op.nftAllowances();
 
-        final var nftStore = context.writableStore(WritableNftStore.class);
-        final var tokenStore = context.writableStore(WritableTokenStore.class);
+        final var storeFactory = context.storeFactory();
+        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
 
         deleteNftSerials(nftAllowances, payer, accountStore, tokenStore, nftStore, context.expiryValidator());
     }
@@ -199,7 +206,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         requireNonNull(accountStore);
 
         final var op = context.body().cryptoDeleteAllowanceOrThrow();
-        final var nftAllowances = op.nftAllowancesOrElse(emptyList());
+        final var nftAllowances = op.nftAllowances();
 
         deleteAllowanceValidator.validate(context, nftAllowances, payerAccount, accountStore);
     }
@@ -210,6 +217,7 @@ public class CryptoDeleteAllowanceHandler implements TransactionHandler {
         final var body = feeContext.body();
         final var op = body.cryptoDeleteAllowanceOrThrow();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(op.nftAllowances().size() * NFT_DELETE_ALLOWANCE_SIZE
                         + countNftDeleteSerials(op.nftAllowances()) * LONG_SIZE)

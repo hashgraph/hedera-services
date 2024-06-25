@@ -16,12 +16,10 @@
 
 package com.swirlds.config.benchmark;
 
-import com.swirlds.common.config.ConfigUtils;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import java.nio.file.FileSystem;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -68,22 +66,9 @@ public class ConfigUtilsBenchmark {
     @Measurement(iterations = 5, time = 2)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
     @BenchmarkMode({Mode.Throughput, Mode.SampleTime})
-    public void loadOnlyHederaDefault(final Blackhole blackhole) {
-        final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        final ConfigurationBuilder modified =
-                ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder, Set.of("com.hedera", "com.swirlds"));
-        blackhole.consume(modified);
-    }
-
-    @Benchmark
-    @Fork(1)
-    @Warmup(iterations = 3, time = 2)
-    @Measurement(iterations = 5, time = 2)
-    @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    @BenchmarkMode({Mode.Throughput, Mode.SampleTime})
     public void loadConfigurationWithAllPackages(final Blackhole blackhole) {
         final ConfigurationBuilder configurationBuilder = ConfigurationBuilder.create();
-        final ConfigurationBuilder modified = ConfigUtils.scanAndRegisterAllConfigTypes(configurationBuilder);
+        final ConfigurationBuilder modified = configurationBuilder.autoDiscoverExtensions();
         blackhole.consume(modified);
     }
 

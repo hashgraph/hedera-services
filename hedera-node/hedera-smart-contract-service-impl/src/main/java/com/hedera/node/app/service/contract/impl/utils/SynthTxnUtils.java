@@ -85,8 +85,8 @@ public class SynthTxnUtils {
     }
 
     /**
-     * Given a validated {@link ContractCreateTransactionBody} and its pending id, returns the
-     * corresponding {@link CryptoCreateTransactionBody} to dispatch.
+     * Given the "parent" {@link Account} creating a contract and the contract's pending id,
+     * returns the corresponding {@link ContractCreateTransactionBody} to dispatch.
      *
      * @param pendingId the pending id
      * @param parent the {@link Account} creating the contract
@@ -101,7 +101,7 @@ public class SynthTxnUtils {
                 .declineReward(parent.declineReward())
                 .memo(parent.memo())
                 .autoRenewPeriod(Duration.newBuilder().seconds(parent.autoRenewSeconds()));
-        if (parent.hasAutoRenewAccountId()) {
+        if (hasNonDegenerateAutoRenewAccountId(parent)) {
             builder.autoRenewAccountId(parent.autoRenewAccountIdOrThrow());
         }
         if (parent.hasStakedNodeId()) {
@@ -109,14 +109,41 @@ public class SynthTxnUtils {
         } else if (parent.hasStakedAccountId()) {
             builder.stakedAccountId(parent.stakedAccountIdOrThrow());
         }
-        final var parentAdminKey = parent.keyOrThrow();
-        if (isSelfAdmin(parent)) {
+
+        if (!parent.hasKey() || isSelfAdmin(parent)) {
             // The new contract will manage itself as well, which we indicate via self-referential admin key
             builder.adminKey(Key.newBuilder().contractID(pendingId));
         } else {
+            final var parentAdminKey = parent.keyOrThrow();
             builder.adminKey(parentAdminKey);
         }
         return builder.build();
+    }
+
+    /**
+     * Create a new empty {@link ContractCreateTransactionBody} with only the key set for externalization.
+     *
+     * @param pendingId the pending id
+     * @return the corresponding {@link CryptoCreateTransactionBody}
+     */
+    public static ContractCreateTransactionBody synthContractCreationForExternalization(
+            @NonNull final ContractID pendingId) {
+        requireNonNull(pendingId);
+        return ContractCreateTransactionBody.newBuilder()
+                .adminKey(Key.newBuilder().contractID(pendingId).build())
+                .build();
+    }
+
+    /**
+     * Returns whether the given account has an auto-renew account id that is not
+     * {@code 0.0.0}.
+     *
+     * @param account the account
+     * @return whether the given account has an auto-renew account id that is not
+     */
+    public static boolean hasNonDegenerateAutoRenewAccountId(@NonNull final Account account) {
+        return account.hasAutoRenewAccountId()
+                && account.autoRenewAccountIdOrThrow().accountNumOrElse(0L) != 0L;
     }
 
     /**

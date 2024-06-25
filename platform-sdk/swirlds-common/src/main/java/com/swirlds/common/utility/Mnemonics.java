@@ -2162,7 +2162,7 @@ public final class Mnemonics {
 
         while (mnemonics.size() < wordCount) {
             if (nextIndex + 1 >= entropy.length) {
-                entropy = CryptographyHolder.get().digestSync(entropy).getValue();
+                entropy = CryptographyHolder.get().digestBytesSync(entropy);
                 nextIndex = 0;
             }
 

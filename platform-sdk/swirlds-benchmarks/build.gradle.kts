@@ -17,9 +17,13 @@
 import me.champeau.jmh.JMHTask
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.benchmark-conventions")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.benchmark")
 }
+
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-static") }
 
 jmhModuleInfo {
     requires("com.hedera.pbj.runtime")
@@ -31,7 +35,7 @@ jmhModuleInfo {
     requires("com.swirlds.fchashmap")
     requires("com.swirlds.merkledb")
     requires("com.swirlds.virtualmap")
-    requires("com.swirlds.platform")
+    requires("com.swirlds.platform.core")
     requires("jmh.core")
     requires("org.apache.logging.log4j")
     requiresStatic("com.github.spotbugs.annotations")
@@ -50,9 +54,23 @@ fun listProperty(value: String) = objects.listProperty<String>().value(listOf(va
 
 tasks.register<JMHTask>("jmhReconnect") {
     includes.set(listOf("Reconnect.*"))
-    jvmArgs.set(listOf("-Xmx16g"))
+    jvmArgs.set(
+        listOf(
+            "-Xmx16g",
+            "-Xms16g",
+            "-XX:+UnlockExperimentalVMOptions",
+            "-XX:+UseZGC",
+            "-XX:MaxDirectMemorySize=48g"
+        )
+    )
 
     resultsFile.convention(layout.buildDirectory.file("results/jmh/results-reconnect.txt"))
 
-    benchmarkParameters.put("numRecords", listProperty("5000000"))
+    benchmarkParameters.put("numRecords", listProperty("1000"))
+    benchmarkParameters.put("numFiles", listProperty("100"))
+    benchmarkParameters.put("delayStorageMicroseconds", listProperty("100"))
+    benchmarkParameters.put("delayNetworkMicroseconds", listProperty("50"))
+    benchmarkParameters.put("teacherAddProbability", listProperty("0.01"))
+    benchmarkParameters.put("teacherRemoveProbability", listProperty("0.01"))
+    benchmarkParameters.put("teacherModifyProbability", listProperty("0.01"))
 }

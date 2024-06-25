@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.regression;
 
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -40,19 +39,19 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.expectedEntitiesExi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hedera.services.bdd.suites.perf.PerfUtilOps.scheduleOpsEnablement;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 /**
  * This restart test uses the named entities under
@@ -71,6 +70,8 @@ import org.apache.logging.log4j.Logger;
  * <p>SCHEDULES - pendingXfer (1tℏ from sender to receiver; has sender sig only)
  *
  * <p>CONTRACTS - multipurpose
+ *
+ * <p><b>(ATROPHIED)</b>
  */
 public class JrsRestartTestTemplate extends HapiSuite {
     private static final Logger log = LogManager.getLogger(JrsRestartTestTemplate.class);
@@ -93,23 +94,11 @@ public class JrsRestartTestTemplate extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            enableHSS(), jrsRestartTemplate(),
-        });
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
+        return List.of(jrsRestartTemplate());
     }
 
-    final HapiSpec enableHSS() {
-        return defaultHapiSpec("enableHSS")
-                .given(
-                        // Directly puting this request in the customHapiSpec before
-                        // expectedEntitiesExist() doesn't work
-                        scheduleOpsEnablement())
-                .when()
-                .then();
-    }
-
-    final HapiSpec jrsRestartTemplate() {
+    final Stream<DynamicTest> jrsRestartTemplate() {
         return customHapiSpec("JrsRestartTemplate")
                 .withProperties(Map.of("persistentEntities.dir.path", ENTITIES_DIR))
                 .given(expectedEntitiesExist())

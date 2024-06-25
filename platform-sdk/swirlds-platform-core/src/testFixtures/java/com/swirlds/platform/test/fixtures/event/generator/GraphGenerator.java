@@ -130,6 +130,15 @@ public interface GraphGenerator<T extends GraphGenerator<T>> {
     long getMaxGeneration(@Nullable final NodeId creatorId);
 
     /**
+     * Returns the maximum birth round of this event generator.
+     *
+     * @param creatorId
+     * 		the event creator
+     * @return the maximum event birth round for the supplied creator
+     */
+    long getMaxBirthRound(@Nullable final NodeId creatorId);
+
+    /**
      * Returns the maximum generation of all events created by this generator
      */
     long getMaxGeneration();

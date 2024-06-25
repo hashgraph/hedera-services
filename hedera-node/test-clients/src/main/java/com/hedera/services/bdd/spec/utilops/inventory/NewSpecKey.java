@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.utilops.inventory;
 import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
@@ -31,10 +32,13 @@ import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.Key;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Optional;
+import java.util.function.Consumer;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,6 +50,10 @@ public class NewSpecKey extends UtilOp {
     private boolean verboseLoggingOn = false;
     private boolean exportEd25519Mnemonic = false;
     private final String name;
+
+    @Nullable
+    private Consumer<Key> keyObserver;
+
     private Optional<String> immediateExportLoc = Optional.empty();
     private Optional<String> immediateExportPass = Optional.empty();
     private Optional<KeyType> type = Optional.empty();
@@ -60,6 +68,11 @@ public class NewSpecKey extends UtilOp {
     public NewSpecKey exportingTo(String loc, String pass) {
         immediateExportLoc = Optional.of(loc);
         immediateExportPass = Optional.of(pass);
+        return this;
+    }
+
+    public NewSpecKey exposingKeyTo(@NonNull final Consumer<Key> observer) {
+        keyObserver = requireNonNull(observer);
         return this;
     }
 
@@ -138,6 +151,9 @@ public class NewSpecKey extends UtilOp {
             key = spec.keys().generate(spec, type.orElse(KeyType.SIMPLE), keyGen);
         }
         spec.registry().saveKey(name, key);
+        if (keyObserver != null) {
+            keyObserver.accept(key);
+        }
         if (immediateExportLoc.isPresent() && immediateExportPass.isPresent()) {
             final var exportLoc = immediateExportLoc.get();
             final var exportPass = immediateExportPass.get();

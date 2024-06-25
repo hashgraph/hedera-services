@@ -43,6 +43,11 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSch
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BEGIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.CREATION;
@@ -62,17 +67,13 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TWO_SIG_XFER
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.UNWILLING_PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_MINIMUM;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.scheduledVersionOf;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.withAndWithoutLongTermEnabled;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -80,32 +81,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class ScheduleRecordSpecs extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(ScheduleRecordSpecs.class);
-
-    public static void main(String... args) {
-        new ScheduleRecordSpecs().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return withAndWithoutLongTermEnabled(() -> List.of(
-                allRecordsAreQueryable(),
-                canonicalScheduleOpsHaveExpectedUsdFees(),
-                canScheduleChunkedMessages(),
-                deletionTimeIsAvailable(),
-                executionTimeIsAvailable(),
-                noFeesChargedIfTriggeredPayerIsInsolvent(),
-                noFeesChargedIfTriggeredPayerIsUnwilling(),
-                schedulingTxnIdFieldsNotAllowed()));
-    }
-
+public class ScheduleRecordSpecs {
     @HapiTest
-    HapiSpec canonicalScheduleOpsHaveExpectedUsdFees() {
+    final Stream<DynamicTest> canonicalScheduleOpsHaveExpectedUsdFees() {
         return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
@@ -144,7 +125,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
                                                         "set",
                                                         BigInteger.valueOf(5),
                                                         BigInteger.valueOf(42))
-                                                .gas(10_000L)
+                                                .gas(24_000)
                                                 .memo("")
                                                 .fee(ONE_HBAR))
                                 .payingWith(OTHER_PAYER)
@@ -161,7 +142,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec noFeesChargedIfTriggeredPayerIsUnwilling() {
+    final Stream<DynamicTest> noFeesChargedIfTriggeredPayerIsUnwilling() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsUnwilling")
                 .given(cryptoCreate(UNWILLING_PAYER))
                 .when(scheduleCreate(
@@ -182,7 +163,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec noFeesChargedIfTriggeredPayerIsInsolvent() {
+    final Stream<DynamicTest> noFeesChargedIfTriggeredPayerIsInsolvent() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsInsolvent")
                 .given(cryptoCreate(INSOLVENT_PAYER).balance(0L))
                 .when(scheduleCreate(SCHEDULE, cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1)))
@@ -200,7 +181,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec canScheduleChunkedMessages() {
+    final Stream<DynamicTest> canScheduleChunkedMessages() {
         String ofGeneralInterest = "Scotch";
         AtomicReference<TransactionID> initialTxnId = new AtomicReference<>();
 
@@ -273,7 +254,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec schedulingTxnIdFieldsNotAllowed() {
+    final Stream<DynamicTest> schedulingTxnIdFieldsNotAllowed() {
         return defaultHapiSpec("SchedulingTxnIdFieldsNotAllowed")
                 .given(usableTxnIdNamed("withScheduled").settingScheduledInappropriately())
                 .when()
@@ -281,7 +262,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec executionTimeIsAvailable() {
+    final Stream<DynamicTest> executionTimeIsAvailable() {
         return defaultHapiSpec("ExecutionTimeIsAvailable")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
@@ -300,7 +281,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec deletionTimeIsAvailable() {
+    final Stream<DynamicTest> deletionTimeIsAvailable() {
         return defaultHapiSpec("DeletionTimeIsAvailable")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
@@ -320,7 +301,7 @@ public class ScheduleRecordSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec allRecordsAreQueryable() {
+    final Stream<DynamicTest> allRecordsAreQueryable() {
         return defaultHapiSpec("AllRecordsAreQueryable")
                 .given(
                         overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
@@ -343,10 +324,5 @@ public class ScheduleRecordSpecs extends HapiSuite {
                         getTxnRecord(CREATION),
                         getTxnRecord(CREATION).scheduled(),
                         getTxnRecord(CREATION).scheduledBy(TWO_SIG_XFER));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

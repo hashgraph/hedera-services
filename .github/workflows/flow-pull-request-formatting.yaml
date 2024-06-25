@@ -18,11 +18,19 @@ name: "PR Formatting"
 on:
   pull_request_target:
     types:
+      - assigned
+      - unassigned
+      - labeled
+      - unlabeled
       - opened
       - reopened
       - edited
+      - converted_to_draft
       - ready_for_review
       - review_requested
+      - review_request_removed
+      - locked
+      - unlocked
       - synchronize
 
 defaults:
@@ -38,6 +46,27 @@ jobs:
     runs-on: [self-hosted, Linux, medium, ephemeral]
     steps:
       - name: Check PR Title
-        uses: aslafy-z/conventional-pr-title-action@2ce59b07f86bd51b521dd088f0acfb0d7fdac55e # v3.1.1
+        uses: step-security/conventional-pr-title-action@0eae74515f5a79f8773fa04142dd746df76666ac # v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  milestone-check:
+    name: Milestone Check
+    runs-on: [self-hosted, Linux, medium, ephemeral]
+    steps:
+      - name: Check Milestone
+        if: ${{ github.event.pull_request.milestone == null }}
+        run: |
+            echo "Milestone is not set. Failing the workflow."
+            exit 1
+
+  assignee-check:
+    name: Assignee Check
+    runs-on: [ self-hosted, Linux, medium, ephemeral ]
+
+    steps:
+      - name: Check Assignee
+        if: ${{ github.event.pull_request.assignees == null || github.event.pull_request.assignees[0] == null }}
+        run: |
+            echo "Assignee is not set. Failing the workflow."
+            exit 1

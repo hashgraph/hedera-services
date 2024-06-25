@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.exec.operations;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_ALIAS_KEY;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractRequired;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZero;
@@ -72,10 +71,6 @@ public class CustomCallOperation extends CallOperation {
             if (isMissing) {
                 return new OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS);
             }
-            if (isLazyCreateButInvalidateAlias(frame, toAddress)) {
-                return new OperationResult(cost(frame), INVALID_ALIAS_KEY);
-            }
-
             return super.execute(frame, evm);
         } catch (final UnderflowException ignore) {
             return UNDERFLOW_RESPONSE;
@@ -95,14 +90,6 @@ public class CustomCallOperation extends CallOperation {
     private boolean impliesLazyCreation(@NonNull final MessageFrame frame, @NonNull final Address toAddress) {
         return !isLongZero(toAddress)
                 && value(frame).greaterThan(Wei.ZERO)
-                && !addressChecks.isPresent(toAddress, frame);
-    }
-
-    private boolean isLazyCreateButInvalidateAlias(
-            @NonNull final MessageFrame frame, @NonNull final Address toAddress) {
-        return isLongZero(toAddress)
-                && value(frame).greaterThan(Wei.ZERO)
-                && !addressChecks.isSystemAccount(toAddress)
                 && !addressChecks.isPresent(toAddress, frame);
     }
 }

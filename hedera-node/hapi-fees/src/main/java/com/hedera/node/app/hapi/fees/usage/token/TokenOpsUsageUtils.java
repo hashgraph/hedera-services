@@ -30,6 +30,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenBurnMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenCreateMeta;
+import com.hedera.node.app.hapi.fees.usage.token.meta.TokenCreateMeta.Builder;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenFreezeMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenMintMeta;
 import com.hedera.node.app.hapi.fees.usage.token.meta.TokenPauseMeta;
@@ -71,7 +72,7 @@ public enum TokenOpsUsageUtils {
             chosenType = usesCustomFees ? TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES : TOKEN_FUNGIBLE_COMMON;
         }
 
-        return new TokenCreateMeta.Builder()
+        return new Builder()
                 .baseSize(baseSize)
                 .lifeTime(lifetime)
                 .customFeeScheleSize(feeSchedulesSize)

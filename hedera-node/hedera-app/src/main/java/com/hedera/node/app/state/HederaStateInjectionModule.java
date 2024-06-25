@@ -17,8 +17,12 @@
 package com.hedera.node.app.state;
 
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.state.listeners.ReconnectListener;
+import com.hedera.node.app.state.listeners.WriteStateToDiskListener;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
+import com.swirlds.platform.listeners.ReconnectCompleteListener;
+import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
@@ -26,9 +30,6 @@ import javax.inject.Singleton;
 
 @Module
 public interface HederaStateInjectionModule {
-    @Binds
-    LedgerValidator provideLedgerValidator(LedgerValidatorImpl impl);
-
     @Binds
     RecordCache provideRecordCache(RecordCacheImpl cache);
 
@@ -43,4 +44,12 @@ public interface HederaStateInjectionModule {
     static WorkingStateAccessor provideWorkingStateAccessor() {
         return new WorkingStateAccessor();
     }
+
+    @Binds
+    @Singleton
+    ReconnectCompleteListener bindReconnectListener(ReconnectListener reconnectListener);
+
+    @Binds
+    @Singleton
+    StateWriteToDiskCompleteListener bindStateWrittenToDiskListener(WriteStateToDiskListener writeStateToDiskListener);
 }

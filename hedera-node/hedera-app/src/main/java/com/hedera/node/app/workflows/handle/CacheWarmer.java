@@ -18,22 +18,23 @@ package com.hedera.node.app.workflows.handle;
 
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.CacheConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.Transaction;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.Executor;
@@ -54,18 +55,17 @@ public class CacheWarmer {
     private final Executor executor;
 
     @Inject
-    public CacheWarmer(@NonNull final TransactionChecker checker, @NonNull final TransactionDispatcher dispatcher) {
-        this(checker, dispatcher, ForkJoinPool.commonPool());
-    }
-
-    @VisibleForTesting
-    CacheWarmer(
+    public CacheWarmer(
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final Executor executor) {
+            @NonNull final ConfigProvider configProvider) {
         this.checker = checker;
         this.dispatcher = requireNonNull(dispatcher);
-        this.executor = requireNonNull(executor);
+        final int parallelism = configProvider
+                .getConfiguration()
+                .getConfigData(CacheConfig.class)
+                .cryptoTransferWarmThreads();
+        this.executor = new ForkJoinPool(parallelism);
     }
 
     /**
@@ -107,7 +107,7 @@ public class CacheWarmer {
         // We can potentially optimize this by limiting the code to the bare minimum needed
         // or keeping the result for later.
         try {
-            final Bytes buffer = Bytes.wrap(platformTransaction.getContents());
+            final Bytes buffer = platformTransaction.getApplicationPayload();
             return checker.parseAndCheck(buffer).txBody();
         } catch (PreCheckException ex) {
             return null;

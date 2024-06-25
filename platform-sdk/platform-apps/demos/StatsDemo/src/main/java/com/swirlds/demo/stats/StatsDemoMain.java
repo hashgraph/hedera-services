@@ -39,7 +39,6 @@ import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
-import com.swirlds.platform.gui.model.GuiModel;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
@@ -222,14 +221,9 @@ public class StatsDemoMain implements SwirldMain {
             transPerEventMax = 1024;
         }
         if (!headless) { // create the window, make it visible
-            final int winNum = GuiModel.getInstance().getInstanceNumber(selfId);
+            final int winNum = (int) selfId.id();
             console = createConsole(platform, winNum, true);
         }
-        GuiModel.getInstance()
-                .setAbout(
-                        platform.getSelfId(),
-                        "Stats Demo v. 1.2\nThis writes statistics to a log file,"
-                                + " such as the number of transactions per second.");
     }
 
     @Override

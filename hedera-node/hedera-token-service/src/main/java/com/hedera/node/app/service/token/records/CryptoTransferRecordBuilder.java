@@ -76,6 +76,11 @@ public interface CryptoTransferRecordBuilder extends SingleTransactionRecordBuil
      */
     CryptoTransferRecordBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation tokenAssociation);
 
+    /**
+     * Tracks the result of a contract call, if any. It is used to update the transaction record.
+     * @param result the result of a contract call
+     * @return this builder
+     */
     @NonNull
     CryptoTransferRecordBuilder contractCallResult(@Nullable ContractFunctionResult result);
 }

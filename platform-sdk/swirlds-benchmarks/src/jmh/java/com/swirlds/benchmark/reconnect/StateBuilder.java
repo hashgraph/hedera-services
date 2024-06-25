@@ -19,6 +19,7 @@ package com.swirlds.benchmark.reconnect;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 
@@ -59,6 +60,9 @@ public record StateBuilder<K, V>(
      *          to have a value that is different from the value under the same key in the learner state.
      * @param teacherPopulator a BiConsumer that persists the teacher state (Map::put or similar)
      * @param learnerPopulator a BiConsumer that persists the learner state (Map::put or similar)
+     * @param storageOptimizer a Consumer<Long> that could optimize the underlying state storage
+     *          (e.g. compacting it, or splitting it into multiple units such as files, etc.)
+     *          based on the current node index passed as a parameter
      */
     public void buildState(
             final Random random,
@@ -67,8 +71,13 @@ public record StateBuilder<K, V>(
             final double teacherRemoveProbability,
             final double teacherModifyProbability,
             final BiConsumer<K, V> teacherPopulator,
-            final BiConsumer<K, V> learnerPopulator) {
+            final BiConsumer<K, V> learnerPopulator,
+            final Consumer<Long> storageOptimizer) {
+        System.err.printf("Building a state of size %,d\n", size);
+
         LongStream.range(1, size).forEach(i -> {
+            storageOptimizer.accept(i);
+
             final K key = keyBuilder.apply(i);
             // Original values indexes 1..size-1
             final V value = valueBuilder.apply(i);
@@ -80,6 +89,8 @@ public record StateBuilder<K, V>(
         final AtomicLong curSize = new AtomicLong(size - 1);
 
         LongStream.range(1, size).forEach(i -> {
+            storageOptimizer.accept(i);
+
             // Make all random outcomes independent of each other:
             final boolean teacherAdd = isRandomOutcome(random, teacherAddProbability);
             final boolean teacherModify = isRandomOutcome(random, teacherModifyProbability);

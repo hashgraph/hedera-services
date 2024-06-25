@@ -23,9 +23,9 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.gossip.SyncException;
 import com.swirlds.platform.internal.EventImpl;
@@ -79,7 +79,7 @@ public final class SyncUtils {
      */
     public static Callable<Void> writeMyTipsAndEventWindow(
             @NonNull final Connection connection,
-            @NonNull final NonAncientEventWindow eventWindow,
+            @NonNull final EventWindow eventWindow,
             @NonNull final List<ShadowEvent> tips) {
         return () -> {
             final List<Hash> tipHashes =
@@ -106,7 +106,7 @@ public final class SyncUtils {
     /**
      * Read the tips and event window from the peer. This is the first data exchanged during a sync (after protocol
      * negotiation). The complementary function to
-     * {@link #writeMyTipsAndEventWindow(Connection, NonAncientEventWindow, List)}.
+     * {@link #writeMyTipsAndEventWindow(Connection, EventWindow, List)}.
      *
      * @param connection    the connection to read from
      * @param numberOfNodes the number of nodes in the network
@@ -116,7 +116,7 @@ public final class SyncUtils {
     public static Callable<TheirTipsAndEventWindow> readTheirTipsAndEventWindow(
             final Connection connection, final int numberOfNodes, @NonNull final AncientMode ancientMode) {
         return () -> {
-            final NonAncientEventWindow eventWindow = deserializeEventWindow(connection.getDis(), ancientMode);
+            final EventWindow eventWindow = deserializeEventWindow(connection.getDis(), ancientMode);
 
             final List<Hash> tips = connection.getDis().readTipHashes(numberOfNodes);
 
@@ -255,7 +255,7 @@ public final class SyncUtils {
      */
     public static Callable<Integer> readEventsINeed(
             final Connection connection,
-            final Consumer<GossipEvent> eventHandler,
+            final Consumer<PlatformEvent> eventHandler,
             final int maxEventCount,
             final SyncMetrics syncMetrics,
             final CountDownLatch eventReadingDone,
@@ -283,12 +283,13 @@ public final class SyncUtils {
                                 }
                             }
 
-                            final GossipEvent gossipEvent = connection.getDis().readEventData();
+                            final PlatformEvent platformEvent =
+                                    connection.getDis().readEventData();
 
-                            gossipEvent.setSenderId(connection.getOtherId());
+                            platformEvent.setSenderId(connection.getOtherId());
                             intakeEventCounter.eventEnteredIntakePipeline(connection.getOtherId());
 
-                            eventHandler.accept(gossipEvent);
+                            eventHandler.accept(platformEvent);
                             eventsRead++;
                         }
                         case ByteConstants.COMM_EVENT_ABORT -> {
@@ -401,11 +402,7 @@ public final class SyncUtils {
                 // If we've decided to send an event, we also want to send its parents if those parents are needed
                 // by the peer.
                 filteredList.addFirst(event);
-                final Hash selfParentHash = event.getBaseEvent().getHashedData().getSelfParentHash();
-                if (selfParentHash != null) {
-                    parentHashesOfEventsToSend.add(selfParentHash);
-                }
-                for (final EventDescriptor otherParent : event.getHashedData().getOtherParents()) {
+                for (final EventDescriptor otherParent : event.getBaseEvent().getAllParents()) {
                     parentHashesOfEventsToSend.add(otherParent.getHash());
                 }
             }
@@ -443,8 +440,8 @@ public final class SyncUtils {
     @NonNull
     public static Predicate<ShadowEvent> unknownNonAncient(
             @NonNull final Collection<ShadowEvent> knownShadows,
-            @NonNull final NonAncientEventWindow myEventWindow,
-            @NonNull final NonAncientEventWindow theirEventWindow,
+            @NonNull final EventWindow myEventWindow,
+            @NonNull final EventWindow theirEventWindow,
             @NonNull final AncientMode ancientMode) {
 
         // When searching for events, we don't want to send any events that are known to be ancient to the peer.
@@ -565,7 +562,7 @@ public final class SyncUtils {
      * @param eventWindow the event window
      */
     public static void serializeEventWindow(
-            @NonNull final SerializableDataOutputStream out, @NonNull final NonAncientEventWindow eventWindow)
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventWindow eventWindow)
             throws IOException {
 
         out.writeLong(eventWindow.getLatestConsensusRound());
@@ -583,13 +580,13 @@ public final class SyncUtils {
      * @return the deserialized event window
      */
     @NonNull
-    public static NonAncientEventWindow deserializeEventWindow(
+    public static EventWindow deserializeEventWindow(
             @NonNull final SerializableDataInputStream in, @NonNull final AncientMode ancientMode) throws IOException {
 
         final long latestConsensusRound = in.readLong();
         final long ancientThreshold = in.readLong();
         final long expiredThreshold = in.readLong();
 
-        return new NonAncientEventWindow(latestConsensusRound, ancientThreshold, expiredThreshold, ancientMode);
+        return new EventWindow(latestConsensusRound, ancientThreshold, expiredThreshold, ancientMode);
     }
 }

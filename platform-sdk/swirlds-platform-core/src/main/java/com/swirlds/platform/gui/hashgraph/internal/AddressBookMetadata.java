@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.gui.hashgraph.internal;
 
+import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -121,7 +121,7 @@ public class AddressBookMetadata {
     /**
      * find the column for e2 next to the column for e1
      */
-    public int mems2col(@Nullable final PlatformEvent e1, @NonNull final PlatformEvent e2) {
+    public int mems2col(@Nullable final EventImpl e1, @NonNull final EventImpl e2) {
         Objects.requireNonNull(e2, "e2 must not be null");
         // To support Noncontiguous NodeId in the address book,
         // the mems2col array is now based on indexes of NodeIds in the address book.

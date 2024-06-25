@@ -22,7 +22,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
-import static java.util.stream.Collectors.toList;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -32,6 +32,7 @@ import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource;
 import com.hederahashgraph.api.proto.java.*;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Function;
@@ -50,6 +51,11 @@ public class HapiSpecSetup {
 
     public static HapiPropertySource getDefaultNodeProps() {
         return defaultNodeProps;
+    }
+
+    public static String getDefaultProp(@NonNull final String property) {
+        requireNonNull(property);
+        return defaultNodeProps.get(property);
     }
 
     private Set<ResponseCodeEnum> streamlinedIngestChecks = null;
@@ -81,6 +87,10 @@ public class HapiSpecSetup {
     }
 
     private HapiPropertySource props;
+
+    public static HapiSpecSetup setupFrom(Object... objs) {
+        return new HapiSpecSetup(inPriorityOrder(asSources(objs)));
+    }
 
     public enum NodeSelection {
         FIXED,
@@ -147,22 +157,6 @@ public class HapiSpecSetup {
 
     public String appPropertiesFile() {
         return props.get("app.properties.name");
-    }
-
-    public Boolean clientFeeScheduleFromDisk() {
-        return props.getBoolean("client.feeSchedule.fromDisk");
-    }
-
-    public String clientFeeSchedulePath() {
-        return props.get("client.feeSchedule.path");
-    }
-
-    public Boolean clientExchangeRatesFromDisk() {
-        return props.getBoolean("client.exchangeRates.fromDisk");
-    }
-
-    public String clientExchangeRatesPath() {
-        return props.get("client.exchangeRates.path");
     }
 
     public String costSnapshotDir() {
@@ -287,6 +281,22 @@ public class HapiSpecSetup {
 
     public AccountID defaultPayer() {
         return props.getAccount("default.payer");
+    }
+
+    public ServiceEndpoint defaultGossipEndpointInternal() {
+        return props.getServiceEndpoint("default.gossipEndpoint.internal");
+    }
+
+    public ServiceEndpoint defaultGossipEndpointExternal() {
+        return props.getServiceEndpoint("default.gossipEndpoint.external");
+    }
+
+    public ServiceEndpoint defaultServiceEndpoint() {
+        return props.getServiceEndpoint("default.serviceEndpoint");
+    }
+
+    public byte[] defaultGossipCaCertificate() {
+        return props.getBytes("default.gossipCaCertificate");
     }
 
     public String defaultPayerKey() {
@@ -420,7 +430,7 @@ public class HapiSpecSetup {
         return props.get("exchange.rates.controlAccount.name");
     }
 
-    public HapiSpec.SpecStatus expectedFinalStatus() {
+    final HapiSpec.SpecStatus expectedFinalStatus() {
         return props.getSpecStatus("expected.final.status");
     }
 
@@ -448,12 +458,20 @@ public class HapiSpecSetup {
         return props.getInteger("fees.tokenTransferUsageMultiplier");
     }
 
-    public Boolean useFixedFee() {
+    public boolean useFixedFee() {
         return props.getBoolean("fees.useFixedOffer");
     }
 
     public long fixedFee() {
         return props.getLong("fees.fixedOffer");
+    }
+
+    public String softwareUpdateAdminName() {
+        return props.get("softwareUpdate.admin.name");
+    }
+
+    public AccountID softwareUpdateAdminId() {
+        return props.getAccount("softwareUpdate.admin.id");
     }
 
     public String freezeAdminName() {
@@ -496,10 +514,6 @@ public class HapiSpecSetup {
         return props.get("invalid.contract.name");
     }
 
-    public Boolean measureConsensusLatency() {
-        return props.getBoolean("measure.consensus.latency");
-    }
-
     public Boolean suppressUnrecoverableNetworkFailures() {
         return props.getBoolean("warnings.suppressUnrecoverableNetworkFailures");
     }
@@ -516,7 +530,7 @@ public class HapiSpecSetup {
         NodeConnectInfo.NEXT_DEFAULT_ACCOUNT_NUM = 3;
         return Stream.of(props.get("nodes").split(","))
                 .map(NodeConnectInfo::new)
-                .collect(toList());
+                .toList();
     }
 
     public NodeSelection nodeSelector() {

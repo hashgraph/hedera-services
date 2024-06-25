@@ -15,26 +15,38 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.platform-maven-publish")
-    id("com.hedera.hashgraph.java-test-fixtures")
-    id("com.hedera.hashgraph.benchmark-conventions")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
+    id("com.hedera.gradle.java-test-fixtures")
+    id("com.hedera.gradle.benchmark")
 }
+
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports,-varargs") }
 
 mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
-
-jmhModuleInfo {
-    requires("com.swirlds.config.api")
-    runtimeOnly("com.swirlds.config.impl")
-}
 
 testModuleInfo {
     requires("org.apache.logging.log4j.core")
     requires("com.swirlds.config.extensions.test.fixtures")
+    requires("com.swirlds.logging.test.fixtures")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("com.swirlds.base.test.fixtures")
     requires("com.swirlds.common.test.fixtures")
     requires("jakarta.inject")
+}
+
+jmhModuleInfo {
+    requires("com.swirlds.logging")
+    requires("org.apache.logging.log4j")
+    requires("com.swirlds.config.api")
+    runtimeOnly("com.swirlds.config.impl")
+    requires("com.swirlds.config.extensions")
+    runtimeOnly("com.swirlds.logging.log4j.appender")
+    requires("org.apache.logging.log4j.core")
+    requires("com.github.spotbugs.annotations")
+    requires("jmh.core")
 }

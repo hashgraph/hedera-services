@@ -17,6 +17,7 @@
 package com.swirlds.common.stream.internal;
 
 import static com.swirlds.common.stream.internal.StreamValidationResult.PARSE_STREAM_FILE_FAIL;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.logging.legacy.LogMarker.OBJECT_STREAM;
 
@@ -25,14 +26,18 @@ import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
+import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.common.stream.StreamType;
 import com.swirlds.logging.legacy.payload.StreamParseErrorPayload;
 import java.io.File;
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PublicKey;
+import java.security.SignatureException;
 import java.util.Iterator;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -126,9 +131,10 @@ public final class LinkedObjectStreamValidateUtils {
             Signature entireSignature = parsedPairs.left().right();
             Hash metaHashInSig = parsedPairs.right().left();
             Signature metaSignature = parsedPairs.right().right();
-            if (!entireSignature.verifySignature(entireHash.getValue(), publicKey)) {
+
+            if (!verifySignature(entireHash, entireSignature, publicKey)) {
                 result = StreamValidationResult.INVALID_ENTIRE_SIGNATURE;
-            } else if (!metaSignature.verifySignature(metaHashInSig.getValue(), publicKey)) {
+            } else if (!verifySignature(metaHashInSig, metaSignature, publicKey)) {
                 result = StreamValidationResult.INVALID_META_SIGNATURE;
             } else {
                 result = StreamValidationResult.OK;
@@ -224,5 +230,26 @@ public final class LinkedObjectStreamValidateUtils {
             return Pair.of(StreamValidationResult.CALCULATED_END_HASH_NOT_MATCH, endHash);
         }
         return Pair.of(StreamValidationResult.OK, endHash);
+    }
+
+    // Code duplicated in order to avoid wasting time on the event stream which will be removed soon
+    public static boolean verifySignature(final Hash hash, final Signature signature, final PublicKey publicKey) {
+        try {
+            final java.security.Signature sig = java.security.Signature.getInstance(
+                    SignatureType.RSA.signingAlgorithm(), SignatureType.RSA.provider());
+            sig.initVerify(publicKey);
+            hash.getBytes().updateSignature(sig);
+            return sig.verify(signature.getSignatureBytes());
+        } catch (final NoSuchAlgorithmException
+                | NoSuchProviderException
+                | InvalidKeyException
+                | SignatureException e) {
+            logger.error(
+                    EXCEPTION.getMarker(),
+                    () -> "Failed to verify Signature: %s, PublicKey: %s"
+                            .formatted(signature, hex(publicKey.getEncoded())),
+                    e);
+        }
+        return false;
     }
 }
