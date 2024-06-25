@@ -17,26 +17,28 @@ The ingest-workflow is single-threaded, but multiple calls can run in parallel.
 
 The ingest workflow consists of the following steps:
 
-1. **Check node.** The node is checked to ensure it is not in a state that prevents it from processing transactions.
-2. **Check timeBox** Checks whether the transaction duration is valid as per the configuration for valid durations 
-for the network, and whether the current node wall-clock time falls between the transaction start and the transaction end (transaction start + duration)
-3. **Parse transaction.** The transaction arrives as a byte-array. The required parts are parsed and the structure and syntax are validated.
-4. **Deduplicate.** The transaction is checked to ensure it has not been processed before.
-5. **Check throttles** Throttling must be observed and checked as early as possible.
-6. **Pure Checks** Calls `pureChecks` method that does validations based on the respective handler's transaction body 
+1. **Check node** The node is checked to ensure it is not in a state that prevents it from processing transactions.
+2. **Parse Transaction** Parse and check the transaction if it is valid and is not larger than allowed size.It also checks
+if there are unknown fields set in the transaction.
+3. **Check Syntax** The transaction arrives as a byte-array. The structure and syntax are validated.
+4. **Validate Submitted Node** Checks if the transaction is submitted to this node.
+5. **Check timeBox** Checks whether the transaction duration is valid as per the configuration for valid durations
+   for the network, and whether the current node wall-clock time falls between the transaction start and the transaction end (transaction start + duration)
+6. **Deduplicate** The transaction is checked to ensure it has not been processed before.
+7. **Check Throttles** Throttling must be observed and checked as early as possible.
+8. **Pure Checks** Calls `pureChecks` method that does validations based on the respective handler's transaction body 
          The checks performed here are independent of the state and configuration. 
          This check will be removed in the future from IngestWorkflow. It is important to note that `pureChecks` 
          and `Transaction Prechecks` found [here](transaction-prechecks.md) are different.
-7. **Get payer account.** The account data of the payer is read from the latest immutable state.
-8. Account Balance
-   1. **Check account balance.** The account of the payer is checked to ensure it is able to pay the fee.
-   2. **Estimate fee.** Compute the fee that is required to pay for the transaction.
-9. **Verify payer's signature.** The signature of the payer is checked. (Please note: other signatures are not checked here, but in later stages)
-10. **Submit to platform.** The transaction is submitted to the platform for further processing.
-11. **TransactionResponse.** Return `TransactionResponse`  with result-code.
+9. **Get payer account.** The account data of the payer is read from the latest immutable state.
+10. **Verify payer's signature.** The signature of the payer is checked. (Please note: other signatures are not checked here, but in later stages)
+11. **Estimate fee** Compute the fee that is required to pay for the transaction.
+12. **Payer Solvency*** Check the account balance of the payer to ensure it is able to pay the fee.
+13. **Submit to platform** The transaction is submitted to the platform for further processing.
+14. **TransactionResponse** Return `TransactionResponse`  with result-code.
 
 If all checks have been successful, the transaction has been submitted to the platform and the precheck-code of the returned `TransactionResponse` is `OK`.
-Otherwise the transaction is rejected with an appropriate response code.
+Otherwise, the transaction is rejected with an appropriate response code.
 In case of insufficient funds, the returned `TransactionResponse` also contains an estimation of the required fee.
 
 ## Pre-Handle Workflow
@@ -52,14 +54,14 @@ The workflow consists of the following steps:
 1. **Parse Transaction.** The transaction arrives as a byte-array. The required parts are parsed and the common information is validated.
 2. **Call PreTransactionHandler.** Depending on the type of transaction, a specific `PreTransactionHandler` is called. 
    It validates the transaction-specific parts and pre-loads data into the cache. It also creates a `TransactionMetadata` and sets the required keys.
-   It also calls `pureChecks` method that does validations based on the respective handler's transaction body. 
+3. **PureChecks** `pureChecks` method does validations based on the respective handler's transaction body. 
    The checks performed are that are independent of the state and configuration. 
-3. **Prepare Signature-Data.** The data for all signatures is loaded into memory. A signature consists of three parts:
+4. **Prepare Signature-Data.** The data for all signatures is loaded into memory. A signature consists of three parts:
    1. Some bytes that are signed; in our case, either the `bodyBytes` for an Ed25519 signature or the Keccak256 hash of the `bodyBytes` for an ECDSA(secp256k1) signature.
    2. An Ed25519 or secp256k1 public key that is supposed to have signed these bytes (these public keys come from e.g. the Hedera key of some `0.0.X` account).
    3. The signature itself---which comes from the `SignatureMap`, based on existence of a unique `SignaturePair` entry whose `pubKeyPrefix` matches the public key in (ii.).
-4. **Verify Signatures.** The information prepared in the previous step is sent to the platform to validate the signatures.
-5. **Transaction Metadata.** The `TransactionMetadata` generated by the `PreTransactionHandler` is attached to the `SwirldsTransaction`.
+5. **Verify Signatures.** The information prepared in the previous step is sent to the platform to validate the signatures.
+6. **Transaction Metadata.** The `TransactionMetadata` generated by the `PreTransactionHandler` is attached to the `SwirldsTransaction`.
 
 If all checks have been successful, the status of the created `TransactionMetadata` will be `OK`. 
 Otherwise, the status is set to the response code providing the failure reason. 
