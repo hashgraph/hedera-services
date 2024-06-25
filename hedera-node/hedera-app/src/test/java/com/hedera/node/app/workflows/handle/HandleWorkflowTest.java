@@ -37,7 +37,8 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionScenarioBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.PreHandleResultManager;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTxnComponent;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTxnWorkflow;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
@@ -129,7 +130,7 @@ class HandleWorkflowTest extends AppTestBase {
     private HandleWorkflowMetrics handleWorkflowMetrics;
 
     @Mock
-    private Provider<UserTransactionComponent.Factory> userTxnProvider;
+    private Provider<UserTxnComponent.Factory> userTxnProvider;
 
     @Mock
     private HederaState state;
@@ -141,13 +142,16 @@ class HandleWorkflowTest extends AppTestBase {
     private ConsensusTransactionImpl txn;
 
     @Mock
-    private UserTransactionComponent.Factory userTxnFactory;
+    private UserTxnComponent.Factory userTxnFactory;
 
     @Mock
-    private UserTransactionComponent userTxn;
+    private UserTxnComponent userTxn;
 
     @Mock
     private UserTxnWorkflow userTxnWorkflow;
+
+    @Mock
+    private PreHandleResultManager preHandleResultManager;
 
     @InjectMocks
     private HandleWorkflow workflow;
@@ -176,7 +180,8 @@ class HandleWorkflowTest extends AppTestBase {
                 cacheWarmer,
                 handleWorkflowMetrics,
                 throttleServiceManager,
-                userTxnProvider);
+                userTxnProvider,
+                preHandleResultManager);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -188,10 +193,17 @@ class HandleWorkflowTest extends AppTestBase {
                         cacheWarmer,
                         handleWorkflowMetrics,
                         throttleServiceManager,
-                        userTxnProvider))
+                        userTxnProvider,
+                        preHandleResultManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo, null, cacheWarmer, handleWorkflowMetrics, throttleServiceManager, userTxnProvider))
+                        networkInfo,
+                        null,
+                        cacheWarmer,
+                        handleWorkflowMetrics,
+                        throttleServiceManager,
+                        userTxnProvider,
+                        preHandleResultManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -199,13 +211,26 @@ class HandleWorkflowTest extends AppTestBase {
                         null,
                         handleWorkflowMetrics,
                         throttleServiceManager,
-                        userTxnProvider))
+                        userTxnProvider,
+                        preHandleResultManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo, blockRecordManager, cacheWarmer, null, throttleServiceManager, userTxnProvider))
+                        networkInfo,
+                        blockRecordManager,
+                        cacheWarmer,
+                        null,
+                        throttleServiceManager,
+                        userTxnProvider,
+                        preHandleResultManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo, blockRecordManager, cacheWarmer, handleWorkflowMetrics, null, userTxnProvider))
+                        networkInfo,
+                        blockRecordManager,
+                        cacheWarmer,
+                        handleWorkflowMetrics,
+                        null,
+                        userTxnProvider,
+                        preHandleResultManager))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new HandleWorkflow(
                         networkInfo,
@@ -213,7 +238,8 @@ class HandleWorkflowTest extends AppTestBase {
                         cacheWarmer,
                         handleWorkflowMetrics,
                         throttleServiceManager,
-                        null))
+                        null,
+                        preHandleResultManager))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -314,7 +340,8 @@ class HandleWorkflowTest extends AppTestBase {
         when(txnIterator.next()).thenReturn(txn);
         when(txn.isSystem()).thenReturn(false);
         when(userTxnProvider.get()).thenReturn(userTxnFactory);
-        when(userTxnFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(userTxn);
+        when(userTxnFactory.create(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(userTxn);
         when(userTxn.workflow()).thenReturn(userTxnWorkflow);
         when(userTxnWorkflow.execute()).thenReturn(mock(Stream.class));
         when(event.getCreatorId()).thenReturn(nodeSelfId);
@@ -338,7 +365,8 @@ class HandleWorkflowTest extends AppTestBase {
     @Test
     void handlePlatformTransaction() {
         when(userTxnProvider.get()).thenReturn(userTxnFactory);
-        when(userTxnFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(userTxn);
+        when(userTxnFactory.create(any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(userTxn);
         when(userTxn.workflow()).thenReturn(userTxnWorkflow);
         when(userTxnWorkflow.execute()).thenReturn(mock(Stream.class));
         when(txn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
