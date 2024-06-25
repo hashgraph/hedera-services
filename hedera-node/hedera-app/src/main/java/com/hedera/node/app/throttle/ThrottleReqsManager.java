@@ -20,7 +20,6 @@ import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
 import com.hedera.node.app.hapi.utils.throttles.BucketThrottle;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
@@ -78,14 +77,6 @@ public class ThrottleReqsManager {
         }
 
         return allPassed;
-    }
-
-    public List<DeterministicThrottle.UsageSnapshot> currentUsage() {
-        List<DeterministicThrottle.UsageSnapshot> usages = new ArrayList<>();
-        for (var req : allReqs) {
-            usages.add(req.getLeft().usageSnapshot());
-        }
-        return usages;
     }
 
     public List<DeterministicThrottle> managedThrottles() {

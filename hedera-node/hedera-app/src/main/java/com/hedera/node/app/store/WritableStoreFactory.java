@@ -63,6 +63,9 @@ public class WritableStoreFactory {
 
     private static Map<Class<?>, StoreEntry> createFactoryMap() {
         final Map<Class<?>, StoreEntry> newMap = new HashMap<>();
+        // AddressBookService
+        newMap.put(WritableNodeStore.class, new StoreEntry(AddressBookService.NAME, WritableNodeStore::new));
+
         // ConsensusService
         newMap.put(WritableTopicStore.class, new StoreEntry(ConsensusService.NAME, WritableTopicStore::new));
         // TokenService

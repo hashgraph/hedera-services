@@ -83,7 +83,7 @@ public record TransactionHandlers(
         @NonNull ContractDeleteHandler contractDeleteHandler,
         @NonNull ContractSystemDeleteHandler contractSystemDeleteHandler,
         @NonNull ContractSystemUndeleteHandler contractSystemUndeleteHandler,
-        @NonNull EthereumTransactionHandler etherumTransactionHandler,
+        @NonNull EthereumTransactionHandler ethereumTransactionHandler,
         @NonNull CryptoCreateHandler cryptoCreateHandler,
         @NonNull CryptoUpdateHandler cryptoUpdateHandler,
         @NonNull CryptoTransferHandler cryptoTransferHandler,
@@ -100,6 +100,9 @@ public record TransactionHandlers(
         @NonNull FileSystemUndeleteHandler fileSystemUndeleteHandler,
         @NonNull FreezeHandler freezeHandler,
         @NonNull NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler,
+        @NonNull NodeCreateHandler nodeCreateHandler,
+        @NonNull NodeDeleteHandler nodeDeleteHandler,
+        @NonNull NodeUpdateHandler nodeUpdateHandler,
         @NonNull ScheduleCreateHandler scheduleCreateHandler,
         @NonNull ScheduleSignHandler scheduleSignHandler,
         @NonNull ScheduleDeleteHandler scheduleDeleteHandler,
@@ -119,7 +122,4 @@ public record TransactionHandlers(
         @NonNull TokenPauseHandler tokenPauseHandler,
         @NonNull TokenUnpauseHandler tokenUnpauseHandler,
         @NonNull TokenUpdateNftsHandler tokenUpdateNftsHandler,
-        @NonNull UtilPrngHandler utilPrngHandler,
-        @NonNull NodeCreateHandler nodeCreateHandler,
-        @NonNull NodeDeleteHandler nodeDeleteHandler,
-        @NonNull NodeUpdateHandler nodeUpdateHandler) {}
+        @NonNull UtilPrngHandler utilPrngHandler) {}

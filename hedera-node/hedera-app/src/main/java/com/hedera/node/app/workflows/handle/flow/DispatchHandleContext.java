@@ -16,15 +16,11 @@
 
 package com.hedera.node.app.workflows.handle.flow;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CREATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SignatureMap;
@@ -36,10 +32,9 @@ import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.RecordBuildersImpl;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -49,12 +44,12 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
@@ -64,7 +59,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.store.StoreFactoryImpl;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
@@ -76,7 +70,6 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import dagger.Reusable;
@@ -84,9 +77,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -105,7 +96,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final FeeManager feeManager;
     private final StoreFactoryImpl storeFactory;
     private final AccountID syntheticPayer;
-    private final KeyVerifier verifier;
+    private final AppKeyVerifier verifier;
     private final Key payerKey;
     private final ExchangeRateManager exchangeRateManager;
     private final SavepointStackImpl stack;
@@ -120,7 +111,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final ChildDispatchFactory childDispatchFactory;
     private final Dispatch currentDispatch;
     private final DispatchProcessor dispatchProcessor;
-    private final NetworkUtilizationManager networkUtilizationManager;
+    private final ThrottleAdviser throttleAdviser;
     private Map<AccountID, Long> dispatchPaidRewards;
 
     @Inject
@@ -134,7 +125,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final FeeManager feeManager,
             @NonNull final StoreFactoryImpl storeFactory,
             @NonNull final AccountID syntheticPayer,
-            @NonNull final KeyVerifier verifier,
+            @NonNull final AppKeyVerifier verifier,
             @NonNull final Key payerKey,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final SavepointStackImpl stack,
@@ -147,7 +138,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final Dispatch parentDispatch,
             @NonNull final DispatchProcessor dispatchProcessor,
-            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+            @NonNull final ThrottleAdviser throttleAdviser) {
         this.consensusNow = requireNonNull(consensusNow);
         this.txnInfo = requireNonNull(transactionInfo);
         this.configuration = requireNonNull(configuration);
@@ -166,7 +157,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.childDispatchFactory = requireNonNull(childDispatchLogic);
         this.currentDispatch = requireNonNull(parentDispatch);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
-        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
+        this.throttleAdviser = requireNonNull(throttleAdviser);
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);
         this.dispatcher = requireNonNull(dispatcher);
@@ -292,25 +283,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public SignatureVerification verificationFor(@NonNull final Key key) {
-        requireNonNull(key, "key must not be null");
-        return verifier.verificationFor(key);
-    }
-
-    @NonNull
-    @Override
-    public SignatureVerification verificationFor(
-            @NonNull final Key key, @NonNull final VerificationAssistant callback) {
-        requireNonNull(key, "key must not be null");
-        requireNonNull(callback, "callback must not be null");
-        return verifier.verificationFor(key, callback);
-    }
-
-    @NonNull
-    @Override
-    public SignatureVerification verificationFor(@NonNull final Bytes evmAlias) {
-        requireNonNull(evmAlias, "evmAlias must not be null");
-        return verifier.verificationFor(evmAlias);
+    public KeyVerifier keyVerifier() {
+        return verifier;
     }
 
     @Override
@@ -486,54 +460,10 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         return stack;
     }
 
+    @NonNull
     @Override
-    public boolean shouldThrottleNOfUnscaled(final int n, @NonNull final HederaFunctionality function) {
-        requireNonNull(function);
-        return networkUtilizationManager.shouldThrottleNOfUnscaled(n, function, consensusNow);
-    }
-
-    @Override
-    public boolean hasThrottleCapacityForChildTransactions() {
-        var isAllowed = true;
-        final var childRecords = currentDispatch.recordListBuilder().childRecordBuilders();
-        @Nullable List<DeterministicThrottle.UsageSnapshot> snapshotsIfNeeded = null;
-
-        for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
-            final var childRecord = childRecords.get(i);
-            if (Objects.equals(childRecord.status(), SUCCESS)) {
-                final var childTx = childRecord.transaction();
-                final var childTxBody = childRecord.transactionBody();
-                HederaFunctionality childTxFunctionality;
-                try {
-                    childTxFunctionality = functionOf(childTxBody);
-                } catch (UnknownHederaFunctionality e) {
-                    throw new IllegalStateException("Invalid transaction body " + childTxBody, e);
-                }
-
-                if (childTxFunctionality == CONTRACT_CREATE || childTxFunctionality == CONTRACT_CALL) {
-                    continue;
-                }
-                if (snapshotsIfNeeded == null) {
-                    snapshotsIfNeeded = networkUtilizationManager.getUsageSnapshots();
-                }
-
-                final var childTxInfo = TransactionInfo.from(
-                        childTx,
-                        childTxBody,
-                        childTx.sigMapOrElse(SignatureMap.DEFAULT),
-                        childTx.signedTransactionBytes(),
-                        childTxFunctionality);
-                final var shouldThrottleTxn = networkUtilizationManager.shouldThrottle(
-                        childTxInfo, currentDispatch.stack().peek(), consensusNow);
-                if (shouldThrottleTxn) {
-                    isAllowed = false;
-                }
-            }
-        }
-        if (!isAllowed) {
-            networkUtilizationManager.resetUsageThrottlesTo(snapshotsIfNeeded);
-        }
-        return isAllowed;
+    public ThrottleAdviser throttleAdviser() {
+        return throttleAdviser;
     }
 
     @NonNull

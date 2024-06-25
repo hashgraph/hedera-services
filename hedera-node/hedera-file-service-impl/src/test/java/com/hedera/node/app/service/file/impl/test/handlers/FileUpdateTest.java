@@ -32,7 +32,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
@@ -68,7 +67,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -217,8 +215,6 @@ class FileUpdateTest extends FileTestBase {
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().fileUpdate(op).build());
         given(storeFactory.writableStore(WritableFileStore.class)).willReturn(writableStore);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         subject.handle(handleContext);
 
@@ -258,8 +254,7 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
+
         willThrow(new HandleException(ResponseCodeEnum.MEMO_TOO_LONG))
                 .given(attributeValidator)
                 .validateMemo(txBody.fileUpdate().memo());
@@ -286,8 +281,6 @@ class FileUpdateTest extends FileTestBase {
                 .build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         // expect:
         assertFailsWith(ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE, () -> subject.handle(handleContext));
@@ -303,8 +296,6 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         subject.handle(handleContext);
 
@@ -324,8 +315,6 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         // expect:
         assertFailsWith(ResponseCodeEnum.MAX_FILE_SIZE_EXCEEDED, () -> subject.handle(handleContext));
@@ -342,8 +331,6 @@ class FileUpdateTest extends FileTestBase {
                 .build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         // expect:
         subject.handle(handleContext);
@@ -362,8 +349,6 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
         given(handleContext.attributeValidator()).willReturn(attributeValidator);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         subject.handle(handleContext);
 
@@ -405,8 +390,6 @@ class FileUpdateTest extends FileTestBase {
                         .build())
                 .build();
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         subject.handle(handleContext);
 
@@ -428,8 +411,6 @@ class FileUpdateTest extends FileTestBase {
                         .build())
                 .build();
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         subject.handle(handleContext);
 
@@ -445,8 +426,6 @@ class FileUpdateTest extends FileTestBase {
         final var op = OP_BUILDER.fileID(wellKnownId()).build();
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
         when(handleContext.body()).thenReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(false);
 
         subject.handle(handleContext);
 
@@ -460,8 +439,6 @@ class FileUpdateTest extends FileTestBase {
         final var txBody = TransactionBody.newBuilder().fileUpdate(op).build();
 
         given(handleContext.body()).willReturn(txBody);
-        given(handleContext.verificationFor(Mockito.any(Key.class))).willReturn(signatureVerification);
-        given(signatureVerification.failed()).willReturn(true);
 
         assertThrows(HandleException.class, () -> subject.handle(handleContext));
     }

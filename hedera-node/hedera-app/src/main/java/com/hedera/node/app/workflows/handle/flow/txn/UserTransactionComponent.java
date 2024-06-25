@@ -27,6 +27,7 @@ import com.hedera.node.app.workflows.handle.flow.txn.modules.DispatchSubcomponen
 import com.hedera.node.app.workflows.handle.flow.txn.modules.LastHandledTime;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.PreHandleResultModule;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.StateModule;
+import com.hedera.node.app.workflows.handle.flow.txn.modules.ThrottleModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -50,7 +51,8 @@ import javax.inject.Provider;
             ActiveConfigModule.class,
             ContextModule.class,
             PreHandleResultModule.class,
-            DispatchSubcomponentsModule.class
+            DispatchSubcomponentsModule.class,
+            ThrottleModule.class
         })
 @UserTxnScope
 public interface UserTransactionComponent {
