@@ -271,13 +271,8 @@ public class AllBaseOpFeesSuite {
                                 UNIQUE_TOKEN,
                                 List.of(
                                         metadata("nemo the fish"),
-                                        metadata("nemo th44e fish"),
-                                        metadata("nemo the1 fish"),
-                                        metadata("nemo the2 fish"),
-                                        metadata("nemo the3 fish"),
-                                        metadata("nemo the4 fish"),
-                                        metadata("nemo the5 fish"),
-                                        metadata("nemo the34 fish"))),
+                                        metadata("garfield the cat"),
+                                        metadata("snoopy the dog"))),
                         tokenAssociate(ALICE, FUNGIBLE_COMMON_TOKEN, UNIQUE_TOKEN),
                         cryptoTransfer(movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, ALICE))
                                 .payingWith(TOKEN_TREASURY)

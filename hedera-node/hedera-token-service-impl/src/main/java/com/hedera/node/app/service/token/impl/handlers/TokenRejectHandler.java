@@ -216,7 +216,8 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
 
         final WritableTokenStore tokenStore = context.storeFactory().writableStore(WritableTokenStore.class);
         final WritableNftStore nftStore = context.storeFactory().writableStore(WritableNftStore.class);
-        final WritableTokenRelationStore relStore = context.storeFactory().writableStore(WritableTokenRelationStore.class);
+        final WritableTokenRelationStore relStore =
+                context.storeFactory().writableStore(WritableTokenRelationStore.class);
 
         final var accountID = rejectingAccount.accountIdOrThrow();
 
