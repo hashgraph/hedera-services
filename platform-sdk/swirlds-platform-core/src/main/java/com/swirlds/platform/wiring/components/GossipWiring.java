@@ -18,7 +18,7 @@ package com.swirlds.platform.wiring.components;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.PlatformSchedulersConfig;
@@ -49,7 +49,7 @@ public class GossipWiring {
     /**
      * Events to be gossiped are sent here.
      */
-    private final BindableInputWire<GossipEvent, Void> eventInput;
+    private final BindableInputWire<PlatformEvent, Void> eventInput;
 
     /**
      * Event window updates are sent here.
@@ -59,7 +59,7 @@ public class GossipWiring {
     /**
      * Events received through gossip are sent out over this wire.
      */
-    private final StandardOutputWire<GossipEvent> eventOutput;
+    private final StandardOutputWire<PlatformEvent> eventOutput;
 
     /**
      * This wire is used to start gossip.
@@ -133,7 +133,7 @@ public class GossipWiring {
      * @return the input wire for events
      */
     @NonNull
-    public InputWire<GossipEvent> getEventInput() {
+    public InputWire<PlatformEvent> getEventInput() {
         return eventInput;
     }
 
@@ -153,7 +153,7 @@ public class GossipWiring {
      * @return the output wire for events
      */
     @NonNull
-    public OutputWire<GossipEvent> getEventOutput() {
+    public OutputWire<PlatformEvent> getEventOutput() {
         return eventOutput;
     }
 

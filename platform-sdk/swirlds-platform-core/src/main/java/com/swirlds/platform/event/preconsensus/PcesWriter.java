@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.preconsensus;
 
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.wiring.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -44,7 +44,7 @@ public interface PcesWriter {
      */
     @InputWireLabel("events to write")
     @Nullable
-    Long writeEvent(@NonNull GossipEvent event);
+    Long writeEvent(@NonNull PlatformEvent event);
 
     /**
      * Inform the preconsensus event writer that a discontinuity has occurred in the preconsensus event stream.

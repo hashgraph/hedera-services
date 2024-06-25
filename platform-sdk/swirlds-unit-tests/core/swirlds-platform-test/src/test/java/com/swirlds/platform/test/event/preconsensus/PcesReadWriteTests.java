@@ -34,7 +34,7 @@ import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesFileIterator;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
@@ -116,13 +116,13 @@ class PcesReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
             events.add(generator.generateEvent().getBaseEvent());
         }
 
         long upperBound = Long.MIN_VALUE;
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
@@ -138,14 +138,14 @@ class PcesReadWriteTests {
                 testDirectory);
 
         final PcesMutableFile mutableFile = file.getMutableFile();
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             mutableFile.writeEvent(event);
         }
 
         mutableFile.close();
 
-        final IOIterator<GossipEvent> iterator = file.iterator(Long.MIN_VALUE);
-        final List<GossipEvent> deserializedEvents = new ArrayList<>();
+        final IOIterator<PlatformEvent> iterator = file.iterator(Long.MIN_VALUE);
+        final List<PlatformEvent> deserializedEvents = new ArrayList<>();
         iterator.forEachRemaining(deserializedEvents::add);
         assertEquals(events.size(), deserializedEvents.size());
         for (int i = 0; i < events.size(); i++) {
@@ -169,13 +169,13 @@ class PcesReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
             events.add(generator.generateEvent().getBaseEvent());
         }
 
         long upperBound = Long.MIN_VALUE;
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
@@ -193,20 +193,20 @@ class PcesReadWriteTests {
                 testDirectory);
 
         final PcesMutableFile mutableFile = file.getMutableFile();
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             mutableFile.writeEvent(event);
         }
 
         mutableFile.close();
 
-        final IOIterator<GossipEvent> iterator = file.iterator(middle);
-        final List<GossipEvent> deserializedEvents = new ArrayList<>();
+        final IOIterator<PlatformEvent> iterator = file.iterator(middle);
+        final List<PlatformEvent> deserializedEvents = new ArrayList<>();
         iterator.forEachRemaining(deserializedEvents::add);
 
         // We don't want any events with an ancient indicator less than the middle
-        final Iterator<GossipEvent> it = events.iterator();
+        final Iterator<PlatformEvent> it = events.iterator();
         while (it.hasNext()) {
-            final GossipEvent event = it.next();
+            final PlatformEvent event = it.next();
             if (event.getAncientIndicator(ancientMode) < middle) {
                 it.remove();
             }
@@ -236,7 +236,7 @@ class PcesReadWriteTests {
         final PcesMutableFile mutableFile = file.getMutableFile();
         mutableFile.close();
 
-        final IOIterator<GossipEvent> iterator = file.iterator(Long.MIN_VALUE);
+        final IOIterator<PlatformEvent> iterator = file.iterator(Long.MIN_VALUE);
         assertFalse(iterator.hasNext());
     }
 
@@ -257,13 +257,13 @@ class PcesReadWriteTests {
                     new StandardEventSource(),
                     new StandardEventSource());
 
-            final List<GossipEvent> events = new ArrayList<>();
+            final List<PlatformEvent> events = new ArrayList<>();
             for (int i = 0; i < numEvents; i++) {
                 events.add(generator.generateEvent().getBaseEvent());
             }
 
             long upperBound = Long.MIN_VALUE;
-            for (final GossipEvent event : events) {
+            for (final PlatformEvent event : events) {
                 upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
             }
 
@@ -282,7 +282,7 @@ class PcesReadWriteTests {
 
             final PcesMutableFile mutableFile = file.getMutableFile();
             for (int i = 0; i < events.size(); i++) {
-                final GossipEvent event = events.get(i);
+                final PlatformEvent event = events.get(i);
                 mutableFile.writeEvent(event);
                 byteBoundaries.put(i, (int) mutableFile.fileSize());
             }
@@ -297,7 +297,7 @@ class PcesReadWriteTests {
             truncateFile(file.getPath(), truncationPosition);
 
             final PcesFileIterator iterator = file.iterator(Long.MIN_VALUE);
-            final List<GossipEvent> deserializedEvents = new ArrayList<>();
+            final List<PlatformEvent> deserializedEvents = new ArrayList<>();
             iterator.forEachRemaining(deserializedEvents::add);
 
             assertEquals(truncateOnBoundary, !iterator.hasPartialEvent());
@@ -326,13 +326,13 @@ class PcesReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
             events.add(generator.generateEvent().getBaseEvent());
         }
 
         long upperBound = Long.MIN_VALUE;
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
 
@@ -351,7 +351,7 @@ class PcesReadWriteTests {
 
         final PcesMutableFile mutableFile = file.getMutableFile();
         for (int i = 0; i < events.size(); i++) {
-            final GossipEvent event = events.get(i);
+            final PlatformEvent event = events.get(i);
             mutableFile.writeEvent(event);
             byteBoundaries.put(i, (int) mutableFile.fileSize());
         }
@@ -390,14 +390,14 @@ class PcesReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
             events.add(generator.generateEvent().getBaseEvent());
         }
 
         long lowerBound = Long.MAX_VALUE;
         long upperBound = Long.MIN_VALUE;
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             lowerBound = Math.min(lowerBound, event.getAncientIndicator(ancientMode));
             upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
@@ -416,8 +416,8 @@ class PcesReadWriteTests {
                 testDirectory);
         final PcesMutableFile mutableFile = file.getMutableFile();
 
-        final List<GossipEvent> validEvents = new ArrayList<>();
-        for (final GossipEvent event : events) {
+        final List<PlatformEvent> validEvents = new ArrayList<>();
+        for (final PlatformEvent event : events) {
             if (event.getAncientIndicator(ancientMode) >= restrictedLowerBound
                     && event.getAncientIndicator(ancientMode) <= restrictedUpperBound) {
                 mutableFile.writeEvent(event);
@@ -429,8 +429,8 @@ class PcesReadWriteTests {
 
         mutableFile.close();
 
-        final IOIterator<GossipEvent> iterator = file.iterator(Long.MIN_VALUE);
-        for (final GossipEvent event : validEvents) {
+        final IOIterator<PlatformEvent> iterator = file.iterator(Long.MIN_VALUE);
+        for (final PlatformEvent event : validEvents) {
             assertTrue(iterator.hasNext());
             assertEquals(event, iterator.next());
         }
@@ -453,14 +453,14 @@ class PcesReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
             events.add(generator.generateEvent().getBaseEvent());
         }
 
         long lowerBound = Long.MAX_VALUE;
         long upperBound = Long.MIN_VALUE;
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             lowerBound = Math.min(lowerBound, event.getAncientIndicator(ancientMode));
             upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
@@ -477,7 +477,7 @@ class PcesReadWriteTests {
                 testDirectory);
 
         final PcesMutableFile mutableFile = file.getMutableFile();
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             mutableFile.writeEvent(event);
         }
 
@@ -494,8 +494,8 @@ class PcesReadWriteTests {
         assertTrue(Files.exists(compressedFile.getPath()));
         assertFalse(Files.exists(file.getPath()));
 
-        final IOIterator<GossipEvent> iterator = compressedFile.iterator(Long.MIN_VALUE);
-        final List<GossipEvent> deserializedEvents = new ArrayList<>();
+        final IOIterator<PlatformEvent> iterator = compressedFile.iterator(Long.MIN_VALUE);
+        final List<PlatformEvent> deserializedEvents = new ArrayList<>();
         iterator.forEachRemaining(deserializedEvents::add);
         assertEquals(events.size(), deserializedEvents.size());
         for (int i = 0; i < events.size(); i++) {
@@ -519,14 +519,14 @@ class PcesReadWriteTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
             events.add(generator.generateEvent().getBaseEvent());
         }
 
         long lowerBound = Long.MAX_VALUE;
         long upperBound = Long.MIN_VALUE;
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             lowerBound = Math.min(lowerBound, event.getAncientIndicator(ancientMode));
             upperBound = Math.max(upperBound, event.getAncientIndicator(ancientMode));
         }
@@ -544,7 +544,7 @@ class PcesReadWriteTests {
                 testDirectory);
 
         final PcesMutableFile mutableFile = file.getMutableFile();
-        for (final GossipEvent event : events) {
+        for (final PlatformEvent event : events) {
             mutableFile.writeEvent(event);
         }
 
@@ -563,8 +563,8 @@ class PcesReadWriteTests {
         assertTrue(Files.exists(compressedFile.getPath()));
         assertFalse(Files.exists(file.getPath()));
 
-        final IOIterator<GossipEvent> iterator = compressedFile.iterator(Long.MIN_VALUE);
-        final List<GossipEvent> deserializedEvents = new ArrayList<>();
+        final IOIterator<PlatformEvent> iterator = compressedFile.iterator(Long.MIN_VALUE);
+        final List<PlatformEvent> deserializedEvents = new ArrayList<>();
         iterator.forEachRemaining(deserializedEvents::add);
         assertEquals(events.size(), deserializedEvents.size());
         for (int i = 0; i < events.size(); i++) {

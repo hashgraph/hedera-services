@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.event.hashing;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.wiring.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -32,5 +32,5 @@ public interface EventHasher {
      */
     @InputWireLabel("unhashed event")
     @NonNull
-    GossipEvent hashEvent(@NonNull GossipEvent event);
+    PlatformEvent hashEvent(@NonNull PlatformEvent event);
 }

@@ -73,10 +73,10 @@ class EventStreamMultiFileIteratorTest {
 
     public static void assertEventsAreEqual(
             final DetailedConsensusEvent expected, final DetailedConsensusEvent actual) {
-        assertEquals(expected.getGossipEvent(), actual.getGossipEvent());
+        assertEquals(expected.getPlatformEvent(), actual.getPlatformEvent());
         assertEquals(
-                expected.getGossipEvent().getConsensusData(),
-                actual.getGossipEvent().getConsensusData());
+                expected.getPlatformEvent().getConsensusData(),
+                actual.getPlatformEvent().getConsensusData());
     }
 
     @Test

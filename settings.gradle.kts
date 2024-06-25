@@ -51,8 +51,6 @@ include(":app-service-file", "hedera-node/hedera-file-service")
 
 include(":app-service-file-impl", "hedera-node/hedera-file-service-impl")
 
-include(":app-service-mono", "hedera-node/hedera-mono-service")
-
 include(":app-service-network-admin", "hedera-node/hedera-network-admin-service")
 
 include(":app-service-network-admin-impl", "hedera-node/hedera-network-admin-service-impl")
@@ -134,17 +132,6 @@ includeAllProjects("platform-sdk/platform-apps/tests")
 //Platform-base demo applications
 include(":swirlds-platform-base-example", "example-apps/swirlds-platform-base-example")
 
-// Block Node Projects
-include(":blocknode-core", "block-node/blocknode-core")
-include(":blocknode-core-spi", "block-node/blocknode-core-spi")
-include(":blocknode-filesystem-api", "block-node/blocknode-filesystem-api")
-include(":blocknode-filesystem-local", "block-node/blocknode-filesystem-local")
-include(":blocknode-filesystem-s3", "block-node/blocknode-filesystem-s3")
-include(":blocknode-grpc-api", "block-node/blocknode-grpc-api")
-include(":blocknode-state", "block-node/blocknode-state")
-
-
-
 fun include(name: String, path: String) {
     include(name)
     project(name).projectDir = File(rootDir, path)
@@ -161,8 +148,7 @@ fun includeAllProjects(containingFolder: String) {
 }
 
 // The HAPI API version to use for Protobuf sources.
-val hapiProtoVersion = "0.51.0"
-
+val hapiProtoVersion = "0.52.0"
 
 dependencyResolutionManagement {
     // Protobuf tool versions

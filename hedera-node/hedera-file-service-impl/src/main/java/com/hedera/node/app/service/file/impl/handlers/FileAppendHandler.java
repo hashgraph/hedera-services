@@ -16,15 +16,14 @@
 
 package com.hedera.node.app.service.file.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_CONTENT_EMPTY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_ENTITY_ID_SIZE;
+import static com.hedera.node.app.service.file.impl.FileServiceImpl.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.preValidate;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateAndAddRequiredKeys;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.validateContent;
-import static com.hedera.node.app.service.mono.txns.crypto.AbstractAutoCreationLogic.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static java.util.Objects.requireNonNull;
 
@@ -33,11 +32,11 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.file.FileAppendTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.file.FileSignatureWaivers;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -55,8 +54,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * This class contains all workflow-related functionality regarding {@link
- * HederaFunctionality#FILE_APPEND}.
+ * This class contains all workflow-related functionality regarding {@link HederaFunctionality#FILE_APPEND}.
  */
 @Singleton
 public class FileAppendHandler implements TransactionHandler {
@@ -65,6 +63,7 @@ public class FileAppendHandler implements TransactionHandler {
 
     /**
      * Default constructor for injection.
+     *
      * @param fileSignatureWaivers the file signature waivers
      */
     @Inject
@@ -74,6 +73,7 @@ public class FileAppendHandler implements TransactionHandler {
 
     /**
      * Performs checks independent of state or context
+     *
      * @param txn the transaction to check
      */
     @Override
@@ -118,9 +118,6 @@ public class FileAppendHandler implements TransactionHandler {
         final var target = fileAppend.fileID();
         final var data = fileAppend.contents();
         final var fileServiceConfig = handleContext.configuration().getConfigData(FilesConfig.class);
-        if (data == null || data.length() <= 0) { // should never happen, this is checked in pureChecks
-            logger.debug("FileAppend: No data to append");
-        }
 
         if (target == null) { // should never happen, this is checked in pureChecks
             throw new HandleException(INVALID_FILE_ID);
@@ -133,7 +130,7 @@ public class FileAppendHandler implements TransactionHandler {
             return;
         }
 
-        final var fileStore = handleContext.writableStore(WritableFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableFileStore.class);
         final var optionalFile = fileStore.get(target);
 
         if (optionalFile.isEmpty()) {
@@ -148,12 +145,9 @@ public class FileAppendHandler implements TransactionHandler {
             throw new HandleException(FILE_DELETED);
         }
 
-        var contents = PbjConverter.asBytes(file.contents());
+        var contents = CommonPbjConverters.asBytes(file.contents());
 
-        if (data == null) {
-            throw new HandleException(FILE_CONTENT_EMPTY);
-        }
-        var newContents = ArrayUtils.addAll(contents, PbjConverter.asBytes(data));
+        var newContents = ArrayUtils.addAll(contents, CommonPbjConverters.asBytes(data));
         validateContent(newContents, fileServiceConfig);
         /* Copy all the fields from existing file and change deleted flag */
         final var fileBuilder = new File.Builder()
@@ -190,6 +184,7 @@ public class FileAppendHandler implements TransactionHandler {
 
         if (file == null) {
             return feeContext
+                    .feeCalculatorFactory()
                     .feeCalculator(SubType.DEFAULT)
                     .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE)
                     .calculate();
@@ -216,6 +211,7 @@ public class FileAppendHandler implements TransactionHandler {
         }
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(BASIC_ENTITY_ID_SIZE + dataLength)
                 .addStorageBytesSeconds(dataLength * effectiveLifeTime)
@@ -223,7 +219,7 @@ public class FileAppendHandler implements TransactionHandler {
     }
 
     private void handleAppendUpgradeFile(FileAppendTransactionBody fileAppend, HandleContext handleContext) {
-        final var fileStore = handleContext.writableStore(WritableUpgradeFileStore.class);
+        final var fileStore = handleContext.storeFactory().writableStore(WritableUpgradeFileStore.class);
         File file = fileStore.peek(fileAppend.fileID());
         if (file == null || fileAppend.fileID() == null) {
             throw new HandleException(INVALID_FILE_ID);

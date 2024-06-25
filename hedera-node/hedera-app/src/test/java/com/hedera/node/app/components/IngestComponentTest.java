@@ -17,18 +17,14 @@
 package com.hedera.node.app.components;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.DaggerHederaInjectionComponent;
 import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
-import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
-import com.hedera.node.app.fees.congestion.UtilizationScaledThrottleMultiplier;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.services.ServicesRegistry;
@@ -38,6 +34,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.CryptographyHolder;
+import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.InitTrigger;
@@ -58,26 +55,14 @@ class IngestComponentTest {
     @Mock
     private Platform platform;
 
-    @Mock
-    private PlatformContext platformContext;
-
-    @Mock
-    private Metrics metrics;
-
-    @Mock
-    UtilizationScaledThrottleMultiplier genericFeeMultiplier;
-
-    @Mock
-    ThrottleMultiplier gasFeeMultiplier;
-
     private HederaInjectionComponent app;
 
     @BeforeEach
     void setUp() {
         final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final PlatformContext platformContext = mock(PlatformContext.class);
+        final Metrics metrics = new NoOpMetrics();
         lenient().when(platformContext.getConfiguration()).thenReturn(configuration);
-        when(platform.getContext()).thenReturn(platformContext);
 
         final var selfNodeInfo = new SelfNodeInfoImpl(
                 1L,
@@ -108,6 +93,7 @@ class IngestComponentTest {
                 .servicesRegistry(mock(ServicesRegistry.class))
                 .instantSource(InstantSource.system())
                 .softwareVersion(mock(HederaSoftwareVersion.class))
+                .metrics(metrics)
                 .build();
 
         final var state = new FakeHederaState();
@@ -117,9 +103,6 @@ class IngestComponentTest {
 
     @Test
     void objectGraphRootsAreAvailable() {
-        given(platform.getContext()).willReturn(platformContext);
-        given(platformContext.getMetrics()).willReturn(metrics);
-
         final IngestInjectionComponent subject =
                 app.ingestComponentFactory().get().create();
 

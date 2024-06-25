@@ -589,7 +589,7 @@ public class PlatformComponentBuilder {
                     (DetailedConsensusEvent event) -> event.isLastInRoundReceived()
                             && blocks.isInFreezePeriodReference()
                                     .get()
-                                    .test(event.getGossipEvent().getConsensusTimestamp()));
+                                    .test(event.getPlatformEvent().getConsensusTimestamp()));
         }
         return consensusEventStream;
     }

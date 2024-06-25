@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.creation;
 
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.wiring.component.InputWireLabel;
@@ -45,8 +45,8 @@ public interface EventCreationManager {
      *
      * @param event the event to add
      */
-    @InputWireLabel("GossipEvent")
-    void registerEvent(@NonNull GossipEvent event);
+    @InputWireLabel("PlatformEvent")
+    void registerEvent(@NonNull PlatformEvent event);
 
     /**
      * Update the event window, defining the minimum threshold for an event to be non-ancient.

@@ -20,7 +20,7 @@ import static com.swirlds.wiring.model.diagram.HyperlinkBuilder.platformCoreHype
 import static com.swirlds.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 
 import com.swirlds.common.io.IOIterator;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.wiring.model.WiringModel;
@@ -40,9 +40,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *                                    replay
  */
 public record PcesReplayerWiring(
-        @NonNull InputWire<IOIterator<GossipEvent>> pcesIteratorInputWire,
+        @NonNull InputWire<IOIterator<PlatformEvent>> pcesIteratorInputWire,
         @NonNull OutputWire<NoInput> doneStreamingPcesOutputWire,
-        @NonNull StandardOutputWire<GossipEvent> eventOutput) {
+        @NonNull StandardOutputWire<PlatformEvent> eventOutput) {
 
     /**
      * Create a new instance of this wiring.
@@ -70,6 +70,6 @@ public record PcesReplayerWiring(
      * @param pcesReplayer the replayer to bind
      */
     public void bind(@NonNull final PcesReplayer pcesReplayer) {
-        ((BindableInputWire<IOIterator<GossipEvent>, NoInput>) pcesIteratorInputWire).bind(pcesReplayer::replayPces);
+        ((BindableInputWire<IOIterator<PlatformEvent>, NoInput>) pcesIteratorInputWire).bind(pcesReplayer::replayPces);
     }
 }

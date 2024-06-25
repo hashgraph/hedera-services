@@ -46,12 +46,12 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
 import com.hedera.node.app.workflows.handle.flow.txn.logic.HollowAccountCompleter;
@@ -86,7 +86,7 @@ class HollowAccountCompleterTest {
     private ReadableAccountStore accountStore;
 
     @Mock(strictness = LENIENT)
-    private KeyVerifier keyVerifier;
+    private AppKeyVerifier keyVerifier;
 
     @Mock(strictness = LENIENT)
     private ReadableStoreFactory readableStoreFactory;

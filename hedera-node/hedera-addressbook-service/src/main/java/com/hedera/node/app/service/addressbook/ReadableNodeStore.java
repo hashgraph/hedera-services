@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.addressbook;
 
 import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Iterator;
 
 /**
  * Provides read-only methods for interacting with the underlying data storage mechanisms for
@@ -51,4 +53,10 @@ public interface ReadableNodeStore {
      * @param nodeId the node id
      */
     default void warm(final long nodeId) {}
+
+    /**
+     * Returns an iterator over the keys in the state.
+     * @return an iterator over the keys in the state.
+     */
+    Iterator<EntityNumber> keys();
 }

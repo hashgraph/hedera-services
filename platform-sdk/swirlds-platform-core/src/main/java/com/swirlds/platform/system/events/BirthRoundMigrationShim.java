@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.system.events;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.wiring.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -31,7 +31,7 @@ public interface BirthRoundMigrationShim {
      * @param event the event to migrate
      * @return the migrated event
      */
-    @InputWireLabel("GossipEvent")
+    @InputWireLabel("PlatformEvent")
     @NonNull
-    GossipEvent migrateEvent(@NonNull GossipEvent event);
+    PlatformEvent migrateEvent(@NonNull PlatformEvent event);
 }

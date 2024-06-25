@@ -18,8 +18,8 @@ package com.hedera.node.app.workflows.handle.flow.txn;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.ActiveConfigModule;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.ContextModule;
@@ -27,6 +27,7 @@ import com.hedera.node.app.workflows.handle.flow.txn.modules.DispatchSubcomponen
 import com.hedera.node.app.workflows.handle.flow.txn.modules.LastHandledTime;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.PreHandleResultModule;
 import com.hedera.node.app.workflows.handle.flow.txn.modules.StateModule;
+import com.hedera.node.app.workflows.handle.flow.txn.modules.ThrottleModule;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -50,7 +51,8 @@ import javax.inject.Provider;
             ActiveConfigModule.class,
             ContextModule.class,
             PreHandleResultModule.class,
-            DispatchSubcomponentsModule.class
+            DispatchSubcomponentsModule.class,
+            ThrottleModule.class
         })
 @UserTxnScope
 public interface UserTransactionComponent {

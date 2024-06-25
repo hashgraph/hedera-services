@@ -30,7 +30,7 @@ import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHan
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -144,7 +144,7 @@ public class HollowAccountCompleter {
             @NonNull final HandleContext context,
             @NonNull final Configuration configuration,
             @NonNull final Set<Account> accounts,
-            @NonNull final KeyVerifier verifier,
+            @NonNull final AppKeyVerifier verifier,
             @Nullable SignatureVerification ethTxVerification,
             @NonNull final RecordListBuilder recordListBuilder) {
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);

@@ -56,7 +56,7 @@ import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesConfig;
 import com.swirlds.platform.event.preconsensus.PcesFileReader;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
@@ -148,9 +148,9 @@ public final class PlatformBuilder {
      */
     private RandomBuilder randomBuilder;
 
-    private Consumer<GossipEvent> preconsensusEventConsumer;
+    private Consumer<PlatformEvent> preconsensusEventConsumer;
     private Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
-    private Consumer<GossipEvent> staleEventConsumer;
+    private Consumer<PlatformEvent> staleEventConsumer;
 
     /**
      * False if this builder has not yet been used to build a platform (or platform component builder), true if it has.
@@ -328,7 +328,7 @@ public final class PlatformBuilder {
      */
     @NonNull
     public PlatformBuilder withPreconsensusEventCallback(
-            @NonNull final Consumer<GossipEvent> preconsensusEventConsumer) {
+            @NonNull final Consumer<PlatformEvent> preconsensusEventConsumer) {
         throwIfAlreadyUsed();
         this.preconsensusEventConsumer = Objects.requireNonNull(preconsensusEventConsumer);
         return this;
@@ -369,7 +369,7 @@ public final class PlatformBuilder {
      * @return this
      */
     @NonNull
-    public PlatformBuilder withStaleEventCallback(@NonNull final Consumer<GossipEvent> staleEventConsumer) {
+    public PlatformBuilder withStaleEventCallback(@NonNull final Consumer<PlatformEvent> staleEventConsumer) {
         throwIfAlreadyUsed();
         this.staleEventConsumer = Objects.requireNonNull(staleEventConsumer);
         return this;

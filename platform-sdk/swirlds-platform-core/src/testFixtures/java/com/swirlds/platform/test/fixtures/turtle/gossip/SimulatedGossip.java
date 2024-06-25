@@ -18,7 +18,7 @@ package com.swirlds.platform.test.fixtures.turtle.gossip;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.wiring.NoInput;
@@ -39,7 +39,7 @@ public class SimulatedGossip implements Gossip {
     private final NodeId selfId;
     private IntakeEventCounter intakeEventCounter;
 
-    private StandardOutputWire<GossipEvent> eventOutput;
+    private StandardOutputWire<PlatformEvent> eventOutput;
 
     /**
      * Constructor.
@@ -67,9 +67,9 @@ public class SimulatedGossip implements Gossip {
     @Override
     public void bind(
             @NonNull final WiringModel model,
-            @NonNull final BindableInputWire<GossipEvent, Void> eventInput,
+            @NonNull final BindableInputWire<PlatformEvent, Void> eventInput,
             @NonNull final BindableInputWire<EventWindow, Void> eventWindowInput,
-            @NonNull final StandardOutputWire<GossipEvent> eventOutput,
+            @NonNull final StandardOutputWire<PlatformEvent> eventOutput,
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
             @NonNull final BindableInputWire<NoInput, Void> clearInput,
@@ -92,7 +92,7 @@ public class SimulatedGossip implements Gossip {
      *
      * @param event the event that was received
      */
-    void receiveEvent(@NonNull final GossipEvent event) {
+    void receiveEvent(@NonNull final PlatformEvent event) {
         if (intakeEventCounter != null) {
             intakeEventCounter.eventEnteredIntakePipeline(event.getSenderId());
         }

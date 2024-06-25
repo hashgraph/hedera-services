@@ -21,7 +21,7 @@ import com.swirlds.common.notification.NotificationEngine;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.crypto.KeysAndCerts;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesFileTracker;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.pool.TransactionPoolNexus;
@@ -104,7 +104,7 @@ public record PlatformBuildingBlocks(
         @NonNull SoftwareVersion appVersion,
         @NonNull ReservedSignedState initialState,
         @NonNull ApplicationCallbacks applicationCallbacks,
-        @Nullable Consumer<GossipEvent> preconsensusEventConsumer,
+        @Nullable Consumer<PlatformEvent> preconsensusEventConsumer,
         @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
         @NonNull IntakeEventCounter intakeEventCounter,
         @NonNull RandomBuilder randomBuilder,

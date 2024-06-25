@@ -17,7 +17,7 @@
 package com.swirlds.platform.event.linking;
 
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.wiring.component.InputWireLabel;
@@ -46,7 +46,7 @@ public interface InOrderLinker {
      */
     @Nullable
     @InputWireLabel("events to gossip") // Note: this interface is only used as a fully fledged component by gossip
-    EventImpl linkEvent(@NonNull GossipEvent event);
+    EventImpl linkEvent(@NonNull PlatformEvent event);
 
     /**
      * Set the event window, defining the minimum non-ancient threshold.

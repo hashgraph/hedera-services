@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.test.fixtures.Randotron;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesReplayer;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -52,7 +52,7 @@ class PcesReplayerTests {
     void testStandardOperation() {
         final FakeTime time = new FakeTime();
 
-        final StandardOutputWire<GossipEvent> eventOutputWire = mock(StandardOutputWire.class);
+        final StandardOutputWire<PlatformEvent> eventOutputWire = mock(StandardOutputWire.class);
         final AtomicInteger eventOutputCount = new AtomicInteger(0);
 
         // whenever an event is forwarded to the output wire, increment the count
@@ -78,11 +78,11 @@ class PcesReplayerTests {
         final PcesReplayer replayer = new PcesReplayer(
                 time, eventOutputWire, flushIntake, flushTransactionHandling, latestImmutableStateSupplier, () -> true);
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         final int eventCount = 100;
 
         for (int i = 0; i < eventCount; i++) {
-            final GossipEvent event = new TestingEventBuilder(Randotron.create())
+            final PlatformEvent event = new TestingEventBuilder(Randotron.create())
                     .setAppTransactionCount(0)
                     .setSystemTransactionCount(0)
                     .build();
@@ -90,15 +90,15 @@ class PcesReplayerTests {
             events.add(event);
         }
 
-        final Iterator<GossipEvent> eventIterator = events.iterator();
-        final IOIterator<GossipEvent> ioIterator = new IOIterator<>() {
+        final Iterator<PlatformEvent> eventIterator = events.iterator();
+        final IOIterator<PlatformEvent> ioIterator = new IOIterator<>() {
             @Override
             public boolean hasNext() {
                 return eventIterator.hasNext();
             }
 
             @Override
-            public GossipEvent next() {
+            public PlatformEvent next() {
                 return eventIterator.next();
             }
         };

@@ -23,7 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface NodeCreateRecordBuilder {
     /**
-     * Tracks creation of a new node by {@link nodeID}.
+     * Tracks creation of a new node by nodeID.
      *
      * @param nodeID  the new node
      * @return this builder

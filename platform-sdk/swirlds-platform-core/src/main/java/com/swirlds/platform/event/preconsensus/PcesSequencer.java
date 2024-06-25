@@ -16,13 +16,13 @@
 
 package com.swirlds.platform.event.preconsensus;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.wiring.component.InputWireLabel;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Responsible for assigning stream sequence numbers to events. All events that are written
- * to the preconsensus event stream must be assigned a sequence number.
+ * Responsible for assigning stream sequence numbers to events. All events that are written to the preconsensus event
+ * stream must be assigned a sequence number.
  */
 public interface PcesSequencer {
     /**
@@ -33,5 +33,5 @@ public interface PcesSequencer {
      */
     @InputWireLabel("unsequenced event")
     @NonNull
-    GossipEvent assignStreamSequenceNumber(@NonNull GossipEvent event);
+    PlatformEvent assignStreamSequenceNumber(@NonNull PlatformEvent event);
 }

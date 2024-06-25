@@ -18,7 +18,7 @@ package com.swirlds.platform.components.consensus;
 
 import com.swirlds.platform.Consensus;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -46,8 +46,8 @@ public interface ConsensusEngine {
      * @return a list of rounds that came to consensus as a result of adding the event
      */
     @NonNull
-    @InputWireLabel("GossipEvent")
-    List<ConsensusRound> addEvent(@NonNull GossipEvent event);
+    @InputWireLabel("PlatformEvent")
+    List<ConsensusRound> addEvent(@NonNull PlatformEvent event);
 
     /**
      * Perform an out-of-band snapshot update. This happens at restart/reconnect boundaries.

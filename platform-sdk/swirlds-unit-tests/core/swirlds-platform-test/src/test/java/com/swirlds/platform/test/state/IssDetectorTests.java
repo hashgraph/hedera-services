@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.state;
 
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -49,8 +51,6 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.test.PlatformTest;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
@@ -84,16 +84,15 @@ class IssDetectorTests extends PlatformTest {
 
         return hashGenerationData.nodeList().stream()
                 .map(nodeHashInfo -> {
-                    final StateSignatureTransaction signatureTransaction =
-                            new StateSignatureTransaction(StateSignaturePayload.newBuilder()
-                                    .round(roundNumber)
-                                    .signature(Bytes.EMPTY)
-                                    .hash(nodeHashInfo.nodeStateHash().getBytes())
-                                    .build());
+                    final StateSignaturePayload signatureTransaction = StateSignaturePayload.newBuilder()
+                            .round(roundNumber)
+                            .signature(Bytes.EMPTY)
+                            .hash(nodeHashInfo.nodeStateHash().getBytes())
+                            .build();
 
                     final TestingEventBuilder event = new TestingEventBuilder(random)
                             .setCreatorId(nodeHashInfo.nodeId())
-                            .setTransactions(new ConsensusTransactionImpl[] {signatureTransaction})
+                            .setTransactions(List.of(new OneOf<>(STATE_SIGNATURE_PAYLOAD, signatureTransaction)))
                             .setSoftwareVersion(new BasicSoftwareVersion(1));
 
                     return EventImplTestUtils.createEventImpl(event, null, null);

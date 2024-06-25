@@ -17,7 +17,7 @@
 package com.swirlds.platform.builder;
 
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.function.Consumer;
 
@@ -30,6 +30,6 @@ import java.util.function.Consumer;
  * @param staleEventConsumer        a consumer that will be called when a stale self event is detected
  */
 public record ApplicationCallbacks(
-        @Nullable Consumer<GossipEvent> preconsensusEventConsumer,
+        @Nullable Consumer<PlatformEvent> preconsensusEventConsumer,
         @Nullable Consumer<ConsensusSnapshot> snapshotOverrideConsumer,
-        @Nullable Consumer<GossipEvent> staleEventConsumer) {}
+        @Nullable Consumer<PlatformEvent> staleEventConsumer) {}
