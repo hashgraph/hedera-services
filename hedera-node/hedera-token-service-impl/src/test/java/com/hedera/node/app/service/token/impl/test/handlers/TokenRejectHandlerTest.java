@@ -21,7 +21,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
-import static com.hedera.node.app.service.mono.context.properties.PropertyNames.FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -141,7 +140,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
 
         // Not interested in return value from calculate, just that it was called and bpt and rbs were set approriately
         InOrder inOrder = inOrder(feeContext, feeCalculator);
-        inOrder.verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON);
+        inOrder.verify(feeContext, times(1)).feeCalculatorFactory().feeCalculator(SubType.TOKEN_FUNGIBLE_COMMON);
         inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(176L);
         inOrder.verify(feeCalculator, times(1)).addRamByteSeconds(176L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
         inOrder.verify(feeCalculator, times(1)).calculate();
@@ -158,7 +157,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
 
         // Not interested in return value from calculate, just that it was called and bpt and rbs were set approriately
         InOrder inOrder = inOrder(feeContext, feeCalculator);
-        inOrder.verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+        inOrder.verify(feeContext, times(1)).feeCalculatorFactory().feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
         inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(104L);
         inOrder.verify(feeCalculator, times(1)).addRamByteSeconds(104L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
         inOrder.verify(feeCalculator, times(1)).calculate();
@@ -175,7 +174,7 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
 
         // Not interested in return value from calculate, just that it was called and bpt and rbs were set approriately
         InOrder inOrder = inOrder(feeContext, feeCalculator);
-        inOrder.verify(feeContext, times(1)).feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+        inOrder.verify(feeContext, times(1)).feeCalculatorFactory().feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
         inOrder.verify(feeCalculator, times(1)).addBytesPerTransaction(280L);
         inOrder.verify(feeCalculator, times(1)).addRamByteSeconds(280L * USAGE_PROPERTIES.legacyReceiptStorageSecs());
         inOrder.verify(feeCalculator, times(1)).calculate();
@@ -233,12 +232,12 @@ class TokenRejectHandlerTest extends CryptoTransferHandlerTestBase {
     private void setupFeeTest(
             final TransactionBody txn, final FeeContext feeContext, final FeeCalculator feeCalculator) {
         config = defaultConfig()
-                .withValue(FEES_TOKEN_TRANSFER_USAGE_MULTIPLIER, 2)
+                .withValue("fees.tokenTransferUsageMultiplier", 2)
                 .getOrCreateConfig();
         Fees fees = mock(Fees.class);
         when(feeContext.body()).thenReturn(txn);
         when(feeContext.configuration()).thenReturn(config);
-        when(feeContext.feeCalculator(any())).thenReturn(feeCalculator);
+        when(feeContext.feeCalculatorFactory().feeCalculator(any())).thenReturn(feeCalculator);
         when(feeCalculator.addBytesPerTransaction(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.addRamByteSeconds(anyLong())).thenReturn(feeCalculator);
         when(feeCalculator.calculate()).thenReturn(fees);
