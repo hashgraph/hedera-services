@@ -30,6 +30,7 @@ import static com.hedera.hapi.node.base.ResponseType.ANSWER_STATE_PROOF;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -78,6 +79,7 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.UnknownFieldException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -140,7 +142,6 @@ class QueryWorkflowImplTest extends AppTestBase {
     private SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
 
     private VersionedConfiguration configuration;
-    private Query query;
     private Transaction payment;
     private TransactionBody txBody;
     private Bytes requestBuffer;
@@ -522,11 +523,20 @@ class QueryWorkflowImplTest extends AppTestBase {
         final var responseBuffer = newEmptyBuffer();
 
         // then
-        workflow.handleQuery(requestBuffer, responseBuffer);
-        final var response = parseResponse(responseBuffer);
-        final var precheckCode =
-                response.transactionGetReceiptOrThrow().headerOrThrow().nodeTransactionPrecheckCode();
-        assertThat(precheckCode).isEqualTo(NOT_SUPPORTED);
+        assertThatThrownBy(() -> workflow.handleQuery(requestBuffer, responseBuffer))
+                .isInstanceOf(StatusRuntimeException.class)
+                .hasFieldOrPropertyWithValue("status", Status.INVALID_ARGUMENT);
+    }
+
+    @Test
+    void testUnknownQueryParamFails() throws ParseException {
+        // given
+        when(queryParser.parseStrict((ReadableSequentialData) notNull()))
+                .thenThrow(new ParseException(new UnknownFieldException("bogus field")));
+        final var responseBuffer = newEmptyBuffer();
+
+        // then
+        assertThrows(StatusRuntimeException.class, () -> workflow.handleQuery(requestBuffer, responseBuffer));
     }
 
     @Test
