@@ -16,30 +16,38 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
-import static java.util.Objects.requireNonNull;
-
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.PreHandleResultManager;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTxnComponent;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.flow.txn.DefaultHandleWorkflow;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTxn;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
+import com.hedera.node.app.workflows.handle.record.GenesisWorkflow;
+import com.hedera.node.config.ConfigProvider;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javax.inject.Inject;
-import javax.inject.Provider;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
+import static java.util.Objects.requireNonNull;
 
 /**
  * The handle workflow that is responsible for handling the next {@link Round} of transactions.
@@ -48,29 +56,53 @@ import org.apache.logging.log4j.Logger;
 public class HandleWorkflow {
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
     private final NetworkInfo networkInfo;
+    private final ConfigProvider configProvider;
+    private final StoreMetricsService storeMetricsService;
     private final BlockRecordManager blockRecordManager;
     private final CacheWarmer cacheWarmer;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
-    private final Provider<UserTxnComponent.Factory> userTxnProvider;
     private final PreHandleResultManager preHandleResultManager;
+    private final UserRecordInitializer userRecordInitializer;
+    private final SoftwareVersion version;
+    private final InitTrigger initTrigger;
+    private final DefaultHandleWorkflow defaultHandleWorkflow;
+    private final GenesisWorkflow genesisWorkflow;
+    private final HederaRecordCache recordCache;
+    private final ExchangeRateManager exchangeRateManager;
 
     @Inject
     public HandleWorkflow(
             @NonNull final NetworkInfo networkInfo,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final Provider<UserTxnComponent.Factory> userTxnProvider,
-            @NonNull final PreHandleResultManager preHandleResultManager) {
+            @NonNull final UserRecordInitializer userRecordInitializer,
+            @NonNull final PreHandleResultManager preHandleResultManager,
+            @NonNull final SoftwareVersion version,
+            @NonNull final InitTrigger initTrigger,
+            @NonNull final DefaultHandleWorkflow defaultHandleWorkflow,
+            @NonNull final GenesisWorkflow genesisWorkflow,
+            @NonNull final HederaRecordCache recordCache,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
+        this.configProvider = requireNonNull(configProvider);
+        this.storeMetricsService = requireNonNull(storeMetricsService);
         this.blockRecordManager = requireNonNull(blockRecordManager, "recordManager must not be null");
         this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
         this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
-        this.userTxnProvider = requireNonNull(userTxnProvider, "userTxnProvider must not be null");
-        this.preHandleResultManager = preHandleResultManager;
+        this.userRecordInitializer = requireNonNull(userRecordInitializer);
+        this.preHandleResultManager = requireNonNull(preHandleResultManager);
+        this.version = requireNonNull(version);
+        this.initTrigger = requireNonNull(initTrigger);
+        this.defaultHandleWorkflow = requireNonNull(defaultHandleWorkflow);
+        this.genesisWorkflow = requireNonNull(genesisWorkflow);
+        this.recordCache = requireNonNull(recordCache);
+        this.exchangeRateManager = requireNonNull(exchangeRateManager);
     }
 
     /**
@@ -139,7 +171,7 @@ public class HandleWorkflow {
     }
 
     /**
-     * Handles a platform transaction. This method is responsible for creating a {@link UserTxnComponent} and
+     * Handles a platform transaction. This method is responsible for creating a {@link UserTxn} and
      * executing the workflow for the transaction. This produces a stream of records that are then passed to the
      * {@link BlockRecordManager} to be externalized.
      * @param state the writable {@link HederaState} that this transaction will work on
@@ -160,12 +192,11 @@ public class HandleWorkflow {
         final var consTime = txn.getConsensusTimestamp().minusNanos(1000 - 3L);
         // FUTURE: Use StreamMode enum to switch between blockStreams and/or recordStreams
         blockRecordManager.startUserTransaction(consTime, state, platformState);
-        final var preHandleResult =
-                preHandleResultManager.getCurrentPreHandleResult(creator, txn, new ReadableStoreFactory(state));
-        final var userTxn = userTxnProvider
-                .get()
-                .create(platformState, event, creator, txn, consTime, lastHandledConsTime, preHandleResult);
-        final var recordStream = userTxn.workflow().execute();
+        final var userTxn = UserTxn.from(
+                state, platformState, event, creator, txn, consTime, lastHandledConsTime,
+                configProvider, storeMetricsService, blockRecordManager, preHandleResultManager);
+        final var workflow = userTxn.workflowWith(version, initTrigger, defaultHandleWorkflow, genesisWorkflow, recordCache, handleWorkflowMetrics, userRecordInitializer, exchangeRateManager);
+        final var recordStream = workflow.execute();
         blockRecordManager.endUserTransaction(recordStream, state);
 
         handleWorkflowMetrics.updateTransactionDuration(

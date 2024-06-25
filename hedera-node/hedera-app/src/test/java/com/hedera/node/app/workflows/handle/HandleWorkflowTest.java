@@ -16,8 +16,56 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fixtures.AppTestBase;
+import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.workflows.TransactionScenarioBuilder;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.PreHandleResultManager;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.flow.txn.DefaultHandleWorkflow;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTxnWorkflow;
+import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
+import com.hedera.node.app.workflows.handle.record.GenesisWorkflow;
+import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
+import com.hedera.node.config.ConfigProvider;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -28,47 +76,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.workflows.TransactionScenarioBuilder;
-import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.PreHandleResultManager;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTxnComponent;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTxnWorkflow;
-import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
-import com.hedera.node.app.workflows.prehandle.PreHandleResult;
-import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
-import com.swirlds.state.HederaState;
-import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.info.NodeInfo;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
-import javax.inject.Provider;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HandleWorkflowTest extends AppTestBase {
@@ -130,9 +137,6 @@ class HandleWorkflowTest extends AppTestBase {
     private HandleWorkflowMetrics handleWorkflowMetrics;
 
     @Mock
-    private Provider<UserTxnComponent.Factory> userTxnProvider;
-
-    @Mock
     private HederaState state;
 
     @Mock
@@ -142,16 +146,28 @@ class HandleWorkflowTest extends AppTestBase {
     private ConsensusTransactionImpl txn;
 
     @Mock
-    private UserTxnComponent.Factory userTxnFactory;
-
-    @Mock
-    private UserTxnComponent userTxn;
-
-    @Mock
     private UserTxnWorkflow userTxnWorkflow;
 
     @Mock
     private PreHandleResultManager preHandleResultManager;
+    @Mock
+    private UserRecordInitializer userRecordInitializer;
+    @Mock
+    private SoftwareVersion version;
+    @Mock
+    private InitTrigger initTrigger;
+    @Mock
+    private DefaultHandleWorkflow defaultHandleWorkflow;
+    @Mock
+    private GenesisWorkflow genesisWorkflow;
+    @Mock
+    private HederaRecordCache recordCache;
+    @Mock
+    private ExchangeRateManager exchangeRateManager;
+    @Mock
+    private ConfigProvider configProvider;
+    @Mock
+    private StoreMetricsService storeMetricsService;
 
     @InjectMocks
     private HandleWorkflow workflow;
@@ -176,73 +192,23 @@ class HandleWorkflowTest extends AppTestBase {
 
         workflow = new HandleWorkflow(
                 networkInfo,
+                configProvider,
+                storeMetricsService,
                 blockRecordManager,
                 cacheWarmer,
                 handleWorkflowMetrics,
                 throttleServiceManager,
-                userTxnProvider,
-                preHandleResultManager);
+                userRecordInitializer,
+                preHandleResultManager,
+                version,
+                initTrigger,
+                defaultHandleWorkflow,
+                genesisWorkflow,
+                recordCache,
+                exchangeRateManager);
     }
 
     @SuppressWarnings("ConstantConditions")
-    @Test
-    void testConstructorWithInvalidArguments() {
-        assertThatThrownBy(() -> new HandleWorkflow(
-                        null,
-                        blockRecordManager,
-                        cacheWarmer,
-                        handleWorkflowMetrics,
-                        throttleServiceManager,
-                        userTxnProvider,
-                        preHandleResultManager))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo,
-                        null,
-                        cacheWarmer,
-                        handleWorkflowMetrics,
-                        throttleServiceManager,
-                        userTxnProvider,
-                        preHandleResultManager))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo,
-                        blockRecordManager,
-                        null,
-                        handleWorkflowMetrics,
-                        throttleServiceManager,
-                        userTxnProvider,
-                        preHandleResultManager))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo,
-                        blockRecordManager,
-                        cacheWarmer,
-                        null,
-                        throttleServiceManager,
-                        userTxnProvider,
-                        preHandleResultManager))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo,
-                        blockRecordManager,
-                        cacheWarmer,
-                        handleWorkflowMetrics,
-                        null,
-                        userTxnProvider,
-                        preHandleResultManager))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new HandleWorkflow(
-                        networkInfo,
-                        blockRecordManager,
-                        cacheWarmer,
-                        handleWorkflowMetrics,
-                        throttleServiceManager,
-                        null,
-                        preHandleResultManager))
-                .isInstanceOf(NullPointerException.class);
-    }
-
     @Test
     @DisplayName("System transaction is skipped")
     void testPlatformTxnIsSkipped() {
@@ -339,10 +305,7 @@ class HandleWorkflowTest extends AppTestBase {
         when(txnIterator.hasNext()).thenReturn(true, false);
         when(txnIterator.next()).thenReturn(txn);
         when(txn.isSystem()).thenReturn(false);
-        when(userTxnProvider.get()).thenReturn(userTxnFactory);
-        when(userTxnFactory.create(any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(userTxn);
-        when(userTxn.workflow()).thenReturn(userTxnWorkflow);
+        // TODO
         when(userTxnWorkflow.execute()).thenReturn(mock(Stream.class));
         when(event.getCreatorId()).thenReturn(nodeSelfId);
         when(txn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
@@ -364,10 +327,7 @@ class HandleWorkflowTest extends AppTestBase {
 
     @Test
     void handlePlatformTransaction() {
-        when(userTxnProvider.get()).thenReturn(userTxnFactory);
-        when(userTxnFactory.create(any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(userTxn);
-        when(userTxn.workflow()).thenReturn(userTxnWorkflow);
+        // TODO
         when(userTxnWorkflow.execute()).thenReturn(mock(Stream.class));
         when(txn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
 

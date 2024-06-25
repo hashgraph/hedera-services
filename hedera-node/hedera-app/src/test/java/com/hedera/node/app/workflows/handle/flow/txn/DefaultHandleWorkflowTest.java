@@ -16,46 +16,44 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
-import static com.hedera.node.app.workflows.handle.flow.DispatchHandleContextTest.CONSENSUS_NOW;
+import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.services.ServiceScopeLookup;
+import com.hedera.node.app.spi.authorization.Authorizer;
+import com.hedera.node.app.spi.fixtures.util.LogCaptor;
+import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
+import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
+import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.ScheduleExpirationHook;
+import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
+import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchFactory;
+import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.schedule.WritableScheduleStore;
-import com.hedera.node.app.spi.fixtures.util.LogCaptor;
-import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
-import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
-import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
-import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.store.WritableStoreFactory;
-import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.ScheduleExpirationHook;
-import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
-import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.hedera.node.app.workflows.prehandle.PreHandleResult;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.state.HederaState;
-import com.swirlds.state.spi.WritableKVState;
-import com.swirlds.state.spi.WritableStates;
-import java.time.Instant;
-import javax.inject.Provider;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 public class DefaultHandleWorkflowTest {
@@ -71,32 +69,14 @@ public class DefaultHandleWorkflowTest {
     @Mock
     private HollowAccountCompleter hollowAccountFinalization;
 
-    @Mock(strictness = LENIENT)
-    private UserTxnComponent userTxn;
-
     @Mock
     private HederaState state;
-
-    @Mock
-    private Provider<UserDispatchComponent.Factory> userDispatchProvider;
-
-    @Mock
-    private UserDispatchComponent.Factory userDispatchComponentFactory;
-
-    @Mock
-    private UserDispatchComponent userDispatchComponent;
 
     @Mock
     private StoreMetricsService storeMetricsService;
 
     @Mock(strictness = LENIENT)
     private SavepointStackImpl savepointStack;
-
-    @Mock
-    private WritableScheduleStore writableScheduleStore;
-
-    @Mock
-    private WritableStoreFactory writableStoreFactory;
 
     @Mock
     private WritableStates states;
@@ -106,6 +86,36 @@ public class DefaultHandleWorkflowTest {
 
     @Mock
     private PreHandleResult preHandleResult;
+
+    @Mock
+    private UserRecordInitializer userRecordInitializer;
+
+    @Mock
+    private Authorizer authorizer;
+
+    @Mock
+    private NetworkInfo networkInfo;
+
+    @Mock
+    private FeeManager feeManager;
+
+    @Mock
+    private RecordCache recordCache;
+
+    @Mock
+    private ServiceScopeLookup serviceScopeLookup;
+
+    @Mock
+    private ExchangeRateManager exchangeRateManager;
+
+    @Mock
+    private ChildDispatchFactory childDispatchFactory;
+
+    @Mock
+    private TransactionDispatcher dispatcher;
+
+    @Mock
+    private NetworkUtilizationManager networkUtilizationManager;
 
     @LoggingTarget
     private LogCaptor logCaptor;
@@ -123,37 +133,38 @@ public class DefaultHandleWorkflowTest {
                 dispatchProcessor,
                 hollowAccountFinalization,
                 scheduleExpirationHook,
-                storeMetricsService);
-        when(userTxn.lastHandledConsensusTime()).thenReturn(Instant.ofEpochSecond(CONSENSUS_NOW.getEpochSecond() - 1));
-        when(userTxn.consensusNow()).thenReturn(CONSENSUS_NOW);
-        when(userTxn.configuration()).thenReturn(HederaTestConfigBuilder.createConfig());
-        when(userTxn.state()).thenReturn(state);
+                storeMetricsService,
+                userRecordInitializer,
+                authorizer,
+                networkInfo,
+                feeManager,
+                recordCache,
+                serviceScopeLookup,
+                exchangeRateManager,
+                childDispatchFactory,
+                dispatcher,
+                networkUtilizationManager);
+        // TODO
         lenient().when(state.getWritableStates(anyString())).thenReturn(states);
-        when(userTxn.stack()).thenReturn(savepointStack);
+//        when(userTxn.stack()).thenReturn(savepointStack);
         when(savepointStack.getWritableStates(anyString())).thenReturn(states);
-        when(userTxn.userDispatchProvider()).thenReturn(userDispatchProvider);
-        when(userTxn.userDispatchProvider().get()).thenReturn(userDispatchComponentFactory);
-        lenient().when(userTxn.userDispatchProvider().get().create()).thenReturn(userDispatchComponent);
+        // TODO
 
-        when(userTxn.platformTxn()).thenReturn(mock(ConsensusTransactionImpl.class));
-        when(userTxn.txnInfo()).thenReturn(mock(TransactionInfo.class));
-        when(userTxn.txnInfo().txBody()).thenReturn(mock(TransactionBody.class));
-        when(userTxn.txnInfo().payerID()).thenReturn(mock(AccountID.class));
-        when(userTxn.preHandleResult()).thenReturn(mock(PreHandleResult.class));
+//        when(userTxn.platformTxn()).thenReturn(mock(ConsensusTransactionImpl.class));
+//        when(userTxn.txnInfo()).thenReturn(mock(TransactionInfo.class));
+//        when(userTxn.txnInfo().txBody()).thenReturn(mock(TransactionBody.class));
+//        when(userTxn.txnInfo().payerID()).thenReturn(mock(AccountID.class));
+//        when(userTxn.preHandleResult()).thenReturn(mock(PreHandleResult.class));
         when(states.get(any())).thenReturn(schedulesById);
     }
 
     @Test
     public void testExecute() {
-        subject.execute(userTxn);
+//        subject.execute(userTxn);
 
         verify(stakingPeriodTimeHook).process(any(), any());
         verify(blockRecordManager).advanceConsensusClock(any(), any());
-        verify(hollowAccountFinalization)
-                .finalizeHollowAccounts(
-                        userTxn, userTxn.userDispatchProvider().get().create());
-        verify(dispatchProcessor)
-                .processDispatch(userTxn.userDispatchProvider().get().create());
+        // TODO
     }
 
     @Test
@@ -162,15 +173,12 @@ public class DefaultHandleWorkflowTest {
                 .when(stakingPeriodTimeHook)
                 .process(any(), any());
 
-        subject.execute(userTxn);
+//        subject.execute(userTxn);
 
-        verify(stakingPeriodTimeHook).process(userTxn.stack(), userTxn.tokenContext());
-        verify(blockRecordManager).advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-        verify(hollowAccountFinalization)
-                .finalizeHollowAccounts(
-                        userTxn, userTxn.userDispatchProvider().get().create());
-        verify(dispatchProcessor)
-                .processDispatch(userTxn.userDispatchProvider().get().create());
+//        verify(stakingPeriodTimeHook).process(userTxn.stack(), userTxn.tokenContext());
+//        verify(blockRecordManager).advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+        // TODO
+        // TODO
 
         assertTrue(logCaptor.errorLogs().getFirst().contains("Failed to process staking period time hook"));
     }

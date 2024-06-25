@@ -16,10 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -33,16 +29,20 @@ import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.stream.Stream;
-import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import java.util.stream.Stream;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains methods to execute the user transaction and return a stream of records that capture all
  * side effects on state that are stipulated by the pre-block-stream contract with mirror nodes.
  */
-@UserTxnScope
 public class UserTxnWorkflow {
     private static final Logger logger = LogManager.getLogger(UserTxnWorkflow.class);
     public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
@@ -51,11 +51,12 @@ public class UserTxnWorkflow {
     private final InitTrigger initTrigger;
     private final DefaultHandleWorkflow defaultHandleWorkflow;
     private final GenesisWorkflow genesisWorkflow;
-    private final UserTxnComponent userTxn;
     private final HederaRecordCache recordCache;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final UserRecordInitializer userRecordInitializer;
     private final ExchangeRateManager exchangeRateManager;
+
+    private final UserTxn userTxn;
 
     @Inject
     public UserTxnWorkflow(
@@ -63,11 +64,11 @@ public class UserTxnWorkflow {
             @NonNull final InitTrigger initTrigger,
             @NonNull final DefaultHandleWorkflow defaultHandleWorkflow,
             @NonNull final GenesisWorkflow genesisWorkflow,
-            @NonNull final UserTxnComponent userTxn,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final UserRecordInitializer userRecordInitializer,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final UserTxn userTxn) {
         this.version = requireNonNull(version);
         this.initTrigger = requireNonNull(initTrigger);
         this.defaultHandleWorkflow = requireNonNull(defaultHandleWorkflow);
@@ -135,7 +136,7 @@ public class UserTxnWorkflow {
     private Stream<SingleTransactionRecord> allSideEffectsFrom(@NonNull final RecordListBuilder builder) {
         final var result = builder.build();
         recordCache.add(
-                userTxn.creator().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), result.records());
+                userTxn.creatorInfo().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), result.records());
         return result.records().stream();
     }
 
@@ -157,10 +158,10 @@ public class UserTxnWorkflow {
      */
     private boolean isOlderSoftwareEvent() {
         return this.initTrigger != EVENT_STREAM_RECOVERY
-                && version.compareTo(userTxn.platformEvent().getSoftwareVersion()) > 0;
+                && version.compareTo(userTxn.event().getSoftwareVersion()) > 0;
     }
 
-    private void skipHandleWorkflow(UserTxnComponent userTxn) {
+    private void skipHandleWorkflow(@NonNull final UserTxn userTxn) {
         final TransactionInfo transactionInfo = userTxn.txnInfo();
         // Initialize record builder list and place a BUSY record in the cache
         userTxn.recordListBuilder()

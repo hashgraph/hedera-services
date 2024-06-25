@@ -16,20 +16,18 @@
 
 package com.hedera.node.app.signature;
 
-import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
-import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
-import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.CompletableFuture.completedFuture;
-
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -37,14 +35,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
-import javax.inject.Inject;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
+import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
+import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
  * Base implementation of {@link AppKeyVerifier}
  */
-@UserTxnScope
 public class DefaultKeyVerifier implements AppKeyVerifier {
 
     private static final Logger logger = LogManager.getLogger(DefaultKeyVerifier.class);

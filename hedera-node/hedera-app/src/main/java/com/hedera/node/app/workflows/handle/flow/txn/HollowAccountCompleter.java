@@ -16,11 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
-import static com.hedera.hapi.util.HapiUtils.isHollow;
-import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
@@ -41,12 +36,18 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Completes the hollow accounts by finalizing them.
@@ -72,7 +73,7 @@ public class HollowAccountCompleter {
      * @param userTxn the user transaction component
      * @param dispatch the dispatch
      */
-    public void finalizeHollowAccounts(@NonNull final UserTxnComponent userTxn, @NonNull final Dispatch dispatch) {
+    public void finalizeHollowAccounts(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
         requireNonNull(userTxn);
         requireNonNull(dispatch);
         // Any hollow accounts that must sign to have all needed signatures, need to be finalized
@@ -102,7 +103,7 @@ public class HollowAccountCompleter {
      * @return the hollow account that needs to be finalized for the Ethereum transaction
      */
     @Nullable
-    private EthFinalization findEthHollowAccount(@NonNull final UserTxnComponent userTxn) {
+    private EthFinalization findEthHollowAccount(@NonNull final UserTxn userTxn) {
         final var fileStore = userTxn.readableStoreFactory().getStore(ReadableFileStore.class);
         final var maybeEthTxSigs = ethereumTransactionHandler.maybeEthTxSigsFor(
                 userTxn.txnInfo().txBody().ethereumTransactionOrThrow(), fileStore, userTxn.configuration());
