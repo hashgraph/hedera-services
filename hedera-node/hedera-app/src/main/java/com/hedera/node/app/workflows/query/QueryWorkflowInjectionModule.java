@@ -90,8 +90,7 @@ public interface QueryWorkflowInjectionModule {
                 tokenHandlers.tokenGetInfoHandler(),
                 tokenHandlers.tokenGetAccountNftInfosHandler(),
                 tokenHandlers.tokenGetNftInfoHandler(),
-                tokenHandlers.tokenGetNftInfosHandler(),
-                addressBookHandlers.nodeGetInfoHandler());
+                tokenHandlers.tokenGetNftInfosHandler());
     }
 
     @Provides

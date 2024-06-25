@@ -28,6 +28,7 @@ import javax.inject.Scope;
 
 /**
  * Scope for bindings whose lifetime is only for a child transaction dispatch.
+ * This scope is used to ensure that the bindings are only available for the child transaction dispatch.
  */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)

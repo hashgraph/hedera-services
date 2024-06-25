@@ -46,6 +46,7 @@ import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.info.UnavailableLedgerIdNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
+import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -82,14 +83,15 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -248,12 +250,14 @@ public final class Hedera implements SwirldMain {
                         new BlockRecordService(),
                         new FeeService(),
                         new CongestionThrottleService(),
-                        new NetworkServiceImpl())
+                        new NetworkServiceImpl(),
+                        new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
         try {
-            // And the factory for the MerkleHederaState class id must be our newState() method
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MerkleHederaState.class, this::newState));
+            // And the factory for the MerkleHederaState class id must be our constructor
+            // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    MerkleHederaState.class, () -> new MerkleHederaState(new HederaLifecyclesImpl(this))));
         } catch (final ConstructableRegistryException e) {
             logger.error("Failed to register MerkleHederaState factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
@@ -291,8 +295,12 @@ public final class Hedera implements SwirldMain {
      */
     @Override
     @NonNull
-    public SwirldState newState() {
-        return new MerkleHederaState(new HederaLifecyclesImpl(this));
+    public MerkleRoot newMerkleStateRoot() {
+        final State state = new State();
+        state.setSwirldState(new MerkleHederaState(new HederaLifecyclesImpl(this)));
+        return state;
+        // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
+        // return new MerkleHederaState(new HederaLifecyclesImpl(this));
     }
 
     /*==================================================================================================================
@@ -304,7 +312,7 @@ public final class Hedera implements SwirldMain {
 
     /**
      * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b>
-     * {@link #init(Platform, NodeId)} and after {@link #newState()}.
+     * {@link #init(Platform, NodeId)} and after {@link #newMerkleStateRoot()}.
      */
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
     public void onStateInitialized(
@@ -421,8 +429,8 @@ public final class Hedera implements SwirldMain {
      * {@inheritDoc}
      *
      * <p>Called <b>AFTER</b> init and migrate have been called on the state (either the new state created from
-     * {@link #newState()} or an instance of {@link MerkleHederaState} created by the platform and loaded from the saved
-     * state).
+     * {@link #newMerkleStateRoot()} or an instance of {@link MerkleHederaState} created by the platform and
+     * loaded from the saved state).
      *
      * <p>(FUTURE) Consider moving this initialization into {@link #onStateInitialized(HederaState, Platform, PlatformState, InitTrigger, SoftwareVersion)}
      * instead, as there is no special significance to having it here instead.

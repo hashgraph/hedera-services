@@ -91,19 +91,17 @@ module com.hedera.node.app {
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.handle.flow.dispatch to
             com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch.child.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch.user.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.txn.logic to
+    exports com.hedera.node.app.workflows.handle.flow.dispatch.helpers to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.handle.flow.txn to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.handle.flow.txn.modules to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.store;
+    exports com.hedera.node.app.workflows.handle.flow.dispatch.user to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.flow.dispatch.child to
+            com.hedera.node.app.test.fixtures;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

@@ -11,3 +11,4 @@ An [Eclipse Adoptium](https://adoptium.net/) build of the Java **21.0.1** JDK is
 - [Branch Naming Conventions](branch-naming-conventions.md)
 - [Java Style Guide](hedera-java-style-guide.md)
 - [Maintainers Guide](maintainers-guide.md)
+- [Glossary](glossary.md)

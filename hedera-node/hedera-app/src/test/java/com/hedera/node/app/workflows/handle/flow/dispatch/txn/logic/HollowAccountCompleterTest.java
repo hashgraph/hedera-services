@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.handle.flow.dispatch.txn.logic;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.child.logic.ChildRecordBuilderFactoryTest.asTxn;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.child.helpers.ChildRecordBuilderFactoryTest.asTxn;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -46,15 +46,15 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
-import com.hedera.node.app.workflows.handle.flow.txn.logic.HollowAccountCompleter;
+import com.hedera.node.app.workflows.handle.flow.txn.HollowAccountCompleter;
+import com.hedera.node.app.workflows.handle.flow.txn.UserTxnComponent;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -80,13 +80,13 @@ class HollowAccountCompleterTest {
     private HandleContext handleContext;
 
     @Mock(strictness = LENIENT)
-    private UserTransactionComponent userTxn;
+    private UserTxnComponent userTxn;
 
     @Mock(strictness = LENIENT)
     private ReadableAccountStore accountStore;
 
     @Mock(strictness = LENIENT)
-    private KeyVerifier keyVerifier;
+    private AppKeyVerifier keyVerifier;
 
     @Mock(strictness = LENIENT)
     private ReadableStoreFactory readableStoreFactory;
