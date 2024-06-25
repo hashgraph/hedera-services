@@ -16,6 +16,11 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -36,17 +41,11 @@ import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProces
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.time.Instant;
-
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
-import static java.util.Objects.requireNonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The default implementation of the handle workflow.
@@ -186,10 +185,7 @@ public class DefaultHandleWorkflow {
             final var firstSecondToExpire = lastHandledTxnTime.getEpochSecond();
             final var lastSecondToExpire = userTxn.consensusNow().getEpochSecond() - 1;
             final var scheduleStore = new WritableStoreFactory(
-                            userTxn.stack(),
-                            ScheduleService.NAME,
-                            userTxn.configuration(),
-                            storeMetricsService)
+                            userTxn.stack(), ScheduleService.NAME, userTxn.configuration(), storeMetricsService)
                     .getStore(WritableScheduleStore.class);
             // purge all expired schedules between the first consensus time of last block and the current consensus time
             scheduleExpirationHook.processExpiredSchedules(scheduleStore, firstSecondToExpire, lastSecondToExpire);

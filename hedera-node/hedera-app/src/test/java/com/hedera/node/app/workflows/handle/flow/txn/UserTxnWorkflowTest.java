@@ -16,6 +16,21 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.child.helpers.ChildRecordBuilderFactoryTest.asTxn;
+import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -44,30 +59,14 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
-
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.child.helpers.ChildRecordBuilderFactoryTest.asTxn;
-import static java.util.Objects.requireNonNull;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UserTxnWorkflowTest {
@@ -150,8 +149,8 @@ class UserTxnWorkflowTest {
     void skipsOlderVersionIfNotEventStreamRecovery() {
         givenSubjectWith(InitTrigger.RESTART, PREVIOUS_VERSION);
         givenNoFailInvalid();
-//        given(userTxn.recordListBuilder()).willReturn(new RecordListBuilder(CONSENSUS_NOW));
-//        given(userTxn.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+        //        given(userTxn.recordListBuilder()).willReturn(new RecordListBuilder(CONSENSUS_NOW));
+        //        given(userTxn.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         given(exchangeRateManager.exchangeRates()).willReturn(exchangeRateSet);
 
         final var recordStream = subject.execute();
@@ -172,7 +171,7 @@ class UserTxnWorkflowTest {
 
         final var records = subject.execute();
 
-//        verify(defaultHandleWorkflow).execute(userTxn);
+        //        verify(defaultHandleWorkflow).execute(userTxn);
         assertExpected(records);
     }
 
@@ -180,13 +179,13 @@ class UserTxnWorkflowTest {
     void alsoExecutesGenesisWorkflowForFirstTransaction() {
         givenSubjectWith(InitTrigger.GENESIS, CURRENT_VERSION);
         givenNoFailInvalid();
-//        given(userTxn.isGenesisTxn()).willReturn(true);
-//        given(userTxn.tokenContext()).willReturn(tokenContext);
+        //        given(userTxn.isGenesisTxn()).willReturn(true);
+        //        given(userTxn.tokenContext()).willReturn(tokenContext);
 
         final var records = subject.execute();
 
         verify(genesisWorkflow).executeIn(tokenContext);
-//        verify(defaultHandleWorkflow).execute(userTxn);
+        //        verify(defaultHandleWorkflow).execute(userTxn);
         verify(handleWorkflowMetrics).switchConsensusSecond();
         assertExpected(records);
     }
@@ -200,17 +199,17 @@ class UserTxnWorkflowTest {
         final var records = subject.execute();
 
         verifyNoInteractions(genesisWorkflow);
-//        verify(defaultHandleWorkflow).execute(userTxn);
+        //        verify(defaultHandleWorkflow).execute(userTxn);
         verify(handleWorkflowMetrics).switchConsensusSecond();
         assertExpected(records);
     }
 
     @Test
     void recoversFromUnhandledException() {
-//        given(userTxn.consensusNow()).willReturn(CONSENSUS_NOW);
+        //        given(userTxn.consensusNow()).willReturn(CONSENSUS_NOW);
         givenSubjectWith(InitTrigger.RESTART, CURRENT_VERSION);
         givenFailInvalid();
-//        doThrow(IllegalStateException.class).when(defaultHandleWorkflow).execute(userTxn);
+        //        doThrow(IllegalStateException.class).when(defaultHandleWorkflow).execute(userTxn);
         doAnswer(invocationOnMock -> {
                     final SingleTransactionRecordBuilderImpl recordBuilder = invocationOnMock.getArgument(0);
                     recordBuilder
@@ -243,32 +242,32 @@ class UserTxnWorkflowTest {
                 null);
         if (trigger != InitTrigger.EVENT_STREAM_RECOVERY) {
             given(consensusEvent.getSoftwareVersion()).willReturn(eventVersion);
-//            given(userTxn.platformEvent()).willReturn(consensusEvent);
+            //            given(userTxn.platformEvent()).willReturn(consensusEvent);
         }
-//        lenient().when(userTxn.consensusNow()).thenReturn(CONSENSUS_NOW);
-//        lenient().when(userTxn.stack()).thenReturn(stack);
+        //        lenient().when(userTxn.consensusNow()).thenReturn(CONSENSUS_NOW);
+        //        lenient().when(userTxn.stack()).thenReturn(stack);
     }
 
     private void givenNoFailInvalid() {
-//        given(userTxn.recordListBuilder()).willReturn(recordListBuilder);
-//        given(userTxn.creator()).willReturn(nodeInfo);
+        //        given(userTxn.recordListBuilder()).willReturn(recordListBuilder);
+        //        given(userTxn.creator()).willReturn(nodeInfo);
         given(nodeInfo.nodeId()).willReturn(CREATOR_NODE_ID);
-//        given(userTxn.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+        //        given(userTxn.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
         lenient()
                 .when(recordListBuilder.build())
                 .thenReturn(new RecordListBuilder.Result(FAKE_RECORD, List.of(FAKE_RECORD)));
     }
 
     private void givenFailInvalid() {
-//        given(userTxn.creator()).willReturn(nodeInfo);
-//        given(userTxn.stack()).willReturn(stack);
+        //        given(userTxn.creator()).willReturn(nodeInfo);
+        //        given(userTxn.stack()).willReturn(stack);
         given(nodeInfo.nodeId()).willReturn(CREATOR_NODE_ID);
-//        given(userTxn.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
+        //        given(userTxn.txnInfo()).willReturn(CRYPTO_TRANSFER_TXN_INFO);
     }
 
     private void givenLastHandled(@NonNull final Instant lastConsensusTime) {
-//        given(userTxn.consensusNow()).willReturn(CONSENSUS_NOW);
-//        given(userTxn.lastHandledConsensusTime()).willReturn(lastConsensusTime);
+        //        given(userTxn.consensusNow()).willReturn(CONSENSUS_NOW);
+        //        given(userTxn.lastHandledConsensusTime()).willReturn(lastConsensusTime);
     }
 
     private void assertExpected(@NonNull final Stream<SingleTransactionRecord> recordStream) {

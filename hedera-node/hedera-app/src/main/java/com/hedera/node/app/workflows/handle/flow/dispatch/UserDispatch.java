@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
@@ -60,12 +63,8 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.util.Set;
-
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static java.util.Objects.requireNonNull;
 
 public record UserDispatch(
         @NonNull SingleTransactionRecordBuilderImpl recordBuilder,
@@ -114,7 +113,8 @@ public record UserDispatch(
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
-        final var recordBuilder = userRecordInitializer.initializeUserRecord(recordListBuilder.userTransactionRecordBuilder(), txnInfo);
+        final var recordBuilder =
+                userRecordInitializer.initializeUserRecord(recordListBuilder.userTransactionRecordBuilder(), txnInfo);
         final var keyVerifier = new DefaultKeyVerifier(
                 txnInfo.signatureMap().sigPair().size(),
                 config.getConfigData(HederaConfig.class),

@@ -31,6 +31,5 @@ import dagger.Module;
             IngestWorkflowInjectionModule.class,
             PreHandleWorkflowInjectionModule.class,
             QueryWorkflowInjectionModule.class
-        },
-        subcomponents = {UserTxnComponent.class})
+        })
 public interface WorkflowsInjectionModule {}

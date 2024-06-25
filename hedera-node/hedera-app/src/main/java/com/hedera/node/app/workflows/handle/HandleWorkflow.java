@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
+import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -38,16 +42,11 @@ import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
-import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
-import static java.util.Objects.requireNonNull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The handle workflow that is responsible for handling the next {@link Round} of transactions.
@@ -193,9 +192,26 @@ public class HandleWorkflow {
         // FUTURE: Use StreamMode enum to switch between blockStreams and/or recordStreams
         blockRecordManager.startUserTransaction(consTime, state, platformState);
         final var userTxn = UserTxn.from(
-                state, platformState, event, creator, txn, consTime, lastHandledConsTime,
-                configProvider, storeMetricsService, blockRecordManager, preHandleResultManager);
-        final var workflow = userTxn.workflowWith(version, initTrigger, defaultHandleWorkflow, genesisWorkflow, recordCache, handleWorkflowMetrics, userRecordInitializer, exchangeRateManager);
+                state,
+                platformState,
+                event,
+                creator,
+                txn,
+                consTime,
+                lastHandledConsTime,
+                configProvider,
+                storeMetricsService,
+                blockRecordManager,
+                preHandleResultManager);
+        final var workflow = userTxn.workflowWith(
+                version,
+                initTrigger,
+                defaultHandleWorkflow,
+                genesisWorkflow,
+                recordCache,
+                handleWorkflowMetrics,
+                userRecordInitializer,
+                exchangeRateManager);
         final var recordStream = workflow.execute();
         blockRecordManager.endUserTransaction(recordStream, state);
 

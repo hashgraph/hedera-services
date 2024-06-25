@@ -95,8 +95,6 @@ module com.hedera.node.app {
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.handle.flow.txn to
             com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.txn.modules to
-            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.store;
     exports com.hedera.node.app.workflows.handle.flow.dispatch.user to
             com.hedera.node.app.test.fixtures;

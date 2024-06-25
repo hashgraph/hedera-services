@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
+import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.service.token.TokenService;
@@ -30,15 +34,10 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
-import javax.inject.Inject;
 import java.time.Instant;
 import java.util.Set;
 import java.util.function.Consumer;
-
-import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
-import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
-import static java.util.Objects.requireNonNull;
+import javax.inject.Inject;
 
 public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final Configuration configuration;

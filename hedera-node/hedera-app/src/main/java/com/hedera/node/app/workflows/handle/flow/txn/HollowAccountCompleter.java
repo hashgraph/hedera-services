@@ -16,6 +16,11 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
+import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
@@ -36,18 +41,12 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.LinkedHashSet;
 import java.util.Set;
-
-import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
-import static com.hedera.hapi.util.HapiUtils.isHollow;
-import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static java.util.Objects.requireNonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Completes the hollow accounts by finalizing them.

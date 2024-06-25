@@ -16,6 +16,10 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -29,15 +33,10 @@ import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.stream.Stream;
+import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import javax.inject.Inject;
-import java.util.stream.Stream;
-
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
-import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains methods to execute the user transaction and return a stream of records that capture all

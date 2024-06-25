@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.flow.dispatch;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
+import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchUsageManager.CONTRACT_OPERATIONS;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -60,12 +63,8 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 import java.util.Set;
-
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchUsageManager.CONTRACT_OPERATIONS;
 
 /**
  * The dispatch context for a child transaction.

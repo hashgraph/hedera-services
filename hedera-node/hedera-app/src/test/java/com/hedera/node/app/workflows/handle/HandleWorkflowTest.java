@@ -16,6 +16,18 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -49,6 +61,12 @@ import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -57,25 +75,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Instant;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class HandleWorkflowTest extends AppTestBase {
@@ -150,22 +149,31 @@ class HandleWorkflowTest extends AppTestBase {
 
     @Mock
     private PreHandleResultManager preHandleResultManager;
+
     @Mock
     private UserRecordInitializer userRecordInitializer;
+
     @Mock
     private SoftwareVersion version;
+
     @Mock
     private InitTrigger initTrigger;
+
     @Mock
     private DefaultHandleWorkflow defaultHandleWorkflow;
+
     @Mock
     private GenesisWorkflow genesisWorkflow;
+
     @Mock
     private HederaRecordCache recordCache;
+
     @Mock
     private ExchangeRateManager exchangeRateManager;
+
     @Mock
     private ConfigProvider configProvider;
+
     @Mock
     private StoreMetricsService storeMetricsService;
 

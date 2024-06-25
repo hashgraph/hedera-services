@@ -16,6 +16,15 @@
 
 package com.hedera.node.app.workflows.handle.flow.txn;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mock.Strictness.LENIENT;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -45,15 +54,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mock.Strictness.LENIENT;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 public class DefaultHandleWorkflowTest {
@@ -146,21 +146,21 @@ public class DefaultHandleWorkflowTest {
                 networkUtilizationManager);
         // TODO
         lenient().when(state.getWritableStates(anyString())).thenReturn(states);
-//        when(userTxn.stack()).thenReturn(savepointStack);
+        //        when(userTxn.stack()).thenReturn(savepointStack);
         when(savepointStack.getWritableStates(anyString())).thenReturn(states);
         // TODO
 
-//        when(userTxn.platformTxn()).thenReturn(mock(ConsensusTransactionImpl.class));
-//        when(userTxn.txnInfo()).thenReturn(mock(TransactionInfo.class));
-//        when(userTxn.txnInfo().txBody()).thenReturn(mock(TransactionBody.class));
-//        when(userTxn.txnInfo().payerID()).thenReturn(mock(AccountID.class));
-//        when(userTxn.preHandleResult()).thenReturn(mock(PreHandleResult.class));
+        //        when(userTxn.platformTxn()).thenReturn(mock(ConsensusTransactionImpl.class));
+        //        when(userTxn.txnInfo()).thenReturn(mock(TransactionInfo.class));
+        //        when(userTxn.txnInfo().txBody()).thenReturn(mock(TransactionBody.class));
+        //        when(userTxn.txnInfo().payerID()).thenReturn(mock(AccountID.class));
+        //        when(userTxn.preHandleResult()).thenReturn(mock(PreHandleResult.class));
         when(states.get(any())).thenReturn(schedulesById);
     }
 
     @Test
     public void testExecute() {
-//        subject.execute(userTxn);
+        //        subject.execute(userTxn);
 
         verify(stakingPeriodTimeHook).process(any(), any());
         verify(blockRecordManager).advanceConsensusClock(any(), any());
@@ -173,10 +173,10 @@ public class DefaultHandleWorkflowTest {
                 .when(stakingPeriodTimeHook)
                 .process(any(), any());
 
-//        subject.execute(userTxn);
+        //        subject.execute(userTxn);
 
-//        verify(stakingPeriodTimeHook).process(userTxn.stack(), userTxn.tokenContext());
-//        verify(blockRecordManager).advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+        //        verify(stakingPeriodTimeHook).process(userTxn.stack(), userTxn.tokenContext());
+        //        verify(blockRecordManager).advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
         // TODO
         // TODO
 
