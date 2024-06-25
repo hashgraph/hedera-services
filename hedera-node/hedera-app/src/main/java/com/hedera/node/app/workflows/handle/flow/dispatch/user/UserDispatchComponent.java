@@ -26,6 +26,12 @@ import dagger.Subcomponent;
 @Subcomponent(modules = {UserDispatchModule.class})
 @UserDispatchScope
 public interface UserDispatchComponent extends Dispatch {
+    /**
+     * The factory for creating user dispatch component. This doesn't need any explicit bindings,
+     * because all the bindings will be same as the parent UserTxnComponent.
+     * UserDispatchComponent has some extra objects that are not available in UserTxnComponent, that are
+     * needed for dispatching the user transaction to handler.
+     */
     @Subcomponent.Factory
     interface Factory {
         UserDispatchComponent create();

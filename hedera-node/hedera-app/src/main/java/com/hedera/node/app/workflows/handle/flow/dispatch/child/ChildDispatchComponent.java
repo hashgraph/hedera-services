@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.handle.flow.dispatch.child;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.signature.KeyVerifier;
+import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
@@ -35,6 +35,10 @@ import dagger.Subcomponent;
 @Subcomponent(modules = {ChildDispatchModule.class})
 @ChildDispatchScope
 public interface ChildDispatchComponent extends Dispatch {
+    /**
+     * The factory for creating child dispatch component. All the bindings annotated with @BindsInstance are provided
+     * explicitly when constructing the component.
+     */
     @Subcomponent.Factory
     interface Factory {
         ChildDispatchComponent create(
@@ -44,7 +48,7 @@ public interface ChildDispatchComponent extends Dispatch {
                 @BindsInstance HandleContext.TransactionCategory childCategory,
                 @BindsInstance @ChildQualifier SavepointStackImpl stack,
                 @BindsInstance @ChildQualifier PreHandleResult preHandleResult,
-                @BindsInstance KeyVerifier keyVerifier);
+                @BindsInstance AppKeyVerifier keyVerifier);
     }
     /**
      * The savepoint stack for the transaction scope

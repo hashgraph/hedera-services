@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -37,8 +38,11 @@ import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.ScheduleTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
+import com.hedera.node.app.spi.key.KeyVerifier;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -70,6 +74,12 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected HandleContext mockContext;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected StoreFactory storeFactory;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected KeyVerifier keyVerifier;
 
     protected final TransactionKeys testChildKeys =
             createChildKeys(adminKey, schedulerKey, payerKey, optionKey, otherKey);
@@ -158,14 +168,16 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         given(mockContext.consensusNow()).willReturn(testConsensusTime);
         given(mockContext.attributeValidator()).willReturn(new AttributeValidatorImpl(mockContext));
         given(mockContext.payer()).willReturn(payer);
-        given(mockContext.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-        given(mockContext.readableStore(ReadableScheduleStore.class)).willReturn(scheduleStore);
-        given(mockContext.writableStore(WritableScheduleStore.class)).willReturn(writableSchedules);
-        given(mockContext.verificationFor(eq(payerKey), any())).willReturn(passedVerification(payerKey));
-        given(mockContext.verificationFor(eq(adminKey), any())).willReturn(passedVerification(adminKey));
-        given(mockContext.verificationFor(eq(schedulerKey), any())).willReturn(failedVerification(schedulerKey));
-        given(mockContext.verificationFor(eq(optionKey), any())).willReturn(failedVerification(optionKey));
-        given(mockContext.verificationFor(eq(otherKey), any())).willReturn(failedVerification(otherKey));
+        given(mockContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(storeFactory.readableStore(ReadableScheduleStore.class)).willReturn(scheduleStore);
+        given(storeFactory.writableStore(WritableScheduleStore.class)).willReturn(writableSchedules);
+        given(mockContext.keyVerifier()).willReturn(keyVerifier);
+        given(keyVerifier.verificationFor(eq(payerKey), any())).willReturn(passedVerification(payerKey));
+        given(keyVerifier.verificationFor(eq(adminKey), any())).willReturn(passedVerification(adminKey));
+        given(keyVerifier.verificationFor(eq(schedulerKey), any())).willReturn(failedVerification(schedulerKey));
+        given(keyVerifier.verificationFor(eq(optionKey), any())).willReturn(failedVerification(optionKey));
+        given(keyVerifier.verificationFor(eq(otherKey), any())).willReturn(failedVerification(otherKey));
         given(mockContext.dispatchChildTransaction(
                         any(),
                         eq(ScheduleRecordBuilder.class),
@@ -173,7 +185,10 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
                         any(AccountID.class),
                         any(TransactionCategory.class)))
                 .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
-        given(mockContext.recordBuilder(ScheduleRecordBuilder.class))
+
+        final var mockRecordBuilders = mock(RecordBuilders.class);
+        given(mockContext.recordBuilders()).willReturn(mockRecordBuilders);
+        given(mockRecordBuilders.getOrCreate(ScheduleRecordBuilder.class))
                 .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
     }
 

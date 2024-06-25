@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -31,8 +31,9 @@ import com.hedera.hapi.node.scheduled.ScheduleCreateTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
-import com.hedera.node.app.service.mono.fees.calculation.schedule.txns.ScheduleCreateResourceUsage;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -46,6 +47,7 @@ import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.SchedulingConfig;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -60,6 +62,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class ScheduleCreateHandler extends AbstractScheduleHandler implements TransactionHandler {
+    private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
+
     @Inject
     public ScheduleCreateHandler() {
         super();
@@ -133,7 +137,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
     public void handle(@NonNull final HandleContext context) throws HandleException {
         Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
         final Instant currentConsensusTime = context.consensusNow();
-        final WritableScheduleStore scheduleStore = context.writableStore(WritableScheduleStore.class);
+        final WritableScheduleStore scheduleStore = context.storeFactory().writableStore(WritableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final LedgerConfig ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
@@ -170,7 +174,7 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 final ScheduleKeysResult requiredKeysResult = allKeysForTransaction(provisionalSchedule, context);
                 final Set<Key> allRequiredKeys = requiredKeysResult.remainingRequiredKeys();
                 final Set<Key> updatedSignatories = requiredKeysResult.updatedSignatories();
-                final long nextId = context.newEntityNum();
+                final long nextId = context.entityNumGenerator().newEntityNum();
                 Schedule finalSchedule =
                         HandlerUtility.completeProvisionalSchedule(provisionalSchedule, nextId, updatedSignatories);
                 if (tryToExecuteSchedule(
@@ -183,7 +187,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                     finalSchedule = HandlerUtility.markExecuted(finalSchedule, currentConsensusTime);
                 }
                 scheduleStore.put(finalSchedule);
-                final ScheduleRecordBuilder scheduleRecords = context.recordBuilder(ScheduleRecordBuilder.class);
+                final ScheduleRecordBuilder scheduleRecords =
+                        context.recordBuilders().getOrCreate(ScheduleRecordBuilder.class);
                 scheduleRecords
                         .scheduleID(finalSchedule.scheduleId())
                         .scheduledTransactionID(HandlerUtility.transactionIdForScheduled(finalSchedule));
@@ -209,7 +214,8 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                             .copyBuilder()
                             .scheduled(true)
                             .build();
-                    context.recordBuilder(ScheduleRecordBuilder.class)
+                    context.recordBuilders()
+                            .getOrCreate(ScheduleRecordBuilder.class)
                             .scheduleID(candidate.scheduleId())
                             .scheduledTransactionID(scheduledTransactionID);
                     return true;
@@ -352,12 +358,33 @@ public class ScheduleCreateHandler extends AbstractScheduleHandler implements Tr
                 ? SubType.SCHEDULE_CREATE_CONTRACT_CALL
                 : SubType.DEFAULT;
 
-        return feeContext.feeCalculator(subType).legacyCalculate(sigValueObj -> new ScheduleCreateResourceUsage(
-                        new ScheduleOpsUsage(), null)
-                .usageGiven(
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(subType)
+                .legacyCalculate(sigValueObj -> usageGiven(
                         fromPbj(op),
                         sigValueObj,
                         schedulingConfig.longTermEnabled(),
                         ledgerConfig.scheduleTxExpiryTimeSecs()));
+    }
+
+    public FeeData usageGiven(
+            final com.hederahashgraph.api.proto.java.TransactionBody txn,
+            final SigValueObj svo,
+            final boolean longTermEnabled,
+            final long scheduledTxExpiryTimeSecs) {
+        final var op = txn.getScheduleCreate();
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+
+        final long lifetimeSecs;
+        if (op.hasExpirationTime() && longTermEnabled) {
+            lifetimeSecs = Math.max(
+                    0L,
+                    op.getExpirationTime().getSeconds()
+                            - txn.getTransactionID().getTransactionValidStart().getSeconds());
+        } else {
+            lifetimeSecs = scheduledTxExpiryTimeSecs;
+        }
+        return scheduleOpsUsage.scheduleCreateUsage(txn, sigUsage, lifetimeSecs);
     }
 }

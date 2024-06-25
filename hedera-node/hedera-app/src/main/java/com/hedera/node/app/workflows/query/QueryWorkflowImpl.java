@@ -51,8 +51,8 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.QueryHandler;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.config.ConfigProvider;
@@ -167,7 +167,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         // 1. Parse and check header
         final Query query = parseQuery(requestBuffer);
         logger.debug("Received query: {}", query);
-
         final var function = functionOf(query);
 
         Response response;
@@ -290,7 +289,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 response = createErrorResponse(handler, responseType, FAIL_INVALID, 0L);
             }
         } else {
-            response = DEFAULT_UNSUPPORTED_RESPONSE;
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
 
         try {

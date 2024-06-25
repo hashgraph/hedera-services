@@ -18,9 +18,6 @@ package com.hedera.services.cli.signedstate;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
-import com.hedera.node.app.service.mono.state.merkle.MerkleStakingInfo;
-import com.hedera.node.app.service.mono.utils.EntityNum;
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
 import com.hedera.services.cli.signedstate.SignedStateCommand.Verbosity;
 import com.hedera.services.cli.utils.FieldBuilder;
@@ -30,8 +27,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -76,10 +71,9 @@ public class DumpStakingInfoSubcommand {
     }
 
     void doit() {
-        final var stakingInfoStore = state.getStakingInfo();
-        System.out.printf("=== %d staking info ===%n", stakingInfoStore.size());
+        System.out.printf("=== %d staking info ===%n", 0);
 
-        final var allStakingInfo = gatherStakingInfo(stakingInfoStore);
+        final var allStakingInfo = gatherStakingInfo();
 
         int reportSize;
         try (@NonNull final var writer = new Writer(stakingInfoPath)) {
@@ -103,29 +97,11 @@ public class DumpStakingInfoSubcommand {
             long unclaimedStakeRewardStart,
             long stake,
             @NonNull long[] rewardSumHistory,
-            int weight) {
-        StakingInfo(@NonNull final MerkleStakingInfo stakingInfo) {
-            this(
-                    stakingInfo.getKey().intValue(),
-                    stakingInfo.getMinStake(),
-                    stakingInfo.getMaxStake(),
-                    stakingInfo.getStakeToReward(),
-                    stakingInfo.getStakeToNotReward(),
-                    stakingInfo.getStakeRewardStart(),
-                    stakingInfo.getUnclaimedStakeRewardStart(),
-                    stakingInfo.getStake(),
-                    stakingInfo.getRewardSumHistory(),
-                    stakingInfo.getWeight());
-            Objects.requireNonNull(rewardSumHistory, "rewardSumHistory");
-        }
-    }
+            int weight) {}
 
     @NonNull
-    Map<Long, StakingInfo> gatherStakingInfo(
-            @NonNull final MerkleMapLike<EntityNum, MerkleStakingInfo> stakingInfoStore) {
-        final var allStakingInfo = new TreeMap<Long, StakingInfo>();
-        stakingInfoStore.forEachNode((en, mt) -> allStakingInfo.put(en.longValue(), new StakingInfo(mt)));
-        return allStakingInfo;
+    Map<Long, StakingInfo> gatherStakingInfo() {
+        return Map.of();
     }
 
     void reportSummary(@NonNull Writer writer, @NonNull Map<Long, StakingInfo> stakingInfo) {

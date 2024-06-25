@@ -23,7 +23,7 @@ import static com.swirlds.platform.test.fixtures.event.RandomEventUtils.DEFAULT_
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.ConsensusImpl;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.event.linking.ConsensusLinker;
 import com.swirlds.platform.event.linking.InOrderLinker;
@@ -494,13 +494,13 @@ public class StandardGraphGenerator extends AbstractGraphGenerator<StandardGraph
                 birthRound);
         next.setGeneratorIndex(eventIndex);
 
-        // The event given to the internal consensus needs its own EventImpl & GossipEvent for metadata to be kept
+        // The event given to the internal consensus needs its own EventImpl & PlatformEvent for metadata to be kept
         // separate from the event that is returned to the caller.  This InOrderLinker wraps the event in an EventImpl
         // and links it. The event must be hashed and have a descriptor built for its use in the InOrderLinker.
         // This may leak memory, but is fine in the current testing framework.
         // When the test ends any memory used will be released.
         new StatefulEventHasher().hashEvent(next.getBaseEvent());
-        final GossipEvent tmp = next.getBaseEvent().copyGossipedData();
+        final PlatformEvent tmp = next.getBaseEvent().copyGossipedData();
         tmp.setHash(next.getBaseEvent().getHash());
         consensus.addEvent(inOrderLinker.linkEvent(tmp));
 

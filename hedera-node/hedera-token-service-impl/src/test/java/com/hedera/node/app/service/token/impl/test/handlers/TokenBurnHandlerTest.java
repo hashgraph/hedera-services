@@ -35,19 +35,12 @@ import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStor
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithNfts;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
-import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_SUPPLY_KT;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_FOR_TOKEN_WITHOUT_SUPPLY;
-import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_MISSING_TOKEN;
-import static com.hedera.test.factories.scenarios.TokenBurnScenarios.BURN_WITH_SUPPLY_KEYED_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_SUPPLY_KT;
-import static com.hedera.test.factories.txns.SignedTxnFactory.DEFAULT_PAYER_KT;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -63,7 +56,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -75,8 +67,9 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.records.RecordBuilders;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -167,50 +160,6 @@ class TokenBurnHandlerTest extends ParityTestBase {
             Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                     .isInstanceOf(PreCheckException.class)
                     .has(responseCode(INVALID_NFT_ID));
-        }
-    }
-
-    @Nested
-    // Tests that check prehandle parity with old prehandle code
-    class PreHandle {
-        @SuppressWarnings("DataFlowIssue")
-        @Test
-        void nullArgsThrows() {
-            assertThatThrownBy(() -> subject.preHandle(null)).isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
-        void parity_getsTokenBurnWithValidId() throws PreCheckException {
-            final var theTxn = txnFrom(BURN_WITH_SUPPLY_KEYED_TOKEN);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            subject.preHandle(context);
-
-            assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-            assertEquals(1, context.requiredNonPayerKeys().size());
-            assertThat(context.requiredNonPayerKeys(), contains(TOKEN_SUPPLY_KT.asPbjKey()));
-        }
-
-        @Test
-        void parity_getsTokenBurnWithMissingToken() throws PreCheckException {
-            final var theTxn = txnFrom(BURN_WITH_MISSING_TOKEN);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_TOKEN_ID);
-        }
-
-        @Test
-        void parity_getsTokenBurnWithoutSupplyKey() throws PreCheckException {
-            final var theTxn = txnFrom(BURN_FOR_TOKEN_WITHOUT_SUPPLY);
-
-            final var context = new FakePreHandleContext(readableAccountStore, theTxn);
-            context.registerStore(ReadableTokenStore.class, readableTokenStore);
-            subject.preHandle(context);
-
-            assertEquals(context.payerKey(), DEFAULT_PAYER_KT.asPbjKey());
-            assertEquals(0, context.requiredNonPayerKeys().size());
         }
     }
 
@@ -440,7 +389,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
             final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
-            given(context.recordBuilder(TokenBurnRecordBuilder.class)).willReturn(recordBuilder);
+            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+                    .willReturn(recordBuilder);
 
             subject.handle(context);
 
@@ -479,7 +429,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
             final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
-            given(context.recordBuilder(TokenBurnRecordBuilder.class)).willReturn(recordBuilder);
+            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+                    .willReturn(recordBuilder);
 
             subject.handle(context);
 
@@ -759,7 +710,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
             final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
-            given(context.recordBuilder(TokenBurnRecordBuilder.class)).willReturn(recordBuilder);
+            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+                    .willReturn(recordBuilder);
 
             subject.handle(context);
             final var treasuryAcct = writableAccountStore.get(ACCOUNT_1339);
@@ -821,7 +773,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L);
             final var context = mockContext(txn);
             final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
-            given(context.recordBuilder(TokenBurnRecordBuilder.class)).willReturn(recordBuilder);
+            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+                    .willReturn(recordBuilder);
 
             subject.handle(context);
             final var treasuryAcct = writableAccountStore.get(ACCOUNT_1339);
@@ -884,7 +837,8 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L, 1L, 2L, 3L, 3L, 1L, 1L, 2L);
             final var context = mockContext(txn);
             final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
-            given(context.recordBuilder(TokenBurnRecordBuilder.class)).willReturn(recordBuilder);
+            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+                    .willReturn(recordBuilder);
 
             subject.handle(context);
             final var treasuryAcct = writableAccountStore.get(ACCOUNT_1339);
@@ -902,14 +856,18 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         private HandleContext mockContext(TransactionBody txn) {
             final var context = mock(HandleContext.class);
+            final var recordBuilders = mock(RecordBuilders.class);
 
             given(context.body()).willReturn(txn);
 
-            given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-            given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-            given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
-            given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+            final var storeFactory = mock(StoreFactory.class);
+            given(context.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+            given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+            given(storeFactory.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
             given(context.configuration()).willReturn(configuration);
+            lenient().when(context.recordBuilders()).thenReturn(recordBuilders);
 
             return context;
         }

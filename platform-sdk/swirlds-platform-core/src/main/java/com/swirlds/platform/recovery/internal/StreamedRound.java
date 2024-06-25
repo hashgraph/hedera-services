@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.recovery.internal;
 
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -44,9 +44,9 @@ public class StreamedRound implements Round {
         this.events = events;
         this.roundNumber = roundNumber;
         events.stream()
-                .map(DetailedConsensusEvent::getGossipEvent)
-                .forEach(GossipEvent::setConsensusTimestampsOnPayloads);
-        consensusTimestamp = events.get(events.size() - 1).getGossipEvent().getConsensusTimestamp();
+                .map(DetailedConsensusEvent::getPlatformEvent)
+                .forEach(PlatformEvent::setConsensusTimestampsOnPayloads);
+        consensusTimestamp = events.get(events.size() - 1).getPlatformEvent().getConsensusTimestamp();
         this.consensusRoster = Objects.requireNonNull(consensusRoster);
     }
 
@@ -65,7 +65,7 @@ public class StreamedRound implements Round {
 
             @Override
             public ConsensusEvent next() {
-                return iterator.next().getGossipEvent();
+                return iterator.next().getPlatformEvent();
             }
         };
     }

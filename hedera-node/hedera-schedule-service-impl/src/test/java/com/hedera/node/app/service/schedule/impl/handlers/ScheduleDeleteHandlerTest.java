@@ -116,7 +116,7 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         final Schedule beforeDelete = scheduleStore.get(testScheduleID);
         assertThat(beforeDelete.deleted()).isFalse();
         prepareContext(scheduleDeleteTransaction(testScheduleID));
-        given(mockContext.verificationFor(adminKey)).willReturn(new SignatureVerificationImpl(adminKey, null, false));
+        given(keyVerifier.verificationFor(adminKey)).willReturn(new SignatureVerificationImpl(adminKey, null, false));
         throwsHandleException(() -> subject.handle(mockContext), ResponseCodeEnum.UNAUTHORIZED);
         final Schedule afterDelete = scheduleStore.get(testScheduleID);
         assertThat(afterDelete.deleted()).isFalse();
@@ -165,8 +165,8 @@ class ScheduleDeleteHandlerTest extends ScheduleHandlerTestBase {
         given(mockContext.body()).willReturn(deleteTransaction);
         given(mockContext.allKeysForTransaction(Mockito.any(), Mockito.any())).willReturn(testChildKeys);
         // This is how you get side-effects replicated, by having the "Answer" called in place of the real method.
-        given(mockContext.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
+        given(keyVerifier.verificationFor(BDDMockito.any(Key.class), BDDMockito.any(VerificationAssistant.class)))
                 .will(new VerificationForAnswer(testChildKeys));
-        given(mockContext.verificationFor(adminKey)).willReturn(new SignatureVerificationImpl(adminKey, null, true));
+        given(keyVerifier.verificationFor(adminKey)).willReturn(new SignatureVerificationImpl(adminKey, null, true));
     }
 }

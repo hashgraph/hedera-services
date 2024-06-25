@@ -9,6 +9,7 @@ of what each of the different APIs are intended for.
   - [Schedule Service](schedule-service/schedule-service.md)
   - [Consensus Service](consensus-service/consensus-service.md)
   - [Network & Freeze Service](network-admin-service/network-admin-service.md)
+  - [Util Service](util-service/util-service.md)
 
 ## Service
 

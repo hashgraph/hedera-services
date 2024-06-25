@@ -28,15 +28,10 @@ import javax.inject.Scope;
 
 /**
  * Scope for bindings whose lifetime consists of a single platform transaction.
- * This scope contains the following bindings:
- * <ol>
- *     <li>HederaState</li>
- *     <li>configuration</li>
- *     <li>TokenContext</li>
- *     <li>RecordListBuilder</li>
- *     <li>PreHandleResult</li>
- *     <li></li>
- *  </ol>
+ * Dagger will provide any objects that are annotated with this scope for the entire duration of
+ * the platform transaction that is used to dispatch platform transaction to the handler and
+ * to handle the platform transaction. These objects can also be accessed by the child dispatch
+ * and user dispatch scopes.
  */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)

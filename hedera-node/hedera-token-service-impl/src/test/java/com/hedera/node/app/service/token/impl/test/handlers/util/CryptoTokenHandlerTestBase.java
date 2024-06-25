@@ -16,14 +16,13 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.util;
 
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakePeriodManager.ZONE_UTC;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
-import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ZONE_UTC;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
-import static com.hedera.test.utils.KeyUtils.A_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.B_COMPLEX_KEY;
-import static com.hedera.test.utils.KeyUtils.C_COMPLEX_KEY;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.A_COMPLEX_KEY;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.B_COMPLEX_KEY;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.C_COMPLEX_KEY;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -79,6 +78,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -105,6 +105,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
@@ -165,7 +166,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     private static final Key aPrimitiveKey = Key.newBuilder()
             .ed25519(Bytes.wrap("01234567890123456789012345678901"))
             .build();
-    private static final Bytes edKeyAlias = Bytes.wrap(asBytes(Key.PROTOBUF, aPrimitiveKey));
+    private static final Bytes edKeyAlias = aPrimitiveKey.ed25519();
     protected final AccountID alias = AccountID.newBuilder().alias(edKeyAlias).build();
     protected final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e25");
     protected final ContractID contractAlias =
@@ -388,6 +389,9 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     @Mock
     private StoreMetricsService storeMetricsService;
+
+    @Mock(strictness = Strictness.LENIENT)
+    protected StoreFactory storeFactory;
 
     protected Configuration configuration;
     protected VersionedConfigImpl versionedConfig;
@@ -991,26 +995,31 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected void givenStoresAndConfig(final HandleContext context) {
         configuration = HederaTestConfigBuilder.createConfig();
         given(context.configuration()).willReturn(configuration);
-        given(context.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
 
-        given(context.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(context.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
 
-        given(context.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
-        given(context.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
+        given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
-        given(context.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
-        given(context.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
+        given(storeFactory.readableStore(ReadableNftStore.class)).willReturn(readableNftStore);
+        given(storeFactory.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
 
-        given(context.readableStore(ReadableNetworkStakingRewardsStore.class)).willReturn(readableRewardsStore);
-        given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(writableRewardsStore);
+        given(storeFactory.readableStore(ReadableNetworkStakingRewardsStore.class))
+                .willReturn(readableRewardsStore);
+        given(storeFactory.writableStore(WritableNetworkStakingRewardsStore.class))
+                .willReturn(writableRewardsStore);
 
-        given(context.readableStore(ReadableStakingInfoStore.class)).willReturn(readableStakingInfoStore);
-        given(context.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
+        given(storeFactory.readableStore(ReadableStakingInfoStore.class)).willReturn(readableStakingInfoStore);
+        given(storeFactory.writableStore(WritableStakingInfoStore.class)).willReturn(writableStakingInfoStore);
 
-        given(context.readableStore(ReadableNetworkStakingRewardsStore.class)).willReturn(readableRewardsStore);
-        given(context.writableStore(WritableNetworkStakingRewardsStore.class)).willReturn(writableRewardsStore);
+        given(storeFactory.readableStore(ReadableNetworkStakingRewardsStore.class))
+                .willReturn(readableRewardsStore);
+        given(storeFactory.writableStore(WritableNetworkStakingRewardsStore.class))
+                .willReturn(writableRewardsStore);
         given(context.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
     }
 
