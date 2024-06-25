@@ -16,21 +16,28 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
+import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.PreHandleResultManager;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.flow.txn.DefaultHandleWorkflow;
 import com.hedera.node.app.workflows.handle.flow.txn.UserTxn;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.GenesisWorkflow;
+import com.hedera.node.app.workflows.handle.record.GenesisSetup;
+import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
@@ -42,7 +49,9 @@ import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -53,6 +62,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class HandleWorkflow {
+    public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
     private final NetworkInfo networkInfo;
     private final ConfigProvider configProvider;
@@ -66,7 +76,7 @@ public class HandleWorkflow {
     private final SoftwareVersion version;
     private final InitTrigger initTrigger;
     private final DefaultHandleWorkflow defaultHandleWorkflow;
-    private final GenesisWorkflow genesisWorkflow;
+    private final GenesisSetup genesisSetup;
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
 
@@ -84,7 +94,7 @@ public class HandleWorkflow {
             @NonNull final SoftwareVersion version,
             @NonNull final InitTrigger initTrigger,
             @NonNull final DefaultHandleWorkflow defaultHandleWorkflow,
-            @NonNull final GenesisWorkflow genesisWorkflow,
+            @NonNull final GenesisSetup genesisSetup,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager) {
         this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
@@ -99,7 +109,7 @@ public class HandleWorkflow {
         this.version = requireNonNull(version);
         this.initTrigger = requireNonNull(initTrigger);
         this.defaultHandleWorkflow = requireNonNull(defaultHandleWorkflow);
-        this.genesisWorkflow = requireNonNull(genesisWorkflow);
+        this.genesisSetup = requireNonNull(genesisSetup);
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
     }
@@ -187,35 +197,161 @@ public class HandleWorkflow {
             @NonNull final ConsensusTransaction txn) {
         final var handleStart = System.nanoTime();
 
-        final var lastHandledConsTime = blockRecordManager.consTimeOfLastHandledTxn();
-        final var consTime = txn.getConsensusTimestamp().minusNanos(1000 - 3L);
-        // FUTURE: Use StreamMode enum to switch between blockStreams and/or recordStreams
-        blockRecordManager.startUserTransaction(consTime, state, platformState);
-        final var userTxn = UserTxn.from(
+        final var consensusNow = txn.getConsensusTimestamp().minusNanos(1000 - 3L);
+        blockRecordManager.startUserTransaction(consensusNow, state, platformState);
+        final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
+        final var recordStream = execute(userTxn);
+        blockRecordManager.endUserTransaction(recordStream, state);
+
+        handleWorkflowMetrics.updateTransactionDuration(
+                userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+    }
+
+    /**
+     * Constructs a new {@link UserTxn} with the scope defined by the
+     * current state, platform context, creator, and consensus time.
+     *
+     * @param state the current state
+     * @param platformState the current platform state
+     * @param event the current consensus event
+     * @param creator the creator of the transaction
+     * @param txn the consensus transaction
+     * @param consensusNow the consensus time
+     * @return the new user transaction
+     */
+    private UserTxn newUserTxn(
+            @NonNull final HederaState state,
+            @NonNull final PlatformState platformState,
+            @NonNull final ConsensusEvent event,
+            @NonNull final NodeInfo creator,
+            @NonNull final ConsensusTransaction txn,
+            @NonNull final Instant consensusNow) {
+        return UserTxn.from(
                 state,
                 platformState,
                 event,
                 creator,
                 txn,
-                consTime,
-                lastHandledConsTime,
+                consensusNow,
+                blockRecordManager.consTimeOfLastHandledTxn(),
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
                 preHandleResultManager);
-        final var workflow = userTxn.workflowWith(
-                version,
-                initTrigger,
-                defaultHandleWorkflow,
-                genesisWorkflow,
-                recordCache,
-                handleWorkflowMetrics,
-                userRecordInitializer,
-                exchangeRateManager);
-        final var recordStream = workflow.execute();
-        blockRecordManager.endUserTransaction(recordStream, state);
+    }
 
-        handleWorkflowMetrics.updateTransactionDuration(
-                userTxn.functionality(), (int) (System.nanoTime() - handleStart));
+    /**
+     * Executes the user transaction and returns a stream of records that capture all
+     * side effects on state that are stipulated by the pre-block-stream contract with
+     * mirror nodes.
+     *
+     * <p>Never throws an exception without a fundamental breakdown in the integrity
+     * of the system invariants. If there is an internal error when executing the
+     * transaction, returns a stream of a single {@link ResponseCodeEnum#FAIL_INVALID}
+     * record with no other side effects.
+     *
+     * <p><b>IMPORTANT:</b> With block streams, this contract will expand to include
+     * all side effects on state, no exceptions.
+     *
+     * @return the stream of records
+     */
+    private Stream<SingleTransactionRecord> execute(@NonNull final UserTxn userTxn) {
+        try {
+            if (isOlderSoftwareEvent(userTxn)) {
+                skip(userTxn);
+            } else {
+                if (userTxn.isGenesisTxn()) {
+                    genesisSetup.setupIn(userTxn.tokenContext());
+                }
+                defaultHandleWorkflow.execute(userTxn);
+                updateWorkflowMetrics(userTxn);
+            }
+            return finalRecordStream(userTxn);
+        } catch (final Exception e) {
+            logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
+            return failInvalidRecordStream(userTxn);
+        }
+    }
+
+    /**
+     * Returns a stream of a single {@link ResponseCodeEnum#FAIL_INVALID} record
+     * for the given user transaction.
+     *
+     * @return the failure record
+     */
+    private Stream<SingleTransactionRecord> failInvalidRecordStream(@NonNull final UserTxn userTxn) {
+        final var failInvalidRecordListBuilder = new RecordListBuilder(userTxn.consensusNow());
+        final var recordBuilder = failInvalidRecordListBuilder.userTransactionRecordBuilder();
+        userRecordInitializer.initializeUserRecord(recordBuilder, userTxn.txnInfo());
+        recordBuilder.status(FAIL_INVALID);
+        userTxn.stack().rollbackFullStack();
+        return recordStream(userTxn, failInvalidRecordListBuilder);
+    }
+
+    /**
+     * Does nothing but has the side effect of adding a {@link ResponseCodeEnum#BUSY}
+     * record to the transaction's record stream.
+     *
+     * @param userTxn the user transaction to skip
+     */
+    private void skip(@NonNull final UserTxn userTxn) {
+        final TransactionInfo transactionInfo = userTxn.txnInfo();
+        // Initialize record builder list and place a BUSY record in the cache
+        userTxn.recordListBuilder()
+                .userTransactionRecordBuilder()
+                .transaction(transactionInfo.transaction())
+                .transactionBytes(transactionInfo.signedBytes())
+                .transactionID(transactionInfo.txBody().transactionIDOrElse(TransactionID.DEFAULT))
+                .exchangeRate(exchangeRateManager.exchangeRates())
+                .memo(transactionInfo.txBody().memo())
+                .status(ResponseCodeEnum.BUSY);
+    }
+
+    /**
+     * Returns true if the software event is older than the current software version.
+     *
+     * @return true if the software event is older than the current software version
+     */
+    private boolean isOlderSoftwareEvent(@NonNull final UserTxn userTxn) {
+        return this.initTrigger != EVENT_STREAM_RECOVERY
+                && version.compareTo(userTxn.event().getSoftwareVersion()) > 0;
+    }
+
+    /**
+     * Updates the metrics for the handle workflow.
+     */
+    private void updateWorkflowMetrics(@NonNull final UserTxn userTxn) {
+        if (userTxn.isGenesisTxn()
+                || userTxn.consensusNow().getEpochSecond()
+                        > userTxn.lastHandledConsensusTime().getEpochSecond()) {
+            handleWorkflowMetrics.switchConsensusSecond();
+        }
+    }
+
+    /**
+     * Returns a stream of records for the given user transaction with
+     * its in-scope records.
+     *
+     * @param userTxn the user transaction
+     * @return the stream of records
+     */
+    private Stream<SingleTransactionRecord> finalRecordStream(@NonNull final UserTxn userTxn) {
+        return recordStream(userTxn, userTxn.recordListBuilder());
+    }
+
+    /**
+     * Builds and caches the result of the user transaction with
+     * the explicitly provided records.
+     *
+     * @param userTxn the user transaction
+     * @param recordListBuilder the explicit records
+     * @return the stream of records
+     */
+    private Stream<SingleTransactionRecord> recordStream(
+            @NonNull final UserTxn userTxn, @NonNull final RecordListBuilder recordListBuilder) {
+        final var result = recordListBuilder.build();
+        recordCache.add(
+                userTxn.creatorInfo().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), result.records());
+        return result.records().stream();
     }
 }

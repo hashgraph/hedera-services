@@ -42,9 +42,8 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.PreHandleResultManager;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.flow.txn.DefaultHandleWorkflow;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTxnWorkflow;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.GenesisWorkflow;
+import com.hedera.node.app.workflows.handle.record.GenesisSetup;
 import com.hedera.node.app.workflows.prehandle.FakeSignatureVerificationFuture;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult.Status;
@@ -66,7 +65,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -145,9 +143,6 @@ class HandleWorkflowTest extends AppTestBase {
     private ConsensusTransactionImpl txn;
 
     @Mock
-    private UserTxnWorkflow userTxnWorkflow;
-
-    @Mock
     private PreHandleResultManager preHandleResultManager;
 
     @Mock
@@ -163,7 +158,7 @@ class HandleWorkflowTest extends AppTestBase {
     private DefaultHandleWorkflow defaultHandleWorkflow;
 
     @Mock
-    private GenesisWorkflow genesisWorkflow;
+    private GenesisSetup genesisSetup;
 
     @Mock
     private HederaRecordCache recordCache;
@@ -211,7 +206,7 @@ class HandleWorkflowTest extends AppTestBase {
                 version,
                 initTrigger,
                 defaultHandleWorkflow,
-                genesisWorkflow,
+                genesisSetup,
                 recordCache,
                 exchangeRateManager);
     }
@@ -314,7 +309,6 @@ class HandleWorkflowTest extends AppTestBase {
         when(txnIterator.next()).thenReturn(txn);
         when(txn.isSystem()).thenReturn(false);
         // TODO
-        when(userTxnWorkflow.execute()).thenReturn(mock(Stream.class));
         when(event.getCreatorId()).thenReturn(nodeSelfId);
         when(txn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
 
@@ -336,7 +330,6 @@ class HandleWorkflowTest extends AppTestBase {
     @Test
     void handlePlatformTransaction() {
         // TODO
-        when(userTxnWorkflow.execute()).thenReturn(mock(Stream.class));
         when(txn.getConsensusTimestamp()).thenReturn(CONSENSUS_NOW);
 
         workflow.handlePlatformTransaction(state, platformState, event, nodeInfo, txn);

@@ -72,13 +72,13 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
-import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
+import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -138,10 +138,10 @@ class DispatchProcessorTest {
     private RecordFinalizer recordFinalizer;
 
     @Mock
-    private SystemFileUpdateFacility systemFileUpdateFacility;
+    private SystemFileUpdates systemFileUpdates;
 
     @Mock
-    private PlatformStateUpdateFacility platformStateUpdateFacility;
+    private PlatformStateUpdates platformStateUpdates;
 
     @Mock
     private ExchangeRateManager exchangeRateManager;
@@ -187,8 +187,8 @@ class DispatchProcessorTest {
                 authorizer,
                 dispatchValidator,
                 recordFinalizer,
-                systemFileUpdateFacility,
-                platformStateUpdateFacility,
+                systemFileUpdates,
+                platformStateUpdates,
                 dispatchUsageManager,
                 exchangeRateManager,
                 dispatcher);
@@ -475,7 +475,7 @@ class DispatchProcessorTest {
         subject.processDispatch(dispatch);
 
         verifyUtilization();
-        verify(platformStateUpdateFacility).handleTxBody(stack, platformState, CONTRACT_TXN_INFO.txBody());
+        verify(platformStateUpdates).handleTxBody(stack, platformState, CONTRACT_TXN_INFO.txBody());
         verify(recordBuilder, times(2)).status(SUCCESS);
         verify(feeAccumulator).chargeFees(PAYER_ACCOUNT_ID, CREATOR_ACCOUNT_ID, FEES);
         assertFinished();
@@ -494,8 +494,7 @@ class DispatchProcessorTest {
 
         subject.processDispatch(dispatch);
 
-        verify(platformStateUpdateFacility, never())
-                .handleTxBody(stack, platformState, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(platformStateUpdates, never()).handleTxBody(stack, platformState, CRYPTO_TRANSFER_TXN_INFO.txBody());
         verify(recordBuilder).status(SUCCESS);
         verify(feeAccumulator).chargeNetworkFee(PAYER_ACCOUNT_ID, FEES.totalFee());
         assertFinished();
@@ -513,8 +512,7 @@ class DispatchProcessorTest {
 
         subject.processDispatch(dispatch);
 
-        verify(platformStateUpdateFacility, never())
-                .handleTxBody(stack, platformState, CRYPTO_TRANSFER_TXN_INFO.txBody());
+        verify(platformStateUpdates, never()).handleTxBody(stack, platformState, CRYPTO_TRANSFER_TXN_INFO.txBody());
         verify(recordBuilder).status(SUCCESS);
         assertFinished();
     }
@@ -562,7 +560,7 @@ class DispatchProcessorTest {
     }
 
     private void givenSystemEffectSuccess(@NonNull final TransactionInfo txnInfo) {
-        given(systemFileUpdateFacility.handleTxBody(stack, txnInfo.txBody())).willReturn(SUCCESS);
+        given(systemFileUpdates.handleTxBody(stack, txnInfo.txBody())).willReturn(SUCCESS);
         given(exchangeRateManager.exchangeRates()).willReturn(ExchangeRateSet.DEFAULT);
         given(recordBuilder.exchangeRate(ExchangeRateSet.DEFAULT)).willReturn(recordBuilder);
         given(dispatch.platformState()).willReturn(platformState);

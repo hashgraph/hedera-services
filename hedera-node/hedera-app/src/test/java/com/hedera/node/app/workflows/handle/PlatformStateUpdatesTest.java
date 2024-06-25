@@ -32,6 +32,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
+import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
@@ -47,10 +48,10 @@ import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PlatformStateUpdateFacilityTest implements TransactionFactory {
+class PlatformStateUpdatesTest implements TransactionFactory {
     private FakeHederaState state;
 
-    private PlatformStateUpdateFacility subject;
+    private PlatformStateUpdates subject;
     private AtomicReference<Timestamp> freezeTimeBackingStore;
 
     @Mock(strictness = Strictness.LENIENT)
@@ -72,7 +73,7 @@ class PlatformStateUpdateFacilityTest implements TransactionFactory {
                 .when(platformState)
                 .setFreezeTime(any(Instant.class));
 
-        subject = new PlatformStateUpdateFacility();
+        subject = new PlatformStateUpdates();
     }
 
     @SuppressWarnings("ConstantConditions")

@@ -33,15 +33,13 @@ import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.ScheduleExpirationHook;
-import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.handle.flow.dispatch.UserDispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -54,11 +52,10 @@ import org.apache.logging.log4j.Logger;
 public class DefaultHandleWorkflow {
     private static final Logger logger = LogManager.getLogger(DefaultHandleWorkflow.class);
 
-    private final StakingPeriodTimeHook stakingPeriodTimeHook;
+    private final NodeStakeUpdates nodeStakeUpdates;
     private final BlockRecordManager blockRecordManager;
     private final DispatchProcessor dispatchProcessor;
     private final HollowAccountCompleter hollowAccountFinalization;
-    private final ScheduleExpirationHook scheduleExpirationHook;
     private final StoreMetricsService storeMetricsService;
     private final UserRecordInitializer userRecordInitializer;
     private final Authorizer authorizer;
@@ -73,11 +70,10 @@ public class DefaultHandleWorkflow {
 
     @Inject
     public DefaultHandleWorkflow(
-            @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
+            @NonNull final NodeStakeUpdates nodeStakeUpdates,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final HollowAccountCompleter hollowAccountFinalization,
-            @NonNull final ScheduleExpirationHook scheduleExpirationHook,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final UserRecordInitializer userRecordInitializer,
             @NonNull final Authorizer authorizer,
@@ -89,11 +85,10 @@ public class DefaultHandleWorkflow {
             @NonNull final ChildDispatchFactory childDispatchFactory,
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
-        this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook);
+        this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.blockRecordManager = requireNonNull(blockRecordManager);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
         this.hollowAccountFinalization = requireNonNull(hollowAccountFinalization);
-        this.scheduleExpirationHook = requireNonNull(scheduleExpirationHook);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.userRecordInitializer = requireNonNull(userRecordInitializer);
         this.authorizer = requireNonNull(authorizer);
@@ -153,7 +148,7 @@ public class DefaultHandleWorkflow {
 
     private void processStakingPeriodTimeHook(@NonNull final UserTxn userTxn) {
         try {
-            stakingPeriodTimeHook.process(userTxn.stack(), userTxn.tokenContext());
+            nodeStakeUpdates.process(userTxn.stack(), userTxn.tokenContext());
         } catch (final Exception e) {
             // If anything goes wrong, we log the error and continue
             logger.error("Failed to process staking period time hook", e);
@@ -171,25 +166,23 @@ public class DefaultHandleWorkflow {
     }
 
     /**
-     * Expire schedules that are due to be executed between the last handled transaction time and the current consensus
-     * time.
+     * Expire schedules that are due to be executed between the last handled
+     * transaction time and the current consensus time.
      *
-     * @param userTxn the user transaction component
+     * @param userTxn the user transaction
      */
-    public void expireSchedules(@NonNull UserTxn userTxn) {
-        final var lastHandledTxnTime = userTxn.lastHandledConsensusTime();
-        if (lastHandledTxnTime == Instant.EPOCH) {
+    private void expireSchedules(@NonNull UserTxn userTxn) {
+        if (userTxn.isGenesisTxn()) {
             return;
         }
+        final var lastHandledTxnTime = userTxn.lastHandledConsensusTime();
         if (userTxn.consensusNow().getEpochSecond() > lastHandledTxnTime.getEpochSecond()) {
             final var firstSecondToExpire = lastHandledTxnTime.getEpochSecond();
             final var lastSecondToExpire = userTxn.consensusNow().getEpochSecond() - 1;
             final var scheduleStore = new WritableStoreFactory(
                             userTxn.stack(), ScheduleService.NAME, userTxn.configuration(), storeMetricsService)
                     .getStore(WritableScheduleStore.class);
-            // purge all expired schedules between the first consensus time of last block and the current consensus time
-            scheduleExpirationHook.processExpiredSchedules(scheduleStore, firstSecondToExpire, lastSecondToExpire);
-            // commit the stack
+            scheduleStore.purgeExpiredSchedulesBetween(firstSecondToExpire, lastSecondToExpire);
             userTxn.stack().commitFullStack();
         }
     }

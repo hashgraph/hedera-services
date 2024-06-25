@@ -41,6 +41,7 @@ import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
@@ -61,7 +62,7 @@ import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class SystemFileUpdateFacilityTest implements TransactionFactory {
+class SystemFileUpdatesTest implements TransactionFactory {
 
     private static final Bytes FILE_BYTES = Bytes.wrap("Hello World");
     private static final Instant CONSENSUS_NOW = Instant.parse("2000-01-01T00:00:00Z");
@@ -73,7 +74,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
 
     private Map<FileID, File> files;
 
-    private SystemFileUpdateFacility subject;
+    private SystemFileUpdates subject;
 
     @Mock
     private ExchangeRateManager exchangeRateManager;
@@ -98,7 +99,7 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
                 .getOrCreateConfig();
         when(configProvider.getConfiguration()).thenReturn(new VersionedConfigImpl(config, 1L));
 
-        subject = new SystemFileUpdateFacility(configProvider, exchangeRateManager, feeManager, throttleServiceManager);
+        subject = new SystemFileUpdates(configProvider, exchangeRateManager, feeManager, throttleServiceManager);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -108,15 +109,14 @@ class SystemFileUpdateFacilityTest implements TransactionFactory {
         final var txBody = simpleCryptoTransfer().body();
 
         // then
-        assertThatThrownBy(() ->
-                        new SystemFileUpdateFacility(null, exchangeRateManager, feeManager, throttleServiceManager))
+        assertThatThrownBy(() -> new SystemFileUpdates(null, exchangeRateManager, feeManager, throttleServiceManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SystemFileUpdateFacility(configProvider, exchangeRateManager, feeManager, null))
+        assertThatThrownBy(() -> new SystemFileUpdates(configProvider, exchangeRateManager, feeManager, null))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new SystemFileUpdateFacility(configProvider, null, feeManager, throttleServiceManager))
+        assertThatThrownBy(() -> new SystemFileUpdates(configProvider, null, feeManager, throttleServiceManager))
                 .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() ->
-                        new SystemFileUpdateFacility(configProvider, exchangeRateManager, null, throttleServiceManager))
+        assertThatThrownBy(
+                        () -> new SystemFileUpdates(configProvider, exchangeRateManager, null, throttleServiceManager))
                 .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> subject.handleTxBody(null, txBody)).isInstanceOf(NullPointerException.class);

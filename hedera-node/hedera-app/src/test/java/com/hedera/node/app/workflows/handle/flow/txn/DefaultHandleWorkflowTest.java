@@ -38,12 +38,11 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.ScheduleExpirationHook;
-import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
 import com.hedera.node.app.workflows.handle.flow.dispatch.child.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.WritableKVState;
@@ -58,7 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
 public class DefaultHandleWorkflowTest {
     @Mock
-    private StakingPeriodTimeHook stakingPeriodTimeHook;
+    private NodeStakeUpdates nodeStakeUpdates;
 
     @Mock
     private BlockRecordManager blockRecordManager;
@@ -123,16 +122,13 @@ public class DefaultHandleWorkflowTest {
     @LoggingSubject
     private DefaultHandleWorkflow subject;
 
-    private ScheduleExpirationHook scheduleExpirationHook = new ScheduleExpirationHook();
-
     @BeforeEach
     public void setUp() {
         subject = new DefaultHandleWorkflow(
-                stakingPeriodTimeHook,
+                nodeStakeUpdates,
                 blockRecordManager,
                 dispatchProcessor,
                 hollowAccountFinalization,
-                scheduleExpirationHook,
                 storeMetricsService,
                 userRecordInitializer,
                 authorizer,
@@ -162,16 +158,14 @@ public class DefaultHandleWorkflowTest {
     public void testExecute() {
         //        subject.execute(userTxn);
 
-        verify(stakingPeriodTimeHook).process(any(), any());
+        verify(nodeStakeUpdates).process(any(), any());
         verify(blockRecordManager).advanceConsensusClock(any(), any());
         // TODO
     }
 
     @Test
     public void testExecuteWithStakingPeriodTimeHookException() {
-        doThrow(new RuntimeException("Test exception"))
-                .when(stakingPeriodTimeHook)
-                .process(any(), any());
+        doThrow(new RuntimeException("Test exception")).when(nodeStakeUpdates).process(any(), any());
 
         //        subject.execute(userTxn);
 

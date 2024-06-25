@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
@@ -49,9 +49,8 @@ import org.apache.logging.log4j.Logger;
  * to update the data that is currently transmitted in these files.
  */
 @Singleton
-public class SystemFileUpdateFacility {
-
-    private static final Logger logger = LogManager.getLogger(SystemFileUpdateFacility.class);
+public class SystemFileUpdates {
+    private static final Logger logger = LogManager.getLogger(SystemFileUpdates.class);
 
     private final ConfigProviderImpl configProvider;
     private final ExchangeRateManager exchangeRateManager;
@@ -64,7 +63,7 @@ public class SystemFileUpdateFacility {
      * @param configProvider the configuration provider
      */
     @Inject
-    public SystemFileUpdateFacility(
+    public SystemFileUpdates(
             @NonNull final ConfigProviderImpl configProvider,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,

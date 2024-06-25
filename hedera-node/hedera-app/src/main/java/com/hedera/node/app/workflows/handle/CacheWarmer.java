@@ -24,8 +24,10 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.WarmupContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionChecker;
+import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.ConfigProvider;
@@ -111,6 +113,42 @@ public class CacheWarmer {
             return checker.parseAndCheck(buffer).txBody();
         } catch (PreCheckException ex) {
             return null;
+        }
+    }
+
+    /**
+     * The default implementation of {@link WarmupContext}.
+     */
+    public static class WarmupContextImpl implements WarmupContext {
+
+        @NonNull
+        private final TransactionBody txBody;
+
+        @NonNull
+        private final ReadableStoreFactory storeFactory;
+
+        /**
+         * Constructor of {@code WarmupContextImpl}
+         *
+         * @param txBody the {@link TransactionInfo} of the transaction
+         * @param storeFactory the {@link ReadableStoreFactory} to create stores
+         */
+        public WarmupContextImpl(
+                @NonNull final TransactionBody txBody, @NonNull final ReadableStoreFactory storeFactory) {
+            this.txBody = txBody;
+            this.storeFactory = storeFactory;
+        }
+
+        @NonNull
+        @Override
+        public TransactionBody body() {
+            return txBody;
+        }
+
+        @NonNull
+        @Override
+        public <C> C createStore(@NonNull final Class<C> storeInterface) {
+            return storeFactory.getStore(storeInterface);
         }
     }
 }

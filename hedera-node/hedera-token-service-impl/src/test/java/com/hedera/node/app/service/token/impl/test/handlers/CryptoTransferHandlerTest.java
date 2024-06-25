@@ -70,7 +70,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.WarmupContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.workflows.handle.WarmupContextImpl;
+import com.hedera.node.app.workflows.handle.CacheWarmer;
 import com.hedera.node.app.workflows.handle.flow.DispatchHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -114,7 +114,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         TransactionBody txn = newCryptoTransfer(ACCT_3333_MINUS_10, ACCT_4444_PLUS_10);
 
-        WarmupContext warmupContext = new WarmupContextImpl(txn, storeFactory);
+        WarmupContext warmupContext = new CacheWarmer.WarmupContextImpl(txn, storeFactory);
         when(storeFactory.getStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
 
         subject.warm(warmupContext);
@@ -141,7 +141,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                         .build())
                 .build());
 
-        WarmupContext warmupContext = new WarmupContextImpl(txn, storeFactory);
+        WarmupContext warmupContext = new CacheWarmer.WarmupContextImpl(txn, storeFactory);
         when(storeFactory.getStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
         when(storeFactory.getStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(storeFactory.getStore(ReadableNftStore.class)).thenReturn(readableNftStore);

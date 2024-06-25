@@ -18,18 +18,36 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 
+import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
+import com.hedera.node.app.service.consensus.impl.handlers.ConsensusHandlers;
+import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
+import com.hedera.node.app.service.file.impl.handlers.FileHandlers;
+import com.hedera.node.app.service.networkadmin.impl.handlers.NetworkAdminHandlers;
+import com.hedera.node.app.service.schedule.impl.handlers.ScheduleHandlers;
+import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
+import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.state.HederaState;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
-@Module(includes = {HandlersInjectionModule.class})
+@Module
 public interface HandleWorkflowInjectionModule {
+    @Provides
+    @Singleton
+    static Supplier<ContractHandlers> provideContractHandlers() {
+        return CONTRACT_SERVICE::handlers;
+    }
+
     @Provides
     @Singleton
     static EthereumTransactionHandler provideEthereumTransactionHandler() {
@@ -42,5 +60,76 @@ public interface HandleWorkflowInjectionModule {
     static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(
             @NonNull final WorkingStateAccessor workingStateAccessor) {
         return () -> new AutoCloseableWrapper<>(workingStateAccessor.getHederaState(), NO_OP);
+    }
+
+    @Provides
+    @Named("FreezeService")
+    static Executor provideFreezeServiceExecutor() {
+        return new ForkJoinPool(
+                1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
+    }
+
+    @Provides
+    @Singleton
+    static TransactionHandlers provideTransactionHandlers(
+            @NonNull final NetworkAdminHandlers networkAdminHandlers,
+            @NonNull final ConsensusHandlers consensusHandlers,
+            @NonNull final FileHandlers fileHandlers,
+            @NonNull final Supplier<ContractHandlers> contractHandlers,
+            @NonNull final ScheduleHandlers scheduleHandlers,
+            @NonNull final TokenHandlers tokenHandlers,
+            @NonNull final UtilHandlers utilHandlers,
+            @NonNull final AddressBookHandlers addressBookHandlers) {
+        return new TransactionHandlers(
+                consensusHandlers.consensusCreateTopicHandler(),
+                consensusHandlers.consensusUpdateTopicHandler(),
+                consensusHandlers.consensusDeleteTopicHandler(),
+                consensusHandlers.consensusSubmitMessageHandler(),
+                contractHandlers.get().contractCreateHandler(),
+                contractHandlers.get().contractUpdateHandler(),
+                contractHandlers.get().contractCallHandler(),
+                contractHandlers.get().contractDeleteHandler(),
+                contractHandlers.get().contractSystemDeleteHandler(),
+                contractHandlers.get().contractSystemUndeleteHandler(),
+                contractHandlers.get().ethereumTransactionHandler(),
+                tokenHandlers.cryptoCreateHandler(),
+                tokenHandlers.cryptoUpdateHandler(),
+                tokenHandlers.cryptoTransferHandler(),
+                tokenHandlers.cryptoDeleteHandler(),
+                tokenHandlers.cryptoApproveAllowanceHandler(),
+                tokenHandlers.cryptoDeleteAllowanceHandler(),
+                tokenHandlers.cryptoAddLiveHashHandler(),
+                tokenHandlers.cryptoDeleteLiveHashHandler(),
+                fileHandlers.fileCreateHandler(),
+                fileHandlers.fileUpdateHandler(),
+                fileHandlers.fileDeleteHandler(),
+                fileHandlers.fileAppendHandler(),
+                fileHandlers.fileSystemDeleteHandler(),
+                fileHandlers.fileSystemUndeleteHandler(),
+                networkAdminHandlers.freezeHandler(),
+                networkAdminHandlers.networkUncheckedSubmitHandler(),
+                addressBookHandlers.nodeCreateHandler(),
+                addressBookHandlers.nodeDeleteHandler(),
+                addressBookHandlers.nodeUpdateHandler(),
+                scheduleHandlers.scheduleCreateHandler(),
+                scheduleHandlers.scheduleSignHandler(),
+                scheduleHandlers.scheduleDeleteHandler(),
+                tokenHandlers.tokenCreateHandler(),
+                tokenHandlers.tokenUpdateHandler(),
+                tokenHandlers.tokenMintHandler(),
+                tokenHandlers.tokenBurnHandler(),
+                tokenHandlers.tokenDeleteHandler(),
+                tokenHandlers.tokenAccountWipeHandler(),
+                tokenHandlers.tokenFreezeAccountHandler(),
+                tokenHandlers.tokenUnfreezeAccountHandler(),
+                tokenHandlers.tokenGrantKycToAccountHandler(),
+                tokenHandlers.tokenRevokeKycFromAccountHandler(),
+                tokenHandlers.tokenAssociateToAccountHandler(),
+                tokenHandlers.tokenDissociateFromAccountHandler(),
+                tokenHandlers.tokenFeeScheduleUpdateHandler(),
+                tokenHandlers.tokenPauseHandler(),
+                tokenHandlers.tokenUnpauseHandler(),
+                tokenHandlers.tokenUpdateNftsHandler(),
+                utilHandlers.prngHandler());
     }
 }

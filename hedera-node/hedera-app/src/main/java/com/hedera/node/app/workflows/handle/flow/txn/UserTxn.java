@@ -19,25 +19,18 @@ package com.hedera.node.app.workflows.handle.flow.txn;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.PreHandleResultManager;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
-import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.GenesisWorkflow;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.system.InitTrigger;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
@@ -101,26 +94,5 @@ public record UserTxn(
                 config,
                 lastHandledConsensusTime,
                 creatorInfo);
-    }
-
-    public UserTxnWorkflow workflowWith(
-            @NonNull final SoftwareVersion version,
-            @NonNull final InitTrigger initTrigger,
-            @NonNull final DefaultHandleWorkflow defaultHandleWorkflow,
-            @NonNull final GenesisWorkflow genesisWorkflow,
-            @NonNull final HederaRecordCache recordCache,
-            @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
-            @NonNull final UserRecordInitializer userRecordInitializer,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
-        return new UserTxnWorkflow(
-                version,
-                initTrigger,
-                defaultHandleWorkflow,
-                genesisWorkflow,
-                recordCache,
-                handleWorkflowMetrics,
-                userRecordInitializer,
-                exchangeRateManager,
-                this);
     }
 }

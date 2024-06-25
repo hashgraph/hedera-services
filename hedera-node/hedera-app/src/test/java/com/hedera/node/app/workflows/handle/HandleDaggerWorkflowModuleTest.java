@@ -307,7 +307,7 @@ class HandleDaggerWorkflowModuleTest {
         given(addressBookHandlers.nodeDeleteHandler()).willReturn(nodeDeleteHandler);
         given(addressBookHandlers.nodeUpdateHandler()).willReturn(nodeUpdateHandler);
 
-        final var handlers = HandlersInjectionModule.provideTransactionHandlers(
+        final var handlers = HandleWorkflowInjectionModule.provideTransactionHandlers(
                 networkAdminHandlers,
                 consensusHandlers,
                 fileHandlers,

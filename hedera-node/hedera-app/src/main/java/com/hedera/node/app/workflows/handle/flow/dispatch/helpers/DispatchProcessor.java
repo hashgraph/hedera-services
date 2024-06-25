@@ -25,12 +25,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.workflows.handle.HandleWorkflow.ALERT_MESSAGE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone.FEES_ONLY;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor.WorkDone.USER_TRANSACTION;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchUsageManager.ThrottleException;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.DuplicateStatus.DUPLICATE;
 import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.ServiceFeeStatus.UNABLE_TO_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.handle.flow.txn.UserTxnWorkflow.ALERT_MESSAGE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -38,12 +38,12 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.PlatformStateUpdateFacility;
-import com.hedera.node.app.workflows.handle.SystemFileUpdateFacility;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
+import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -64,8 +64,8 @@ public class DispatchProcessor {
     private final Authorizer authorizer;
     private final DispatchValidator validator;
     private final RecordFinalizer recordFinalizer;
-    private final SystemFileUpdateFacility systemFileUpdateFacility;
-    private final PlatformStateUpdateFacility platformStateUpdateFacility;
+    private final SystemFileUpdates systemFileUpdates;
+    private final PlatformStateUpdates platformStateUpdates;
     private final DispatchUsageManager dispatchUsageManager;
     private final ExchangeRateManager exchangeRateManager;
     private final TransactionDispatcher dispatcher;
@@ -75,16 +75,16 @@ public class DispatchProcessor {
             @NonNull final Authorizer authorizer,
             @NonNull final DispatchValidator validator,
             @NonNull final RecordFinalizer recordFinalizer,
-            @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
-            @NonNull final PlatformStateUpdateFacility platformStateUpdateFacility,
+            @NonNull final SystemFileUpdates systemFileUpdates,
+            @NonNull final PlatformStateUpdates platformStateUpdates,
             @NonNull final DispatchUsageManager dispatchUsageManager,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionDispatcher dispatcher) {
         this.authorizer = requireNonNull(authorizer);
         this.validator = requireNonNull(validator);
         this.recordFinalizer = requireNonNull(recordFinalizer);
-        this.systemFileUpdateFacility = requireNonNull(systemFileUpdateFacility);
-        this.platformStateUpdateFacility = requireNonNull(platformStateUpdateFacility);
+        this.systemFileUpdates = requireNonNull(systemFileUpdates);
+        this.platformStateUpdates = requireNonNull(platformStateUpdates);
         this.dispatchUsageManager = requireNonNull(dispatchUsageManager);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.dispatcher = requireNonNull(dispatcher);
@@ -167,7 +167,7 @@ public class DispatchProcessor {
     private void handleSystemUpdates(final Dispatch dispatch) {
         // Notify responsible facility if system-file was uploaded.
         // Returns SUCCESS if no system-file was uploaded
-        final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(
+        final var fileUpdateResult = systemFileUpdates.handleTxBody(
                 dispatch.stack(), dispatch.txnInfo().txBody());
 
         dispatch.recordBuilder()
@@ -175,7 +175,7 @@ public class DispatchProcessor {
                 .status(fileUpdateResult);
 
         // Notify if platform state was updated
-        platformStateUpdateFacility.handleTxBody(
+        platformStateUpdates.handleTxBody(
                 dispatch.stack(), dispatch.platformState(), dispatch.txnInfo().txBody());
     }
 

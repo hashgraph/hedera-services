@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.record;
+package com.hedera.node.app.services;
 
 import static java.util.Objects.requireNonNull;
 

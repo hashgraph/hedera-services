@@ -49,7 +49,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class GenesisWorkflowTest {
+class GenesisSetupTest {
     private static final AccountID ACCOUNT_ID_1 =
             AccountID.newBuilder().accountNum(1).build();
     private static final AccountID ACCOUNT_ID_2 =
@@ -79,7 +79,7 @@ class GenesisWorkflowTest {
     @Mock
     private GenesisAccountRecordBuilder genesisAccountRecordBuilder;
 
-    private GenesisWorkflow subject;
+    private GenesisSetup subject;
 
     @BeforeEach
     void setup() {
@@ -91,12 +91,12 @@ class GenesisWorkflowTest {
 
         given(blockStore.getLastBlockInfo()).willReturn(defaultStartupBlockInfo());
 
-        subject = new GenesisWorkflow(syntheticAccountCreator);
+        subject = new GenesisSetup(syntheticAccountCreator);
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void executeInCreatesAllRecords() {
+    void setupInCreatesAllRecords() {
         final var acctId3 = ACCOUNT_ID_1.copyBuilder().accountNum(3).build();
         final var acct3 = ACCOUNT_1.copyBuilder().accountId(acctId3).build();
         final var acctId4 = ACCOUNT_ID_1.copyBuilder().accountNum(4).build();
@@ -125,7 +125,7 @@ class GenesisWorkflowTest {
                 .generateSyntheticAccounts(any(), any(), any(), any(), any(), any());
 
         // Call the first time to make sure records are generated
-        subject.executeIn(context);
+        subject.setupIn(context);
 
         verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO, ACCT_1_BALANCE);
         verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_STAKING_MEMO);
@@ -133,15 +133,15 @@ class GenesisWorkflowTest {
         verifyBuilderInvoked(acctId4, EXPECTED_TREASURY_CLONE_MEMO);
         verifyBuilderInvoked(acctId5, null);
 
-        // Call executeIn() a second time to make sure no other records are created
+        // Call setupIn() a second time to make sure no other records are created
         Mockito.clearInvocations(genesisAccountRecordBuilder);
-        assertThatThrownBy(() -> subject.executeIn(context)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.setupIn(context)).isInstanceOf(NullPointerException.class);
         verifyNoInteractions(genesisAccountRecordBuilder);
     }
 
     @Test
-    void executeInCreatesNoRecordsWhenEmpty() {
-        subject.executeIn(context);
+    void setupInCreatesNoRecordsWhenEmpty() {
+        subject.setupIn(context);
         verifyNoInteractions(genesisAccountRecordBuilder);
         verify(context, never()).markMigrationRecordsStreamed();
     }

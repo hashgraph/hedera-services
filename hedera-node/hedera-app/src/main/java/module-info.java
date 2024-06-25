@@ -100,6 +100,9 @@ module com.hedera.node.app {
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.workflows.handle.flow.dispatch.child to
             com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.steps to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

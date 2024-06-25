@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ABORT;
 import static com.hedera.hapi.node.freeze.FreezeType.FREEZE_ONLY;
@@ -41,14 +41,14 @@ import org.apache.logging.log4j.Logger;
  * Simple facility that notifies interested parties when the freeze state is updated.
  */
 @Singleton
-public class PlatformStateUpdateFacility {
-    private static final Logger logger = LogManager.getLogger(PlatformStateUpdateFacility.class);
+public class PlatformStateUpdates {
+    private static final Logger logger = LogManager.getLogger(PlatformStateUpdates.class);
 
     /**
      * Creates a new instance of this class.
      */
     @Inject
-    public PlatformStateUpdateFacility() {
+    public PlatformStateUpdates() {
         // For dagger
     }
 

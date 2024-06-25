@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.workflows.handle.steps;
 
 import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 import static java.time.ZoneOffset.UTC;
@@ -39,8 +39,8 @@ import org.apache.logging.log4j.Logger;
  * Handles the daily staking period updates
  */
 @Singleton
-public class StakingPeriodTimeHook {
-    private static final Logger logger = LogManager.getLogger(StakingPeriodTimeHook.class);
+public class NodeStakeUpdates {
+    private static final Logger logger = LogManager.getLogger(NodeStakeUpdates.class);
 
     private static final long DEFAULT_STAKING_PERIOD_MINS = 1440L;
     private static final long MINUTES_TO_MILLISECONDS = 60_000L;
@@ -49,7 +49,7 @@ public class StakingPeriodTimeHook {
     private final ExchangeRateManager exchangeRateManager;
 
     @Inject
-    public StakingPeriodTimeHook(
+    public NodeStakeUpdates(
             @NonNull final EndOfStakingPeriodUpdater stakingPeriodCalculator,
             @NonNull final ExchangeRateManager exchangeRateManager) {
         this.stakingCalculator = requireNonNull(stakingPeriodCalculator);
@@ -103,7 +103,7 @@ public class StakingPeriodTimeHook {
     }
 
     @VisibleForTesting
-    static boolean isNextStakingPeriod(
+    public static boolean isNextStakingPeriod(
             @NonNull final Instant currentConsensusTime,
             @NonNull final Instant previousConsensusTime,
             @NonNull final TokenContext tokenContext) {

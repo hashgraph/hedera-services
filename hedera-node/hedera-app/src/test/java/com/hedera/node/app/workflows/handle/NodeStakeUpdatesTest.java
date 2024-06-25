@@ -31,6 +31,7 @@ import com.hedera.node.app.records.ReadableBlockRecordStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
@@ -44,7 +45,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class StakingPeriodTimeHookTest {
+class NodeStakeUpdatesTest {
     private static final Instant CONSENSUS_TIME_1234567 = Instant.ofEpochSecond(1_234_5670L, 1357);
 
     @Mock
@@ -62,21 +63,21 @@ class StakingPeriodTimeHookTest {
     @Mock
     private SavepointStackImpl stack;
 
-    private StakingPeriodTimeHook subject;
+    private NodeStakeUpdates subject;
 
     @BeforeEach
     void setUp() {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 
-        subject = new StakingPeriodTimeHook(stakingPeriodCalculator, exchangeRateManager);
+        subject = new NodeStakeUpdates(stakingPeriodCalculator, exchangeRateManager);
     }
 
     @SuppressWarnings("DataFlowIssue")
     @Test
     void nullArgConstructor() {
-        Assertions.assertThatThrownBy(() -> new StakingPeriodTimeHook(null, exchangeRateManager))
+        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(null, exchangeRateManager))
                 .isInstanceOf(NullPointerException.class);
-        Assertions.assertThatThrownBy(() -> new StakingPeriodTimeHook(stakingPeriodCalculator, null))
+        Assertions.assertThatThrownBy(() -> new NodeStakeUpdates(stakingPeriodCalculator, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -131,8 +132,8 @@ class StakingPeriodTimeHookTest {
         given(context.consensusTime()).willReturn(currentConsensusTime);
 
         // Pre-condition check
-        Assertions.assertThat(StakingPeriodTimeHook.isNextStakingPeriod(
-                        currentConsensusTime, CONSENSUS_TIME_1234567, context))
+        Assertions.assertThat(
+                        NodeStakeUpdates.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
 
         subject.process(stack, context);
@@ -164,8 +165,7 @@ class StakingPeriodTimeHookTest {
 
         final var earlierNowConsensus =
                 CONSENSUS_TIME_1234567.minusSeconds(Duration.ofDays(1).toSeconds());
-        final var result =
-                StakingPeriodTimeHook.isNextStakingPeriod(earlierNowConsensus, CONSENSUS_TIME_1234567, context);
+        final var result = NodeStakeUpdates.isNextStakingPeriod(earlierNowConsensus, CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isFalse();
     }
@@ -175,7 +175,7 @@ class StakingPeriodTimeHookTest {
         given(context.configuration()).willReturn(newPeriodMinsConfig());
 
         final var result =
-                StakingPeriodTimeHook.isNextStakingPeriod(CONSENSUS_TIME_1234567, CONSENSUS_TIME_1234567, context);
+                NodeStakeUpdates.isNextStakingPeriod(CONSENSUS_TIME_1234567, CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isFalse();
     }
@@ -186,8 +186,7 @@ class StakingPeriodTimeHookTest {
 
         final var laterNowConsensus =
                 CONSENSUS_TIME_1234567.plusSeconds(Duration.ofDays(1).toSeconds());
-        final var result =
-                StakingPeriodTimeHook.isNextStakingPeriod(laterNowConsensus, CONSENSUS_TIME_1234567, context);
+        final var result = NodeStakeUpdates.isNextStakingPeriod(laterNowConsensus, CONSENSUS_TIME_1234567, context);
 
         Assertions.assertThat(result).isTrue();
     }
@@ -201,7 +200,7 @@ class StakingPeriodTimeHookTest {
                 // 1000 min * 60 seconds/min
                 1000 * 60);
         final var result =
-                StakingPeriodTimeHook.isNextStakingPeriod(earlierStakingPeriodTime, CONSENSUS_TIME_1234567, context);
+                NodeStakeUpdates.isNextStakingPeriod(earlierStakingPeriodTime, CONSENSUS_TIME_1234567, context);
         Assertions.assertThat(result).isFalse();
     }
 
@@ -214,7 +213,7 @@ class StakingPeriodTimeHookTest {
                 // 1000 min * 60 seconds/min
                 1000 * 60);
         final var result =
-                StakingPeriodTimeHook.isNextStakingPeriod(laterStakingPeriodTime, CONSENSUS_TIME_1234567, context);
+                NodeStakeUpdates.isNextStakingPeriod(laterStakingPeriodTime, CONSENSUS_TIME_1234567, context);
         Assertions.assertThat(result).isTrue();
     }
 
