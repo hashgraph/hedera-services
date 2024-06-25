@@ -116,7 +116,9 @@ public interface VerificationStrategy {
                                 case INVALID -> false;
                                     // Note the EthereumTransaction sender's key has necessarily signed
                                 case DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION -> Objects.equals(key, maybeEthSenderKey)
-                                        || context.verificationFor(key).passed();
+                                        || context.keyVerifier()
+                                                .verificationFor(key)
+                                                .passed();
                             };
                         }
                         yield false;

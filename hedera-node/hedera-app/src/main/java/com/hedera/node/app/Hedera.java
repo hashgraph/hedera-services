@@ -46,6 +46,7 @@ import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.info.UnavailableLedgerIdNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
+import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
@@ -189,6 +190,8 @@ public final class Hedera implements SwirldMain {
      */
     private PlatformStatus platformStatus = STARTING_UP;
 
+    private Metrics metrics;
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -246,7 +249,8 @@ public final class Hedera implements SwirldMain {
                         new BlockRecordService(),
                         new FeeService(),
                         new CongestionThrottleService(),
-                        new NetworkServiceImpl())
+                        new NetworkServiceImpl(),
+                        new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
         try {
             // And the factory for the MerkleHederaState class id must be our newState() method
@@ -319,7 +323,7 @@ public final class Hedera implements SwirldMain {
             throw new IllegalStateException("Platform should never change once set");
         }
         this.platform = requireNonNull(platform);
-        final var metrics = platform.getContext().getMetrics();
+        this.metrics = platform.getContext().getMetrics();
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
@@ -678,6 +682,7 @@ public final class Hedera implements SwirldMain {
                 .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
                 .servicesRegistry(servicesRegistry)
                 .instantSource(InstantSource.system())
+                .metrics(metrics)
                 .build();
         daggerApp.workingStateAccessor().setHederaState(state);
         daggerApp.platformStateAccessor().setPlatformState(platformState);
