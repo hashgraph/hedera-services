@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungibleMovement;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingFungiblePendingAirdrop;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.includingNftPendingAirdrop;
@@ -58,20 +58,29 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
+@HapiTestLifecycle
+@DisplayName("AIRDROP")
 public class TokenAirdropSuite {
 
     private static final String AIRDROPS_ENABLED = "tokens.airdrops.enabled";
+    public static final String UNLIMITED_AUTO_ASSOCIATIONS_ENABLED = "entities.unlimitedAutoAssociationsEnabled";
     private static final String SENDER = "sender";
     private static final String OWNER = "owner";
     private static final String SPENDER = "spender";
@@ -90,6 +99,18 @@ public class TokenAirdropSuite {
     private static final String SECP_256K1_KEY = "secp256K1";
     private static final String ANOTHER_SECP_256K1_KEY = "anotherSecp256K1";
 
+    @BeforeAll
+    static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
+        specManager.setup(overriding(AIRDROPS_ENABLED, "true"));
+        specManager.setup(overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "true"));
+    }
+
+    @AfterAll
+    static void afterAll(@NonNull final SpecManager specManager) throws Throwable {
+        specManager.teardown(overriding(AIRDROPS_ENABLED, "false"));
+        specManager.teardown(overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "false"));
+    }
+
     @HapiTest
     final Stream<DynamicTest> tokenAirdropToExistingAccountsWorks() {
         var moveToReceiverWithUnlimitedAutoAssociations =
@@ -102,11 +123,9 @@ public class TokenAirdropSuite {
         var moveToReceiverWithoutFreeAutoAssociations =
                 moving(10, FUNGIBLE_TOKEN).between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS);
 
-        return propertyPreservingHapiSpec("tokenAirdropToExistingAccountsWorks")
-                .preserving(AIRDROPS_ENABLED)
+        return defaultHapiSpec("tokenAirdropToExistingAccountsWorks")
                 .given(
                         // create fungible token and receivers accounts
-                        overriding(AIRDROPS_ENABLED, "true"),
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(FUNGIBLE_TOKEN)
                                 .treasury(SENDER)
@@ -165,10 +184,8 @@ public class TokenAirdropSuite {
 
     @HapiTest
     final Stream<DynamicTest> nftAirdropToExistingAccountsWorks() {
-        return propertyPreservingHapiSpec("nftAirdropToExistingAccountsWorks")
-                .preserving(AIRDROPS_ENABLED)
+        return defaultHapiSpec("nftAirdropToExistingAccountsWorks")
                 .given(
-                        overriding(AIRDROPS_ENABLED, "true"),
                         newKeyNamed(NFT_SUPPLY_KEY),
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
                         tokenCreate(DUMMY_FUNGIBLE_TOKEN)
@@ -221,6 +238,7 @@ public class TokenAirdropSuite {
                                                         .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
                                                 movingUnique(NON_FUNGIBLE_TOKEN, 2L)
                                                         .between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))))
+                                // todo check child records for transfers
                                 .hasChildRecords(recordWith()
                                         .tokenTransfers(
                                                 includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 3L)
@@ -248,10 +266,8 @@ public class TokenAirdropSuite {
     @HapiTest
     final Stream<DynamicTest> airdropToNonExistingAccountsWorks() {
         final AtomicReference<ByteString> evmAddress = new AtomicReference<>();
-        return propertyPreservingHapiSpec("nftAirdropToExistingAccountsWorks")
-                .preserving(AIRDROPS_ENABLED)
+        return defaultHapiSpec("nftAirdropToExistingAccountsWorks")
                 .given(
-                        overriding(AIRDROPS_ENABLED, "true"),
                         newKeyNamed(ED25519_KEY),
                         newKeyNamed(SECP_256K1_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ANOTHER_SECP_256K1_KEY).shape(SECP_256K1_SHAPE),
@@ -283,10 +299,8 @@ public class TokenAirdropSuite {
 
     @HapiTest
     final Stream<DynamicTest> airdropInvalidTokenIdFails() {
-        return propertyPreservingHapiSpec("airdropMissingTokenIdFails")
-                .preserving(AIRDROPS_ENABLED)
+        return defaultHapiSpec("airdropMissingTokenIdFails")
                 .given(
-                        overriding(AIRDROPS_ENABLED, "ture"),
                         cryptoCreate(SENDER),
                         cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
                         withOpContext((spec, opLog) -> {
@@ -307,10 +321,8 @@ public class TokenAirdropSuite {
 
     @HapiTest
     final Stream<DynamicTest> airdropNFTNegativeSerial() {
-        return propertyPreservingHapiSpec("airdropNFTNegativeSerial")
-                .preserving(AIRDROPS_ENABLED)
+        return defaultHapiSpec("airdropNFTNegativeSerial")
                 .given(
-                        overriding(AIRDROPS_ENABLED, "true"),
                         newKeyNamed(NFT_SUPPLY_KEY),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
@@ -331,10 +343,8 @@ public class TokenAirdropSuite {
 
     @HapiTest
     final Stream<DynamicTest> airdropNegativeAmountFails() {
-        return propertyPreservingHapiSpec("airdropNegativeAmountFails")
-                .preserving(AIRDROPS_ENABLED)
+        return defaultHapiSpec("airdropNegativeAmountFails")
                 .given(
-                        overriding(AIRDROPS_ENABLED, "true"),
                         newKeyNamed(NFT_SUPPLY_KEY),
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
@@ -355,10 +365,8 @@ public class TokenAirdropSuite {
 
     @HapiTest
     final Stream<DynamicTest> spenderNotEnoughAllowanceFails() {
-        return propertyPreservingHapiSpec("spenderNotEnoughAllowanceFails")
-                .preserving(AIRDROPS_ENABLED)
+        return defaultHapiSpec("spenderNotEnoughAllowanceFails")
                 .given(
-                        overriding(AIRDROPS_ENABLED, "true"),
                         newKeyNamed(NFT_SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
@@ -393,10 +401,8 @@ public class TokenAirdropSuite {
 
     @HapiTest
     final Stream<DynamicTest> senderWithMissingAssociationFails() {
-        return propertyPreservingHapiSpec("senderWithMissingAssociationFails")
-                .preserving(AIRDROPS_ENABLED)
+        return defaultHapiSpec("senderWithMissingAssociationFails")
                 .given(
-                        overriding(AIRDROPS_ENABLED, "true"),
                         newKeyNamed(NFT_SUPPLY_KEY),
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
@@ -422,10 +428,8 @@ public class TokenAirdropSuite {
 
     @HapiTest
     final Stream<DynamicTest> missingSenderSigFails() {
-        return propertyPreservingHapiSpec("missingSenderSigFails")
-                .preserving(AIRDROPS_ENABLED)
+        return defaultHapiSpec("missingSenderSigFails")
                 .given(
-                        overriding(AIRDROPS_ENABLED, "true"),
                         newKeyNamed(NFT_SUPPLY_KEY),
                         cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
@@ -439,16 +443,13 @@ public class TokenAirdropSuite {
                 .when()
                 .then(tokenAirdrop(
                                 moving(50, FUNGIBLE_TOKEN).between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                        //                        .payingWith(SENDER)
                         .hasPrecheck(INVALID_SIGNATURE));
     }
 
     @HapiTest
     final Stream<DynamicTest> missingPayerSigFails() {
-        return propertyPreservingHapiSpec("missingPayerSigFails")
-                .preserving(AIRDROPS_ENABLED)
+        return defaultHapiSpec("missingPayerSigFails")
                 .given(
-                        overriding(AIRDROPS_ENABLED, "true"),
                         newKeyNamed(NFT_SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(SPENDER).balance(ONE_HUNDRED_HBARS),
@@ -481,10 +482,8 @@ public class TokenAirdropSuite {
 
     @HapiTest
     final Stream<DynamicTest> duplicateEntryInTokenTransferFails() {
-        return propertyPreservingHapiSpec("duplicateEntryInTokenTransferFails")
-                .preserving(AIRDROPS_ENABLED)
+        return defaultHapiSpec("duplicateEntryInTokenTransferFails")
                 .given(
-                        overriding(AIRDROPS_ENABLED, "true"),
                         newKeyNamed(NFT_SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
@@ -516,10 +515,8 @@ public class TokenAirdropSuite {
 
     @HapiTest
     final Stream<DynamicTest> aboveMaxTransfersFails() {
-        return propertyPreservingHapiSpec("aboveMaxTransfersFails")
-                .preserving(AIRDROPS_ENABLED)
+        return defaultHapiSpec("aboveMaxTransfersFails")
                 .given(
-                        overriding(AIRDROPS_ENABLED, "true"),
                         newKeyNamed(NFT_SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
