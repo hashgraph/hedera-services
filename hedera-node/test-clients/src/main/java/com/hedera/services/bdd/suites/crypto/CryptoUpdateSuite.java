@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -87,36 +88,46 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
+@SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class CryptoUpdateSuite {
     private static final long DEFAULT_MAX_LIFETIME =
             Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
-    public static final String REPEATING_KEY = "repeatingKey";
-    public static final String TEST_ACCOUNT = "testAccount";
-    public static final String ORIG_KEY = "origKey";
-    public static final String UPD_KEY = "updKey";
 
-    private final SigControl twoLevelThresh = SigControl.threshSigs(
+    private static final String TEST_ACCOUNT = "testAccount";
+    private static final String TARGET_ACCOUNT = "complexKeyAccount";
+    private static final String ACCOUNT_ALICE = "alice";
+    private static final String ACCOUNT_PETER = "peter";
+    private static final String ACCOUNT_PARKER = "parker";
+    private static final String ACCOUNT_TONY = "tony";
+    private static final String ACCOUNT_STARK = "stark";
+
+    private static final String TOKEN_FUNGIBLE = "fungibleToken";
+
+    private static final String REPEATING_KEY = "repeatingKey";
+    private static final String ORIG_KEY = "origKey";
+    private static final String UPD_KEY = "updKey";
+    private static final String TARGET_KEY = "twoLevelThreshWithOverlap";
+    private static final String MULTI_KEY = "multiKey";
+
+    private static final SigControl twoLevelThresh = SigControl.threshSigs(
             2,
             SigControl.threshSigs(1, ANY, ANY, ANY, ANY, ANY, ANY, ANY),
             SigControl.threshSigs(3, ANY, ANY, ANY, ANY, ANY, ANY, ANY));
-    private final KeyLabels overlappingKeys =
+    private static final KeyLabels overlappingKeys =
             complex(complex("A", "B", "C", "D", "E", "F", "G"), complex("H", "I", "J", "K", "L", "M", "A"));
 
-    private final SigControl ENOUGH_UNIQUE_SIGS = SigControl.threshSigs(
+    private static final SigControl ENOUGH_UNIQUE_SIGS = SigControl.threshSigs(
             2,
             SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, ON),
             SigControl.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
-    private final SigControl NOT_ENOUGH_UNIQUE_SIGS = SigControl.threshSigs(
+    private static final SigControl NOT_ENOUGH_UNIQUE_SIGS = SigControl.threshSigs(
             2,
             SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
             SigControl.threshSigs(3, ON, ON, ON, OFF, OFF, OFF, OFF));
-    private final SigControl ENOUGH_OVERLAPPING_SIGS = SigControl.threshSigs(
+    private static final SigControl ENOUGH_OVERLAPPING_SIGS = SigControl.threshSigs(
             2,
             SigControl.threshSigs(1, OFF, OFF, OFF, OFF, OFF, OFF, OFF),
             SigControl.threshSigs(3, ON, ON, OFF, OFF, OFF, OFF, ON));
-
-    private final String TARGET_KEY = "twoLevelThreshWithOverlap";
-    private final String TARGET_ACCOUNT = "complexKeyAccount";
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
@@ -125,6 +136,53 @@ public class CryptoUpdateSuite {
                 .when()
                 .then(submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoUpdate("user")
                         .newStakedAccountId("0.0.21")));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> updateForMaxAutoAssociationsForAccountsWorks() {
+        return propertyPreservingHapiSpec("updateForMaxAutoAssociationsForAccountsWorks")
+                .preserving("entities.unlimitedAutoAssociationsEnabled", "contracts.allowAutoAssociations")
+                .given(
+                        overridingTwo(
+                                "entities.unlimitedAutoAssociationsEnabled",
+                                "true",
+                                "contracts.allowAutoAssociations",
+                                TRUE_VALUE),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT_ALICE).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
+                        cryptoCreate(ACCOUNT_PETER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
+                        cryptoCreate(ACCOUNT_TONY).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(ACCOUNT_STARK).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
+                        cryptoCreate(ACCOUNT_PARKER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
+                        tokenCreate(TOKEN_FUNGIBLE)
+                                .initialSupply(1000L)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(ACCOUNT_ALICE)
+                                .via("tokenCreate"),
+                        tokenAssociate(ACCOUNT_PETER, TOKEN_FUNGIBLE),
+                        tokenAssociate(ACCOUNT_TONY, TOKEN_FUNGIBLE))
+                .when(
+                        // Update Alice
+                        cryptoUpdate(ACCOUNT_ALICE).maxAutomaticAssociations(0),
+                        getAccountInfo(ACCOUNT_ALICE).hasMaxAutomaticAssociations(0),
+                        cryptoUpdate(ACCOUNT_ALICE).maxAutomaticAssociations(-1),
+                        getAccountInfo(ACCOUNT_ALICE).hasMaxAutomaticAssociations(-1),
+                        // Update Tony
+                        cryptoUpdate(ACCOUNT_TONY).maxAutomaticAssociations(1),
+                        getAccountInfo(ACCOUNT_TONY).hasMaxAutomaticAssociations(1),
+                        // Update Stark
+                        cryptoUpdate(ACCOUNT_STARK).maxAutomaticAssociations(-1),
+                        getAccountInfo(ACCOUNT_STARK).hasMaxAutomaticAssociations(-1),
+                        // Update Peter
+                        cryptoUpdate(ACCOUNT_PETER).maxAutomaticAssociations(-1),
+                        getAccountInfo(ACCOUNT_PETER).hasMaxAutomaticAssociations(-1),
+                        cryptoUpdate(ACCOUNT_PETER).maxAutomaticAssociations(0),
+                        getAccountInfo(ACCOUNT_PETER).hasMaxAutomaticAssociations(0),
+                        // Update Parker
+                        cryptoUpdate(ACCOUNT_PARKER).maxAutomaticAssociations(1),
+                        getAccountInfo(ACCOUNT_PARKER).hasMaxAutomaticAssociations(1))
+                .then(getTxnRecord("tokenCreate").hasNewTokenAssociation(TOKEN_FUNGIBLE, ACCOUNT_ALICE));
     }
 
     @HapiTest
