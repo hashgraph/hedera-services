@@ -24,7 +24,7 @@ the functionality to sign and verify blocks using a Threshold Signature Scheme (
 
 The related proposal, TSS-Ledger-Id, provides an overview of the process and background for TSS and how it impacts the platform’s functionality.
 
-This proposal assumes no relation with the platform and defines a generic solution that any consumer can adopt.
+This proposal assumes no relation with the platform and defines a generic components that any consumer can integrate.
 It only assumes that there exists a channel to connect participants, where the identity of the message sender has been previously validated.
 
 The process of sending messages through that channel and receiving the responses is outside the scope of this proposal.
@@ -59,7 +59,7 @@ the distribution aspect, the loading, and the in-memory interpretation from each
   so that signature validation can be done on smart contracts without incurring an excessive gas cost.
 - **Security**: Our produced code should be able to pass internal and external security audits.
 - **Flexibility**: Minimize the impact of introducing support for other elliptic curves.
-- **Independent Release**: This library should have its release cycle separate from the platform and be easy for both platform and block node to depend on.
+- **Independent Release**: When applicable, the new libraries should have the release cycle separate from the platform.They should be implemented in a way that is easy for both platform and block node to depend on.
 
 ### Non-Goals
 - Implement support for elliptic curve cryptography in Java.
