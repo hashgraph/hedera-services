@@ -80,7 +80,7 @@ class CustomCallCodeOperationTest {
 
     @Test
     void catchesUnderflowWhenStackIsEmpty() {
-        givenWellKnownFrameWithNoGasCalc(1L, NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
+        givenWellKnownFrameWithNoGasCalcNoValue(NON_SYSTEM_LONG_ZERO_ADDRESS, 2L);
         given(frame.getStackItem(1)).willThrow(UnderflowException.class);
         final var expected = new Operation.OperationResult(0L, ExceptionalHaltReason.INSUFFICIENT_STACK_ITEMS);
         assertSameResult(expected, subject.execute(frame, evm));
@@ -109,6 +109,16 @@ class CustomCallCodeOperationTest {
             final var expected = new Operation.OperationResult(REQUIRED_GAS, null);
             assertSameResult(expected, subject.execute(frame, evm));
         }
+    }
+
+    private void givenWellKnownFrameWithNoGasCalcNoValue(final Address to, final long gas) {
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(frame.getStackItem(0)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(gas)));
+        given(frame.getStackItem(1)).willReturn(to);
+        given(frame.getStackItem(3)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(3)));
+        given(frame.getStackItem(4)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(4)));
+        given(frame.getStackItem(5)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(5)));
+        given(frame.getStackItem(6)).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(6)));
     }
 
     private void givenWellKnownFrameWithNoGasCalc(final long value, final Address to, final long gas) {

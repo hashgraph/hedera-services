@@ -107,7 +107,16 @@ class CustomStaticCallOperationTest {
             givenWellKnownFrameWith(1L, SYSTEM_ADDRESS, 2L);
             given(frame.getRemainingGas()).willReturn(0L);
             given(gasCalculator.callOperationGasCost(
-                            any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                            any(),
+                            anyLong(),
+                            anyLong(),
+                            anyLong(),
+                            anyLong(),
+                            anyLong(),
+                            any(),
+                            any(),
+                            any(),
+                            anyBoolean()))
                     .willReturn(REQUIRED_GAS);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(REQUIRED_GAS, INSUFFICIENT_GAS);

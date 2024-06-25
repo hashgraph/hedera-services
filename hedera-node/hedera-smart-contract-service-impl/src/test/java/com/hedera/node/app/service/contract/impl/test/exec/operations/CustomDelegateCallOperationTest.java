@@ -109,7 +109,16 @@ class CustomDelegateCallOperationTest {
             givenWellKnownFrameWithNoGasCalc(1L, SYSTEM_ADDRESS, 2L);
             given(frame.getRemainingGas()).willReturn(0L);
             given(gasCalculator.callOperationGasCost(
-                            any(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), any(), any(), any()))
+                            any(),
+                            anyLong(),
+                            anyLong(),
+                            anyLong(),
+                            anyLong(),
+                            anyLong(),
+                            any(),
+                            any(),
+                            any(),
+                            anyBoolean()))
                     .willReturn(REQUIRED_GAS);
             given(frame.getRecipientAddress()).willReturn(SYSTEM_ADDRESS);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
