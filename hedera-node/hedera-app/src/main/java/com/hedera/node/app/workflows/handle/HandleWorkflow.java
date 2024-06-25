@@ -230,8 +230,8 @@ public class HandleWorkflow {
         final var handleStart = System.nanoTime();
 
         final var consensusNow = txn.getConsensusTimestamp().minusNanos(1000 - 3L);
-        blockRecordManager.startUserTransaction(consensusNow, state, platformState);
         final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
+        blockRecordManager.startUserTransaction(consensusNow, state, platformState);
         final var recordStream = execute(userTxn);
         blockRecordManager.endUserTransaction(recordStream, state);
 
