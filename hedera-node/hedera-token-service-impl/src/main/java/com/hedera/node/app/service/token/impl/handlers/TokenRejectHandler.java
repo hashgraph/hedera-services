@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_REFERENCE_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
@@ -141,7 +142,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         requireNonNull(txn, "Transaction body cannot be null");
         final var op = txn.tokenRejectOrThrow();
 
-        validateFalsePreCheck(op.rejections().isEmpty(), INVALID_TRANSACTION_BODY);
+        validateFalsePreCheck(op.rejections().isEmpty(), EMPTY_TOKEN_REFERENCE_LIST);
         if (op.hasOwner()) {
             validateAccountID(op.owner(), null);
         }
