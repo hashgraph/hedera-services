@@ -237,7 +237,6 @@ public class TokenAirdropSuite {
                                                         .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
                                                 movingUnique(NON_FUNGIBLE_TOKEN, 2L)
                                                         .between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))))
-                                // todo check child records for transfers
                                 .hasChildRecords(recordWith()
                                         .tokenTransfers(
                                                 includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 3L)
@@ -296,6 +295,52 @@ public class TokenAirdropSuite {
                     getAutoCreatedAccountBalance(SECP_256K1_KEY).hasTokenBalance(FUNGIBLE_TOKEN, 10);
                     getAutoCreatedAccountBalance(ANOTHER_SECP_256K1_KEY).hasTokenBalance(FUNGIBLE_TOKEN, 10);
                 }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> consequentAirdrops() {
+        // Verify that when sending 2 consequent airdrops to a recipient,
+        // which associated themselves to the token after the first airdrop,
+        // the second airdrop is directly transferred to the recipient and the first airdrop remains in pending state
+        return defaultHapiSpec("consequentAirdrops")
+                .given(
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .treasury(SENDER)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(100L),
+                        cryptoCreate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(0))
+                .when(
+                        // send first airdrop
+                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                .payingWith(SENDER)
+                                .via("first"),
+                        getTxnRecord("first")
+                                .andAllChildRecords()
+                                // assert pending airdrops
+                                .hasPriority(recordWith()
+                                        .pendingAirdrops(includingFungiblePendingAirdrop(moving(10, FUNGIBLE_TOKEN)
+                                                .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))),
+                        tokenAssociate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN)
+                        // assert pending list and balances
+                        )
+                .then(
+                        // this time tokens should be transferred
+                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                .payingWith(SENDER)
+                                .via("second"),
+                        // assert sender and receiver accounts to ensure first airdrop is still in pending state
+                        getTxnRecord("second")
+                                .andAllChildRecords()
+                                // assert transfers
+                                .hasChildRecords(recordWith()
+                                        .tokenTransfers(includingFungibleMovement(moving(10, FUNGIBLE_TOKEN)
+                                                .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))))
+                                .logged(),
+
+                        // since there is noway to check pending airdrop state, we just assert the account balances
+                        getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 90),
+                        getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasTokenBalance(FUNGIBLE_TOKEN, 10));
     }
 
     @HapiTest
