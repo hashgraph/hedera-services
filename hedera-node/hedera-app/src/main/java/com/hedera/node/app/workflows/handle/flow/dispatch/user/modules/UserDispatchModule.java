@@ -49,7 +49,7 @@ import com.hedera.node.app.workflows.handle.flow.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.flow.dispatch.Dispatch;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchScope;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.UserRecordInitializer;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -65,7 +65,7 @@ import java.util.Set;
 /**
  * The module that provides the dependencies for the user dispatch.
  */
-@Module(subcomponents = {})
+@Module
 public interface UserDispatchModule {
     @Binds
     @UserDispatchScope

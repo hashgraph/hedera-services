@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.flow.txn;
 
 import static com.hedera.node.app.workflows.handle.flow.DispatchHandleContextTest.CONSENSUS_NOW;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
@@ -29,19 +30,26 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.handle.ScheduleExpirationHook;
 import com.hedera.node.app.workflows.handle.StakingPeriodTimeHook;
-import com.hedera.node.app.workflows.handle.flow.dispatch.logic.DispatchProcessor;
+import com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserDispatchComponent;
-import com.hedera.node.app.workflows.handle.flow.txn.logic.HollowAccountCompleter;
-import com.hedera.node.app.workflows.handle.flow.txn.logic.SchedulePurger;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
+import java.time.Instant;
 import javax.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,16 +66,13 @@ public class DefaultHandleWorkflowTest {
     private BlockRecordManager blockRecordManager;
 
     @Mock
-    private SchedulePurger schedulePurger;
-
-    @Mock
     private DispatchProcessor dispatchProcessor;
 
     @Mock
     private HollowAccountCompleter hollowAccountFinalization;
 
     @Mock(strictness = LENIENT)
-    private UserTransactionComponent userTxn;
+    private UserTxnComponent userTxn;
 
     @Mock
     private HederaState state;
@@ -81,23 +86,51 @@ public class DefaultHandleWorkflowTest {
     @Mock
     private UserDispatchComponent userDispatchComponent;
 
+    @Mock
+    private StoreMetricsService storeMetricsService;
+
+    @Mock(strictness = LENIENT)
+    private SavepointStackImpl savepointStack;
+
+    @Mock
+    private WritableScheduleStore writableScheduleStore;
+
+    @Mock
+    private WritableStoreFactory writableStoreFactory;
+
+    @Mock
+    private WritableStates states;
+
+    @Mock
+    private WritableKVState schedulesById;
+
+    @Mock
+    private PreHandleResult preHandleResult;
+
     @LoggingTarget
     private LogCaptor logCaptor;
 
     @LoggingSubject
     private DefaultHandleWorkflow subject;
 
+    private ScheduleExpirationHook scheduleExpirationHook = new ScheduleExpirationHook();
+
     @BeforeEach
     public void setUp() {
         subject = new DefaultHandleWorkflow(
                 stakingPeriodTimeHook,
                 blockRecordManager,
-                schedulePurger,
                 dispatchProcessor,
-                hollowAccountFinalization);
-
+                hollowAccountFinalization,
+                scheduleExpirationHook,
+                storeMetricsService);
+        when(userTxn.lastHandledConsensusTime()).thenReturn(Instant.ofEpochSecond(CONSENSUS_NOW.getEpochSecond() - 1));
         when(userTxn.consensusNow()).thenReturn(CONSENSUS_NOW);
+        when(userTxn.configuration()).thenReturn(HederaTestConfigBuilder.createConfig());
         when(userTxn.state()).thenReturn(state);
+        lenient().when(state.getWritableStates(anyString())).thenReturn(states);
+        when(userTxn.stack()).thenReturn(savepointStack);
+        when(savepointStack.getWritableStates(anyString())).thenReturn(states);
         when(userTxn.userDispatchProvider()).thenReturn(userDispatchProvider);
         when(userTxn.userDispatchProvider().get()).thenReturn(userDispatchComponentFactory);
         lenient().when(userTxn.userDispatchProvider().get().create()).thenReturn(userDispatchComponent);
@@ -107,6 +140,7 @@ public class DefaultHandleWorkflowTest {
         when(userTxn.txnInfo().txBody()).thenReturn(mock(TransactionBody.class));
         when(userTxn.txnInfo().payerID()).thenReturn(mock(AccountID.class));
         when(userTxn.preHandleResult()).thenReturn(mock(PreHandleResult.class));
+        when(states.get(any())).thenReturn(schedulesById);
     }
 
     @Test
@@ -115,7 +149,6 @@ public class DefaultHandleWorkflowTest {
 
         verify(stakingPeriodTimeHook).process(any(), any());
         verify(blockRecordManager).advanceConsensusClock(any(), any());
-        verify(schedulePurger).expireSchedules(userTxn);
         verify(hollowAccountFinalization)
                 .finalizeHollowAccounts(
                         userTxn, userTxn.userDispatchProvider().get().create());
@@ -133,7 +166,6 @@ public class DefaultHandleWorkflowTest {
 
         verify(stakingPeriodTimeHook).process(userTxn.stack(), userTxn.tokenContext());
         verify(blockRecordManager).advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
-        verify(schedulePurger).expireSchedules(userTxn);
         verify(hollowAccountFinalization)
                 .finalizeHollowAccounts(
                         userTxn, userTxn.userDispatchProvider().get().create());
