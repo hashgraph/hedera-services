@@ -304,7 +304,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
             final boolean lastJudgeFound = checkInitJudges(event);
 
-            if(!noInitJudgesMissing()){
+            if (!noInitJudgesMissing()) {
                 // we should not do any calculations or voting until we have found all the init judges
                 return rounds;
             }

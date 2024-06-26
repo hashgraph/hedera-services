@@ -50,7 +50,6 @@ import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.wiring.components.PassThroughWiring;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 

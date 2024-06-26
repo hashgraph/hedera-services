@@ -33,16 +33,11 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.event.ItemEvent;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.Serial;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import javax.swing.JPanel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -101,7 +96,7 @@ public class HashgraphPicture extends JPanel {
             List<EventImpl> events;
             if (options.displayLatestEvents()) {
                 final long startGen = Math.max(
-                        hashgraphSource.getMaxGeneration() - options.getNumGenerationsDisplay()+1,
+                        hashgraphSource.getMaxGeneration() - options.getNumGenerationsDisplay() + 1,
                         GraphGenerations.FIRST_GENERATION);
                 options.setStartGeneration(startGen);
                 events = hashgraphSource.getEvents(startGen, options.getNumGenerationsDisplay());
@@ -194,11 +189,11 @@ public class HashgraphPicture extends JPanel {
                 ? event.getOtherParent()
                 : null;
         final Color color;
-        if(selector.isSelected(event)) {
+        if (selector.isSelected(event)) {
             color = Color.MAGENTA;
-        }else if(selector.isStronglySeen(event)){
+        } else if (selector.isStronglySeen(event)) {
             color = Color.CYAN;
-        }else {
+        } else {
             color = HashgraphGuiUtils.eventColor(event, options);
         }
         g.setColor(color);

@@ -52,10 +52,10 @@ public class AddressBookMetadata {
         numMembers = m;
         memberLabels = new String[m];
         for (int i = 0; i < m; i++) {
-            memberLabels[i] = "ID:%d W:%d".formatted(
-                    addressBook.getNodeId(i).id(),
-                    addressBook.getAddress(addressBook.getNodeId(i)).getWeight()
-            );
+            memberLabels[i] = "ID:%d W:%d"
+                    .formatted(
+                            addressBook.getNodeId(i).id(),
+                            addressBook.getAddress(addressBook.getNodeId(i)).getWeight());
         }
 
         // fix corner cases missed by the formulas here

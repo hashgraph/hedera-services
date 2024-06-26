@@ -48,7 +48,6 @@ public class HashgraphGuiConstants {
     /** non-witness, non-consensus */
     public static final Color DARK_GRAY = new Color(0, 0, 0);
 
-
     public static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("H:m:s.n").withLocale(Locale.US).withZone(ZoneId.systemDefault());
     public static final Font HASHGRAPH_PICTURE_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 12);

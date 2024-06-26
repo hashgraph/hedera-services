@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 
 class HashgraphGuiTest {
     @Test
-    //@Disabled("this test is useful for debugging consensus")
+    // @Disabled("this test is useful for debugging consensus")
     void runGuiWithControls() {
         final Randotron randotron = Randotron.create(1);
         final int numNodes = 4;
@@ -39,11 +39,12 @@ class HashgraphGuiTest {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final GraphGenerator<?> graphGenerator = new StandardGraphGenerator(platformContext, randotron.nextInt(),
-                generateSources(numNodes));
+        final GraphGenerator<?> graphGenerator =
+                new StandardGraphGenerator(platformContext, randotron.nextInt(), generateSources(numNodes));
         graphGenerator.reset();
 
-        final TestGuiSource guiSource = new TestGuiSource(platformContext, graphGenerator.getAddressBook(), new GeneratorEventProvider(graphGenerator));
+        final TestGuiSource guiSource = new TestGuiSource(
+                platformContext, graphGenerator.getAddressBook(), new GeneratorEventProvider(graphGenerator));
         guiSource.generateEvents(initialEvents);
         guiSource.runGui();
     }

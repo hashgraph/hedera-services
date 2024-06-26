@@ -70,8 +70,10 @@ public class ConsensusTestOrchestrator {
         final AddressBook addressBook =
                 node.getEventEmitter().getGraphGenerator().getAddressBook();
 
-        new TestGuiSource(platformContext, addressBook,
-                new GeneratorEventProvider(node.getEventEmitter().getGraphGenerator()))
+        new TestGuiSource(
+                        platformContext,
+                        addressBook,
+                        new GeneratorEventProvider(node.getEventEmitter().getGraphGenerator()))
                 .runGui();
     }
 

@@ -82,7 +82,7 @@ public final class HashgraphGuiUtils {
             return event.isConsensus() ? HashgraphGuiConstants.DARK_RED : HashgraphGuiConstants.LIGHT_RED;
         }
         // after this point, we know the event is a witness and fame is decided
-        if(event.isJudge()){
+        if (event.isJudge()) {
             return event.isConsensus() ? HashgraphGuiConstants.DARK_BLUE : HashgraphGuiConstants.LIGHT_BLUE;
         }
         if (event.isFamous()) {
