@@ -192,7 +192,7 @@ We include a Feldman commitment to the polynomial.
  g = a point generator of `SignatureScheme.publicKeyGroup`
  aₒ...aₜ₋₁ = coefficients of the polynomial being commited to.
 ```
-For each coefficient in the polynomial `Xₖ` `a₍ₒ₎` to `a₍ₜ₋₁₎`, computes a commitment value by calculating: `gᵢᵃ⁽ⁱ⁾ ` (g elevated to the polynomial coefficient `a₍ᵢ₎` )
+For each coefficient in the polynomial `Xₖ` `a₍ₒ₎` to `a₍ₜ₋₁₎`, computes a commitment value by calculating: `gᵢ * aᵢ ` (g multiplied by polynomial coefficient `a₍ᵢ₎` )
 
 ###### Generation of the NIZKs proofs
 
@@ -200,7 +200,7 @@ Generate a NIZK proof that these commitments and the encrypted shares correspond
 
 Given the input:
 
-* witness: structure with secrets that include private shares(sᵢ) and randomness used during the encryption.
+* witness: private data for the proof, including the actual share and the randomness used in the encryption process and private shares(sᵢ).
 
 * statement: The information to proof (sidᵢs,public_keys, polynomial_commitment, encrypted_shares )
 
@@ -239,12 +239,55 @@ Each message can be validated against the commitment and the proof by:
 * Checking that the encrypted shares correspond to the commitments.
 * and, that the commitments are consistent with the public values and the generated proof.
 
+Given the input:
 
-##### 3. Processing of TssMessage
+* statement: The proven information (sidᵢs, public_keys, polynomial_commitment, encrypted_shares )
+* proof: NIZKs Proofs received in the TssMessage
+* generator `g`:  a point generator of `SignatureScheme.publicKeyGroup`
+
+1. Serialize statement
+2. Initialize a pseudorandom number generator using the `SHA256` hash of (1)
+3. `x` = Random out of the random generator in (2)
+4. Serialize (`proof.F`, `proof.A`, `proof.Y`)
+5. Initialize a pseudorandom number generator using the `SHA256` hash of (4)
+6. `x'` = Random out of the random generator in (5)
+7. `lhs` = (`statement.ciphertext_rand` raised to the power of `x'`) multiplied by `proof.F`
+8. `rhs` = generator multiplied by `proof.z_r`
+9. If `lhs` != `rhs`: Return False
+10. `inner` = 0
+11. For each pair (`i`:index ; `k`:commitment value)  in `statement.polynomial_commitment`:
+    
+    11.1.  `term` = For each `sid` in `statements.sids`: sum (`sid` raised to the power of `i`) multiplied by (`x` raised to the power of `sid`)
+
+    11.2.  `inner` += `k` multiplied by `term`
+12. `lhs` = (`inner` multiplied by `x'`) add `proof.A`
+13. `rhs` = `g` multiplied by `proof.z_a`
+14. If `lhs` != `rhs`: Return False
+15. `inner` = 0
+16. For each (`ciphertext_value`, `sid`) pair in Zip(`statements.ciphertext_values`;`statements.sids`):
+
+    16.1.  `term` =`ciphertext_value` multiplied by (`x` raised to the power of `sid`)
+
+    16.2.  `inner` =`inner` + `term`
+    
+17. `lhs` = (`inner` multiplied by `x'`) add `proof.Y`
+18. `rhs` = `g` multiplied by  `proof.z_a`
+19. If `lhs` != `rhs`: Return False
+20. `inner` = 0
+21. For each (`public_key`, `sid`) pair in Zip(`statements.public_keys`;`statements.sids`):
+
+    21.1.  `term` = `public_key` multiplied by (`proof.z_r` * (`x` raised to the power of `sid`))
+
+    21.2.  `inner` =`inner` + `term`
+22. `rhs` = `inner` + (`g` multiplied by `proof.z_a`)
+23. If `lhs` != `rhs`: Return False
+24. Return True
+
+##### 3. Generating Participant's Private Shares & Ledger Id
 Given Participant's persistent EC PrivateKey and precisely `t` number of validated messages (t=threshold)
-each participant will decrypt all `Mₛ` to generate an aggregated value `xₛ` that will become a  `SecretShare(sidₛ, xₛ)` for each `ShareId`: `sidₛ` owned by the participant.
+each participant will decrypt all `Cᵢ` to generate an aggregated value `sᵢ` that will become a  `SecretShare(sidᵢ, sᵢ)` for each `ShareId`: `sidᵢ` owned by the participant.
 
-**Note:** All participants must choose the same set of valid `TssMessages’ and have a threshold number of valid messages.
+**Note:** All participants must choose the same set of valid `TssMessages` and have a threshold number of valid messages.
 
 ![img_1.png](img_1.png)
 
@@ -300,8 +343,7 @@ To implement the functionality detailed in the previous section, the following c
    Multiple implementations can be provided to support different types of curves. It allows changing or switching dependencies.
 5. **Native Support Lib**: Provides a set of generic functions loading native libraries in different system architectures when packaged in a jar
    using a predefined organization so they can be accessed with JNI.
-6. **Arkworks[https://github.com/arkworks-rs]**:  arkworks is a Rust ecosystem for zkSNARK programming.
-   Our implementation uses it as the library responsible for elliptic curve cryptography.
+6. **[Arkworks](https://github.com/arkworks-rs)**: A Rust ecosystem for cryptography. Our implementation uses it as the library responsible for elliptic curve cryptography.
 7. **EC-Key Utils** is a utility module that enables the node operator to generate a bootstrapping public/private key pair.
 
 ### Module organization and repositories
