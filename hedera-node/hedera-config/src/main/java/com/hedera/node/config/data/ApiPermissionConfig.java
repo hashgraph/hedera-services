@@ -63,6 +63,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ACCOUNT_WIPE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_AIRDROP;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_BURN;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CANCEL_AIRDROP;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT;
@@ -257,7 +258,8 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getNodeInfo,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenAirdrops) {
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenAirdrops,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenCancelAirdrop) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -306,6 +308,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(TOKEN_UPDATE_NFTS, c -> c.tokenUpdateNfts);
         permissionKeys.put(TOKEN_REJECT, c -> c.tokenReject);
         permissionKeys.put(TOKEN_AIRDROP, c -> c.tokenAirdrop);
+        permissionKeys.put(TOKEN_CANCEL_AIRDROP, c -> c.tokenCancelAirdrop);
         /* Queries */
         permissionKeys.put(CONSENSUS_GET_TOPIC_INFO, c -> c.getTopicInfo);
         permissionKeys.put(CONTRACT_CALL_LOCAL, c -> c.contractCallLocalMethod);
