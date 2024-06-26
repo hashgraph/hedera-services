@@ -70,12 +70,9 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
         final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
         final var expiryValidator = handleContext.expiryValidator();
 
-        var tokenPausedValidation = transferContext.tokenValidations();
-        var tokenRelFrozenValidation = transferContext.tokenRelValidations();
-
         for (var xfers : tokenTransferLists) {
             final var tokenId = xfers.token();
-            final var token = getIfUsable(tokenId, tokenStore, tokenPausedValidation);
+            final var token = getIfUsable(tokenId, tokenStore);
             // Expected decimals are already validated in AdjustFungibleTokenChangesStep.
             // So not doing same check again here
 
@@ -86,8 +83,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
 
                 final var senderAccount = getIfUsable(senderId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
                 final var receiverAccount = getIfUsable(receiverId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
-                final var senderRel = getIfUsable(senderId, tokenId, tokenRelStore, tokenRelFrozenValidation);
-                final var receiverRel = getIfUsable(receiverId, tokenId, tokenRelStore, tokenRelFrozenValidation);
+                final var senderRel = getIfUsable(senderId, tokenId, tokenRelStore);
+                final var receiverRel = getIfUsable(receiverId, tokenId, tokenRelStore);
                 validateTrue(senderRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
                 validateTrue(receiverRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
 

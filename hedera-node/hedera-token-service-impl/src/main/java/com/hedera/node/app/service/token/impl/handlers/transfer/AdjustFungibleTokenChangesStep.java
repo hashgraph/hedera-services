@@ -39,7 +39,6 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
-import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenRelValidations;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -83,14 +82,11 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
         final Map<EntityIDPair, Long> allowanceTransfers = new LinkedHashMap<>();
 
-        var tokenPausedValidation = transferContext.tokenValidations();
-        var tokenRelFrozenValidation = transferContext.tokenRelValidations();
-
         // Look at all fungible token transfers and put into aggregatedFungibleTokenChanges map.
         // Also, put any transfers happening with allowances in allowanceTransfers map.
         for (final var transfers : tokenTransferLists) {
             final var tokenId = transfers.tokenOrThrow();
-            final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore, tokenPausedValidation);
+            final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
             if (transfers.hasExpectedDecimals()) {
                 validateTrue(token.decimals() == transfers.expectedDecimalsOrThrow(), UNEXPECTED_TOKEN_DECIMALS);
@@ -107,7 +103,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
                 // Validate freeze status and kyc granted
                 final var accountID = aa.accountIDOrThrow();
-                final var tokenRel = getIfUsable(accountID, tokenId, tokenRelStore, tokenRelFrozenValidation);
+                final var tokenRel = getIfUsable(accountID, tokenId, tokenRelStore);
                 validateTrue(tokenRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
 
                 // Add the amount to the aggregatedFungibleTokenChanges map.
@@ -127,11 +123,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
         modifyAggregatedAllowances(allowanceTransfers, accountStore, transferContext);
         modifyAggregatedTokenBalances(
-                aggregatedFungibleTokenChanges,
-                tokenRelStore,
-                accountStore,
-                transferContext.getAssessedCustomFees(),
-                tokenRelFrozenValidation);
+                aggregatedFungibleTokenChanges, tokenRelStore, accountStore, transferContext.getAssessedCustomFees());
     }
 
     /**
@@ -195,14 +187,12 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
             @NonNull final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges,
             @NonNull final WritableTokenRelationStore tokenRelStore,
             @NonNull final WritableAccountStore accountStore,
-            @NonNull final List<AssessedCustomFee> assessedCustomFees,
-            @NonNull final TokenRelValidations tokenRelFrozenValidation) {
+            @NonNull final List<AssessedCustomFee> assessedCustomFees) {
         // Look at all the aggregatedFungibleTokenChanges and adjust the balances in the tokenRelStore.
         for (final var entry : aggregatedFungibleTokenChanges.entrySet()) {
             final var atPair = entry.getKey();
             final var amount = entry.getValue();
-            final var rel = getIfUsable(
-                    atPair.accountIdOrThrow(), atPair.tokenIdOrThrow(), tokenRelStore, tokenRelFrozenValidation);
+            final var rel = getIfUsable(atPair.accountIdOrThrow(), atPair.tokenIdOrThrow(), tokenRelStore);
             final var account = requireNonNull(accountStore.get(atPair.accountIdOrThrow()));
             try {
                 adjustBalance(rel, account, amount, tokenRelStore, accountStore);

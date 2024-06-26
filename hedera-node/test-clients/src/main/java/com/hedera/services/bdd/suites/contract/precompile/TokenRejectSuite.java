@@ -34,6 +34,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenPause;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenReject;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnpause;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingNFT;
@@ -51,6 +53,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EMPTY_TOKEN_REFERENCE_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -59,6 +62,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NFT_ID
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_PAUSED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
@@ -296,7 +300,7 @@ public class TokenRejectSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> tokenRejectWorksWhileFreezeOrPausedOrSigRequired() {
+    final Stream<DynamicTest> tokenRejectCasesWhileFreezeOrPausedOrSigRequired() {
         return propertyPreservingHapiSpec("tokenRejectWorksWhileFreezeOrPausedOrSigRequired")
                 .preserving(TOKEN_REJECT_ENABLED_PROPERTY)
                 .given(
@@ -331,6 +335,7 @@ public class TokenRejectSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY)
                                 .freezeKey("freezeKey")
+                                .pauseKey("pauseKey")
                                 .treasury(TOKEN_TREASURY)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE),
                         tokenAssociate(
@@ -349,19 +354,61 @@ public class TokenRejectSuite {
                         // Apply freeze and pause to tokens:
                         tokenPause(FUNGIBLE_TOKEN_A),
                         tokenFreeze(FUNGIBLE_TOKEN_B, ACCOUNT),
-                        tokenPause(NON_FUNGIBLE_TOKEN_A),
                         tokenFreeze(NON_FUNGIBLE_TOKEN_B, ACCOUNT))
                 .when(withOpContext((spec, opLog) -> allRunFor(
                         spec,
+                        tokenReject(ACCOUNT, rejectingToken(FUNGIBLE_TOKEN_A), rejectingNFT(NON_FUNGIBLE_TOKEN_A, 1L))
+                                .hasKnownStatus(TOKEN_IS_PAUSED)
+                                .via("tokenRejectFungibleFailsWithPaused"),
+                        tokenReject(ACCOUNT, rejectingToken(FUNGIBLE_TOKEN_B))
+                                .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)
+                                .via("tokenRejectFungibleFailsWithFreeze"),
+                        tokenReject(
+                                        ACCOUNT,
+                                        rejectingNFT(NON_FUNGIBLE_TOKEN_A, 1L),
+                                        rejectingNFT(NON_FUNGIBLE_TOKEN_B, 2L))
+                                .hasKnownStatus(ACCOUNT_FROZEN_FOR_TOKEN)
+                                .via("tokenRejectNFTFailsWithFreeze"),
+                        tokenPause(NON_FUNGIBLE_TOKEN_A),
+                        tokenReject(ACCOUNT, rejectingNFT(NON_FUNGIBLE_TOKEN_A, 1L))
+                                .hasKnownStatus(TOKEN_IS_PAUSED)
+                                .via("tokenRejectNFTFailsWithPaused"),
                         tokenReject(
                                         ACCOUNT,
                                         rejectingToken(FUNGIBLE_TOKEN_A),
                                         rejectingToken(FUNGIBLE_TOKEN_B),
                                         rejectingNFT(NON_FUNGIBLE_TOKEN_A, 1L),
                                         rejectingNFT(NON_FUNGIBLE_TOKEN_B, 2L))
-                                .via("tokenRejectWorkWithPausedOrFreezeOrSigRequired"))))
+                                .hasKnownStatus(TOKEN_IS_PAUSED)
+                                .via("tokenRejectFailsWithPausedAndFreeze"),
+                        tokenUnpause(FUNGIBLE_TOKEN_A),
+                        tokenUnfreeze(FUNGIBLE_TOKEN_B, ACCOUNT),
+                        tokenUnpause(NON_FUNGIBLE_TOKEN_A),
+                        tokenUnfreeze(NON_FUNGIBLE_TOKEN_B, ACCOUNT),
+                        tokenReject(
+                                        ACCOUNT,
+                                        rejectingToken(FUNGIBLE_TOKEN_A),
+                                        rejectingToken(FUNGIBLE_TOKEN_B),
+                                        rejectingNFT(NON_FUNGIBLE_TOKEN_A, 1L),
+                                        rejectingNFT(NON_FUNGIBLE_TOKEN_B, 2L))
+                                .via("tokenRejectWorksWithSigRequired"))))
                 .then(
-                        getTxnRecord("tokenRejectWorkWithPausedOrFreezeOrSigRequired")
+                        getTxnRecord("tokenRejectFungibleFailsWithPaused")
+                                .andAllChildRecords()
+                                .logged(),
+                        getTxnRecord("tokenRejectFungibleFailsWithFreeze")
+                                .andAllChildRecords()
+                                .logged(),
+                        getTxnRecord("tokenRejectNFTFailsWithFreeze")
+                                .andAllChildRecords()
+                                .logged(),
+                        getTxnRecord("tokenRejectNFTFailsWithPaused")
+                                .andAllChildRecords()
+                                .logged(),
+                        getTxnRecord("tokenRejectFailsWithPausedAndFreeze")
+                                .andAllChildRecords()
+                                .logged(),
+                        getTxnRecord("tokenRejectWorksWithSigRequired")
                                 .andAllChildRecords()
                                 .logged(),
                         getTokenNftInfo(NON_FUNGIBLE_TOKEN_A, 1L)

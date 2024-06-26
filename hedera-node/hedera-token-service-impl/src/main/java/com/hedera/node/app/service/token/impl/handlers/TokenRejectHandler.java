@@ -37,8 +37,6 @@ import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySize
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createFungibleTransfer;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createNftTransfer;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.nftTransfer;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenRelValidations.PERMIT_FROZEN;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
@@ -188,7 +186,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
         final var processedRejectTransfers = processRejectionsForTransfer(rejections, context, rejectingAccount);
 
         // Apply all changes to the handleContext's states by performing the transfer to the treasuries
-        final var transferContext = new TransferContextImpl(context, false, PERMIT_FROZEN, PERMIT_PAUSED);
+        final var transferContext = new TransferContextImpl(context);
         final var fungibleTokensStep = new AdjustFungibleTokenChangesStep(processedRejectTransfers, context.payer());
         final var nftOwnersChangeStep = new NFTOwnersChangeStep(processedRejectTransfers, context.payer());
         fungibleTokensStep.doIn(transferContext);
@@ -259,7 +257,7 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
             @NonNull final WritableNftStore nftStore,
             @NonNull final WritableTokenStore tokenStore) {
         final var nft = getIfUsable(nftID, nftStore);
-        final var token = getIfUsable(nftID.tokenIdOrThrow(), tokenStore, PERMIT_PAUSED);
+        final var token = getIfUsable(nftID.tokenIdOrThrow(), tokenStore);
         final var tokenTreasury = token.treasuryAccountIdOrThrow();
         validateTrue(!tokenTreasury.equals(rejectingAccountID), ACCOUNT_IS_TREASURY);
         validateTrue(nft.hasOwnerId() && rejectingAccountID.equals(nft.ownerId()), INVALID_OWNER_ID);
@@ -282,9 +280,9 @@ public class TokenRejectHandler extends BaseTokenHandler implements TransactionH
             @NonNull final WritableTokenStore tokenStore,
             @NonNull final WritableTokenRelationStore relStore) {
         final var accountID = rejectingAccount.accountIdOrThrow();
-        final var token = getIfUsable(rejection.fungibleTokenOrThrow(), tokenStore, PERMIT_PAUSED);
+        final var token = getIfUsable(rejection.fungibleTokenOrThrow(), tokenStore);
         final var tokenId = token.tokenIdOrThrow();
-        final var tokenRelation = getIfUsable(accountID, tokenId, relStore, PERMIT_FROZEN);
+        final var tokenRelation = getIfUsable(accountID, tokenId, relStore);
         validateTrue(token.treasuryAccountId() != null, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
         validateTrue(!token.treasuryAccountId().equals(accountID), ACCOUNT_IS_TREASURY);
         validateTrue(tokenRelation.balance() > 0, INSUFFICIENT_TOKEN_BALANCE);
