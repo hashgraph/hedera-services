@@ -70,13 +70,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
 @HapiTestLifecycle
-@DisplayName("AIRDROP")
 public class TokenAirdropSuite {
 
     private static final String AIRDROPS_ENABLED = "tokens.airdrops.enabled";
