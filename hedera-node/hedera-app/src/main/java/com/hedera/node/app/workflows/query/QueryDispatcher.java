@@ -86,6 +86,7 @@ public class QueryDispatcher {
             case TOKEN_GET_ACCOUNT_NFT_INFOS -> handlers.tokenGetAccountNftInfosHandler();
             case TOKEN_GET_NFT_INFO -> handlers.tokenGetNftInfoHandler();
             case TOKEN_GET_NFT_INFOS -> handlers.tokenGetNftInfosHandler();
+
             case UNSET -> throw new UnsupportedOperationException(QUERY_NOT_SET);
         };
     }
