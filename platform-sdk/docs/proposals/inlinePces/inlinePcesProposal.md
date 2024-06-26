@@ -62,9 +62,9 @@ PCES writer to the `RoundDurabilityBuffer` to prevent handling of a round until 
 written to disk.
 
 We propose to remove these extra complications (PCES Sequencer, `RoundDurabilityBuffer`, consensus control of flush,
-"keystone" events). Instead, let the PCES writer use a memory mapped file. It should be fast enough, and maintain all
-the persistence guarantees we require. This means we can send events directly from event intake into the PCES, and
-directly from PCES into consensus and, for self-events, into the gossip engine.
+"keystone" events). Through experimentation, we have determined that the `FileChannel` API is fast enough to make the
+writing of each event a synchronous operation. This means we can send events directly from event intake into the PCES,
+and directly from PCES into consensus and, for self-events, into the gossip engine.
 
 This allows us to remove the flush call and the PCES Sequencer, while also closing the loophole causing branching.
 
@@ -75,6 +75,11 @@ This allows us to remove the flush call and the PCES Sequencer, while also closi
 If the PCES is forced to flush after the last self event is created when freezing, then the PCES will be in a consistent
 state when restarted. However, this does not solve the problem if a deterministic crash affects all nodes, and it does
 not get us closer to the end-state of a simpler system.
+
+##### Other Methods For Writing
+
+We also explored several other APIs for writing events to disk (for example, memory mapped files). Of all the APIs we
+explored, the `FileChannel` API was the fastest and simplest to use.
 
 ---
 
