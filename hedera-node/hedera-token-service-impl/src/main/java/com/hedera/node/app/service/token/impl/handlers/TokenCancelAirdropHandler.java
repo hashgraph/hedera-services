@@ -30,12 +30,18 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#TOKEN_CANCEL_AIRDROP}.
  * This transaction type is used to reject tokens from an account and send them back to the treasury.
  */
+@Singleton
 public class TokenCancelAirdropHandler extends BaseTokenHandler implements TransactionHandler {
+
+    @Inject
+    public TokenCancelAirdropHandler() {}
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {}
