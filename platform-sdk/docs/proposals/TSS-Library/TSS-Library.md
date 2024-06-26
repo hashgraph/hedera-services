@@ -233,7 +233,7 @@ Using an established channel, each participant will broadcast a single message t
 while waiting to receive other participants' messages. This functionality is critical for the protocol to work but needs to be handled outside the library.
 Each participant will validate the received message against the commitment and the NIZKs proof. Invalid messages needs to be discarded.
 
-##### 2. Validation of TssMessage
+##### Validation of TssMessage
 The validation is produced over the content of the message and does not include the sender's identity, which is assumed to be provided by the external channel.
 Each message can be validated against the commitment and the proof by:
 * Checking that the encrypted shares correspond to the commitments.
@@ -283,7 +283,7 @@ Given the input:
 23. If `lhs` != `rhs`: Return False
 24. Return True
 
-##### 3. Generating Participant's Private Shares & Ledger Id
+##### Generating Participant's Private Shares & Ledger Id
 Given Participant's persistent EC PrivateKey and precisely `t` number of validated messages (t=threshold)
 each participant will decrypt all `Cᵢ` to generate an aggregated value `sᵢ` that will become a  `SecretShare(sidᵢ, sᵢ)` for each `ShareId`: `sidᵢ` owned by the participant.
 
