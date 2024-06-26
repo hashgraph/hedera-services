@@ -529,6 +529,11 @@ public class UnsignedEvent extends AbstractHashable {
         return eventCore;
     }
 
+    /**
+     * Get the payloads of the event.
+     *
+     * @return list of payloads
+     */
     public List<EventPayload> getPayloads() {
         return payloads;
     }
