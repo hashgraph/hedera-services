@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.spec.transactions;
 
-import static com.hedera.services.bdd.spec.fees.Payment.Reason.TXN_FEE;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
@@ -47,7 +46,6 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnPrecheckStateException;
-import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.infrastructure.DelegatingOpFinisher;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
@@ -309,11 +307,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                         String.format("Wrong status! Expected %s, was %s", getExpectedStatus(), actualStatus));
             }
         }
-        if (!deferStatusResolution) {
-            if (spec.setup().costSnapshotMode() != HapiSpec.CostSnapshotMode.OFF) {
-                publishFeeChargedTo(spec);
-            }
-        }
         if (ensureResolvedStatusIsntFromDuplicate) {
             assertRecordHasExpectedMemo(spec);
         }
@@ -358,14 +351,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         List<ResponseCodeEnum> tolerating = new ArrayList<>(immutableSet);
         tolerating.add(INSUFFICIENT_PAYER_BALANCE);
         return EnumSet.copyOf(tolerating);
-    }
-
-    private void publishFeeChargedTo(HapiSpec spec) throws Throwable {
-        if (recordOfSubmission == null) {
-            lookupSubmissionRecord(spec);
-        }
-        long fee = recordOfSubmission.getTransactionFee();
-        spec.recordPayment(new Payment(fee, self().getClass().getSimpleName(), TXN_FEE));
     }
 
     private void assertRecordHasExpectedMemo(HapiSpec spec) throws Throwable {

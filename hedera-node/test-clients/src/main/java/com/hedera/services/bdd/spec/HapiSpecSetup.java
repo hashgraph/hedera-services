@@ -19,7 +19,6 @@ package com.hedera.services.bdd.spec;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
-import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.keys.deterministic.Bip0032.mnemonicToEd25519Key;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
@@ -173,14 +172,6 @@ public class HapiSpecSetup {
 
     public String appPropertiesFile() {
         return props.get("app.properties.name");
-    }
-
-    public String costSnapshotDir() {
-        return props.get("cost.snapshot.dir");
-    }
-
-    public CostSnapshotMode costSnapshotMode() {
-        return props.getCostSnapshotMode("cost.snapshot.mode");
     }
 
     public HapiPropertySource ciPropertiesMap() {

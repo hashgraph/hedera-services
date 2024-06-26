@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_RECEIVER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
-import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiPropertySource;
@@ -64,7 +63,7 @@ import java.util.function.Function;
 public class HapiSpecRegistry {
     private final Map<String, Object> registry = new HashMap<>();
     private final HapiSpecSetup setup;
-    private Map<Class, List<RegistryChangeListener>> listenersByType = new HashMap<>();
+    private final Map<Class, List<RegistryChangeListener>> listenersByType = new HashMap<>();
 
     private static final Integer ZERO = 0;
 
@@ -204,10 +203,6 @@ public class HapiSpecRegistry {
 
     public long getBalanceSnapshot(String name) {
         return get(name, Long.class);
-    }
-
-    public boolean hasTimestamp(String label) {
-        return registry.containsKey(full(label, Timestamp.class));
     }
 
     public Timestamp getTimestamp(String label) {
@@ -355,10 +350,6 @@ public class HapiSpecRegistry {
 
     public String getMemo(String entity) {
         return get(entity + "Memo", String.class);
-    }
-
-    public String getSymbol(String token) {
-        return get(token + "Symbol", String.class);
     }
 
     public void forgetSymbol(String token) {
@@ -524,12 +515,6 @@ public class HapiSpecRegistry {
         return Optional.ofNullable(getOrElse(name, TransactionID.class, null));
     }
 
-    public <T extends Record> void saveRecord(@NonNull final String name, @NonNull final T registryRecord) {
-        requireNonNull(name);
-        requireNonNull(registryRecord);
-        put(name, registryRecord);
-    }
-
     public void saveAccountId(String name, AccountID id) {
         put(name, id);
         put(asAccountString(id), name);
@@ -625,16 +610,8 @@ public class HapiSpecRegistry {
         put(account + "RechargeWindow", seconds);
     }
 
-    public boolean hasRechargingWindow(String rechargingAccount) {
-        return registry.get(full(rechargingAccount + "RechargeWindow", Integer.class)) != null;
-    }
-
     public Integer getRechargingWindow(String account) {
         return getOrElse(account + "RechargeWindow", Integer.class, ZERO);
-    }
-
-    public boolean hasTokenId(String name) {
-        return hasVia(this::getTokenID, name);
     }
 
     public boolean hasAccountId(String name) {
@@ -678,10 +655,6 @@ public class HapiSpecRegistry {
 
     public TokenID getTokenID(String name) {
         return get(name, TokenID.class);
-    }
-
-    public boolean hasFileId(String name) {
-        return hasVia(this::getFileId, name);
     }
 
     public void saveFileId(String name, FileID id) {
@@ -868,15 +841,7 @@ public class HapiSpecRegistry {
         return get(name + "Metadata", Key.class);
     }
 
-    public boolean hasMetadataKey(String name) {
-        return has(name + "Metadata", Key.class);
-    }
-
     public void saveMetadata(String token, String metadata) {
         put(token + "Metadata", metadata, String.class);
-    }
-
-    public String getMetadata(String entity) {
-        return get(entity + "Metadata", String.class);
     }
 }

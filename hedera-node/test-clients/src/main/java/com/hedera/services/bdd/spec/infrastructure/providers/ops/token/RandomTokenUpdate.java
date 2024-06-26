@@ -44,7 +44,6 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
@@ -73,7 +72,7 @@ public class RandomTokenUpdate implements OpProvider {
 
     private static double fieldUpdateProb = 0.5;
 
-    private final EntityNameProvider<Key> keys;
+    private final EntityNameProvider keys;
     private final RegistrySourcedNameProvider<TokenID> tokens;
     private final RegistrySourcedNameProvider<AccountID> accounts;
 
@@ -99,7 +98,7 @@ public class RandomTokenUpdate implements OpProvider {
             INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
 
     public RandomTokenUpdate(
-            EntityNameProvider<Key> keys,
+            EntityNameProvider keys,
             RegistrySourcedNameProvider<TokenID> tokens,
             RegistrySourcedNameProvider<AccountID> accounts) {
         this.keys = keys;

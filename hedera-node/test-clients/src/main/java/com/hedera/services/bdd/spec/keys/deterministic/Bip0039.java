@@ -21,10 +21,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 public class Bip0039 {
-    public static String[] wordList() {
-        return Arrays.copyOf(wordList, wordList.length);
-    }
-
     public static byte[] entropyFrom(String mnemonic) {
         String[] words = mnemonic.split(" ");
         assert (words.length == 24);

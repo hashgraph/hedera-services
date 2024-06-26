@@ -111,6 +111,7 @@ import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyAddLiveHashNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetAccountNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
+import com.hedera.services.bdd.spec.utilops.checks.VerifyGetExecutionTimeNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetFastRecordNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
@@ -643,6 +644,10 @@ public class UtilVerbs {
 
     public static VerifyGetStakersNotSupported getStakersNotSupported() {
         return new VerifyGetStakersNotSupported();
+    }
+
+    public static VerifyGetExecutionTimeNotSupported getExecutionTimeNotSupported() {
+        return new VerifyGetExecutionTimeNotSupported();
     }
 
     public static VerifyGetFastRecordNotSupported getFastRecordNotSupported() {

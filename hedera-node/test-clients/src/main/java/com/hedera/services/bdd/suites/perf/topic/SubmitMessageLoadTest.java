@@ -47,7 +47,6 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
@@ -114,7 +113,6 @@ public class SubmitMessageLoadTest extends LoadTest {
 
     final Stream<DynamicTest> runSubmitMessages() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
-        final AtomicInteger submittedSoFar = new AtomicInteger(0);
         Supplier<HapiSpecOperation[]> submitBurst =
                 () -> new HapiSpecOperation[] {opSupplier(settings).get()};
 
