@@ -52,8 +52,7 @@ the distribution aspect, the loading, and the in-memory interpretation from each
 - **Share**: Represents a piece of the necessary public/private elements to create signatures. In TSS,
   a threshold number of shares is needed to produce an aggregate signature that the ledger public key can later verify.
 - **Polynomial Commitment**: It enables verification of evaluations of the polynomial at specific points without revealing the entire polynomial.
-- **Participant**: Any party involved in the distributed key generation protocol. Their goal is to generate a public key and provide a set of receivers with matching secret shares of the secret key. 
-  The set of participants that act as dealers and the set of participants acting as receivers may be identical, overlapping or disjoint.
+- **Participant**: Any party involved in the distributed key generation protocol.
 - **Participant Directory**: An address book of Participants of the distributed key generation protocol.
 
 Each scheme participant will receive its persistent EC private key from an external source and all participants' EC public keys.
@@ -159,7 +158,7 @@ P₁  	P₁  	P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄
 
 ##### 1. Create TssMessage
 `TssMessage`: A data structure for distributing encrypted shares of a secret among all participants in a way that only the intended participant can see its part of the share.
-It includes auxiliary information used to validate its correctness and assemble an aggregate public key ie: a commitment to a secret share polynomial and a NIZK proof.
+It includes auxiliary information used to validate its correctness and assemble an aggregate public key i.e., a commitment to a secret share polynomial and a NIZK proof.
 
 ###### Generation of the shares
 In the bootstrap process, each participant creates a random EC Private Key `k` out of the Field of the `SignatureScheme` (the secret being shared).
