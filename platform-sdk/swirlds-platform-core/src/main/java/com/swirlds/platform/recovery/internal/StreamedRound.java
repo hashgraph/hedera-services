@@ -65,7 +65,7 @@ public class StreamedRound implements Round {
 
             @Override
             public ConsensusEvent next() {
-                return iterator.next().getPlatformEvent();
+                return iterator.next();
             }
         };
     }

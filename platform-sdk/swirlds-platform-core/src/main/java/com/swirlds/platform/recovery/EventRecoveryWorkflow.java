@@ -378,8 +378,8 @@ public final class EventRecoveryWorkflow {
         final Instant currentRoundTimestamp = getRoundTimestamp(round);
         previousState.get().getState().throwIfImmutable();
         final MerkleRoot newState = previousState.get().getState().copy();
-        final PlatformEvent lastEvent = (PlatformEvent) getLastEvent(round);
-        new StatefulEventHasher().hashEvent(lastEvent);
+        final DetailedConsensusEvent lastEvent = (DetailedConsensusEvent) getLastEvent(round);
+        new StatefulEventHasher().hashEvent(lastEvent.getPlatformEvent());
 
         final PlatformState platformState = newState.getPlatformState();
 
@@ -392,7 +392,7 @@ public final class EventRecoveryWorkflow {
                 lastEvent.getConsensusOrder(),
                 currentRoundTimestamp,
                 config,
-                lastEvent));
+                lastEvent.getPlatformEvent()));
         platformState.setCreationSoftwareVersion(
                 previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
 
