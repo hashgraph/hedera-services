@@ -153,6 +153,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAsser
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
 import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
+import com.hedera.services.bdd.spec.utilops.upgrade.RemoveNodeOp;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -401,6 +402,10 @@ public class UtilVerbs {
     public static TryToStartNodesOp restartNetwork() {
         return new TryToStartNodesOp(
                 NodeSelector.allNodes(), TryToStartNodesOp.UseUpgradeJar.NO, TryToStartNodesOp.ReassignPorts.YES);
+    }
+
+    public static RemoveNodeOp removeNode(@NonNull final NodeSelector selector) {
+        return new RemoveNodeOp(selector);
     }
 
     public static TryToStartNodesOp restartNetworkFromUpgradeJar() {
