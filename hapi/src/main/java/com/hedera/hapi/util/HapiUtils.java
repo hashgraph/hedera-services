@@ -263,6 +263,7 @@ public class HapiUtils {
             case TRANSACTION_GET_RECORD -> HederaFunctionality.TRANSACTION_GET_RECORD;
             case TRANSACTION_GET_FAST_RECORD -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UNSET -> throw new UnknownHederaFunctionality();
+            case NODE_GET_INFO -> throw new UnknownHederaFunctionality();
         };
     }
 
