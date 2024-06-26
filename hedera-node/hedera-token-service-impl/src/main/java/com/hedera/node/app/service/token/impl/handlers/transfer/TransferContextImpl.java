@@ -70,10 +70,9 @@ public class TransferContextImpl implements TransferContext {
 
     /**
      * Create a new {@link TransferContextImpl} instance.
-     *
      * @param context The context to use.
      * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments Whether to enforce mono service restrictions
-     * on auto creation custom fee payments.
+     *                                                                      on auto creation custom fee payments.
      */
     public TransferContextImpl(
             final HandleContext context, final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {

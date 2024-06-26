@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -104,7 +103,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
                 // Validate freeze status and kyc granted
                 final var accountID = aa.accountIDOrThrow();
                 final var tokenRel = getIfUsable(accountID, tokenId, tokenRelStore);
-                validateTrue(tokenRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+                validateNotFrozenAndKycOnRelation(tokenRel);
 
                 // Add the amount to the aggregatedFungibleTokenChanges map.
                 // If the (accountId, tokenId) pair doesn't exist in the map, add it.

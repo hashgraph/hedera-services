@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
@@ -85,8 +84,8 @@ public class NFTOwnersChangeStep extends BaseTokenHandler implements TransferSte
                 final var receiverAccount = getIfUsable(receiverId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
                 final var senderRel = getIfUsable(senderId, tokenId, tokenRelStore);
                 final var receiverRel = getIfUsable(receiverId, tokenId, tokenRelStore);
-                validateTrue(senderRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
-                validateTrue(receiverRel.kycGranted(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
+                validateNotFrozenAndKycOnRelation(senderRel);
+                validateNotFrozenAndKycOnRelation(receiverRel);
 
                 final var treasuryId = token.treasuryAccountId();
                 getIfUsable(treasuryId, accountStore, expiryValidator, INVALID_ACCOUNT_ID);
