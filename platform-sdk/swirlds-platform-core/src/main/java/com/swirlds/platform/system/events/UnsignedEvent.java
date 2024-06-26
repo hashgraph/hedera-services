@@ -25,12 +25,10 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.AbstractHashable;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -42,10 +40,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -63,12 +61,6 @@ public class UnsignedEvent extends AbstractHashable {
     private static final int APPLICATION_TRANSACTION_VERSION = 1;
     private static final long STATE_SIGNATURE_CLASS_ID = 0xaf7024c653caabf4L;
     private static final int STATE_SIGNATURE_VERSION = 3;
-
-    /**
-     * Class IDs of permitted transaction types.
-     */
-    private static final Set<Long> TRANSACTION_TYPES =
-            Set.of(StateSignatureTransaction.CLASS_ID, SwirldTransaction.CLASS_ID);
 
     public static class ClassVersion {
         /**
@@ -211,40 +203,49 @@ public class UnsignedEvent extends AbstractHashable {
         out.writeInt(PayloadUtils.getLegacyObjectSize(payloads));
         // transactions may include both system transactions and application transactions
         // so writeClassId set to true and allSameClass set to false
-        final boolean allSameClass = false;
         out.writeInt(payloads.size());
         if (!payloads.isEmpty()) {
+            final boolean allSameClass = false;
             out.writeBoolean(allSameClass);
         }
         for (final EventPayload payload : payloads) {
             switch (payload.payload().kind()) {
                 case APPLICATION_PAYLOAD:
-                    out.writeLong(APPLICATION_TRANSACTION_CLASS_ID);
-                    out.writeInt(APPLICATION_TRANSACTION_VERSION);
-                    final Bytes bytes = payload.payload().as();
-                    out.writeInt((int) bytes.length());
-                    bytes.writeTo(out);
+                    serializeApplicationPayload(out, payload);
                     break;
                 case STATE_SIGNATURE_PAYLOAD:
-                    final StateSignaturePayload stateSignaturePayload =
-                            payload.payload().as();
-
-                    out.writeLong(STATE_SIGNATURE_CLASS_ID);
-                    out.writeInt(STATE_SIGNATURE_VERSION);
-                    out.writeInt((int) stateSignaturePayload.signature().length());
-                    stateSignaturePayload.signature().writeTo(out);
-
-                    out.writeInt((int) stateSignaturePayload.hash().length());
-                    stateSignaturePayload.hash().writeTo(out);
-
-                    out.writeLong(stateSignaturePayload.round());
-                    out.writeInt(Integer.MIN_VALUE); // epochHash is always null
+                    serializeStateSignaturePayload(out, payload);
                     break;
                 default:
                     throw new IOException(
                             "Unknown payload type: " + payload.payload().kind());
             }
         }
+    }
+
+    private static void serializeApplicationPayload(SerializableDataOutputStream out, EventPayload payload)
+            throws IOException {
+        out.writeLong(APPLICATION_TRANSACTION_CLASS_ID);
+        out.writeInt(APPLICATION_TRANSACTION_VERSION);
+        final Bytes bytes = payload.payload().as();
+        out.writeInt((int) bytes.length());
+        bytes.writeTo(out);
+    }
+
+    private static void serializeStateSignaturePayload(SerializableDataOutputStream out, EventPayload payload)
+            throws IOException {
+        final StateSignaturePayload stateSignaturePayload = payload.payload().as();
+
+        out.writeLong(STATE_SIGNATURE_CLASS_ID);
+        out.writeInt(STATE_SIGNATURE_VERSION);
+        out.writeInt((int) stateSignaturePayload.signature().length());
+        stateSignaturePayload.signature().writeTo(out);
+
+        out.writeInt((int) stateSignaturePayload.hash().length());
+        stateSignaturePayload.hash().writeTo(out);
+
+        out.writeLong(stateSignaturePayload.round());
+        out.writeInt(Integer.MIN_VALUE); // epochHash is always null
     }
 
     /**
@@ -260,7 +261,6 @@ public class UnsignedEvent extends AbstractHashable {
             throw new IOException("Unsupported version: " + version);
         }
 
-        final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
         Objects.requireNonNull(in, "The input stream must not be null");
         final SoftwareVersion softwareVersion =
                 in.readSerializable(StaticSoftwareVersion.getSoftwareVersionClassIdSet());
@@ -275,17 +275,52 @@ public class UnsignedEvent extends AbstractHashable {
 
         final var timeCreated = in.readInstant();
         in.readInt(); // read serialized length
-        final var transactions = in.readSerializableArray(
-                ConsensusTransactionImpl[]::new,
-                transactionConfig.maxTransactionCountPerEvent(),
-                true,
-                TRANSACTION_TYPES);
-        final var transactionList = Arrays.stream(transactions)
-                .map(ConsensusTransactionImpl::getPayload)
-                .toList();
+        final List<OneOf<PayloadOneOfType>> transactionList = new ArrayList<>();
+        final int payloadSize = in.readInt();
+        if(payloadSize > 0) {
+            in.readBoolean(); // allSameClass
+        }
+        for (int i = 0; i < payloadSize; i++) {
+            final long classId = in.readLong();
+            final int classVersion = in.readInt();
+            if (classId == APPLICATION_TRANSACTION_CLASS_ID) {
+                transactionList.add(new OneOf<>(
+                        PayloadOneOfType.APPLICATION_PAYLOAD, deserializeApplicationPayload(in, classVersion)));
+            } else if (classId == STATE_SIGNATURE_CLASS_ID) {
+                transactionList.add(new OneOf<>(
+                        PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, deserializeStateSignaturePayload(in, classVersion)));
+            } else {
+                throw new IOException("Unknown classId: " + classId);
+            }
+        }
 
         return new UnsignedEvent(
                 softwareVersion, creatorId, selfParent, otherParents, birthRound, timeCreated, transactionList);
+    }
+
+    private static Bytes deserializeApplicationPayload(SerializableDataInputStream in, int classVersion)
+            throws IOException {
+        if (classVersion != APPLICATION_TRANSACTION_VERSION) {
+            throw new IOException("Unsupported application class version: " + classVersion);
+        }
+        final byte[] bytes = in.readByteArray(1000000);
+
+        if (bytes != null) {
+            return Bytes.wrap(bytes);
+        }
+        return null;
+    }
+
+    private static StateSignaturePayload deserializeStateSignaturePayload(
+            SerializableDataInputStream in, int classVersion) throws IOException {
+        if (classVersion != STATE_SIGNATURE_VERSION) {
+            throw new IOException("Unsupported state signature class version: " + classVersion);
+        }
+        final byte[] sigBytes = in.readByteArray(1000000);
+        final byte[] hashBytes = in.readByteArray(1000000);
+        final long round = in.readLong();
+        in.readInt(); // epochHash is always null
+        return new StateSignaturePayload(round, Bytes.wrap(sigBytes), Bytes.wrap(hashBytes));
     }
 
     @Override
@@ -523,6 +558,11 @@ public class UnsignedEvent extends AbstractHashable {
         return descriptor;
     }
 
+    /**
+     * Get the core event data.
+     *
+     * @return the core event data
+     */
     public EventCore getEventCore() {
         return eventCore;
     }
