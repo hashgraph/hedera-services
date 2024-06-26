@@ -17,15 +17,17 @@
 package com.hedera.node.app.workflows.handle.flow.txn;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.node.app.workflows.handle.flow.util.FlowUtils.ALERT_MESSAGE;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.flow.dispatch.user.logic.UserRecordInitializer;
+import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.handle.flow.dispatch.user.UserRecordInitializer;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisWorkflow;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
@@ -37,40 +39,45 @@ import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * This class contains methods to execute the user transaction and return a stream of records that capture all
+ * side effects on state that are stipulated by the pre-block-stream contract with mirror nodes.
+ */
 @UserTxnScope
 public class UserTxnWorkflow {
     private static final Logger logger = LogManager.getLogger(UserTxnWorkflow.class);
+    public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
 
     private final SemanticVersion version;
     private final InitTrigger initTrigger;
-    private final SkipHandleWorkflow skipHandleWorkflow;
     private final DefaultHandleWorkflow defaultHandleWorkflow;
     private final GenesisWorkflow genesisWorkflow;
-    private final UserTransactionComponent userTxn;
+    private final UserTxnComponent userTxn;
     private final HederaRecordCache recordCache;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final UserRecordInitializer userRecordInitializer;
+    private final ExchangeRateManager exchangeRateManager;
 
     @Inject
     public UserTxnWorkflow(
             @NonNull final SemanticVersion version,
             @NonNull final InitTrigger initTrigger,
-            @NonNull final SkipHandleWorkflow skipHandleWorkflow,
             @NonNull final DefaultHandleWorkflow defaultHandleWorkflow,
             @NonNull final GenesisWorkflow genesisWorkflow,
-            @NonNull final UserTransactionComponent userTxn,
+            @NonNull final UserTxnComponent userTxn,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
-            @NonNull final UserRecordInitializer userRecordInitializer) {
+            @NonNull final UserRecordInitializer userRecordInitializer,
+            @NonNull final ExchangeRateManager exchangeRateManager) {
         this.version = requireNonNull(version);
         this.initTrigger = requireNonNull(initTrigger);
-        this.skipHandleWorkflow = requireNonNull(skipHandleWorkflow);
         this.defaultHandleWorkflow = requireNonNull(defaultHandleWorkflow);
         this.genesisWorkflow = requireNonNull(genesisWorkflow);
         this.userTxn = requireNonNull(userTxn);
         this.recordCache = requireNonNull(recordCache);
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
         this.userRecordInitializer = requireNonNull(userRecordInitializer);
+        this.exchangeRateManager = requireNonNull(exchangeRateManager);
     }
 
     /**
@@ -90,31 +97,20 @@ public class UserTxnWorkflow {
      */
     public Stream<SingleTransactionRecord> execute() {
         try {
-            return sideEffectsOfExecution();
+            if (isOlderSoftwareEvent()) {
+                skipHandleWorkflow(userTxn);
+            } else {
+                if (userTxn.isGenesisTxn()) {
+                    genesisWorkflow.executeIn(userTxn.tokenContext());
+                }
+                defaultHandleWorkflow.execute(userTxn);
+                updateWorkflowMetrics();
+            }
+            return allSideEffectsFrom(userTxn.recordListBuilder());
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
             return failInvalidRecordStream();
         }
-    }
-
-    /**
-     * Executes the user transaction and returns a stream of records that capture all
-     * side effects on state that are stipulated by the pre-block-stream contract with
-     * mirror nodes.
-     *
-     * @return the stream of records
-     */
-    private Stream<SingleTransactionRecord> sideEffectsOfExecution() {
-        if (isOlderSoftwareEvent()) {
-            skipHandleWorkflow.execute(userTxn);
-        } else {
-            if (userTxn.isGenesisTxn()) {
-                genesisWorkflow.executeIn(userTxn.tokenContext());
-            }
-            defaultHandleWorkflow.execute(userTxn);
-            updateWorkflowMetrics();
-        }
-        return allSideEffectsFrom(userTxn.recordListBuilder());
     }
 
     /**
@@ -165,5 +161,18 @@ public class UserTxnWorkflow {
                 && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(
                                 version, userTxn.platformEvent().getSoftwareVersion())
                         > 0;
+    }
+
+    private void skipHandleWorkflow(UserTxnComponent userTxn) {
+        final TransactionInfo transactionInfo = userTxn.txnInfo();
+        // Initialize record builder list and place a BUSY record in the cache
+        userTxn.recordListBuilder()
+                .userTransactionRecordBuilder()
+                .transaction(transactionInfo.transaction())
+                .transactionBytes(transactionInfo.signedBytes())
+                .transactionID(transactionInfo.txBody().transactionIDOrElse(TransactionID.DEFAULT))
+                .exchangeRate(exchangeRateManager.exchangeRates())
+                .memo(transactionInfo.txBody().memo())
+                .status(ResponseCodeEnum.BUSY);
     }
 }

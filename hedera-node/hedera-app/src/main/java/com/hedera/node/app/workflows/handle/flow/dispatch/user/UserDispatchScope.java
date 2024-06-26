@@ -28,6 +28,9 @@ import javax.inject.Scope;
 
 /**
  * Scope for bindings whose lifetime consists of a user transaction dispatch.
+ * Dagger will provide any objects that are annotated with this scope for the duration of
+ * the user transaction dispatch that is used to dispatch user transaction to the handler and
+ * to handle the user transaction.
  */
 @Target({METHOD, PARAMETER, TYPE})
 @Retention(RUNTIME)

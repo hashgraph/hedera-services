@@ -35,6 +35,10 @@ import dagger.Subcomponent;
 @Subcomponent(modules = {ChildDispatchModule.class})
 @ChildDispatchScope
 public interface ChildDispatchComponent extends Dispatch {
+    /**
+     * The factory for creating child dispatch component. All the bindings annotated with @BindsInstance are provided
+     * explicitly when constructing the component.
+     */
     @Subcomponent.Factory
     interface Factory {
         ChildDispatchComponent create(
