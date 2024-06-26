@@ -723,6 +723,13 @@ Limitations: native-support-library tests must be executed in different environm
 JMH benchmarks should be provided for signature generation and aggregation.
 TssMessage validation, and public key aggregation.
 
+We should know that variance (min, max, average, median) time it takes to do the following:
+
+Genesis for a 4, 10, 20, 40, and 100 participants.
+Rekeying for a 4, 10, 20, 40, and 100 participants.
+Shares Amounts distributed randomly: 200, 500, 1000, 2000, 5000
+we need to test each configuration 100 times to get confident mins, maxes, and a good average and median
+
 ## Security Audit
 After this proposal is accepted we will invite security team to define the necessary steps for auditing the code.
 
