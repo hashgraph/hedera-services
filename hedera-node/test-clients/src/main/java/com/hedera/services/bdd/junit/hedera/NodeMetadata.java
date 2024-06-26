@@ -31,4 +31,19 @@ public record NodeMetadata(
         int prometheusPort,
         @Nullable Path workingDir) {
     public static final int UNKNOWN_PORT = -1;
+
+    /**
+     * Create a new instance with the same values as this instance, but different ports.
+     *
+     * @param grpcPort the new grpc port
+     * @param gossipPort the new gossip port
+     * @param tlsGossipPort the new tls gossip port
+     * @param prometheusPort the new prometheus port
+     * @return a new instance with the same values as this instance, but different ports
+     */
+    public NodeMetadata withNewPorts(
+            final int grpcPort, final int gossipPort, final int tlsGossipPort, final int prometheusPort) {
+        return new NodeMetadata(
+                nodeId, name, accountId, host, grpcPort, gossipPort, tlsGossipPort, prometheusPort, workingDir);
+    }
 }

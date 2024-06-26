@@ -18,13 +18,15 @@ package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.JAR_FILE;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNode;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -40,15 +42,36 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
         NO
     }
 
-    private final UseUpgradeJar useUpgradeJar;
-
-    public TryToStartNodesOp(@NonNull final NodeSelector selector) {
-        this(selector, UseUpgradeJar.NO);
+    public enum ReassignPorts {
+        YES,
+        NO
     }
 
-    public TryToStartNodesOp(@NonNull final NodeSelector selector, @NonNull final UseUpgradeJar useUpgradeJar) {
+    private final UseUpgradeJar useUpgradeJar;
+    private final ReassignPorts reassignPorts;
+
+    public TryToStartNodesOp(@NonNull final NodeSelector selector) {
+        this(selector, UseUpgradeJar.NO, ReassignPorts.NO);
+    }
+
+    public TryToStartNodesOp(
+            @NonNull final NodeSelector selector,
+            @NonNull final UseUpgradeJar useUpgradeJar,
+            @NonNull final ReassignPorts reassignPorts) {
         super(selector);
-        this.useUpgradeJar = Objects.requireNonNull(useUpgradeJar);
+        this.useUpgradeJar = requireNonNull(useUpgradeJar);
+        this.reassignPorts = requireNonNull(reassignPorts);
+    }
+
+    @Override
+    protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
+        if (reassignPorts == ReassignPorts.YES) {
+            if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
+                throw new IllegalStateException("Can only reassign ports for a SubProcessNetwork");
+            }
+            subProcessNetwork.assignNewPorts();
+        }
+        return super.submitOp(spec);
     }
 
     @Override

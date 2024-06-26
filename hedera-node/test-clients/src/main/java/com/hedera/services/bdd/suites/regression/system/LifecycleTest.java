@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutdownNetworkWithin;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForFrozenNetwork;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -34,11 +33,6 @@ public interface LifecycleTest {
         return blockingOrder(
                 waitForFrozenNetwork(FREEZE_TIMEOUT),
                 // Shut down all nodes, since the platform doesn't automatically go back to ACTIVE status
-                shutdownNetworkWithin(SHUTDOWN_TIMEOUT),
-                // This sleep is needed, since the ports of shutdown nodes may still be in time_wait status,
-                // which will cause an error that address is already in use when restarting nodes.
-                // Sleep long enough (120s or 180 secs for TIME_WAIT status to be finished based on
-                // kernel settings), so restarting nodes succeeds.
-                sleepFor(PORT_UNBINDING_TIMEOUT_MS));
+                shutdownNetworkWithin(SHUTDOWN_TIMEOUT));
     }
 }

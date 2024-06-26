@@ -35,7 +35,7 @@ public abstract class AbstractNode implements HederaNode {
     private static final String HGCAA_LOG = "hgcaa.log";
     private static final String LOG4J2_XML = "log4j2.xml";
 
-    protected final NodeMetadata metadata;
+    protected NodeMetadata metadata;
 
     protected AbstractNode(@NonNull final NodeMetadata metadata) {
         this.metadata = metadata;
@@ -47,7 +47,7 @@ public abstract class AbstractNode implements HederaNode {
     }
 
     @Override
-    public int getPort() {
+    public int getGrpcPort() {
         return metadata.grpcPort();
     }
 

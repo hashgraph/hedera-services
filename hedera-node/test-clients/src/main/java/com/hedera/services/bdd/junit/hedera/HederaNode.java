@@ -39,7 +39,7 @@ public interface HederaNode {
      *
      * @return the port number of the gRPC service
      */
-    int getPort();
+    int getGrpcPort();
 
     /**
      * Gets the node ID, such as 0, 1, 2, or 3.
@@ -131,6 +131,6 @@ public interface HederaNode {
      * @return this node's HAPI spec identifier
      */
     default String hapiSpecInfo() {
-        return getHost() + ":" + getPort() + ":0.0." + getAccountId().accountNumOrThrow();
+        return getHost() + ":" + getGrpcPort() + ":0.0." + getAccountId().accountNumOrThrow();
     }
 }

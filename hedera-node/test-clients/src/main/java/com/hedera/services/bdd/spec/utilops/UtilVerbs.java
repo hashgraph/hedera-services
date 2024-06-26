@@ -419,20 +419,22 @@ public class UtilVerbs {
         return new WaitForStatusOp(NodeSelector.byName(name), FREEZE_COMPLETE, timeout);
     }
 
-    public static TryToStartNodesOp restartNode(String name) {
-        return new TryToStartNodesOp(NodeSelector.byName(name));
-    }
-
     public static WaitForStatusOp waitForActiveNetwork(@NonNull final Duration timeout) {
         return new WaitForStatusOp(NodeSelector.allNodes(), ACTIVE, timeout);
     }
 
+    public static TryToStartNodesOp restartNode(String name) {
+        return new TryToStartNodesOp(NodeSelector.byName(name));
+    }
+
     public static TryToStartNodesOp restartNetwork() {
-        return new TryToStartNodesOp(NodeSelector.allNodes());
+        return new TryToStartNodesOp(
+                NodeSelector.allNodes(), TryToStartNodesOp.UseUpgradeJar.NO, TryToStartNodesOp.ReassignPorts.YES);
     }
 
     public static TryToStartNodesOp restartNetworkFromUpgradeJar() {
-        return new TryToStartNodesOp(NodeSelector.allNodes(), TryToStartNodesOp.UseUpgradeJar.YES);
+        return new TryToStartNodesOp(
+                NodeSelector.allNodes(), TryToStartNodesOp.UseUpgradeJar.YES, TryToStartNodesOp.ReassignPorts.YES);
     }
 
     public static ShutdownWithinOp shutdownWithin(String name, Duration timeout) {

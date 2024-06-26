@@ -99,19 +99,6 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         return startWithJar(null);
     }
 
-    public SubProcessNode startWithJar(@Nullable final Path jarPath) {
-        assertStopped();
-        assertWorkingDirInitialized();
-        destroyAnySubProcessNodeWithId(metadata.nodeId());
-        if (jarPath == null) {
-            processHandle = startSubProcessNodeFrom(metadata, null);
-        } else {
-            final var jarLoc = jarPath.normalize().toAbsolutePath().toString();
-            processHandle = startSubProcessNodeFrom(metadata, jarLoc);
-        }
-        return this;
-    }
-
     @Override
     public boolean stop() {
         return stopWith(ProcessHandle::destroy);
@@ -160,6 +147,32 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
     @Override
     protected SubProcessNode self() {
         return this;
+    }
+
+    public SubProcessNode startWithJar(@Nullable final Path jarPath) {
+        assertStopped();
+        assertWorkingDirInitialized();
+        destroyAnySubProcessNodeWithId(metadata.nodeId());
+        if (jarPath == null) {
+            processHandle = startSubProcessNodeFrom(metadata, null);
+        } else {
+            final var jarLoc = jarPath.normalize().toAbsolutePath().toString();
+            processHandle = startSubProcessNodeFrom(metadata, jarLoc);
+        }
+        return this;
+    }
+
+    /**
+     * Reassigns the ports used by this node.
+     *
+     * @param grpcPort
+     * @param gossipPort
+     * @param tlsGossipPort
+     * @param prometheusPort
+     */
+    public void reassignPorts(
+            final int grpcPort, final int gossipPort, final int tlsGossipPort, final int prometheusPort) {
+        metadata = metadata.withNewPorts(grpcPort, gossipPort, tlsGossipPort, prometheusPort);
     }
 
     private boolean stopWith(@NonNull final BooleanFunction<ProcessHandle> stop) {
