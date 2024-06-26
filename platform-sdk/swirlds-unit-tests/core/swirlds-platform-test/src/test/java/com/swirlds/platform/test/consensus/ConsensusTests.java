@@ -301,7 +301,7 @@ class ConsensusTests extends PlatformTest {
         ConsensusTestRunner.create()
                 .setTest(ConsensusTestDefinitions::removeNode)
                 .setParams(modifyParams(params))
-                .setIterations(0)
+                .setIterations(NUM_ITER)
                 .run();
     }
 

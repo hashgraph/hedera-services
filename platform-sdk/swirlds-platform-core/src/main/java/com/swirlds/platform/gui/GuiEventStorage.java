@@ -88,10 +88,6 @@ public class GuiEventStorage {
             return;
         }
 
-        if(event.getGeneration() == 2854 && event.getCreatorId().id() == 2){
-            System.out.println("found it");
-        }
-
         final List<ConsensusRound> rounds = consensus.addEvent(eventImpl);
 
         if (rounds.isEmpty()) {

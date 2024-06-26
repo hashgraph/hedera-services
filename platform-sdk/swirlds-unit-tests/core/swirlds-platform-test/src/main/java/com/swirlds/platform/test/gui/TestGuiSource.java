@@ -26,13 +26,8 @@ import com.swirlds.platform.gui.hashgraph.HashgraphGuiSource;
 import com.swirlds.platform.gui.hashgraph.internal.StandardGuiSource;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
-import com.swirlds.platform.test.fixtures.event.generator.StandardGraphGenerator;
-import com.swirlds.platform.test.fixtures.event.source.EventSource;
-import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.awt.FlowLayout;
-import java.util.LinkedList;
 import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -47,33 +42,12 @@ public class TestGuiSource {
     private final GuiEventStorage eventStorage;
 
     /**
-     * Construct a {@link TestGuiSource} with the given platform context, seed, and number of nodes.
+     * Construct a {@link TestGuiSource} with the given platform context, address book, and event provider.
      *
      * @param platformContext the platform context
-     * @param seed            the seed
-     * @param numNodes        the number of nodes
+     * @param addressBook     the address book
+     * @param eventProvider   the event provider
      */
-    public TestGuiSource(
-            @NonNull final PlatformContext platformContext, final long seed, @NonNull final int numNodes) {
-
-        final GraphGenerator<?> graphGenerator = new StandardGraphGenerator(platformContext, seed,
-                generateSources(numNodes));
-        graphGenerator.reset();
-
-        eventStorage = new GuiEventStorage(platformContext.getConfiguration(), graphGenerator.getAddressBook());
-        guiSource = new StandardGuiSource(graphGenerator.getAddressBook(), eventStorage);
-        eventProvider = new GeneratorEventProvider(graphGenerator);
-    }
-
-    public TestGuiSource(
-            @NonNull final PlatformContext platformContext,
-            @NonNull final AddressBook addressBook,
-            @NonNull final GraphGenerator<?> graphGenerator) {
-        eventStorage = new GuiEventStorage(platformContext.getConfiguration(), addressBook);
-        guiSource = new StandardGuiSource(addressBook, eventStorage);
-        eventProvider = new GeneratorEventProvider(graphGenerator);
-    }
-
     public TestGuiSource(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
@@ -88,7 +62,7 @@ public class TestGuiSource {
     }
 
     public void generateEvents(final int numEvents) {
-        final List<PlatformEvent> events = eventProvider.generateEvents(numEvents);
+        final List<PlatformEvent> events = eventProvider.provideEvents(numEvents);
         for (final PlatformEvent event : events) {
             eventStorage.handlePreconsensusEvent(event);
         }
@@ -111,8 +85,8 @@ public class TestGuiSource {
                 Integer.valueOf(Integer.MAX_VALUE),
                 Integer.valueOf(numEventsStep)));
         nextEvent.addActionListener(e -> {
-            final List<PlatformEvent> events = eventProvider.generateEvents(
-                    numEvents.getValue() instanceof Integer value ? value : defaultNumEvents);
+            final List<PlatformEvent> events = eventProvider.provideEvents(
+                    numEvents.getValue() instanceof final Integer value ? value : defaultNumEvents);
             for (final PlatformEvent event : events) {
                 eventStorage.handlePreconsensusEvent(event);
             }
@@ -133,7 +107,7 @@ public class TestGuiSource {
             if (round == null) {
                 System.out.println("No consensus rounds");
             } else {
-                System.out.println(round.getSnapshot().toString());
+                System.out.println(round.getSnapshot());
             }
         });
         final JButton saveLastSnapshot = new JButton("Save last snapshot");
@@ -151,7 +125,6 @@ public class TestGuiSource {
                 System.out.println("No saved snapshot");
                 return;
             }
-            //eventStorage.clearState();
             eventStorage.handleSnapshotOverride(savedSnapshot);
         });
 
@@ -168,20 +141,23 @@ public class TestGuiSource {
         return controls;
     }
 
+    /**
+     * Load a snapshot into consensus
+     * @param snapshot the snapshot to load
+     */
+    @SuppressWarnings("unused") // useful for debugging
     public void loadSnapshot(final ConsensusSnapshot snapshot) {
         System.out.println("Loading snapshot for round: " + snapshot.round());
         eventStorage.handleSnapshotOverride(snapshot);
     }
 
+    /**
+     * Get the {@link GuiEventStorage} used by this {@link TestGuiSource}
+     *
+     * @return the {@link GuiEventStorage}
+     */
+    @SuppressWarnings("unused") // useful for debugging
     public GuiEventStorage getEventStorage() {
         return eventStorage;
-    }
-
-    public static @NonNull List<EventSource<?>> generateSources(final int numNetworkNodes) {
-        final List<EventSource<?>> list = new LinkedList<>();
-        for (long i = 0; i < numNetworkNodes; i++) {
-            list.add(new StandardEventSource(true));
-        }
-        return list;
     }
 }

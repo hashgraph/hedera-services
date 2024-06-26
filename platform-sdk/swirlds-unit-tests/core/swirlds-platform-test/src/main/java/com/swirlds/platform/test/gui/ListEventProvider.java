@@ -1,19 +1,30 @@
 package com.swirlds.platform.test.gui;
 
 import com.swirlds.platform.event.PlatformEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Objects;
 
+/**
+ * Provides events for the GUI by using a list of events
+ */
 public class ListEventProvider implements GuiEventProvider{
     private final List<PlatformEvent> events;
     private int index;
 
-    public ListEventProvider(final List<PlatformEvent> events) {
+    /**
+     * Constructor
+     *
+     * @param events the list of events
+     */
+    public ListEventProvider(@NonNull final List<PlatformEvent> events) {
+        Objects.requireNonNull(events);
         this.events = events;
         this.index = 0;
     }
 
     @Override
-    public List<PlatformEvent> generateEvents(final int numberOfEvents) {
+    public @NonNull List<PlatformEvent> provideEvents(final int numberOfEvents) {
         if(index >= events.size()) {
             return List.of();
         }
