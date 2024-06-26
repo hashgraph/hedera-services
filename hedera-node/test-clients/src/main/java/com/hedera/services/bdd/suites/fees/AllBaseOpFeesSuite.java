@@ -85,7 +85,7 @@ import org.junit.jupiter.api.Tag;
 public class AllBaseOpFeesSuite {
     private static final String PAYER = "payer";
     private static final double ALLOWED_DIFFERENCE_PERCENTAGE = 0.01;
-    private static final double ALLOWED_DIFFERENCE = 10;
+    private static final double ALLOWED_DIFFERENCE = 1;
 
     private static final String TREASURE_KEY = "treasureKey";
     private static final String FUNGIBLE_COMMON_TOKEN = "fungibleCommonToken";
@@ -108,7 +108,7 @@ public class AllBaseOpFeesSuite {
 
     private static final double EXPECTED_FUNGIBLE_REJECT_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_REJECT_PRICE_USD = 0.00100245;
-    private static final double EXPECTED_MIX_REJECT_PRICE_USD = 0.0035;
+    private static final double EXPECTED_MIX_REJECT_PRICE_USD = 0.00375498;
     private static final double EXPECTED_UNFREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_FREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.02;
@@ -292,8 +292,8 @@ public class AllBaseOpFeesSuite {
                                         moving(100, FUNGIBLE_COMMON_TOKEN).between(TOKEN_TREASURY, ALICE))
                                 .payingWith(ALICE)
                                 .via("transferMix"),
-                        tokenReject(rejectingNFT(UNIQUE_TOKEN, 1), rejectingToken(FUNGIBLE_COMMON_TOKEN))
-                                .payingWith(ALICE)
+                        tokenReject(ALICE, rejectingNFT(UNIQUE_TOKEN, 1), rejectingToken(FUNGIBLE_COMMON_TOKEN))
+                                .payingWith(TOKEN_TREASURY)
                                 .via("rejectMix"))
                 .then(
                         validateChargedUsdWithin(
