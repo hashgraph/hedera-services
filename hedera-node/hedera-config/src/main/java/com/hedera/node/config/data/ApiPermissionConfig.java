@@ -175,10 +175,6 @@ import java.util.function.Function;
  * @param freeze                     the permission for {@link HederaFunctionality#FREEZE} functionality
  * @param getAccountDetails          the permission for {@link HederaFunctionality#GET_ACCOUNT_DETAILS} functionality
  * @param tokenUpdateNfts            the permission for {@link HederaFunctionality#TOKEN_UPDATE_NFTS} functionality
- *
- * @param createNode                   the permission for {@link HederaFunctionality#NODE_CREATE} functionality
- * @param updateNode                   the permission for {@link HederaFunctionality#NODE_UPDATE} functionality
- * @param deleteNode                   the permission for {@link HederaFunctionality#NODE_DELETE} functionality
  */
 @ConfigData
 public record ApiPermissionConfig(
@@ -315,9 +311,6 @@ public record ApiPermissionConfig(
         permissionKeys.put(TOKEN_GET_ACCOUNT_NFT_INFOS, c -> c.tokenGetAccountNftInfos);
         permissionKeys.put(TOKEN_FEE_SCHEDULE_UPDATE, c -> c.tokenFeeScheduleUpdate);
         permissionKeys.put(UTIL_PRNG, c -> c.utilPrng);
-        permissionKeys.put(NODE_CREATE, c -> c.createNode);
-        permissionKeys.put(NODE_UPDATE, c -> c.updateNode);
-        permissionKeys.put(NODE_DELETE, c -> c.deleteNode);
     }
 
     /**
