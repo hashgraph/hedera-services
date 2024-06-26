@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
@@ -89,6 +90,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -680,6 +682,7 @@ public class ScheduleSignSpecs {
 
     @HapiTest
     @Order(7)
+    @Tag(NOT_REPEATABLE)
     final Stream<DynamicTest> okIfAdminKeyOverlapsWithActiveScheduleKey() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
         var adminKey = "adminKey";
@@ -698,6 +701,7 @@ public class ScheduleSignSpecs {
 
     @HapiTest
     @Order(8)
+    @Tag(NOT_REPEATABLE)
     final Stream<DynamicTest> overlappingKeysTreatedAsExpected() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
 

@@ -18,8 +18,8 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.evmAddressFromSecp256k1Key;
@@ -267,7 +267,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
-        key = key != null ? key : netOf(spec, keyName, keyShape, keyType, Optional.of(this::effectiveKeyGen));
+        key = key != null ? key : netOf(spec, keyName, keyShape, keyType);
         final long amount = balanceFn.map(fn -> fn.apply(spec)).orElse(initialBalance.orElse(-1L));
         initialBalance = (amount >= 0) ? Optional.of(amount) : Optional.empty();
         final CryptoCreateTransactionBody opBody = spec.txns()

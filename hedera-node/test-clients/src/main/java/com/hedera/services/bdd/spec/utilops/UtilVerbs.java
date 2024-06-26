@@ -20,6 +20,7 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -55,7 +56,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
-import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
+import static com.hedera.services.bdd.suites.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
@@ -86,7 +87,6 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
-import com.hedera.services.bdd.junit.support.RecordStreamValidator;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -118,6 +118,7 @@ import com.hedera.services.bdd.spec.utilops.checks.VerifyGetTokenNftInfosNotSupp
 import com.hedera.services.bdd.spec.utilops.checks.VerifyUserFreezeNotAuthorized;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
 import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
+import com.hedera.services.bdd.spec.utilops.grouping.GroupedOps;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
@@ -139,13 +140,10 @@ import com.hedera.services.bdd.spec.utilops.mod.SubmitModificationsOp;
 import com.hedera.services.bdd.spec.utilops.mod.TxnModification;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
-import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.LogValidationOp;
-import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
-import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
 import com.hedera.services.bdd.spec.utilops.streams.StreamValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.AssertingBiConsumer;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.CryptoCreateAssertion;
@@ -177,6 +175,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
@@ -210,14 +209,31 @@ import java.util.function.ObjIntConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
 public class UtilVerbs {
+    private static final long FIRST_NODE_ACCOUNT_NUM = 3L;
+    private static final int NUM_IN_USE_NODE_ACCOUNTS = 4;
+    private static final TransferList DEFAULT_NODE_BALANCE_FUNDING = TransferList.newBuilder()
+            .addAllAccountAmounts(Stream.concat(
+                            Stream.of(AccountAmount.newBuilder()
+                                    .setAmount(-NUM_IN_USE_NODE_ACCOUNTS * ONE_HBAR)
+                                    .setAccountID(AccountID.newBuilder().setAccountNum(2L))
+                                    .build()),
+                            LongStream.range(FIRST_NODE_ACCOUNT_NUM, FIRST_NODE_ACCOUNT_NUM + NUM_IN_USE_NODE_ACCOUNTS)
+                                    .mapToObj(number -> AccountAmount.newBuilder()
+                                            .setAmount(ONE_HBAR)
+                                            .setAccountID(AccountID.newBuilder().setAccountNum(number))
+                                            .build()))
+                    .toList())
+            .build();
+
     private static final EnumSet<TargetNetworkType> HAPI_TEST_NETWORK_TYPES =
-            EnumSet.of(SHARED_HAPI_TEST_NETWORK, EMBEDDED_NETWORK);
+            EnumSet.of(SUBPROCESS_NETWORK, EMBEDDED_NETWORK);
 
     public static final int DEFAULT_COLLISION_AVOIDANCE_FACTOR = 2;
 
@@ -288,10 +304,6 @@ public class UtilVerbs {
         return new InBlockingOrder(ops);
     }
 
-    public static NodeLivenessTimeout withLiveNode(String node) {
-        return new NodeLivenessTimeout(node);
-    }
-
     public static <T> RecordSystemProperty<T> recordSystemProperty(
             String property, Function<String, T> converter, Consumer<T> historian) {
         return new RecordSystemProperty<>(property, converter, historian);
@@ -301,7 +313,7 @@ public class UtilVerbs {
         return new NetworkTypeFilterOp(HAPI_TEST_NETWORK_TYPES, ops);
     }
 
-    public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final HapiSpecOperation... ops) {
+    public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final SpecOperation... ops) {
         return new NetworkTypeFilterOp(EnumSet.complementOf(HAPI_TEST_NETWORK_TYPES), ops);
     }
 
@@ -461,8 +473,13 @@ public class UtilVerbs {
      */
     public static HapiSpecOperation ifNextStakePeriodStartsWithin(
             @NonNull final Duration window, final long stakePeriodMins, @NonNull final HapiSpecOperation then) {
-        return sourcing(
-                () -> (timeUntilNextPeriod(Instant.now(), stakePeriodMins).compareTo(window) < 0) ? then : noOp());
+        return withOpContext((spec, opLog) -> {
+            final var buffer = timeUntilNextPeriod(spec.consensusTime(), stakePeriodMins);
+            if (buffer.compareTo(window) < 0) {
+                opLog.info("Waiting for next staking period, buffer {} less than window {}", buffer, window);
+                allRunFor(spec, then);
+            }
+        });
     }
 
     /**
@@ -534,8 +551,18 @@ public class UtilVerbs {
         return new NewSpecKeyList(key, childKeys);
     }
 
-    public static ParallelSpecOps inParallel(HapiSpecOperation... subs) {
-        return new ParallelSpecOps(subs);
+    /**
+     * Unless the {@link HapiSpec} is in a repeatable mode, returns an operation that will
+     * run the given sub-operations in parallel.
+     *
+     * <p>If in repeatable mode, instead returns an operation that will run the sub-operations
+     * in blocking order, since parallelism can lead to non-deterministic outcomes.
+     *
+     * @param subs the sub-operations to run in parallel
+     * @return the operation that runs the sub-operations in parallel
+     */
+    public static GroupedOps<?> inParallel(@NonNull final SpecOperation... subs) {
+        return repeatableModeRequested() ? blockingOrder(subs) : new ParallelSpecOps(subs);
     }
 
     public static CustomSpecAssert assertionsHold(CustomSpecAssert.ThrowingConsumer custom) {
@@ -650,17 +677,6 @@ public class UtilVerbs {
         return new NoOp();
     }
 
-    /**
-     * A different name for {@link NoOp} that express the intent of a spec author to end by letting
-     * {@link HapiSpec} automatically waits for the streamMustInclude() assertions to pass, fail, or
-     * time out while ensuring enough background traffic to keep closing record stream files
-     *
-     * @return a {@link NoOp} instance
-     */
-    public static NoOp awaitStreamAssertions() {
-        return new NoOp();
-    }
-
     public static LogMessage logIt(String msg) {
         return new LogMessage(msg);
     }
@@ -675,10 +691,6 @@ public class UtilVerbs {
 
     public static HapiSpecOperation overriding(String property, String value) {
         return overridingAllOf(Map.of(property, value));
-    }
-
-    public static HapiSpecOperation overridingAllOfDeferred(Supplier<Map<String, String>> explicit) {
-        return sourcing(() -> overridingAllOf(explicit.get()));
     }
 
     public static HapiSpecOperation resetToDefault(String... properties) {
@@ -777,15 +789,6 @@ public class UtilVerbs {
     }
 
     /* Stream validation. */
-    public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
-        return new RecordStreamVerification(baseDir);
-    }
-
-    public static HapiSpecOperation assertEventuallyPasses(
-            final RecordStreamValidator validator, final Duration timeout) {
-        return new RecordAssertions(timeout, validator);
-    }
-
     public static EventualAssertion streamMustInclude(final Function<HapiSpec, RecordStreamAssertion> assertion) {
         return new EventualRecordStreamAssertion(assertion);
     }
@@ -795,12 +798,16 @@ public class UtilVerbs {
         return EventualRecordStreamAssertion.eventuallyAssertingNoFailures(assertion);
     }
 
-    public static Function<HapiSpec, RecordStreamAssertion> recordedCryptoCreate(final String name) {
-        return recordedCryptoCreate(name, assertion -> {});
-    }
-
+    /**
+     * "Hello world" example of a custom record stream assertion that validates a named
+     * account has a creation record in the record stream.
+     *
+     * @param name the name of the account
+     * @param config the configuration of the custom record stream assertion
+     * @return the custom record stream assertion
+     */
     public static Function<HapiSpec, RecordStreamAssertion> recordedCryptoCreate(
-            final String name, final Consumer<CryptoCreateAssertion> config) {
+            @NonNull final String name, @NonNull final Consumer<CryptoCreateAssertion> config) {
         return spec -> {
             final var assertion = new CryptoCreateAssertion(spec, name);
             config.accept(assertion);
@@ -813,7 +820,11 @@ public class UtilVerbs {
     }
 
     public static Function<HapiSpec, RecordStreamAssertion> recordedChildBodyWithId(
-            final String specTxnId, final int nonce, final AssertingBiConsumer<HapiSpec, TransactionBody> assertion) {
+            @NonNull final String specTxnId,
+            final int nonce,
+            @NonNull final AssertingBiConsumer<HapiSpec, TransactionBody> assertion) {
+        requireNonNull(specTxnId);
+        requireNonNull(assertion);
         return spec -> new TransactionBodyAssertion(specTxnId, spec, txnId -> txnId.getNonce() == nonce, assertion);
     }
 
@@ -835,6 +846,17 @@ public class UtilVerbs {
                 CustomSpecAssert.allRunFor(spec, subOp);
             }
         });
+    }
+
+    /**
+     * Returns a transfer that funds all node accounts with one hbar to cover any penalty payments.
+     *
+     * @return the operation that funds all node accounts
+     */
+    public static HapiCryptoTransfer fundHapiTestNodeAccounts() {
+        return cryptoTransfer((ignore, builder) -> builder.setTransfers(DEFAULT_NODE_BALANCE_FUNDING))
+                .deferStatusResolution()
+                .hasAnyStatusAtAll();
     }
 
     public static HapiSpecOperation emptyChildRecordsCheck(String parentTxnId, ResponseCodeEnum parentalStatus) {
@@ -1883,10 +1905,10 @@ public class UtilVerbs {
         return arg;
     }
 
-    public static byte[] getPrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {
+    public static byte[] getEcdsaPrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {
         var key = spec.registry().getKey(privateKeyRef);
         final var privateKey = spec.keys()
-                .getPrivateKey(com.swirlds.common.utility.CommonUtils.hex(
+                .getEcdsaPrivateKey(com.swirlds.common.utility.CommonUtils.hex(
                         key.getECDSASecp256K1().toByteArray()));
 
         byte[] privateKeyByteArray;

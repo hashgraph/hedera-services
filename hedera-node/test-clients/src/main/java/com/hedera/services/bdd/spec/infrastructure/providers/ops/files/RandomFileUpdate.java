@@ -24,6 +24,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FILE_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static java.util.Collections.swap;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -57,7 +58,7 @@ public class RandomFileUpdate implements OpProvider {
     }
 
     @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
+    public List<SpecOperation> suggestedInitializers() {
         return List.of(
                 newKeyNamed("NEW-WACL-1").shape(listOf(1)),
                 newKeyNamed("NEW-WACL-2").shape(listOf(2)),

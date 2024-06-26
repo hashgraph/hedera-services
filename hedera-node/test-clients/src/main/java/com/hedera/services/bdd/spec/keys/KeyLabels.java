@@ -24,28 +24,28 @@ import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-public class KeyLabel {
+public class KeyLabels {
     public enum Kind {
         SIMPLE,
         COMPLEX
     }
 
     private String label;
-    private KeyLabel[] constituents;
+    private KeyLabels[] constituents;
 
     private final Kind kind;
 
-    private KeyLabel(Kind kind, String label) {
+    private KeyLabels(Kind kind, String label) {
         this.kind = kind;
         this.label = label;
     }
 
-    private KeyLabel(Kind kind, KeyLabel[] constituents) {
+    private KeyLabels(Kind kind, KeyLabels[] constituents) {
         this.kind = kind;
         this.constituents = constituents;
     }
 
-    public KeyLabel[] getConstituents() {
+    public KeyLabels[] getConstituents() {
         return constituents;
     }
 
@@ -53,22 +53,22 @@ public class KeyLabel {
         return label;
     }
 
-    public static KeyLabel simple(String label) {
-        return new KeyLabel(Kind.SIMPLE, label);
+    public static KeyLabels simple(String label) {
+        return new KeyLabels(Kind.SIMPLE, label);
     }
 
-    public static KeyLabel complex(Object... objs) {
-        KeyLabel[] constituents = Stream.of(objs)
-                .map(obj -> (obj instanceof KeyLabel) ? obj : simple((String) obj))
-                .toArray(n -> new KeyLabel[n]);
-        return new KeyLabel(Kind.COMPLEX, constituents);
+    public static KeyLabels complex(Object... objs) {
+        KeyLabels[] constituents = Stream.of(objs)
+                .map(obj -> (obj instanceof KeyLabels) ? obj : simple((String) obj))
+                .toArray(n -> new KeyLabels[n]);
+        return new KeyLabels(Kind.COMPLEX, constituents);
     }
 
-    public static KeyLabel uniquelyLabeling(SigControl control) {
+    public static KeyLabels uniquelyLabeling(SigControl control) {
         return uniquelyLabeling(control, new AtomicInteger(0));
     }
 
-    private static KeyLabel uniquelyLabeling(SigControl control, AtomicInteger id) {
+    private static KeyLabels uniquelyLabeling(SigControl control, AtomicInteger id) {
         if (EnumSet.of(SIG_ON, SIG_OFF).contains(control.getNature())) {
             int idHere = id.incrementAndGet();
             return simple("" + idHere);
@@ -88,7 +88,7 @@ public class KeyLabel {
             case COMPLEX:
                 return new StringBuilder()
                         .append("[")
-                        .append(Stream.of(constituents).map(KeyLabel::toString).collect(joining(", ")))
+                        .append(Stream.of(constituents).map(KeyLabels::toString).collect(joining(", ")))
                         .append("]")
                         .toString();
         }

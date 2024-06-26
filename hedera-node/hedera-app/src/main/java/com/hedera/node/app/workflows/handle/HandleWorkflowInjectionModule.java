@@ -16,8 +16,7 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.contract.impl.handlers.EthereumTransactionHandler;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -32,8 +31,9 @@ import javax.inject.Singleton;
 public interface HandleWorkflowInjectionModule {
     @Provides
     @Singleton
-    static EthereumTransactionHandler provideEthereumTransactionHandler() {
-        return CONTRACT_SERVICE.handlers().ethereumTransactionHandler();
+    static EthereumTransactionHandler provideEthereumTransactionHandler(
+            @NonNull final ContractServiceImpl contractService) {
+        return contractService.handlers().ethereumTransactionHandler();
     }
 
     Runnable NO_OP = () -> {};

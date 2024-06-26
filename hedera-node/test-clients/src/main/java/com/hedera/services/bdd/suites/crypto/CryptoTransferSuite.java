@@ -91,6 +91,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -161,8 +162,6 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
 import com.hedera.services.bdd.spec.keys.SigControl;
-import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -1951,7 +1950,7 @@ public class CryptoTransferSuite {
                         cryptoCreate("somebody")
                                 .maxAutomaticTokenAssociations(5001)
                                 .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        UtilVerbs.inParallel(
+                        inParallel(
                                 cryptoCreate(PAYER),
                                 cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true),
                                 cryptoCreate(PAYEE_NO_SIG_REQ)))
@@ -2763,8 +2762,7 @@ public class CryptoTransferSuite {
                         // Transfer some hbars to the hollow account so that it could pay the next transaction
                         cryptoTransfer(movingHbar(ONE_MILLION_HBARS).between(ALICE, CAROL)),
                         // Send transfer to complete the hollow account
-                        cryptoTransfer(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L)
-                                        .between(CAROL, DAVE))
+                        cryptoTransfer(movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(CAROL, DAVE))
                                 .payingWith(CAROL)
                                 .signedBy(CAROL)
                                 .sigMapPrefixes(uniqueWithFullPrefixesFor(CAROL)),
