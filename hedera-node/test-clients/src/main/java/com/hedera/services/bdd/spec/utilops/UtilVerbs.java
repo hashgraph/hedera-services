@@ -1057,12 +1057,7 @@ public class UtilVerbs {
     }
 
     public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
-        return withOpContext((spec, opLog) -> {
-            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, defaultFeeSchedules()));
-            if (!spec.tryReinitializingFees()) {
-                throw new IllegalStateException("New fee schedules won't be available, dying!");
-            }
-        });
+        return uploadCustomFeeSchedules(payer, "FeeSchedule.json");
     }
 
     public static HapiSpecOperation uploadCustomFeeSchedules(String payer, String feeSchedule) {
@@ -1072,24 +1067,6 @@ public class UtilVerbs {
                 throw new IllegalStateException("New fee schedules won't be available, dying!");
             }
         });
-    }
-
-    private static ByteString defaultFeeSchedules() {
-        SysFileSerde<String> serde = new FeesJsonToGrpcBytes();
-        var baos = new ByteArrayOutputStream();
-        try {
-            var schedulesIn = HapiFileCreate.class.getClassLoader().getResourceAsStream("FeeSchedule.json");
-            if (schedulesIn == null) {
-                throw new IllegalStateException("No FeeSchedule.json resource available!");
-            }
-            schedulesIn.transferTo(baos);
-            baos.close();
-            baos.flush();
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-        var stylized = new String(baos.toByteArray());
-        return ByteString.copyFrom(serde.toRawFile(stylized, null));
     }
 
     private static ByteString customFeeSchedules(String feeSchedules) {

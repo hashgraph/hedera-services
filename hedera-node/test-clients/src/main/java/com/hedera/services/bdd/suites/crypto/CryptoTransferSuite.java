@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
@@ -2365,7 +2366,7 @@ public class CryptoTransferSuite {
                         .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
     final Stream<DynamicTest> createHollowAccountWithFtTransferAndCompleteIt() {
         final var tokenA = "tokenA";
         final var tokenB = "tokenB";
@@ -2460,7 +2461,7 @@ public class CryptoTransferSuite {
                         transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
     final Stream<DynamicTest> createHollowAccountWithNftTransferAndCompleteIt() {
         final var tokenA = "tokenA";
         final var tokenB = "tokenB";
@@ -2568,7 +2569,7 @@ public class CryptoTransferSuite {
                         transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
     final Stream<DynamicTest> createHollowAccountWithMultipleSendersAndCompleteIt() {
         final var ALICE = "ALICE";
         final var BOB = "BOB";
@@ -2663,7 +2664,7 @@ public class CryptoTransferSuite {
                         transfersToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
     final Stream<DynamicTest> createHollowAccountWithMultipleReceiversAndCompleteIt() {
         final var ALICE = "ALICE";
         final var BOB = "BOB";
