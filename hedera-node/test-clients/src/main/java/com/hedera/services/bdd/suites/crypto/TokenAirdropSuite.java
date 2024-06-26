@@ -252,7 +252,7 @@ public class TokenAirdropSuite {
                                 .logged(),
 
                         // assert account balances
-                        getAccountBalance(SENDER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
+                        getAccountBalance(SENDER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 2),
                         getAccountBalance(ASSOCIATED_RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                         getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
                                 .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
