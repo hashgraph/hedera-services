@@ -355,7 +355,7 @@ To implement the functionality detailed in the previous section, the following c
    This library's only client is the consensus node, so it will be in the hedera-services repository, under the `platform-sdk` folder.
 4. **swirlds-crypto-signatures**: Gradle module for the Bilinear Pairings Signature Library.
 5. **swirlds-crypto-pairings-api**: Gradle module for the Bilinear Pairings API. Minimizes the impact of adding or removing implementations.
-6. **swirlds-crypto-alt128**: Gradle module that will implement the Bilinear Pairings API using alt-128 elliptic curve.
+6. **swirlds-crypto-alt128**: Gradle module that will implement the Bilinear Pairings API using alt-bn128 elliptic curve.
    That curve has been chosen due to EVM support. The arkworks rust library will provide the underlying cryptography implementation.
    The module will include Java and Rust codes that will be compiled for all possible system architectures and distributed in a jar under a predefined structure.
 
