@@ -448,22 +448,22 @@ class ReadableFreezeUpgradeActionsTest {
         assertTrue(configFilePath.toFile().exists());
         final var configFile = Files.readString(configFilePath);
 
-        final Path pemFilePath1 = baseDir.resolve("s-public-node1.pem");
+        final Path pemFilePath1 = baseDir.resolve("s-public-node2.pem");
         assertTrue(pemFilePath1.toFile().exists());
-        final Path pemFilePath2 = baseDir.resolve("s-public-node2.pem");
+        final Path pemFilePath2 = baseDir.resolve("s-public-node3.pem");
         assertTrue(pemFilePath2.toFile().exists());
-        final Path pemFilePath3 = baseDir.resolve("s-public-node3.pem");
+        final Path pemFilePath3 = baseDir.resolve("s-public-node4.pem");
         assertFalse(pemFilePath3.toFile().exists());
-        final Path pemFilePath4 = baseDir.resolve("s-public-node4.pem");
+        final Path pemFilePath4 = baseDir.resolve("s-public-node5.pem");
         assertTrue(pemFilePath4.toFile().exists());
         final var pemFile1 = Files.readAllBytes(pemFilePath1);
         final var pemFile2 = Files.readAllBytes(pemFilePath2);
         final var pemFile4 = Files.readAllBytes(pemFilePath4);
 
         final String configContents = new StringBuilder()
-                .append("address, 1, 1, node1, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
-                .append("address, 2, 2, node2, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n")
-                .append("address, 4, 4, node4, 20, 127.0.0.4, 1445, test.domain.com, 50225, 0.0.8\n")
+                .append("address, 1, 1, node2, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
+                .append("address, 2, 2, node3, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n")
+                .append("address, 4, 4, node5, 20, 127.0.0.4, 1445, test.domain.com, 50225, 0.0.8\n")
                 .toString();
         final byte[] pemFile1Bytes = Bytes.wrap(
                         "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec")
