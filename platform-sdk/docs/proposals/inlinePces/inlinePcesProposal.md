@@ -95,8 +95,7 @@ by the "Gossip System", events are handled by the "Event Intake System", persist
 
 In this case, we are only interested in _self events_. These are created by the `Event Creator System` and passed to
 the `Event Intake System`. Here, they are ordered and validated and sent to the `Preconsensus Recording System`. Here,
-they will be immediately persisted using `MemoryMappedFile` and then sent to the `Consensus System` and to the
-`Gossip System`.
+they will be immediately persisted and then sent to the `Consensus System` and to the `Gossip System`.
 
 In the short term, we will not send any events to the gossip system before they pass through the PCES system. When we
 eventually deploy gossip algorithms that call for out of order transmission (e.g. chatter), we may decide to expose
@@ -106,8 +105,10 @@ other events (i.e. events not created by ourselves) to gossip before they pass t
 
 #### PCES Writer
 
-PCES Writer will be changed to use `MemoryMappedFile`. The `flush` API will be removed (or, at least, no longer used
-by the consensus engine. It may be required for clean shutdown, which will be handled by another issue).
+PCES Writer will be changed to use `FileChannel`. All writes will be synchronous. The PCES writer will accept an event
+as input, and will return that same event once it has been written to disk. The `flush` API will be removed
+(or, at least, no longer used by the consensus engine. It may be required for clean shutdown,
+which will be handled by another issue).
 
 #### Asynchronous writing changes
 
@@ -133,57 +134,6 @@ In this image, several existing components are crossed out. This represents a co
 still flow along the same pathways, but with no component on that wire.
 
 ![](inlinePces.png)](inlinePces.png)
-
-### Core Behaviors
-
-[JEP 352](https://openjdk.org/jeps/352) enhanced the support for `MemoryMappedFile` to support the semantics we need
-for non-volatile memory:
-
-> This JEP proposes to upgrade MappedByteBuffer to support access to non-volatile memory (NVM). The only API change
-> required is a new enumeration employed by FileChannel clients to request mapping of a file located on an NVM-backed
-> file system rather than a conventional, file storage system. Recent changes to the MappedByteBuffer API mean that it
-> supports all the behaviours needed to allow direct memory updates and provide the durability guarantees needed for
-> higher level, Java client libraries to implement persistent data types (e.g. block file systems, journaled logs,
-> persistent objects, etc.). The implementations of FileChannel and MappedByteBuffer need revising to be aware of this
-> new backing type for the mapped file.
-
-However, it also limits support for these more rigorous semantics to Linux:
-
-> The target OS/CPU platform combinations for this JEP are Linux/x64 and Linux/AArch64. This restriction is imposed for
-> two reasons. This feature will only work on OSes that support the mmap system call MAP_SYNC flag, which allows
-> synchronous mapping of non-volatile memory. That is true of recent Linux releases. It will also only work on CPUs that
-> support cache line writeback under user space control. x64 and AArch64 both provide instructions meeting this
-> requirement.
-
-Only Linux is used today in production deployments. Should MacOS or Windows be used in the future, we may need to look
-into equivalent solutions for those platforms, or use something other than memory mapped files on those platforms, with
-a corresponding impact on time to finality for those hosts.
-
-It's plausible that we may be able to get the main implementation functional on other OSes (perhaps with reduced
-consistency guarantees). If this is not plausible, an implementation that does not use memory mapped files will be
-developed for use on MacOS and Windows. The goal of this solution will be to allow developers to run the software
-locally. Since this will not be code we intend to deploy (in the short term), we will just need to make it
-"fast enough" such that local tests work as intended. It will not be necessary to fine tune the performance of this
-implementation until we derive a use case that requires it.
-
-The [Man Page for mmap(2)](https://man7.org/linux/man-pages/man2/mmap.2.html) on Linux describes the MAP_SYNC flag:
-
-> MAP_SYNC (since Linux 4.15)
->    This flag is available only with the MAP_SHARED_VALIDATE
->    mapping type; mappings of type MAP_SHARED will silently
->    ignore this flag.  This flag is supported only for files
->    supporting DAX (direct mapping of persistent memory).  For
->    other files, creating a mapping with this flag results in
->    an EOPNOTSUPP error.
->
->    Shared file mappings with this flag provide the guarantee
->    that while some memory is mapped writable in the address
->    space of the process, it will be visible in the same file
->    at the same offset even after the system crashes or is
->    rebooted.  In conjunction with the use of appropriate CPU
->    instructions, this provides users of such mappings with a
->    more efficient way of making data modifications
->    persistent.
 
 ### Performance
 
