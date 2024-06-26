@@ -69,11 +69,15 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class NetworkAdminHandlerTestBase {
     public static final String ACCOUNTS = "ACCOUNTS";
     protected static final String TOKENS = "TOKENS";
@@ -184,7 +188,9 @@ public class NetworkAdminHandlerTestBase {
     private NetworkInfo networkInfo;
 
     @Mock
-    FeeCalculator feeCalculator;
+    protected FeeCalculator feeCalculator;
+
+    private final InstantSource instantSource = InstantSource.system();
 
     @BeforeEach
     void commonSetUp() {
@@ -321,7 +327,7 @@ public class NetworkAdminHandlerTestBase {
 
     @NonNull
     protected RecordCacheImpl emptyRecordCacheBuilder() {
-        dedupeCache = new DeduplicationCacheImpl(props);
+        dedupeCache = new DeduplicationCacheImpl(props, instantSource);
         return new RecordCacheImpl(dedupeCache, wsa, props);
     }
 
