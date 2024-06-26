@@ -6,8 +6,6 @@ As part of [HIP-904](https://hips.hedera.com/hip/hip-904), we would like to have
 
 This would mean transferring the token (the whole amount if fungible) or the NFT (concrete serial number from a unique token type) back to its treasury account, without assessing custom fees. Using token reject an account could get rid of potential “ransom” tokens which have very expensive custom fees and only pay for the cheaper token reject operation.
 
-An added advantage for token reject is that we can transfer back tokens to the treasury even if they are paused or frozen (which is not the case with regular crypto transfer).
-
 Token reject transaction can be performed only for tokens which are part of the persistent state of the account. No tokens from the pending state that is introduced with HIP-904 could be rejected. This remains only a right for the owner, who can cancel a pending airdrop.
 
 ## Goals
@@ -118,7 +116,7 @@ An update into the `feeSchedule` file would be needed to specify that.
             - We should not decrement `used_auto_associations` field
             - We should not dissociate the token from the account after token reject is performed
             - In case `receiver_sig_required` is set on a treasury account it should be ignored and the token reject should succeed
-            - In case the token is frozen or paused the token reject should succeed
+            - In case the token is frozen or paused the token reject should fail
         - Update state
     - Fees calculation
         - Custom fees are not applied and no tokens are deducted from the sender balance
@@ -140,10 +138,8 @@ All of the expected behaviour described below should be present only if the new 
 - Given account with some NFT in its balance when `TokenReject` for the same NFT is performed then the `TokenReject` should succeed, the NFT should be transferred from the account to the token treasury and any other NFTs from the same collection should be left in the account
 - Given account with enough fungible tokens and NFTs in its balance when `TokenReject` for up to 10 transfers of fungible or NFTs is performed then the `TokenReject` should succeed and the whole amount of the fungible tokens, the specified NFTs from the account should should be transferred to the token treasury and any other NFTs from the same collection should be left in the account
 - Given account with some token in its balance and treasury account with `receiver_sig_required` enabled when `TokenReject` for the same token is performed then the `TokenReject` should succeed
-- Given account with some fungible token in its balance that is frozen when `TokenReject` for the same token is performed then the `TokenReject` should succeed
-- Given account with some fungible token in its balance that is paused when `TokenReject` for the same token is performed then the `TokenReject` should succeed
-- Given account with some NFT in its balance that is frozen when `TokenReject` for the same NFT is performed then the `TokenReject` should succeed and any other NFTs from the same collection should be left in the account
-- Given account with some NFT in its balance that is paused when `TokenReject` for the same NFT is performed then the `TokenReject` should succeed and any other NFTs from the same collection should be left in the account
+- Given account with some fungible token in its balance that is frozen when `TokenReject` for the same token is performed then the `TokenReject` should fail
+- Given account with some fungible token in its balance that is paused when `TokenReject` for the same token is performed then the `TokenReject` should fail
 - Given token allowance from owner to sender account when `TokenReject` for the same token is performed on the owner account then the token allowance should be canceled
 - Given token allowance from owner to sender account when `TokenReject` for the same token is performed on the sender account then the token allowance should not be affected
 - Given token allowance from owner to sender account when `TokenReject` for the same token is performed on the sender account then the sender account should be able to perform `TokenAirdrop` for the same token within the existing allowance
