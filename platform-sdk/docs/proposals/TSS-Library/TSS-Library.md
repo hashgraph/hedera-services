@@ -145,7 +145,7 @@ P₄  2        P₄_EC_PublicKey
 A threshold value:
 `e.g: t = 5`
 
-First, a `shareId`: `sid` is generated for each share. It's a unique identifier for each existent share. It is deterministic because the function we use to generate it is deterministic.
+First, a `shareId`: `sid` is generated for each share. It's a unique, contiguous starting from 1 identifier for each existent share. It is deterministic because the function we use to generate it is deterministic.
 It is necessary to assure they are values that: a) are unique per share, b) non-0, and c) can be used as input for the polynomial (They are from the same field of the selected curve)
 
 
