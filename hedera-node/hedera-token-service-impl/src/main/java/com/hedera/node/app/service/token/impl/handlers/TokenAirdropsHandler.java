@@ -36,7 +36,6 @@ import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.get
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -472,14 +471,6 @@ public class TokenAirdropsHandler implements TransactionHandler {
 
             final var nft = nftStore.get(tokenID, nftTransfer.serialNumber());
             validateTrue(nft != null, INVALID_NFT_ID);
-
-            var pendingId = PendingAirdropId.newBuilder()
-                    .receiverId(receiverId)
-                    .senderId(senderId)
-                    .fungibleTokenType(tokenID)
-                    .build();
-            // TODO: add PENDING_NFT_AIRDROP_ALREADY_EXISTS to protos and replace this
-            validateFalsePreCheck(airdropStore.exists(pendingId), INVALID_TRANSACTION);
 
             if (nftTransfer.isApproval()) {
                 // If isApproval flag is set then the spender account must have paid for the transaction.

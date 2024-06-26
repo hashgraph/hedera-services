@@ -52,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -60,6 +61,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -594,31 +596,45 @@ public class TokenAirdropSuite {
                         newKeyNamed(NFT_SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .supplyKey(NFT_SUPPLY_KEY)
-                                .maxSupply(10_000)
-                                .initialSupply(5000)
-                                .treasury(OWNER))
+                        createTokenWithName("FUNGIBLE1"),
+                        createTokenWithName("FUNGIBLE2"),
+                        createTokenWithName("FUNGIBLE3"),
+                        createTokenWithName("FUNGIBLE4"),
+                        createTokenWithName("FUNGIBLE5"),
+                        createTokenWithName("FUNGIBLE6"),
+                        createTokenWithName("FUNGIBLE7"),
+                        createTokenWithName("FUNGIBLE8"),
+                        createTokenWithName("FUNGIBLE9"),
+                        createTokenWithName("FUNGIBLE10"),
+                        createTokenWithName("FUNGIBLE11"))
                 .when()
                 .then(tokenAirdrop(
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement())
+                                defaultMovementOfToken("FUNGIBLE1"),
+                                defaultMovementOfToken("FUNGIBLE2"),
+                                defaultMovementOfToken("FUNGIBLE3"),
+                                defaultMovementOfToken("FUNGIBLE4"),
+                                defaultMovementOfToken("FUNGIBLE5"),
+                                defaultMovementOfToken("FUNGIBLE6"),
+                                defaultMovementOfToken("FUNGIBLE7"),
+                                defaultMovementOfToken("FUNGIBLE8"),
+                                defaultMovementOfToken("FUNGIBLE9"),
+                                defaultMovementOfToken("FUNGIBLE10"),
+                                defaultMovementOfToken("FUNGIBLE11"))
                         .payingWith(OWNER)
-                        .hasPrecheck(INVALID_TRANSACTION));
+                        .hasPrecheck(INVALID_TRANSACTION_BODY));
     }
 
-    private TokenMovement defaultMovement() {
-        return moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS);
+    private TokenMovement defaultMovementOfToken(String token) {
+        return moving(10, token).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS);
+    }
+
+    private HapiTokenCreate createTokenWithName(String tokenName) {
+        return tokenCreate(tokenName)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .supplyType(TokenSupplyType.FINITE)
+                .supplyKey(NFT_SUPPLY_KEY)
+                .maxSupply(10_000)
+                .initialSupply(5000)
+                .treasury(OWNER);
     }
 }
