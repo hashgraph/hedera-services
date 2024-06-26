@@ -184,8 +184,8 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
     }
 
     @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        unsignedEvent = UnsignedEvent.deserialize(in, version);
+    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
+        unsignedEvent = UnsignedEvent.deserialize(in);
         final byte[] signature = in.readByteArray(SignatureType.RSA.signatureLength());
         this.signature = Bytes.wrap(signature);
         timeReceived = Instant.now();
