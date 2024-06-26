@@ -9,7 +9,6 @@ Provide necessary components for signing messages using a TSS scheme.
 | Designers          | Austin, Cody, Edward, Rohit, Maxi, <br/> Platform team | 
 | Functional Impacts | Platform team. Release engineering. DevOps             |
 | Related Proposals  | TSS-Roster, TSS-Ledger-Id                              |
-| HIPS               | ?                                                      |
 
 
 ## Purpose and Context
@@ -36,13 +35,14 @@ the distribution aspect, the loading, and the in-memory interpretation from each
   to produce an aggregate signature that can be used to sign messages and an aggregate public key that can be used to verify that signature.
 - **Groth 21**: Publicly verifiable secret sharing and resharing schemes that enable secure and efficient distribution and management of secret shares,
   with many possible use cases supporting applications in distributed key generation and threshold signatures.
-  Uses Shamir's secret sharing, ElGamal, and ZK-Snarks.
+  Uses Shamir's secret sharing, ElGamal, and Zero-Knowledge Proofs.
 - **Shamir’s Secret Sharing**: In Shamir’s SS, a secret `s` is divided into `n` shares by a dealer, and shares are sent to shareholders secretly.
   The secret `s` is shared among `n` shareholders in such a way that:
   (a) any party with at least `t` shares can recover the secret, and (b) any party with fewer than `t` shares cannot obtain the secret.
 - **ElGamal**: On a message, the ElGamal signature scheme produces a signature consisting of two elements `(r, s)`, where `r` is a random number, and `s` is computed from the message, a signer's secret key, and `r`.
-- **zk-SNARKs**: The acronym zk-SNARK stands for Zero-Knowledge Succinct Non-Interactive Argument of Knowledge and refers
-  to a proof construction where one can prove possession of certain information, e.g., a secret key, without revealing that information or any interaction between the prover and verifier.
+- **SNARK**: they mean a proof system for proving arbitrary statements (circuits / programs).
+- **Zero-Knowledge Proofs**: A proof system where one can prove possession of certain information, e.g., a secret key, without revealing that information or any interaction between the prover and verifier.
+- **NIZK**: A non-interactive zero-knowledge proof for an statement. In TSS we use NIZK proofs for encoding the correctness of the secret sharing.
 - **EC (Elliptic Curve)**: `Elliptic` is not elliptic in the sense of an `oval circle`. In the field `Fp`, an `EC` is like a non-connected cloud of points where
   all points satisfy an equation, and all operations are performed modulo `p`. Some elliptic curves are pairing-friendly.
 - **Bilinear Pairings**: These are mathematical functions used in cryptography to map two elements of different groups (in EC, the group is an elliptic curve) to a single value in another group
@@ -52,6 +52,11 @@ the distribution aspect, the loading, and the in-memory interpretation from each
 - **Share**: Represents a piece of the necessary public/private elements to create signatures. In TSS,
   a threshold number of shares is needed to produce an aggregate signature that the ledger public key can later verify.
 - **Polynomial Commitment**: It enables verification of evaluations of the polynomial at specific points without revealing the entire polynomial.
+- **Participant**: Any party involved in the distributed key generation protocol. Their goal is to generate a public key and provide a set of receivers with matching secret shares of the secret key. 
+  The set of participants that act as dealers and the set of participants acting as receivers may be identical, overlapping or disjoint.
+- **Participant Directory**: An address book of Participants of the distributed key generation protocol.
+
+Each scheme participant will receive its persistent EC private key from an external source and all participants' EC public keys.
 
 ### Goals
 - **Usability**: Design user-friendly libraries with a public API that are easy to integrate with other projects, such as consensus node and block node.
@@ -78,10 +83,6 @@ which may or may not overlap with the original set of shareholders.
 
 
 #### Overview
-Here, the word participant describes parties producing the aggregate signature and aggregate public key.
-
-Each scheme participant will receive its persistent EC private key from an external source and all participants' EC public keys.
-
 This proposal covers the implementation of a tool similar to ssh-keygen to generate those keys, but the generation, persistence, distribution
 and loading of those keys is outside the scope of this proposal.
 
@@ -158,11 +159,10 @@ P₁  	P₁  	P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄
 
 ##### 1. Create TssMessage
 `TssMessage`: A data structure for distributing encrypted shares of a secret among all participants in a way that only the intended participant can see its part of the share.
-It includes validation information like a commitment to a secret share polynomial and a zk-SNARKs proof.
-Both proof and commitment can be used to verify the message’s validity and assemble an aggregate public key (referred to as ledgerId).
+It includes auxiliary information used to validate its correctness and assemble an aggregate public key ie: a commitment to a secret share polynomial and a NIZK proof.
 
+###### Generation of the shares
 In the bootstrap process, each participant creates a random EC Private Key `k` out of the Field of the `SignatureScheme` (the secret being shared).
-
 
 ```
 `k`  -  A random EC Private Key for the participant
@@ -178,25 +178,68 @@ Then, each shareholder will produce `n` (n=total number of shares) values `Xₛ`
 The polynomial `Xₖ` is a polynomial with degree `t-1` (t=threshold) with the form:
 `Xₖ = k + a₁x + ...aₜ₋₁xᵗ⁻¹`[ having: `a₁...aₜ₋₁`: random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element. x is a field element, thus allowing the polynomial to be evaluated for each share id]
 
-Each `xₛ = Xₖ(sidₛ)` constitutes a point on the polynomial.
+Each `sₛ = Xₖ(sidₛ)` constitutes a point on the polynomial.
 
-Once the `xₛ` value has been calculated for each `ShareId`: `sidₛ`, the value: `Mₛ` will be produced by encrypting the `xₛ` using the `sidₛ` owner's public key.
-The TssMessage will contain all the encrypted values for all shares.
-
+Once the `sₛ` value has been calculated for each `ShareId`: `sidₛ`, the value: `Cₛ` will be produced by encrypting the `sₛ` using the `sidₛ` owner's public key.
 ![img.png](img.png)
 
-A TssMessage class diagram:
+The TssMessage will contain all the encrypted values for all shares.
+
+###### Generation of the Polynomial Commitment
+Secret sharing poses a problem for the receiver: did it get a correct share? 
+The dealer may give her a bad share that does not correspond to the dealing, or give so many fake shares to different receiver that they do not correspond to a real dealing. 
+We include a Feldman commitment to the polynomial.
+
+```
+ g = a point generator of `SignatureScheme.publicKeyGroup`
+ aₒ...aₜ₋₁ = coefficients of the polynomial being commited to.
+```
+For each coefficient in the polynomial `Xₖ` `a₍ₒ₎` to `a₍ₜ₋₁₎`, computes a commitment value by calculating: `gᵢᵃ⁽ⁱ⁾ ` (g elevated to the polynomial coefficient `a₍ᵢ₎` )
+
+###### Generation of the NIZKs proofs
+
+Generate a NIZK proof that these commitments and the encrypted shares correspond to a valid sharing of the secret according to the polynomial.
+
+Given the input:
+
+* witness: structure with secrets that include private shares(sᵢ) and randomness used during the encryption.
+
+* statement: The information to proof (sidᵢs,public_keys, polynomial_commitment, encrypted_shares )
+
+* rng: source of randomness
+
+1. Serialize statement
+2. Initialize a pseudorandom number generator using the `SHA256` hash of (1)
+3. `x` = Random out of the random generator in (2)  
+4. Generate random values `α`, `ρ` from the `SignatureScheme.field` out of rng
+5. `g` = `SignatureScheme.publicKeyGroup.generator`
+  5.1    `F = g^ρ`
+  5.2    `A = g^α`
+6. Calculate `Y` by transforming element of the statements (public keys, sids) multiplied by `ρ`, then adding `A`
+    
+7. Serialize (`x`, `F`, `A`, `Y`)
+8. Recompute the pseudorandom number generator seed using the hash of (7)
+9. `x'` = Random out of the random generator in (8)
+    
+10. `z_r` = `x'` * `witness.randomness` + `ρ`
+11. `z_a` = `x'` + `α` + Sum(`sᵢ` * `x`.pow(`sidᵢ`))
+    
+Return the proof composed of `F`, `A`, `Y`, `z_r`, and `z_a`
+
+###### A TssMessage class diagram
 
 ![img_3.png](img_3.png)
 
 ##### Outside of scope
 Using an established channel, each participant will broadcast a single message to be received by all participants
 while waiting to receive other participants' messages. This functionality is critical for the protocol to work but needs to be handled outside the library.
-Each participant will validate the received message against the commitment and the zk-SNARKs proof. Invalid messages needs to be discarded.
+Each participant will validate the received message against the commitment and the NIZKs proof. Invalid messages needs to be discarded.
 
 ##### 2. Validation of TssMessage
-Each message can be validated against the commitment and the zk-SNARKs proof.
 The validation is produced over the content of the message and does not include the sender's identity, which is assumed to be provided by the external channel.
+Each message can be validated against the commitment and the proof by:
+* Checking that the encrypted shares correspond to the commitments.
+* and, that the commitments are consistent with the public values and the generated proof.
 
 
 ##### 3. Processing of TssMessage
@@ -221,6 +264,7 @@ The rekeying process can happen, too, if the parameters are the same as the gene
 
 The rekeying process is similar to the bootstrap process, but it starts with the previous list of owned private `SecretShare`.
 The main difference with the genesis stage is that every participant generates a `TssMessage` out of each previously owned `SecretShare`.
+
 
 ![img_4.png](img_4.png)
 
@@ -260,19 +304,19 @@ To implement the functionality detailed in the previous section, the following c
    using a predefined organization so they can be accessed with JNI.
 6. **Arkworks[https://github.com/arkworks-rs]**:  arkworks is a Rust ecosystem for zkSNARK programming.
    Our implementation uses it as the library responsible for elliptic curve cryptography.
-7. **EC-Key Utils ** is a utility module that enables the node operator to generate a bootstrapping public/private key pair.
+7. **EC-Key Utils** is a utility module that enables the node operator to generate a bootstrapping public/private key pair.
 
 ### Module organization and repositories
 ![img_6.png](img_6.png)
 1. **hedera-cryptography**: This is a separate repository for hosting cryptography-related libraries.
    It is necessary to facilitate our build process, which includes Rust libraries. It also provides independent release cycles between consensus node code and block node code.
 2. **swirlds-native-support**: Gradle module that enables loading into memory compiled native libraries so they can be used with JNI.
-3. **swirlds-cryptography-tss**: Gradle module for the TSS Library.
+3. **swirlds-crypto-tss**: Gradle module for the TSS Library.
    This library's only client is the consensus node, so it will be in the hedera-services repository, under the `platform-sdk` folder.
-4. **swirlds-cryptography-signatures**: Gradle module for the Bilinear Pairings Signature Library.
-5. **swirlds-cryptography-pairings-api**: Gradle module for the Bilinear Pairings API. Minimizes the impact of adding or removing implementations.
-6. **swirlds-cryptography-alt128**: Gradle module that will implement the Bilinear Pairings API using alt-128 elliptic curve.
-   That curve has been chosen due to EVM support. The artworks rust library will provide the underlying cryptography implementation.
+4. **swirlds-crypto-signatures**: Gradle module for the Bilinear Pairings Signature Library.
+5. **swirlds-crypto-pairings-api**: Gradle module for the Bilinear Pairings API. Minimizes the impact of adding or removing implementations.
+6. **swirlds-crypto-alt128**: Gradle module that will implement the Bilinear Pairings API using alt-128 elliptic curve.
+   That curve has been chosen due to EVM support. The arkworks rust library will provide the underlying cryptography implementation.
    The module will include Java and Rust codes that will be compiled for all possible system architectures and distributed in a jar under a predefined structure.
 
 ### Libraries Specifications
