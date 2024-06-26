@@ -415,7 +415,8 @@ public class TokenAirdropsHandler implements TransactionHandler {
                         }
                         validateTruePreCheck(haveExistingAllowance, SPENDER_DOES_NOT_HAVE_ALLOWANCE);
                     } else {
-                        validateTruePreCheck(tokenRel.balance() >= Math.abs(accountAmount.amount()), INVALID_ACCOUNT_AMOUNTS);
+                        validateTruePreCheck(
+                                tokenRel.balance() >= Math.abs(accountAmount.amount()), INVALID_ACCOUNT_AMOUNTS);
                         // If the account is a hollow account, then we require a signature for it.
                         // It is possible that the hollow account has signed this transaction, in which case
                         // we need to finalize the hollow account by setting its key.
