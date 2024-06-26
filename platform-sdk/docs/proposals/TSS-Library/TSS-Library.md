@@ -167,20 +167,19 @@ In the bootstrap process, each participant creates a random EC Private Key `k` o
 ```
 `k`  -  A random EC Private Key for the participant
 `n`  -  The number of total shares across all participants
-`s`  -  One of the total shares
-`sidₛ`- The shareId of the share s
+`sidᵢ`- The shareId of the share i
 `Xₖ` -  A polynomial with certain properties given a specific secret k
-`xₛ` -  A point in the polynomial Xₖ for sidₛ
+`sᵢ` -  A point in the polynomial Xₖ for sidᵢ
 ```
 
-Then, each shareholder will produce `n` (n=total number of shares) values `Xₛ` by evaluating a polynomial Xₖ at each `ShareId`: `sidₛ` in the ownership map.
+Then, each shareholder will produce `n` (n=total number of shares) values `Xₛ` by evaluating a polynomial Xₖ at each `ShareId`: `sidᵢ` in the ownership map.
 
 The polynomial `Xₖ` is a polynomial with degree `t-1` (t=threshold) with the form:
 `Xₖ = k + a₁x + ...aₜ₋₁xᵗ⁻¹`[ having: `a₁...aₜ₋₁`: random coefficients from `SignatureScheme.publicKeyGroup` and `k`'s EC field element. x is a field element, thus allowing the polynomial to be evaluated for each share id]
 
-Each `sₛ = Xₖ(sidₛ)` constitutes a point on the polynomial.
+Each `sᵢ = Xₖ(sidᵢ)` constitutes a point on the polynomial.
 
-Once the `sₛ` value has been calculated for each `ShareId`: `sidₛ`, the value: `Cₛ` will be produced by encrypting the `sₛ` using the `sidₛ` owner's public key.
+Once the `sᵢ` value has been calculated for each `ShareId`: `sidᵢ`, the value: `Cᵢ` will be produced by encrypting the `sᵢ` using the `sidᵢ` owner's public key.
 ![img.png](img.png)
 
 The TssMessage will contain all the encrypted values for all shares.
