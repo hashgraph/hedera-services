@@ -173,6 +173,7 @@ public class TokenAirdropSuite {
                                 .logged(),
 
                         // assert account balances
+                        getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 70),
                         getAccountBalance(ASSOCIATED_RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
                         getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
                                 .hasTokenBalance(FUNGIBLE_TOKEN, 10),
@@ -254,6 +255,7 @@ public class TokenAirdropSuite {
                                 .logged(),
 
                         // assert account balances
+                        getAccountBalance(SENDER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
                         getAccountBalance(ASSOCIATED_RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                         getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
                                 .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
@@ -291,6 +293,7 @@ public class TokenAirdropSuite {
                                         moving(10, FUNGIBLE_TOKEN).between(SENDER, evmAddress.get()))
                                 .payingWith(SENDER)))
                 .then(withOpContext((spec, log) -> {
+                    getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 15);
                     getAutoCreatedAccountBalance(ED25519_KEY).hasTokenBalance(FUNGIBLE_TOKEN, 10);
                     getAutoCreatedAccountBalance(SECP_256K1_KEY).hasTokenBalance(FUNGIBLE_TOKEN, 10);
                     getAutoCreatedAccountBalance(ANOTHER_SECP_256K1_KEY).hasTokenBalance(FUNGIBLE_TOKEN, 10);
@@ -499,10 +502,12 @@ public class TokenAirdropSuite {
                                 .treasury(TOKEN_TREASURY),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN))
                 .when(cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
-                .then(tokenAirdrop(moving(99, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                        .payingWith(OWNER)
-                        .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS)
-                        .via("ownerNotEnoughBalance"),
+                .then(
+                        tokenAirdrop(moving(99, FUNGIBLE_TOKEN)
+                                        .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                                .payingWith(OWNER)
+                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS)
+                                .via("ownerNotEnoughBalance"),
                         getTxnRecord("ownerNotEnoughBalance").logged());
     }
 
