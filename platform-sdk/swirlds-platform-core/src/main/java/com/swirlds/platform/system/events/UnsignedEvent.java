@@ -78,7 +78,6 @@ public class UnsignedEvent extends AbstractHashable {
          * @since 0.46.0
          */
         public static final int BIRTH_ROUND = 4;
-
     }
 
     /**
@@ -255,8 +254,7 @@ public class UnsignedEvent extends AbstractHashable {
      * @return the deserialized event
      * @throws IOException if unsupported payload types are encountered
      */
-    public static UnsignedEvent deserialize(final SerializableDataInputStream in)
-            throws IOException {
+    public static UnsignedEvent deserialize(final SerializableDataInputStream in) throws IOException {
         final int version = in.readInt();
         if (version != ClassVersion.BIRTH_ROUND) {
             throw new IOException("Unsupported version: " + version);
