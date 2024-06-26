@@ -77,8 +77,6 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle to
             com.hedera.node.app.test.fixtures,
             com.hedera.node.test.clients;
-    exports com.hedera.node.app.workflows.handle.record to
-            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.version to
             com.hedera.node.app.test.fixtures,
             com.swirlds.platform,
@@ -87,23 +85,19 @@ module com.hedera.node.app {
     exports com.hedera.node.app.state.listeners to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.services;
-    exports com.hedera.node.app.workflows.handle.flow to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch.child.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch.user.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.txn.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.txn to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.txn.modules to
-            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.store;
+    exports com.hedera.node.app.workflows.handle.steps to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
+    exports com.hedera.node.app.workflows.handle.record to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
+    exports com.hedera.node.app.workflows.handle.throttle to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.dispatch;
+    exports com.hedera.node.app.workflows.handle.cache to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

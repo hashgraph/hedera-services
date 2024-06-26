@@ -52,6 +52,7 @@ import com.swirlds.platform.gui.internal.WinBrowser;
 import com.swirlds.platform.gui.model.InfoApp;
 import com.swirlds.platform.gui.model.InfoMember;
 import com.swirlds.platform.gui.model.InfoSwirld;
+import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SystemExitCode;
 import com.swirlds.platform.system.SystemExitUtils;
@@ -216,7 +217,8 @@ public class Browser {
                     appMain.getClass().getName(),
                     appDefinition.getSwirldName(),
                     appMain.getSoftwareVersion(),
-                    appMain::newState,
+                    appMain::newMerkleStateRoot,
+                    SignedStateFileUtils::readState,
                     nodeId);
 
             if (showUi && index == 0) {
