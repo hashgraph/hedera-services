@@ -28,7 +28,6 @@ import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.util.iterator.SkippingIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
@@ -271,7 +270,7 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
      * {@inheritDoc}
      */
     @Override
-    @Nullable
+    @NonNull
     public SemanticVersion getSoftwareVersion() {
         return baseEvent.getSoftwareVersion();
     }

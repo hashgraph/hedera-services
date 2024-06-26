@@ -81,7 +81,6 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -433,7 +432,7 @@ public class EmbeddedHedera {
             return creatorId;
         }
 
-        @Nullable
+        @NonNull
         @Override
         public SemanticVersion getSoftwareVersion() {
             return requireNonNull(version);
