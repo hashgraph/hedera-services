@@ -80,7 +80,6 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.SpecStateObserver;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
-import com.hedera.services.bdd.spec.persistence.EntityManager;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
@@ -217,7 +216,6 @@ public class HapiSpec implements Runnable, Executable {
     private TxnFactory txnFactory;
     private KeyFactory keyFactory;
     private KeyGenerator keyGenerator = DEFAULT_KEY_GEN;
-    private EntityManager entities;
     private FeeCalculator feeCalculator;
     private HapiSpecRegistry hapiRegistry;
     private FeesAndRatesProvider ratesProvider;
@@ -632,13 +630,6 @@ public class HapiSpec implements Runnable, Executable {
             status = ERROR;
             return false;
         }
-        if (hapiSetup.requiresPersistentEntities()) {
-            entities = new EntityManager(this);
-            if (!entities.init()) {
-                status = ERROR;
-                return false;
-            }
-        }
         return true;
     }
 
@@ -657,20 +648,9 @@ public class HapiSpec implements Runnable, Executable {
             log.warn("'{}' failed to initialize, being skipped!", name);
             return;
         }
-
-        if (hapiSetup.requiresPersistentEntities()) {
-            List<SpecOperation> creationOps = entities.requiredCreations();
-            if (!creationOps.isEmpty()) {
-                if (!quietMode) {
-                    log.info("Inserting {} required creations to establish persistent entities.", creationOps.size());
-                }
-                ops = Stream.concat(creationOps.stream(), ops.stream()).toList();
-            }
-        }
         if (!quietMode) {
             log.info("{} test suite started !", logPrefix());
         }
-
         status = RUNNING;
         if (hapiSetup.statusDeferredResolvesDoAsync()) {
             startFinalizingOps();
@@ -776,10 +756,6 @@ public class HapiSpec implements Runnable, Executable {
         tearDown();
         if (!quietMode) {
             log.info("{}final status: {}!", logPrefix(), status);
-        }
-
-        if (hapiSetup.requiresPersistentEntities() && hapiSetup.updateManifestsForCreatedPersistentEntities()) {
-            entities.updateCreatedEntityManifests();
         }
     }
 
@@ -1014,10 +990,6 @@ public class HapiSpec implements Runnable, Executable {
 
     public KeyFactory keys() {
         return keyFactory;
-    }
-
-    public EntityManager persistentEntities() {
-        return entities;
     }
 
     public HapiSpecRegistry registry() {
@@ -1339,7 +1311,6 @@ public class HapiSpec implements Runnable, Executable {
     private void nullOutInfrastructure() {
         txnFactory = null;
         keyFactory = null;
-        entities = null;
         feeCalculator = null;
         ratesProvider = null;
         hapiRegistry = null;

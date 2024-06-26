@@ -520,10 +520,6 @@ public class UtilVerbs {
         return new SpecKeyFromLiteral(name, hexEncodedPrivateKey);
     }
 
-    public static HapiSpecOperation expectedEntitiesExist() {
-        return withOpContext((spec, opLog) -> spec.persistentEntities().runExistenceChecks());
-    }
-
     public static SpecKeyFromEcdsaFile keyFromEcdsaFile(String loc, String name) {
         return new SpecKeyFromEcdsaFile(loc, name);
     }

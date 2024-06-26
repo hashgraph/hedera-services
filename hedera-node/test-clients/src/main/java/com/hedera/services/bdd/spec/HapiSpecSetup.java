@@ -520,18 +520,6 @@ public class HapiSpecSetup {
         return props.getInteger("num.opFinisher.threads");
     }
 
-    public String persistentEntitiesDir() {
-        return props.get("persistentEntities.dir.path");
-    }
-
-    public boolean requiresPersistentEntities() {
-        return StringUtils.isNotEmpty(persistentEntitiesDir());
-    }
-
-    public boolean updateManifestsForCreatedPersistentEntities() {
-        return props.getBoolean("persistentEntities.updateCreatedManifests");
-    }
-
     public Integer port() {
         return props.getInteger("port");
     }
@@ -641,22 +629,6 @@ public class HapiSpecSetup {
 
     public String systemUndeleteAdminName() {
         return props.get("systemUndeleteAdmin.name");
-    }
-
-    /**
-     * Stream the set of HAPI operations that should be submitted to workflow port 60211/60212.
-     * This code is needed to test each operation through the new workflow code.
-     *
-     * @return set of hapi operations
-     */
-    public Set<HederaFunctionality> workflowOperations() {
-        final var workflowOps = props.get("client.workflow.operations");
-        if (workflowOps.isEmpty()) {
-            return Collections.emptySet();
-        }
-        return Stream.of(workflowOps.split(","))
-                .map(HederaFunctionality::valueOf)
-                .collect(toSet());
     }
 
     /**
