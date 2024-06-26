@@ -26,11 +26,12 @@ import com.swirlds.platform.test.fixtures.event.source.StandardEventSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class HashgraphGuiTest {
     @Test
-    // @Disabled("this test is useful for debugging consensus")
+    @Disabled("this test is useful for debugging consensus")
     void runGuiWithControls() {
         final Randotron randotron = Randotron.create(1);
         final int numNodes = 4;
