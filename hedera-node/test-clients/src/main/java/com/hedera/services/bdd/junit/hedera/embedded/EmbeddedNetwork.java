@@ -17,11 +17,13 @@
 package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
+import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
 import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.services.bdd.junit.hedera.AbstractNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -38,8 +40,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class EmbeddedNetwork extends AbstractNetwork {
+    private static final Logger log = LogManager.getLogger(EmbeddedNetwork.class);
+
     private static final String WORKING_DIR_SCOPE = "embedded";
     private static final String EMBEDDED_HOST = "127.0.0.1";
     private static final String EMBEDDED_NETWORK_NAME = WORKING_DIR_SCOPE.toUpperCase();
@@ -85,7 +91,9 @@ public class EmbeddedNetwork extends AbstractNetwork {
         embeddedNode.initWorkingDir(configTxt);
         embeddedNode.start();
         // Start the embedded Hedera "network"
-        embeddedHedera = new EmbeddedHedera(embeddedNode);
+        embeddedHedera = repeatableModeRequested()
+                ? new RepeatableEmbeddedHedera(embeddedNode)
+                : new ConcurrentEmbeddedHedera(embeddedNode);
         embeddedHedera.start();
     }
 
@@ -93,6 +101,18 @@ public class EmbeddedNetwork extends AbstractNetwork {
     public void terminate() {
         if (embeddedHedera != null) {
             embeddedHedera.stop();
+            if (repeatableModeRequested()) {
+                final var runningHashes = embeddedHedera
+                        .state()
+                        .getReadableStates("BlockRecordService")
+                        .<RunningHashes>getSingleton("RUNNING_HASHES")
+                        .get();
+                if (runningHashes != null) {
+                    log.info(
+                            "Final record running hash - {}",
+                            runningHashes.runningHash().toHex());
+                }
+            }
         }
     }
 
@@ -126,8 +146,7 @@ public class EmbeddedNetwork extends AbstractNetwork {
         return EMBEDDED_NETWORK;
     }
 
-    @Nullable
-    public EmbeddedHedera embeddedHedera() {
-        return embeddedHedera;
+    public @NonNull EmbeddedHedera embeddedHederaOrThrow() {
+        return requireNonNull(embeddedHedera);
     }
 }

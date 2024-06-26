@@ -128,7 +128,7 @@ public class HapiFreeze extends HapiTxnOp<HapiFreeze> {
                 .<FreezeTransactionBody, FreezeTransactionBody.Builder>body(FreezeTransactionBody.class, b -> {
                     b.setFreezeType(action);
                     if (needsFreezeTimeCalc) {
-                        freezeStartTime = Optional.of(Instant.now().plus(delay, delayUnit));
+                        freezeStartTime = Optional.of(spec.consensusTime().plus(delay, delayUnit));
                     }
                     freezeStartTime.map(TxnUtils::asTimestamp).ifPresent(b::setStartTime);
                     if (updateFile != null) {
