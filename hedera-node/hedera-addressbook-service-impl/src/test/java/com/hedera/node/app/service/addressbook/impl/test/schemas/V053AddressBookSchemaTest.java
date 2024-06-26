@@ -23,16 +23,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.info.NodeInfoImpl;
-import com.hedera.node.app.service.addressbook.impl.schemas.V052AddressBookSchema;
+import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
-import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
 import java.util.List;
@@ -43,7 +44,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({MockitoExtension.class, LogCaptureExtension.class})
-class V052AddressBookSchemaTest extends AddressBookTestBase {
+class V053AddressBookSchemaTest extends AddressBookTestBase {
     @LoggingTarget
     private LogCaptor logCaptor;
 
@@ -57,14 +58,14 @@ class V052AddressBookSchemaTest extends AddressBookTestBase {
     private NetworkInfo networkInfo;
 
     @Mock
-    private WritableKVState writableKVState;
+    private WritableKVStateBase writableKVState;
 
     @LoggingSubject
-    private V052AddressBookSchema subject;
+    private V053AddressBookSchema subject;
 
     @BeforeEach
     void setUp() {
-        subject = new V052AddressBookSchema();
+        subject = new V053AddressBookSchema();
     }
 
     @Test
@@ -88,6 +89,7 @@ class V052AddressBookSchemaTest extends AddressBookTestBase {
     private void setupMigrationContext() {
         given(migrationContext.newStates()).willReturn(writableStates);
         given(writableStates.get(NODES_KEY)).willReturn(writableKVState);
+        given(writableKVState.isModified()).willReturn(true);
 
         final var nodeInfo1 = new NodeInfoImpl(
                 1,
@@ -113,5 +115,9 @@ class V052AddressBookSchemaTest extends AddressBookTestBase {
                 Bytes.wrap(grpcCertificateHash));
         given(networkInfo.addressBook()).willReturn(List.of(nodeInfo1, nodeInfo2));
         given(migrationContext.networkInfo()).willReturn(networkInfo);
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("bootstrap.genesisPublicKey", defauleAdminKeyBytes)
+                .getOrCreateConfig();
+        given(migrationContext.configuration()).willReturn(config);
     }
 }

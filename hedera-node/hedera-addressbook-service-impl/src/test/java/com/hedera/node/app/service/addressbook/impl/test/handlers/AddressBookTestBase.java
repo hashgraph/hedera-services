@@ -88,6 +88,9 @@ public class AddressBookTestBase {
     protected final Key key = A_COMPLEX_KEY;
     protected final Key anotherKey = B_COMPLEX_KEY;
 
+    protected final Bytes defauleAdminKeyBytes =
+            Bytes.wrap("0aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92");
+
     final Key invalidKey = Key.newBuilder()
             .ecdsaSecp256k1((Bytes.fromHex("0000000000000000000000000000000000000000")))
             .build();
@@ -211,8 +214,8 @@ public class AddressBookTestBase {
     }
 
     @NonNull
-    protected MapReadableKVState<EntityNumber, Node> emptyReadableNodeState() {
-        return MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY).build();
+    protected MapReadableKVState.Builder<EntityNumber, Node> emptyReadableNodeStateBuilder() {
+        return MapReadableKVState.builder(NODES_KEY);
     }
 
     protected void givenValidNode() {
