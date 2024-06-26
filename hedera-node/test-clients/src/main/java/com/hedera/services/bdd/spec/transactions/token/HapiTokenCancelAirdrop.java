@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.transactions.token;
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
+import com.google.common.base.MoreObjects.ToStringHelper;
 import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenDissociateUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
@@ -41,13 +42,13 @@ public class HapiTokenCancelAirdrop extends HapiTxnOp<HapiTokenCancelAirdrop> {
     private final List<Function<HapiSpec, PendingAirdropId>> pendingAirdropIds;
 
     @SafeVarargs
-    public HapiTokenCancelAirdrop(Function<HapiSpec, PendingAirdropId>... pendingAirdropIds) {
+    public HapiTokenCancelAirdrop(final Function<HapiSpec, PendingAirdropId>... pendingAirdropIds) {
         this.pendingAirdropIds = List.of(pendingAirdropIds);
     }
 
     @Override
     protected HapiTokenCancelAirdrop self() {
-        return null;
+        return this;
     }
 
     @Override
@@ -65,7 +66,7 @@ public class HapiTokenCancelAirdrop extends HapiTxnOp<HapiTokenCancelAirdrop> {
         return builder -> builder.setTokenCancelAirdrop(opBody);
     }
 
-    public static Function<HapiSpec, PendingAirdropId> cancelPendingAirdrop(
+    public static Function<HapiSpec, PendingAirdropId> pendingAirdrop(
             final String sender, final String receiver, final String token) {
         return spec -> {
             final var tokenID = TxnUtils.asTokenId(token, spec);
@@ -79,7 +80,7 @@ public class HapiTokenCancelAirdrop extends HapiTxnOp<HapiTokenCancelAirdrop> {
         };
     }
 
-    public static Function<HapiSpec, PendingAirdropId> cancelPendingNFTAirdrop(
+    public static Function<HapiSpec, PendingAirdropId> pendingNFTAirdrop(
             final String sender, final String receiver, final String token, final long serialNum) {
         return spec -> {
             final var tokenID = TxnUtils.asTokenId(token, spec);
@@ -100,6 +101,11 @@ public class HapiTokenCancelAirdrop extends HapiTxnOp<HapiTokenCancelAirdrop> {
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
         return spec.fees()
                 .forActivityBasedOp(HederaFunctionality.TokenCancelAirdrop, this::usageEstimate, txn, numPayerKeys);
+    }
+
+    @Override
+    protected ToStringHelper toStringHelper() {
+        return super.toStringHelper().add("pendingAirdropIds", pendingAirdropIds);
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
