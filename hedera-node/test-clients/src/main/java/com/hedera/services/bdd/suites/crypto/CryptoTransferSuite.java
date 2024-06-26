@@ -95,6 +95,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadCustomFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithChilds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -2384,6 +2385,7 @@ public class CryptoTransferSuite {
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, "CustomFeeSchedule.json"),
                         newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
                         cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
                         // Create FT1
@@ -2478,6 +2480,7 @@ public class CryptoTransferSuite {
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, "CustomFeeSchedule.json"),
                         newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
@@ -2587,6 +2590,7 @@ public class CryptoTransferSuite {
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, "CustomFeeSchedule.json"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ALICE).balance(10_000 * ONE_MILLION_HBARS),
                         cryptoCreate(BOB).balance(10_000 * ONE_MILLION_HBARS),
@@ -2681,6 +2685,7 @@ public class CryptoTransferSuite {
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, "CustomFeeSchedule.json"),
                         cryptoCreate(ALICE).balance(1_000 * ONE_MILLION_HBARS),
                         newKeyNamed(BOB).shape(SECP_256K1_SHAPE),
                         newKeyNamed(CAROL).shape(SECP_256K1_SHAPE),
