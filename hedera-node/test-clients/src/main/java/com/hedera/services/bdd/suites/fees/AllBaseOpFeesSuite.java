@@ -107,7 +107,7 @@ public class AllBaseOpFeesSuite {
     private static final String UNFREEZE = "unfreeze";
 
     private static final double EXPECTED_FUNGIBLE_REJECT_PRICE_USD = 0.001;
-    private static final double EXPECTED_NFT_REJECT_PRICE_USD = 0.0011008552;
+    private static final double EXPECTED_NFT_REJECT_PRICE_USD = 0.00100245;
     private static final double EXPECTED_MIX_REJECT_PRICE_USD = 0.0035;
     private static final double EXPECTED_UNFREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_FREEZE_PRICE_USD = 0.001;
@@ -281,19 +281,19 @@ public class AllBaseOpFeesSuite {
                                 .payingWith(TOKEN_TREASURY)
                                 .via("fungibleTransfer"))
                 .when(
-                        tokenReject(ALICE, rejectingToken(FUNGIBLE_COMMON_TOKEN))
-                                .payingWith(TOKEN_TREASURY)
+                        tokenReject(rejectingToken(FUNGIBLE_COMMON_TOKEN))
+                                .payingWith(ALICE)
                                 .via("rejectFungible"),
-                        tokenReject(ALICE, rejectingNFT(UNIQUE_TOKEN, 1))
-                                .payingWith(TOKEN_TREASURY)
+                        tokenReject(rejectingNFT(UNIQUE_TOKEN, 1))
+                                .payingWith(ALICE)
                                 .via("rejectNft"),
                         cryptoTransfer(
                                         movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, ALICE),
                                         moving(100, FUNGIBLE_COMMON_TOKEN).between(TOKEN_TREASURY, ALICE))
-                                .payingWith(TOKEN_TREASURY)
+                                .payingWith(ALICE)
                                 .via("transferMix"),
-                        tokenReject(ALICE, rejectingNFT(UNIQUE_TOKEN, 1), rejectingToken(FUNGIBLE_COMMON_TOKEN))
-                                .payingWith(TOKEN_TREASURY)
+                        tokenReject(rejectingNFT(UNIQUE_TOKEN, 1), rejectingToken(FUNGIBLE_COMMON_TOKEN))
+                                .payingWith(ALICE)
                                 .via("rejectMix"))
                 .then(
                         validateChargedUsdWithin(

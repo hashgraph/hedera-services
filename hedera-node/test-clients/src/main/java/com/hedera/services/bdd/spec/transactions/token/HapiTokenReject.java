@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.TokenRejectTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -92,8 +93,12 @@ public class HapiTokenReject extends HapiTxnOp<HapiTokenReject> {
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), spec -> spec.registry()
-                .getKey(account));
+        final List<Function<HapiSpec, Key>> signers = new ArrayList<>();
+        signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
+        if (account != null) {
+            signers.add(spec -> spec.registry().getKey(account));
+        }
+        return signers;
     }
 
     @Override
