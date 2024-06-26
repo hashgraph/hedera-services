@@ -225,14 +225,10 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         return hashedData.getTimeCreated();
     }
 
-    @Nullable
+    @NonNull
     @Override
     public SemanticVersion getSoftwareVersion() {
-        if (hashedData.getSoftwareVersion() != null) {
-            return hashedData.getSoftwareVersion().getPbjSemanticVersion();
-        }
-
-        return null;
+        return hashedData.getSoftwareVersion().getPbjSemanticVersion();
     }
 
     @NonNull

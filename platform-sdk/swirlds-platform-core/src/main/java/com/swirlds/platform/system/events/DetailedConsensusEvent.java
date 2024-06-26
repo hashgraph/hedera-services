@@ -33,7 +33,6 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Iterator;
@@ -174,7 +173,7 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
         return platformEvent.getCreatorId();
     }
 
-    @Nullable
+    @NonNull
     @Override
     public SemanticVersion getSoftwareVersion() {
         return platformEvent.getSoftwareVersion();
