@@ -85,7 +85,7 @@
 # NOTE: Must be placed last to ensure enforcement over all other rules
 
 # Protection Rules for Github Configuration Files and Actions Workflows
-/.github/                                       @hashgraph/devops-ci
+/.github/                                       @hashgraph/devops-ci @hashgraph/release-engineering-managers
 
 # Legacy Maven project files
 **/pom.xml                                      @hashgraph/devops-ci
