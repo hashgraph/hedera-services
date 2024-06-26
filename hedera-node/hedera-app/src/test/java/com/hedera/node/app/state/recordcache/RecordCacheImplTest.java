@@ -55,6 +55,7 @@ import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -87,6 +88,8 @@ final class RecordCacheImplTest extends AppTestBase {
     @Mock
     WorkingStateAccessor wsa;
 
+    private final InstantSource instantSource = InstantSource.system();
+
     @Mock
     private ConfigProvider props;
 
@@ -96,7 +99,7 @@ final class RecordCacheImplTest extends AppTestBase {
             @Mock final HederaConfig hederaConfig,
             @Mock final LedgerConfig ledgerConfig,
             @Mock final NetworkInfo networkInfo) {
-        dedupeCache = new DeduplicationCacheImpl(props);
+        dedupeCache = new DeduplicationCacheImpl(props, instantSource);
         final var registry = new FakeSchemaRegistry();
         final var state = new FakeHederaState();
         final var svc = new RecordCacheService();

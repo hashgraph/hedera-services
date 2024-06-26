@@ -19,7 +19,7 @@ package com.hedera.services.bdd.suites.fees;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
-import static com.hedera.services.bdd.spec.keys.KeyLabel.complex;
+import static com.hedera.services.bdd.spec.keys.KeyLabels.complex;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
 import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
@@ -57,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.keys.KeyLabel;
+import com.hedera.services.bdd.spec.keys.KeyLabels;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -308,7 +308,7 @@ public class AllBaseOpFeesSuite {
     @HapiTest
     final Stream<DynamicTest> feeCalcUsesNumPayerKeys() {
         SigControl SHAPE = threshSigs(2, threshSigs(2, ANY, ANY, ANY), threshSigs(2, ANY, ANY, ANY));
-        KeyLabel ONE_UNIQUE_KEY = complex(complex("X", "X", "X"), complex("X", "X", "X"));
+        KeyLabels ONE_UNIQUE_KEY = complex(complex("X", "X", "X"), complex("X", "X", "X"));
         SigControl SIGN_ONCE = threshSigs(2, threshSigs(3, ON, OFF, OFF), threshSigs(3, OFF, OFF, OFF));
 
         return defaultHapiSpec("PayerSigRedundancyRecognized")

@@ -37,10 +37,7 @@ public record ContractsConfig(
                 int localCallEstRetBytes,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean allowCreate2,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean allowAutoAssociations,
-        // @ConfigProperty(defaultValue =
-        // "TokenAssociateToAccount,TokenDissociateFromAccount,TokenFreezeAccount,TokenUnfreezeAccount,TokenGrantKycToAccount,TokenRevokeKycFromAccount,TokenAccountWipe,TokenBurn,TokenDelete,TokenMint,TokenUnpause,TokenPause,TokenCreate,TokenUpdate,ContractCall,CryptoTransfer") Set<HederaFunctionality> allowSystemUseOfHapiSigs,
         @ConfigProperty(defaultValue = "0") @NetworkProperty long maxNumWithHapiSigsAccess,
-        // @ConfigProperty(defaultValue = "") Set<Address> withSpecialHapiSigsAccess,
         @ConfigProperty(value = "nonces.externalization.enabled", defaultValue = "true") @NetworkProperty
                 boolean noncesExternalizationEnabled,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean enforceCreationThrottle,

@@ -131,8 +131,8 @@ public class SubmitMessageLoadTest extends LoadTest {
                                         .passphrase(KeyFactory.PEM_PASSPHRASE),
                         // if just created a new key then export spec for later reuse
                         pemFile == null
-                                ? withOpContext(
-                                        (spec, ignore) -> spec.keys().exportSimpleKey("topicSubmitKey.pem", SUBMIT_KEY))
+                                ? withOpContext((spec, ignore) ->
+                                        spec.keys().exportEd25519Key("topicSubmitKey.pem", SUBMIT_KEY))
                                 : sleepFor(100),
                         logIt(ignore -> settings.toString()))
                 .when(
