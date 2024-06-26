@@ -36,7 +36,6 @@ import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.get
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -67,7 +66,6 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenAirdropsRecordBuilder;
@@ -110,6 +108,8 @@ public class TokenAirdropsHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        validateTrue(tokensConfig.airdropsEnabled(), NOT_SUPPORTED);
         pureChecks(context.body());
 
         final var op = context.body().tokenAirdropOrThrow();
@@ -128,8 +128,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn);
-        final var op = txn.tokenAirdrop();
-        validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
+        final var op = txn.tokenAirdropOrThrow();
         validator.pureChecks(op);
     }
 
@@ -140,8 +139,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
         validateTrue(tokensConfig.airdropsEnabled(), NOT_SUPPORTED);
 
         final var txn = context.body();
-        final var op = txn.tokenAirdrop();
-        final var tokenStore = context.storeFactory().writableStore(WritableTokenStore.class);
+        final var op = txn.tokenAirdropOrThrow();
         final var tokenRelStore = context.storeFactory().writableStore(WritableTokenRelationStore.class);
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         final var pendingStore = context.storeFactory().writableStore(WritableAirdropStore.class);
@@ -149,7 +147,6 @@ public class TokenAirdropsHandler implements TransactionHandler {
         List<TokenTransferList> tokenTransferList = new ArrayList<>();
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
-            final var token = getIfUsable(tokenId, tokenStore);
 
             List<AccountAmount> transferAmounts = new ArrayList<>();
             List<AccountAmount> pendingAmounts = new ArrayList<>();
@@ -293,7 +290,9 @@ public class TokenAirdropsHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        final var op = feeContext.body().tokenAirdrop();
+        final var op = feeContext.body().tokenAirdropOrThrow();
+        final var tokensConfig = feeContext.configuration().getConfigData(TokensConfig.class);
+        validateTrue(tokensConfig.airdropsEnabled(), NOT_SUPPORTED);
 
         final var defaultAirdropFees =
                 feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT).calculate();
@@ -472,14 +471,6 @@ public class TokenAirdropsHandler implements TransactionHandler {
 
             final var nft = nftStore.get(tokenID, nftTransfer.serialNumber());
             validateTrue(nft != null, INVALID_NFT_ID);
-
-            var pendingId = PendingAirdropId.newBuilder()
-                    .receiverId(receiverId)
-                    .senderId(senderId)
-                    .fungibleTokenType(tokenID)
-                    .build();
-            // TODO: add PENDING_NFT_AIRDROP_ALREADY_EXISTS to protos and replace this
-            validateFalsePreCheck(airdropStore.exists(pendingId), INVALID_TRANSACTION);
 
             if (nftTransfer.isApproval()) {
                 // If isApproval flag is set then the spender account must have paid for the transaction.

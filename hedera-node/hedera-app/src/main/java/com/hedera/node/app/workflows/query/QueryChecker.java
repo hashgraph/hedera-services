@@ -30,7 +30,6 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.Query;
-import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -46,7 +45,6 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Objects;
@@ -63,7 +61,6 @@ public class QueryChecker {
     private final ExpiryValidation expiryValidation;
     private final FeeManager feeManager;
     private final TransactionDispatcher dispatcher;
-    private final ExchangeRateManager exchangeRateManager;
 
     /**
      * Constructor of {@code QueryChecker}
@@ -84,15 +81,13 @@ public class QueryChecker {
             @NonNull final SolvencyPreCheck solvencyPreCheck,
             @NonNull final ExpiryValidation expiryValidation,
             @NonNull final FeeManager feeManager,
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final TransactionDispatcher dispatcher) {
         this.authorizer = requireNonNull(authorizer);
         this.cryptoTransferHandler = requireNonNull(cryptoTransferHandler);
         this.solvencyPreCheck = requireNonNull(solvencyPreCheck);
         this.expiryValidation = requireNonNull(expiryValidation);
         this.feeManager = requireNonNull(feeManager);
         this.dispatcher = requireNonNull(dispatcher);
-        this.exchangeRateManager = exchangeRateManager;
     }
 
     /**
@@ -216,7 +211,6 @@ public class QueryChecker {
      * @return the estimated fees
      */
     public long estimateTxFees(
-            @NonNull final HederaState state,
             @NonNull final ReadableStoreFactory storeFactory,
             @NonNull final Instant consensusTime,
             @NonNull final TransactionInfo transactionInfo,

@@ -52,6 +52,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -60,6 +61,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -70,13 +72,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(CRYPTO)
 @HapiTestLifecycle
-@DisplayName("AIRDROP")
 public class TokenAirdropSuite {
 
     private static final String AIRDROPS_ENABLED = "tokens.airdrops.enabled";
@@ -173,6 +173,7 @@ public class TokenAirdropSuite {
                                 .logged(),
 
                         // assert account balances
+                        getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 70),
                         getAccountBalance(ASSOCIATED_RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
                         getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
                                 .hasTokenBalance(FUNGIBLE_TOKEN, 10),
@@ -238,7 +239,6 @@ public class TokenAirdropSuite {
                                                         .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
                                                 movingUnique(NON_FUNGIBLE_TOKEN, 2L)
                                                         .between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))))
-                                // todo check child records for transfers
                                 .hasChildRecords(recordWith()
                                         .tokenTransfers(
                                                 includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 3L)
@@ -254,6 +254,7 @@ public class TokenAirdropSuite {
                                 .logged(),
 
                         // assert account balances
+                        getAccountBalance(SENDER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 2),
                         getAccountBalance(ASSOCIATED_RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                         getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
                                 .hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
@@ -291,10 +292,57 @@ public class TokenAirdropSuite {
                                         moving(10, FUNGIBLE_TOKEN).between(SENDER, evmAddress.get()))
                                 .payingWith(SENDER)))
                 .then(withOpContext((spec, log) -> {
+                    getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 15);
                     getAutoCreatedAccountBalance(ED25519_KEY).hasTokenBalance(FUNGIBLE_TOKEN, 10);
                     getAutoCreatedAccountBalance(SECP_256K1_KEY).hasTokenBalance(FUNGIBLE_TOKEN, 10);
                     getAutoCreatedAccountBalance(ANOTHER_SECP_256K1_KEY).hasTokenBalance(FUNGIBLE_TOKEN, 10);
                 }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> consequentAirdrops() {
+        // Verify that when sending 2 consequent airdrops to a recipient,
+        // which associated themselves to the token after the first airdrop,
+        // the second airdrop is directly transferred to the recipient and the first airdrop remains in pending state
+        return defaultHapiSpec("consequentAirdrops")
+                .given(
+                        cryptoCreate(SENDER).balance(ONE_HUNDRED_HBARS),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .treasury(SENDER)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .initialSupply(100L),
+                        cryptoCreate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(0))
+                .when(
+                        // send first airdrop
+                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                .payingWith(SENDER)
+                                .via("first"),
+                        getTxnRecord("first")
+                                .andAllChildRecords()
+                                // assert pending airdrops
+                                .hasPriority(recordWith()
+                                        .pendingAirdrops(includingFungiblePendingAirdrop(moving(10, FUNGIBLE_TOKEN)
+                                                .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))),
+                        tokenAssociate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN)
+                        // assert pending list and balances
+                        )
+                .then(
+                        // this time tokens should be transferred
+                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                .payingWith(SENDER)
+                                .via("second"),
+                        // assert sender and receiver accounts to ensure first airdrop is still in pending state
+                        getTxnRecord("second")
+                                .andAllChildRecords()
+                                // assert transfers
+                                .hasChildRecords(recordWith()
+                                        .tokenTransfers(includingFungibleMovement(moving(10, FUNGIBLE_TOKEN)
+                                                .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))))
+                                .logged(),
+
+                        // since there is noway to check pending airdrop state, we just assert the account balances
+                        getAccountBalance(SENDER).hasTokenBalance(FUNGIBLE_TOKEN, 90),
+                        getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasTokenBalance(FUNGIBLE_TOKEN, 10));
     }
 
     @HapiTest
@@ -548,31 +596,45 @@ public class TokenAirdropSuite {
                         newKeyNamed(NFT_SUPPLY_KEY),
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(10),
                         cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .supplyKey(NFT_SUPPLY_KEY)
-                                .maxSupply(10_000)
-                                .initialSupply(5000)
-                                .treasury(OWNER))
+                        createTokenWithName("FUNGIBLE1"),
+                        createTokenWithName("FUNGIBLE2"),
+                        createTokenWithName("FUNGIBLE3"),
+                        createTokenWithName("FUNGIBLE4"),
+                        createTokenWithName("FUNGIBLE5"),
+                        createTokenWithName("FUNGIBLE6"),
+                        createTokenWithName("FUNGIBLE7"),
+                        createTokenWithName("FUNGIBLE8"),
+                        createTokenWithName("FUNGIBLE9"),
+                        createTokenWithName("FUNGIBLE10"),
+                        createTokenWithName("FUNGIBLE11"))
                 .when()
                 .then(tokenAirdrop(
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement(),
-                                defaultMovement())
+                                defaultMovementOfToken("FUNGIBLE1"),
+                                defaultMovementOfToken("FUNGIBLE2"),
+                                defaultMovementOfToken("FUNGIBLE3"),
+                                defaultMovementOfToken("FUNGIBLE4"),
+                                defaultMovementOfToken("FUNGIBLE5"),
+                                defaultMovementOfToken("FUNGIBLE6"),
+                                defaultMovementOfToken("FUNGIBLE7"),
+                                defaultMovementOfToken("FUNGIBLE8"),
+                                defaultMovementOfToken("FUNGIBLE9"),
+                                defaultMovementOfToken("FUNGIBLE10"),
+                                defaultMovementOfToken("FUNGIBLE11"))
                         .payingWith(OWNER)
-                        .hasPrecheck(INVALID_TRANSACTION));
+                        .hasPrecheck(INVALID_TRANSACTION_BODY));
     }
 
-    private TokenMovement defaultMovement() {
-        return moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS);
+    private TokenMovement defaultMovementOfToken(String token) {
+        return moving(10, token).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS);
+    }
+
+    private HapiTokenCreate createTokenWithName(String tokenName) {
+        return tokenCreate(tokenName)
+                .tokenType(TokenType.FUNGIBLE_COMMON)
+                .supplyType(TokenSupplyType.FINITE)
+                .supplyKey(NFT_SUPPLY_KEY)
+                .maxSupply(10_000)
+                .initialSupply(5000)
+                .treasury(OWNER);
     }
 }

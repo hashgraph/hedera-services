@@ -46,7 +46,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -92,9 +91,6 @@ class QueryCheckerTest extends AppTestBase {
     private FeeManager feeManager;
 
     @Mock
-    private ExchangeRateManager exchangeRateManager;
-
-    @Mock
     private TransactionDispatcher dispatcher;
 
     private QueryChecker checker;
@@ -102,62 +98,26 @@ class QueryCheckerTest extends AppTestBase {
     @BeforeEach
     void setup() {
         checker = new QueryChecker(
-                authorizer,
-                cryptoTransferHandler,
-                solvencyPreCheck,
-                expiryValidation,
-                feeManager,
-                dispatcher,
-                exchangeRateManager);
+                authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager, dispatcher);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testConstructorWithIllegalArguments() {
         assertThatThrownBy(() -> new QueryChecker(
-                        null,
-                        cryptoTransferHandler,
-                        solvencyPreCheck,
-                        expiryValidation,
-                        feeManager,
-                        dispatcher,
-                        exchangeRateManager))
+                        null, cryptoTransferHandler, solvencyPreCheck, expiryValidation, feeManager, dispatcher))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() ->
+                        new QueryChecker(authorizer, null, solvencyPreCheck, expiryValidation, feeManager, dispatcher))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryChecker(
-                        authorizer,
-                        null,
-                        solvencyPreCheck,
-                        expiryValidation,
-                        feeManager,
-                        dispatcher,
-                        exchangeRateManager))
+                        authorizer, cryptoTransferHandler, null, expiryValidation, feeManager, dispatcher))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryChecker(
-                        authorizer,
-                        cryptoTransferHandler,
-                        null,
-                        expiryValidation,
-                        feeManager,
-                        dispatcher,
-                        exchangeRateManager))
+                        authorizer, cryptoTransferHandler, solvencyPreCheck, null, feeManager, dispatcher))
                 .isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new QueryChecker(
-                        authorizer,
-                        cryptoTransferHandler,
-                        solvencyPreCheck,
-                        null,
-                        feeManager,
-                        dispatcher,
-                        exchangeRateManager))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new QueryChecker(
-                        authorizer,
-                        cryptoTransferHandler,
-                        solvencyPreCheck,
-                        expiryValidation,
-                        null,
-                        dispatcher,
-                        exchangeRateManager))
+                        authorizer, cryptoTransferHandler, solvencyPreCheck, expiryValidation, null, dispatcher))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -516,12 +476,7 @@ class QueryCheckerTest extends AppTestBase {
 
         // when
         final var result = checker.estimateTxFees(
-                null, // TODO: fix
-                storeFactory,
-                consensusNow,
-                txInfo,
-                ALICE.account().key(),
-                configuration);
+                storeFactory, consensusNow, txInfo, ALICE.account().key(), configuration);
 
         // then
         assertThat(result).isEqualTo(fees.totalFee());
