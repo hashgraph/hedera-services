@@ -2457,8 +2457,10 @@ public class CryptoTransferSuite {
                         getAliasedAccountInfo(hollowAccountKey)
                                 .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1))
                                 .hasAlreadyUsedAutomaticAssociations(2))))
-                .then(validateChargedUsdWithChilds(
-                        transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
+                .then(
+                        validateChargedUsdWithChilds(
+                                transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd),
+                        uploadCustomFeeSchedules(GENESIS, "FeeSchedule.json"));
     }
 
     @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
@@ -2565,8 +2567,10 @@ public class CryptoTransferSuite {
                         getAliasedAccountInfo(hollowAccountKey)
                                 .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1))
                                 .hasAlreadyUsedAutomaticAssociations(2))))
-                .then(validateChargedUsdWithChilds(
-                        transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
+                .then(
+                        validateChargedUsdWithChilds(
+                                transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd),
+                        uploadCustomFeeSchedules(GENESIS, "FeeSchedule.json"));
     }
 
     @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
@@ -2660,8 +2664,10 @@ public class CryptoTransferSuite {
                         getAccountInfo(DAVE).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
                         // Verify the hollow account is completed
                         getAliasedAccountInfo(CAROL).has(accountWith().key(CAROL)))))
-                .then(validateChargedUsdWithChilds(
-                        transfersToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
+                .then(
+                        validateChargedUsdWithChilds(
+                                transfersToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd),
+                        uploadCustomFeeSchedules(GENESIS, "FeeSchedule.json"));
     }
 
     @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
@@ -2766,7 +2772,9 @@ public class CryptoTransferSuite {
                         getAccountInfo(DAVE).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)),
                         // Verify the hollow account is completed
                         getAliasedAccountInfo(CAROL).has(accountWith().key(CAROL)))))
-                .then(validateChargedUsdWithChilds(
-                        transferTokensToHollowAccountsTxn, expectedCryptoTransferAndAssociationUsd));
+                .then(
+                        validateChargedUsdWithChilds(
+                                transferTokensToHollowAccountsTxn, expectedCryptoTransferAndAssociationUsd),
+                        uploadCustomFeeSchedules(GENESIS, "FeeSchedule.json"));
     }
 }
