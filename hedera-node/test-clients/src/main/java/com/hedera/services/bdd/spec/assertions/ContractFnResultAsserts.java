@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.spec.assertions;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
-import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -26,8 +25,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.contract.Utils;
-import com.hedera.services.bdd.suites.utils.contracts.ContractCallResult;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -172,21 +169,6 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
      This method utilizes algorithmic extraction of a function ABI by the name of the function and the contract
      and should replace the "resultThruAbi" method, which depends on function ABI, passed as String literal.
     */
-    public ContractFnResultAsserts resultViaFunctionName(
-            final String functionName,
-            final String contractName,
-            final Function<HapiSpec, Function<Object[], Optional<Throwable>>> provider) {
-        final var abi = Utils.getABIFor(FUNCTION, functionName, contractName);
-        registerProvider((spec, o) -> {
-            Object[] actualObjs = viaAbi(
-                    abi, ((ContractFunctionResult) o).getContractCallResult().toByteArray());
-            Optional<Throwable> error = provider.apply(spec).apply(actualObjs);
-            if (error.isPresent()) {
-                throw error.get();
-            }
-        });
-        return this;
-    }
 
     public ContractFnResultAsserts contract(String contract) {
         registerIdLookupAssert(contract, r -> r.getContractID(), ContractID.class, "Bad contract!");
@@ -276,33 +258,6 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
                 Assertions.fail("Expected gas used to be " + gasUsed + " up to 8 differing "
                         + " zero bytes in the payload; but was " + result.getGasUsed());
             }
-        });
-        return this;
-    }
-
-    public ContractFnResultAsserts contractCallResult(ContractCallResult contractCallResult) {
-        registerProvider((spec, o) -> {
-            ContractFunctionResult result = (ContractFunctionResult) o;
-            assertEquals(
-                    ByteString.copyFrom(contractCallResult.getBytes().toArray()),
-                    result.getContractCallResult(),
-                    "Wrong contract call result!");
-        });
-        return this;
-    }
-
-    public ContractFnResultAsserts contractCallResultFrom(@NonNull final ContractCallResult... contractCallResults) {
-        registerProvider((spec, o) -> {
-            ContractFunctionResult result = (ContractFunctionResult) o;
-            final var actual = result.getContractCallResult();
-            var someMatch = false;
-            for (final var expected : contractCallResults) {
-                if (ByteString.copyFrom(expected.getBytes().toArrayUnsafe()).equals(actual)) {
-                    someMatch = true;
-                    break;
-                }
-            }
-            assertTrue(someMatch, "Contract call result matched none of the expected values");
         });
         return this;
     }

@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
@@ -32,7 +32,6 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.schedule.ScheduleUtils;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -41,7 +40,6 @@ import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -190,7 +188,6 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
                             } else {
                                 try {
                                     var deserializedTxn = TransactionBody.parseFrom(subOp.getBodyBytes());
-                                    scheduledTxn.set(ScheduleUtils.fromOrdinary(deserializedTxn));
                                     b.setScheduledTransactionBody(scheduledTxn.get());
                                 } catch (InvalidProtocolBufferException fatal) {
                                     throw new IllegalStateException(
@@ -239,11 +236,6 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
                 .setSeconds(expiry.getEpochSecond())
                 .setNanos(expiry.getNano())
                 .build();
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScheduleSvcStub(targetNodeFor(spec), useTls)::createSchedule;
     }
 
     @Override

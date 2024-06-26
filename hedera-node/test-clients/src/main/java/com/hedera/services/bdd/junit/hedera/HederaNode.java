@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.junit.hedera;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.services.bdd.junit.hedera.live.NodeStatus;
+import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -28,11 +28,18 @@ import java.util.function.Consumer;
 
 public interface HederaNode {
     /**
+     * Gets the hostname of the node.
+     *
+     * @return the hostname of the node
+     */
+    String getHost();
+
+    /**
      * Gets the port number of the gRPC service.
      *
      * @return the port number of the gRPC service
      */
-    int getPort();
+    int getGrpcPort();
 
     /**
      * Gets the node ID, such as 0, 1, 2, or 3.
@@ -53,18 +60,12 @@ public interface HederaNode {
     AccountID getAccountId();
 
     /**
-     * Gets the path to the node's record stream.
+     * Gets the path to a external file or directory used by the node.
      *
-     * @return the path to the node's record stream
+     * @param path the external path to get
+     * @return the requested external path
      */
-    Path getRecordStreamPath();
-
-    /**
-     * Gets the path to the node's application log.
-     *
-     * @return the path to the node's application log
-     */
-    Path getApplicationLogPath();
+    Path getExternalPath(@NonNull ExternalPath path);
 
     /**
      * Initializes the working directory for the node. Must be called before the node is started.
@@ -103,14 +104,12 @@ public interface HederaNode {
             @NonNull PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver);
 
     /**
-     * Returns a future that resolves when the node has the given status.
+     * Returns a future that resolves when the node has written the specified <i>.mf</i> file.
      *
-     * @param status the status to wait for
-     * @return a future that resolves when the node has the given status
+     * @param markerFile the marker file to wait for
+     * @return a future that resolves when the node has written the specified <i>.mf</i> file
      */
-    default CompletableFuture<Void> statusFuture(@NonNull PlatformStatus status) {
-        return statusFuture(status, null);
-    }
+    CompletableFuture<Void> mfFuture(@NonNull MarkerFile markerFile);
 
     /**
      * Returns a future that resolves when the node has stopped.
@@ -120,7 +119,7 @@ public interface HederaNode {
     CompletableFuture<Void> stopFuture();
 
     /**
-     * Returns the string that would identify this node as a target
+     * Returns the string that would summarize this node as a target
      * server in a {@link HapiSpec} that is submitting transactions
      * and sending queries via gRPC.
      *
@@ -131,7 +130,7 @@ public interface HederaNode {
      *
      * @return this node's HAPI spec identifier
      */
-    default String hapiSpecIdentifier() {
-        return "127.0.0.1:" + getPort() + ":0.0." + getAccountId().accountNumOrThrow();
+    default String hapiSpecInfo() {
+        return getHost() + ":" + getGrpcPort() + ":0.0." + getAccountId().accountNumOrThrow();
     }
 }

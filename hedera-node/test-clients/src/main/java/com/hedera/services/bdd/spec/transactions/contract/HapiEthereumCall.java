@@ -16,12 +16,11 @@
 
 package com.hedera.services.bdd.spec.transactions.contract;
 
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
@@ -42,7 +41,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
-import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -51,7 +49,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -282,11 +279,6 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::callEthereum;
-    }
-
-    @Override
     public HederaFunctionality type() {
         return HederaFunctionality.EthereumTransaction;
     }
@@ -314,22 +306,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
         byte[] callData = initializeCallData();
 
-        final byte[] to;
-        if (explicitTo != null) {
-            to = explicitTo;
-        } else if (alias != null) {
-            to = recoverAddressFromPubKey(alias.toByteArray());
-        } else if (account != null) {
-            to = Utils.asAddress(spec.registry().getAccountID(account));
-        } else if (isTokenFlow) {
-            to = Utils.asAddress(spec.registry().getTokenID(contract));
-        } else {
-            if (!tryAsHexedAddressIfLenMatches) {
-                to = Utils.asAddress(spec.registry().getContractId(contract));
-            } else {
-                to = Utils.asAddress(TxnUtils.asContractId(contract, spec));
-            }
-        }
+        final byte[] to = new byte[0];
 
         final var gasPriceBytes = gasLongToBytes(gasPrice.longValueExact());
 
@@ -357,7 +334,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 null,
                 null);
 
-        byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
+        byte[] privateKeyByteArray = getEcdsaPrivateKeyFromSpec(spec, privateKeyRef);
         var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
         spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 

@@ -28,7 +28,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.isEndOfStakingP
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate.correspondingScheduledTxnId;
 import static com.hedera.services.bdd.suites.HapiSuite.HBAR_TOKEN_SENTINEL;
-import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseType.COST_ANSWER;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -57,8 +56,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.QueryHeader;
-import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
@@ -67,6 +66,7 @@ import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -882,9 +882,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     @Override
     @SuppressWarnings("java:S1874")
-    protected void submitWith(final HapiSpec spec, final Transaction payment) throws InvalidProtocolBufferException {
-        final Query query = maybeModified(getRecordQuery(spec, payment, false), spec);
-        response = spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         final TransactionRecord rcd = response.getTransactionGetRecord().getTransactionRecord();
         if (contractResultAbi != null) {
             exposeRequestedEventsFrom(rcd);
@@ -959,7 +957,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         }
 
         if (loggingOnlyFee && spec.ratesProvider().hasRateSet()) {
-            final var priceInUsd = sdec(spec.ratesProvider().toUsdWithActiveRates(rcd.getTransactionFee()), 5);
+            final var priceInUsd = 0.0;
             LOG.info("{}Record of {} charged ${}", spec::logPrefix, () -> txn, () -> priceInUsd);
         }
         if (verboseLoggingOn) {
@@ -969,7 +967,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
                 final var fee = rcd.getTransactionFee();
                 final var rates = spec.ratesProvider();
                 if (rates.hasRateSet()) {
-                    final var priceInUsd = sdec(rates.toUsdWithActiveRates(fee), 5);
+                    final var priceInUsd = 0.0;
                     LOG.info("{}Record (charged ${}): {}", spec::logPrefix, () -> priceInUsd, () -> rcd);
                 }
                 LOG.info(
@@ -1018,12 +1016,15 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(final HapiSpec spec, final Transaction payment) throws Throwable {
-        final Query query = maybeModified(getRecordQuery(spec, payment, true), spec);
-        final Response response =
-                spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls).getTxRecordByTxID(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getRecordQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getRecordQuery(final HapiSpec spec, final Transaction payment, final boolean costOnly) {

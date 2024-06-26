@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.transactions.contract;
 
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
@@ -34,24 +34,22 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
@@ -263,8 +261,8 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
             setBytecodeToDefaultContract(spec);
         }
 
-        final var filePath = Utils.getResourcePath(bytecodeFile.get(), ".bin");
-        final var fileContents = Utils.extractByteCode(filePath);
+        final Path filePath = null;
+        final ByteString fileContents = null;
 
         ByteString bytecode = fileContents;
         if (args.isPresent() && abi.isPresent()) {
@@ -300,7 +298,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                 null,
                 null);
 
-        final byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
+        final byte[] privateKeyByteArray = getEcdsaPrivateKeyFromSpec(spec, privateKeyRef);
         var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
         spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
@@ -308,10 +306,10 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
         final var senderAddress = ByteString.copyFrom(extractedSignatures.address());
         spec.registry().saveBytes(ETH_SENDER_ADDRESS, senderAddress);
 
-        if (fileContents.toByteArray().length > MAX_CALL_DATA_SIZE) {
-            ethFileID = Optional.of(TxnUtils.asFileId(bytecodeFile.get(), spec));
-            signedEthTxData = signedEthTxData.replaceCallData(new byte[] {});
-        }
+//        if (fileContents.toByteArray().length > MAX_CALL_DATA_SIZE) {
+//            ethFileID = Optional.of(TxnUtils.asFileId(bytecodeFile.get(), spec));
+//            signedEthTxData = signedEthTxData.replaceCallData(new byte[] {});
+//        }
 
         final var ethData = signedEthTxData;
         final EthereumTransactionBody opBody = spec.txns()
@@ -352,11 +350,6 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                         scFees::getEthereumTransactionFeeMatrices,
                         txn,
                         numPayerSigs);
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getScSvcStub(targetNodeFor(spec), useTls)::createContract;
     }
 
     private EthereumTransactionBody explicitEthereumTransaction(HapiSpec spec)

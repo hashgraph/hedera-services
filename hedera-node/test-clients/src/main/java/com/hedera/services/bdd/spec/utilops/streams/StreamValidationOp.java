@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.streams;
 
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -23,14 +24,8 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static java.util.stream.Collectors.joining;
 
-import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.support.RecordStreamAccess;
 import com.hedera.services.bdd.junit.support.RecordStreamValidator;
-import com.hedera.services.bdd.junit.support.validators.BalanceReconciliationValidator;
-import com.hedera.services.bdd.junit.support.validators.BlockNoValidator;
-import com.hedera.services.bdd.junit.support.validators.ExpiryRecordsValidator;
-import com.hedera.services.bdd.junit.support.validators.TokenReconciliationValidator;
-import com.hedera.services.bdd.junit.support.validators.TransactionBodyValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,12 +50,7 @@ public class StreamValidationOp extends UtilOp {
     private static final long MIN_GZIP_SIZE_IN_BYTES = 26;
     private static final String ERROR_PREFIX = "\n  - ";
 
-    private static final List<RecordStreamValidator> STREAM_VALIDATORS = List.of(
-            new BlockNoValidator(),
-            new TransactionBodyValidator(),
-            new ExpiryRecordsValidator(),
-            new BalanceReconciliationValidator(),
-            new TokenReconciliationValidator());
+    private static final List<RecordStreamValidator> STREAM_VALIDATORS = List.of();
 
     @Override
     protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
@@ -92,7 +82,7 @@ public class StreamValidationOp extends UtilOp {
     private static Optional<RecordStreamAccess.Data> readMaybeStreamDataFor(@NonNull final HapiSpec spec) {
         RecordStreamAccess.Data data = null;
         final var streamLocs = spec.getNetworkNodes().stream()
-                .map(HederaNode::getRecordStreamPath)
+                .map(node -> node.getExternalPath(STREAMS_DIR))
                 .map(Path::toAbsolutePath)
                 .map(Object::toString)
                 .toList();

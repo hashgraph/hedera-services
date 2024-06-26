@@ -30,11 +30,10 @@ import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenUpdateUsage;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
+import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
-import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -79,7 +78,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     @Nullable
     private String newPartitionMoveKey;
 
-    private Set<TokenFeature> rolesToRemove = EnumSet.noneOf(TokenFeature.class);
     private Optional<String> newSymbol = Optional.empty();
     private Optional<String> newName = Optional.empty();
     private Optional<String> newTreasury = Optional.empty();
@@ -105,7 +103,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private boolean useInvalidPauseKey = false;
     private boolean noKeyValidation = false;
     private Optional<String> contractKeyName = Optional.empty();
-    private Set<TokenKeyType> contractKeyAppliedTo = Set.of();
 
     @Override
     public HederaFunctionality type() {
@@ -114,13 +111,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
     public HapiTokenUpdate(String token) {
         this.token = token;
-    }
-
-    public HapiTokenUpdate removingRoles(@NonNull final TokenFeature... rolesToRemove) {
-        this.rolesToRemove = rolesToRemove.length == 0
-                ? EnumSet.noneOf(TokenFeature.class)
-                : Arrays.stream(rolesToRemove).collect(toCollection(() -> EnumSet.noneOf(TokenFeature.class)));
-        return this;
     }
 
     public HapiTokenUpdate freezeKey(String name) {
@@ -318,11 +308,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         return this;
     }
 
-    public HapiTokenUpdate contractKey(final Set<TokenKeyType> contractKeyAppliedTo, final String contractKeyName) {
-        this.contractKeyName = Optional.of(contractKeyName);
-        this.contractKeyAppliedTo = contractKeyAppliedTo;
-        return this;
-    }
 
     @Override
     protected HapiTokenUpdate self() {
@@ -481,24 +466,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                             // of a token, and in this case we need to use a Key{contractID=0.0.X} as the key; so for
                             // convenience we have a special case and allow the user to specify the name of the
                             // contract it should use from the registry to create this special key.
-                            if (contractKeyName.isPresent() && !contractKeyAppliedTo.isEmpty()) {
-                                final var contractId = spec.registry().getContractId(contractKeyName.get());
-                                final var contractKey = Key.newBuilder()
-                                        .setContractID(contractId)
-                                        .build();
-                                for (final var tokenKeyType : contractKeyAppliedTo) {
-                                    switch (tokenKeyType) {
-                                        case ADMIN_KEY -> b.setAdminKey(contractKey);
-                                        case FREEZE_KEY -> b.setFreezeKey(contractKey);
-                                        case KYC_KEY -> b.setKycKey(contractKey);
-                                        case PAUSE_KEY -> b.setPauseKey(contractKey);
-                                        case SUPPLY_KEY -> b.setSupplyKey(contractKey);
-                                        case WIPE_KEY -> b.setWipeKey(contractKey);
-                                        default -> throw new IllegalStateException(
-                                                "Unexpected tokenKeyType: " + tokenKeyType);
-                                    }
-                                }
-                            }
                         });
         return b -> b.setTokenUpdate(opBody);
     }
@@ -507,15 +474,19 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
+        signers.add(spec -> {
+            try {
+                return spec.registry().getAdminKey(token);
+            } catch (RegistryNotFound ignore) {
+                // Some tests attempt to update an immutable token,
+                // skip the admin key if it's not found
+                return Key.getDefaultInstance();
+            }
+        });
         newTreasury.ifPresent(n -> signers.add((spec -> spec.registry().getKey(n))));
         newAdminKey.ifPresent(n -> signers.add(spec -> spec.registry().getKey(n)));
         autoRenewAccount.ifPresent(a -> signers.add(spec -> spec.registry().getKey(a)));
         return signers;
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::updateToken;
     }
 
     @Override

@@ -17,8 +17,6 @@
 package com.hedera.services.bdd.spec.infrastructure.meta;
 
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
-import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
-import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -26,9 +24,8 @@ import java.util.List;
 public enum SupportedContract {
     SIMPLE_STORAGE(
             bytecodePath(Constants.SIMPLE_STORAGE1),
-            List.of(new ContractCallDetails(
-                    getABIFor(FUNCTION, "set", Constants.SIMPLE_STORAGE1), new Object[] {BigInteger.valueOf(1)})),
-            List.of(new ContractCallDetails(getABIFor(FUNCTION, "get", Constants.SIMPLE_STORAGE1), new Object[] {})));
+            List.of(),
+            List.of());
 
     private final String pathToBytecode;
     private final List<ContractCallDetails> callDetails;

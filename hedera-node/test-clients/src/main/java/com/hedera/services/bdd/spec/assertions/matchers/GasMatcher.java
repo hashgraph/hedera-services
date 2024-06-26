@@ -16,14 +16,12 @@
 
 package com.hedera.services.bdd.spec.assertions.matchers;
 
-import com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite;
 import org.testcontainers.shaded.org.hamcrest.Description;
 import org.testcontainers.shaded.org.hamcrest.TypeSafeMatcher;
 
 /**
  * Used in assertions to check if two gas values are equal within a certain range.
  * <p>
- * Depending on the addresses used in {@link TraceabilitySuite},
  * the hard-coded gas values may vary slightly from the observed results.
  * For example, the actual sidecar may have an intrinsic gas cost differing
  * from that of the expected sidecar by a value of {@code 12 * X},

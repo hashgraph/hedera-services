@@ -32,16 +32,12 @@ import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
-import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
-import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
-import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
-import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -431,60 +427,6 @@ public class TxnVerbs {
         return new HapiContractCall(contract);
     }
 
-    /**
-     * This method allows the developer to invoke a contract function by the name of the called
-     * contract and the name of the desired function
-     *
-     * @param contract the name of the contract
-     * @param functionName the name of the function
-     * @param params the arguments (if any) passed to the contract's function
-     */
-    public static HapiContractCall contractCall(String contract, String functionName, Object... params) {
-        final var abi = getABIFor(FUNCTION, functionName, contract);
-        return new HapiContractCall(abi, contract, params);
-    }
-
-    /**
-     * This method allows the developer to invoke a contract function by the name of the called
-     * contract and the name of the desired function and make an ethereum call
-     *
-     * @param contract the name of the contract
-     * @param functionName the name of the function
-     * @param params the arguments (if any) passed to the contract's function
-     */
-    public static HapiEthereumCall ethereumCall(String contract, String functionName, Object... params) {
-        final var abi = getABIFor(FUNCTION, functionName, contract);
-        return new HapiEthereumCall(abi, contract, params);
-    }
-
-    public static HapiEthereumCall ethereumCallWithFunctionAbi(
-            boolean isTokenFlow, String contract, String abi, Object... params) {
-        return new HapiEthereumCall(isTokenFlow, abi, contract, params);
-    }
-
-    /**
-     * This method allows the developer to transfer hbars to an <b>account that's not a smart
-     * contract</b> through an Ethereum transaction.
-     *
-     * @param account the name of the account in the registry
-     * @param amount the amount of tinybars to be transferred from the Ethereum transaction sender
-     *     to the specified account
-     */
-    public static HapiEthereumCall ethereumCryptoTransfer(String account, long amount) {
-        return new HapiEthereumCall(account, amount);
-    }
-
-    public static HapiEthereumCall ethereumCryptoTransferToAlias(ByteString alias, long amount) {
-        return new HapiEthereumCall(alias, amount);
-    }
-
-    public static HapiEthereumCall ethereumCryptoTransferToExplicit(@NonNull final byte[] to, final long amount) {
-        return HapiEthereumCall.explicitlyTo(to, amount);
-    }
-
-    public static HapiEthereumCall ethereumCryptoTransferToAddress(@NonNull final Address address, final long amount) {
-        return HapiEthereumCall.explicitlyTo(explicitBytesOf(address), amount);
-    }
 
     /**
      * This method provides for the proper execution of specs, which execute contract calls with a
@@ -513,16 +455,6 @@ public class TxnVerbs {
     public static HapiEthereumContractCreate ethereumContractCreate(final String contractName) {
         return new HapiEthereumContractCreate(contractName).bytecode(contractName);
     }
-
-    public static HapiContractCreate contractCreate(final String contractName, final Object... constructorParams) {
-        if (constructorParams.length > 0) {
-            final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
-            return new HapiContractCreate(contractName, constructorABI, constructorParams).bytecode(contractName);
-        } else {
-            return new HapiContractCreate(contractName).bytecode(contractName);
-        }
-    }
-
     /**
      * Constructs a {@link HapiContractCreate} by letting the client code explicitly customize the {@link ContractCreateTransactionBody}.
      *
@@ -551,37 +483,6 @@ public class TxnVerbs {
         return new HapiContractCreate(name);
     }
 
-    /**
-     * Previously - when creating contracts we were passing a name, chosen by the developer, which
-     * can differentiate from the name of the contract. The new implementation of the contract
-     * creation depends on the exact name of the contract, which means, that we can not create
-     * multiple instances of the contract with the same name. Therefore - in order to provide each
-     * contract with a unique name - the developer must attach a suffix to happily create multiple
-     * instances of the same contract, but with different names.
-     *
-     * <p><b>Example</b>:
-     *
-     * <p>final var contract = "TransferringContract";
-     *
-     * <p>contractCreate(contract).balance(10_000L).payingWith(ACCOUNT),
-     *
-     * <p>contractCustomCreate(contract, to).balance(10_000L).payingWith(ACCOUNT)
-     *
-     * @param contractName the name of the contract
-     * @param suffix an additional String literal, which provides the instance of the contract with
-     *     a unique identifier
-     * @param constructorParams the arguments (if any) passed to the contract's constructor
-     */
-    public static HapiContractCreate contractCustomCreate(
-            final String contractName, final String suffix, final Object... constructorParams) {
-        if (constructorParams.length > 0) {
-            final var constructorABI = getABIFor(CONSTRUCTOR, EMPTY, contractName);
-            return new HapiContractCreate(contractName + suffix, constructorABI, constructorParams)
-                    .bytecode(contractName);
-        } else {
-            return new HapiContractCreate(contractName + suffix).bytecode(contractName);
-        }
-    }
 
     public static HapiContractDelete contractDelete(String contract) {
         return new HapiContractDelete(contract);
@@ -590,114 +491,6 @@ public class TxnVerbs {
     public static HapiContractUpdate contractUpdate(String contract) {
         return new HapiContractUpdate(contract);
     }
-
-    /**
-     * This method enables the developer to upload one or many contract(s) bytecode(s)
-     *
-     * @param contractsNames the name(s) of the contract(s), which are to be deployed
-     */
-    public static HapiSpecOperation uploadInitCode(final String... contractsNames) {
-        return uploadInitCode(Optional.empty(), contractsNames);
-    }
-
-    public static HapiSpecOperation uploadInitCode(final Optional<String> payer, final String... contractsNames) {
-        return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> ops = new ArrayList<>();
-            for (String contractName : contractsNames) {
-                final var path = getResourcePath(contractName, ".bin");
-                final var file = new HapiFileCreate(contractName);
-                final var updatedFile = updateLargeFile(payer.orElse(GENESIS), contractName, extractByteCode(path));
-                ops.add(file);
-                ops.add(updatedFile);
-            }
-            allRunFor(spec, ops);
-        });
-    }
-
-    /**
-     *  This method enables uploading a contract bytecode with the constructor parameters (if present) appended at the end of the file
-     *  Used for ethereum create conversion when we need to pass constructor arguments
-     * @param contractName
-     * @param abi
-     * @param args
-     * @return
-     */
-    public static HapiSpecOperation updateInitCodeWithConstructorArgs(
-            final Optional<String> payer, final String contractName, final String abi, final Object... args) {
-        return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> ops = new ArrayList<>();
-
-            final var path = getResourcePath(contractName, ".bin");
-
-            // concatenate bytecode with params
-            final var bytecode = extractByteCode(path).concat(TxnUtils.constructorArgsToByteString(abi, args));
-            final var updatedFile = updateLargeFile(payer.orElse(GENESIS), contractName, bytecode);
-            ops.add(updatedFile);
-
-            allRunFor(spec, ops);
-        });
-    }
-
-    public static HapiSpecOperation uploadSingleInitCode(
-            final String contractName, final long expiry, final String payingWith, final LongConsumer exposingTo) {
-        return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> ops = new ArrayList<>();
-            final var path = getResourcePath(contractName, ".bin");
-            final var file = new HapiFileCreate(contractName)
-                    .payingWith(payingWith)
-                    .exposingNumTo(exposingTo)
-                    .expiry(expiry);
-            final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
-            ops.add(file);
-            ops.add(updatedFile);
-            allRunFor(spec, ops);
-        });
-    }
-
-    public static HapiSpecOperation uploadSingleInitCode(
-            final String contractName, final ResponseCodeEnum... statuses) {
-        return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> ops = new ArrayList<>();
-            final var path = getResourcePath(contractName, ".bin");
-            final var file = new HapiFileCreate(contractName).hasRetryPrecheckFrom(statuses);
-            final var updatedFile = updateLargeFile(GENESIS, contractName, extractByteCode(path));
-            ops.add(file);
-            ops.add(updatedFile);
-            allRunFor(spec, ops);
-        });
-    }
-
-    /**
-     * This method enables uploading a contract bytecode with the constructor parameters (if
-     * present) appended at the end of the file
-     *
-     * @param contractName the name of the contract, which is to be deployed
-     * @param abi the abi of the contract
-     * @param args the constructor arguments
-     */
-    public static HapiSpecOperation uploadInitCodeWithConstructorArguments(
-            final String contractName, final String abi, final Object... args) {
-        return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> ops = new ArrayList<>();
-
-            final var path = getResourcePath(contractName, ".bin");
-            final var file = new HapiFileCreate(contractName);
-            final var fileByteCode = extractByteCode(path);
-            final byte[] params = args.length == 0
-                    ? new byte[] {}
-                    : com.esaulpaugh.headlong.abi.Function.fromJson(abi)
-                            .encodeCall(Tuple.of(args))
-                            .array();
-            final var updatedFile = updateLargeFile(
-                    GENESIS,
-                    contractName,
-                    params.length == 0 ? fileByteCode : fileByteCode.concat(ByteString.copyFrom(params)));
-            ops.add(file);
-            ops.add(updatedFile);
-            allRunFor(spec, ops);
-        });
-    }
-
     /* SYSTEM */
     public static HapiFreeze hapiFreeze(final Instant freezeStartTime) {
         return new HapiFreeze().startingAt(freezeStartTime);

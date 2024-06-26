@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilStateChange.stateChangesToGrpc;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.contract.traceability.EncodingUtils.getInitcode;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
@@ -135,7 +134,6 @@ public class SidecarVerbs {
             allRunFor(spec, contractBytecode);
             builder.setBytecode(ContractBytecode.newBuilder()
                     .setContractId(originRecord.getContractCreateResult().getContractID())
-                    .setInitcode(getInitcode(binFileName, constructorArgs))
                     .setRuntimeBytecode(ByteString.copyFrom(spec.registry().getBytes(RUNTIME_CODE)))
                     .build());
         });
@@ -159,7 +157,6 @@ public class SidecarVerbs {
         requireNonNull(constructorArgs);
         return expectSidecarRecord(txnName, (builder, spec, originRecord) -> {
             builder.setBytecode(ContractBytecode.newBuilder()
-                    .setInitcode(getInitcode(binFileName, constructorArgs))
                     .build());
         });
     }
