@@ -180,7 +180,7 @@ The polynomial `Xₖ` is a polynomial with degree `t-1` (t=threshold) with the f
 Each `sᵢ = Xₖ(sidᵢ)` constitutes a point on the polynomial.
 
 Once the `sᵢ` value has been calculated for each `ShareId`: `sidᵢ`, the value: `Cᵢ` will be produced by encrypting the `sᵢ` using the `sidᵢ` owner's public key.
-![img.png](img.png)
+![img.svg](img.svg)
 
 The TssMessage will contain all the encrypted values for all shares.
 
@@ -225,9 +225,6 @@ Given the input:
     
 Return the proof composed of `F`, `A`, `Y`, `z_r`, and `z_a`
 
-###### A TssMessage class diagram
-
-![img_3.png](img_3.png)
 
 ##### Outside of scope
 Using an established channel, each participant will broadcast a single message to be received by all participants
@@ -290,7 +287,7 @@ each participant will decrypt all `Cᵢ` to generate an aggregated value `sᵢ` 
 
 **Note:** All participants must choose the same set of valid `TssMessages` and have a threshold number of valid messages.
 
-![img_1.png](img_1.png)
+![img_1.svg](img_1.svg)
 
 Also, we will extract a `PublicShare` for each `ShareId`: `sidₛ` in the directory from the list of valid messages.
 The PublicShare for share `s` is computed by evaluating each polynomial commitment in the common set of messages at `sidₛ` and then aggregating the results.
@@ -308,7 +305,7 @@ The rekeying process is similar to the bootstrap process, but it starts with the
 The main difference with the genesis stage is that every participant generates a `TssMessage` out of each previously owned `SecretShare`.
 
 
-![img_4.png](img_4.png)
+![img_4.svg](img_4.svg)
 
 Once finished, the list of `SecretShare`s will be updated but the previously generated aggregate public key remains the same.
 
@@ -325,13 +322,13 @@ Multiple signatures can be aggregated to create an aggregate `TssSignature`. An 
 The following diagram exposes the steps necessary for bootstrapping and using the library. In orange are all the steps where the library is involved.
 The rest of the steps need to happen but are outside the scope of the described library.
 
-![img_2.png](img_2.png)
+![img_2.png](img_2.svg)
 
 
 ### Architecture
 To implement the functionality detailed in the previous section, the following code structure is proposed:
 
-![img_5.png](img_5.png)
+![img_5.png](img_5.svg)
 
 1. **TSS Lib**: The consensus node will use the TSS library to create shares, create TSS messages to send to other nodes,
    assemble shared public keys (ledgerId), and sign the block node Merkle tree hash.
@@ -348,7 +345,7 @@ To implement the functionality detailed in the previous section, the following c
 7. **EC-Key Utils** is a utility module that enables the node operator to generate a bootstrapping public/private key pair.
 
 ### Module organization and repositories
-![img_6.png](img_6.png)
+![img_6.png](img_6.svg)
 1. **hedera-cryptography**: This is a separate repository for hosting cryptography-related libraries.
    It is necessary to facilitate our build process, which includes Rust libraries. It also provides independent release cycles between consensus node code and block node code.
 2. **swirlds-native-support**: Gradle module that enables loading into memory compiled native libraries so they can be used with JNI.
@@ -636,6 +633,11 @@ It should be built in a way that the rust code is compiled for every supported a
 ```
 It will unzip and load the correct library packaged inside the jar and access it using JNI calls.
 The API interface is through JNI. Once built, this should become a runtime dependency.
+
+##### Build Process
+While developing and in a developer's machine, the project will be built for the architecture executing the build.
+Once the code is merged to develop, the CI/CD pipeline compiles the library for multiple platforms, packages it into a jar, and publishes it to Maven. 
+When using the dependency from the Maven repo, it will be cross-compiled for all supported architectures.
 
 #### Swirlds Native Support
 ##### Overview
