@@ -58,30 +58,29 @@ Dependencies on the TSS-Library
 Dependencies on the TSS-Roster
 
 * The `Roster` API is defined with an AddressBook wrapper for initial development and testing.
-    * The Roster API must be expanded to include the number of shares each node is assigned.
 * A lot can be done in parallel, but final integration will require that the TSS-Roster proposal be fully implemented.
     * Transferring the ledger key will require the new roster life-cycle be complete and working.
 
 Impacts to Services Team
 
 * TSS-Roster Proposal
-  * Services will adopt the new address book / roster life-cycle
-  * If the persistent EC Key for nodes is integrated at this stage, 
-    * The HAPI transactions for add/update of consensus node in the address book must support a required EC public key. 
+    * Services will adopt the new address book / roster life-cycle
+    * If the persistent EC Key for nodes is integrated at this stage,
+        * The HAPI transactions for add/update of consensus node in the address book must support a required EC public
+          key.
 * TSS-Ledger-Id Proposal
-  * The timing of submitting the candidate roster may need to be adjusted to allow enough time for the candidate 
-    roster to have enough key material generated. 
-  * Services will need to know / detect when the candidate roster fails to be adopted due to not having enough key 
-    material generated. 
+    * The timing of submitting the candidate roster may need to be adjusted to allow enough time for the candidate
+      roster to have enough key material generated.
+    * Services will need to know / detect when the candidate roster fails to be adopted due to not having enough key
+      material generated.
 * TSS-Block-Signing Proposal
-  * Services will need to invoke the new ledger signing API to sign a block.
-      * This API is asynchronous and will return a future that returns the ledger signature when it is ready.
-
+    * Services will need to invoke the new ledger signing API to sign a block.
+        * This API is asynchronous and will return a future that returns the ledger signature when it is ready.
 
 Impacts to DevOps Team
 
 * Each consensus node will need a new private long term EC key in addition to the existing RSA key.
-      * EC Key generation will have to happen before a node can join the network.
+    * EC Key generation will have to happen before a node can join the network.
 * A new node added to an existing network will need to be given a state from an existing node after the network has
   adopted the consensus roster containing the new node.
 
@@ -106,6 +105,14 @@ TSS Core Requirements
 | TSS-008        | The ledger signature SHOULD be verifiable by an EVM smart contract without excessive cost or time.                           |
 | TSS-009        | The TSS implementation SHOULD be able to switch elliptic curves.                                                             |
 | TSS-010        | The TSS algorithm SHOULD be able to model consensus weight with high precision.                                              |
+| TSS-011        | Minimize the number of steps a Node Operator needs to perform.                                                               |
+
+Block Signing Requirements
+
+| Requirement ID | Requirement Description                               |
+|----------------|-------------------------------------------------------|
+| TSSBS-001      | The initial block in the block stream MUST be signed. |
+| TSSBS-002      | On a new network, the initial block MUST be block 0   |
 
 ### Design Decisions
 
@@ -128,14 +135,17 @@ The relevant Address Book life-cycle changes are the following:
 6. The CAB is not adopted and the previous AAB remains the existing AAB after a software upgrade if the CAB does not
    have enough key material to generate ledger signatures.
 
-Prior to restart for upgrade,  `candidate` consensus roster will be set in the platform state by the app in such a way
-as to mark it clearly as the next consensus roster. This methodology replaces the previous methodology in DAB Phase
-2, which was to write a new `config.txt` to disk. After the `TSS-Roster` proposal has been implemented, the only
+Prior to restart for upgrade, the `candidate` consensus roster will be set in the platform state by the app in such 
+a way as to mark it clearly as the next consensus roster. This methodology replaces the previous methodology in DAB 
+Phase 2, which was to write a new `config.txt` to disk. After the `TSS-Roster` proposal has been implemented, the only
 need for a file on disk is the genesis address book at the start of a new network.
 
-Once the correct address book and consensus roster life-cycle is in place through the `TSS-Roster` proposal, this
-proposal only introduces the logistics of generating the key material and the logic for deciding to adopt the CAB in
-replacement of the AAB.
+The core of the life-cycle change for setting candidate rosters in the state iis captured in the `TSS-Roster` 
+proposal. This Proposal augments the life-cycle with generating the key material for the new roster and the logic for
+deciding to adopt the new roster on software upgrade.
+
+![TSS FAB, CAB, AAB Lifecycle](./TSS-FAB-CAB-AAB-Lifecycle.drawio.svg)
+
 
 #### TSS Algorithm
 
@@ -175,11 +185,6 @@ that the process can resume from any point if a node or the network restarts. Sw
 cannot happen until that roster has enough nodes able to recover a threshold number of shares so that an aggregation of
 node signatures can generate the ledger signature.
 
-TODO: Add description of determination of weights on nodes.
-* max weight
-* numShares(node) := ceiling(N* weight(node) / max weight)
-* 
-
 ##### Elliptic Curve Decisions
 
 Our first implementation of Groth21 will use the ALT_BN128 elliptic curve which is in use and verifiable by EVMs.  
@@ -200,6 +205,23 @@ If there are a total of N shares, then the distribution of weight can only be mo
 weight. The cost of re-keying the network in an address book change is quadratic in the number of shares. This forces us
 to pick a number of total shares with a max value in the thousands. This modeling of weight is a discrete using small
 integer precision.
+
+##### Calculating Number of Shares from Weight
+
+Given that we have a low resolution for modeling weight, the number of shares assigned to each node will be
+calculated as follows:
+
+* Let `N` be the max number of shares that any node can have.
+* Let `maxweight` be the max weight assigned to any node.
+* Let `weight(node)` be the weight assigned to the node.
+* Let `numShares(node)` be the number of shares assigned to the node.
+* then `numShares(node) = ceiling(N * weight(node) / maxweight)` where the operations are floating point.
+
+##### Threshold for recovery of Signatures and Ledger Id.
+
+Our public claim is that we can tolerate up to 1/3 of the stake assigned to malicious nodes. Our
+threshold for recovery of ledger signatures and the ledger id must be greater than 1/3 of the total number of shares.
+The integer threshold should be `ceiling((N + 1) / 3)` where `N` is the total number of shares.
 
 ##### TSS Algorithm - Alternatives Considered
 
@@ -238,10 +260,37 @@ network. There are several options to consider in the TSS genesis process:
 3. For new networks, Do we need to produce a signed block 0?
 4. For existing networks, does the TSS genesis roster sign blocks prior to its existence?
 
-For existing networks, without significant effort to translate the hashgraph history into a block history and sign
-the blocks using the genesis ledger, there will be transactions and state in the history which cannot have Block
-Proofs constructed for it. The most straight forward solution is to simply start signing blocks as soon as the
-TSS genesis roster is in place and accept that the block proof capability starts with a non-zero block number.
+##### For New Networks
+
+There will be a pre-genesis phase where the genesis roster is keyed and a random ledger id is created. This will
+happen through running the platform without application transactions. After the platform keys the roster, the
+platform restarts itself with a copy of the genesis state and adding to it the TSS key material and ledger
+id. After platform restart, application transactions are accepted and the platform starts building the new hashgraph
+from round 0.
+
+While this solution does not have the history of setting up the ledger id in the hashgraph after platform restart,
+the node can cryptographically verify that the setup process took place correctly through using the TSS key material to
+re-derive the ledger id.
+
+This process ensures that block 0 containing application transactions is signed by the ledger and verifiable with
+the ledger id.
+
+The process of the platform restarting itself after performing a pre-genesis keying phase is new startup logic.  
+This should not involve an interruption or restart to the containing process or application.
+
+##### For Existing Networks
+
+Given the requirement of TSSBS-001, the setup of the TSS Key Material must happen before the software upgrade that
+enables block streams. In order to reduce risk and density of complex software changes, giving the nodes
+their long term EC keys and changing the roster life-cycle through the TSS-Roster effort should be completed and
+delivered in a software release prior to the code that will key the first candidate roster.
+
+For example, if Block Streams ships in release 0.7, then TSS-Ledger-Id should ship in release 0.6, and TSS-Roster
+along with setting the EC keys on nodes should ship in release 0.5.
+
+The setup of the first key material will be observable in the record stream prior to the Block Streams going live, 
+but this observability is not consequential because what matters is the cryptographic verification that the TSS 
+material can generate the ledger key.  
 
 ##### TSS Genesis Process - Alternatives Considered
 
@@ -280,7 +329,17 @@ The following are not goals of this proposal:
 ## Changes
 
 Integrating a Threshold Signature Scheme into the consensus node requires significant changes to the startup
-process for a node and the process of changing the consensus roster.
+process for a node and the process of changing the consensus roster.  These changes are outline in more detail in 
+the following sections, but a brief summary is presented here. 
+
+New Network TSS Genesis Process
+  * The platform will accept a genesis roster and check the state for the TSS key material.
+  * If the TSS key material is not present, the platform will generate the key material and ledger id.
+  * The platform will restart itself from round 0 with the new key material and ledger id in the state. 
+Existing Network Genesis
+  * 
+
+
 
 ### Architecture and/or Components
 
@@ -355,7 +414,7 @@ The following are new components in the system:
 5. TSS Signing Manager (Wired)
 6. Roster Initializer (Not Wired)
 
-The following components are removed from the system:
+The following components are removed from or replaced in the system:
 
 1. AddressBookInitializer
 
@@ -424,7 +483,7 @@ Input Invariants:
 1. Self TSS Messages must be received after the candidate roster is set.
 2. The candidate roster is not set if the voting is already closed.
 
-On Active Roster:
+`On Active Roster`:
 
 1. Set this roster as the active roster.
     1. If the candidate roster is set and the candidate roster is not the active roster, then (re)start the TSS Message
@@ -432,36 +491,33 @@ On Active Roster:
     2. If the candidate roster is set and the candidate roster is the active roster, then clear the candidate roster,
        clear the TTS Message List, and stop the TSS Message Manager
 
-On Candidate Roster:
+`On Candidate Roster`:
 
 1. If the internal candidate roster is set and equal to the input candidate roster, do nothing.
 2. else, set the internal candidate roster.
 3. if the active roster is set, (re)start the TSS Message Manager with the active roster and candidate roster.
 
-On Self TSS Message:
+`On Self TSS Message`:
 
 1. If the TSS Message Manager is active, forward the message to the TSS Message Manager.
 2. else log an error indicating that the TSS Message was received before the candidate roster was set.
 
-On Voting Closed Notification:
+`On Voting Closed Notification`:
 
 1. Stop the TSS Message Manager.
 
-TSS Message Manager:
+###### TSS Message Manager
 
 1. Keep a list of Self TSS Messages that have been received.
-2. On Start:
+2. `On Start`:
     1. Wait the configured time period to receive any previously sent Self TSS Messages (relevant for restarts)
     2. For each share assigned to this node in the active roster that we do not have a Self TSS message for, generate a
-       TSS Message from the share for the candidate roster and submit a system transaction with the TSS Message.
+       TSS Message from the share for the candidate roster and submit a signed system transaction with the TSS Message.
     3. If a TSS Message does not come back through consensus within a configured time period, resubmit the TSS Message.
-        * There is a restart problem here with forgetting about the previously received TSS messages
-            * Bad solution 1: Wait for a replay of TSS Messages stored in the state.
-            * Bad solution 2: Resend TSS Messages anyway until the new messages are received.
-            * Bad Solution 3: Require initialization phase where the TSS Message Creator is initialized with self-TSS
-              Messages in state.
-3. On TSS Message:
-    1. stop resending the TSS Message that matches the one we received and added to the internal list.
+        
+3. `On TSS Message`:
+   1. verify the signature on the self TSS Message, log an error if the signature is invalid.
+   2. stop resending the TSS Message that matches the one we received and added to the internal list.
 
 ##### TSS Message Validator
 
@@ -484,21 +540,21 @@ Inputs:
 
 Input Invariants
 
-1. TSS Messages for the candidate roster must be received after the candidate roster is set.
+11. TSS Messages for the candidate roster must be received after the candidate roster is set.
 
-On Active Roster:
+`On Active Roster`:
 
 1. Set the active roster.
 2. If the candidate roster is set and equals active roster, clear the candidate roster and the TSS Message List.
 3. else, Validate the TSS Message List
 
-On Candidate Roster:
+`On Candidate Roster`:
 
 1. If the input candidate roster is equal to the active roster, do nothing.
 2. If the input candidate roster is equal to the internal candidate roster, do nothing.
 3. Set the internal candidate roster, clear the TSS Message List.
 
-On TSS Message:
+`On TSS Message`:
 
 1. If the vote bit vector is passing for a yes vote, do nothing.
 2. If the vote bit vector has already recorded a yes or no for the share in the TSS Message, report duplicate in
@@ -506,29 +562,33 @@ On TSS Message:
 3. append the TSS Message to the TSS Message List.
 4. If the active and candidate rosters are set, validate the TSS Message List
 
-Validate TSS Message List:
+###### Validate TSS Message List
 
 1. For the votes already cast in the vote vector
     1. sum all the yes votes into a total count.
-    2. If the count is greater than or equal to the threshold in the candidate roster, do nothing and return.  
+    2. If the count is greater than or equal to the threshold in the candidate roster, do nothing and return.
 2. For each TSS message in the TSS Message list
     1. If the TSS Message has a yes entry in the vote vector, do nothing.
     2. otherwise, validate the message.
     3. If the message is valid, update the vote vector and increment the count of yes votes.
-    4. If the count of yes votes is greater than or equal to the threshold in the candidate roster, then send the 
+    4. If the count of yes votes is greater than or equal to the threshold in the candidate roster, then send the
        vote vector as a system transaction and exit the validation process.
 
 ##### TSS Key Manager
- TODO:  Separate out the computation of the shares into the TSS Key Manager. 
+
+TODO:  Separate out the computation of the shares into the TSS Key Manager.
+
 ##### TSS Signing Manager
 
-The TSS Signing Manager is responsible for computing a node's private shares from the TSS Messages and for 
-generating ledger signatures on messages.  The Signing manager operates on its own thread. 
+The TSS Signing Manager is responsible for computing a node's private shares from the TSS Messages and for
+generating ledger signatures on messages. The Signing manager operates on its own thread.
 
 Public API:
+
 1. Future<PairingSignature> signMessage(byte[] message) throws NotReadyException
 
-Internal Elements: 
+Internal Elements:
+
 1. active roster
 2. active private shares
 3. active public shares
@@ -540,21 +600,24 @@ Internal Elements:
 9. Map<Message Hash, Future<PairingSignature>> messageSignatureFuturesMap
 
 Inputs:
+
 1. roster key material: Triple(round, active roster, TSS Messages for active roster)
 2. TssSignatureMessage
 3. EventWindow
 
 Input Invariants:
-1. TssSignatureMessages received must be for previous signMessage(byte[] message) calls. 
+
+1. TssSignatureMessages received must be for previous signMessage(byte[] message) calls.
 
 On Roster Key Material:
-1. update the roundRosterMap  with the roster. 
-2. computeShares(TSS Messages) 
 
-On TssSignatureMessage: 
-1. get the hash of the message the signature is for. 
-2. if the message hash is not a key in the messageSignaturesMap, do nothing. 
+1. update the roundRosterMap with the roster.
+2. computeShares(TSS Messages)
 
+On TssSignatureMessage:
+
+1. get the hash of the message the signature is for.
+2. if the message hash is not a key in the messageSignaturesMap, do nothing.
 
 The TSS key manager is special logic that only runs when the system starts up.  (When DAB phase 3 is implemented,
 this will happen whenever the active consensus roster is updated.)
