@@ -22,6 +22,8 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.io.IOException;
@@ -54,6 +56,7 @@ public class EventSerialization {
     private PlatformEvent event;
     private MerkleDataOutputStream outStream;
     private MerkleDataInputStream inStream;
+    private EventHasher eventHasher;
 
     @Setup
     public void setup() throws IOException, ConstructableRegistryException {
@@ -67,6 +70,7 @@ public class EventSerialization {
         final PipedOutputStream outputStream = new PipedOutputStream(inputStream);
         outStream = new MerkleDataOutputStream(outputStream);
         inStream = new MerkleDataInputStream(inputStream);
+        eventHasher = new StatefulEventHasher();
     }
 
     @Benchmark
@@ -79,5 +83,16 @@ public class EventSerialization {
         // EventSerialization.serializeDeserialize       0  thrpt    3  962.486 ± 29.252  ops/ms
         outStream.writeSerializable(event, false);
         bh.consume(inStream.readSerializable(false, PlatformEvent::new));
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public void hashingBase(final Blackhole bh) throws IOException {
+        // results on Timo's M3 Max MacBook Pro:
+        //
+        // Benchmark                       (seed)   Mode  Cnt     Score     Error   Units
+        // EventSerialization.hashingBase       0  thrpt    3  1680.478 ± 173.379  ops/ms
+        bh.consume(eventHasher.hashEvent(event));
     }
 }
