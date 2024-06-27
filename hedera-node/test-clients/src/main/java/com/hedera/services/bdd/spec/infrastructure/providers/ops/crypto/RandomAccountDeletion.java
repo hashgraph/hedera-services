@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
-import static java.util.Collections.EMPTY_LIST;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -29,7 +28,6 @@ import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourc
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoDelete;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
 import java.util.Optional;
 
 public class RandomAccountDeletion implements OpProvider {
@@ -42,11 +40,6 @@ public class RandomAccountDeletion implements OpProvider {
     public RandomAccountDeletion(RegistrySourcedNameProvider<AccountID> accounts, ResponseCodeEnum[] customOutcomes) {
         this.accounts = accounts;
         this.customOutcomes = customOutcomes;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return EMPTY_LIST;
     }
 
     @Override
