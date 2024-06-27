@@ -27,6 +27,7 @@ import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -177,7 +178,10 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
      * @param nodeAlreadyPresent true if the learner tree has the query node already
      */
     default void recordHashStats(
-            final ReconnectMapStats mapStats, final T parent, final int childIndex, final boolean nodeAlreadyPresent) {
+            @NonNull final ReconnectMapStats mapStats,
+            @NonNull final T parent,
+            final int childIndex,
+            final boolean nodeAlreadyPresent) {
         // no-op
     }
 }

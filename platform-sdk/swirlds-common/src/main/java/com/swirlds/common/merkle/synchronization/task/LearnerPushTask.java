@@ -213,11 +213,7 @@ public class LearnerPushTask<T> {
      */
     private void addToNodeCount(final ExpectedLesson<T> expectedLesson, final Lesson<T> lesson, final T newChild) {
         if (lesson.isLeafLesson()) {
-            if (expectedLesson.isNodeAlreadyPresent()) {
-                mapStats.incrementLeafData(1, 1);
-            } else {
-                mapStats.incrementLeafData(1, 0);
-            }
+            mapStats.incrementLeafData(1, expectedLesson.isNodeAlreadyPresent() ? 1 : 0);
         }
 
         if (lesson.isCurrentNodeUpToDate()) {

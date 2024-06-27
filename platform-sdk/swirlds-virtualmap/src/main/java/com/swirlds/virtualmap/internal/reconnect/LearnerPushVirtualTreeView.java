@@ -47,6 +47,7 @@ import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Queue;
@@ -350,8 +351,8 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     @Override
     public void recordHashStats(
-            final ReconnectMapStats mapStats,
-            final Long parent,
+            @NonNull final ReconnectMapStats mapStats,
+            @NonNull final Long parent,
             final int childIndex,
             final boolean nodeAlreadyPresent) {
         final long childPath = Path.getChildPath(parent, childIndex);
