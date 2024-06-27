@@ -8,7 +8,11 @@ This proposal is for the integration of a threshold signature scheme into the co
 private/public key pair for the ledger that can be used to sign blocks and construct block proofs. The private key must
 be a secret that no one knows. The public key is known by all and functions as the ledger id. The consensus nodes must
 be able to aggregate their individual signatures on a message into a valid ledger signature for the message that is
-verifiable by the public key.
+verifiable by the ledger id. Through signing a block with the ledger private key, we can use Merkle Proofs to
+extend the signature to cover the contents of the block and the state changes processed in that round. This forms
+the basis of Block Proofs and provides a way for external parties to verify that certain facts are true on the ledger
+at a particular point in time. Part of our goal is that users could write EVM smart contracts that can verify the
+Block Proofs and make decisions based on their claims.
 
 | Metadata           | Entities                                   | 
 |--------------------|--------------------------------------------|
@@ -34,8 +38,9 @@ TSS-Block-Signing.
 1. The `TSS-Library` proposal contains the cryptographic primitives and algorithms needed to implement TSS.
 2. The `TSS-Roster` proposal introduces the data structure of a consensus `Roster` to replace the platform's concept of
    an `AddressBook` and modifies the life-cycle for when the platform receives new consensus rosters.
-3. The `TSS-Ledger-Id` proposal depends on the other first two proposals is for the integration of a threshold signature
-   scheme into the consensus node, delivering the ability for the ledger to sign a message with the ledger private key.
+3. This proposal (`TSS-Ledger-Id`) depends on the first two proposals and is for the integration of a threshold
+   signature scheme into the consensus node, delivering the ability for the ledger to sign a message with the
+   ledger private key.
 4. The `TSS-Block-Signing` proposal is everything needed to support the signing of blocks and generation of block
    proofs.
 
@@ -118,7 +123,7 @@ Block Signing Requirements
 
 #### New Address Book Life-Cycle
 
-This design proposal will deliver after Dynamic Address Book  (DAB) Phase 2 and before DAB Phase 3. In Phase 2 the
+This design proposal will deliver after Dynamic Address Book (DAB) Phase 2 and before DAB Phase 3. In Phase 2 the
 address book is updated on software upgrades. In Phase 3 the address book is updated dynamically without restarting
 the node. Since the TSS effort requires keying a roster with enough `TssMessages` to generate ledger signatures, a
 modified life-cycle is needed. Some of the dynamic work in Phase 3 will be needed. This work is being encapsulated
@@ -128,37 +133,40 @@ The relevant Address Book life-cycle changes are the following:
 
 1. The platform only receives a Roster, a subset of the Address Book.
 2. The application address book has 3 states: `Active` (AAB), `Candidate` (CAB), and `Future` (FAB).
-3. The FAB is updated by every HAPI transaction that is already received in DAB Phase 2.
-4. The CAB is a snapshot of the FAB when the APP is ready to initiate an address book rotation.
+3. The FAB is updated by every HAPI transaction that is already received in Dynamic Address Book Phase 2.
+4. The CAB is a snapshot of the FAB when the app is ready to initiate an address book rotation.
 5. The AAB is replaced by the CAB on a software upgrade if the consensus roster derived from the CAB has enough key
    material to generate ledger signatures.
 6. The CAB is not adopted and the previous AAB remains the existing AAB after a software upgrade if the CAB does not
    have enough key material to generate ledger signatures.
+    * NOTE: These last two condition only applied to `TSS-Ledger-Id`. The `TSS-Roster` proposal will always adopt the
+      roster that is set when a software upgrade occurs.
 
-Prior to restart for upgrade, the `candidate` consensus roster will be set in the platform state by the app in such 
-a way as to mark it clearly as the next consensus roster. This methodology replaces the previous methodology in DAB 
+Prior to restart for upgrade, the `candidate` consensus roster will be set in the platform state by the app in such
+a way as to mark it clearly as the next consensus roster. This methodology replaces the previous methodology in DAB
 Phase 2, which was to write a new `config.txt` to disk. After the `TSS-Roster` proposal has been implemented, the only
 need for a file on disk is the genesis address book at the start of a new network.
 
-The core of the life-cycle change for setting candidate rosters in the state iis captured in the `TSS-Roster` 
+The core of the life-cycle change for setting candidate rosters in the state iis captured in the `TSS-Roster`
 proposal. This Proposal augments the life-cycle with generating the key material for the new roster and the logic for
 deciding to adopt the new roster on software upgrade.
 
 ![TSS FAB, CAB, AAB Lifecycle](./TSS-FAB-CAB-AAB-Lifecycle.drawio.svg)
 
-
 #### TSS Algorithm
 
-The threshold signature scheme chosen for our implementation is detailed in https://eprint.iacr.org/2021/339. This
-scheme is able to meet the core requirements listed above. The rest of this proposal details the design of how to
-implement this scheme in the consensus nodes.
+The threshold signature scheme chosen for our implementation is detailed in [Non-interactive distributed key
+generation and key resharing (Groth21)](https://eprint.iacr.org/2021/339). This scheme is able to meet the
+core requirements listed above. The rest of this proposal details the design of how to implement this scheme in the
+consensus nodes. See the TSS-Library proposal for more details on the Groth21.
 
-The Groth21 algorithm uses Shamir Secret Sharing to hide the private key of the ledger and distribute shares of it
-so that a threshold number of node signatures on a message can generate the ledger signature on the same message.  
-The threshold should be high enough to ensure at least 1 honest node is required to participate in the signing since
-a threshold number of nodes can also collude to recover the ledger private key, if they so choose. For example if
-the network is designed to tolerate up to 1/3 of the nodes being dishonest, then the threshold should never be less
-than 1/3 + 1 of the nodes to ensure that no 1/3 will collude to recover the ledger private key.
+The Groth21 algorithm uses [Shamir Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_secret_sharing) to hide the
+private key of the ledger and distribute shares of it so that a threshold number of node signatures on a message can
+generate the ledger signature on the same message. The threshold should be high enough to ensure at least 1 honest
+node is required to participate in the signing since a threshold number of nodes can also collude to recover the
+ledger private key, if they so choose. For example if the network is designed to tolerate up to 1/3 of the nodes
+being dishonest, then the threshold should never be less than 1/3 + 1 of the nodes to ensure that no 1/3 will
+collude to recover the ledger private key.
 
 The Groth21 algorithm requires specific Elliptic Curve (EC)s with the ability to produce bilinear pairings. Each
 node will need its own long-term EC key pair on the curve for use in the groth21 TSS algorithm. Each node receives
@@ -171,13 +179,15 @@ recover the ledger signature on the message.
 
 Transferring the ability to generate ledger signatures from one set of consensus nodes to another is done by having
 each node generate a `TssMessage` for each share that fractures the share into a number of subshares or `shares of
-shares`. Each `Share of a share` is encrypted with the public key of the node in the next consensus roster that it
+shares`. Each `share of a share` is encrypted with the public key of the node in the next consensus roster that it
 belongs to so that only the intended node can use the `share of a share` to recover that node's share's private key.  
 The collection of `TssMessages` generated from nodes in the previous consensus roster forms the `key material` for
 the new consensus roster. To bootstrap a network and generate the ledger private and public keys, each node creates
 a random share for themselves and generates a `TssMessage` containing `shares of shares` for the total number of shares
 needed in the consensus roster. The use of random shares at the outset creates a random ledger private key that nobody
 knows.
+
+![TSS re-keying next consensus roster](./Groth21-re-keying-shares-of-shares.drawio.svg)
 
 This process of re-keying the next consensus roster during an address book change takes an asynchronous amount of
 time through multiple rounds of consensus to complete. This requires saving incremental progress in the state to ensure
@@ -202,9 +212,9 @@ keys of these long-term node specific EC keys must be in the address book.
 The Groth21 algorithm is not able to model arbitrary precision proportions of weight assigned to nodes in the
 network. For example if each node in a 4 node network received 1 share, then every share has a weight of 1/4.
 If there are a total of N shares, then the distribution of weight can only be modeled in increments of (1/N) * total
-weight. The cost of re-keying the network in an address book change is quadratic in the number of shares. This forces us
-to pick a number of total shares with a max value in the thousands. This modeling of weight is a discrete using small
-integer precision.
+weight. The cost of re-keying the network in an address book change is quadratic in the number of shares. (See the
+picture of TssMessages above.) This forces us to pick a number of total shares with a max value in the thousands.
+This modeling of weight uses small integer precision.
 
 ##### Calculating Number of Shares from Weight
 
@@ -288,9 +298,9 @@ delivered in a software release prior to the code that will key the first candid
 For example, if Block Streams ships in release 0.7, then TSS-Ledger-Id should ship in release 0.6, and TSS-Roster
 along with setting the EC keys on nodes should ship in release 0.5.
 
-The setup of the first key material will be observable in the record stream prior to the Block Streams going live, 
-but this observability is not consequential because what matters is the cryptographic verification that the TSS 
-material can generate the ledger key.  
+The setup of the first key material will be observable in the record stream prior to the Block Streams going live,
+but this observability is not consequential because what matters is the cryptographic verification that the TSS
+material can generate the ledger key.
 
 ##### TSS Genesis Process - Alternatives Considered
 
@@ -323,23 +333,26 @@ The following are not goals of this proposal:
 1. Achieving a fully dynamic address book life-cycle.
 2. Block Proofs or the signing of blocks.
 3. Verification of signed messages beyond the consensus node.
+    * It is not within the scope of this proposal and effort to develop, test, and deploy a smart contract that can
+      verify a block proof. It is expected that mathematics works and that our use of the ALT-BN128 curve will
+      dovetail with the
+      [precompiles that are available in the EVM](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1829.md).
 
 ---
 
 ## Changes
 
 Integrating a Threshold Signature Scheme into the consensus node requires significant changes to the startup
-process for a node and the process of changing the consensus roster.  These changes are outline in more detail in 
-the following sections, but a brief summary is presented here. 
+process for a node and the process of changing the consensus roster. These changes are outline in more detail in
+the following sections, but a brief summary is presented here.
 
 New Network TSS Genesis Process
-  * The platform will accept a genesis roster and check the state for the TSS key material.
-  * If the TSS key material is not present, the platform will generate the key material and ledger id.
-  * The platform will restart itself from round 0 with the new key material and ledger id in the state. 
-Existing Network Genesis
-  * 
 
-
+* The platform will accept a genesis roster and check the state for the TSS key material.
+* If the TSS key material is not present, the platform will generate the key material and ledger id.
+* The platform will restart itself from round 0 with the new key material and ledger id in the state.
+  Existing Network Genesis
+*
 
 ### Architecture and/or Components
 
@@ -514,10 +527,10 @@ Input Invariants:
     2. For each share assigned to this node in the active roster that we do not have a Self TSS message for, generate a
        TSS Message from the share for the candidate roster and submit a signed system transaction with the TSS Message.
     3. If a TSS Message does not come back through consensus within a configured time period, resubmit the TSS Message.
-        
+
 3. `On TSS Message`:
-   1. verify the signature on the self TSS Message, log an error if the signature is invalid.
-   2. stop resending the TSS Message that matches the one we received and added to the internal list.
+    1. verify the signature on the self TSS Message, log an error if the signature is invalid.
+    2. stop resending the TSS Message that matches the one we received and added to the internal list.
 
 ##### TSS Message Validator
 
