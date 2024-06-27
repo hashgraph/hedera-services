@@ -42,6 +42,8 @@ sourceSets {
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("platform") })
         }
+    }
+    testFixtures {
         proto {
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
@@ -54,6 +56,7 @@ testModuleInfo {
     requires("com.hedera.node.hapi")
     // we depend on the protoc compiled hapi during test as we test our pbj generated code
     // against it to make sure it is compatible
+    requires("com.google.protobuf")
     requires("com.google.protobuf.util")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")

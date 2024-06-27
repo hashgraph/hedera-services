@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.util.Map;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
@@ -45,7 +45,7 @@ public class SpyHederaEvmTxProcessor extends HederaEvmTxProcessor {
 
     @Override
     protected HederaFunctionality getFunctionType() {
-        return HederaFunctionality.ContractCall;
+        return HederaFunctionality.CONTRACT_CALL;
     }
 
     @Override

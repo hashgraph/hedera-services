@@ -17,11 +17,11 @@
 package com.hedera.node.app.service.evm.contracts.execution;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -208,7 +208,7 @@ public abstract class HederaEvmTxProcessor {
 
     protected long gasPriceTinyBarsGiven(final Instant consensusTime, final boolean isEthTxn) {
         return livePricesSource.currentGasPrice(
-                consensusTime, isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
+                consensusTime, isEthTxn ? HederaFunctionality.ETHEREUM_TRANSACTION : getFunctionType());
     }
 
     protected abstract HederaFunctionality getFunctionType();

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.store.contracts.precompile.proxy;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_NON_FUNGIBLE_TOKEN_INFO;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_GET_TOKEN_CUSTOM_FEES;
@@ -33,8 +34,8 @@ import static com.hedera.node.app.service.evm.store.contracts.precompile.proxy.R
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.MINIMUM_TINYBARS_COST;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.addressFromBytes;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenExpiryInfo;
@@ -50,7 +51,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmNonFun
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenGetCustomFeesPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenInfoPrecompile;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;

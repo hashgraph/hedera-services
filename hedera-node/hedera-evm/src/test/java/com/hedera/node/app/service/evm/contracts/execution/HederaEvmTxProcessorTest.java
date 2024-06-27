@@ -28,11 +28,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -319,7 +319,7 @@ class HederaEvmTxProcessorTest {
 
     @Test
     void assertIsContractCallFunctionality() {
-        assertEquals(HederaFunctionality.ContractCall, evmTxProcessor.getFunctionType());
+        assertEquals(HederaFunctionality.CONTRACT_CALL, evmTxProcessor.getFunctionType());
     }
 
     @Test

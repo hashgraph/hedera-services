@@ -38,6 +38,7 @@ import static org.mockito.Mockito.verify;
 
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
@@ -66,7 +67,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenG
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenInfoPrecompile;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -106,7 +106,7 @@ public class ViewExecutorTest {
 
     private static final long timestamp = 10L;
     private static final Timestamp resultingTimestamp =
-            Timestamp.newBuilder().setSeconds(timestamp).build();
+            Timestamp.newBuilder().seconds(timestamp).build();
     private static final long gas = 100L;
 
     private EvmTokenInfo evmTokenInfo;

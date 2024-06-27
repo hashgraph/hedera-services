@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hapi.utils.fee;
 
+import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.hapi.utils.builder.RequestBuilder;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;

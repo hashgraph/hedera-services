@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.evm.store.contracts.precompile.proxy;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_ALLOWANCE;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_BALANCE_OF_TOKEN;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_DECIMALS;
@@ -32,9 +34,8 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUt
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.FUNGIBLE_COMMON;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmAllowancePrecompile;
@@ -44,7 +45,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsAppr
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmOwnerOfPrecompile;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmTokenURIPrecompile;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -71,7 +71,7 @@ public class RedirectViewExecutor {
     }
 
     public static Timestamp asSecondsTimestamp(final long now) {
-        return Timestamp.newBuilder().setSeconds(now).build();
+        return Timestamp.newBuilder().seconds(now).build();
     }
 
     public Pair<Long, Bytes> computeCosted() {

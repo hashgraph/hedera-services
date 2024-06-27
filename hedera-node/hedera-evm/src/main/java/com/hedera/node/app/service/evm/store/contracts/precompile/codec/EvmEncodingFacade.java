@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.evm.store.contracts.precompile.codec;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BIG_INTEGER_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BOOLEAN_TUPLE;
@@ -30,12 +31,11 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingCo
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.NOT_SPECIFIED_TYPE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.STRING_TUPLE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.intPairTuple;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.FunctionType;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -67,7 +67,7 @@ public class EvmEncodingFacade {
     public Bytes encodeGetTokenType(final ResponseCodeEnum status, final int tokenType) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_TYPE)
-                .withStatus(status.getNumber())
+                .withStatus(status.protoOrdinal())
                 .withGetTokenType(tokenType)
                 .build();
     }
@@ -107,7 +107,7 @@ public class EvmEncodingFacade {
     public Bytes encodeIsFrozen(final ResponseCodeEnum status, final boolean isFrozen) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_IS_FROZEN)
-                .withStatus(status.getNumber())
+                .withStatus(status.protoOrdinal())
                 .withIsFrozen(isFrozen)
                 .build();
     }
@@ -119,7 +119,7 @@ public class EvmEncodingFacade {
     public Bytes encodeGetTokenDefaultFreezeStatus(final ResponseCodeEnum status, final boolean defaultFreezeStatus) {
         return functionResultBuilder()
                 .forFunction(FunctionType.GET_TOKEN_DEFAULT_FREEZE_STATUS)
-                .withStatus(status.getNumber())
+                .withStatus(status.protoOrdinal())
                 .withGetTokenDefaultFreezeStatus(defaultFreezeStatus)
                 .build();
     }
@@ -131,7 +131,7 @@ public class EvmEncodingFacade {
     public Bytes encodeGetTokenDefaultKycStatus(final ResponseCodeEnum status, final boolean defaultKycStatus) {
         return functionResultBuilder()
                 .forFunction(FunctionType.GET_TOKEN_DEFAULT_KYC_STATUS)
-                .withStatus(status.getNumber())
+                .withStatus(status.protoOrdinal())
                 .withGetTokenDefaultKycStatus(defaultKycStatus)
                 .build();
     }
@@ -143,7 +143,7 @@ public class EvmEncodingFacade {
     public Bytes encodeIsKyc(final ResponseCodeEnum status, final boolean isKyc) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_IS_KYC)
-                .withStatus(status.getNumber())
+                .withStatus(status.protoOrdinal())
                 .withIsKyc(isKyc)
                 .build();
     }
@@ -155,7 +155,7 @@ public class EvmEncodingFacade {
     public Bytes encodeIsToken(final ResponseCodeEnum status, final boolean isToken) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_IS_TOKEN)
-                .withStatus(status.getNumber())
+                .withStatus(status.protoOrdinal())
                 .withIsToken(isToken)
                 .build();
     }
@@ -202,7 +202,7 @@ public class EvmEncodingFacade {
     public Bytes encodeGetTokenInfo(final ResponseCodeEnum status, final EvmTokenInfo tokenInfo) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_INFO)
-                .withStatus(status.getNumber())
+                .withStatus(status.protoOrdinal())
                 .withTokenInfo(tokenInfo)
                 .build();
     }
@@ -214,7 +214,7 @@ public class EvmEncodingFacade {
     public Bytes encodeGetFungibleTokenInfo(final ResponseCodeEnum status, final EvmTokenInfo tokenInfo) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_FUNGIBLE_TOKEN_INFO)
-                .withStatus(status.getNumber())
+                .withStatus(status.protoOrdinal())
                 .withTokenInfo(tokenInfo)
                 .build();
     }
@@ -226,7 +226,7 @@ public class EvmEncodingFacade {
     public Bytes encodeTokenGetCustomFees(final ResponseCodeEnum status, final List<CustomFee> customFees) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_CUSTOM_FEES)
-                .withStatus(status.getNumber())
+                .withStatus(status.protoOrdinal())
                 .withCustomFees(customFees)
                 .build();
     }
@@ -239,7 +239,7 @@ public class EvmEncodingFacade {
             final ResponseCodeEnum status, final EvmTokenInfo tokenInfo, final EvmNftInfo nonFungibleTokenInfo) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_NON_FUNGIBLE_TOKEN_INFO)
-                .withStatus(status.getNumber())
+                .withStatus(status.protoOrdinal())
                 .withTokenInfo(tokenInfo)
                 .withNftTokenInfo(nonFungibleTokenInfo)
                 .build();
@@ -252,7 +252,7 @@ public class EvmEncodingFacade {
     public Bytes encodeGetTokenExpiryInfo(final ResponseCodeEnum status, final TokenExpiryInfo tokenExpiryWrapper) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
-                .withStatus(status.getNumber())
+                .withStatus(status.protoOrdinal())
                 .withExpiry(tokenExpiryWrapper)
                 .build();
     }
@@ -264,7 +264,7 @@ public class EvmEncodingFacade {
     public Bytes encodeGetTokenKey(final ResponseCodeEnum status, final EvmKey keyValue) {
         return functionResultBuilder()
                 .forFunction(FunctionType.HAPI_GET_TOKEN_KEY)
-                .withStatus(status.getNumber())
+                .withStatus(status.protoOrdinal())
                 .withKey(keyValue)
                 .build();
     }
