@@ -64,7 +64,6 @@ import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -428,12 +427,12 @@ public final class EventRecoveryWorkflow {
      * @return the running event hash at the end of the current round
      */
     static Hash getHashEventsCons(final Hash previousRunningHash, final StreamedRound round) {
-        final RunningHashCalculatorForStream<DetailedConsensusEvent> hashCalculator =
+        final RunningHashCalculatorForStream<PlatformEvent> hashCalculator =
                 new RunningHashCalculatorForStream<>();
         hashCalculator.setRunningHash(previousRunningHash);
 
         for (final ConsensusEvent event : round) {
-            hashCalculator.addObject((DetailedConsensusEvent) event);
+            hashCalculator.addObject((PlatformEvent) event);
         }
 
         final Hash runningHash = hashCalculator.getRunningHash();
