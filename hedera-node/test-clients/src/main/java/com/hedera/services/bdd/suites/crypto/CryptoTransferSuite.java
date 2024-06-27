@@ -105,6 +105,7 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FUL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_COLLECTOR;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -122,7 +123,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreat
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -2383,7 +2383,7 @@ public class CryptoTransferSuite {
         return propertyPreservingHapiSpec("createHollowAccountWithHBARSTransferAndCompleteIt")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
                         newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
                         cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
                         withOpContext((spec, opLog) -> {
@@ -2419,16 +2419,20 @@ public class CryptoTransferSuite {
                         spec.registry().saveAccountId(hollowAccountKey, newAccountID);
                     }
                     // Verify maxAutomaticAssociations is set to 0
-                    var getInfo = getAliasedAccountInfo(hollowAccountAlias.get())
-                            .has(accountWith().hasEmptyKey().maxAutoAssociations(-1))
+                    var getInfo = getAliasedAccountInfo(hollowAccountKey)
+                            .has(accountWith().hasEmptyKey())
                             .hasAlreadyUsedAutomaticAssociations(0)
-                            .hasMaxAutomaticAssociations(-1)
+                            .hasMaxAutomaticAssociations(0)
                             .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id));
 
                     // Delete the account
-                    var delete =
-                            cryptoDelete(hollowAccountKey).sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey));
+                    var delete = cryptoDelete(hollowAccountKey)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey))
+                            .hasKnownStatus(SUCCESS);
                     allRunFor(spec, getInfo, delete);
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    var changeFlag = overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE);
 
                     // Create hollow account with the deleted account alias
                     var hollowCreate2 = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
@@ -2439,7 +2443,7 @@ public class CryptoTransferSuite {
                             .via(transferHBARSToHollowAccountTxn);
 
                     // Verify new hollow account is created and has no associations
-                    var getInfo2 = getAliasedAccountInfo(hollowAccountAlias.get())
+                    var getInfo2 = getAliasedAccountInfo(hollowAccountKey)
                             .has(accountWith().hasEmptyKey())
                             .hasAlreadyUsedAutomaticAssociations(0)
                             .hasMaxAutomaticAssociations(-1)
@@ -2457,10 +2461,8 @@ public class CryptoTransferSuite {
                     var getInfo3 = getAliasedAccountInfo(hollowAccountKey)
                             .hasAlreadyUsedAutomaticAssociations(0)
                             .hasMaxAutomaticAssociations(-1);
-
-                    allRunFor(spec, hollowCreate2, getInfo2, hollowAccountTransferHBAR, getInfo3);
-                }))
-                .then();
+                    allRunFor(spec, changeFlag, hollowCreate2, getInfo2, hollowAccountTransferHBAR, getInfo3);
+                }));
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
@@ -2473,7 +2475,7 @@ public class CryptoTransferSuite {
         return propertyPreservingHapiSpec("createHollowAccountWithFtTransferAndCompleteIt")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
                         newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
                         cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -2517,7 +2519,7 @@ public class CryptoTransferSuite {
                     var getInfo = getAccountInfo(hollowAccountKey)
                             .hasAlreadyUsedAutomaticAssociations(0)
                             .has(accountWith().hasEmptyKey())
-                            .hasMaxAutomaticAssociations(-1)
+                            .hasMaxAutomaticAssociations(0)
                             .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id));
 
                     // Delete the account
@@ -2525,6 +2527,9 @@ public class CryptoTransferSuite {
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey))
                             .hasKnownStatus(SUCCESS);
                     allRunFor(spec, getInfo, delete);
+                }))
+                .then(withOpContext((spec, opLog) -> {
+                    var changeFlag = overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE);
 
                     // Create hollow account with the deleted account alias
                     var hollowCreate2 = cryptoTransfer((s, b) -> b.addTokenTransfers(TokenTransferList.newBuilder()
@@ -2542,8 +2547,7 @@ public class CryptoTransferSuite {
                             .hasMaxAutomaticAssociations(-1)
                             .exposingIdTo(id -> spec.registry().saveAccountId(hollowAccountKey, id));
 
-                    allRunFor(spec, hollowCreate2, getInfo2);
-                }))
-                .then();
+                    allRunFor(spec, changeFlag, hollowCreate2, getInfo2);
+                }));
     }
 }
