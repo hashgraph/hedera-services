@@ -31,6 +31,7 @@ import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -154,6 +155,9 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder instantSource(InstantSource instantSource);
+
+        @BindsInstance
+        Builder contractServiceImpl(ContractServiceImpl contractService);
 
         @BindsInstance
         Builder softwareVersion(SoftwareVersion softwareVersion);

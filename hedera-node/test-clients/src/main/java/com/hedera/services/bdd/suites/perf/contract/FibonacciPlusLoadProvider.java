@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.perf.contract;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralArrayResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -42,6 +43,7 @@ import static java.lang.Math.ceil;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -70,10 +72,12 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
 /**
  * (FUTURE) Integrate this test to CI in some form.
  */
+@Tag(NOT_REPEATABLE)
 public class FibonacciPlusLoadProvider extends HapiSuite {
 
     private static final Logger LOG = LogManager.getLogger(FibonacciPlusLoadProvider.class);
@@ -266,8 +270,8 @@ public class FibonacciPlusLoadProvider extends HapiSuite {
 
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
-                final List<HapiSpecOperation> inits = new ArrayList<>();
+            public List<SpecOperation> suggestedInitializers() {
+                final List<SpecOperation> inits = new ArrayList<>();
                 inits.add(uploadInitCode(CONTRACT));
                 inits.add(
                         cryptoCreate(civilian).balance(100 * ONE_MILLION_HBARS).payingWith(GENESIS));

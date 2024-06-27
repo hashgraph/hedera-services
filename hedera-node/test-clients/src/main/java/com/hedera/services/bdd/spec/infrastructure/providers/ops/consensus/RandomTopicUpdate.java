@@ -19,7 +19,6 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops.consensus;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOPIC_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOPIC_EXPIRED;
-import static java.util.Collections.EMPTY_LIST;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
@@ -27,7 +26,6 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
-import java.util.List;
 import java.util.Optional;
 
 public class RandomTopicUpdate implements OpProvider {
@@ -38,11 +36,6 @@ public class RandomTopicUpdate implements OpProvider {
     public RandomTopicUpdate(EntityNameProvider<TopicID> topics, ResponseCodeEnum[] customOutcomes) {
         this.topics = topics;
         this.customOutcomes = customOutcomes;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return EMPTY_LIST;
     }
 
     @Override
