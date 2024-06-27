@@ -31,9 +31,9 @@ tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-
 tasks.cloneHederaProtobufs {
     // uncomment below to use a specific tag
     //    tag = "v0.51.0"
+    branch = "main"
     // uncomment below to use a specific branch
     // branch = "main"
-    branch = "hip-904-proto-updates"
 }
 
 sourceSets {
