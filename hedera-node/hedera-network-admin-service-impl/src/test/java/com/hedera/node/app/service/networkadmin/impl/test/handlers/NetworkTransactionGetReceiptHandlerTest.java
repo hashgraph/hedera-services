@@ -204,7 +204,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
                 Transaction.DEFAULT,
                 transactionRecord,
                 List.of(),
-                new SingleTransactionRecord.TransactionOutputs(null));
+                null);
     }
 
     @Test

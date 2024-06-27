@@ -35,6 +35,8 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody.DataOneOfType;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.fixtures.AppTestBase;
@@ -81,7 +83,8 @@ final class RecordCacheImplTest extends AppTestBase {
             TransactionReceipt.newBuilder().status(UNKNOWN).build();
     private static final AccountID PAYER_ACCOUNT_ID =
             AccountID.newBuilder().accountNum(1001).build();
-    private static final TransactionOutputs SIMPLE_OUTPUT = new TransactionOutputs(TokenType.FUNGIBLE_COMMON);
+    private static final TransactionOutputs SIMPLE_OUTPUT = new TransactionOutputs(TokenType.FUNGIBLE_COMMON,
+            DataOneOfType.CRYPTO_TRANSFER);
 
     private DeduplicationCache dedupeCache;
 

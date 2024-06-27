@@ -37,7 +37,7 @@ import java.util.stream.Stream;
  * {@link Bytes}. These operations are dependent on the block stream version (v7, etc),
  * but are not otherwise related to the construction of the record file or writing the bytes to a destination such as
  * disk or a socket. Thus, an implementation of this interface for a particular version of the block record format can
- * be reused across the different implementations of {@link BlockStreamWriter}.
+ * be reused across the different implementations of.
  */
 public interface BlockStreamFormat {
 

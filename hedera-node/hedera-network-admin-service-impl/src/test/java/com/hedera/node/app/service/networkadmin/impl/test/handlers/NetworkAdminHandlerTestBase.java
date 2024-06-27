@@ -304,7 +304,7 @@ public class NetworkAdminHandlerTestBase {
 
     private SingleTransactionRecord singleTransactionRecord(TransactionRecord record) {
         return new SingleTransactionRecord(
-                Transaction.DEFAULT, record, List.of(), new TransactionOutputs(TokenType.FUNGIBLE_COMMON));
+                Transaction.DEFAULT, record, List.of(), null);
     }
 
     protected MapReadableKVState<AccountID, Account> readableAccountState() {

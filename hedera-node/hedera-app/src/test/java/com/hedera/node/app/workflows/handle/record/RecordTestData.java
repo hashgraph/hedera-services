@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody.DataOneOfType;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.HashAlgorithm;
 import com.hedera.hapi.streams.HashObject;
@@ -84,7 +85,7 @@ public class RecordTestData {
     //    block seconds       24,   26,   28,   30,    32,   34,    36,    38,   40
 
     /** Transaction Outputs data */
-    private static final TransactionOutputs SIMPLE_OUTPUT = new TransactionOutputs(TokenType.FUNGIBLE_COMMON);
+    private static final TransactionOutputs SIMPLE_OUTPUT = new TransactionOutputs(TokenType.FUNGIBLE_COMMON, DataOneOfType.CRYPTO_TRANSFER);
     /** Test Signer for signing record stream files */
     public static final Signer SIGNER;
     /** Test user public key */
