@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.services;
 
+import com.hedera.node.app.service.addressbook.impl.AddressBookServiceInjectionModule;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceInjectionModule;
 import com.hedera.node.app.service.file.impl.FileServiceInjectionModule;
 import com.hedera.node.app.service.networkadmin.impl.NetworkAdminServiceInjectionModule;
@@ -35,5 +36,6 @@ import dagger.Module;
             ScheduleServiceInjectionModule.class,
             TokenServiceInjectionModule.class,
             UtilServiceInjectionModule.class,
+            AddressBookServiceInjectionModule.class,
         })
 public interface ServicesInjectionModule {}

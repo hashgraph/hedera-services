@@ -20,7 +20,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
-import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0039;
@@ -32,14 +31,11 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.SplittableRandom;
 import java.util.function.BiConsumer;
-import javax.crypto.ShortBufferException;
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -124,9 +120,9 @@ public class SpecKey {
                 throw new UncheckedIOException(e);
             }
         } else {
-            mnemonic = KeyFactory.mnemonicFromFile(qWordsLoc);
+            mnemonic = Bip0032.mnemonicFromFile(qWordsLoc);
         }
-        var cryptoKey = mnemonicToEd25519Key(mnemonic);
+        var cryptoKey = Bip0032.mnemonicToEd25519Key(mnemonic);
         var grpcKey = Ed25519Factory.populatedFrom(cryptoKey.getAbyte());
         forms.completeIntake(spec.registry(), grpcKey);
         spec.keys().incorporate(forms.name(), CommonUtils.hex(cryptoKey.getAbyte()), cryptoKey, SigControl.ON);
@@ -142,14 +138,6 @@ public class SpecKey {
         }
     }
 
-    public static EdDSAPrivateKey mnemonicToEd25519Key(String mnemonic) {
-        try {
-            return Ed25519Factory.ed25519From(Bip0032.privateKeyFrom(Bip0032.seedFrom(mnemonic)));
-        } catch (NoSuchAlgorithmException | InvalidKeyException | ShortBufferException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     private void registerPemWith(HapiSpec spec, RegistryForms forms) {
         var qPemLoc = qualifiedKeyLoc(pemLoc, spec);
         var aes256EncryptedPkcs8Pem = new File(qPemLoc);
@@ -157,9 +145,9 @@ public class SpecKey {
             if (!generateIfMissing) {
                 throw new IllegalStateException(String.format("File missing at PEM loc '%s'!", qPemLoc));
             }
-            Key simpleKey = spec.keys().generate(spec, KeyFactory.KeyType.SIMPLE);
+            Key simpleKey = spec.keys().generateSubjectTo(spec, SigControl.ON);
             forms.completeIntake(spec.registry(), simpleKey);
-            spec.keys().exportSimpleKey(qPemLoc, forms.name(), passphrase);
+            spec.keys().exportEd25519Key(qPemLoc, forms.name(), passphrase);
             log.info("Created new simple key at PEM loc '{}'.", qPemLoc);
             return;
         }

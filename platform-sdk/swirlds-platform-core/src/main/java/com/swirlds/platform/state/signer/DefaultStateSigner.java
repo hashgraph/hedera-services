@@ -21,8 +21,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.state.signed.ReservedSignedState;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -55,7 +53,7 @@ public class DefaultStateSigner implements StateSigner {
      */
     @Override
     @Nullable
-    public ConsensusTransactionImpl signState(@NonNull final ReservedSignedState reservedSignedState) {
+    public StateSignaturePayload signState(@NonNull final ReservedSignedState reservedSignedState) {
         try (reservedSignedState) {
             if (reservedSignedState.get().isPcesRound()) {
                 // don't sign states produced during PCES replay
@@ -67,12 +65,11 @@ public class DefaultStateSigner implements StateSigner {
             final Bytes signature = signer.signImmutable(stateHash);
             Objects.requireNonNull(signature);
 
-            final StateSignaturePayload payload = StateSignaturePayload.newBuilder()
+            return StateSignaturePayload.newBuilder()
                     .round(reservedSignedState.get().getRound())
                     .signature(signature)
                     .hash(stateHash.getBytes())
                     .build();
-            return new StateSignatureTransaction(payload);
         }
     }
 }

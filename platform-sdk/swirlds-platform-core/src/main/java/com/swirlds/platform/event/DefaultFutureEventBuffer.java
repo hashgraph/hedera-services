@@ -42,11 +42,11 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
      * A little lambda that builds a new array list. Cache this here so we don't have to create a new lambda each time
      * we buffer a future event.
      */
-    private static final Function<Long, List<GossipEvent>> BUILD_LIST = x -> new ArrayList<>();
+    private static final Function<Long, List<PlatformEvent>> BUILD_LIST = x -> new ArrayList<>();
 
     private EventWindow eventWindow;
 
-    private final SequenceMap<Long /* birth round */, List<GossipEvent>> futureEvents =
+    private final SequenceMap<Long /* birth round */, List<PlatformEvent>> futureEvents =
             new StandardSequenceMap<>(ROUND_FIRST, 8, true, x -> x);
 
     private final AtomicLong bufferedEventCount = new AtomicLong(0);
@@ -77,7 +77,7 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
      */
     @Override
     @Nullable
-    public List<GossipEvent> addEvent(@NonNull final GossipEvent event) {
+    public List<PlatformEvent> addEvent(@NonNull final PlatformEvent event) {
         if (eventWindow.isAncient(event)) {
             // we can safely ignore ancient events
             return null;
@@ -97,7 +97,7 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
      */
     @Override
     @Nullable
-    public List<GossipEvent> updateEventWindow(@NonNull final EventWindow eventWindow) {
+    public List<PlatformEvent> updateEventWindow(@NonNull final EventWindow eventWindow) {
         this.eventWindow = Objects.requireNonNull(eventWindow);
 
         // We want to release all events with birth rounds less than or equal to the pending consensus round.
@@ -105,9 +105,9 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
         // to keep within the buffer.
         final long oldestRoundToBuffer = eventWindow.getPendingConsensusRound() + 1;
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         futureEvents.shiftWindow(oldestRoundToBuffer, (round, roundEvents) -> {
-            for (final GossipEvent event : roundEvents) {
+            for (final PlatformEvent event : roundEvents) {
                 if (!eventWindow.isAncient(event)) {
                     events.add(event);
                 }

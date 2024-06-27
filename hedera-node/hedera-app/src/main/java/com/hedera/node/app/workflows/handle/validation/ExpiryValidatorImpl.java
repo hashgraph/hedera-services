@@ -24,7 +24,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.clampedAdd;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
@@ -32,8 +31,8 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
@@ -224,18 +223,26 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
             // 0L is a sentinel number that says to remove the current auto-renew account
             return;
         }
-        final var accountStore = context.readableStore(ReadableAccountStore.class);
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         try {
             final var account = accountStore.getAccountById(accountID);
             if (account == null || account.deleted()) {
                 throw new HandleException(INVALID_AUTORENEW_ACCOUNT);
             }
         } catch (final InvalidTransactionException e) {
-            throw new HandleException(PbjConverter.toPbj(e.getResponseCode()));
+            throw new HandleException(CommonPbjConverters.toPbj(e.getResponseCode()));
         }
     }
 
     private boolean isExpiryDisabled(boolean smartContract, boolean expireAccounts, boolean expireContracts) {
         return (smartContract && !expireContracts) || (!smartContract && !expireAccounts);
+    }
+
+    private static long clampedAdd(final long a, final long b) {
+        try {
+            return Math.addExact(a, b);
+        } catch (final ArithmeticException ae) {
+            return a > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
+        }
     }
 }

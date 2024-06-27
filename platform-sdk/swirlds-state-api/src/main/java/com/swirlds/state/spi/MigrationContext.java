@@ -19,7 +19,6 @@ package com.swirlds.state.spi;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
@@ -65,17 +64,6 @@ public interface MigrationContext {
      * @return The {@link NetworkInfo} of the network at the time of migration.
      */
     NetworkInfo networkInfo();
-
-    /**
-     * Provides a class to store any entities created during genesis. The data saved in this class
-     * during genesis will then enable record generation from said data once a consensus timestamp is
-     * available.
-     * <p>
-     * It's possible that this method could be expanded to cover records for any migration (genesis
-     * or otherwise) in the future.
-     */
-    @NonNull
-    GenesisRecordsBuilder genesisRecordsBuilder();
 
     /**
      * Consumes and returns the next entity number. For use by migrations that need to create entities.

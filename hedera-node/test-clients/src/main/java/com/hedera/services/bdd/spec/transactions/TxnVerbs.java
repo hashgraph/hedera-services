@@ -68,6 +68,9 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileDelete;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.transactions.network.HapiUncheckedSubmit;
+import com.hedera.services.bdd.spec.transactions.node.HapiNodeCreate;
+import com.hedera.services.bdd.spec.transactions.node.HapiNodeDelete;
+import com.hedera.services.bdd.spec.transactions.node.HapiNodeUpdate;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleDelete;
 import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleSign;
@@ -85,6 +88,7 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycGrant;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycRevoke;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenMint;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenPause;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenReject;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnfreeze;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnpause;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
@@ -97,6 +101,7 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenReference;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -223,6 +228,19 @@ public class TxnVerbs {
         return new HapiFileDelete(fileNameSupplier);
     }
 
+    /* NODE */
+    public static HapiNodeCreate nodeCreate(String node) {
+        return new HapiNodeCreate(node);
+    }
+
+    public static HapiNodeUpdate nodeUpdate(String node) {
+        return new HapiNodeUpdate(node);
+    }
+
+    public static HapiNodeDelete nodeDelete(String node) {
+        return new HapiNodeDelete(node);
+    }
+
     /* TOKEN */
     public static HapiTokenDissociate tokenDissociate(String account, String... tokens) {
         return new HapiTokenDissociate(account, tokens);
@@ -294,6 +312,16 @@ public class TxnVerbs {
 
     public static HapiTokenUpdateNfts tokenUpdateNfts(String token, String metadata, List<Long> serialNumbers) {
         return new HapiTokenUpdateNfts(token, metadata, serialNumbers);
+    }
+
+    @SafeVarargs
+    public static HapiTokenReject tokenReject(String account, Function<HapiSpec, TokenReference>... referencesSources) {
+        return new HapiTokenReject(account, referencesSources);
+    }
+
+    @SafeVarargs
+    public static HapiTokenReject tokenReject(Function<HapiSpec, TokenReference>... referencesSources) {
+        return new HapiTokenReject(referencesSources);
     }
 
     public static HapiTokenFeeScheduleUpdate tokenFeeScheduleUpdate(String token) {

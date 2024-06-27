@@ -16,20 +16,21 @@
 
 package com.hedera.node.app.service.addressbook.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CAE_CERTIFICATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
-import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.addressbook.NodeUpdateTransactionBody;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -58,19 +59,39 @@ public class NodeUpdateHandler implements TransactionHandler {
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        requireNonNull(txn);
         final var op = txn.nodeUpdate();
         validateFalsePreCheck(op.nodeId() < 0, INVALID_NODE_ID);
-        if (op.hasAccountId()) {
-            final var accountId = validateAccountID(op.accountIdOrElse(AccountID.DEFAULT), INVALID_NODE_ACCOUNT_ID);
-            validateFalsePreCheck(!accountId.hasAccountNum() && accountId.hasAlias(), INVALID_NODE_ACCOUNT_ID);
-        }
         if (op.hasGossipCaCertificate())
-            validateFalsePreCheck(op.gossipCaCertificate().equals(Bytes.EMPTY), INVALID_GOSSIP_CAE_CERTIFICATE);
+            validateFalsePreCheck(op.gossipCaCertificate().equals(Bytes.EMPTY), INVALID_GOSSIP_CA_CERTIFICATE);
+        if (op.hasAdminKey()) {
+            final var adminKey = op.adminKey();
+            addressBookValidator.validateAdminKey(adminKey);
+        }
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
+        final var op = context.body().nodeUpdateOrThrow();
+        final var nodeStore = context.createStore(ReadableNodeStore.class);
+        final var config = context.configuration().getConfigData(NodesConfig.class);
+
+        final var existingNode = nodeStore.get(op.nodeId());
+        validateFalsePreCheck(existingNode == null, INVALID_NODE_ID);
+        validateFalsePreCheck(existingNode.deleted(), INVALID_NODE_ID);
+
+        context.requireKeyOrThrow(existingNode.adminKey(), INVALID_ADMIN_KEY);
+        if (op.hasAdminKey()) {
+            context.requireKeyOrThrow(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
+        }
+        if (config.updateAccountIdAllowed()) {
+            if (op.hasAccountId()) {
+                addressBookValidator.validateAccountId(op.accountIdOrThrow());
+            }
+        } else {
+            validateFalsePreCheck(op.hasAccountId(), UPDATE_NODE_ACCOUNT_NOT_ALLOWED);
+        }
     }
 
     @Override
@@ -80,13 +101,14 @@ public class NodeUpdateHandler implements TransactionHandler {
 
         final var configuration = handleContext.configuration();
         final var nodeConfig = configuration.getConfigData(NodesConfig.class);
-        final var nodeStore = handleContext.writableStore(WritableNodeStore.class);
-        final var accountStore = handleContext.readableStore(ReadableAccountStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var nodeStore = storeFactory.writableStore(WritableNodeStore.class);
+        final var accountStore = storeFactory.readableStore(ReadableAccountStore.class);
 
         final var existingNode = nodeStore.get(op.nodeId());
         validateFalse(existingNode == null, INVALID_NODE_ID);
         if (op.hasAccountId()) {
-            final var accountId = op.accountIdOrElse(AccountID.DEFAULT);
+            final var accountId = op.accountIdOrThrow();
             validateTrue(accountStore.contains(accountId), INVALID_NODE_ACCOUNT_ID);
         }
         if (op.hasDescription()) addressBookValidator.validateDescription(op.description(), nodeConfig);
@@ -100,6 +122,9 @@ public class NodeUpdateHandler implements TransactionHandler {
     }
 
     private Node.Builder updateNode(@NonNull final NodeUpdateTransactionBody op, @NonNull final Node node) {
+        requireNonNull(op);
+        requireNonNull(node);
+
         final var nodeBuilder = node.copyBuilder();
         if (op.hasAccountId()) {
             nodeBuilder.accountId(op.accountId());
@@ -118,6 +143,9 @@ public class NodeUpdateHandler implements TransactionHandler {
         }
         if (op.hasGrpcCertificateHash()) {
             nodeBuilder.grpcCertificateHash(op.grpcCertificateHash());
+        }
+        if (op.hasAdminKey()) {
+            nodeBuilder.adminKey(op.adminKey());
         }
         return nodeBuilder;
     }

@@ -43,7 +43,10 @@ public class FakeNetworkInfo implements NetworkInfo {
                     "333.333.333.333",
                     50233,
                     "3333333333333333333333333333333333333333333333333333333333333333",
-                    "Alpha"),
+                    "Alpha",
+                    "127.0.0.1",
+                    20,
+                    Bytes.wrap("cert1")),
             fakeInfoWith(
                     4L,
                     AccountID.newBuilder().accountNum(4).build(),
@@ -51,7 +54,10 @@ public class FakeNetworkInfo implements NetworkInfo {
                     "444.444.444.444",
                     50244,
                     "444444444444444444444444444444444444444444444444444444444444444",
-                    "Bravo"),
+                    "Bravo",
+                    "127.0.0.2",
+                    21,
+                    Bytes.wrap("cert2")),
             fakeInfoWith(
                     8L,
                     AccountID.newBuilder().accountNum(5).build(),
@@ -59,7 +65,10 @@ public class FakeNetworkInfo implements NetworkInfo {
                     "555.555.555.555",
                     50255,
                     "555555555555555555555555555555555555555555555555555555555555555",
-                    "Charlie"));
+                    "Charlie",
+                    "127.0.0.3",
+                    22,
+                    Bytes.wrap("cert3")));
 
     @NonNull
     @Override
@@ -122,6 +131,21 @@ public class FakeNetworkInfo implements NetworkInfo {
             public long stake() {
                 return FAKE_NODE_INFOS.get(0).stake();
             }
+
+            @Override
+            public String internalHostName() {
+                return FAKE_NODE_INFOS.get(0).internalHostName();
+            }
+
+            @Override
+            public int internalPort() {
+                return FAKE_NODE_INFOS.get(0).internalPort();
+            }
+
+            @Override
+            public Bytes sigCertBytes() {
+                return FAKE_NODE_INFOS.get(0).sigCertBytes();
+            }
         };
     }
 
@@ -149,7 +173,10 @@ public class FakeNetworkInfo implements NetworkInfo {
             @NonNull String externalHostName,
             int externalPort,
             @NonNull String hexEncodedPublicKey,
-            @NonNull String memo) {
+            @NonNull String memo,
+            @NonNull String internalHostName,
+            @NonNull int internalPort,
+            @Nullable Bytes sigCertBytes) {
         return new NodeInfo() {
             @Override
             public long nodeId() {
@@ -184,6 +211,21 @@ public class FakeNetworkInfo implements NetworkInfo {
             @Override
             public long stake() {
                 return stake;
+            }
+
+            @Override
+            public String internalHostName() {
+                return internalHostName;
+            }
+
+            @Override
+            public int internalPort() {
+                return internalPort;
+            }
+
+            @Override
+            public Bytes sigCertBytes() {
+                return sigCertBytes;
             }
         };
     }

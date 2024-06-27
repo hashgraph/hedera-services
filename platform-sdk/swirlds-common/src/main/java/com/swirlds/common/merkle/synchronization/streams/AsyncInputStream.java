@@ -134,6 +134,7 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
      */
     private void run() {
         T message = null;
+        logger.info(RECONNECT.getMarker(), this.toString() + " start run()");
         try {
             while (isAlive() && !Thread.currentThread().isInterrupted()) {
                 final long previous =
@@ -149,23 +150,26 @@ public class AsyncInputStream<T extends SelfSerializable> implements AutoCloseab
 
                 final boolean accepted = receivedMessages.offer(message, pollTimeout.toMillis(), MILLISECONDS);
                 if (!accepted) {
-                    new MerkleSynchronizationException("Timed out waiting to add message to received messages queue");
+                    new MerkleSynchronizationException(
+                            this.toString() + " timed out waiting to add message to received messages queue");
                 }
             }
         } catch (final IOException e) {
             throw new MerkleSynchronizationException(
                     String.format(
-                            "Failed to deserialize object with class ID %d(0x%08X) (%s)",
+                            "%s failed to deserialize object with class ID %d(0x%08X) (%s)",
+                            this.toString(),
                             message.getClassId(),
                             message.getClassId(),
                             message.getClass().toString()),
                     e);
         } catch (final InterruptedException e) {
-            logger.warn(RECONNECT.getMarker(), "AsyncInputStream interrupted");
+            logger.warn(RECONNECT.getMarker(), this.toString() + " interrupted");
             Thread.currentThread().interrupt();
         } finally {
             finishedLatch.countDown();
         }
+        logger.info(RECONNECT.getMarker(), this.toString() + " finish run()");
     }
 
     /**

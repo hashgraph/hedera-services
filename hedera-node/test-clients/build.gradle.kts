@@ -59,6 +59,14 @@ sourceSets {
     create("yahcli")
 }
 
+tasks.register<JavaExec>("runTestClient") {
+    group = "build"
+    description = "Run a test client via -PtestClient=<Class>"
+
+    classpath = sourceSets.main.get().runtimeClasspath + files(tasks.jar)
+    mainClass = providers.gradleProperty("testClient")
+}
+
 val ciCheckTagExpressions =
     mapOf(
         "hapiTestCrypto" to "CRYPTO",
@@ -67,7 +75,8 @@ val ciCheckTagExpressions =
         "hapiTestSmartContract" to "SMART_CONTRACT",
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
-        "hapiTestMisc" to "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT)"
+        "hapiTestMisc" to
+            "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT|EMBEDDED)"
     )
 
 tasks {
@@ -87,8 +96,8 @@ tasks.test {
             .joinToString("|")
     useJUnitPlatform {
         includeTags(
-            if (ciTagExpression.isBlank()) "any()|none()"
-            else "${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION"
+            if (ciTagExpression.isBlank()) "none()|!(EMBEDDED)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED)"
         )
     }
 
@@ -115,6 +124,72 @@ tasks.test {
     maxHeapSize = "8g"
     jvmArgs("-XX:ActiveProcessorCount=6")
     maxParallelForks = 1
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// Runs tests against an embedded network that supports concurrent tests
+tasks.register<Test>("testEmbedded") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform {
+        // Exclude tests that start and stop nodes, or explicitly preclude embedded mode
+        excludeTags("RESTART|ND_RECONNECT|NOT_EMBEDDED")
+    }
+
+    systemProperty("junit.jupiter.execution.parallel.enabled", true)
+    systemProperty("junit.jupiter.execution.parallel.mode.default", "concurrent")
+    // Surprisingly, the Gradle JUnitPlatformTestExecutionListener fails to gather result
+    // correctly if test classes run in parallel (concurrent execution WITHIN a test class
+    // is fine). So we need to force the test classes to run in the same thread. Luckily this
+    // is not a huge limitation, as our test classes generally have enough non-leaky tests to
+    // get a material speed up. See https://github.com/gradle/gradle/issues/6453.
+    systemProperty("junit.jupiter.execution.parallel.mode.classes.default", "same_thread")
+    systemProperty(
+        "junit.jupiter.testclass.order.default",
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+    )
+    // Tell our launcher to target an embedded network
+    systemProperty("hapi.spec.embedded.mode", true)
+    // Configure log4j2.xml for the embedded node
+    systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// Runs tests against an embedded network that achieves repeatable results by running tests in a
+// single thread
+tasks.register<Test>("testRepeatable") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform {
+        // Exclude tests that start and stop nodes, or explicitly preclude embedded or repeatable
+        // mode
+        excludeTags("RESTART|ND_RECONNECT|UPGRADE|NOT_EMBEDDED|NOT_REPEATABLE")
+    }
+
+    // Disable all parallelism
+    systemProperty("junit.jupiter.execution.parallel.enabled", false)
+    systemProperty(
+        "junit.jupiter.testclass.order.default",
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+    )
+    // Tell our launcher to target a repeatable embedded network
+    systemProperty("hapi.spec.repeatable.mode", true)
+    // Configure log4j2.xml for the embedded node
+    systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
 
     // Do not yet run things on the '--module-path'
     modularity.inferModulePath.set(false)
