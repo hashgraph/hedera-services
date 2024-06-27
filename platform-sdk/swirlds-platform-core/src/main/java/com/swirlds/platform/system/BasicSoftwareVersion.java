@@ -27,7 +27,7 @@ import java.io.IOException;
  */
 public class BasicSoftwareVersion implements SoftwareVersion {
 
-    private static final long CLASS_ID = 0x777ea397b73c9830L;
+    public static final long CLASS_ID = 0x777ea397b73c9830L;
 
     private static class ClassVersion {
         public static final int ORIGINAL = 1;

@@ -373,7 +373,7 @@ public class UnsignedEvent extends AbstractHashable {
      *
      * @return the software version of the node that created this event
      */
-    @Nullable
+    @NonNull
     public SoftwareVersion getSoftwareVersion() {
         return softwareVersion;
     }

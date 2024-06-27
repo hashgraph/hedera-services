@@ -20,6 +20,7 @@ import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLI
 import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
 import static com.swirlds.platform.system.events.EventConstants.MINIMUM_ROUND_CREATED;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
@@ -203,8 +204,8 @@ public class TestingEventBuilder {
      * @param softwareVersion the software version
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setSoftwareVersion(@Nullable final SoftwareVersion softwareVersion) {
-        this.softwareVersion = softwareVersion;
+    public @NonNull TestingEventBuilder setSoftwareVersion(@Nullable final SemanticVersion softwareVersion) {
+        this.softwareVersion = new BasicSoftwareVersion(softwareVersion.major());
         return this;
     }
 
