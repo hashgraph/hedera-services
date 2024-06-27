@@ -41,6 +41,8 @@ import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A network of Hedera nodes started in subprocesses and accessed via gRPC. Unlike
@@ -48,6 +50,8 @@ import java.util.stream.IntStream;
  * stopping and restarting.
  */
 public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetwork {
+    private static final Logger log = LogManager.getLogger(SubProcessNetwork.class);
+
     // We need 5 ports for each node in the network (gRPC, gRPC, gossip, gossip TLS, prometheus)
     private static final int PORTS_PER_NODE = 5;
     private static final SplittableRandom RANDOM = new SplittableRandom();
@@ -66,13 +70,15 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     private static int nextPrometheusPort;
     private static boolean nextPortsInitialized = false;
 
-    private final String configTxt;
+    private final int initialSize;
+    private final AtomicReference<CompletableFuture<Void>> ready = new AtomicReference<>();
 
-    private AtomicReference<CompletableFuture<Void>> ready = new AtomicReference<>();
+    private String configTxt;
 
     private SubProcessNetwork(@NonNull final String networkName, @NonNull final List<SubProcessNode> nodes) {
         super(networkName, nodes.stream().map(node -> (HederaNode) node).toList());
         this.configTxt = configTxtForLocal(name(), nodes(), nextGossipPort, nextGossipTlsPort);
+        initialSize = nodes.size();
     }
 
     /**
@@ -142,28 +148,11 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      * <p>Overwrites the existing <i>config.txt</i> file for each node in the network with the new ports.
      */
     public void assignNewPorts() {
-        String configTxt;
-        try {
-            configTxt = Files.readString(nodes().getFirst().getExternalPath(ADDRESS_BOOK));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        final var networkSize = nodes().size();
         final var firstGrpcPort = nodes().getFirst().getGrpcPort();
-        final var totalPortsUsed = networkSize * PORTS_PER_NODE;
+        final var totalPortsUsed = initialSize * PORTS_PER_NODE;
         final var newFirstGrpcPort = firstGrpcPort + totalPortsUsed;
-        for (int port = firstGrpcPort; port < newFirstGrpcPort; port++) {
-            configTxt = configTxt.replaceAll("" + port, "" + (port + totalPortsUsed));
-        }
-        final var newConfigTxt = configTxt;
-        initializeNextPortsForNetwork(networkSize, newFirstGrpcPort);
+        initializeNextPortsForNetwork(initialSize, newFirstGrpcPort);
         nodes.forEach(node -> {
-            final var configTxtLoc = node.getExternalPath(ADDRESS_BOOK);
-            try {
-                Files.writeString(configTxtLoc, newConfigTxt);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
             final int nodeId = (int) node.getNodeId();
             ((SubProcessNode) node)
                     .reassignPorts(
@@ -172,6 +161,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                             nextGossipTlsPort + nodeId * 2,
                             nextPrometheusPort + nodeId);
         });
+        configTxt = configTxtForLocal(name(), nodes(), nextGossipPort, nextGossipTlsPort);
+        refreshNodeConfigTxt();
         this.clients = HapiClients.clientsFor(this);
     }
 
@@ -205,6 +196,18 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                         .toList());
         Runtime.getRuntime().addShutdownHook(new Thread(network::terminate));
         return network;
+    }
+
+    private void refreshNodeConfigTxt() {
+        log.info("Refreshing config.txt for network '{}' - %n{}", name(), configTxt);
+        nodes.forEach(node -> {
+            final var configTxtLoc = node.getExternalPath(ADDRESS_BOOK);
+            try {
+                Files.writeString(configTxtLoc, configTxt);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
     private static void initializeNextPortsForNetwork(final int size) {

@@ -236,7 +236,7 @@ public class ReadableFreezeUpgradeActions {
         final var configTxt = artifactsLoc.resolve("config.txt");
 
         if (activeNodes.isEmpty()) {
-            log.info("Node state is empty, cannot generate config.txt"); // change to log error later
+            log.error("Node state is empty, which should be impossible");
             return;
         }
 
@@ -257,9 +257,9 @@ public class ReadableFreezeUpgradeActions {
                 .map(ActiveNode::node)
                 .map(Node::nodeId)
                 .max(Long::compareTo)
-                .orElse(-1L);
+                .orElseThrow();
         try {
-            bw.write("nextNodeId, " + maxNodeId + 1);
+            bw.write("nextNodeId, " + (maxNodeId + 1));
         } catch (IOException e) {
             log.error("Failed to write nextNodeId {} with exception : {}", maxNodeId, e);
         }
