@@ -357,7 +357,10 @@ public class HandleWorkflow {
      * @return true if the software event is older than the current software version
      */
     private boolean isOlderSoftwareEvent(@NonNull final UserTxn userTxn) {
-        return this.initTrigger != EVENT_STREAM_RECOVERY && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(version, userTxn.event().getSoftwareVersion()) > 0;
+        return this.initTrigger != EVENT_STREAM_RECOVERY
+                && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(
+                                version, userTxn.event().getSoftwareVersion())
+                        > 0;
     }
 
     /**
