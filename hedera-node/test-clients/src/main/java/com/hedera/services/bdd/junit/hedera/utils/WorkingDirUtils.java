@@ -56,6 +56,7 @@ public class WorkingDirUtils {
     public static final String CURRENT_DIR = "current";
     public static final String CONFIG_TXT = "config.txt";
     public static final String GENESIS_PROPERTIES = "genesis.properties";
+    public static final String ERROR_REDIRECT_FILE = "test-clients.log";
     public static final String APPLICATION_PROPERTIES = "application.properties";
 
     private static final List<String> WORKING_DIR_DATA_FOLDERS = List.of(KEYS_FOLDER, CONFIG_FOLDER, UPGRADE_DIR);
@@ -185,6 +186,23 @@ public class WorkingDirUtils {
     }
 
     /**
+     * Returns the given path as a file after a best-effort attempt to ensure it exists.
+     *
+     * @param path the path to ensure exists
+     * @return the path as a file
+     */
+    public static File guaranteedExtantFile(@NonNull final Path path) {
+        if (!Files.exists(path)) {
+            try {
+                Files.createFile(guaranteedExtantDir(path.getParent()).resolve(path.getName(path.getNameCount() - 1)));
+            } catch (IOException ignore) {
+                // We don't care if the file already exists
+            }
+        }
+        return path.toFile();
+    }
+
+    /**
      * Returns the given path after a best-effort attempt to ensure it exists.
      *
      * @param path the path to ensure exists
@@ -193,8 +211,8 @@ public class WorkingDirUtils {
     public static Path guaranteedExtantDir(@NonNull final Path path) {
         if (!Files.exists(path)) {
             try {
-                createDirectoriesUnchecked(path);
-            } catch (UncheckedIOException ignore) {
+                Files.createDirectories(path);
+            } catch (IOException e) {
                 // We don't care if the directory already exists
             }
         }

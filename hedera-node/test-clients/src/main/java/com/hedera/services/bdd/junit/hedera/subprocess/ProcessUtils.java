@@ -17,8 +17,9 @@
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DIR;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ERROR_REDIRECT_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.guaranteedExtantDir;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.guaranteedExtantFile;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -32,6 +33,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -118,24 +120,17 @@ public class ProcessUtils {
         environment.put("LANG", "en_US.UTF-8");
         environment.put("grpc.port", Integer.toString(metadata.grpcPort()));
         try {
-            final var redirectFile = metadata.workingDirOrThrow()
-                    .resolve(OUTPUT_DIR)
-                    .resolve("test-clients.log")
-                    .toFile();
-            if (!redirectFile.exists()) {
-                try {
-                    Files.createFile(
-                            guaranteedExtantDir(redirectFile.getParentFile().toPath())
-                                    .resolve("test-clients.log"));
-                } catch (IOException ignore) {
-                }
+            final var redirectFile = guaranteedExtantFile(
+                    metadata.workingDirOrThrow().resolve(OUTPUT_DIR).resolve(ERROR_REDIRECT_FILE));
+            builder.command(javaCommandLineFor(metadata, appJar))
+                    .directory(metadata.workingDirOrThrow().toFile());
+            // When in CI redirect errors to a log for debugging; when running locally inherit IO
+            if (System.getenv("CI") != null) {
+                builder.redirectError(redirectFile);
+            } else {
+                builder.inheritIO();
             }
-            return builder.command(javaCommandLineFor(metadata, appJar))
-                    .directory(metadata.workingDirOrThrow().toFile())
-                    .redirectOutput(redirectFile)
-                    .redirectError(redirectFile)
-                    .start()
-                    .toHandle();
+            return builder.start().toHandle();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -143,12 +138,15 @@ public class ProcessUtils {
 
     private static List<String> javaCommandLineFor(
             @NonNull final NodeMetadata metadata, @Nullable final String appJar) {
-        return List.of(
-                // Use the same java command that started this process
-                ProcessHandle.current().info().command().orElseThrow(),
-                "-agentlib:jdwp=transport=dt_socket,server=y,suspend="
-                        + (metadata.nodeId() == NODE_ID_TO_SUSPEND ? "y" : "n") + ",address=*:"
-                        + (FIRST_AGENT_PORT + metadata.nodeId()),
+        final List<String> commandLine = new ArrayList<>();
+        commandLine.add(ProcessHandle.current().info().command().orElseThrow());
+        // Only activate JDWP if not in CI
+        if (System.getenv("CI") == null) {
+            commandLine.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend="
+                    + (metadata.nodeId() == NODE_ID_TO_SUSPEND ? "y" : "n") + ",address=*:"
+                    + (FIRST_AGENT_PORT + metadata.nodeId()));
+        }
+        commandLine.addAll(List.of(
                 "-classpath",
                 // Use the same classpath that started this process, excluding test-clients
                 currentNonTestClientClasspath(appJar),
@@ -160,7 +158,8 @@ public class ProcessUtils {
                 "-Dhedera.workflows.enabled=true",
                 "com.hedera.node.app.ServicesMain",
                 "-local",
-                Long.toString(metadata.nodeId()));
+                Long.toString(metadata.nodeId())));
+        return commandLine;
     }
 
     /**
