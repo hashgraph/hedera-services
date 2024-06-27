@@ -23,10 +23,11 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
 import com.swirlds.platform.config.DefaultConfiguration;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -52,6 +53,7 @@ import org.apache.logging.log4j.Logger;
  * </ol>
  */
 public class AddressBookTestingToolMain implements SwirldMain {
+
     /** The logger for this class. */
     private static final Logger logger = LogManager.getLogger(AddressBookTestingToolMain.class);
 
@@ -103,8 +105,10 @@ public class AddressBookTestingToolMain implements SwirldMain {
      */
     @Override
     @NonNull
-    public SwirldState newState() {
-        return new AddressBookTestingToolState();
+    public MerkleRoot newMerkleStateRoot() {
+        final State state = new State();
+        state.setSwirldState(new AddressBookTestingToolState());
+        return state;
     }
 
     /**

@@ -45,6 +45,7 @@ module com.hedera.node.test.clients {
     requires transitive com.hedera.node.app;
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.common;
+    requires transitive com.swirlds.platform.core;
     requires transitive com.swirlds.state.api;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.google.common;
@@ -66,12 +67,12 @@ module com.hedera.node.test.clients {
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.spi.test.fixtures;
     requires com.hedera.node.config;
+    requires com.swirlds.base.test.fixtures;
     requires com.swirlds.base;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions.test.fixtures;
     requires com.swirlds.metrics.api;
     requires com.swirlds.platform.core.test.fixtures;
-    requires com.swirlds.platform.core;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
