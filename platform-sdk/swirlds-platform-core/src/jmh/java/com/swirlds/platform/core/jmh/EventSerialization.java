@@ -91,6 +91,6 @@ public class EventSerialization {
         //
         // Benchmark                       (seed)   Mode  Cnt     Score     Error   Units
         // EventSerialization.hashingBase       0  thrpt    3  1680.478 ± 173.379  ops/ms
-        eventHasher.hashEvent(event);
+        bh.consume(eventHasher.hashEvent(event));
     }
 }
