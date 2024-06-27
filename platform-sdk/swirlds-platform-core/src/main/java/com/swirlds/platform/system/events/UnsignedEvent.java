@@ -269,11 +269,11 @@ public class UnsignedEvent extends AbstractHashable {
         if (creatorId == null) {
             throw new IOException("creatorId is null");
         }
-        final var selfParent = in.readSerializable(false, EventDescriptor::new);
-        final var otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
-        final var birthRound = in.readLong();
+        final EventDescriptor selfParent = in.readSerializable(false, EventDescriptor::new);
+        final List<EventDescriptor> otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
+        final long birthRound = in.readLong();
 
-        final var timeCreated = in.readInstant();
+        final Instant timeCreated = in.readInstant();
         in.readInt(); // read serialized length
         final List<OneOf<PayloadOneOfType>> transactionList = new ArrayList<>();
         final int payloadSize = in.readInt();
