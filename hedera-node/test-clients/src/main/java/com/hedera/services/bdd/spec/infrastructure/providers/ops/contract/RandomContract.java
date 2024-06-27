@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -59,8 +60,8 @@ public class RandomContract implements OpProvider {
     }
 
     @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        List<HapiSpecOperation> ops = new ArrayList<>();
+    public List<SpecOperation> suggestedInitializers() {
+        List<SpecOperation> ops = new ArrayList<>();
         for (SupportedContract choice : choices) {
             HapiFileCreate op = fileCreate(fileFor(choice)).noLogging().path(choice.getPathToBytecode());
             ops.add(op);

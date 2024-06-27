@@ -109,6 +109,7 @@ public final class HandlerUtility {
                 case TOKEN_FEE_SCHEDULE_UPDATE -> ordinary.tokenFeeScheduleUpdate(
                         scheduledTransaction.tokenFeeScheduleUpdateOrThrow());
                 case UTIL_PRNG -> ordinary.utilPrng(scheduledTransaction.utilPrngOrThrow());
+                case TOKEN_REJECT -> ordinary.tokenReject(scheduledTransaction.tokenRejectOrThrow());
                 case NODE_CREATE -> ordinary.nodeCreate(scheduledTransaction.nodeCreateOrThrow());
                 case NODE_UPDATE -> ordinary.nodeUpdate(scheduledTransaction.nodeUpdateOrThrow());
                 case NODE_DELETE -> ordinary.nodeDelete(scheduledTransaction.nodeDeleteOrThrow());
@@ -164,6 +165,7 @@ public final class HandlerUtility {
             case TOKEN_FEE_SCHEDULE_UPDATE -> HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case TOKEN_UPDATE_NFTS -> HederaFunctionality.TOKEN_UPDATE_NFTS;
+            case TOKEN_REJECT -> HederaFunctionality.TOKEN_REJECT;
             case NODE_CREATE -> HederaFunctionality.NODE_CREATE;
             case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
             case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
