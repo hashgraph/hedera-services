@@ -47,4 +47,5 @@ hammerModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     runtimeOnly("com.swirlds.config.impl")
+    requiresStatic("com.github.spotbugs.annotations")
 }
