@@ -38,7 +38,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@Tag(TOKEN)
 public class NodeUpdateSuite {
     @HapiTest
     @Tag(EMBEDDED)

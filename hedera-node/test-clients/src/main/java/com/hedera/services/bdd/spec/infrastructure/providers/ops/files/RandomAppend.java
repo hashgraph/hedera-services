@@ -27,8 +27,6 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 public class RandomAppend implements OpProvider {
@@ -44,11 +42,6 @@ public class RandomAppend implements OpProvider {
 
     public RandomAppend(EntityNameProvider<FileID> files) {
         this.files = files;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return Collections.emptyList();
     }
 
     @Override
