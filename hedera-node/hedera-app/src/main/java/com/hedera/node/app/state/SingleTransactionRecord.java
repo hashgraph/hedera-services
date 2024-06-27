@@ -43,6 +43,6 @@ public record SingleTransactionRecord(
     }
 
     // This is used by BlockStream, and is not serialized.
-    public record TransactionOutputs(@Nullable TokenType tokenType,
-                                     @NonNull TransactionBody.DataOneOfType transactionBodyType) {}
+    public record TransactionOutputs(
+            @Nullable TokenType tokenType, @NonNull TransactionBody.DataOneOfType transactionBodyType) {}
 }

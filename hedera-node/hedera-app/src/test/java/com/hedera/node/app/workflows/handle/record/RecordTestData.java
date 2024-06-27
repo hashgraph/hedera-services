@@ -85,7 +85,8 @@ public class RecordTestData {
     //    block seconds       24,   26,   28,   30,    32,   34,    36,    38,   40
 
     /** Transaction Outputs data */
-    private static final TransactionOutputs SIMPLE_OUTPUT = new TransactionOutputs(TokenType.FUNGIBLE_COMMON, DataOneOfType.CRYPTO_TRANSFER);
+    private static final TransactionOutputs SIMPLE_OUTPUT =
+            new TransactionOutputs(TokenType.FUNGIBLE_COMMON, DataOneOfType.CRYPTO_TRANSFER);
     /** Test Signer for signing record stream files */
     public static final Signer SIGNER;
     /** Test user public key */

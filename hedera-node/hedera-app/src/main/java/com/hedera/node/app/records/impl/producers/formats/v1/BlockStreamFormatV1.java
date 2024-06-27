@@ -5,15 +5,15 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
+
 package com.hedera.node.app.records.impl.producers.formats.v1;
 
 import com.hedera.hapi.block.stream.BlockHeader;
@@ -30,18 +30,15 @@ import com.hedera.hapi.block.stream.output.EthereumOutput;
 import com.hedera.hapi.block.stream.output.SignScheduleOutput;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.SubmitMessageOutput;
+import com.hedera.hapi.block.stream.output.SubmitMessageOutputRunningHashVersion;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.block.stream.output.UtilPrngOutput;
-import com.hedera.hapi.block.stream.output.SubmitMessageOutputRunningHashVersion;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.records.impl.producers.BlockStreamFormat;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
-import java.util.stream.Stream;
 
 public final class BlockStreamFormatV1 implements BlockStreamFormat {
 
@@ -176,8 +173,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
             case CONSENSUS_CREATE_TOPIC -> {} // NOOP
             case CONSENSUS_UPDATE_TOPIC -> {} // NOOP
             case CONSENSUS_DELETE_TOPIC -> {} // NOOP
-            case CONSENSUS_SUBMIT_MESSAGE -> builder.submitMessage(
-                    buildConsensusSubmitMessageOutput(item));
+            case CONSENSUS_SUBMIT_MESSAGE -> builder.submitMessage(buildConsensusSubmitMessageOutput(item));
             case UNCHECKED_SUBMIT -> {} // NOOP
             case TOKEN_CREATION -> {} // NOOP
             case TOKEN_FREEZE -> {} // NOOP
@@ -202,7 +198,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
             case ETHEREUM_TRANSACTION -> builder.ethereumCall(buildEthereumTransactionOutput(item));
             case NODE_STAKE_UPDATE -> {} // NOOP
             case UTIL_PRNG -> builder.utilPrng(buildUtilPrngOutput(item));
-            // No default case, so we can get compiler warnings if we are missing one.
+                // No default case, so we can get compiler warnings if we are missing one.
         }
 
         return builder.build();
@@ -230,28 +226,26 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
     }
 
     @NonNull
-    private SubmitMessageOutput.Builder buildConsensusSubmitMessageOutput(
-            @NonNull final SingleTransactionRecord item) {
+    private SubmitMessageOutput.Builder buildConsensusSubmitMessageOutput(@NonNull final SingleTransactionRecord item) {
         // TODO: Is there ever a case where we don't have a receipt?
         var receipt = item.transactionRecord().receiptOrThrow();
         return SubmitMessageOutput.newBuilder()
-                .topicRunningHashVersion(SubmitMessageOutputRunningHashVersion.fromProtobufOrdinal((int)receipt.topicRunningHashVersion()));
+                .topicRunningHashVersion(SubmitMessageOutputRunningHashVersion.fromProtobufOrdinal(
+                        (int) receipt.topicRunningHashVersion()));
     }
 
     @NonNull
     private CreateScheduleOutput.Builder buildScheduleCreateOutput(@NonNull final SingleTransactionRecord item) {
         // TODO: Is there ever a case where we don't have a receipt?
         var receipt = item.transactionRecord().receiptOrThrow();
-        return CreateScheduleOutput.newBuilder()
-                .scheduledTransactionId(receipt.scheduledTransactionID());
+        return CreateScheduleOutput.newBuilder().scheduledTransactionId(receipt.scheduledTransactionID());
     }
 
     @NonNull
     private SignScheduleOutput.Builder buildScheduleSignOutput(@NonNull final SingleTransactionRecord item) {
         // TODO: Is there ever a case where we don't have a receipt?
         var receipt = item.transactionRecord().receiptOrThrow();
-        return SignScheduleOutput.newBuilder()
-                .scheduledTransactionId(receipt.scheduledTransactionID());
+        return SignScheduleOutput.newBuilder().scheduledTransactionId(receipt.scheduledTransactionID());
     }
 
     @NonNull
@@ -270,5 +264,4 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         if (record.hasPrngNumber()) builder.prngNumber(record.prngNumberOrThrow());
         return builder;
     }
-
 }

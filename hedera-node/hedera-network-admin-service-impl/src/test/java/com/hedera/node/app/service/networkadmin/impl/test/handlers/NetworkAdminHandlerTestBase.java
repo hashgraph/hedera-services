@@ -52,7 +52,6 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
@@ -303,8 +302,7 @@ public class NetworkAdminHandlerTestBase {
     }
 
     private SingleTransactionRecord singleTransactionRecord(TransactionRecord record) {
-        return new SingleTransactionRecord(
-                Transaction.DEFAULT, record, List.of(), null);
+        return new SingleTransactionRecord(Transaction.DEFAULT, record, List.of(), null);
     }
 
     protected MapReadableKVState<AccountID, Account> readableAccountState() {

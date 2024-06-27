@@ -200,11 +200,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
     }
 
     private SingleTransactionRecord singleRecordWith(final TransactionRecord transactionRecord) {
-        return new SingleTransactionRecord(
-                Transaction.DEFAULT,
-                transactionRecord,
-                List.of(),
-                null);
+        return new SingleTransactionRecord(Transaction.DEFAULT, transactionRecord, List.of(), null);
     }
 
     @Test

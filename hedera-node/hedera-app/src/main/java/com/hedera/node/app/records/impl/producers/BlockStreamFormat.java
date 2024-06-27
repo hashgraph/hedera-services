@@ -5,19 +5,19 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
+
 package com.hedera.node.app.records.impl.producers;
 
-import com.hedera.hapi.block.stream.Block;
 import com.hedera.hapi.block.stream.BlockHeader;
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.hapi.block.stream.EventMetadata;
 import com.hedera.hapi.block.stream.FilteredBlockItem;
@@ -26,11 +26,8 @@ import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import com.hedera.hapi.block.stream.BlockItem;
-import java.util.stream.Stream;
 
 /**
  * Defines API for computing running hashes, and converting {@link BlockItem}s into
