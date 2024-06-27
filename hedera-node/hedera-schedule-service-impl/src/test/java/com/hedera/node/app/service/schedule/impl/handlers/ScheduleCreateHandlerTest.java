@@ -43,6 +43,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import java.security.InvalidKeyException;
+import java.time.InstantSource;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,7 @@ class ScheduleCreateHandlerTest extends ScheduleHandlerTestBase {
 
     @BeforeEach
     void setUp() throws PreCheckException, InvalidKeyException {
-        subject = new ScheduleCreateHandler();
+        subject = new ScheduleCreateHandler(InstantSource.system());
         setUpBase();
     }
 

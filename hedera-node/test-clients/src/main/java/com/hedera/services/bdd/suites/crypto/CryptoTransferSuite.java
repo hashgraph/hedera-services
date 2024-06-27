@@ -90,6 +90,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -1896,7 +1897,7 @@ public class CryptoTransferSuite {
                         cryptoCreate("somebody")
                                 .maxAutomaticTokenAssociations(5001)
                                 .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        UtilVerbs.inParallel(
+                        inParallel(
                                 cryptoCreate(PAYER),
                                 cryptoCreate(PAYEE_SIG_REQ).receiverSigRequired(true),
                                 cryptoCreate(PAYEE_NO_SIG_REQ)))

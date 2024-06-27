@@ -25,11 +25,14 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
@@ -79,15 +82,21 @@ public class TrieSigMapGenerator implements SigMapGenerator {
     }
 
     @Override
-    public SignatureMap forPrimitiveSigs(final HapiSpec spec, final List<Map.Entry<byte[], byte[]>> keySigs) {
-        Set<ByteString> keys = keySigs.stream()
+    public SignatureMap forPrimitiveSigs(
+            @Nullable final HapiSpec spec, @NonNull final List<Map.Entry<byte[], byte[]>> keySigs) {
+        final Set<ByteString> keys = keySigs.stream()
                 .map(Map.Entry::getKey)
                 .map(ByteString::copyFrom)
                 .collect(Collectors.toSet());
-        ByteTrie trie = new ByteTrie(keys.stream().map(ByteString::toByteArray).collect(toList()));
+        final var trie = new ByteTrie(keys.stream().map(ByteString::toByteArray).collect(toList()));
 
-        final Set<ByteString> alwaysFullPrefixes =
-                (fullPrefixKeys == null) ? Collections.emptySet() : fullPrefixSetFor(spec);
+        final Set<ByteString> alwaysFullPrefixes;
+        if (fullPrefixKeys == null) {
+            alwaysFullPrefixes = Collections.emptySet();
+        } else {
+            Objects.requireNonNull(spec, "Cannot lookup full prefix keys without a spec");
+            alwaysFullPrefixes = fullPrefixSetFor(spec);
+        }
 
         final Function<byte[], byte[]> prefixCalc = getPrefixCalcFor(trie);
         return keySigs.stream()

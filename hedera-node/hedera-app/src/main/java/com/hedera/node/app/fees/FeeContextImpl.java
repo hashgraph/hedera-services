@@ -29,6 +29,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
+import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -37,7 +38,7 @@ import java.time.Instant;
  * Simple implementation of {@link FeeContext} without any addition functionality.
  *
  * <p>This class is intended to be used during ingest. In the handle-workflow we use
- * {@link com.hedera.node.app.workflows.handle.flow.DispatchHandleContext}, which also implements{@link FeeContext}
+ * {@link DispatchHandleContext}, which also implements{@link FeeContext}
  */
 public class FeeContextImpl implements FeeContext {
     private final Instant consensusTime;
