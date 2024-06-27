@@ -210,9 +210,5 @@
   },
   "NodeDelete": {
     "DEFAULT": 0.001
-  },
-  "NodeGetInfo": {
-    "DEFAULT": 0.001
   }
-
 }
