@@ -18,9 +18,11 @@ package com.swirlds.fcqueue;
 
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.SerializableHashable;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
 import com.swirlds.fcqueue.internal.FCQueueNode;
 
-final class AccessibleFCQueue<E extends FastCopyable & SerializableHashable> extends SlowMockFCQueue<E> {
+final class AccessibleFCQueue<E extends FastCopyable & SerializableHashable & ProtoSerializable>
+        extends SlowMockFCQueue<E> {
 
     public AccessibleFCQueue() {
         super();

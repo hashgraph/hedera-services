@@ -25,9 +25,9 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.ids.WritableEntityIdStore;
+import com.hedera.node.app.services.MigrationContextImpl;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
-import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -37,7 +37,6 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.config.MerkleDbConfig;
-import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.merkle.StateUtils;
 import com.swirlds.platform.state.merkle.disk.OnDiskKey;
@@ -58,7 +57,6 @@ import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -92,6 +90,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      */
     private final String serviceName;
     /**
+     * The current bootstrap configuration of the network; note this ideally would be a
+     * provider of {@link com.hedera.node.config.VersionedConfiguration}s per version,
+     * in case a service's states evolved with changing config. But this is a very edge
+     * affordance that we have no example of needing.
+     */
+    private final Configuration bootstrapConfig;
+    /**
      * The registry to use when deserializing from saved states
      */
     private final ConstructableRegistry constructableRegistry;
@@ -99,10 +104,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * The ordered set of all schemas registered by the service
      */
     private final SortedSet<Schema> schemas = new TreeSet<>();
-    /**
-     * Stores system entities created during genesis until the node can build synthetic records
-     */
-    private final GenesisRecordsBuilder genesisRecordsBuilder;
     /**
      * The analysis to use when determining how to apply a schema.
      */
@@ -114,17 +115,16 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param constructableRegistry The {@link ConstructableRegistry} to register states with for
      * deserialization
      * @param serviceName The name of the service using this registry.
-     * @param genesisRecordsBuilder class used to store entities created at genesis
      * @param schemaApplications the analysis to use when determining how to apply a schema
      */
     public MerkleSchemaRegistry(
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final String serviceName,
-            @NonNull final GenesisRecordsBuilder genesisRecordsBuilder,
+            @NonNull final Configuration bootstrapConfig,
             @NonNull final SchemaApplications schemaApplications) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
         this.serviceName = StateUtils.validateStateKey(requireNonNull(serviceName));
-        this.genesisRecordsBuilder = requireNonNull(genesisRecordsBuilder);
+        this.bootstrapConfig = requireNonNull(bootstrapConfig);
         this.schemaApplications = requireNonNull(schemaApplications);
     }
 
@@ -143,7 +143,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 () -> serviceName);
 
         // Any states being created, need to be registered for deserialization
-        schema.statesToCreate().forEach(def -> {
+        schema.statesToCreate(bootstrapConfig).forEach(def -> {
             //noinspection rawtypes,unchecked
             final var md = new StateMetadata<>(serviceName, schema, def);
             registerWithSystem(md);
@@ -222,7 +222,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 () -> HapiUtils.toString(currentVersion),
                 () -> HapiUtils.toString(latestVersion));
         for (final var schema : schemas) {
-            final var applications = schemaApplications.computeApplications(previousVersion, latestVersion, schema);
+            final var applications =
+                    schemaApplications.computeApplications(previousVersion, latestVersion, schema, config);
             logger.info("Applying {} schema {} ({})", serviceName, schema.getVersion(), applications);
             // Now we can migrate the schema and then commit all the changes
             // We just have one merkle tree -- the just-loaded working tree -- to work from.
@@ -248,14 +249,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 newStates = writableStates = state.getWritableStates(serviceName);
             }
             final var migrationContext = new MigrationContextImpl(
-                    previousStates,
-                    newStates,
-                    config,
-                    networkInfo,
-                    genesisRecordsBuilder,
-                    entityIdStore,
-                    previousVersion,
-                    sharedValues);
+                    previousStates, newStates, config, networkInfo, entityIdStore, previousVersion, sharedValues);
             if (applications.contains(MIGRATION)) {
                 schema.migrate(migrationContext);
             }
@@ -267,19 +261,18 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 mws.commit();
             }
             // And finally we can remove any states we need to remove
-            schema.statesToRemove()
-                    .forEach(stateKey -> ((MerkleHederaState) state).removeServiceState(serviceName, stateKey));
+            schema.statesToRemove().forEach(stateKey -> state.removeServiceState(serviceName, stateKey));
         }
     }
 
     private RedefinedWritableStates applyStateDefinitions(
             @NonNull final Schema schema,
-            @NonNull final Configuration config,
+            @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
             @NonNull final MerkleHederaState hederaState) {
         // Create the new states (based on the schema) which, thanks to the above, does not
         // expand the set of states that the migration code will see
-        schema.statesToCreate().stream()
+        schema.statesToCreate(configuration).stream()
                 .sorted(Comparator.comparing(StateDefinition::stateKey))
                 .forEach(def -> {
                     final var stateKey = def.stateKey();
@@ -303,7 +296,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.stateDefinition().stateKey(),
                                         md.queueNodeClassId(),
                                         md.singletonClassId(),
-                                        md.stateDefinition().valueCodec()));
+                                        md.stateDefinition().valueCodec(),
+                                        md.stateDefinition().stateProtoField()));
                     } else if (!def.onDisk()) {
                         hederaState.putServiceStateIfAbsent(md, () -> {
                             final var map = new MerkleMap<>();
@@ -320,7 +314,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                     md.onDiskValueSerializerClassId(),
                                     md.onDiskValueClassId(),
                                     md.stateDefinition().valueCodec());
-                            final MerkleDbConfig merkleDbConfig = config.getConfigData(MerkleDbConfig.class);
+                            final MerkleDbConfig merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
                             final var tableConfig = new MerkleDbTableConfig<>(
                                     DigestType.SHA_384, def.maxKeysHint(), merkleDbConfig.hashesRamToDiskThreshold(), false);
                             final var label = StateUtils.computeLabel(serviceName, stateKey);
@@ -402,7 +396,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             md.stateDefinition().stateKey(),
                             md.queueNodeClassId(),
                             md.singletonClassId(),
-                            md.stateDefinition().valueCodec())));
+                            md.stateDefinition().valueCodec(),
+                            md.stateDefinition().stateProtoField())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     ValueLeaf.class,
@@ -412,7 +407,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             md.stateDefinition().stateProtoField())));
         } catch (ConstructableRegistryException e) {
             // This is a fatal error.
-            throw new RuntimeException(
+            throw new IllegalStateException(
                     "Failed to register with the system '"
                             + serviceName
                             + ":"

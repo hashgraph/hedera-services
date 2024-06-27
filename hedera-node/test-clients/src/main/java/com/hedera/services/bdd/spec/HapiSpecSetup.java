@@ -21,25 +21,29 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSources;
 import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
+import static com.hedera.services.bdd.spec.keys.deterministic.Bip0032.mnemonicToEd25519Key;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
+import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource;
 import com.hederahashgraph.api.proto.java.*;
-import java.security.SecureRandom;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.commons.lang3.StringUtils;
 
 public class HapiSpecSetup {
-    private final SecureRandom r = new SecureRandom();
+    private final SplittableRandom r = new SplittableRandom(1_234_567L);
 
     private static final HapiPropertySource defaultNodeProps;
 
@@ -49,6 +53,11 @@ public class HapiSpecSetup {
 
     public static HapiPropertySource getDefaultNodeProps() {
         return defaultNodeProps;
+    }
+
+    public static String getDefaultProp(@NonNull final String property) {
+        requireNonNull(property);
+        return defaultNodeProps.get(property);
     }
 
     private Set<ResponseCodeEnum> streamlinedIngestChecks = null;
@@ -107,6 +116,24 @@ public class HapiSpecSetup {
     }
 
     /**
+     * Returns the Ed25519 private key for the default payer in this spec setup.
+     *
+     * @return the Ed25519 private key for the default payer in this spec setup
+     */
+    public EdDSAPrivateKey payerKey() {
+        if (StringUtils.isNotEmpty(defaultPayerKey())) {
+            return Ed25519Utils.keyFrom(com.swirlds.common.utility.CommonUtils.unhex(defaultPayerKey()));
+        } else if (StringUtils.isNotEmpty(defaultPayerMnemonic())) {
+            return mnemonicToEd25519Key(defaultPayerMnemonic());
+        } else if (StringUtils.isNotEmpty(defaultPayerMnemonicFile())) {
+            final var mnemonic = Bip0032.mnemonicFromFile(defaultPayerMnemonicFile());
+            return mnemonicToEd25519Key(mnemonic);
+        } else {
+            return Ed25519Utils.readKeyFrom(defaultPayerPemKeyLoc(), defaultPayerPemKeyPassphrase());
+        }
+    }
+
+    /**
      * Add new properties that would merge with existing ones, if a property already exist then
      * override it with new value
      *
@@ -114,10 +141,6 @@ public class HapiSpecSetup {
      */
     public void addOverrides(final Map<String, Object> props) {
         this.props = HapiPropertySource.inPriorityOrder(new MapPropertySource(props), this.props);
-    }
-
-    public String defaultRecordLoc() {
-        return props.get("recordStream.path");
     }
 
     public FileID addressBookId() {
@@ -150,22 +173,6 @@ public class HapiSpecSetup {
 
     public String appPropertiesFile() {
         return props.get("app.properties.name");
-    }
-
-    public Boolean clientFeeScheduleFromDisk() {
-        return props.getBoolean("client.feeSchedule.fromDisk");
-    }
-
-    public String clientFeeSchedulePath() {
-        return props.get("client.feeSchedule.path");
-    }
-
-    public Boolean clientExchangeRatesFromDisk() {
-        return props.getBoolean("client.exchangeRates.fromDisk");
-    }
-
-    public String clientExchangeRatesPath() {
-        return props.get("client.exchangeRates.path");
     }
 
     public String costSnapshotDir() {
@@ -292,6 +299,22 @@ public class HapiSpecSetup {
         return props.getAccount("default.payer");
     }
 
+    public ServiceEndpoint defaultGossipEndpointInternal() {
+        return props.getServiceEndpoint("default.gossipEndpoint.internal");
+    }
+
+    public ServiceEndpoint defaultGossipEndpointExternal() {
+        return props.getServiceEndpoint("default.gossipEndpoint.external");
+    }
+
+    public ServiceEndpoint defaultServiceEndpoint() {
+        return props.getServiceEndpoint("default.serviceEndpoint");
+    }
+
+    public byte[] defaultGossipCaCertificate() {
+        return props.getBytes("default.gossipCaCertificate");
+    }
+
     public String defaultPayerKey() {
         return props.get("default.payer.key");
     }
@@ -331,26 +354,6 @@ public class HapiSpecSetup {
         return props.getBoolean("recordStream.overrideExistingSnapshot");
     }
 
-    /**
-     * Returns the record stream source for the {@link HapiSpec} to use when automatically taking snapshots
-     * with {@code recordStream.autoSnapshotManagement=true}.
-     *
-     * @return the record stream source for the {@link HapiSpec} to use when automatically taking snapshots
-     */
-    public AutoSnapshotRecordSource autoSnapshotTarget() {
-        return props.getAutoSnapshotRecordSource("recordStream.autoSnapshotTarget");
-    }
-
-    /**
-     * Returns the record stream source for the {@link HapiSpec} to use when automatically matching snapshots
-     * with {@code recordStream.autoMatchTarget=true}.
-     *
-     * @return the record stream source for the {@link HapiSpec} to use when automatically matching snapshots
-     */
-    public AutoSnapshotRecordSource autoMatchTarget() {
-        return props.getAutoSnapshotRecordSource("recordStream.autoMatchTarget");
-    }
-
     public boolean defaultReceiverSigRequired() {
         return props.getBoolean("default.receiverSigRequired");
     }
@@ -365,14 +368,6 @@ public class HapiSpecSetup {
 
     public int defaultThresholdN() {
         return props.getInteger("default.thresholdKey.N");
-    }
-
-    public long defaultThroughputObsExpiryMs() {
-        return props.getLong("default.throughputObs.expiry.ms");
-    }
-
-    public long defaultThroughputObsSleepMs() {
-        return props.getLong("default.throughputObs.sleep.ms");
     }
 
     public String defaultTokenSymbol() {
@@ -451,7 +446,7 @@ public class HapiSpecSetup {
         return props.getInteger("fees.tokenTransferUsageMultiplier");
     }
 
-    public Boolean useFixedFee() {
+    public boolean useFixedFee() {
         return props.getBoolean("fees.useFixedOffer");
     }
 
@@ -505,10 +500,6 @@ public class HapiSpecSetup {
 
     public String invalidContractName() {
         return props.get("invalid.contract.name");
-    }
-
-    public Boolean measureConsensusLatency() {
-        return props.getBoolean("measure.consensus.latency");
     }
 
     public Boolean suppressUnrecoverableNetworkFailures() {

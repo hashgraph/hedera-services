@@ -28,13 +28,14 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.config.IsEmbeddedTest;
+import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
-import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.RuntimeConstructable;
+import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
@@ -46,7 +47,9 @@ import com.swirlds.platform.builder.PlatformBuilder;
 import com.swirlds.platform.config.legacy.ConfigurationException;
 import com.swirlds.platform.config.legacy.LegacyConfigProperties;
 import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -55,6 +58,7 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -63,11 +67,10 @@ import org.apache.logging.log4j.Logger;
 /**
  * Main entry point.
  *
- * <p>This class simply delegates to either {@link MonoServicesMain} or {@link Hedera} depending on
- * the value of the {@code hedera.services.functions.workflows.enabled} property. If *any* workflows are enabled, then
- * {@link Hedera} is used; otherwise, {@link MonoServicesMain} is used.
+ * <p>This class simply delegates to {@link Hedera}.
  */
 public class ServicesMain implements SwirldMain {
+
     private static final Logger logger = LogManager.getLogger(ServicesMain.class);
 
     /**
@@ -79,18 +82,7 @@ public class ServicesMain implements SwirldMain {
      * Create a new instance
      */
     public ServicesMain() {
-        final var configProvider = new ConfigProviderImpl(false);
-        final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
-        if (hederaConfig.workflowsEnabled().isEmpty()) {
-            logger.info("No workflows enabled, using mono-service");
-            delegate = new MonoServicesMain();
-        } else {
-            logger.info("One or more workflows enabled, using Hedera");
-            final var constructableRegistry = ConstructableRegistry.getInstance();
-            final var servicesRegistry =
-                    new ServicesRegistryImpl(constructableRegistry, new GenesisRecordsConsensusHook());
-            delegate = new Hedera(constructableRegistry, servicesRegistry);
-        }
+        delegate = newHedera();
     }
 
     /**
@@ -113,8 +105,8 @@ public class ServicesMain implements SwirldMain {
      * {@inheritDoc}
      */
     @Override
-    public SwirldState newState() {
-        return delegate.newState();
+    public MerkleRoot newMerkleStateRoot() {
+        return delegate.newMerkleStateRoot();
     }
 
     /**
@@ -135,15 +127,15 @@ public class ServicesMain implements SwirldMain {
      *     <li>Create the application's {@link Hedera} singleton, which overrides
      *     the default factory for the stable {@literal 0x8e300b0dfdafbb1a} class
      *     id of the Services Merkle tree root with a reference to its
-     *     {@link Hedera#newState()} method.</li>
+     *     {@link Hedera#newMerkleStateRoot()} method.</li>
      *     <li>Determine this node's <b>self id</b> by searching the <i>config.txt</i>
      *     in the working directory for any address book entries with IP addresses
      *     local to this machine; if there is there is more than one such entry,
      *     fail unless the command line args include a {@literal -local N} arg.</li>
      *     <li>Build a {@link Platform} instance from Services application metadata
      *     and the working directory <i>settings.txt</i>, providing the same
-     *     {@link Hedera#newState()} method reference as the genesis state factory.
-     *     (<b>IMPORTANT:</b> This step instantiates and invokes
+     *     {@link Hedera#newMerkleStateRoot()} method reference as the genesis state
+     *     factory. (<b>IMPORTANT:</b> This step instantiates and invokes
      *     {@link SwirldState#init(Platform, PlatformState, InitTrigger, SoftwareVersion)}
      *     on a {@link MerkleHederaState} instance that delegates the call back to our
      *     Hedera instance.)</li>
@@ -160,11 +152,7 @@ public class ServicesMain implements SwirldMain {
      */
     public static void main(final String... args) throws Exception {
         BootstrapUtils.setupConstructableRegistry();
-        final var constructableRegistry = ConstructableRegistry.getInstance();
-        final var genesisRecordBuilder = new GenesisRecordsConsensusHook();
-        final var servicesRegistry = new ServicesRegistryImpl(constructableRegistry, genesisRecordBuilder);
-
-        final Hedera hedera = new Hedera(constructableRegistry, servicesRegistry);
+        final Hedera hedera = newHedera();
 
         // Determine which node to run locally
         // Load config.txt address book file and parse address book
@@ -192,10 +180,20 @@ public class ServicesMain implements SwirldMain {
         final SoftwareVersion version = hedera.getSoftwareVersion();
         logger.info("Starting node {} with version {}", selfId, version);
 
-        final PlatformBuilder builder =
-                PlatformBuilder.create(Hedera.APP_NAME, Hedera.SWIRLD_NAME, version, hedera::newState, selfId);
+        final PlatformBuilder platformBuilder = PlatformBuilder.create(
+                Hedera.APP_NAME,
+                Hedera.SWIRLD_NAME,
+                version,
+                hedera::newMerkleStateRoot,
+                SignedStateFileUtils::readState,
+                selfId);
 
-        builder.withConfiguration(buildConfiguration());
+        // Add additional configuration to the platform
+        final Configuration configuration = buildConfiguration();
+        platformBuilder.withConfiguration(configuration);
+
+        platformBuilder.withCryptography(CryptographyFactory.create());
+        platformBuilder.withTime(Time.getCurrent());
 
         // IMPORTANT: A surface-level reading of this method will undersell the centrality
         // of the Hedera instance. It is actually omnipresent throughout both the startup
@@ -220,7 +218,7 @@ public class ServicesMain implements SwirldMain {
         // whose object graph roots include the Ingest, PreHandle, Handle, and Query workflows;
         // as well as other infrastructure components that need to be initialized or accessed
         // at specific points in the Swirlds application lifecycle.
-        final Platform platform = builder.build();
+        final Platform platform = platformBuilder.build();
         hedera.init(platform, selfId);
         platform.start();
         hedera.run();
@@ -244,7 +242,7 @@ public class ServicesMain implements SwirldMain {
     /**
      * Selects the node to run locally from either the command line arguments or the address book.
      *
-     * @param nodesToRun        the list of nodes configured to run based on the address book.
+     * @param nodesToRun the list of nodes configured to run based on the address book.
      * @param localNodesToStart the node ids specified on the command line.
      * @return the node which should be run locally.
      * @throws ConfigurationException if more than one node would be started or the requested node is not configured.
@@ -299,5 +297,14 @@ public class ServicesMain implements SwirldMain {
             exitSystem(CONFIGURATION_ERROR);
             throw e;
         }
+    }
+
+    private static Hedera newHedera() {
+        return new Hedera(
+                ConstructableRegistry.getInstance(),
+                ServicesRegistryImpl::new,
+                new OrderedServiceMigrator(),
+                IsEmbeddedTest.NO,
+                InstantSource.system());
     }
 }

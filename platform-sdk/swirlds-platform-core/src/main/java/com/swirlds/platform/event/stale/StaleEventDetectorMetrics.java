@@ -21,9 +21,10 @@ import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.metrics.api.LongAccumulator;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Iterator;
 
 /**
  * Collection of metrics related to stale events and transactions
@@ -66,11 +67,13 @@ public class StaleEventDetectorMetrics {
      *
      * @param event the stale event
      */
-    public void reportStaleEvent(@NonNull final GossipEvent event) {
+    public void reportStaleEvent(@NonNull final PlatformEvent event) {
         int systemTransactions = 0;
         int appTransactions = 0;
 
-        for (final ConsensusTransactionImpl transaction : event.getHashedData().getTransactions()) {
+        final Iterator<Transaction> iterator = event.transactionIterator();
+        while (iterator.hasNext()) {
+            final Transaction transaction = iterator.next();
             if (transaction.isSystem()) {
                 systemTransactions++;
             } else {

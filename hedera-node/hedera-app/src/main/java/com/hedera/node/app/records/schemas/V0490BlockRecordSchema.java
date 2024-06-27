@@ -23,17 +23,11 @@ import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLE
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.node.app.records.impl.codec.BlockInfoTranslator;
-import com.hedera.node.app.records.impl.codec.RunningHashesTranslator;
-import com.hedera.node.app.service.mono.state.merkle.MerkleNetworkContext;
-import com.hedera.node.app.service.mono.stream.RecordsRunningHashLeaf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.IOException;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,9 +46,6 @@ public class V0490BlockRecordSchema extends Schema {
      */
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
-
-    private static RecordsRunningHashLeaf fs;
-    private static MerkleNetworkContext mnc;
 
     public V0490BlockRecordSchema() {
         super(VERSION);
@@ -75,52 +66,15 @@ public class V0490BlockRecordSchema extends Schema {
      * */
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        final var runningHashState = ctx.newStates().getSingleton(RUNNING_HASHES_STATE_KEY);
-        final var blocksState = ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY);
         final var isGenesis = ctx.previousVersion() == null;
         if (isGenesis) {
+            final var blocksState = ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY);
             final var blocks = new BlockInfo(-1, EPOCH, Bytes.EMPTY, EPOCH, false, EPOCH);
             blocksState.put(blocks);
+            final var runningHashState = ctx.newStates().getSingleton(RUNNING_HASHES_STATE_KEY);
             final var runningHashes =
                     RunningHashes.newBuilder().runningHash(GENESIS_HASH).build();
             runningHashState.put(runningHashes);
         }
-
-        if (mnc != null) {
-            logger.info("BBM: doing block record migration");
-
-            // first migrate the hashes
-            final var toHashState = ctx.newStates().getSingleton(RUNNING_HASHES_STATE_KEY);
-            final var toRunningHashes = RunningHashesTranslator.runningHashesFromRecordsRunningHashLeaf(fs);
-            toHashState.put(toRunningHashes);
-            if (toHashState.isModified()) ((WritableSingletonStateBase) toHashState).commit();
-
-            // then migrate the latest block info
-            final var toBlockState = ctx.newStates().getSingleton(BLOCK_INFO_STATE_KEY);
-
-            try {
-                final BlockInfo toBlockInfo = BlockInfoTranslator.blockInfoFromMerkleNetworkContext(mnc);
-                toBlockState.put(toBlockInfo);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            if (toBlockState.isModified()) ((WritableSingletonStateBase) toBlockState).commit();
-
-            logger.info("BBM: finished block record migration");
-        } else {
-            logger.warn("BBM: no block 'from' state found");
-        }
-
-        fs = null;
-        mnc = null;
-    }
-
-    public static void setFs(RecordsRunningHashLeaf fs) {
-        V0490BlockRecordSchema.fs = fs;
-    }
-
-    public static void setMnc(MerkleNetworkContext mnc) {
-        V0490BlockRecordSchema.mnc = mnc;
     }
 }

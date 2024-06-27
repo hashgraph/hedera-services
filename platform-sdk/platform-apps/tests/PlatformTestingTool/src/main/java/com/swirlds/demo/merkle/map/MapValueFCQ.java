@@ -23,6 +23,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.exceptions.IllegalChildIndexException;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.demo.platform.expiration.ExpirationRecordEntry;
@@ -40,7 +41,8 @@ import java.util.concurrent.BlockingQueue;
 /**
  * MapValue with a {@link FCQueue}
  */
-public class MapValueFCQ<T extends FastCopyable & SerializableHashable> extends PartialNaryMerkleInternal
+public class MapValueFCQ<T extends FastCopyable & SerializableHashable & ProtoSerializable>
+        extends PartialNaryMerkleInternal
         implements Keyed<MapKey>, MapValue, MerkleInternal {
 
     private static final long CLASS_ID = 0xed49aa414bec6dbdL;

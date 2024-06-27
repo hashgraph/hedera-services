@@ -17,7 +17,7 @@
 package com.hedera.node.config.converter;
 
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
-import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
+import com.hedera.node.config.types.EntityScaleFactors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

@@ -21,6 +21,7 @@ import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.exceptions.IllegalChildIndexException;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
 import com.swirlds.common.merkle.utility.Keyed;
 import com.swirlds.common.merkle.utility.MerkleLong;
 import com.swirlds.common.test.fixtures.dummy.Key;
@@ -34,7 +35,8 @@ import java.util.Objects;
 /**
  * MapValue with a {@link FCQueue}
  */
-public class FCQValue<T extends FastCopyable & SerializableHashable> extends PartialNaryMerkleInternal
+public class FCQValue<T extends FastCopyable & SerializableHashable & ProtoSerializable>
+        extends PartialNaryMerkleInternal
         implements Iterable<T>, Keyed<Key>, MerkleInternal {
 
     protected static final int FCQ_VALUE_TYPE = 5;

@@ -25,7 +25,7 @@ class ValueLeafTest extends MerkleTestBase {
     @Test
     void setValue() {
         setupSingletonCountry();
-        final var leaf = new ValueLeaf<>(singletonClassId(COUNTRY_STATE_KEY), STRING_CODEC, DENMARK);
+        final var leaf = new ValueLeaf<>(singletonClassId(COUNTRY_STATE_KEY), STRING_CODEC, COUNTRY_PROTO_FIELD, DENMARK);
         assertThat(leaf.getValue()).isEqualTo(DENMARK);
         leaf.setValue(FRANCE);
         assertThat(leaf.getValue()).isEqualTo(FRANCE);

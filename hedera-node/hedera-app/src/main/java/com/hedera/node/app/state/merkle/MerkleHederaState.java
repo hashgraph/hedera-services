@@ -25,6 +25,7 @@ import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATEN
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVEVMBYTECODE;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVEVMSTORAGE;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVNFTS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVNODES;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVSCHEDULESBYEQUALITY;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVSCHEDULESBYEXPIRYSEC;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVSCHEDULESBYID;
@@ -43,6 +44,7 @@ import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENOD
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVEVMBYTECODE;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVEVMSTORAGE;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVNFTS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVNODES;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVSCHEDULESBYEQUALITY;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVSCHEDULESBYEXPIRYSEC;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVSCHEDULESBYID;
@@ -56,6 +58,8 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
@@ -390,6 +394,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                 case ContractService.NAME + "." + V0490ContractSchema.STORAGE_KEY -> FIELD_STATENODE_KVEVMSTORAGE;
                 case ContractService.NAME + "." + V0490ContractSchema.BYTECODE_KEY -> FIELD_STATENODE_KVEVMBYTECODE;
                 case ConsensusService.NAME + "." + ConsensusServiceImpl.TOPICS_KEY -> FIELD_STATENODE_KVTOPICS;
+                case AddressBookService.NAME + "." + AddressBookServiceImpl.NODES_KEY -> FIELD_STATENODE_KVNODES;
                 default -> throw new IllegalStateException("Unknown onDisk state: " + label);
             };
         } else {
@@ -488,6 +493,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                     return protoDeserializeVirtualMap(in, artifactsDir, ContractService.NAME, V0490ContractSchema.BYTECODE_KEY);
                 } else if (stateNodeFieldNum == NUM_STATENODE_KVTOPICS) {
                     return protoDeserializeVirtualMap(in, artifactsDir, ConsensusService.NAME, ConsensusServiceImpl.TOPICS_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVNODES) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, ConsensusService.NAME, AddressBookServiceImpl.NODES_KEY);
                 } else {
                     throw new MerkleSerializationException("Unknown state node type: " + stateNodeTag);
                 }

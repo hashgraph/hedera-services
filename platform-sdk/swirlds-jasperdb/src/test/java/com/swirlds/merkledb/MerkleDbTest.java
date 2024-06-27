@@ -59,7 +59,7 @@ public class MerkleDbTest {
             new MerkleDbTableConfig<>(
                     (short) 1, DigestType.SHA_384,
                     (short) 1, KEY_SERIALIZER,
-                    (short) 1, VALUE_SERIALIZER;
+                    (short) 1, VALUE_SERIALIZER);
 
     @BeforeAll
     public static void setup() throws Exception {
@@ -141,7 +141,7 @@ public class MerkleDbTest {
 
             final MerkleDb snapshotDb = MerkleDb.getInstance(snapshotDir.resolve("db"), snapshotConfig);
             final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> snapshotDs =
-                    snapshotDb.getDataSource("table" + sourceUsePbj, false);
+                    snapshotDb.getDataSource("table" + sourceUsePbj, KEY_SERIALIZER, VALUE_SERIALIZER, false);
             Assertions.assertNotNull(snapshotDs);
             snapshotDs.close();
         }
@@ -238,7 +238,8 @@ public class MerkleDbTest {
         MerkleDb.setDefaultPath(dbDir);
         final MerkleDb instance = MerkleDb.getDefaultInstance();
         final String tableName = "tableb";
-        Assertions.assertThrows(IllegalStateException.class, () -> instance.getDataSource(tableName, false));
+        Assertions.assertThrows(IllegalStateException.class,
+                () -> instance.getDataSource(tableName, KEY_SERIALIZER, VALUE_SERIALIZER, false));
     }
 
     @Test
@@ -250,7 +251,8 @@ public class MerkleDbTest {
                 instance.createDataSource(tableName, TABLE_CONFIG, KEY_SERIALIZER, VALUE_SERIALIZER, false);
         Assertions.assertNotNull(dataSource);
         dataSource.close();
-        Assertions.assertThrows(IllegalStateException.class, () -> instance.getDataSource(tableName, false));
+        Assertions.assertThrows(IllegalStateException.class,
+                () -> instance.getDataSource(tableName, KEY_SERIALIZER, VALUE_SERIALIZER, false));
     }
 
     @Test
@@ -267,7 +269,7 @@ public class MerkleDbTest {
 
         final MerkleDb instance2 = MerkleDb.getInstance(snapshotDir);
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource2 =
-                instance2.getDataSource(tableName, false);
+                instance2.getDataSource(tableName, KEY_SERIALIZER, VALUE_SERIALIZER, false);
         Assertions.assertNotNull(dataSource2);
         Assertions.assertNotEquals(dataSource2, dataSource);
 
@@ -298,11 +300,11 @@ public class MerkleDbTest {
         Assertions.assertTrue(Files.exists(instance2.getTableDir(tableName2, dataSource2.getTableId())));
         Assertions.assertFalse(Files.exists(instance2.getTableDir("tabled", dataSource2.getTableId())));
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> restored1 =
-                instance2.getDataSource(tableName1, false);
+                instance2.getDataSource(tableName1, KEY_SERIALIZER, VALUE_SERIALIZER, false);
         Assertions.assertEquals(TABLE_CONFIG, restored1.getTableConfig());
         restored1.close();
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> restored2 =
-                instance2.getDataSource(tableName2, false);
+                instance2.getDataSource(tableName2, KEY_SERIALIZER, VALUE_SERIALIZER, false);
         Assertions.assertEquals(TABLE_CONFIG, restored2.getTableConfig());
         Assertions.assertEquals(TABLE_CONFIG, instance2.getTableConfig(restored2.getTableId()));
         restored2.close();
@@ -403,7 +405,7 @@ public class MerkleDbTest {
         MerkleDb.setDefaultPath(newDir);
         final MerkleDb instance2 = MerkleDb.restore(snapshotDir, null);
         final MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource2 =
-                instance2.getDataSource(tableName, false);
+                instance2.getDataSource(tableName, KEY_SERIALIZER, VALUE_SERIALIZER, false);
         Assertions.assertNotNull(dataSource2);
         Assertions.assertEquals(TABLE_CONFIG, dataSource2.getTableConfig());
 

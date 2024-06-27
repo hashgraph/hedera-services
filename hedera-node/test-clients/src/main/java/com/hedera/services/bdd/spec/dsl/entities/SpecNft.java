@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.dsl.entities;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 
 import com.hedera.hapi.node.base.NftID;

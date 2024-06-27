@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.services.bdd.spec.fees.Payment.Reason.TXN_FEE;
-import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
@@ -25,12 +24,14 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TransactionGetReceipt;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.RECEIPT_NOT_FOUND;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 import static java.lang.Thread.sleep;
@@ -50,8 +51,6 @@ import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.infrastructure.DelegatingOpFinisher;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
-import com.hedera.services.bdd.spec.keys.KeyGenerator;
-import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
 import com.hederahashgraph.api.proto.java.Key;
@@ -106,7 +105,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     protected Optional<ResponseCodeEnum> expectedStatus = Optional.empty();
     protected Optional<ResponseCodeEnum> expectedPrecheck = Optional.empty();
-    protected Optional<KeyGenerator.Nature> keyGen = Optional.empty();
     protected Optional<EnumSet<ResponseCodeEnum>> permissibleStatuses = Optional.empty();
     protected Optional<EnumSet<ResponseCodeEnum>> permissiblePrechecks = Optional.empty();
     /** if response code in the set then allow to resubmit transaction */
@@ -324,7 +322,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     private void rechargePayerFor(HapiSpec spec) {
         long rechargeAmount = spec.registry().getRechargeAmount(payer.get());
         var bank = spec.setup().defaultPayerName();
-        spec.registry().setRechargingTime(payer.get(), Instant.now()); // record timestamp of last recharge event
+        spec.registry().setRechargingTime(payer.get(), spec.consensusTime()); // record timestamp of last recharge event
         allRunFor(spec, cryptoTransfer(tinyBarsFromTo(bank, payer.get(), rechargeAmount)));
     }
 
@@ -335,7 +333,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     private synchronized boolean payerNotRecentlyRecharged(HapiSpec spec) {
         Instant lastInstant = payer.map(spec.registry()::getRechargingTime).orElse(Instant.MIN);
         Integer rechargeWindow = payer.map(spec.registry()::getRechargingWindow).orElse(0);
-        return !lastInstant.plusSeconds(rechargeWindow).isAfter(Instant.now());
+        return !lastInstant.plusSeconds(rechargeWindow).isAfter(spec.consensusTime());
     }
 
     private void addIpbToPermissiblePrechecks() {
@@ -424,16 +422,28 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         Query receiptQuery = txnReceiptQueryFor(extractTxnId(txnSubmitted));
         do {
             Response response = statusResponse(spec, receiptQuery);
-            lastReceipt = response.getTransactionGetReceipt().getReceipt();
-            ResponseCodeEnum statusNow = lastReceipt.getStatus();
+            final var getReceiptResponse = response.getTransactionGetReceipt();
+            lastReceipt = getReceiptResponse.getReceipt();
+            final var lookupStatus = getReceiptResponse.getHeader().getNodeTransactionPrecheckCode();
+            final var statusNow = lookupStatus == OK ? lastReceipt.getStatus() : lookupStatus;
             if (acceptAnyStatus) {
                 expectedStatus = Optional.of(statusNow);
                 return statusNow;
             } else if (statusNow != UNKNOWN) {
                 if (acceptAnyKnownStatus) {
                     expectedStatus = Optional.of(statusNow);
+                    return statusNow;
                 }
-                return statusNow;
+                if (statusNow == RECEIPT_NOT_FOUND
+                        && expectedStatus.orElse(SUCCESS) != RECEIPT_NOT_FOUND
+                        && spec.targetNetworkOrThrow().type() == EMBEDDED_NETWORK) {
+                    // This smooths the case of getting the receipt for a transaction that was submitted
+                    // to the non-default node in embedded mode, bypassing ingest; we retry until the default
+                    // node caches the receipt at consensus
+                    continue;
+                } else {
+                    return statusNow;
+                }
             }
             pause(spec.setup().statusWaitSleepMs());
         } while ((Instant.now().toEpochMilli() - beginWait) < spec.setup().statusWaitTimeoutMs());
@@ -503,12 +513,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 Thread.currentThread().interrupt();
             }
         }
-    }
-
-    protected KeyGenerator effectiveKeyGen() {
-        return (keyGen.orElse(KeyGenerator.Nature.RANDOMIZED) == KeyGenerator.Nature.WITH_OVERLAPPING_PREFIXES)
-                ? OverlappingKeyGenerator.withDefaultOverlaps()
-                : DEFAULT_KEY_GEN;
     }
 
     protected byte[] gasLongToBytes(final Long gas) {
@@ -647,11 +651,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
-    public T ed25519Keys(KeyGenerator.Nature nature) {
-        keyGen = Optional.of(nature);
-        return self();
-    }
-
     public T sigMapPrefixes(SigMapGenerator gen) {
         sigMapGen = Optional.of(gen);
         return self();
@@ -704,16 +703,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T txnId(String name) {
         customTxnId = Optional.of(name);
-        return self();
-    }
-
-    public T randomNode() {
-        useRandomNode = true;
-        return self();
-    }
-
-    public T unavailableNode() {
-        unavailableNode = true;
         return self();
     }
 

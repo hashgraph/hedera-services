@@ -36,13 +36,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Base implementation of {@link KeyVerifier}
+ * Base implementation of {@link AppKeyVerifier}
  */
-public class DefaultKeyVerifier implements KeyVerifier {
+public class DefaultKeyVerifier implements AppKeyVerifier {
 
     private static final Logger logger = LogManager.getLogger(DefaultKeyVerifier.class);
 
@@ -54,8 +55,10 @@ public class DefaultKeyVerifier implements KeyVerifier {
      * Creates a {@link DefaultKeyVerifier}
      *
      * @param legacyFeeCalcNetworkVpt the number of verifications to report for temporary mono-service parity
+     * @param config configuration for the node
      * @param keyVerifications A {@link Map} with all data to verify signatures
      */
+    @Inject
     public DefaultKeyVerifier(
             final int legacyFeeCalcNetworkVpt,
             @NonNull final HederaConfig config,

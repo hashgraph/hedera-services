@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.services;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,7 +31,6 @@ import com.hedera.pbj.runtime.FieldType;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.state.spi.StateDefinition;
-import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,14 +43,11 @@ final class ServicesRegistryImplTest {
     @Mock
     ConstructableRegistry cr;
 
-    @Mock
-    GenesisRecordsBuilder genesisRecords;
-
     @DisplayName("The constructable registry cannot be null")
     @Test
     void nullConstructableRegistryThrows() {
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> new ServicesRegistryImpl(null, genesisRecords))
+        assertThatThrownBy(() -> new ServicesRegistryImpl(null, DEFAULT_CONFIG))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -58,12 +55,13 @@ final class ServicesRegistryImplTest {
     @Test
     void nullGenesisRecordsThrows() {
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> new ServicesRegistryImpl(cr, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new ServicesRegistryImpl(null, DEFAULT_CONFIG))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void registerCallsTheConstructableRegistry() throws ConstructableRegistryException {
-        final var registry = new ServicesRegistryImpl(cr, genesisRecords);
+        final var registry = new ServicesRegistryImpl(cr, DEFAULT_CONFIG);
         final var protoField = new FieldDefinition("singleton", FieldType.MESSAGE, false, false, true, 99);
         registry.register(TestService.newBuilder()
                 .name("registerCallsTheConstructableRegistryTest")
@@ -78,7 +76,7 @@ final class ServicesRegistryImplTest {
 
     @Test
     void registrationsAreSortedByName() {
-        final var registry = new ServicesRegistryImpl(cr, genesisRecords);
+        final var registry = new ServicesRegistryImpl(cr, DEFAULT_CONFIG);
         registry.register(TestService.newBuilder().name("B").build());
         registry.register(TestService.newBuilder().name("C").build());
         registry.register(TestService.newBuilder().name("A").build());

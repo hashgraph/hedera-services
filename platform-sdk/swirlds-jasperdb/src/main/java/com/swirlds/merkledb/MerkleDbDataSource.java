@@ -60,6 +60,7 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
@@ -67,6 +68,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -513,9 +515,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualHashRecord> hashRecordsToUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+            @NonNull final Stream<VirtualHashRecord> hashRecordsToUpdate,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
             final boolean isReconnectContext)
             throws IOException {
         try {
@@ -1143,23 +1145,30 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     private void writeLeavesToPathToKeyValue(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualLeafRecord<K, V>> dirtyLeaves,
-            final Stream<VirtualLeafRecord<K, V>> deletedLeaves,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> dirtyLeaves,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> deletedLeaves,
             boolean isReconnect)
             throws IOException {
-        if ((dirtyLeaves == null) || (firstLeafPath <= 0)) {
-            // nothing to do
+        // If both streams are empty, no new data files should be created. One simple way to
+        // check emptiness is to use iterators. The streams aren't processed in parallel anyway
+        final Iterator<VirtualLeafRecord<K, V>> dirtyIterator = dirtyLeaves
+                .sorted(Comparator.comparingLong(VirtualLeafRecord::getPath))
+                .iterator();
+        final Iterator<VirtualLeafRecord<K, V>> deletedIterator = deletedLeaves.iterator();
+
+        if (!dirtyIterator.hasNext() && !deletedIterator.hasNext()) {
+            // Nothing to do
             return;
         }
 
-        // start writing
         pathToKeyValue.startWriting(firstLeafPath, lastLeafPath);
         if (!isLongKeyMode) {
             objectKeyToPath.startWriting();
         }
 
         // Iterate over leaf records
-        dirtyLeaves.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath)).forEachOrdered(leafRecord -> {
+        while (dirtyIterator.hasNext()) {
+            final VirtualLeafRecord<K, V> leafRecord = dirtyIterator.next();
             final long path = leafRecord.getPath();
             // Update key to path index
             if (isLongKeyMode) {
@@ -1181,10 +1190,11 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
             // cache the record
             invalidateReadCache(leafRecord.getKey());
-        });
+        }
 
         // Iterate over leaf records to delete
-        deletedLeaves.forEach(leafRecord -> {
+        while (deletedIterator.hasNext()) {
+            final VirtualLeafRecord<K, V> leafRecord = deletedIterator.next();
             final long path = leafRecord.getPath();
             // Update key to path index. In some cases (e.g. during reconnect), some leaves in the
             // deletedLeaves stream have been moved to different paths in the tree. This is good
@@ -1215,7 +1225,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
             // delete the record from the cache
             invalidateReadCache(leafRecord.getKey());
-        });
+        }
 
         // end writing
         final DataFileReader<VirtualLeafRecord<K, V>> pathToKeyValueReader = pathToKeyValue.endWriting();

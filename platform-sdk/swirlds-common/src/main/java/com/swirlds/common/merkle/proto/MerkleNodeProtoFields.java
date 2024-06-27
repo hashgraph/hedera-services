@@ -237,6 +237,7 @@ public final class MerkleNodeProtoFields {
     //         VirtualMap kvEvmStorage = 311;
     //         VirtualMap kvEvmBytecode = 312;
     //         VirtualMap kvTopics = 313;
+    //         VirtualMap kvNodes = 314;
     //     }
     // }
 
@@ -257,6 +258,7 @@ public final class MerkleNodeProtoFields {
     public static final int NUM_STATENODE_KVEVMSTORAGE = 311;
     public static final int NUM_STATENODE_KVEVMBYTECODE = 312;
     public static final int NUM_STATENODE_KVTOPICS = 313;
+    public static final int NUM_STATENODE_KVNODES = 314;
 
     public static final FieldDefinition FIELD_STATENODE_SINGLETON = new FieldDefinition(
             "singleton", FieldType.MESSAGE, false, true, true, NUM_STATENODE_SINGLETON);
@@ -306,6 +308,9 @@ public final class MerkleNodeProtoFields {
 
     public static final FieldDefinition FIELD_STATENODE_KVTOPICS = new FieldDefinition(
             "topics", FieldType.MESSAGE, false, true, true, NUM_STATENODE_KVTOPICS);
+
+    public static final FieldDefinition FIELD_STATENODE_KVNODES = new FieldDefinition(
+            "nodes", FieldType.MESSAGE, false, true, true, NUM_STATENODE_KVNODES);
 
     // Hedera state nodes
 
@@ -463,6 +468,7 @@ public final class MerkleNodeProtoFields {
     //         VirtualMap evmStorage = 311;
     //         VirtualMap evmBytecode = 312;
     //         VirtualMap topics = 313;
+    //         VirtualMap nodes = 314;
     //     }
     // }
 
@@ -479,6 +485,7 @@ public final class MerkleNodeProtoFields {
     public static final int NUM_KEYVALUEVALUELEAF_EVMSTORAGE = 311;
     public static final int NUM_KEYVALUEVALUELEAF_EVNBYTECODE = 312;
     public static final int NUM_KEYVALUEVALUELEAF_TOPICS = 313;
+    public static final int NUM_KEYVALUEVALUELEAF_NODES = 314;
 
     public static final FieldDefinition FIELD_KEYVALUEVALUELEAF_TOKENS = new FieldDefinition(
             "tokens", FieldType.MESSAGE, false, false, true, NUM_KEYVALUEVALUELEAF_TOKENS);
@@ -518,6 +525,9 @@ public final class MerkleNodeProtoFields {
 
     public static final FieldDefinition FIELD_KEYVALUEVALUELEAF_TOPICS = new FieldDefinition(
             "topics", FieldType.MESSAGE, false, false, true, NUM_KEYVALUEVALUELEAF_TOPICS);
+
+    public static final FieldDefinition FIELD_KEYVALUEVALUELEAF_NODES = new FieldDefinition(
+            "nodes", FieldType.MESSAGE, false, false, true, NUM_KEYVALUEVALUELEAF_NODES);
     */
 
 

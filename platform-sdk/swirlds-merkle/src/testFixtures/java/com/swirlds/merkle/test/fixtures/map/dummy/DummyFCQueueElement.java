@@ -21,13 +21,14 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.SerializableHashable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
 import java.io.IOException;
 import java.util.Objects;
 
 /**
  * An element that sits in an FCQueue
  */
-public class DummyFCQueueElement implements FastCopyable, SerializableHashable {
+public class DummyFCQueueElement implements FastCopyable, ProtoSerializable, SerializableHashable {
 
     private static final long CLASS_ID = 0x1fc41d4f294c4115L;
 

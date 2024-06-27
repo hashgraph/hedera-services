@@ -20,12 +20,16 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class TransactionRecord extends AbstractSerializableHashable implements FastCopyable, Serializable {
+public class TransactionRecord
+        extends AbstractSerializableHashable
+        implements FastCopyable, ProtoSerializable, Serializable {
+
     private static final long CLASS_ID = 0xcdd5ad651cf2c4d8L;
 
     private static class ClassVersion {

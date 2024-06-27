@@ -142,6 +142,11 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         return queryMutation != null ? queryMutation.apply(query, spec) : query;
     }
 
+    public T withUnknownFieldIn(final UnknownFieldLocation location) {
+        unknownFieldLocation = location;
+        return self();
+    }
+
     protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
         return 0L;
     }
@@ -415,11 +420,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
         return self();
     }
 
-    public T noYahcliLogging() {
-        yahcliLogger = false;
-        return self();
-    }
-
     public T withYahcliLogging() {
         yahcliLogger = true;
         return self();
@@ -433,16 +433,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
     public T useEmptyTxnAsAnswerPayment() {
         useDefaultTxnAsAnswerOnlyPayment = true;
         return self();
-    }
-
-    public T randomNode() {
-        useRandomNode = true;
-        return self();
-    }
-
-    public T unavailableNode() {
-        unavailableNode = true;
-        return noLogging();
     }
 
     public T setNode(String account) {

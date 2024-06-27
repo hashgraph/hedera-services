@@ -24,6 +24,7 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.SerializableHashable;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
 import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.fcqueue.internal.FCQHashAlgorithm;
 import com.swirlds.fcqueue.internal.FCQueueNode;
@@ -51,7 +52,8 @@ import java.util.function.Supplier;
  * after
  * a write to that queue, but it is unaffected by writes to other queues in that queue group.
  */
-public class MockFCQueue<E extends FastCopyable & SerializableHashable> extends SlowMockFCQueue<E> {
+public class MockFCQueue<E extends FastCopyable & SerializableHashable & ProtoSerializable>
+        extends SlowMockFCQueue<E> {
 
     /** Object identifier of this class (random int). Do NOT change when the class changes its code/name/version. */
     public static final long CLASS_ID = 141236109103L;
