@@ -333,7 +333,7 @@ public class BaseTokenHandler {
                 tokenRelStore.sizeOfState() + 1 < tokensConfig.maxAggregateRels(),
                 MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
-        // Check is number of used associations is less than maxAutoAssociations
+        // Check if number of used associations is less than maxAutoAssociations
         final var numAssociations = account.numberAssociations();
         validateFalse(
                 entitiesConfig.limitTokenAssociations() && numAssociations >= tokensConfig.maxPerAccount(),
