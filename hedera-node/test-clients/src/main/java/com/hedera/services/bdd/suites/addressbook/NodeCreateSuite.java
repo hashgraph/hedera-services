@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.addressbook;
 
 import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
-import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
