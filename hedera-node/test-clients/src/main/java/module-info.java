@@ -50,14 +50,12 @@ module com.hedera.node.test.clients {
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
     requires transitive headlong;
-    requires transitive info.picocli;
     requires transitive io.grpc;
     requires transitive net.i2p.crypto.eddsa;
     requires transitive org.apache.commons.io;
     requires transitive org.apache.logging.log4j;
     requires transitive org.junit.jupiter.api;
     requires transitive org.testcontainers;
-    requires transitive org.yaml.snakeyaml;
     requires transitive tuweni.bytes;
     requires com.hedera.node.app.service.addressbook.impl;
     requires com.hedera.node.app.service.addressbook;
@@ -89,6 +87,7 @@ module com.hedera.node.test.clients {
     requires org.json;
     requires org.junit.platform.commons;
     requires org.opentest4j;
+    requires org.yaml.snakeyaml;
     requires tuweni.units;
     requires static com.github.spotbugs.annotations;
     requires static com.hedera.pbj.runtime;
