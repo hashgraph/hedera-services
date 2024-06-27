@@ -5,7 +5,6 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.suites.utils.sysfiles.serdes;
     exports com.hedera.services.bdd;
     exports com.hedera.services.bdd.spec;
-    exports com.hedera.services.bdd.spec.persistence;
     exports com.hedera.services.bdd.spec.infrastructure;
     exports com.hedera.services.bdd.spec.props;
     exports com.hedera.services.bdd.spec.queries;

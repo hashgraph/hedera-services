@@ -19,8 +19,19 @@ package com.hedera.services.bdd.spec.keys.deterministic;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.SplittableRandom;
 
 public class Bip0039 {
+    public static String randomMnemonic() {
+        byte[] entropy = new byte[32];
+        new SplittableRandom().nextBytes(entropy);
+        try {
+            return Bip0039.mnemonicFrom(entropy);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     public static byte[] entropyFrom(String mnemonic) {
         String[] words = mnemonic.split(" ");
         assert (words.length == 24);
