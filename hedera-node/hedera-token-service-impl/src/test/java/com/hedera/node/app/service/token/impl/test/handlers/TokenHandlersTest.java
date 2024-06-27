@@ -48,6 +48,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHan
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenRejectHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
@@ -91,6 +92,7 @@ public class TokenHandlersTest {
     private TokenGetNftInfoHandler tokenGetNftInfoHandler;
     private TokenGetNftInfosHandler tokenGetNftInfosHandler;
     private TokenUpdateNftsHandler tokenUpdateNftsHandler;
+    private TokenRejectHandler tokenRejectHandler;
 
     private TokenHandlers tokenHandlers;
 
@@ -129,6 +131,7 @@ public class TokenHandlersTest {
         tokenGetNftInfoHandler = mock(TokenGetNftInfoHandler.class);
         tokenGetNftInfosHandler = mock(TokenGetNftInfosHandler.class);
         tokenUpdateNftsHandler = mock(TokenUpdateNftsHandler.class);
+        tokenRejectHandler = mock(TokenRejectHandler.class);
 
         tokenHandlers = new TokenHandlers(
                 cryptoCreateHandler,
@@ -163,6 +166,7 @@ public class TokenHandlersTest {
                 tokenGetAccountNftInfosHandler,
                 tokenGetNftInfoHandler,
                 tokenGetNftInfosHandler,
+                tokenRejectHandler,
                 tokenUpdateNftsHandler);
     }
 
@@ -329,5 +333,10 @@ public class TokenHandlersTest {
     @Test
     public void tokenUpdateNftsHandlerReturnsCorrectInstance() {
         assertEquals(tokenUpdateNftsHandler, tokenHandlers.tokenUpdateNftsHandler());
+    }
+
+    @Test
+    public void setTokenRejectHandlerReturnsCorrectInstance() {
+        assertEquals(tokenRejectHandler, tokenHandlers.tokenRejectHandler());
     }
 }

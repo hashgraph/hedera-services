@@ -24,6 +24,7 @@ import com.swirlds.virtual.merkle.TestValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -44,9 +45,9 @@ public final class BreakableDataSource implements VirtualDataSource<TestKey, Tes
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-            final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+            @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+            @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
+            @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
             final boolean isReconnectContext)
             throws IOException {
         final List<VirtualLeafRecord<TestKey, TestValue>> leaves = leafRecordsToAddOrUpdate.toList();

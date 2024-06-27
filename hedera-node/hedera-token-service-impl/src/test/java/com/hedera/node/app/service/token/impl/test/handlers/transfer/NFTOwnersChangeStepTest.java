@@ -83,7 +83,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         given(handleContext.payer()).willReturn(spenderId);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
-        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, payerId);
+        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp.tokenTransfers(), payerId);
         final var nft = writableNftStore.get(nftIdSl1);
         assertThat(nft.ownerId()).isEqualTo(ownerId);
 
@@ -174,7 +174,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         final var receiver = asAccount(tokenReceiver);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
-        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, spenderId);
+        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp.tokenTransfers(), spenderId);
 
         final var nft = writableNftStore.get(nftIdSl1);
         assertThat(nft.ownerId()).isEqualTo(ownerId);
@@ -243,7 +243,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
 
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
         final var replacedOp = getReplacedOp();
-        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp, payerId);
+        changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp.tokenTransfers(), payerId);
 
         assertThatThrownBy(() -> changeNFTOwnersStep.doIn(transferContext))
                 .isInstanceOf(HandleException.class)
