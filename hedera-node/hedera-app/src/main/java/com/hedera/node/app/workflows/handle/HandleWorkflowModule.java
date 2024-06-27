@@ -130,6 +130,7 @@ public interface HandleWorkflowModule {
                 tokenHandlers.tokenPauseHandler(),
                 tokenHandlers.tokenUnpauseHandler(),
                 tokenHandlers.tokenUpdateNftsHandler(),
+                tokenHandlers.tokenRejectHandler(),
                 utilHandlers.prngHandler());
     }
 }
