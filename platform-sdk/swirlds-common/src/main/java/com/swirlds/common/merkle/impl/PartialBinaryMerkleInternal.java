@@ -45,11 +45,6 @@ public non-sealed class PartialBinaryMerkleInternal extends AbstractMerkleIntern
 
     public PartialBinaryMerkleInternal() {}
 
-    public PartialBinaryMerkleInternal(final ReadableSequentialData in, final Path artifactsDir)
-            throws MerkleSerializationException {
-        super(in, artifactsDir);
-    }
-
     /**
      * Copy constructor.
      */

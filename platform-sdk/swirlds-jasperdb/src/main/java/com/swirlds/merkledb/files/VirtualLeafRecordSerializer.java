@@ -72,9 +72,12 @@ public class VirtualLeafRecordSerializer<K extends VirtualKey, V extends Virtual
 
     private final int hashSize;
 
-    public VirtualLeafRecordSerializer(MerkleDbTableConfig<K, V> tableConfig) {
-        keySerializer = tableConfig.getKeySerializer();
-        valueSerializer = tableConfig.getValueSerializer();
+    public VirtualLeafRecordSerializer(
+            final MerkleDbTableConfig<K, V> tableConfig,
+            final KeySerializer<K> keySerializer,
+            final ValueSerializer<V> valueSerializer) {
+        this.keySerializer = keySerializer;
+        this.valueSerializer = valueSerializer;
         final boolean variableSize = keySerializer.isVariableSize() || valueSerializer.isVariableSize();
         dataItemSerializedSize = variableSize
                 ? VARIABLE_DATA_SIZE

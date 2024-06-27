@@ -1,6 +1,7 @@
 package com.swirlds.virtualmap.internal.cache;
 
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VNCPATHTOHASH_DELETED;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VNCPATHTOHASH_HASH;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VNCPATHTOHASH_PATH;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VNCPATHTOHASH_VERSION;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VNCPATHTOHASH_DELETED;
@@ -17,6 +18,7 @@ import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.merkle.proto.MerkleProtoUtils;
 import com.swirlds.common.merkle.proto.ProtoSerializable;
 import com.swirlds.virtualmap.VirtualKey;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Function;
 
 public class CachePathToHashEntry implements ProtoSerializable {
@@ -33,7 +35,7 @@ public class CachePathToHashEntry implements ProtoSerializable {
         this.deleted = deleted;
     }
 
-    public CachePathToHashEntry(final ReadableSequentialData in) throws MerkleSerializationException {
+    public CachePathToHashEntry(@NonNull final ReadableSequentialData in) throws MerkleSerializationException {
         long defaultVersion = 0;
         long defaultPath = 0;
         Hash defaultHash = null;
@@ -102,7 +104,7 @@ public class CachePathToHashEntry implements ProtoSerializable {
             size += ProtoWriterTools.sizeOfTag(FIELD_VNCPATHTOHASH_PATH);
             size += ProtoWriterTools.sizeOfVarInt64(path);
         }
-        size += MerkleProtoUtils.getHashSizeInBytes(hash);
+        size += MerkleProtoUtils.getHashSizeInBytes(hash, FIELD_VNCPATHTOHASH_HASH);
         if (deleted) {
             size += ProtoWriterTools.sizeOfTag(FIELD_VNCPATHTOHASH_DELETED);
             size += ProtoWriterTools.sizeOfVarInt32(1);
@@ -120,7 +122,7 @@ public class CachePathToHashEntry implements ProtoSerializable {
             ProtoWriterTools.writeTag(out, FIELD_VNCPATHTOHASH_PATH);
             out.writeVarLong(path, false);
         }
-        MerkleProtoUtils.protoWriteHash(out, hash);
+        MerkleProtoUtils.protoWriteHash(out, hash, FIELD_VNCPATHTOHASH_HASH);
         if (deleted) {
             ProtoWriterTools.writeTag(out, FIELD_VNCPATHTOHASH_DELETED);
             out.writeVarInt(1, false);

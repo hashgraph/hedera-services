@@ -4,6 +4,7 @@ import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_HASH_D
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_HASH_DIGESTTYPE;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_NODE_HASH;
 
+import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoParserTools;
 import com.hedera.pbj.runtime.ProtoWriterTools;
@@ -17,7 +18,13 @@ public final class MerkleProtoUtils {
 
     private MerkleProtoUtils() {}
 
+    // Hash size, in bytes. Includes FIELD_NODE_HASH tag and length
     public static int getHashSizeInBytes(final Hash hash) {
+        return getHashSizeInBytes(hash, FIELD_NODE_HASH);
+    }
+
+    // Hash size, in bytes. Includes field tag and length
+    public static int getHashSizeInBytes(final Hash hash, final FieldDefinition fieldDef) {
         if (hash == null) {
             return 0;
         }
@@ -25,10 +32,14 @@ public final class MerkleProtoUtils {
         size += ProtoWriterTools.sizeOfTag(FIELD_HASH_DIGESTTYPE) +
                 ProtoWriterTools.sizeOfVarInt32(hash.getDigestType().id());
         size += ProtoWriterTools.sizeOfDelimited(FIELD_HASH_DATA, hash.getDigestType().digestLength());
-        return ProtoWriterTools.sizeOfDelimited(FIELD_NODE_HASH, size);
+        return ProtoWriterTools.sizeOfDelimited(fieldDef, size);
     }
 
     public static void protoWriteHash(final WritableSequentialData out, final Hash hash) {
+        protoWriteHash(out, hash, FIELD_NODE_HASH);
+    }
+
+    public static void protoWriteHash(final WritableSequentialData out, final Hash hash, final FieldDefinition fieldDef) {
         if (hash == null) {
             return;
         }

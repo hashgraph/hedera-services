@@ -41,10 +41,12 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.ProtoParserTools;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.ExternalSelfSerializable;
@@ -221,8 +223,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     private VirtualDataSource<K, V> dataSource;
 
     // Only used during deserialization construction
-    private Function<ReadableSequentialData, K> keyReader;
-    private Function<ReadableSequentialData, V> valueReader;
+    private CheckedFunction<ReadableSequentialData, K, Exception> keyReader;
+    private CheckedFunction<ReadableSequentialData, V, Exception> valueReader;
 
     /**
      * A cache for virtual tree nodes. This cache is very specific for this use case. The elements
@@ -413,12 +415,12 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
     }
 
     public VirtualRootNode(
-            final @NonNull ReadableSequentialData in,
+            @NonNull final ReadableSequentialData in,
             final Path artifactsDir,
             final VirtualMapState state,
-            final @NonNull VirtualDataSourceBuilder<K, V> dataSourceBuilder,
-            final @NonNull Function<ReadableSequentialData, K> keyReader,
-            final @NonNull Function<ReadableSequentialData, V> valueReader)
+            @NonNull final VirtualDataSourceBuilder<K, V> dataSourceBuilder,
+            @NonNull final CheckedFunction<ReadableSequentialData, K, Exception> keyReader,
+            @NonNull final CheckedFunction<ReadableSequentialData, V, Exception> valueReader)
             throws MerkleSerializationException {
         this(dataSourceBuilder);
         this.dataSource = dataSourceBuilder.restore(state.getLabel(), artifactsDir);
@@ -1278,38 +1280,45 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
 
     @Override
     protected MerkleNode protoDeserializeNextChild(
-            final @NonNull ReadableSequentialData in,
+            @NonNull final ReadableSequentialData in,
             final Path artifactsDir) {
         throw new UnsupportedOperationException("Virtual nodes must never be deserialized");
     }
 
     @Override
     protected boolean protoDeserializeField(
-            final @NonNull ReadableSequentialData in,
+            @NonNull final ReadableSequentialData in,
             final Path artifactsDir,
-            int fieldTag)
+            final int fieldTag)
             throws MerkleSerializationException {
-        if (super.protoDeserializeField(in, artifactsDir, fieldTag)) {
+        if (super.protoDeserializeField(in, artifactsDir, fieldTag)) { // Reads hash
             return true;
         }
         final int fieldNum = fieldTag >> ProtoParserTools.TAG_FIELD_OFFSET;
         if (fieldNum == NUM_VRNODE_CACHE) {
-            cache = new VirtualNodeCache<>(in, keyReader, valueReader);
-            return true;
+            final int len = in.readVarInt(false);
+            final long oldLimit = in.limit();
+            try {
+                in.limit(in.position() + len);
+                cache = new VirtualNodeCache<>(in, keyReader, valueReader);
+                return true;
+            } finally {
+                in.limit(oldLimit);
+            }
         }
         return false;
     }
 
     @Override
     protected void protoSerializeChild(
-            final WritableSequentialData out,
+            @NonNull final WritableSequentialData out,
             final Path artifactsDir,
             final int index) {
         // No-op: virtual nodes are never serialized
     }
 
     @Override
-    public void protoSerializeSelf(final WritableSequentialData out, final Path artifactsDir)
+    public void protoSerializeSelf(@NonNull final WritableSequentialData out, final Path artifactsDir)
             throws MerkleSerializationException {
         // Data source snapshot
         final RecordAccessor<K, V> detachedRecords = pipeline.detachCopy(this, artifactsDir);

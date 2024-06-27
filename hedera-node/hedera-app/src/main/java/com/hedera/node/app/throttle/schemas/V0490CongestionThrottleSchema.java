@@ -17,6 +17,8 @@
 package com.hedera.node.app.throttle.schemas;
 
 import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_CONGESTIONLEVELSTARTS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_THROTTLEUSAGESNAPSHOTS;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.congestion.CongestionLevelStarts;
@@ -59,8 +61,8 @@ public class V0490CongestionThrottleSchema extends Schema {
     @Override
     public Set<StateDefinition> statesToCreate() {
         return Set.of(
-                StateDefinition.singleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY, ThrottleUsageSnapshots.PROTOBUF),
-                StateDefinition.singleton(CONGESTION_LEVEL_STARTS_STATE_KEY, CongestionLevelStarts.PROTOBUF));
+                StateDefinition.singleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY, ThrottleUsageSnapshots.PROTOBUF, FIELD_SINGLETONVALUELEAF_THROTTLEUSAGESNAPSHOTS),
+                StateDefinition.singleton(CONGESTION_LEVEL_STARTS_STATE_KEY, CongestionLevelStarts.PROTOBUF, FIELD_SINGLETONVALUELEAF_CONGESTIONLEVELSTARTS));
     }
 
     /** {@inheritDoc} */

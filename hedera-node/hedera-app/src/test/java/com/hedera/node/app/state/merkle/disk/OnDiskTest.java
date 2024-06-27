@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.state.merkle.disk;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_ACCOUNTS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -69,7 +70,7 @@ class OnDiskTest extends MerkleTestBase {
         setupConstructableRegistry();
         final Path storageDir = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
-        def = StateDefinition.onDisk(ACCOUNT_STATE_KEY, AccountID.PROTOBUF, Account.PROTOBUF, 100);
+        def = StateDefinition.onDisk(ACCOUNT_STATE_KEY, AccountID.PROTOBUF, Account.PROTOBUF, FIELD_KEYVALUEVALUELEAF_ACCOUNTS, 100);
 
         //noinspection rawtypes
         schema = new Schema(version(1, 0, 0)) {

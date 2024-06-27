@@ -17,6 +17,8 @@
 package com.hedera.node.app.records.schemas;
 
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_BLOCKINFO;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_RUNNINGHASHES;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
@@ -64,8 +66,8 @@ public class V0490BlockRecordSchema extends Schema {
     @Override
     public @NonNull Set<StateDefinition> statesToCreate() {
         return Set.of(
-                StateDefinition.singleton(RUNNING_HASHES_STATE_KEY, RunningHashes.PROTOBUF),
-                StateDefinition.singleton(BLOCK_INFO_STATE_KEY, BlockInfo.PROTOBUF));
+                StateDefinition.singleton(RUNNING_HASHES_STATE_KEY, RunningHashes.PROTOBUF, FIELD_SINGLETONVALUELEAF_RUNNINGHASHES),
+                StateDefinition.singleton(BLOCK_INFO_STATE_KEY, BlockInfo.PROTOBUF, FIELD_SINGLETONVALUELEAF_BLOCKINFO));
     }
 
     /**

@@ -25,6 +25,8 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.spi.fixtures.TestService;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.FieldType;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.state.spi.StateDefinition;
@@ -62,11 +64,12 @@ final class ServicesRegistryImplTest {
     @Test
     void registerCallsTheConstructableRegistry() throws ConstructableRegistryException {
         final var registry = new ServicesRegistryImpl(cr, genesisRecords);
+        final var protoField = new FieldDefinition("singleton", FieldType.MESSAGE, false, false, true, 99);
         registry.register(TestService.newBuilder()
                 .name("registerCallsTheConstructableRegistryTest")
                 .schema(TestSchema.newBuilder()
                         .minorVersion(1)
-                        .stateToCreate(StateDefinition.singleton("Singleton", Timestamp.JSON))
+                        .stateToCreate(StateDefinition.singleton("Singleton", Timestamp.JSON, protoField))
                         .build())
                 .build());
         //noinspection removal

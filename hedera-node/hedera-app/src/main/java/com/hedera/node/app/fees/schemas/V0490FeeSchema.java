@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.fees.schemas;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_MIDNIGHTRATES;
+
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.transaction.ExchangeRate;
@@ -50,7 +52,7 @@ public class V0490FeeSchema extends Schema {
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(StateDefinition.singleton(MIDNIGHT_RATES_STATE_KEY, ExchangeRateSet.PROTOBUF));
+        return Set.of(StateDefinition.singleton(MIDNIGHT_RATES_STATE_KEY, ExchangeRateSet.PROTOBUF, FIELD_SINGLETONVALUELEAF_MIDNIGHTRATES));
     }
 
     @Override

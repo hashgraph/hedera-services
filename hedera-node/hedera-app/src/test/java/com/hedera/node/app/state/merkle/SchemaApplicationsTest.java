@@ -24,6 +24,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.FieldType;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import java.util.Set;
@@ -34,8 +36,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SchemaApplicationsTest {
+
+    private static final FieldDefinition PROTO_FIELD = new FieldDefinition("number", FieldType.MESSAGE, false, false, true, 99);
     @SuppressWarnings("rawtypes")
-    private static final StateDefinition STATE_DEFINITION = StateDefinition.singleton("NUMBER", EntityNumber.PROTOBUF);
+    private static final StateDefinition STATE_DEFINITION = StateDefinition.singleton("NUMBER", EntityNumber.PROTOBUF, PROTO_FIELD);
 
     private static final SemanticVersion LATEST_VERSION =
             SemanticVersion.newBuilder().major(3).build();

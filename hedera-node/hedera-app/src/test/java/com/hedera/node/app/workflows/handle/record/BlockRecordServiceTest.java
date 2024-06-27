@@ -19,6 +19,8 @@ package com.hedera.node.app.workflows.handle.record;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_BLOCKINFO;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_RUNNINGHASHES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,8 +71,8 @@ final class BlockRecordServiceTest {
             assertThat(schema).isInstanceOf(V0490BlockRecordSchema.class);
             Set<StateDefinition> states = schema.statesToCreate();
             assertEquals(2, states.size());
-            assertTrue(states.contains(StateDefinition.singleton("RUNNING_HASHES", RunningHashes.PROTOBUF)));
-            assertTrue(states.contains(StateDefinition.singleton("BLOCKS", BlockInfo.PROTOBUF)));
+            assertTrue(states.contains(StateDefinition.singleton("RUNNING_HASHES", RunningHashes.PROTOBUF, FIELD_SINGLETONVALUELEAF_RUNNINGHASHES)));
+            assertTrue(states.contains(StateDefinition.singleton("BLOCKS", BlockInfo.PROTOBUF, FIELD_SINGLETONVALUELEAF_BLOCKINFO)));
 
             when(migrationContext.newStates()).thenReturn(writableStates);
             when(migrationContext.previousVersion()).thenReturn(null);

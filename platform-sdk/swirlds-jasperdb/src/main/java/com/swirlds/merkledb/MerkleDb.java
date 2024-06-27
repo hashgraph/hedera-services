@@ -355,9 +355,9 @@ public final class MerkleDb {
      */
     public <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> createDataSource(
             final String label,
-            // final KeySerializer<K> keySerializer,
-            // final ValueSerializer<V> valueSerializer,
             final MerkleDbTableConfig<K, V> tableConfig,
+            final KeySerializer<K> keySerializer,
+            final ValueSerializer<V> valueSerializer,
             final boolean dbCompactionEnabled)
             throws IOException {
         // This method should be synchronized, as between tableExists() and tableConfigs.set()
@@ -370,8 +370,8 @@ public final class MerkleDb {
         }
         final int tableId = getNextTableId();
         tableConfigs.set(tableId, new TableMetadata(tableId, label, tableConfig));
-        MerkleDbDataSource<K, V> dataSource =
-                new MerkleDbDataSource<>(this, label, tableId, tableConfig, dbCompactionEnabled);
+        MerkleDbDataSource<K, V> dataSource = new MerkleDbDataSource<>(
+                this, label, tableId, tableConfig, keySerializer, valueSerializer, dbCompactionEnabled);
         dataSources.set(tableId, dataSource);
         // New tables are always primary
         primaryTables.add(tableId);
@@ -398,11 +398,15 @@ public final class MerkleDb {
      * @throws IOException If an I/O error occurs
      */
     public <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> copyDataSource(
-            final MerkleDbDataSource<K, V> dataSource, final boolean makeCopyPrimary) throws IOException {
+            final MerkleDbDataSource<K, V> dataSource,
+            final boolean makeCopyPrimary)
+            throws IOException {
         final String label = dataSource.getTableName();
+        final KeySerializer<K> keySerializer = dataSource.getKeySerializer();
+        final ValueSerializer<V> valueSerializer = dataSource.getValueSerializer();
         final int tableId = getNextTableId();
         importDataSource(dataSource, tableId, !makeCopyPrimary, makeCopyPrimary); // import to itself == copy
-        return getDataSource(tableId, label, makeCopyPrimary);
+        return getDataSource(tableId, label, keySerializer, valueSerializer, makeCopyPrimary);
     }
 
     private <K extends VirtualKey, V extends VirtualValue> void importDataSource(
@@ -440,6 +444,8 @@ public final class MerkleDb {
      * table name, throws an exception.
      *
      * @param name Table name
+     * @param keySerializer Virtual key serializer
+     * @param valueSerializer Virtual value serializer
      * @param dbCompactionEnabled Whether background compaction process needs to be enabled for this
      *     data source. If the data source was previously opened, this flag is ignored
      * @return The datasource
@@ -447,18 +453,27 @@ public final class MerkleDb {
      * @param <V> Virtual value type
      */
     public <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> getDataSource(
-            final String name, final boolean dbCompactionEnabled) throws IOException {
+            final String name,
+            final KeySerializer<K> keySerializer,
+            final ValueSerializer<V> valueSerializer,
+            final boolean dbCompactionEnabled)
+            throws IOException {
         final TableMetadata metadata = getTableMetadata(name);
         if (metadata == null) {
             throw new IllegalStateException("Unknown table: " + name);
         }
         final int tableId = metadata.getTableId();
-        return getDataSource(tableId, name, dbCompactionEnabled);
+        return getDataSource(tableId, name, keySerializer, valueSerializer, dbCompactionEnabled);
     }
 
     @SuppressWarnings({"unchecked"})
     private <K extends VirtualKey, V extends VirtualValue> MerkleDbDataSource<K, V> getDataSource(
-            final int tableId, final String tableName, final boolean dbCompactionEnabled) throws IOException {
+            final int tableId,
+            final String tableName,
+            final KeySerializer<K> keySerializer,
+            final ValueSerializer<V> valueSerializer,
+            final boolean dbCompactionEnabled)
+            throws IOException {
         final MerkleDbTableConfig<K, V> tableConfig = getTableConfig(tableId);
         final AtomicReference<IOException> rethrowIO = new AtomicReference<>(null);
         final MerkleDbDataSource<K, V> dataSource = dataSources.updateAndGet(tableId, ds -> {
@@ -466,7 +481,8 @@ public final class MerkleDb {
                 return ds;
             }
             try {
-                return new MerkleDbDataSource<>(this, tableName, tableId, tableConfig, dbCompactionEnabled);
+                return new MerkleDbDataSource<>(
+                        this, tableName, tableId, tableConfig, keySerializer, valueSerializer, dbCompactionEnabled);
             } catch (final IOException z) {
                 rethrowIO.set(z);
                 return null;
@@ -481,7 +497,7 @@ public final class MerkleDb {
     /**
      * Marks the data source as closed in this database instance. The corresponding table
      * configuration and table files are preserved, so the data source can be re-opened later using
-     * {@link #getDataSource(String, boolean)} method.
+     * {@link #getDataSource(String, KeySerializer, ValueSerializer, boolean)} method.
      *
      * @param dataSource The closed data source
      * @param <K> Virtual key type
@@ -534,8 +550,9 @@ public final class MerkleDb {
      * @param destination Destination folder
      * @throws IOException If an I/O error occurred
      */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public void snapshot(final Path destination, final MerkleDbDataSource dataSource) throws IOException {
+    public <K extends VirtualKey, V extends VirtualValue> void snapshot(
+            final Path destination, final MerkleDbDataSource<K, V> dataSource)
+            throws IOException {
         if (this != dataSource.getDatabase()) {
             logger.error(
                     EXCEPTION.getMarker(),

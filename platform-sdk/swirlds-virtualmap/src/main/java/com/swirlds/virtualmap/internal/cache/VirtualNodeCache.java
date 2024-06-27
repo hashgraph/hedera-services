@@ -33,6 +33,7 @@ import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.base.function.CheckedConsumer;
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
@@ -373,9 +374,9 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     }
 
     public VirtualNodeCache(
-            final @NonNull ReadableSequentialData in,
-            final @NonNull Function<ReadableSequentialData, K> keyReader,
-            final @NonNull Function<ReadableSequentialData, V> valueReader)
+            @NonNull final ReadableSequentialData in,
+            @NonNull final CheckedFunction<ReadableSequentialData, K, Exception> keyReader,
+            @NonNull final CheckedFunction<ReadableSequentialData, V, Exception> valueReader)
             throws MerkleSerializationException {
         this();
         protoDeserialize(in, keyReader, valueReader);
@@ -1080,9 +1081,9 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     }
 
     private void protoDeserialize(
-            final @NonNull ReadableSequentialData in,
-            final @NonNull Function<ReadableSequentialData, K> keyReader,
-            final @NonNull Function<ReadableSequentialData, V> valueReader)
+            @NonNull final ReadableSequentialData in,
+            @NonNull final CheckedFunction<ReadableSequentialData, K, Exception> keyReader,
+            @NonNull final CheckedFunction<ReadableSequentialData, V, Exception> valueReader)
             throws MerkleSerializationException {
         // Defaults
         fastCopyVersion.set(0);

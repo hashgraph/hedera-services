@@ -46,11 +46,6 @@ public non-sealed class PartialMerkleLeaf extends AbstractMerkleNode {
         super(that);
     }
 
-    protected PartialMerkleLeaf(final ReadableSequentialData in, final Path artifactsDir)
-            throws MerkleSerializationException {
-        super(in, artifactsDir);
-    }
-
     /**
      * {@inheritDoc}
      */

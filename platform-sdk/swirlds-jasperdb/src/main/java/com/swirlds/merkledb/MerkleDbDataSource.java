@@ -51,6 +51,8 @@ import com.swirlds.merkledb.files.VirtualLeafRecordSerializer;
 import com.swirlds.merkledb.files.hashmap.Bucket;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
 import com.swirlds.merkledb.serialize.KeyIndexType;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualLongKey;
@@ -100,10 +102,14 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     /** Table ID used by this data source in its database instance. */
     private final int tableId;
 
-    /**
-     * Table config, includes key and value serializers as well as a few other non-global params.
-     */
+    /** Table config, includes key and value serializers as well as a few other non-global params */
     private final MerkleDbTableConfig<K, V> tableConfig;
+
+    /** Virtual key serializer */
+    private final KeySerializer<K> keySerializer;
+
+    /** Virtual value serializer */
+    private final ValueSerializer<V> valueSerializer;
 
     /** data item serializer for hashStoreDisk store */
     private final VirtualHashRecordSerializer virtualHashRecordSerializer = new VirtualHashRecordSerializer();
@@ -195,12 +201,16 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             final String tableName,
             final int tableId,
             final MerkleDbTableConfig<K, V> tableConfig,
+            final KeySerializer<K> keySerializer,
+            final ValueSerializer<V> valueSerializer,
             final boolean compactionEnabled)
             throws IOException {
         this.database = database;
         this.tableName = tableName;
         this.tableId = tableId;
         this.tableConfig = tableConfig;
+        this.keySerializer = keySerializer;
+        this.valueSerializer = valueSerializer;
 
         // create thread group with label
         final ThreadGroup threadGroup = new ThreadGroup("MerkleDb-" + tableName);
@@ -251,7 +261,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         saveMetadata(dbPaths);
 
         // data item serializer for pathToKeyValue store
-        final VirtualLeafRecordSerializer<K, V> leafRecordSerializer = new VirtualLeafRecordSerializer<>(tableConfig);
+        final VirtualLeafRecordSerializer<K, V> leafRecordSerializer =
+                new VirtualLeafRecordSerializer<>(tableConfig, keySerializer, valueSerializer);
 
         // create path to disk location index
         final boolean forceIndexRebuilding = database.getConfig().indexRebuildingEnforced();
@@ -327,7 +338,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
         final DataFileCompactor<Bucket<K>> objectKeyToPathFileCompactor;
         // key to path store
-        if (tableConfig.getKeySerializer().getIndexType() == KeyIndexType.SEQUENTIAL_INCREMENTING_LONGS) {
+        if (keySerializer.getIndexType() == KeyIndexType.SEQUENTIAL_INCREMENTING_LONGS) {
             isLongKeyMode = true;
             objectKeyToPath = null;
             objectKeyToPathFileCompactor = null;
@@ -343,7 +354,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             objectKeyToPath = new HalfDiskHashMap<>(
                     database.getConfig(),
                     tableConfig.getMaxNumberOfKeys(),
-                    tableConfig.getKeySerializer(),
+                    keySerializer,
                     dbPaths.objectKeyToPathDirectory,
                     storeName,
                     tableName + ":objectKeyToPath",
@@ -443,6 +454,14 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
      */
     public static long getCountOfOpenDatabases() {
         return COUNT_OF_OPEN_DATABASES.sum();
+    }
+
+    public KeySerializer<K> getKeySerializer() {
+        return keySerializer;
+    }
+
+    public ValueSerializer<V> getValueSerializer() {
+        return valueSerializer;
     }
 
     /** Get the most recent first leaf path */
@@ -876,8 +895,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         final long estimatedLeavesSize = dirtyLeaves
                 * (Long.BYTES // path
                         + DigestType.SHA_384.digestLength() // hash
-                        + tableConfig.getKeySerializer().getTypicalSerializedSize() // key
-                        + tableConfig.getValueSerializer().getTypicalSerializedSize()); // value
+                        + keySerializer.getTypicalSerializedSize() // key
+                        + valueSerializer.getTypicalSerializedSize()); // value
         return estimatedInternalsSize + estimatedLeavesSize;
     }
 

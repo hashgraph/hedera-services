@@ -72,6 +72,7 @@ import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -82,6 +83,7 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.platform.system.InitTrigger;
@@ -97,7 +99,9 @@ import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.workflows.record.GenesisRecordsBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -347,6 +351,10 @@ public final class Hedera implements SwirldMain {
     @NonNull
     public SwirldState newState() {
         return new MerkleHederaState(new HederaLifecyclesImpl(this));
+    }
+
+    public MerkleRoot loadState(final ReadableSequentialData in, final Path artifactsDir) throws IOException {
+        return new MerkleHederaState(new HederaLifecyclesImpl(this), servicesRegistry, in, artifactsDir);
     }
 
     /*==================================================================================================================

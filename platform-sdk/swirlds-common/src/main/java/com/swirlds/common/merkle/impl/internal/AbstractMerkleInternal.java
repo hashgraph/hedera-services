@@ -17,8 +17,9 @@
 package com.swirlds.common.merkle.impl.internal;
 
 import static com.swirlds.common.io.streams.SerializableStreamConstants.NULL_CLASS_ID;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_NODE_CHILD;
 
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoParserTools;
 import com.hedera.pbj.runtime.ProtoWriterTools;
@@ -33,7 +34,6 @@ import com.swirlds.common.merkle.exceptions.IllegalChildTypeException;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.merkle.interfaces.MerkleParent;
-import com.swirlds.common.merkle.proto.MerkleNodeProtoFields;
 import com.swirlds.common.merkle.proto.MerkleProtoUtils;
 import com.swirlds.common.merkle.proto.ProtoSerializableNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
@@ -41,7 +41,6 @@ import com.swirlds.common.utility.ValueReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * This abstract class implements boiler plate functionality for a binary {@link MerkleInternal} (i.e. an internal
@@ -63,11 +62,6 @@ public abstract sealed class AbstractMerkleInternal extends AbstractMerkleNode
      */
     protected AbstractMerkleInternal(final AbstractMerkleInternal that) {
         super(that);
-    }
-
-    protected AbstractMerkleInternal(final @NonNull ReadableSequentialData in, final Path artifactsDir)
-            throws MerkleSerializationException {
-        super(in, artifactsDir);
     }
 
     /**
@@ -295,9 +289,7 @@ public abstract sealed class AbstractMerkleInternal extends AbstractMerkleNode
 
     @Override
     public int getProtoSizeInBytes() {
-        int size = 0;
-        // Hash
-        size += MerkleProtoUtils.getHashSizeInBytes(getHash());
+        int size = super.getProtoSizeInBytes(); // Includes hash
         // Children
         for (int i = 0; i < getNumberOfChildren(); i++) {
             size += getProtoChildSizeInBytes(i);
@@ -312,7 +304,8 @@ public abstract sealed class AbstractMerkleInternal extends AbstractMerkleNode
         if (child != null) {
             final int childSize = child.getProtoSizeInBytes();
             if (childSize != 0) {
-                return ProtoWriterTools.sizeOfDelimited(FIELD_NODE_CHILD, childSize);
+                final FieldDefinition childField = getChildProtoField(index);
+                return ProtoWriterTools.sizeOfDelimited(childField, childSize);
             }
         }
         return 0;
@@ -329,12 +322,12 @@ public abstract sealed class AbstractMerkleInternal extends AbstractMerkleNode
             final Path artifactsDir,
             final int fieldTag)
             throws MerkleSerializationException {
-        if (super.protoDeserializeField(in, artifactsDir, fieldTag)) {
+        if (super.protoDeserializeField(in, artifactsDir, fieldTag)) { // Reads hash
             return true;
         }
         final int fieldNum = fieldTag >> ProtoParserTools.TAG_FIELD_OFFSET;
-        if (fieldNum == MerkleNodeProtoFields.NUM_NODE_CHILD) {
-            assert (fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_DELIMITED.ordinal();
+        final int wireType = fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK;
+        if ((wireType == ProtoConstants.WIRE_TYPE_DELIMITED.ordinal()) && isChildNodeProtoTag(fieldNum)) {
             final int length = in.readVarInt(false);
             final long oldLimit = in.limit();
             try {
@@ -353,6 +346,11 @@ public abstract sealed class AbstractMerkleInternal extends AbstractMerkleNode
         return false;
     }
 
+    // May be overridden in subclasses to use other tags for child nodes
+    protected boolean isChildNodeProtoTag(final int fieldNum) {
+        return false;
+    }
+
     // TODO: current assumption is internals can't have null child nodes
     protected MerkleNode protoDeserializeNextChild(
             final @NonNull ReadableSequentialData in,
@@ -366,7 +364,7 @@ public abstract sealed class AbstractMerkleInternal extends AbstractMerkleNode
             throws MerkleSerializationException {
         final long startPos = out.position();
         // Node hash
-        MerkleProtoUtils.protoWriteHash(out, getHash());
+        super.protoSerialize(out, artifactsDir);
         // Children
         for (int i = 0; i < getNumberOfChildren(); i++) {
             protoSerializeChild(out, artifactsDir, i);
@@ -381,7 +379,23 @@ public abstract sealed class AbstractMerkleInternal extends AbstractMerkleNode
             final Path artifactsDir,
             final int index)
             throws MerkleSerializationException {
-        final MerkleNode child = getChild(index);
+        final FieldDefinition childField = getChildProtoField(index);
+        protoSerializeChild(out, artifactsDir, index, childField);
+    }
+
+    // Called by protoSerializeChild() to get the child node tag
+    protected FieldDefinition getChildProtoField(final int childIndex) {
+        throw new UnsupportedOperationException("TO IMPLEMENT: " + getClass().getName() + ".getChildProtoField()");
+    }
+
+    protected void protoSerializeChild(
+            final @NonNull WritableSequentialData out,
+            final Path artifactsDir,
+            final int childIndex,
+            final FieldDefinition childField)
+            throws MerkleSerializationException {
+        assert childField.type() == FieldType.MESSAGE;
+        final MerkleNode child = getChild(childIndex);
         if (child == null) {
             throw new MerkleSerializationException("Cannot serialize internal node, child is null");
         }
@@ -389,7 +403,7 @@ public abstract sealed class AbstractMerkleInternal extends AbstractMerkleNode
         if (childSize != 0) {
             final ValueReference<MerkleSerializationException> error = new ValueReference<>();
             // TODO: improve writeDelimited() to throw a checked exception
-            ProtoWriterTools.writeDelimited(out, FIELD_NODE_CHILD, child.getProtoSizeInBytes(),
+            ProtoWriterTools.writeDelimited(out, childField, child.getProtoSizeInBytes(),
                     w -> {
                         try {
                             child.protoSerialize(w, artifactsDir);

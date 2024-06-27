@@ -218,7 +218,7 @@ public class VirtualMapState extends PartialMerkleLeaf implements MerkleLeaf {
 
     @Override
     public int getProtoSizeInBytes() {
-        int size = 0;
+        int size = super.getProtoSizeInBytes(); // Includes hash
         if (firstLeafPath != 0) {
             size += ProtoWriterTools.sizeOfTag(FIELD_VMSTATE_FIRSTLEAFPATH);
             size += ProtoWriterTools.sizeOfVarInt64(firstLeafPath);
@@ -240,19 +240,29 @@ public class VirtualMapState extends PartialMerkleLeaf implements MerkleLeaf {
             final java.nio.file.Path artifactsDir,
             final int fieldTag)
             throws MerkleSerializationException {
+        if (super.protoDeserializeField(in, artifactsDir, fieldTag)) { // Reads hash
+            return true;
+        }
         final int fieldNum = fieldTag >> ProtoParserTools.TAG_FIELD_OFFSET;
+        final int wireType = fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK;
         if (fieldNum == NUM_VMSTATE_FIRSTLEAFPATH) {
-            assert (fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG.ordinal();
+            if (wireType != ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG.ordinal()) {
+                throw new MerkleSerializationException("Unexpected field wire type: " + fieldTag);
+            }
             firstLeafPath = in.readVarInt(false);
             return true;
         }
         if (fieldNum == NUM_VMSTATE_LASTLEAFPATH) {
-            assert (fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG.ordinal();
+            if (wireType != ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG.ordinal()) {
+                throw new MerkleSerializationException("Unexpected field wire type: " + fieldTag);
+            }
             lastLeafPath = in.readVarInt(false);
             return true;
         }
         if (fieldNum == NUM_VMSTATE_LABEL) {
-            assert (fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_DELIMITED.ordinal();
+            if (wireType != ProtoConstants.WIRE_TYPE_DELIMITED.ordinal()) {
+                throw new MerkleSerializationException("Unexpected field wire type: " + fieldTag);
+            }
             final int length = in.readVarInt(false);
             final byte[] labelBytes = new byte[length];
             if (in.readBytes(labelBytes) != length) {
@@ -265,7 +275,9 @@ public class VirtualMapState extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     @Override
-    public void protoSerialize(final @NonNull WritableSequentialData out, final java.nio.file.Path artifactsDir) {
+    public void protoSerialize(final @NonNull WritableSequentialData out, final java.nio.file.Path artifactsDir)
+            throws MerkleSerializationException {
+        super.protoSerialize(out, artifactsDir); // Writes hash
         if (firstLeafPath != 0) {
             ProtoWriterTools.writeTag(out, FIELD_VMSTATE_FIRSTLEAFPATH);
             out.writeVarLong(firstLeafPath, false);

@@ -16,9 +16,17 @@
 
 package com.swirlds.fcqueue;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_QUEUE_VALUE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_QUEUE_VALUE;
 import static com.swirlds.common.utility.ByteUtils.byteArrayToLong;
 import static com.swirlds.common.utility.ByteUtils.longToByteArray;
 
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.ProtoWriterTools;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyHolder;
@@ -26,12 +34,18 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.SerializableHashable;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
+import com.swirlds.common.utility.ValueReference;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,7 +70,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * multiple threads at the same time. An iterator for a mutable queue provides a snapshot view of the queue at the
  * time of iterator creation. A reverse iterator materializes the view (should not be used for huge queues).
  */
-public class FCQueue<E extends FastCopyable & SerializableHashable> extends PartialMerkleLeaf
+public class FCQueue<E extends FastCopyable & SerializableHashable & ProtoSerializable>
+        extends PartialMerkleLeaf
         implements Queue<E>, MerkleLeaf {
 
     private static class ClassVersion {
@@ -108,6 +123,9 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
     /** the hash of this queue once it becomes immutable */
     private volatile ImmutableHash hash;
 
+    /** Only used for deserialization */
+    private CheckedFunction<ReadableSequentialData, E, MerkleSerializationException> valueReader;
+
     static class Node<E extends FastCopyable> {
         /** the element in the list */
         E element;
@@ -139,6 +157,16 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
         tail = fcQueue.tail;
         unhashed = fcQueue.unhashed;
         hash = null;
+    }
+
+    public FCQueue(
+            @NonNull final ReadableSequentialData in,
+            final Path artifactsDir,
+            @NonNull final CheckedFunction<ReadableSequentialData, E, MerkleSerializationException> valueReader)
+            throws MerkleSerializationException {
+        this();
+        this.valueReader = valueReader;
+        protoDeserialize(in, artifactsDir);
     }
 
     /**
@@ -791,6 +819,66 @@ public class FCQueue<E extends FastCopyable & SerializableHashable> extends Part
 
     private void deserializeV3(final SerializableDataInputStream dis) throws IOException {
         dis.readSerializableIterableWithSize(MAX_ELEMENTS, this::add);
+    }
+
+    // Protobuf deserialization
+
+    @Override
+    public int getProtoSizeInBytes() {
+        int size = super.getProtoSizeInBytes(); // Includes hash
+        for (Node<E> e = head; e != null; e = e.next) {
+            size += ProtoWriterTools.sizeOfDelimited(FIELD_QUEUE_VALUE, e.element.getProtoSizeInBytes());
+        }
+        return size;
+    }
+
+    @Override
+    protected boolean protoDeserializeField(
+            @NonNull ReadableSequentialData in,
+            @Nullable Path artifactsDir,
+            int fieldTag)
+            throws MerkleSerializationException {
+        if (super.protoDeserializeField(in, artifactsDir, fieldTag)) { // Reads hash
+            return true;
+        }
+        final int fieldNum = fieldTag >> ProtoParserTools.TAG_FIELD_OFFSET;
+        final int wireType = fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK;
+        if (wireType != ProtoConstants.WIRE_TYPE_DELIMITED.ordinal()) {
+            throw new MerkleSerializationException("Unexpected wire type: " + fieldTag);
+        }
+        if (fieldNum != NUM_QUEUE_VALUE) {
+            throw new MerkleSerializationException("Unknown queue field: " + fieldTag);
+        }
+        final int len = in.readVarInt(false);
+        final long oldLimit = in.limit();
+        try {
+            in.limit(in.position() + len);
+            final E value = valueReader.apply(in);
+            add(value);
+        } finally {
+            in.limit(oldLimit);
+        }
+        return true;
+    }
+
+    @Override
+    public void protoSerialize(@NonNull final WritableSequentialData out, Path artifactsDir)
+            throws MerkleSerializationException {
+        super.protoSerialize(out, artifactsDir); // Writes hash
+        final ValueReference<MerkleSerializationException> ex = new ValueReference<>();
+        for (Node<E> e = head; e != null; e = e.next) {
+            final E value = e.element;
+            ProtoWriterTools.writeDelimited(out, FIELD_QUEUE_VALUE, value.getProtoSizeInBytes(), t -> {
+                try {
+                    value.protoSerialize(out);
+                } catch (final MerkleSerializationException z) {
+                    ex.setValue(z);
+                }
+            });
+            if (ex.getValue() != null) {
+                throw ex.getValue();
+            }
+        }
     }
 
     /**

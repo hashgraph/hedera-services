@@ -17,6 +17,7 @@
 package com.swirlds.state.spi;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.FieldDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -27,6 +28,10 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param keyCodec The {@link Codec} to use for parsing and writing keys in the registered state
  * @param valueCodec The {@link Codec} to use for parsing and writing values in the registered
  *     state
+ * @param stateProtoField Protobuf field definition. Must be unique across all states of the same type
+ *     (on disk, queue, or singleton). This field definition is used by the corresponding state node
+ *     class (e.g. SingletonNode) to serialize and deserialize the state to and from snapshots. See
+ *     MerkleNodeProtoFields for examples.
  * @param maxKeysHint A hint as to the maximum number of keys to be stored in this state. This value
  *     CANNOT CHANGE from one schema version to another. If it is changed, you will need to do a
  *     long-form migration to a new state.
@@ -42,6 +47,8 @@ public record StateDefinition<K, V>(
         @NonNull String stateKey,
         @Nullable Codec<K> keyCodec,
         @NonNull Codec<V> valueCodec,
+        // FUTURE WORK: how is this field def related to other codecs than protobuf, e.g. JSON?
+        @NonNull FieldDefinition stateProtoField,
         long maxKeysHint,
         boolean onDisk,
         boolean singleton,
@@ -64,8 +71,8 @@ public record StateDefinition<K, V>(
             throw new IllegalArgumentException("You must specify the maxKeysHint when onDisk. Please see docs.");
         }
 
-        if (keyCodec == null && !singleton && !queue) {
-            throw new NullPointerException("keyCodec must be specified unless using singleton or queue types");
+        if (onDisk && (keyCodec == null)) {
+            throw new NullPointerException("keyCodec must be specified when onDisk. Please see docs.");
         }
     }
 
@@ -80,8 +87,11 @@ public record StateDefinition<K, V>(
      * @param <V> The value type
      */
     public static <K, V> StateDefinition<K, V> inMemory(
-            @NonNull final String stateKey, @NonNull final Codec<K> keyCodec, @NonNull final Codec<V> valueCodec) {
-        return new StateDefinition<>(stateKey, keyCodec, valueCodec, NO_MAX, false, false, false);
+            @NonNull final String stateKey,
+            @NonNull final Codec<K> keyCodec,
+            @NonNull final Codec<V> valueCodec,
+            @NonNull final FieldDefinition protoField) {
+        return new StateDefinition<>(stateKey, keyCodec, valueCodec, protoField, NO_MAX, false, false, false);
     }
 
     /**
@@ -101,8 +111,11 @@ public record StateDefinition<K, V>(
             @NonNull final String stateKey,
             @NonNull final Codec<K> keyCodec,
             @NonNull final Codec<V> valueCodec,
+            // https://github.com/hashgraph/hedera-services/issues/13781
+            // protoField is not used for onDisk states
+            @NonNull final FieldDefinition protoField,
             final long maxKeysHint) {
-        return new StateDefinition<>(stateKey, keyCodec, valueCodec, maxKeysHint, true, false, false);
+        return new StateDefinition<>(stateKey, keyCodec, valueCodec, protoField, maxKeysHint, true, false, false);
     }
 
     /**
@@ -115,8 +128,10 @@ public record StateDefinition<K, V>(
      * @param <V> The value type
      */
     public static <K, V> StateDefinition<K, V> singleton(
-            @NonNull final String stateKey, @NonNull final Codec<V> valueCodec) {
-        return new StateDefinition<>(stateKey, null, valueCodec, NO_MAX, false, true, false);
+            @NonNull final String stateKey,
+            @NonNull final Codec<V> valueCodec,
+            @NonNull final FieldDefinition protoField) {
+        return new StateDefinition<>(stateKey, null, valueCodec, protoField, NO_MAX, false, true, false);
     }
 
     /**
@@ -129,7 +144,9 @@ public record StateDefinition<K, V>(
      * @param <V> The value type
      */
     public static <K, V> StateDefinition<K, V> queue(
-            @NonNull final String stateKey, @NonNull final Codec<V> elementCodec) {
-        return new StateDefinition<>(stateKey, null, elementCodec, NO_MAX, false, false, true);
+            @NonNull final String stateKey,
+            @NonNull final Codec<V> elementCodec,
+            @NonNull final FieldDefinition protoField) {
+        return new StateDefinition<>(stateKey, null, elementCodec, protoField, NO_MAX, false, false, true);
     }
 }

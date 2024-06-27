@@ -11,11 +11,13 @@ import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.merkle.proto.ProtoSerializable;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -32,9 +34,9 @@ public class CacheKeyToLeafEntry<K extends VirtualKey, V extends VirtualValue> i
     }
 
     public CacheKeyToLeafEntry(
-            final ReadableSequentialData in,
-            final Function<ReadableSequentialData, K> keyReader,
-            final Function<ReadableSequentialData, V> valueReader)
+            @NonNull final ReadableSequentialData in,
+            @NonNull final CheckedFunction<ReadableSequentialData, K, Exception> keyReader,
+            @NonNull final CheckedFunction<ReadableSequentialData, V, Exception> valueReader)
             throws MerkleSerializationException {
         long defaultVersion = 0;
         VirtualLeafRecord<K, V> defaultRecord = null;

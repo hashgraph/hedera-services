@@ -19,10 +19,12 @@ import com.hedera.pbj.runtime.ProtoConstants;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.merkle.proto.ProtoSerializable;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -40,7 +42,9 @@ public class CachePathToKeyEntry<K extends VirtualKey> implements ProtoSerializa
         this.deleted = deleted;
     }
 
-    public CachePathToKeyEntry(final ReadableSequentialData in, final Function<ReadableSequentialData, K> keyReader)
+    public CachePathToKeyEntry(
+            @NonNull final ReadableSequentialData in,
+            @NonNull final CheckedFunction<ReadableSequentialData, K, Exception> keyReader)
             throws MerkleSerializationException {
         long defaultVersion = 0;
         long defaultPath = 0;
@@ -63,6 +67,8 @@ public class CachePathToKeyEntry<K extends VirtualKey> implements ProtoSerializa
                 in.limit(in.position() + len);
                 try {
                     defaultKey = keyReader.apply(in);
+                } catch (final Exception e) {
+                    throw new MerkleSerializationException("Failed to parse a key", e);
                 } finally {
                     in.limit(oldLimit);
                 }

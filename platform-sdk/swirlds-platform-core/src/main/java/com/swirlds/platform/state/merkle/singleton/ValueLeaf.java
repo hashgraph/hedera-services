@@ -21,19 +21,32 @@ import static com.swirlds.platform.state.merkle.StateUtils.writeToStream;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.ParseException;
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.ProtoWriterTools;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
+import com.swirlds.common.merkle.proto.MerkleProtoUtils;
+import com.swirlds.common.utility.ValueReference;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Objects;
 
 /**
  * A Merkle leaf that stores an arbitrary value with delegated serialization based on the {@link
  * #classId}.
  */
 public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
+
     /**
      * {@deprecated} Needed for ConstructableRegistry, TO BE REMOVED ASAP
      */
@@ -42,6 +55,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
 
     private final long classId;
     private final Codec<T> codec;
+    private final FieldDefinition protoField;
     /** The actual value. For example, it could be an Account or SmartContract. */
     private T val;
 
@@ -52,6 +66,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     public ValueLeaf() {
         codec = null;
         classId = CLASS_ID;
+        protoField = null;
     }
 
     /**
@@ -61,9 +76,10 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
      * @param singletonClassId The class ID of the object
      * @param codec   The codec to use for serialization
      */
-    public ValueLeaf(final long singletonClassId, @NonNull Codec<T> codec) {
+    public ValueLeaf(final long singletonClassId, @NonNull final Codec<T> codec, final FieldDefinition protoField) {
         this.codec = requireNonNull(codec);
         this.classId = singletonClassId;
+        this.protoField = protoField;
     }
 
     /**
@@ -73,9 +89,23 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
      * @param codec   The codec to use for serialization
      * @param value The value.
      */
-    public ValueLeaf(final long singletonClassId, @NonNull Codec<T> codec, @Nullable final T value) {
-        this(singletonClassId, codec);
+    public ValueLeaf(final long singletonClassId,
+            @NonNull final Codec<T> codec,
+            @NonNull final FieldDefinition protoField,
+            @Nullable final T value) {
+        this(singletonClassId, codec, protoField);
         this.val = value;
+    }
+
+    public ValueLeaf(
+            @NonNull final ReadableSequentialData in,
+            @NonNull final Codec<T> codec,
+            @NonNull final FieldDefinition protoField)
+            throws MerkleSerializationException {
+        this.classId = 0; // not used
+        this.codec = Objects.requireNonNull(codec);
+        this.protoField = Objects.requireNonNull(protoField);
+        protoDeserialize(in, null);
     }
 
     /** {@inheritDoc} */
@@ -84,7 +114,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
         throwIfImmutable();
         throwIfDestroyed();
 
-        final var cp = new ValueLeaf<>(classId, codec, val);
+        final var cp = new ValueLeaf<>(classId, codec, protoField, val);
         setImmutable(true);
         return cp;
     }
@@ -119,6 +149,74 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
         }
 
         this.val = readFromStream(in, codec);
+    }
+
+    // Protobuf serialization
+
+    @Override
+    public int getProtoSizeInBytes() {
+        int size = super.getProtoSizeInBytes(); // Includes hash
+        if (val != null) {
+            size += ProtoWriterTools.sizeOfDelimited(protoField, codec.measureRecord(val));
+        }
+        return size;
+    }
+
+    @Override
+    protected boolean protoDeserializeField(
+            @NonNull final ReadableSequentialData in,
+            final Path artifactsDir,
+            final int fieldTag)
+            throws MerkleSerializationException {
+        if (super.protoDeserializeField(in, artifactsDir, fieldTag)) { // Reads hash
+            return true;
+        }
+        final int fieldNum = fieldTag >> ProtoParserTools.TAG_FIELD_OFFSET;
+        final int wireType = fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK;
+        if (wireType != ProtoConstants.WIRE_TYPE_DELIMITED.ordinal()) {
+            throw new MerkleSerializationException("Unexpected wire type: " + fieldTag);
+        }
+        if (fieldNum == protoField.number()) {
+            final int len = in.readVarInt(false);
+            final long oldLimit = in.limit();
+            try {
+                in.limit(in.position() + len);
+                val = codec.parse(in);
+                return true;
+            } catch (final ParseException e) {
+                throw new MerkleSerializationException(e);
+            } finally {
+                in.limit(oldLimit);
+            }
+        } else {
+            throw new MerkleSerializationException("Proto field mismatch, expected: " + protoField.number() + ", but was: " + fieldNum);
+        }
+    }
+
+    @Override
+    public void protoSerialize(@NonNull final WritableSequentialData out, final Path artifactsDir)
+            throws MerkleSerializationException {
+        if (codec == null) {
+            throw new IllegalStateException("Metadata is null, meaning this is not a proper object");
+        }
+        try {
+            super.protoSerialize(out, artifactsDir);
+            if (val != null) {
+                final ValueReference<IOException> ex = new ValueReference<>();
+                ProtoWriterTools.writeDelimited(out, protoField, codec.measureRecord(val), o -> {
+                    try {
+                        codec.write(val, o);
+                    } catch (final IOException e) {
+                        ex.setValue(e);
+                    }
+                });
+                if (ex.getValue() != null) {
+                    throw ex.getValue();
+                }
+            }
+        } catch (final IOException e) {
+            throw new MerkleSerializationException(e);
+        }
     }
 
     /**

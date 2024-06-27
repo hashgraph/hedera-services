@@ -64,6 +64,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -149,6 +150,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         });
 
         return this;
+    }
+
+    @Override
+    public Iterator<Schema> registeredSchemas() {
+        return schemas.iterator();
     }
 
     /**
@@ -287,6 +293,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.stateDefinition().stateKey(),
                                         md.singletonClassId(),
                                         md.stateDefinition().valueCodec(),
+                                        md.stateDefinition().stateProtoField(),
                                         null));
                     } else if (def.queue()) {
                         hederaState.putServiceStateIfAbsent(
@@ -305,7 +312,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                         });
                     } else {
                         hederaState.putServiceStateIfAbsent(md, () -> {
-                            final MerkleDbConfig merkleDbConfig = config.getConfigData(MerkleDbConfig.class);
                             final var keySerializer = new OnDiskKeySerializer<>(
                                     md.onDiskKeySerializerClassId(),
                                     md.onDiskKeyClassId(),
@@ -314,10 +320,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                     md.onDiskValueSerializerClassId(),
                                     md.onDiskValueClassId(),
                                     md.stateDefinition().valueCodec());
-                            // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
-                            // PREFER_DISK_BASED_INDICES = false
-                            final var tableConfig =
-                                    new MerkleDbTableConfig<>(DigestType.SHA_384, def.maxKeysHint(), merkleDbConfig.hashesRamToDiskThreshold(), false);
+                            final MerkleDbConfig merkleDbConfig = config.getConfigData(MerkleDbConfig.class);
+                            final var tableConfig = new MerkleDbTableConfig<>(
+                                    DigestType.SHA_384, def.maxKeysHint(), merkleDbConfig.hashesRamToDiskThreshold(), false);
                             final var label = StateUtils.computeLabel(serviceName, stateKey);
                             final var dsBuilder = new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
                             final var virtualMap = new VirtualMap<>(label, dsBuilder);
@@ -388,6 +393,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             md.stateDefinition().stateKey(),
                             md.singletonClassId(),
                             md.stateDefinition().valueCodec(),
+                            md.stateDefinition().stateProtoField(),
                             null)));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     QueueNode.class,
@@ -401,7 +407,9 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     ValueLeaf.class,
                     () -> new ValueLeaf<>(
-                            md.singletonClassId(), md.stateDefinition().valueCodec())));
+                            md.singletonClassId(),
+                            md.stateDefinition().valueCodec(),
+                            md.stateDefinition().stateProtoField())));
         } catch (ConstructableRegistryException e) {
             // This is a fatal error.
             throw new RuntimeException(

@@ -77,8 +77,8 @@ public enum TestType {
         this.fixedSize = fixedSize;
     }
 
-    public <K extends VirtualKey, V extends VirtualValue> DataTypeConfig<K, V> dataType() {
-        return new DataTypeConfig<>(this);
+    public DataTypeConfig dataType() {
+        return new DataTypeConfig(this);
     }
 
     public Metrics getMetrics() {
@@ -102,11 +102,11 @@ public enum TestType {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes", "unused"})
-    public class DataTypeConfig<K extends VirtualKey, V extends VirtualValue> {
+    public class DataTypeConfig {
 
         private final TestType testType;
-        private final KeySerializer<? extends VirtualLongKey> keySerializer;
-        private final ValueSerializer<? extends ExampleByteArrayVirtualValue> valueSerializer;
+        private final KeySerializer keySerializer;
+        private final ValueSerializer valueSerializer;
 
         public DataTypeConfig(TestType testType) {
             this.testType = testType;
@@ -114,15 +114,15 @@ public enum TestType {
             this.valueSerializer = createValueSerializer();
         }
 
-        public KeySerializer<? extends VirtualLongKey> getKeySerializer() {
+        public KeySerializer getKeySerializer() {
             return keySerializer;
         }
 
-        public ValueSerializer<? extends ExampleByteArrayVirtualValue> getValueSerializer() {
+        public ValueSerializer getValueSerializer() {
             return valueSerializer;
         }
 
-        private KeySerializer<? extends VirtualLongKey> createKeySerializer() {
+        private KeySerializer createKeySerializer() {
             switch (testType) {
                 default:
                 case fixed_fixed:
@@ -140,7 +140,7 @@ public enum TestType {
             }
         }
 
-        private ValueSerializer<? extends ExampleByteArrayVirtualValue> createValueSerializer() {
+        private ValueSerializer createValueSerializer() {
             switch (testType) {
                 default:
                 case fixed_fixed:
@@ -222,10 +222,10 @@ public enum TestType {
                 boolean preferDiskBasedIndexes)
                 throws IOException {
             final MerkleDb database = MerkleDb.getInstance(dbPath);
-            final MerkleDbTableConfig<? extends VirtualLongKey, ? extends ExampleByteArrayVirtualValue> tableConfig =
-                    new MerkleDbTableConfig<>(DigestType.SHA_384, size * 10L, hashesRamToDiskThreshold,false);
-            MerkleDbDataSource dataSource =
-                    database.createDataSource(name, (MerkleDbTableConfig) tableConfig, enableMerging);
+            final MerkleDbTableConfig tableConfig =
+                    new MerkleDbTableConfig(DigestType.SHA_384, size * 10L, hashesRamToDiskThreshold,false);
+            MerkleDbDataSource dataSource = database.createDataSource(
+                    name, tableConfig, keySerializer, valueSerializer, enableMerging);
             dataSource.registerMetrics(getMetrics());
             return dataSource;
         }
@@ -233,7 +233,7 @@ public enum TestType {
         public MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> getDataSource(
                 final Path dbPath, final String name, final boolean enableMerging) throws IOException {
             final MerkleDb database = MerkleDb.getInstance(dbPath);
-            return database.getDataSource(name, enableMerging);
+            return database.getDataSource(name, keySerializer, valueSerializer, enableMerging);
         }
 
         public VirtualHashRecord createVirtualInternalRecord(final int i) {

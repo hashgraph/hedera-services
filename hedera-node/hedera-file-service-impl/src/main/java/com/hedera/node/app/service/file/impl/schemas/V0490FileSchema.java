@@ -17,6 +17,9 @@
 package com.hedera.node.app.service.file.impl.schemas;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.fromString;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_BLOBS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_QUEUEVALUELEAF_UPGRADEDATA;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVBLOBS;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -88,6 +91,7 @@ import org.apache.logging.log4j.Logger;
  * this schema is always correct for the current version of the software.
  */
 public class V0490FileSchema extends Schema {
+
     private static final Logger logger = LogManager.getLogger(V0490FileSchema.class);
 
     public static final String BLOBS_KEY = "FILES";
@@ -130,7 +134,10 @@ public class V0490FileSchema extends Schema {
     @SuppressWarnings("rawtypes")
     public Set<StateDefinition> statesToCreate() {
         final Set<StateDefinition> definitions = new LinkedHashSet<>();
-        definitions.add(StateDefinition.onDisk(BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, MAX_FILES_HINT));
+        definitions.add(StateDefinition.onDisk(
+                // https://github.com/hashgraph/hedera-services/issues/13781
+                // BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, FIELD_KEYVALUEVALUELEAF_BLOBS, MAX_FILES_HINT));
+                BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, FIELD_STATENODE_KVBLOBS, MAX_FILES_HINT));
 
         final FilesConfig filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final HederaConfig hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
@@ -145,7 +152,7 @@ public class V0490FileSchema extends Schema {
                     .realmNum(hederaConfig.realm())
                     .fileNum(updateNum)
                     .build();
-            definitions.add(StateDefinition.queue(UPGRADE_DATA_KEY.formatted(fileId), ProtoBytes.PROTOBUF));
+            definitions.add(StateDefinition.queue(UPGRADE_DATA_KEY.formatted(fileId), ProtoBytes.PROTOBUF, FIELD_QUEUEVALUELEAF_UPGRADEDATA));
         }
 
         return definitions;

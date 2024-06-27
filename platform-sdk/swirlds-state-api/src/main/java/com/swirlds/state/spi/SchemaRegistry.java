@@ -18,6 +18,7 @@ package com.swirlds.state.spi;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Provided by the application to the {@link Service}, the {@link SchemaRegistry} is used by the
@@ -59,4 +60,6 @@ public interface SchemaRegistry {
 
         return this;
     }
+
+    Iterator<Schema> registeredSchemas();
 }

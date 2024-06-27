@@ -16,6 +16,13 @@
 
 package com.swirlds.virtualmap.datasource;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VLEAFRECORD_KEY;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VLEAFRECORD_PATH;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VLEAFRECORD_VALUE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VLEAFRECORD_KEY;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VLEAFRECORD_PATH;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VLEAFRECORD_VALUE;
+
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.FieldType;
 import com.hedera.pbj.runtime.ProtoConstants;
@@ -23,6 +30,7 @@ import com.hedera.pbj.runtime.ProtoParserTools;
 import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.exceptions.MerkleSerializationException;
@@ -34,6 +42,7 @@ import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,19 +62,6 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
     private static final class ClassVersion {
         public static final int ORIGINAL = 1;
     }
-
-    public static final int NUM_VLEAFRECORD_PATH = MerkleNodeProtoFields.MIN_NUM_NODE_OWNDATA + 1;
-    public static final int NUM_VLEAFRECORD_KEY = MerkleNodeProtoFields.MIN_NUM_NODE_OWNDATA + 2;
-    public static final int NUM_VLEAFRECORD_VALUE = MerkleNodeProtoFields.MIN_NUM_NODE_OWNDATA + 3;
-
-    public static final FieldDefinition FIELD_VLEAFRECORD_PATH = new FieldDefinition(
-            "path", FieldType.UINT64, false, true, false, NUM_VLEAFRECORD_PATH);
-
-    public static final FieldDefinition FIELD_VLEAFRECORD_KEY = new FieldDefinition(
-            "key", FieldType.MESSAGE, false, false, false, NUM_VLEAFRECORD_KEY);
-
-    public static final FieldDefinition FIELD_VLEAFRECORD_VALUE = new FieldDefinition(
-            "value", FieldType.MESSAGE, false, false, false, NUM_VLEAFRECORD_VALUE);
 
     /**
      * The path for this record. The path can change over time as nodes are added or removed.
@@ -105,9 +101,9 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
     }
 
     public VirtualLeafRecord(
-            final ReadableSequentialData in,
-            final Function<ReadableSequentialData, K> keyReader,
-            final Function<ReadableSequentialData, V> valueReader)
+            @NonNull final ReadableSequentialData in,
+            @NonNull final CheckedFunction<ReadableSequentialData, K, Exception> keyReader,
+            @NonNull final CheckedFunction<ReadableSequentialData, V, Exception> valueReader)
             throws MerkleSerializationException {
         // Defaults
         path = 0;
@@ -127,6 +123,8 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
                 in.limit(in.position() + len);
                 try {
                     key = keyReader.apply(in);
+                } catch (final Exception e) {
+                    throw new MerkleSerializationException("Failed to parse a key", e);
                 } finally {
                     in.limit(oldLimit);
                 }
@@ -137,6 +135,8 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
                 in.limit(in.position() + len);
                 try {
                     value = valueReader.apply(in);
+                } catch (final Exception e) {
+                    throw new MerkleSerializationException("Failed to parse a value", e);
                 } finally {
                     in.limit(oldLimit);
                 }

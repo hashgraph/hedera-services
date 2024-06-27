@@ -28,6 +28,7 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -152,11 +153,12 @@ public final class VirtualLeafNode<K extends VirtualKey, V extends VirtualValue>
 
     @Override
     public int getProtoSizeInBytes() {
+        // TODO: should it just throw UnsupportedOperationException ?
         return virtualRecord.getProtoSizeInBytes();
     }
 
     @Override
-    public void protoSerialize(final WritableSequentialData out, final Path artifactsDir) {
+    public void protoSerialize(@NonNull final WritableSequentialData out, final Path artifactsDir) {
         throw new UnsupportedOperationException("Virtual leaf nodes must never be serialized as a part of a state");
     }
 

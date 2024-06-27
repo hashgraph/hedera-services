@@ -16,13 +16,67 @@
 
 package com.hedera.node.app.state.merkle;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_HEDERASTATE_STATENODE;
+// https://github.com/hashgraph/hedera-services/issues/13781
+//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KEYVALUE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVACCOUNTS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVALIASES;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVBLOBS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVEVMBYTECODE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVEVMSTORAGE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVNFTS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVSCHEDULESBYEQUALITY;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVSCHEDULESBYEXPIRYSEC;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVSCHEDULESBYID;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVSTAKINGINFO;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVTOKENRELS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVTOKENS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVTOPICS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_QUEUE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_SINGLETON;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_HEDERASTATE_STATENODE;
+// https://github.com/hashgraph/hedera-services/issues/13781
+//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KEYVALUE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVACCOUNTS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVALIASES;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVBLOBS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVEVMBYTECODE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVEVMSTORAGE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVNFTS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVSCHEDULESBYEQUALITY;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVSCHEDULESBYEXPIRYSEC;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVSCHEDULESBYID;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVSTAKINGINFO;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVTOKENRELS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVTOKENS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVTOPICS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_QUEUE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_SINGLETON;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
+import com.hedera.node.app.service.contract.ContractService;
+import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
+import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
+import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
+import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.exceptions.MerkleSerializationException;
@@ -30,13 +84,20 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
+import com.swirlds.common.utility.ValueReference;
 import com.swirlds.merkle.map.MerkleMap;
+import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
+import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.merkle.StateUtils;
+import com.swirlds.platform.state.merkle.disk.OnDiskKeySerializer;
 import com.swirlds.platform.state.merkle.disk.OnDiskReadableKVState;
+import com.swirlds.platform.state.merkle.disk.OnDiskValueSerializer;
 import com.swirlds.platform.state.merkle.disk.OnDiskWritableKVState;
 import com.swirlds.platform.state.merkle.memory.InMemoryReadableKVState;
 import com.swirlds.platform.state.merkle.memory.InMemoryWritableKVState;
@@ -63,6 +124,7 @@ import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
@@ -133,6 +195,9 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     // but at this point all major rewrites seem to risky.
     private static final Map<String, Integer> INDEX_LOOKUP = new ConcurrentHashMap<>();
 
+    // Only used for deserialization
+    private final ServicesRegistry servicesRegistry;
+
     private long classId;
 
     /**
@@ -169,6 +234,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      */
     public MerkleHederaState(@NonNull final HederaLifecycles lifecycles) {
         this.lifecycles = requireNonNull(lifecycles);
+        // FUTURE WORK: set servicesRegistry
+        this.servicesRegistry = null;
         this.classId = CLASS_ID;
     }
 
@@ -184,24 +251,19 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public MerkleHederaState() {
         // ConstructableRegistry requires a "working" no-arg constructor
         this.lifecycles = null;
+        this.servicesRegistry = null;
         this.classId = DO_NOT_USE_IN_REAL_LIFE_CLASS_ID;
     }
 
     public MerkleHederaState(
             final @NonNull HederaLifecycles lifecycles,
+            final @NonNull ServicesRegistry servicesRegistry,
             final @NonNull ReadableSequentialData in,
             final Path artifactsDir)
             throws MerkleSerializationException {
-        this(lifecycles);
+        this.lifecycles = requireNonNull(lifecycles);
+        this.servicesRegistry = servicesRegistry;
         protoDeserialize(in, artifactsDir);
-    }
-
-    @Override
-    protected MerkleNode protoDeserializeNextChild(
-            final @NonNull ReadableSequentialData in,
-            final Path artifactsDir)
-            throws MerkleSerializationException {
-        return super.protoDeserializeNextChild(in, artifactsDir);
     }
 
     /**
@@ -255,6 +317,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
         this.classId = from.classId;
         this.lifecycles = from.lifecycles;
+        this.servicesRegistry = null; // only used, when a state is deserialized
 
         // Copy over the metadata
         for (final var entry : from.services.entrySet()) {
@@ -281,6 +344,211 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     public int getVersion() {
         return CURRENT_VERSION;
     }
+
+    @Override
+    protected int getProtoChildSizeInBytes(final int index) {
+        // Hedera state nodes are wrapped into StateNode proto message to overcome (lack of)
+        // support for repeated oneof fields in protobuf
+        final MerkleNode stateNode = getChild(index);
+        return getProtoChildSizeInBytes(stateNode);
+    }
+
+    private int getProtoChildSizeInBytes(final MerkleNode stateNode) {
+        final FieldDefinition childField = getStateNodeProtoField(stateNode);
+        final int stateNodeSize = ProtoWriterTools.sizeOfDelimited(childField, stateNode.getProtoSizeInBytes());
+        // Now wrap it into StateNode
+        return ProtoWriterTools.sizeOfDelimited(FIELD_HEDERASTATE_STATENODE, stateNodeSize);
+    }
+
+    private FieldDefinition getStateNodeProtoField(final MerkleNode stateNode) {
+        if (!(stateNode instanceof Labeled labeled)) {
+            throw new IllegalStateException("Child node must be a Labeled");
+        }
+        final String label = labeled.getLabel();
+        final StateDefinition def = servicesRegistry.getStateDefinition(label);
+        if (def == null) {
+            throw new IllegalStateException("Unknown state: " + label);
+        }
+        if (def.singleton()) {
+            return FIELD_STATENODE_SINGLETON;
+        } else if (def.queue()) {
+            return FIELD_STATENODE_QUEUE;
+        } else if (def.onDisk()) {
+            // https://github.com/hashgraph/hedera-services/issues/13781
+            // return FIELD_STATENODE_KEYVALUE;
+            return switch (label) {
+                case TokenService.NAME + "." + V0490TokenSchema.TOKENS_KEY -> FIELD_STATENODE_KVTOKENS;
+                case TokenService.NAME + "." + V0490TokenSchema.ACCOUNTS_KEY -> FIELD_STATENODE_KVACCOUNTS;
+                case TokenService.NAME + "." + V0490TokenSchema.ALIASES_KEY -> FIELD_STATENODE_KVALIASES;
+                case TokenService.NAME + "." + V0490TokenSchema.NFTS_KEY-> FIELD_STATENODE_KVNFTS;
+                case TokenService.NAME + "." + V0490TokenSchema.TOKEN_RELS_KEY -> FIELD_STATENODE_KVTOKENRELS;
+                case TokenService.NAME + "." + V0490TokenSchema.STAKING_INFO_KEY -> FIELD_STATENODE_KVSTAKINGINFO;
+                case ScheduleService.NAME + "." + V0490ScheduleSchema.SCHEDULES_BY_ID_KEY -> FIELD_STATENODE_KVSCHEDULESBYID;
+                case ScheduleService.NAME + "." + V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY -> FIELD_STATENODE_KVSCHEDULESBYEXPIRYSEC;
+                case ScheduleService.NAME + "." + V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY -> FIELD_STATENODE_KVSCHEDULESBYEQUALITY;
+                case FileService.NAME + "." + V0490FileSchema.BLOBS_KEY -> FIELD_STATENODE_KVBLOBS;
+                case ContractService.NAME + "." + V0490ContractSchema.STORAGE_KEY -> FIELD_STATENODE_KVEVMSTORAGE;
+                case ContractService.NAME + "." + V0490ContractSchema.BYTECODE_KEY -> FIELD_STATENODE_KVEVMBYTECODE;
+                case ConsensusService.NAME + "." + ConsensusServiceImpl.TOPICS_KEY -> FIELD_STATENODE_KVTOPICS;
+                default -> throw new IllegalStateException("Unknown onDisk state: " + label);
+            };
+        } else {
+            throw new IllegalStateException("Unknown state type: " + def);
+        }
+    }
+
+    @Override
+    protected FieldDefinition getChildProtoField(final int childIndex) {
+        return FIELD_HEDERASTATE_STATENODE;
+    }
+
+    @Override
+    protected void protoSerializeChild(
+            @NonNull final WritableSequentialData out,
+            final Path artifactsDir,
+            final int childIndex,
+            @NonNull FieldDefinition childField)
+            throws MerkleSerializationException {
+        assert childField == FIELD_HEDERASTATE_STATENODE;
+        final MerkleNode stateNode = getChild(childIndex);
+        // Wrap the child node into StateNode, this is a workaround to unsupported repeated oneof
+        // protobuf fields
+        final ValueReference<MerkleSerializationException> ex = new ValueReference<>();
+        ProtoWriterTools.writeDelimited(out, childField, getProtoChildSizeInBytes(stateNode), o -> {
+            ProtoWriterTools.writeDelimited(o, getStateNodeProtoField(stateNode), stateNode.getProtoSizeInBytes(), p -> {
+                try {
+                    stateNode.protoSerialize(out, artifactsDir);
+                } catch (final MerkleSerializationException e) {
+                    ex.setValue(e);
+                }
+            });
+        });
+        if (ex.getValue() != null) {
+            throw ex.getValue();
+        }
+    }
+
+    @Override
+    protected MerkleNode protoDeserializeNextChild(
+            @NonNull final ReadableSequentialData in,
+            final Path artifactsDir)
+            throws MerkleSerializationException {
+        try {
+            final int tag = in.readVarInt(false);
+            final int fieldNum = tag >> ProtoParserTools.TAG_FIELD_OFFSET;
+            final int wireType = tag & ProtoConstants.TAG_WIRE_TYPE_MASK;
+            if (fieldNum != NUM_HEDERASTATE_STATENODE) {
+                throw new MerkleSerializationException("Unknown child field: " + tag);
+            }
+            if (wireType != ProtoConstants.WIRE_TYPE_DELIMITED.ordinal()) {
+                throw new MerkleSerializationException("Unexpected wire type: " + tag);
+            }
+            final int len = in.readVarInt(false);
+            final long oldLimit = in.limit();
+            try {
+                in.limit(in.position() + len);
+                final int stateNodeTag = in.readVarInt(false);
+                final int stateNodeFieldNum = stateNodeTag >> ProtoParserTools.TAG_FIELD_OFFSET;
+                final int stateNodeWireType = stateNodeTag & ProtoConstants.TAG_WIRE_TYPE_MASK;
+                if (stateNodeWireType != ProtoConstants.WIRE_TYPE_DELIMITED.ordinal()) {
+                    throw new MerkleSerializationException("Unexpected wire type: " + stateNodeTag);
+                }
+                final int stateNodeLen = in.readVarInt(false);
+                in.limit(in.position() + stateNodeLen);
+                if (stateNodeFieldNum == NUM_STATENODE_SINGLETON) {
+                    return protoDeserializeSingleton(in, artifactsDir);
+                } else if (stateNodeFieldNum == NUM_STATENODE_QUEUE) {
+                    return protoDeserializeQueue(in, artifactsDir);
+                // https://github.com/hashgraph/hedera-services/issues/13781
+                // } else if (stateNodeFieldNum == NUM_STATENODE_KEYVALUE) {
+                //     return protoDeserializeKeyValue(in, artifactsDir);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVTOKENS) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, TokenService.NAME, V0490TokenSchema.TOKENS_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVACCOUNTS) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, TokenService.NAME, V0490TokenSchema.ACCOUNTS_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVALIASES) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, TokenService.NAME, V0490TokenSchema.ALIASES_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVNFTS) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, TokenService.NAME, V0490TokenSchema.NFTS_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVTOKENRELS) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, TokenService.NAME, V0490TokenSchema.TOKEN_RELS_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVSTAKINGINFO) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, TokenService.NAME, V0490TokenSchema.STAKING_INFO_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVSCHEDULESBYID) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, ScheduleService.NAME, V0490ScheduleSchema.SCHEDULES_BY_ID_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVSCHEDULESBYEXPIRYSEC) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, ScheduleService.NAME, V0490ScheduleSchema.SCHEDULES_BY_EXPIRY_SEC_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVSCHEDULESBYEQUALITY) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, ScheduleService.NAME, V0490ScheduleSchema.SCHEDULES_BY_EQUALITY_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVBLOBS) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, FileService.NAME, V0490FileSchema.BLOBS_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVEVMSTORAGE) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, ContractService.NAME, V0490ContractSchema.STORAGE_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVEVMBYTECODE) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, ContractService.NAME, V0490ContractSchema.BYTECODE_KEY);
+                } else if (stateNodeFieldNum == NUM_STATENODE_KVTOPICS) {
+                    return protoDeserializeVirtualMap(in, artifactsDir, ConsensusService.NAME, ConsensusServiceImpl.TOPICS_KEY);
+                } else {
+                    throw new MerkleSerializationException("Unknown state node type: " + stateNodeTag);
+                }
+            } finally {
+                in.limit(oldLimit);
+            }
+        } catch (final Exception e) {
+            throw new MerkleSerializationException("Cannot deserialize a state child node", e);
+        }
+    }
+
+    private MerkleNode protoDeserializeSingleton(
+            @NonNull final ReadableSequentialData in,
+            final Path artifactsDir)
+            throws MerkleSerializationException {
+        return new SingletonNode<>(in, artifactsDir, servicesRegistry::getStateDefinition);
+    }
+
+    private MerkleNode protoDeserializeQueue(
+            @NonNull final ReadableSequentialData in,
+            final Path artifactsDir)
+            throws MerkleSerializationException {
+        return new QueueNode<>(in, artifactsDir, servicesRegistry::getStateDefinition);
+    }
+
+    // https://github.com/hashgraph/hedera-services/issues/13781
+    /*
+    private MerkleNode protoDeserializeKeyValue(
+            @NonNull final ReadableSequentialData in,
+            final Path artifactsDir)
+            throws MerkleSerializationException {
+        throw new UnsupportedOperationException("TO IMPLEMENT: protoDeserializeKeyValue()");
+    }
+    */
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private MerkleNode protoDeserializeVirtualMap(
+            @NonNull final ReadableSequentialData in,
+            final Path artifactsDir,
+            final String serviceName,
+            final String stateKey)
+            throws MerkleSerializationException {
+        final String stateLabel = serviceName + "." + stateKey;
+        final StateDefinition stateDef = servicesRegistry.getStateDefinition(stateLabel);
+        if (stateDef == null) {
+            throw new MerkleSerializationException("Unknown state key: " + stateLabel);
+        }
+        if (!stateDef.onDisk()) {
+            throw new MerkleSerializationException("State type is not onDisk: " + stateLabel);
+        }
+        final Codec keyCodec = stateDef.keyCodec();
+        final Codec valueCodec = stateDef.valueCodec();
+        final KeySerializer keySerializer = new OnDiskKeySerializer(0, 0, keyCodec);
+        final ValueSerializer valueSerializer = new OnDiskValueSerializer(0, 0, valueCodec);
+        final MerkleDbDataSourceBuilder builder = new MerkleDbDataSourceBuilder(keySerializer, valueSerializer, null);
+        final CheckedFunction<ReadableSequentialData, ?, Exception> keyReader = keyCodec::parse;
+        final CheckedFunction<ReadableSequentialData, ?, Exception> valueReader = valueCodec::parse;
+        return new VirtualMap(in, artifactsDir, builder, keyReader, valueReader);
+    }
+
+
 
     /**
      * To be called ONLY at node shutdown. Attempts to gracefully close any virtual maps. This method is a bit of a

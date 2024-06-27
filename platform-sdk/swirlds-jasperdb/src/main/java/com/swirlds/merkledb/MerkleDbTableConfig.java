@@ -48,6 +48,7 @@ import java.util.Objects;
  * @param <V>
  *     Virtual value type
  */
+// FUTURE WORK: remove K and V types
 // FUTURE WORK: don't implement SelfSerializable
 public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualValue> implements SelfSerializable {
 
@@ -251,7 +252,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
      *      Key serializer
      */
     @Deprecated
-    public KeySerializer<K> getKeySerializer() {
+    KeySerializer<K> getKeySerializer() {
         return keySerializer;
     }
 
@@ -262,7 +263,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
      *      Value serializer
      */
     @Deprecated
-    public ValueSerializer<V> getValueSerializer() {
+    ValueSerializer<V> getValueSerializer() {
         return valueSerializer;
     }
 
@@ -361,6 +362,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     /**
      * {@inheritDoc}
      */
+    @Deprecated
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
         throw new UnsupportedOperationException("This method should no longer be used");
@@ -369,6 +371,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     /**
      * {@inheritDoc}
      */
+    @Deprecated
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         preferDiskBasedIndices = in.readBoolean();

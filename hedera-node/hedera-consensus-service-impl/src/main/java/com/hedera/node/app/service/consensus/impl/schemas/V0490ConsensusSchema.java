@@ -25,6 +25,7 @@ import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.mono.state.adapters.MerkleMapLike;
 import com.hedera.node.app.service.mono.state.merkle.MerkleTopic;
 import com.hedera.node.app.service.mono.utils.EntityNum;
+import com.swirlds.common.merkle.proto.MerkleNodeProtoFields;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.MigrationContext;
@@ -64,7 +65,10 @@ public class V0490ConsensusSchema extends Schema {
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(StateDefinition.onDisk(TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF, MAX_TOPICS));
+        return Set.of(StateDefinition.onDisk(
+                // https://github.com/hashgraph/hedera-services/issues/13781
+                // TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF, MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_TOPICS, MAX_TOPICS));
+                TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF, MerkleNodeProtoFields.FIELD_STATENODE_KVTOPICS, MAX_TOPICS));
     }
 
     @Override

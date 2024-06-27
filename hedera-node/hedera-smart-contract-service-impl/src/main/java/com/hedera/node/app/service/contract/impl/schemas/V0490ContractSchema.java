@@ -17,6 +17,10 @@
 package com.hedera.node.app.service.contract.impl.schemas;
 
 import static com.hedera.node.app.service.mono.state.migration.ContractStateMigrator.bytesFromInts;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_EVMBYTECODE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_EVMSTORAGE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVEVMBYTECODE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVEVMSTORAGE;
 
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -50,6 +54,7 @@ import org.apache.logging.log4j.Logger;
  * for both the contract storage and bytecode.
  */
 public class V0490ContractSchema extends Schema {
+
     private static final Logger log = LogManager.getLogger(V0490ContractSchema.class);
 
     private static final int MAX_BYTECODES = 50_000_000;
@@ -185,11 +190,17 @@ public class V0490ContractSchema extends Schema {
     }
 
     private @NonNull StateDefinition<SlotKey, SlotValue> storageDef() {
-        return StateDefinition.onDisk(STORAGE_KEY, SlotKey.PROTOBUF, SlotValue.PROTOBUF, MAX_STORAGE_ENTRIES);
+        return StateDefinition.onDisk(
+                // https://github.com/hashgraph/hedera-services/issues/13781
+                // STORAGE_KEY, SlotKey.PROTOBUF, SlotValue.PROTOBUF, FIELD_KEYVALUEVALUELEAF_EVMSTORAGE, MAX_STORAGE_ENTRIES);
+                STORAGE_KEY, SlotKey.PROTOBUF, SlotValue.PROTOBUF, FIELD_STATENODE_KVEVMSTORAGE, MAX_STORAGE_ENTRIES);
     }
 
     private @NonNull StateDefinition<ContractID, Bytecode> bytecodeDef() {
-        return StateDefinition.onDisk(BYTECODE_KEY, ContractID.PROTOBUF, Bytecode.PROTOBUF, MAX_BYTECODES);
+        return StateDefinition.onDisk(
+                // https://github.com/hashgraph/hedera-services/issues/13781
+                // BYTECODE_KEY, ContractID.PROTOBUF, Bytecode.PROTOBUF, FIELD_KEYVALUEVALUELEAF_EVMBYTECODE, MAX_BYTECODES);
+                BYTECODE_KEY, ContractID.PROTOBUF, Bytecode.PROTOBUF, FIELD_STATENODE_KVEVMBYTECODE, MAX_BYTECODES);
     }
 
     public static void setStorageFromState(
