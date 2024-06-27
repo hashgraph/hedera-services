@@ -485,7 +485,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.attributeValidator()).willReturn(validator);
-        doThrow(new HandleException(INVALID_ADMIN_KEY)).when(validator).validateKey(invalidKey);
+        doThrow(new HandleException(INVALID_ADMIN_KEY)).when(validator).validateKey(invalidKey, INVALID_ADMIN_KEY);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
         assertEquals(ResponseCodeEnum.INVALID_ADMIN_KEY, msg.getStatus());

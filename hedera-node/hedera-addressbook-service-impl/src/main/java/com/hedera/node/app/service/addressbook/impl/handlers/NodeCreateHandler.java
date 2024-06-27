@@ -104,7 +104,7 @@ public class NodeCreateHandler implements TransactionHandler {
         addressBookValidator.validateDescription(op.description(), nodeConfig);
         addressBookValidator.validateGossipEndpoint(op.gossipEndpoint(), nodeConfig);
         addressBookValidator.validateServiceEndpoint(op.serviceEndpoint(), nodeConfig);
-        addressBookValidator.validateAdminKeyInHandle(handleContext, op.adminKeyOrThrow());
+        handleContext.attributeValidator().validateKey(op.adminKeyOrThrow(), INVALID_ADMIN_KEY);
 
         final var nodeBuilder = new Node.Builder()
                 .accountId(op.accountId())

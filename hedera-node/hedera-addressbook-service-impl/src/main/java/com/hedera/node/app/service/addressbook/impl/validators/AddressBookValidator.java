@@ -39,8 +39,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ServiceEndpoint;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -141,24 +139,8 @@ public class AddressBookValidator {
      */
     public void validateAdminKey(@Nullable Key key) throws PreCheckException {
         final var keyEmpty = isEmpty(key);
-        validateFalsePreCheck(key == null || keyEmpty, KEY_REQUIRED);
+        validateFalsePreCheck(keyEmpty, KEY_REQUIRED);
         validateTruePreCheck(isValid(key), INVALID_ADMIN_KEY);
-    }
-
-    /**
-     * Validates the admin key in the handle.
-     * @param handleContext
-     * @param key
-     */
-    public void validateAdminKeyInHandle(@NonNull final HandleContext handleContext, @NonNull final Key key) {
-        requireNonNull(handleContext);
-        requireNonNull(key);
-
-        try {
-            handleContext.attributeValidator().validateKey(key);
-        } catch (HandleException e) {
-            throw new HandleException(INVALID_ADMIN_KEY);
-        }
     }
 
     /**
