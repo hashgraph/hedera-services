@@ -16,7 +16,10 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
 
@@ -45,5 +48,14 @@ public record NodeMetadata(
             final int grpcPort, final int gossipPort, final int tlsGossipPort, final int prometheusPort) {
         return new NodeMetadata(
                 nodeId, name, accountId, host, grpcPort, gossipPort, tlsGossipPort, prometheusPort, workingDir);
+    }
+
+    /**
+     * Returns the working directory for this node, or throws an exception if the working directory is null.
+     *
+     * @return the working directory for this node
+     */
+    public @NonNull Path workingDirOrThrow() {
+        return requireNonNull(workingDir);
     }
 }

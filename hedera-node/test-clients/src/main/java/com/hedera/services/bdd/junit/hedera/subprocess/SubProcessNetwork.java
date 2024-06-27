@@ -199,7 +199,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     private void refreshNodeConfigTxt() {
-        log.info("Refreshing config.txt for network '{}' - %n{}", name(), configTxt);
+        log.info("Refreshing config.txt for network '{}' - \n{}", name(), configTxt);
         nodes.forEach(node -> {
             final var configTxtLoc = node.getExternalPath(ADDRESS_BOOK);
             try {

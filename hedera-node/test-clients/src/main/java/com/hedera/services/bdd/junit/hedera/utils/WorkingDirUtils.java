@@ -190,7 +190,7 @@ public class WorkingDirUtils {
      * @param path the path to ensure exists
      * @return the path
      */
-    public static Path guaranteedExtant(@NonNull final Path path) {
+    public static Path guaranteedExtantDir(@NonNull final Path path) {
         if (!Files.exists(path)) {
             try {
                 createDirectoriesUnchecked(path);

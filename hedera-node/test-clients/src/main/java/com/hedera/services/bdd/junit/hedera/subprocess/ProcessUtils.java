@@ -17,6 +17,8 @@
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DIR;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.guaranteedExtantDir;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -116,9 +118,22 @@ public class ProcessUtils {
         environment.put("LANG", "en_US.UTF-8");
         environment.put("grpc.port", Integer.toString(metadata.grpcPort()));
         try {
+            final var redirectFile = metadata.workingDirOrThrow()
+                    .resolve(OUTPUT_DIR)
+                    .resolve("test-clients.log")
+                    .toFile();
+            if (!redirectFile.exists()) {
+                try {
+                    Files.createFile(
+                            guaranteedExtantDir(redirectFile.getParentFile().toPath())
+                                    .resolve("test-clients.log"));
+                } catch (IOException ignore) {
+                }
+            }
             return builder.command(javaCommandLineFor(metadata, appJar))
-                    .directory(metadata.workingDir().toFile())
-                    .inheritIO()
+                    .directory(metadata.workingDirOrThrow().toFile())
+                    .redirectOutput(redirectFile)
+                    .redirectError(redirectFile)
                     .start()
                     .toHandle();
         } catch (IOException e) {
