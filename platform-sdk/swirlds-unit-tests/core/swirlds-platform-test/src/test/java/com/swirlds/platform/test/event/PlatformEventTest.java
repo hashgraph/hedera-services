@@ -51,11 +51,44 @@ class PlatformEventTest {
     }
 
     @Test
-    @DisplayName("Serialize and deserialize event")
-    void serializeDeserialize() throws IOException, ConstructableRegistryException {
+    @DisplayName("Serialize and deserialize event with 2 app payloads")
+    void serializeDeserializeAppPayloads() throws IOException, ConstructableRegistryException {
         final Random random = RandomUtils.getRandomPrintSeed();
 
         final PlatformEvent platformEvent = new TestingEventBuilder(random).build();
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        final PlatformEvent copy = SerializationUtils.serializeDeserialize(platformEvent);
+        assertEquals(platformEvent, copy, "deserialized version should be the same");
+    }
+
+    @Test
+    @DisplayName("Serialize and deserialize event with no payloads")
+    void serializeDeserializeNoPayloads() throws IOException, ConstructableRegistryException {
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final PlatformEvent platformEvent = new TestingEventBuilder(random).setSystemTransactionCount(0).setAppTransactionCount(0).build();
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        final PlatformEvent copy = SerializationUtils.serializeDeserialize(platformEvent);
+        assertEquals(platformEvent, copy, "deserialized version should be the same");
+    }
+
+    @Test
+    @DisplayName("Serialize and deserialize event with 2 system payloads")
+    void serializeDeserializeSystemPayloads() throws IOException, ConstructableRegistryException {
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final PlatformEvent platformEvent = new TestingEventBuilder(random).setAppTransactionCount(0).setSystemTransactionCount(2).build();
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
+        final PlatformEvent copy = SerializationUtils.serializeDeserialize(platformEvent);
+        assertEquals(platformEvent, copy, "deserialized version should be the same");
+    }
+
+    @Test
+    @DisplayName("Serialize and deserialize event with 2 system payloads and 2 app payloads")
+    void serializeDeserializeAppAndSystemPayloads() throws IOException, ConstructableRegistryException {
+        final Random random = RandomUtils.getRandomPrintSeed();
+
+        final PlatformEvent platformEvent = new TestingEventBuilder(random).setAppTransactionCount(2).setSystemTransactionCount(2).build();
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         final PlatformEvent copy = SerializationUtils.serializeDeserialize(platformEvent);
         assertEquals(platformEvent, copy, "deserialized version should be the same");

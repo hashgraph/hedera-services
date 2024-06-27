@@ -38,7 +38,7 @@ public final class PayloadUtils {
     private PayloadUtils() {}
 
     /**
-     * Get the size of an list of payloads.
+     * Get the size of a list of payloads.
      *
      * @param payloads the payloads to get the size of
      * @return the size of the payloads

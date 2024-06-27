@@ -176,7 +176,7 @@ public class UnsignedEvent extends AbstractHashable {
      * @param out the stream to which this object is to be written
      * @throws IOException if unsupported payload types are encountered
      */
-    public void serializeLegacyHashBytes(final SerializableDataOutputStream out) throws IOException {
+    public void serializeLegacyHashBytes(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeLong(CLASS_ID);
         serialize(out);
     }
@@ -188,7 +188,7 @@ public class UnsignedEvent extends AbstractHashable {
      *
      * @throws IOException if unsupported payload types are encountered
      */
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
         out.writeInt(ClassVersion.BIRTH_ROUND);
         out.writeSerializable(softwareVersion, true);
         out.writeInt(NodeId.ClassVersion.ORIGINAL);
@@ -223,7 +223,7 @@ public class UnsignedEvent extends AbstractHashable {
         }
     }
 
-    private static void serializeApplicationPayload(SerializableDataOutputStream out, EventPayload payload)
+    private static void serializeApplicationPayload(@NonNull final SerializableDataOutputStream out, @NonNull final EventPayload payload)
             throws IOException {
         out.writeLong(APPLICATION_TRANSACTION_CLASS_ID);
         out.writeInt(APPLICATION_TRANSACTION_VERSION);
@@ -232,7 +232,7 @@ public class UnsignedEvent extends AbstractHashable {
         bytes.writeTo(out);
     }
 
-    private static void serializeStateSignaturePayload(SerializableDataOutputStream out, EventPayload payload)
+    private static void serializeStateSignaturePayload(@NonNull final SerializableDataOutputStream out, @NonNull final EventPayload payload)
             throws IOException {
         final StateSignaturePayload stateSignaturePayload = payload.payload().as();
 
@@ -255,7 +255,7 @@ public class UnsignedEvent extends AbstractHashable {
      * @return the deserialized event
      * @throws IOException if unsupported payload types are encountered
      */
-    public static UnsignedEvent deserialize(final SerializableDataInputStream in) throws IOException {
+    public static UnsignedEvent deserialize(@NonNull final SerializableDataInputStream in) throws IOException {
         final int version = in.readInt();
         if (version != ClassVersion.BIRTH_ROUND) {
             throw new IOException("Unsupported version: " + version);
@@ -265,7 +265,7 @@ public class UnsignedEvent extends AbstractHashable {
         final SoftwareVersion softwareVersion =
                 in.readSerializable(StaticSoftwareVersion.getSoftwareVersionClassIdSet());
 
-        final var creatorId = in.readSerializable(false, NodeId::new);
+        final NodeId creatorId = in.readSerializable(false, NodeId::new);
         if (creatorId == null) {
             throw new IOException("creatorId is null");
         }
@@ -298,7 +298,8 @@ public class UnsignedEvent extends AbstractHashable {
                 softwareVersion, creatorId, selfParent, otherParents, birthRound, timeCreated, transactionList);
     }
 
-    private static Bytes deserializeApplicationPayload(SerializableDataInputStream in, int classVersion)
+    @Nullable
+    private static Bytes deserializeApplicationPayload(@NonNull final SerializableDataInputStream in, final int classVersion)
             throws IOException {
         if (classVersion != APPLICATION_TRANSACTION_VERSION) {
             throw new IOException("Unsupported application class version: " + classVersion);
@@ -563,6 +564,7 @@ public class UnsignedEvent extends AbstractHashable {
      *
      * @return the core event data
      */
+    @NonNull
     public EventCore getEventCore() {
         return eventCore;
     }
@@ -572,6 +574,7 @@ public class UnsignedEvent extends AbstractHashable {
      *
      * @return list of payloads
      */
+    @NonNull
     public List<EventPayload> getPayloads() {
         return payloads;
     }
