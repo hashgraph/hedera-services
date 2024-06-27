@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -43,8 +44,10 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadCustomFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THOUSAND_HBAR;
@@ -682,7 +685,7 @@ public class AssociatePrecompileV2SecurityModelSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(FUNGIBLE_TOKEN));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
     final Stream<DynamicTest> associateSingleTokenWithDelegateContractKeyValidateFees() {
         final double expectedFeeForOneAssociation = 0.0621609828;
         final double expectedFeeForTwoAssociations = 0.1222927572;
@@ -691,6 +694,7 @@ public class AssociatePrecompileV2SecurityModelSuite {
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, "CustomFeeSchedule.json"),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
                         cryptoCreate(ACCOUNT).balance(10 * ONE_HUNDRED_HBARS),
@@ -791,6 +795,7 @@ public class AssociatePrecompileV2SecurityModelSuite {
                                         .freeze(FreezeNotApplicable)),
                         validateChargedUsd("fungibleTokenAssociate", expectedFeeForOneAssociation),
                         validateChargedUsd("nonFungibleTokenAssociate", expectedFeeForOneAssociation),
-                        validateChargedUsd("multipleTokensAssociate", expectedFeeForTwoAssociations));
+                        validateChargedUsd("multipleTokensAssociate", expectedFeeForTwoAssociations),
+                        uploadCustomFeeSchedules(GENESIS, "FeeSchedule.json"));
     }
 }
