@@ -59,7 +59,7 @@ public final class AddressBookServiceDefinition implements RpcServiceDefinition 
     @Override
     @NonNull
     public String basePath() {
-        return "com.hedera.hapi.node.addressbook.AddressBookService";
+        return "proto.AddressBookService";
     }
 
     @Override
