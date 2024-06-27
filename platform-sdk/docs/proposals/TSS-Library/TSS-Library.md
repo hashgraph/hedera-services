@@ -36,11 +36,13 @@ the distribution aspect, the loading, and the in-memory interpretation from each
 - **Groth 21**: Publicly verifiable secret sharing and resharing schemes that enable secure and efficient distribution and management of secret shares,
   with many possible use cases supporting applications in distributed key generation and threshold signatures.
   Uses Shamir's secret sharing, ElGamal, and Zero-Knowledge Proofs.
+- **Distribute key generation**: Aims to solve the problem of getting n parties able to cryptographically sign and verify signatures in the presence of some corruption threshold in a decentralized network. 
+To do so, this algorithm generates a public key, and a secret key of which no single party knows, but has some share of.
 - **Shamir’s Secret Sharing**: In Shamir’s SS, a secret `s` is divided into `n` shares by a dealer, and shares are sent to shareholders secretly.
   The secret `s` is shared among `n` shareholders in such a way that:
   (a) any party with at least `t` shares can recover the secret, and (b) any party with fewer than `t` shares cannot obtain the secret.
 - **ElGamal**: On a message, the ElGamal signature scheme produces a signature consisting of two elements `(r, s)`, where `r` is a random number, and `s` is computed from the message, a signer's secret key, and `r`.
-- **SNARK**: they mean a proof system for proving arbitrary statements (circuits / programs).
+- **SNARK**: A proof system for proving arbitrary statements (circuits / programs).
 - **Zero-Knowledge Proofs**: A proof system where one can prove possession of certain information, e.g., a secret key, without revealing that information or any interaction between the prover and verifier.
 - **NIZK**: A non-interactive zero-knowledge proof for an statement. In TSS we use NIZK proofs for encoding the correctness of the secret sharing.
 - **EC (Elliptic Curve)**: `Elliptic` is not elliptic in the sense of an `oval circle`. In the field `Fp`, an `EC` is like a non-connected cloud of points where
@@ -51,11 +53,10 @@ the distribution aspect, the loading, and the in-memory interpretation from each
 - **Groups**: Sets equipped with an operation (like addition or multiplication) that satisfies certain conditions (closure, associativity, identity element, and inverses).
 - **Share**: Represents a piece of the necessary public/private elements to create signatures. In TSS,
   a threshold number of shares is needed to produce an aggregate signature that the ledger public key can later verify.
-- **Polynomial Commitment**: It enables verification of evaluations of the polynomial at specific points without revealing the entire polynomial.
+- **Polynomial Commitment**: A process that enables evaluations of a polynomial at specific points to be verified without revealing the entire polynomial.
 - **Participant**: Any party involved in the distributed key generation protocol.
-- **Participant Directory**: An address book of Participants of the distributed key generation protocol.
+- **Participant Directory**: An address book of participants of the distributed key generation protocol.
 
-Each scheme participant will receive its persistent EC private key from an external source and all participants' EC public keys.
 
 ### Goals
 - **Usability**: Design user-friendly libraries with a public API that are easy to integrate with other projects, such as consensus node and block node.
@@ -123,7 +124,7 @@ The `SignatureSchema` defines the type of Curve and which Group of the Pairing i
 ```
 `Share`: An abstract concept having a unique identifier and an owner
 |-  `PrivateShare`: Represents a share owned by the executor of the scheme. Contains a secret value (EC Private key) used for signing.
-|-  `PublicShare`: Represents a share in the system. It contains public information that can be used to validate each signature and, when combined, to validate aggregate signatures.   
+|-  `PublicShare`: Represents a share in the system. It contains public information that can be used to validate each signatures.   
 ```
 
 #####  Bootstrap Stage
