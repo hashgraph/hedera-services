@@ -60,6 +60,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenRejectHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
@@ -119,6 +120,7 @@ public record TransactionHandlers(
         @NonNull TokenPauseHandler tokenPauseHandler,
         @NonNull TokenUnpauseHandler tokenUnpauseHandler,
         @NonNull TokenUpdateNftsHandler tokenUpdateNftsHandler,
+        @NonNull TokenRejectHandler tokenRejectHandler,
         @NonNull NodeCreateHandler nodeCreateHandler,
         @NonNull NodeUpdateHandler nodeUpdateHandler,
         @NonNull NodeDeleteHandler nodeDeleteHandler,

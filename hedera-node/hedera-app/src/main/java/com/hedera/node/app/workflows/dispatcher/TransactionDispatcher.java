@@ -204,6 +204,7 @@ public class TransactionDispatcher {
             case TOKEN_PAUSE -> handlers.tokenPauseHandler();
             case TOKEN_UNPAUSE -> handlers.tokenUnpauseHandler();
             case TOKEN_UPDATE_NFTS -> handlers.tokenUpdateNftsHandler();
+            case TOKEN_REJECT -> handlers.tokenRejectHandler();
 
             case UTIL_PRNG -> handlers.utilPrngHandler();
 
