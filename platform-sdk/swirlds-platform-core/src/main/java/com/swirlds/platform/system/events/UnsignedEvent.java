@@ -223,8 +223,8 @@ public class UnsignedEvent extends AbstractHashable {
         }
     }
 
-    private static void serializeApplicationPayload(@NonNull final SerializableDataOutputStream out, @NonNull final EventPayload payload)
-            throws IOException {
+    private static void serializeApplicationPayload(
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventPayload payload) throws IOException {
         out.writeLong(APPLICATION_TRANSACTION_CLASS_ID);
         out.writeInt(APPLICATION_TRANSACTION_VERSION);
         final Bytes bytes = payload.payload().as();
@@ -232,8 +232,8 @@ public class UnsignedEvent extends AbstractHashable {
         bytes.writeTo(out);
     }
 
-    private static void serializeStateSignaturePayload(@NonNull final SerializableDataOutputStream out, @NonNull final EventPayload payload)
-            throws IOException {
+    private static void serializeStateSignaturePayload(
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventPayload payload) throws IOException {
         final StateSignaturePayload stateSignaturePayload = payload.payload().as();
 
         out.writeLong(STATE_SIGNATURE_CLASS_ID);
@@ -270,7 +270,8 @@ public class UnsignedEvent extends AbstractHashable {
             throw new IOException("creatorId is null");
         }
         final EventDescriptor selfParent = in.readSerializable(false, EventDescriptor::new);
-        final List<EventDescriptor> otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
+        final List<EventDescriptor> otherParents =
+                in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
         final long birthRound = in.readLong();
 
         final Instant timeCreated = in.readInstant();
@@ -299,8 +300,8 @@ public class UnsignedEvent extends AbstractHashable {
     }
 
     @Nullable
-    private static Bytes deserializeApplicationPayload(@NonNull final SerializableDataInputStream in, final int classVersion)
-            throws IOException {
+    private static Bytes deserializeApplicationPayload(
+            @NonNull final SerializableDataInputStream in, final int classVersion) throws IOException {
         if (classVersion != APPLICATION_TRANSACTION_VERSION) {
             throw new IOException("Unsupported application class version: " + classVersion);
         }
