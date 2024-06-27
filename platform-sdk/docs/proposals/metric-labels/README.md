@@ -202,6 +202,8 @@ Next to extending the public API we need to migrate the current metrics to the n
 #### Migration of the `category`, `name`, and `nodeId`
 
 The `nodeId` information of a metric will be migrated to labels.
+Today we create a prometheus label out of the `nodeId` internally in our prometheus endpoint implementation.
+The same conversion can be used to create a label for the `nodeId` in future but should be moved from the prometheus endpoint to the platform code.
 The key of a metric won't change and still be defined as the combination of the `category` and `name`.
 The unique identifier of the metric is the combination key and the labels.
 That is a breaking change since today the key is the unique identifier of a metric.
