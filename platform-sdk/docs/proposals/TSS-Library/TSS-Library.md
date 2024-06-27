@@ -80,7 +80,7 @@ Groth21 is a non-interactive, publicly verifiable secret-sharing scheme where a 
 and confidentially yet verifiably distribute shares to multiple receivers.
 It includes a distributed resharing protocol that preserves the public key but creates a fresh secret sharing of the secret key and hands it to a set of receivers,
 which may or may not overlap with the original set of shareholders.
-
+non-interactive distributed key generation and key resharing protocols that support Shamir secret sharings of the secret keys.
 
 #### Overview
 This proposal covers the implementation of a tool similar to ssh-keygen to generate those keys, but the generation, persistence, distribution
@@ -159,7 +159,7 @@ P₁  	P₁  	P₁  	P₁  	P₁  	P₂  	P₂  	P₃  	P₄  	P₄
 
 ##### 1. Create TssMessage
 `TssMessage`: A data structure for distributing encrypted shares of a secret among all participants in a way that only the intended participant can see its part of the share.
-It includes auxiliary information used to validate its correctness and assemble an aggregate public key i.e., a commitment to a secret share polynomial and a NIZK proof.
+It includes auxiliary information used to validate its correctness and assemble an aggregate public key, i.e., a commitment to a secret share polynomial and a NIZK proof.
 
 ###### Generation of the shares
 In the bootstrap process, each participant creates a random EC Private Key `k` out of the Field of the `SignatureScheme` (the secret being shared).
