@@ -32,6 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -131,11 +132,9 @@ public enum RecordStreamAccess {
      */
     public synchronized BroadcastingRecordStreamListener getValidatingListener(final String loc) throws Exception {
         if (!validatingListeners.containsKey(loc)) {
-            // In most cases should let us run HapiSpec#main() from both the root and test-clients/
-            // directories
             var fAtLoc = relocatedIfNotPresentWithCurrentPathPrefix(new File(loc), "..", TEST_CLIENTS_PREFIX);
             if (!fAtLoc.exists()) {
-                throw new IllegalArgumentException("No such record stream file location: " + fAtLoc.getAbsolutePath());
+                Files.createDirectories(fAtLoc.toPath());
             }
             validatingListeners.put(loc, newValidatingListener(fAtLoc.getAbsolutePath()));
         }

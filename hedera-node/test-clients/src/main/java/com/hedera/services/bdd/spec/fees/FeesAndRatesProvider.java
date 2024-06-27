@@ -30,6 +30,7 @@ import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnFactory;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
@@ -54,6 +55,7 @@ import java.math.RoundingMode;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -206,17 +208,22 @@ public class FeesAndRatesProvider {
         CryptoTransferTransactionBody opBody =
                 txns.<CryptoTransferTransactionBody, CryptoTransferTransactionBody.Builder>body(
                         CryptoTransferTransactionBody.class, b -> b.setTransfers(transfers));
-        Transaction.Builder txnBuilder = txns.getReadyToSign(b -> {
-            b.setTransactionID(
-                    TransactionID.newBuilder().mergeFrom(b.getTransactionID()).setAccountID(setup.defaultPayer()));
-            b.setCryptoTransfer(opBody);
-        });
+        Transaction.Builder txnBuilder = txns.getReadyToSign(
+                b -> {
+                    b.setTransactionID(TransactionID.newBuilder()
+                            .mergeFrom(b.getTransactionID())
+                            .setAccountID(setup.defaultPayer()));
+                    b.setCryptoTransfer(opBody);
+                },
+                null,
+                null);
 
-        return keys.signWithFullPrefixEd25519Keys(
-                txnBuilder,
-                List.of(
-                        flattenedMaybeList(registry.getKey(setup.defaultPayerName())),
-                        flattenedMaybeList(registry.getKey(setup.defaultPayerName()))));
+        final var payerKey = flattenedMaybeList(registry.getKey(setup.defaultPayerName()));
+        try {
+            return keys.sign(null, txnBuilder, List.of(payerKey), Map.of(payerKey, SigControl.ED25519_ON));
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Key flattenedMaybeList(final Key k) {

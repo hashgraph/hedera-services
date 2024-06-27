@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl.ReversingBehavior;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
@@ -69,7 +68,6 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>As with all classes intended to be used within the handle-workflow, this class is <em>not</em> thread-safe.
  */
-@UserTxnScope
 public final class RecordListBuilder {
     private static final Logger logger = LogManager.getLogger(RecordListBuilder.class);
 

@@ -63,6 +63,7 @@ public class TokenHandlers {
     private final TokenGetNftInfoHandler tokenGetNftInfoHandler;
     private final TokenGetNftInfosHandler tokenGetNftInfosHandler;
     private final TokenUpdateNftsHandler tokenUpdateNftsHandler;
+    private final TokenRejectHandler tokenRejectHandler;
 
     /**
      * Constructor for the TokenHandlers.
@@ -134,7 +135,8 @@ public class TokenHandlers {
             @NonNull final TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler,
             @NonNull final TokenGetNftInfoHandler tokenGetNftInfoHandler,
             @NonNull final TokenGetNftInfosHandler tokenGetNftInfosHandler,
-            TokenUpdateNftsHandler tokenUpdateNftsHandler) {
+            @NonNull final TokenRejectHandler tokenRejectHandler,
+            @NonNull final TokenUpdateNftsHandler tokenUpdateNftsHandler) {
         this.cryptoCreateHandler = Objects.requireNonNull(cryptoCreateHandler, "cryptoCreateHandler must not be null");
         this.cryptoUpdateHandler = Objects.requireNonNull(cryptoUpdateHandler, "cryptoUpdateHandler must not be null");
         this.cryptoTransferHandler =
@@ -190,6 +192,7 @@ public class TokenHandlers {
                 Objects.requireNonNull(tokenGetNftInfosHandler, "tokenGetNftInfosHandler must not be null");
         this.tokenUpdateNftsHandler =
                 Objects.requireNonNull(tokenUpdateNftsHandler, "tokenUpdateNftsHandler must not be null");
+        this.tokenRejectHandler = Objects.requireNonNull(tokenRejectHandler, "tokenRejectHandler must not be null");
     }
 
     /**
@@ -487,5 +490,14 @@ public class TokenHandlers {
      */
     public TokenUpdateNftsHandler tokenUpdateNftsHandler() {
         return tokenUpdateNftsHandler;
+    }
+
+    /**
+     * Gets the tokenRejectHandler.
+     *
+     * @return the tokenRejectHandler
+     */
+    public TokenRejectHandler tokenRejectHandler() {
+        return tokenRejectHandler;
     }
 }

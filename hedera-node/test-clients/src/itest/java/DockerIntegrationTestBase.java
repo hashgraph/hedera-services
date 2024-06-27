@@ -64,6 +64,6 @@ public abstract class DockerIntegrationTestBase extends TestBase {
                 defaultProperties.get("tls"),
                 defaultProperties.get("txn.proto.structure"),
                 defaultProperties.get("node.selector"),
-                Map.of("recordStream.path", NODE_0.getRecordPath()));
+                Map.of());
     }
 }
