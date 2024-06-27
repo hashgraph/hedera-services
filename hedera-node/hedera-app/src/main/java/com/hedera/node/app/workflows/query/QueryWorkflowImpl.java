@@ -206,7 +206,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     payerID = requireNonNull(transactionInfo.payerID());
                     context = new QueryContextImpl(
                             state,
-                            consensusTime,
                             storeFactory,
                             query,
                             configuration,
@@ -234,7 +233,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                         // 3.iv Calculate costs
                         final var queryFees = handler.computeFees(context).totalFee();
                         final var txFees = queryChecker.estimateTxFees(
-                                state, storeFactory, consensusTime, transactionInfo, payer.keyOrThrow(), configuration);
+                                storeFactory, consensusTime, transactionInfo, payer.keyOrThrow(), configuration);
 
                         // 3.v Check account balances
                         queryChecker.validateAccountBalances(accountStore, transactionInfo, payer, queryFees, txFees);
@@ -249,7 +248,6 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                     }
                     context = new QueryContextImpl(
                             state,
-                            consensusTime,
                             storeFactory,
                             query,
                             configProvider.getConfiguration(),

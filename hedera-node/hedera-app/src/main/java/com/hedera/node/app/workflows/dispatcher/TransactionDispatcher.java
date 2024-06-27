@@ -47,7 +47,6 @@ public class TransactionDispatcher {
     public static final String SYSTEM_UNDELETE_WITHOUT_ID_CASE = "SystemUndelete without IdCase";
 
     protected final TransactionHandlers handlers;
-    private Object NODE_CREATE;
 
     /**
      * Creates a {@code TransactionDispatcher}.

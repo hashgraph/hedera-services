@@ -56,7 +56,6 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.UncheckedSubmitBody;
-import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.info.CurrentPlatformStatus;
@@ -126,9 +125,6 @@ class IngestCheckerTest extends AppTestBase {
     private FeeManager feeManager;
 
     @Mock(strictness = LENIENT)
-    private ExchangeRateManager exchangeRateManager;
-
-    @Mock(strictness = LENIENT)
     private Authorizer authorizer;
 
     @Mock(strictness = LENIENT)
@@ -187,8 +183,7 @@ class IngestCheckerTest extends AppTestBase {
                 dispatcher,
                 feeManager,
                 authorizer,
-                synchronizedThrottleAccumulator,
-                exchangeRateManager);
+                synchronizedThrottleAccumulator);
     }
 
     @Nested
@@ -237,8 +232,7 @@ class IngestCheckerTest extends AppTestBase {
                 dispatcher,
                 feeManager,
                 authorizer,
-                synchronizedThrottleAccumulator,
-                exchangeRateManager);
+                synchronizedThrottleAccumulator);
 
         // Then the checker should throw a PreCheckException
         assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))

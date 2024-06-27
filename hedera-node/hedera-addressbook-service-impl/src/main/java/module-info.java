@@ -9,7 +9,6 @@ module com.hedera.node.app.service.addressbook.impl {
     requires transitive com.swirlds.state.api;
     requires transitive dagger;
     requires transitive javax.inject;
-    requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.service.token;
     requires com.swirlds.platform.core;
     requires com.hedera.pbj.runtime;

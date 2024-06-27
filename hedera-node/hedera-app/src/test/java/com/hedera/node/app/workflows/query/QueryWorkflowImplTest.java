@@ -692,12 +692,7 @@ class QueryWorkflowImplTest extends AppTestBase {
         given(handler.computeFees(any(QueryContext.class))).willReturn(new Fees(1L, 20L, 300L));
         when(handler.requiresNodePayment(ANSWER_ONLY)).thenReturn(true);
         when(queryChecker.estimateTxFees(
-                        any(),
-                        any(),
-                        any(),
-                        eq(transactionInfo),
-                        eq(ALICE.account().key()),
-                        eq(configuration)))
+                        any(), any(), eq(transactionInfo), eq(ALICE.account().key()), eq(configuration)))
                 .thenReturn(4000L);
         doThrow(new InsufficientBalanceException(INSUFFICIENT_TX_FEE, 12345L))
                 .when(queryChecker)

@@ -70,11 +70,6 @@ public class NoOpFeeCalculator implements FeeCalculator {
         return this;
     }
 
-    @Override
-    public long getVptPrice() {
-        return 0;
-    }
-
     @NonNull
     @Override
     public Fees legacyCalculate(@NonNull Function<SigValueObj, FeeData> callback) {

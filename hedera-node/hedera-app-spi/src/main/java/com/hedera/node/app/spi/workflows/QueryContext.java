@@ -25,7 +25,6 @@ import com.hedera.node.app.spi.records.RecordCache;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 
 /**
  * Context of a single query. Contains all query specific information.
@@ -89,7 +88,4 @@ public interface QueryContext {
      */
     @NonNull
     FeeCalculator feeCalculator();
-
-    @NonNull
-    Instant consensusNow();
 }
