@@ -277,7 +277,7 @@ public class UnsignedEvent extends AbstractHashable {
         in.readInt(); // read serialized length
         final List<OneOf<PayloadOneOfType>> transactionList = new ArrayList<>();
         final int payloadSize = in.readInt();
-        if(payloadSize > 0) {
+        if (payloadSize > 0) {
             in.readBoolean(); // allSameClass
         }
         for (int i = 0; i < payloadSize; i++) {
