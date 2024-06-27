@@ -28,8 +28,6 @@ import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourc
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 public class RandomTransferFromSigner extends RandomTransfer {
@@ -42,11 +40,6 @@ public class RandomTransferFromSigner extends RandomTransfer {
         super(accounts, outcomes);
         this.signer = signer;
         this.outcomes = outcomes;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return Collections.emptyList();
     }
 
     @Override

@@ -19,7 +19,6 @@ package com.hedera.services.bdd.spec.infrastructure;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
-import static com.hedera.services.bdd.spec.keys.KeyFactory.payerKey;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_RECEIVER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static java.util.Objects.requireNonNull;
@@ -72,7 +71,7 @@ public class HapiSpecRegistry {
     public HapiSpecRegistry(HapiSpecSetup setup) throws Exception {
         this.setup = setup;
 
-        final var key = payerKey(setup);
+        final var key = setup.payerKey();
         final var genesisKey = asPublicKey(CommonUtils.hex(key.getAbyte()));
 
         saveAccountId(setup.genesisAccountName(), setup.genesisAccount());

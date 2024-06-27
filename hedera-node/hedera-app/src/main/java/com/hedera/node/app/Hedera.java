@@ -18,7 +18,6 @@ package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.config.IsEmbeddedTest.NO;
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
@@ -48,6 +47,7 @@ import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
@@ -169,7 +169,21 @@ public final class Hedera implements SwirldMain {
      */
     private final HederaSoftwareVersion version;
 
+    /**
+     * Whether this node is running in an embedded test environment.
+     */
     private final IsEmbeddedTest isEmbeddedTest;
+
+    /**
+     * The source of time the node should use for screening transactions at ingest.
+     */
+    private final InstantSource instantSource;
+
+    /**
+     * The contract service singleton, kept as a field here to avoid constructing twice
+     * (once in constructor to register schemas, again inside Dagger component).
+     */
+    private final ContractServiceImpl contractServiceImpl;
 
     /**
      * The Hashgraph Platform. This is set during state initialization.
@@ -214,11 +228,13 @@ public final class Hedera implements SwirldMain {
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
-            @NonNull final IsEmbeddedTest isEmbeddedTest) {
+            @NonNull final IsEmbeddedTest isEmbeddedTest,
+            @NonNull final InstantSource instantSource) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         this.isEmbeddedTest = requireNonNull(isEmbeddedTest);
         this.serviceMigrator = requireNonNull(migrator);
+        this.instantSource = requireNonNull(instantSource);
         logger.info(
                 """
 
@@ -236,11 +252,12 @@ public final class Hedera implements SwirldMain {
                 "Creating Hedera Consensus Node {} with HAPI {}",
                 () -> HapiUtils.toString(version.getServicesVersion()),
                 () -> HapiUtils.toString(version.getHapiVersion()));
+        contractServiceImpl = new ContractServiceImpl(instantSource);
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        CONTRACT_SERVICE,
+                        contractServiceImpl,
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
@@ -687,7 +704,8 @@ public final class Hedera implements SwirldMain {
                 .crypto(CryptographyHolder.get())
                 .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
                 .servicesRegistry(servicesRegistry)
-                .instantSource(InstantSource.system())
+                .instantSource(instantSource)
+                .contractServiceImpl(contractServiceImpl)
                 .metrics(metrics)
                 .build();
         daggerApp.workingStateAccessor().setHederaState(state);

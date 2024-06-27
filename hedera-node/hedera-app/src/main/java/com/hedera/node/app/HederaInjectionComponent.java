@@ -16,7 +16,6 @@
 
 package com.hedera.node.app;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
@@ -32,6 +31,7 @@ import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -53,6 +53,7 @@ import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.SelfNodeInfo;
 import dagger.BindsInstance;
@@ -156,7 +157,10 @@ public interface HederaInjectionComponent {
         Builder instantSource(InstantSource instantSource);
 
         @BindsInstance
-        Builder softwareVersion(SemanticVersion softwareVersion);
+        Builder contractServiceImpl(ContractServiceImpl contractService);
+
+        @BindsInstance
+        Builder softwareVersion(SoftwareVersion softwareVersion);
 
         @BindsInstance
         Builder metrics(Metrics metrics);
