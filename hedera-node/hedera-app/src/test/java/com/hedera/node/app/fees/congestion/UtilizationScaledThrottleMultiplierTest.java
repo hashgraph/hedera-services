@@ -51,16 +51,13 @@ import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
-import com.hedera.node.app.service.contract.impl.state.InitialModServiceContractSchema;
+import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.file.FileService;
-import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
-import com.hedera.node.app.service.mono.store.models.Account;
-import com.hedera.node.app.service.mono.store.models.Id;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.service.token.impl.TokenServiceImpl;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.AccountsConfig;
@@ -69,6 +66,7 @@ import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.data.TopicsConfig;
+import com.hedera.node.config.types.EntityScaleFactors;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.HashMap;
@@ -145,19 +143,24 @@ class UtilizationScaledThrottleMultiplierTest {
                         Map.of(
                                 "ACCOUNTS",
                                 Map.of(
-                                        AccountID.newBuilder().accountNum(1L), new Account(Id.DEFAULT),
-                                        AccountID.newBuilder().accountNum(2L), new Account(Id.DEFAULT),
-                                        AccountID.newBuilder().accountNum(3L), new Account(Id.DEFAULT),
-                                        AccountID.newBuilder().accountNum(4L), new Account(Id.DEFAULT),
-                                        AccountID.newBuilder().accountNum(5L), new Account(Id.DEFAULT)),
+                                        AccountID.newBuilder().accountNum(1L),
+                                                com.hedera.hapi.node.state.token.Account.DEFAULT,
+                                        AccountID.newBuilder().accountNum(2L),
+                                                com.hedera.hapi.node.state.token.Account.DEFAULT,
+                                        AccountID.newBuilder().accountNum(3L),
+                                                com.hedera.hapi.node.state.token.Account.DEFAULT,
+                                        AccountID.newBuilder().accountNum(4L),
+                                                com.hedera.hapi.node.state.token.Account.DEFAULT,
+                                        AccountID.newBuilder().accountNum(5L),
+                                                com.hedera.hapi.node.state.token.Account.DEFAULT),
                                 "ALIASES",
                                 new HashMap<>()))
                 .addService(
                         ContractService.NAME,
                         Map.of(
-                                InitialModServiceContractSchema.STORAGE_KEY,
+                                V0490ContractSchema.STORAGE_KEY,
                                 new HashMap<>(),
-                                InitialModServiceContractSchema.BYTECODE_KEY,
+                                V0490ContractSchema.BYTECODE_KEY,
                                 Map.of(
                                         new EntityNumber(4L), Bytecode.DEFAULT,
                                         new EntityNumber(5L), Bytecode.DEFAULT)));
@@ -183,9 +186,9 @@ class UtilizationScaledThrottleMultiplierTest {
                 .addService(
                         ContractService.NAME,
                         Map.of(
-                                InitialModServiceContractSchema.STORAGE_KEY,
+                                V0490ContractSchema.STORAGE_KEY,
                                 new HashMap<>(),
-                                InitialModServiceContractSchema.BYTECODE_KEY,
+                                V0490ContractSchema.BYTECODE_KEY,
                                 Map.of(
                                         new EntityNumber(4L), Bytecode.DEFAULT,
                                         new EntityNumber(5L), Bytecode.DEFAULT)));
@@ -211,7 +214,7 @@ class UtilizationScaledThrottleMultiplierTest {
                 .addService(
                         FileService.NAME,
                         Map.of(
-                                FileServiceImpl.BLOBS_KEY,
+                                V0490FileSchema.BLOBS_KEY,
                                 Map.of(
                                         FileID.newBuilder().fileNum(1L), File.DEFAULT,
                                         FileID.newBuilder().fileNum(2L), File.DEFAULT)));
@@ -245,7 +248,7 @@ class UtilizationScaledThrottleMultiplierTest {
                 .addService(
                         TokenService.NAME,
                         Map.of(
-                                TokenServiceImpl.NFTS_KEY,
+                                V0490TokenSchema.NFTS_KEY,
                                 Map.of(
                                         NftID.newBuilder()
                                                         .tokenId(TokenID.newBuilder()
@@ -300,7 +303,7 @@ class UtilizationScaledThrottleMultiplierTest {
                 .addService(
                         TokenService.NAME,
                         Map.of(
-                                TokenServiceImpl.TOKENS_KEY,
+                                V0490TokenSchema.TOKENS_KEY,
                                 Map.of(
                                         TokenID.newBuilder().tokenNum(1L), Token.DEFAULT,
                                         TokenID.newBuilder().tokenNum(2L), Token.DEFAULT)));
@@ -326,7 +329,7 @@ class UtilizationScaledThrottleMultiplierTest {
                 .addService(
                         TokenService.NAME,
                         Map.of(
-                                TokenServiceImpl.TOKEN_RELS_KEY,
+                                V0490TokenSchema.TOKEN_RELS_KEY,
                                 Map.of(
                                         EntityIDPair.newBuilder()
                                                         .tokenId(TokenID.newBuilder()

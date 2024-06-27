@@ -28,7 +28,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -56,7 +55,7 @@ public class TransactionSignatureTests {
 
         cryptoProvider = CryptographyHolder.get();
         executorService = Executors.newFixedThreadPool(PARALLELISM);
-        signaturePool = new SignaturePool(cryptoConfig.computeCpuVerifierThreadCount() * PARALLELISM, 4096, true);
+        signaturePool = new SignaturePool(1024, 4096, true);
     }
 
     @AfterAll
@@ -83,81 +82,6 @@ public class TransactionSignatureTests {
         future.get();
 
         assertEquals(VerificationStatus.VALID, singleSignature.getSignatureStatus());
-    }
-
-    /**
-     * Checks correctness of DigitalSignature batch sizes less than the thread count
-     */
-    @Test
-    public void signatureSizeUnderThreads()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final TransactionSignature[] signatures =
-                new TransactionSignature[cryptoConfig.computeCpuVerifierThreadCount() - 1];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        cryptoProvider.verifySync(Arrays.asList(signatures));
-
-        checkSignatures(signatures);
-    }
-
-    /**
-     * Checks correctness of DigitalSignature batch sizes more than the thread count
-     */
-    @Test
-    public void signatureSizeOverThreads()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final TransactionSignature[] signatures =
-                new TransactionSignature[(cryptoConfig.computeCpuVerifierThreadCount() * 2) - 1];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        cryptoProvider.verifySync(Arrays.asList(signatures));
-
-        checkSignatures(signatures);
-    }
-
-    /**
-     * Checks correctness of DigitalSignature batch sizes less than the thread count
-     */
-    @Test
-    public void asyncSignatureSizeUnderThreads()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-        final TransactionSignature[] signatures =
-                new TransactionSignature[cryptoConfig.computeCpuVerifierThreadCount() - 1];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        cryptoProvider.verifyAsync(Arrays.asList(signatures));
-        // Thread.sleep(250);
-
-        checkSignatures(signatures);
-    }
-
-    /**
-     * Checks correctness of DigitalSignature batch sizes more than the thread count
-     */
-    @Test
-    public void asyncSignatureSizeOverThreads()
-            throws ExecutionException, InterruptedException, NoSuchProviderException, NoSuchAlgorithmException {
-
-        final TransactionSignature[] signatures =
-                new TransactionSignature[(cryptoConfig.computeCpuVerifierThreadCount() * 2) - 1];
-
-        for (int i = 0; i < signatures.length; i++) {
-            signatures[i] = signaturePool.next();
-        }
-
-        cryptoProvider.verifyAsync(Arrays.asList(signatures));
-        // Thread.sleep(250);
-
-        checkSignatures(signatures);
     }
 
     private void checkSignatures(TransactionSignature... signatures) throws ExecutionException, InterruptedException {

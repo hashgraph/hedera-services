@@ -16,21 +16,20 @@
 
 package com.hedera.node.app.platform.event;
 
-import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
-import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.EventDescriptor;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -52,8 +51,7 @@ public class EventMigrationTest {
      * The file being read is from mainnet written by the SDK 0.46.3.
      * <p>
      * Even though this could be considered a platform test, it needs to be in the services module because the event
-     * contains a {@link com.hedera.node.app.service.mono.context.properties.SerializableSemVers} which is a services
-     * class
+     * contains a {@link SerializableSemVers} which is a services class
      */
     @Test
     public void migration() throws URISyntaxException, IOException {
@@ -69,13 +67,13 @@ public class EventMigrationTest {
                         .toPath(),
                 false)) {
             while (iterator.hasNext()) {
-                final BaseEventHashedData hashedData =
-                        iterator.next().getGossipEvent().getHashedData();
+                final PlatformEvent platformEvent = iterator.next().getPlatformEvent();
+                new StatefulEventHasher().hashEvent(platformEvent);
                 numEvents++;
-                CryptographyHolder.get().digestSync(hashedData);
-                eventHashes.add(hashedData.getHash());
-                Stream.of(hashedData.getSelfParentHash(), hashedData.getOtherParentHash())
+                eventHashes.add(platformEvent.getHash());
+                platformEvent.getAllParents().stream()
                         .filter(Objects::nonNull)
+                        .map(EventDescriptor::getHash)
                         .forEach(parentHashes::add);
             }
         }

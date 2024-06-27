@@ -113,6 +113,7 @@ An update into the `feeSchedule` file would be needed to specify that.
 
 ### Services updates
 
+- Update `ApiPermissionConfig` class to include a `0-* PermissionedAccountsRange` for the new `TokenClaimAirdrop` transaction type 
 - Update `TokenServiceDefinition` class to include the new RPC method definition for claiming airdrops
 - Implement new `TokenClaimAirdropHandler` class which should be invoked when the gRPC server handles `TokenClaimAirdrop` transactions. The class should be responsible for:
     - Pure checks: validation logic based only on the transaction body itself in order to verify if the transaction is valid one
@@ -120,23 +121,27 @@ An update into the `feeSchedule` file would be needed to specify that.
         - Verify that the pending airdrops list does not have any duplicate entries
     - Pre-handle:
         - The transaction must be signed by the account referenced by a `receiver_id` for each entry in the pending airdrops list
-        - Confirm that for the given pending airdrops ids in the transaction there are corresponding pending transfers existing in state
-        - Check if the sender has sufficient balance to fulfill the airdrop
     - Handle:
+        - Confirm that for the given pending airdrops ids in the transaction there are corresponding pending transfers existing in state
+        - Check if the sender has sufficient amount or has enough approved allowance of the tokens being claimed to fulfill the airdrop
+        - Check if the token is not frozen, paused, or deleted
+          - If the token is frozen or paused the claim transaction should fail
+          - For deleted tokens, the claim transaction should fail, but also we should remove the pending airdrop from state
         - Any additional validation depending on config or state i.e. semantics checks
         - The business logic for claiming pending airdrops
-            - We need to create a token association between each `receiver_id` and `token_reference`, future rents for token association slot should be paid by `receiver_id`
+            - If token association between each `receiver_id` and `token_reference` does not exist, we need to create it; future rents for token association slot should be paid by `receiver_id`
               - Since we would have the signature of the receiver, even if it's an account with `receiver_sig_required=true`, the claim would implicitly work properly
+              - The token association is free at this point because the sender already paid for it when submitting the `TokenAirdrop` transaction
             - Then we should transfer the claimed tokens to each `receiver_id`
-                - We can dispatch synthetic crypto transfer for this, but we must skip the assessment of custom fees
-                  - In case of a fungible token claim
-                    - Create a synthetic `CryptoTransfer` with the corresponding `sender`, `receiver`, `token` and `amount` based on the `PendingAirdropId` and the corresponding `PendingAirdropValue`
-                    - Then delegate it to the `CryptoTransfer.handler()` to execute the transfer
-                  - In case of an NFT claim
-                    - Create a synthetic `CryptoTransfer` with the corresponding `sender`, `receiver`, `token` and `serial number` based on the based on the `PendingAirdropId`
-                    - Then delegate it to `CryptoTransfer.handler()` to execute the transfer
-        - Token transfers and associations should be externalized using the `tokenTransferLists` and `automatic_token_associations` fields in the transaction record
+              - Reuse any existing logic from `CryptoTransferHandler`, extracting common code into a separate class
+              - We must skip the assessment of custom fees
+        - Token transfers should be externalized using the `tokenTransferLists` field in the transaction record
     - Fees calculation
+- Update throttle definitions to include the new `TokenClaimAirdrop` transaction type
+  - Throttle definitions are specified in `throttles.json` files
+  - There are different configurations containing throttle definitions under `hedera-node/configuration/` for the different environments e.g. testnet, previewnet, mainnet
+  - There is also a default throttle definition file in `resources/genesis/throttles.json` that is used during the genesis
+  - Add the new `TokenClaimAirdrop` transaction type to the `ThroughputLimits` bucket
 
 ### Zero-Balance accounts
 
@@ -155,11 +160,15 @@ All of the expected behaviour described below should be present only if the new 
     - the tokens being claimed should be automatically associated with the `receiver_id` account
     - the tokens being claimed should be transferred to the `receiver_id` account
     - the pending airdrop should be removed from state
-- Given a successful `TokenClaimAirdrop`  transaction having a hollow account as `receiver_id` should also complete the account without modifying its `maxAutoAssociations` value
+    - the transaction record should contain the transferred tokens in `tokenTransferLists` field
+- Given existing pending airdrop in state when valid `TokenClaimAirdrop` transaction containing entry for the same pending airdrop is performed and the token in the pending airdrop is frozen or paused then the `TokenClaimAirdrop` should fail without modifying the pending airdrop state
+- Given existing pending airdrop in state when valid `TokenClaimAirdrop` transaction containing entry for the same pending airdrop is performed and the token in the pending airdrop is deleted then the `TokenClaimAirdrop` should fail and the pending airdrop should be removed from state
+- Given a successful `TokenClaimAirdrop` transaction having a hollow account as `receiver_id` should also complete the account without modifying its `maxAutoAssociations` value
 - Given successful `TokenClaimAirdrop` when another `TokenClaimAirdrop` for the same airdrop is performed then the second `TokenClaimAirdrop` should fail
 - `TokenClaimAirdrop` transaction with no pending airdrops entries should fail
 - `TokenClaimAirdrop` transaction with more than 10 pending airdrops entries should fail
 - `TokenClaimAirdrop` transaction containing duplicate entries should fail
 - `TokenClaimAirdrop` transaction containing pending airdrops entries which do not exist in state should fail
 - `TokenClaimAirdrop` transaction not signed by the account referenced by a `receiver_id` for each entry in the pending airdrops list should fail
-- `TokenClaimAirdrop` transaction with a `sender_id` account that does not have sufficient balance of the claimed token should fail
+- `TokenClaimAirdrop` transaction with a `sender_id` account that does not have sufficient balance or not enough allowance of the claimed token should fail
+- Given the feature flag for `TokenClaimAirdrop` is disabled then any `TokenClaimAirdrop` transaction should fail with `NOT_SUPPORTED`

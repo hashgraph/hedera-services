@@ -20,8 +20,10 @@ import static com.swirlds.common.stream.LinkedObjectStreamUtilities.getPeriod;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Date;
@@ -34,7 +36,6 @@ public class HapiSpecWaitUntil extends UtilOp {
     private long timeMs;
     private long stakePeriodMins;
     private long targetTimeOffsetSecs;
-    private boolean startOfNextStakingPeriod;
     private long adhocPeriodMs;
     private WaitUntilTarget waitUntilTarget;
 
@@ -69,13 +70,12 @@ public class HapiSpecWaitUntil extends UtilOp {
     private HapiSpecWaitUntil(final long stakePeriodMins, final long targetTimeOffsetSecs) {
         this.stakePeriodMins = stakePeriodMins;
         this.targetTimeOffsetSecs = targetTimeOffsetSecs;
-        this.startOfNextStakingPeriod = true;
         this.waitUntilTarget = WaitUntilTarget.START_OF_NEXT_STAKING_PERIOD;
     }
 
     @Override
-    protected boolean submitOp(HapiSpec spec) throws Throwable {
-        final var now = Instant.now();
+    protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
+        final var now = spec.consensusTime();
         if (waitUntilTarget == WaitUntilTarget.START_OF_NEXT_STAKING_PERIOD) {
             final var stakePeriodMillis = stakePeriodMins * 60 * 1000L;
             final var currentPeriod = getPeriod(now, stakePeriodMillis);
@@ -90,8 +90,7 @@ public class HapiSpecWaitUntil extends UtilOp {
                 "Sleeping until epoch milli {} ({} CST)",
                 timeMs,
                 Instant.ofEpochMilli(timeMs).atZone(ZoneId.systemDefault()));
-        long currentEpocMillis = now.getEpochSecond() * 1000L;
-        Thread.sleep(timeMs - currentEpocMillis);
+        spec.sleepConsensusTime(Duration.ofMillis(timeMs - now.toEpochMilli()));
         return false;
     }
 

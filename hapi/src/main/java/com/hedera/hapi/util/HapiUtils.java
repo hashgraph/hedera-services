@@ -97,15 +97,6 @@ public class HapiUtils {
     public static final Comparator<Timestamp> TIMESTAMP_COMPARATOR =
             Comparator.comparingLong(Timestamp::seconds).thenComparingInt(Timestamp::nanos);
 
-    /** A {@link Comparator} for {@link SemanticVersion}s that ignores
-     * any semver part that cannot be parsed as an integer. */
-    public static final Comparator<SemanticVersion> SEMANTIC_VERSION_COMPARATOR = Comparator.comparingInt(
-                    SemanticVersion::major)
-            .thenComparingInt(SemanticVersion::minor)
-            .thenComparingInt(SemanticVersion::patch)
-            .thenComparingInt(semVer -> parsedIntOrZero(semVer.pre()))
-            .thenComparingInt(semVer -> parsedIntOrZero(semVer.build()));
-
     private HapiUtils() {}
 
     /**
@@ -187,8 +178,7 @@ public class HapiUtils {
             HederaFunctionality.TOKEN_GET_NFT_INFOS,
             HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS,
             HederaFunctionality.NETWORK_GET_EXECUTION_TIME,
-            HederaFunctionality.GET_ACCOUNT_DETAILS,
-            HederaFunctionality.NODE_GET_INFO);
+            HederaFunctionality.GET_ACCOUNT_DETAILS);
 
     public static HederaFunctionality functionOf(final TransactionBody txn) throws UnknownHederaFunctionality {
         return switch (txn.data().kind()) {
@@ -272,7 +262,6 @@ public class HapiUtils {
             case TRANSACTION_GET_RECEIPT -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TRANSACTION_GET_RECORD -> HederaFunctionality.TRANSACTION_GET_RECORD;
             case TRANSACTION_GET_FAST_RECORD -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
-            case NODE_GET_INFO -> HederaFunctionality.NODE_GET_INFO;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
@@ -344,7 +333,7 @@ public class HapiUtils {
     }
 
     private static int parsedIntOrZero(@Nullable final String s) {
-        if (s == null) {
+        if (s == null || s.isBlank()) {
             return 0;
         } else {
             try {

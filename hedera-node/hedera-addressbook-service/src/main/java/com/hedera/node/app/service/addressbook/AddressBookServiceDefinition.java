@@ -17,8 +17,6 @@
 package com.hedera.node.app.service.addressbook;
 
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.transaction.Query;
-import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionResponse;
 import com.hedera.pbj.runtime.RpcMethodDefinition;
 import com.hedera.pbj.runtime.RpcServiceDefinition;
@@ -26,7 +24,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
 /**
- * The Addressbook Service provides the ability for Hedera Hashgraph to provide facilitate changes to the nodes used across the Hedera network.
+ * The Addressbook Service provides the ability for Hedera Hashgraph to facilitate changes to the nodes used across the Hedera network.
  */
 @SuppressWarnings("java:S6548")
 public final class AddressBookServiceDefinition implements RpcServiceDefinition {
@@ -38,7 +36,7 @@ public final class AddressBookServiceDefinition implements RpcServiceDefinition 
             // When a valid council member initiates a HAPI transaction to add a new node,
             // then the network should acknowledge the transaction and update the network’s Address Book within 24
             // hours.
-            // The added node will not be active until the network is upgradede
+            // The added node will not be active until the network is upgraded
             // Request is [NodeCreateTransactionBody](#proto.NodeCreateTransactionBody)
             //
             new RpcMethodDefinition<>("createNode", Transaction.class, TransactionResponse.class),
@@ -47,18 +45,12 @@ public final class AddressBookServiceDefinition implements RpcServiceDefinition 
             // Request is [NodeUpdateTransactionBody](#proto.NodeUpdateTransactionBody)
             //
             new RpcMethodDefinition<>("updateNode", Transaction.class, TransactionResponse.class),
-            // Prepare to delete the node to the network.
+            // Prepare to delete the node from the network.
             // The deleted node will not be deleted until the network is upgraded.
             // Such a deleted node can never be reused.
             // Request is [NodeDeleteTransactionBody](#proto.NodeDeleteTransactionBody)
             //
-            new RpcMethodDefinition<>("deleteNode", Transaction.class, TransactionResponse.class),
-
-            // Retrieves the node information by node Id.
-            // Request is [NodeGetInfoQuery](#proto.NodeGetInfoQuery)
-            // Response is [NodeGetInfoResponse](#proto.NodeGetInfoResponse)
-            //
-            new RpcMethodDefinition<>("getNodeInfo", Query.class, Response.class));
+            new RpcMethodDefinition<>("deleteNode", Transaction.class, TransactionResponse.class));
 
     private AddressBookServiceDefinition() {
         // Forbid instantiation
@@ -67,7 +59,7 @@ public final class AddressBookServiceDefinition implements RpcServiceDefinition 
     @Override
     @NonNull
     public String basePath() {
-        return "proto.AddressbookService";
+        return "proto.AddressBookService";
     }
 
     @Override

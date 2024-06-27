@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.event;
 
+import static com.swirlds.platform.consensus.ConsensusConstants.MIN_TRANS_TIMESTAMP_INCR_NANOS;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
@@ -53,5 +55,41 @@ public final class EventUtils {
         } else {
             return now;
         }
+    }
+
+    /**
+     * Returns the timestamp of the transaction with given index in this event
+     *
+     * @param event            the event to get the transaction time from
+     * @param transactionIndex index of the transaction in this event
+     * @return timestamp of the given index transaction
+     */
+    public static @NonNull Instant getTransactionTime(@NonNull final PlatformEvent event, final int transactionIndex) {
+        if (event.getConsensusTimestamp() == null) {
+            throw new IllegalArgumentException("Event is not a consensus event");
+        }
+        if (transactionIndex >= event.getPayloadCount()) {
+            throw new IllegalArgumentException("Event does not have a transaction with index: " + transactionIndex);
+        }
+        return event.getConsensusTimestamp().plusNanos(transactionIndex * MIN_TRANS_TIMESTAMP_INCR_NANOS);
+    }
+
+    /**
+     * Returns the timestamp of the last transaction in this event. If this event has no transaction, then the timestamp
+     * of the event will be returned
+     *
+     * @param event the event to get the transaction time from
+     * @return timestamp of the last transaction
+     */
+    public static @NonNull Instant getLastTransTime(@NonNull final PlatformEvent event) {
+        if (event.getConsensusTimestamp() == null) {
+            throw new IllegalArgumentException("Event is not a consensus event");
+        }
+        // this is a special case. if an event has 0 or 1 transactions, the timestamp of the last transaction can be
+        // considered to be the same, equivalent to the timestamp of the event
+        if (event.getPayloadCount() <= 1) {
+            return event.getConsensusTimestamp();
+        }
+        return getTransactionTime(event, event.getPayloadCount() - 1);
     }
 }

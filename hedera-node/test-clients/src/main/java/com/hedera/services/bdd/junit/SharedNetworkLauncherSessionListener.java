@@ -16,12 +16,15 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
+import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
+
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
-import com.hedera.services.bdd.spec.infrastructure.HapiApiClients;
+import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
+import com.hedera.services.bdd.spec.infrastructure.HapiClients;
+import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Duration;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.platform.launcher.LauncherSession;
 import org.junit.platform.launcher.LauncherSessionListener;
 import org.junit.platform.launcher.TestExecutionListener;
@@ -33,9 +36,7 @@ import org.junit.platform.launcher.TestPlan;
  * plan execution finishes.
  */
 public class SharedNetworkLauncherSessionListener implements LauncherSessionListener {
-    private static final Logger log = LogManager.getLogger(SharedNetworkLauncherSessionListener.class);
-
-    public static final int DEFAULT_SHARED_NETWORK_SIZE = 4;
+    public static final int CLASSIC_HAPI_TEST_NETWORK_SIZE = 4;
 
     @Override
     public void launcherSessionOpened(@NonNull final LauncherSession session) {
@@ -43,19 +44,36 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
     }
 
     private static class SharedNetworkExecutionListener implements TestExecutionListener {
-        private static final Duration SHARED_NETWORK_STARTUP_TIMEOUT = Duration.ofSeconds(300);
+        private boolean isEmbedded = false;
 
         @Override
         public void testPlanExecutionStarted(@NonNull final TestPlan testPlan) {
-            final var sharedNetwork = HederaNetwork.newSharedSubProcessNetwork(DEFAULT_SHARED_NETWORK_SIZE);
-            log.info("Waiting for shared network to start within {}", SHARED_NETWORK_STARTUP_TIMEOUT);
-            sharedNetwork.startWithin(SHARED_NETWORK_STARTUP_TIMEOUT);
+            isEmbedded = embeddedModeRequested() || repeatableModeRequested();
+            final HederaNetwork targetNetwork;
+            if (isEmbedded) {
+                targetNetwork = EmbeddedNetwork.newEmbeddedNetwork();
+            } else {
+                targetNetwork = SubProcessNetwork.newSharedNetwork(CLASSIC_HAPI_TEST_NETWORK_SIZE);
+            }
+            targetNetwork.start();
+            SHARED_NETWORK.set(targetNetwork);
+            REPEATABLE_KEY_GENERATOR.set(new RepeatableKeyGenerator());
         }
 
         @Override
         public void testPlanExecutionFinished(@NonNull final TestPlan testPlan) {
-            HapiApiClients.tearDown();
-            HederaNetwork.SHARED_NETWORK.get().terminate();
+            if (!isEmbedded) {
+                HapiClients.tearDown();
+            }
+            SHARED_NETWORK.get().terminate();
         }
+    }
+
+    private static boolean embeddedModeRequested() {
+        return "true".equalsIgnoreCase(System.getProperty("hapi.spec.embedded.mode"));
+    }
+
+    public static boolean repeatableModeRequested() {
+        return "true".equalsIgnoreCase(System.getProperty("hapi.spec.repeatable.mode"));
     }
 }

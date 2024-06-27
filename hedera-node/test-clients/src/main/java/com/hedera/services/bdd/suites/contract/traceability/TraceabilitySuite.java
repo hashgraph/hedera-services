@@ -18,8 +18,10 @@ package com.hedera.services.bdd.suites.contract.traceability;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.contractCallLocal;
@@ -41,10 +43,16 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.GLOBAL_WATCHER;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectContractActionSidecarFor;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectContractBytecodeSansInitcodeFor;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectContractBytecodeSidecarFor;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectContractStateChangesSidecarFor;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectExplicitContractBytecode;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectFailedContractBytecodeSidecarFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
@@ -67,15 +75,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.assertNoMismatchedSidecars;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectContractActionSidecarFor;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectContractBytecode;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectContractBytecodeSidecarFor;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectContractBytecodeWithMinimalFieldsSidecarFor;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectContractStateChangesSidecarFor;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.expectFailedContractBytecodeSidecarFor;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.initializeSidecarWatcher;
-import static com.hedera.services.bdd.suites.SidecarAwareHapiSuite.tearDownSidecarWatcher;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
@@ -106,6 +105,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.hex;
+import static java.util.Objects.requireNonNull;
 import static org.hyperledger.besu.crypto.Hash.keccak256;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -116,7 +116,9 @@ import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
+import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
@@ -124,6 +126,7 @@ import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -132,20 +135,24 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
+@HapiTestLifecycle
 @OrderedInIsolation
 @Tag(SMART_CONTRACT)
 public class TraceabilitySuite {
@@ -176,21 +183,15 @@ public class TraceabilitySuite {
     private static final String LAZY_CREATE_PROPERTY = "lazyCreation.enabled";
     public static final String SIDECARS_PROP = "contracts.sidecars";
 
-    @HapiTest
-    @Order(1)
-    final Stream<DynamicTest> suiteSetup() {
-        return defaultHapiSpec("suiteSetup")
-                .given()
-                .when()
-                .then(
-                        initializeSidecarWatcher(),
-                        overridingTwo(
-                                "contracts.throttle.throttleByGas", "false",
-                                "contracts.enforceCreationThrottle", "false"));
+    @BeforeAll
+    static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
+        specManager.setup(
+                withOpContext((spec, opLog) -> GLOBAL_WATCHER.set(new SidecarWatcher(spec.streamsLoc(byNodeId(0))))),
+                overriding("contracts.enforceCreationThrottle", "false"));
     }
 
     @HapiTest
-    @Order(2)
+    @Order(1)
     final Stream<DynamicTest> traceabilityE2EScenario1() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario1",
@@ -564,7 +565,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(3)
+    @Order(2)
     final Stream<DynamicTest> traceabilityE2EScenario2() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario2",
@@ -972,7 +973,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(4)
+    @Order(3)
     final Stream<DynamicTest> traceabilityE2EScenario3() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario3", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
@@ -1382,7 +1383,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(5)
+    @Order(4)
     final Stream<DynamicTest> traceabilityE2EScenario4() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario4", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
@@ -1675,7 +1676,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(6)
+    @Order(5)
     final Stream<DynamicTest> traceabilityE2EScenario5() {
         return defaultHapiSpec("traceabilityE2EScenario5", FULLY_NONDETERMINISTIC)
                 .given(
@@ -1981,7 +1982,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(7)
+    @Order(6)
     final Stream<DynamicTest> traceabilityE2EScenario6() {
         return defaultHapiSpec("traceabilityE2EScenario6", FULLY_NONDETERMINISTIC)
                 .given(
@@ -2317,7 +2318,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(8)
+    @Order(7)
     final Stream<DynamicTest> traceabilityE2EScenario7() {
         return defaultHapiSpec("traceabilityE2EScenario7", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -2708,7 +2709,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(9)
+    @Order(8)
     final Stream<DynamicTest> traceabilityE2EScenario8() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario8",
@@ -3063,7 +3064,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(10)
+    @Order(9)
     final Stream<DynamicTest> traceabilityE2EScenario9() {
         return defaultHapiSpec("traceabilityE2EScenario9", FULLY_NONDETERMINISTIC)
                 .given(
@@ -3370,7 +3371,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(11)
+    @Order(10)
     final Stream<DynamicTest> traceabilityE2EScenario10() {
         return defaultHapiSpec(
                         "traceabilityE2EScenario10",
@@ -3716,7 +3717,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(12)
+    @Order(11)
     final Stream<DynamicTest> traceabilityE2EScenario11() {
         return defaultHapiSpec("traceabilityE2EScenario11", NONDETERMINISTIC_FUNCTION_PARAMETERS)
                 .given(
@@ -3994,7 +3995,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(13)
+    @Order(12)
     final Stream<DynamicTest> traceabilityE2EScenario12() {
         final var contract = "CreateTrivial";
         final var scenario12 = "traceabilityE2EScenario12";
@@ -4023,11 +4024,11 @@ public class TraceabilitySuite {
                                                     .setOutput(EMPTY)
                                                     .build())));
                         }),
-                        expectContractBytecode(TRACEABILITY_TXN, contract));
+                        expectContractBytecodeSansInitcodeFor(TRACEABILITY_TXN, contract));
     }
 
     @HapiTest
-    @Order(14)
+    @Order(13)
     final Stream<DynamicTest> traceabilityE2EScenario13() {
         final AtomicReference<AccountID> accountIDAtomicReference = new AtomicReference<>();
         return defaultHapiSpec("traceabilityE2EScenario13", FULLY_NONDETERMINISTIC)
@@ -4067,11 +4068,13 @@ public class TraceabilitySuite {
                                                     .setOutput(EMPTY)
                                                     .build())));
                         }),
-                        expectContractBytecodeWithMinimalFieldsSidecarFor(FIRST_CREATE_TXN, PAY_RECEIVABLE_CONTRACT));
+                        // The bytecode is externalized along with the synthetic ContractCreate
+                        // child following the top-level EthereumTransaction record (index=1)
+                        expectContractBytecodeSansInitcodeFor(FIRST_CREATE_TXN, 1, PAY_RECEIVABLE_CONTRACT));
     }
 
     @HapiTest
-    @Order(15)
+    @Order(14)
     final Stream<DynamicTest> traceabilityE2EScenario14() {
         return defaultHapiSpec("traceabilityE2EScenario14", FULLY_NONDETERMINISTIC)
                 .given(
@@ -4109,13 +4112,14 @@ public class TraceabilitySuite {
                                             .setGasUsed(135)
                                             .setOutput(EMPTY)
                                             .build())),
-                            expectContractBytecodeWithMinimalFieldsSidecarFor(
-                                    TRACEABILITY_TXN, PAY_RECEIVABLE_CONTRACT));
+                            // The bytecode is externalized along with the synthetic ContractCreate
+                            // child following the top-level EthereumTransaction record (index=1)
+                            expectContractBytecodeSansInitcodeFor(TRACEABILITY_TXN, 1, PAY_RECEIVABLE_CONTRACT));
                 }));
     }
 
     @HapiTest
-    @Order(16)
+    @Order(15)
     final Stream<DynamicTest> traceabilityE2EScenario15() {
         final String GET_BYTECODE = "getBytecode";
         final String DEPLOY = "deploy";
@@ -4249,20 +4253,22 @@ public class TraceabilitySuite {
                                                             .setCallDepth(1)
                                                             .build())),
                                     hapiGetContractBytecode);
-                            expectContractBytecode(
-                                    specName,
-                                    topLevelCallTxnRecord
-                                            .getFirstNonStakingChildRecord()
-                                            .getConsensusTimestamp(),
-                                    asContract(mirrorLiteralId.get()),
-                                    ByteStringUtils.wrapUnsafely(testContractInitcode.get()),
-                                    ByteStringUtils.wrapUnsafely(bytecodeFromMirror.get()));
+                            allRunFor(
+                                    spec,
+                                    // The bytecode is externalized along with the synthetic ContractCreate
+                                    // child corresponding to the internal creation (index=1)
+                                    expectExplicitContractBytecode(
+                                            CREATE_2_TXN,
+                                            1,
+                                            asContract(mirrorLiteralId.get()),
+                                            ByteStringUtils.wrapUnsafely(testContractInitcode.get()),
+                                            ByteStringUtils.wrapUnsafely(bytecodeFromMirror.get())));
                         }))
                 .then();
     }
 
     @HapiTest
-    @Order(17)
+    @Order(16)
     final Stream<DynamicTest> traceabilityE2EScenario16() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final String PRECOMPILE_CALLER = "PrecompileCaller";
@@ -4372,7 +4378,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(18)
+    @Order(17)
     final Stream<DynamicTest> traceabilityE2EScenario17() {
         return defaultHapiSpec("traceabilityE2EScenario17")
                 .given(
@@ -4431,7 +4437,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(19)
+    @Order(18)
     final Stream<DynamicTest> traceabilityE2EScenario18() {
         return defaultHapiSpec("traceabilityE2EScenario18")
                 .given(uploadInitCode(REVERTING_CONTRACT))
@@ -4456,7 +4462,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(20)
+    @Order(19)
     final Stream<DynamicTest> traceabilityE2EScenario19() {
         final var RECEIVER = "RECEIVER";
         final var hbarsToSend = 1;
@@ -4500,7 +4506,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(21)
+    @Order(20)
     final Stream<DynamicTest> traceabilityE2EScenario20() {
         return defaultHapiSpec("traceabilityE2EScenario20", HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(uploadInitCode(REVERTING_CONTRACT))
@@ -4526,7 +4532,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(22)
+    @Order(21)
     final Stream<DynamicTest> traceabilityE2EScenario21() {
         return defaultHapiSpec("traceabilityE2EScenario21", FULLY_NONDETERMINISTIC)
                 .given(
@@ -4603,7 +4609,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(23)
+    @Order(22)
     final Stream<DynamicTest> vanillaBytecodeSidecar() {
         final var EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
         final var vanillaBytecodeSidecar = "vanillaBytecodeSidecar";
@@ -4638,7 +4644,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(24)
+    @Order(23)
     final Stream<DynamicTest> vanillaBytecodeSidecar2() {
         final var contract = "CreateTrivial";
         final String trivialCreate = "vanillaBytecodeSidecar2";
@@ -4670,7 +4676,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(25)
+    @Order(24)
     final Stream<DynamicTest> actionsShowPropagatedRevert() {
         final var APPROVE_BY_DELEGATE = "ApproveByDelegateCall";
         final var badApproval = "BadApproval";
@@ -4853,7 +4859,7 @@ public class TraceabilitySuite {
     }
 
     @HapiTest
-    @Order(26)
+    @Order(25)
     final Stream<DynamicTest> ethereumLazyCreateExportsExpectedSidecars() {
         final var RECIPIENT_KEY = "lazyAccountRecipient";
         final var RECIPIENT_KEY2 = "lazyAccountRecipient2";
@@ -4868,13 +4874,13 @@ public class TraceabilitySuite {
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
                 .given(
-                        overridingThree(
+                        overridingAllOf(Map.of(
                                 CHAIN_ID_PROPERTY,
                                 "298",
                                 LAZY_CREATE_PROPERTY,
                                 "true",
                                 "contracts.evm.version",
-                                "v0.34"),
+                                "v0.34")),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY2).shape(SECP_256K1_SHAPE),
@@ -4951,7 +4957,7 @@ public class TraceabilitySuite {
 
     @SuppressWarnings("java:S5960")
     @HapiTest
-    @Order(27)
+    @Order(26)
     final Stream<DynamicTest> hollowAccountCreate2MergeExportsExpectedSidecars() {
         final var tcValue = 1_234L;
         final var create2Factory = "Create2Factory";
@@ -5049,11 +5055,8 @@ public class TraceabilitySuite {
                             final AtomicReference<byte[]> mergedContractBytecode = new AtomicReference<>();
                             final var hapiGetContractBytecode = getContractBytecode(mergedContractIdAsString)
                                     .exposingBytecodeTo(mergedContractBytecode::set);
-                            final var topLevelCallTxnRecord =
-                                    getTxnRecord(CREATE_2_TXN).andAllChildRecords();
                             allRunFor(
                                     spec,
-                                    topLevelCallTxnRecord,
                                     expectContractStateChangesSidecarFor(
                                             CREATE_2_TXN,
                                             List.of(
@@ -5113,22 +5116,22 @@ public class TraceabilitySuite {
                                                             .setCallDepth(1)
                                                             .build())),
                                     hapiGetContractBytecode);
-                            expectContractBytecode(
-                                    specName,
-                                    topLevelCallTxnRecord
-                                            .getFirstNonStakingChildRecord()
-                                            .getConsensusTimestamp(),
-                                    asContract(mergedContractIdAsString),
-                                    ByteStringUtils.wrapUnsafely(testContractInitcode.get()),
-                                    ByteStringUtils.wrapUnsafely(mergedContractBytecode.get()));
+                            allRunFor(
+                                    spec,
+                                    // The bytecode is externalized along with the synthetic ContractCreate
+                                    // child corresponding to the internal creation (index=1)
+                                    expectExplicitContractBytecode(
+                                            CREATE_2_TXN,
+                                            1,
+                                            asContract(mergedContractIdAsString),
+                                            ByteStringUtils.wrapUnsafely(testContractInitcode.get()),
+                                            ByteStringUtils.wrapUnsafely(mergedContractBytecode.get())));
                         }));
     }
 
     @Order(Integer.MAX_VALUE)
     public final Stream<DynamicTest> assertSidecars() {
-        return defaultHapiSpec("assertSidecars")
-                .given()
-                .when(tearDownSidecarWatcher())
-                .then(assertNoMismatchedSidecars());
+        return hapiTest(withOpContext(
+                (spec, opLog) -> requireNonNull(GLOBAL_WATCHER.get()).assertExpectations(spec)));
     }
 }

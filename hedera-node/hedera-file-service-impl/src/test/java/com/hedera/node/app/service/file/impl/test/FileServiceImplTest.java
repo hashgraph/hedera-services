@@ -17,24 +17,16 @@
 package com.hedera.node.app.service.file.impl.test;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.file.impl.schemas.InitialModFileGenesisSchema;
-import com.hedera.node.app.service.mono.state.adapters.VirtualMapLike;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobKey;
-import com.hedera.node.app.service.mono.state.virtual.VirtualBlobValue;
-import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.hedera.node.app.spi.state.Schema;
-import com.hedera.node.app.spi.state.SchemaRegistry;
-import com.hedera.node.app.spi.state.StateDefinition;
-import com.hedera.node.config.ConfigProvider;
-import java.lang.reflect.Field;
-import java.util.function.Supplier;
-import org.junit.jupiter.api.BeforeEach;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.state.spi.StateDefinition;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -46,47 +38,26 @@ class FileServiceImplTest {
     @Mock
     private SchemaRegistry registry;
 
-    private ConfigProvider configProvider;
-
-    @BeforeEach
-    void setUp() {
-        configProvider = new BootstrapConfigProviderImpl();
-    }
+    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
 
     @Test
     void registersExpectedSchema() {
         ArgumentCaptor<Schema> schemaCaptor = ArgumentCaptor.forClass(Schema.class);
 
-        subject().registerSchemas(registry, TestSchema.CURRENT_VERSION);
+        subject().registerSchemas(registry);
 
         verify(registry).register(schemaCaptor.capture());
 
         final var schema = schemaCaptor.getValue();
 
-        final var statesToCreate = schema.statesToCreate();
+        final var statesToCreate = schema.statesToCreate(DEFAULT_CONFIG);
         assertThat(11).isEqualTo(statesToCreate.size());
         final var iter =
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
-        assertThat(FileServiceImpl.BLOBS_KEY).isEqualTo(iter.next());
-    }
-
-    @Test
-    void testSetFs() throws NoSuchFieldException, IllegalAccessException {
-        FileServiceImpl fileService = new FileServiceImpl(configProvider);
-        fileService.registerSchemas(registry, TestSchema.CURRENT_VERSION);
-        Supplier<VirtualMapLike<VirtualBlobKey, VirtualBlobValue>> mockSupplier = mock(Supplier.class);
-        InitialModFileGenesisSchema mockInitialFileSchema = mock(InitialModFileGenesisSchema.class);
-
-        Field field = FileServiceImpl.class.getDeclaredField("initialFileSchema");
-        field.setAccessible(true);
-        field.set(fileService, mockInitialFileSchema);
-
-        fileService.setFs(mockSupplier);
-
-        verify(mockInitialFileSchema).setFs(mockSupplier);
+        assertThat(V0490FileSchema.BLOBS_KEY).isEqualTo(iter.next());
     }
 
     private FileService subject() {
-        return new FileServiceImpl(configProvider);
+        return new FileServiceImpl();
     }
 }

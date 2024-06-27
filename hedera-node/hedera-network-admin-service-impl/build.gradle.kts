@@ -21,6 +21,22 @@ plugins {
 
 description = "Default Hedera Network Admin Service Implementation"
 
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports") }
+
+val writeSemanticVersionProperties =
+    tasks.register<WriteProperties>("writeSemanticVersionProperties") {
+        property("hapi.proto.version", libs.versions.hapi.proto.get())
+        property("hedera.services.version", project.version)
+
+        destinationFile.set(
+            layout.buildDirectory.file("generated/version/semantic-version.properties")
+        )
+    }
+
+tasks.processResources { from(writeSemanticVersionProperties) }
+
 mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {
@@ -32,7 +48,6 @@ testModuleInfo {
     requires("com.swirlds.platform.core.test.fixtures")
     requires("com.hedera.node.app.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")
-    requires("com.swirlds.fcqueue")
     requires("org.assertj.core")
     requires("org.junit.jupiter.api")
     requires("org.mockito")

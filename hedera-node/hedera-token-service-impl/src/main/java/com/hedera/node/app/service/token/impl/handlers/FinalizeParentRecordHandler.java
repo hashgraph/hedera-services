@@ -18,9 +18,9 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_TRANSFER_LIST_COMPARATOR;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.requiresExternalization;
-import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Collections.emptyList;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -46,7 +46,6 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +62,11 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class FinalizeParentRecordHandler extends RecordFinalizerBase implements ParentRecordFinalizer {
     private static final Logger logger = LogManager.getLogger(FinalizeParentRecordHandler.class);
+    public static final long LEDGER_TOTAL_TINY_BAR_FLOAT = 5000000000000000000L;
+    private static final List<AccountAmount> GENESIS_TREASURY_CREDIT = List.of(AccountAmount.newBuilder()
+            .amount(LEDGER_TOTAL_TINY_BAR_FLOAT)
+            .accountID(asAccount(2))
+            .build());
 
     private final StakingRewardsHandler stakingRewardsHandler;
 
@@ -77,7 +81,6 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
 
     @Override
     public void finalizeParentRecord(
-            @Nullable final AccountID payer,
             @NonNull final FinalizeContext context,
             @NonNull final HederaFunctionality functionality,
             @NonNull final Set<AccountID> explicitRewardReceivers,
@@ -115,7 +118,6 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         } catch (HandleException e) {
             if (e.getStatus() == FAIL_INVALID) {
                 logHbarFinalizationFailInvalid(
-                        payer,
                         context.userTransactionRecordBuilder(SingleTransactionRecordBuilder.class),
                         writableAccountStore);
             }
@@ -133,13 +135,9 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         // represent the changes for Mint or Wipe of NFTs in the token relation changes.
         final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore, tokenRelChanges);
 
-        if (context.hasChildRecords()) {
+        if (context.hasChildOrPrecedingRecords()) {
             // All the above changes maps are mutable
-            deductChangesFromChildRecords(context, tokenRelChanges, nftChanges, hbarChanges);
-            // In the current system a parent transaction that has child transactions cannot
-            // *itself* cause any net fungible or NFT transfers; fail fast if that happens
-            validateTrue(tokenRelChanges.isEmpty(), FAIL_INVALID);
-            validateTrue(nftChanges.isEmpty(), FAIL_INVALID);
+            deductChangesFromChildOrPrecedingRecords(context, tokenRelChanges, nftChanges, hbarChanges);
         }
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written
@@ -160,18 +158,16 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
     // invoke logger parameters conditionally
     @SuppressWarnings("java:S2629")
     private void logHbarFinalizationFailInvalid(
-            @Nullable final AccountID payerId,
             @NonNull final SingleTransactionRecordBuilder recordBuilder,
             @NonNull final WritableAccountStore accountStore) {
         logger.error(
                 """
                         Non-zero net hbar change when handling body
                         {}
-                        with payer {} and fee {}; original/modified accounts claimed to be:
+                        with fee {}; original/modified accounts claimed to be:
                         {}
                         """,
                 recordBuilder.transactionBody(),
-                payerId,
                 recordBuilder.transactionFee(),
                 accountStore.modifiedAccountsInState().stream()
                         .map(accountId -> String.format(
@@ -180,7 +176,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                         .collect(Collectors.joining("%n")));
     }
 
-    private void deductChangesFromChildRecords(
+    private void deductChangesFromChildOrPrecedingRecords(
             @NonNull final FinalizeContext context,
             @NonNull final Map<EntityIDPair, Long> fungibleChanges,
             @NonNull final Map<TokenID, List<NftTransfer>> nftTransfers,
@@ -190,6 +186,12 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             final List<AccountAmount> childHbarChangesFromRecord = childRecord.transferList() == null
                     ? emptyList()
                     : childRecord.transferList().accountAmounts();
+            if (childHbarChangesFromRecord.size() == 1) {
+                if (!childHbarChangesFromRecord.equals(GENESIS_TREASURY_CREDIT)) {
+                    throw new IllegalStateException("Invalid hbar changes from child record");
+                }
+                return;
+            }
             for (final var childChange : childHbarChangesFromRecord) {
                 final var accountId = childChange.accountID();
                 if (hbarChanges.containsKey(accountId)) {

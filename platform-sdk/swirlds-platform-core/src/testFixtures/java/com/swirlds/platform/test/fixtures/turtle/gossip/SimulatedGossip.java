@@ -21,11 +21,13 @@ import com.swirlds.common.wiring.model.WiringModel;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.StandardOutputWire;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.gossip.IntakeEventCounter;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.wiring.NoInput;
 import com.swirlds.platform.wiring.components.Gossip;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.Objects;
 
 /**
@@ -37,7 +39,7 @@ public class SimulatedGossip implements Gossip {
     private final NodeId selfId;
     private IntakeEventCounter intakeEventCounter;
 
-    private StandardOutputWire<GossipEvent> eventOutput;
+    private StandardOutputWire<PlatformEvent> eventOutput;
 
     /**
      * Constructor.
@@ -65,12 +67,14 @@ public class SimulatedGossip implements Gossip {
     @Override
     public void bind(
             @NonNull final WiringModel model,
-            @NonNull final BindableInputWire<GossipEvent, Void> eventInput,
+            @NonNull final BindableInputWire<PlatformEvent, Void> eventInput,
             @NonNull final BindableInputWire<EventWindow, Void> eventWindowInput,
-            @NonNull final StandardOutputWire<GossipEvent> eventOutput,
+            @NonNull final StandardOutputWire<PlatformEvent> eventOutput,
             @NonNull final BindableInputWire<NoInput, Void> startInput,
             @NonNull final BindableInputWire<NoInput, Void> stopInput,
-            @NonNull final BindableInputWire<NoInput, Void> clearInput) {
+            @NonNull final BindableInputWire<NoInput, Void> clearInput,
+            @NonNull final BindableInputWire<Duration, Void> systemHealthInput,
+            @NonNull final BindableInputWire<PlatformStatus, Void> platformStatusInput) {
 
         this.eventOutput = Objects.requireNonNull(eventOutput);
         eventInput.bindConsumer(event -> network.submitEvent(selfId, event));
@@ -79,6 +83,8 @@ public class SimulatedGossip implements Gossip {
         startInput.bindConsumer(ignored -> {});
         stopInput.bindConsumer(ignored -> {});
         clearInput.bindConsumer(ignored -> {});
+        systemHealthInput.bindConsumer(ignored -> {});
+        platformStatusInput.bindConsumer(ignored -> {});
     }
 
     /**
@@ -86,7 +92,7 @@ public class SimulatedGossip implements Gossip {
      *
      * @param event the event that was received
      */
-    void receiveEvent(@NonNull final GossipEvent event) {
+    void receiveEvent(@NonNull final PlatformEvent event) {
         if (intakeEventCounter != null) {
             intakeEventCounter.eventEnteredIntakePipeline(event.getSenderId());
         }

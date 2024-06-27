@@ -20,6 +20,8 @@ import static com.swirlds.logging.legacy.LogMarker.CONSENSUS_VOTING;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_NUMBER;
 
+import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.util.HapiUtils;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
@@ -38,6 +40,7 @@ import com.swirlds.platform.consensus.InitJudges;
 import com.swirlds.platform.consensus.RoundElections;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
 import com.swirlds.platform.event.AncientMode;
+import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -207,6 +210,11 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     private RateLimitedLogger coinRoundLogger;
 
     /**
+     * A flag that signals if we are currently replaying the PCES or not.
+     */
+    private boolean pcesMode = false;
+
+    /**
      * Constructs an empty object (no events) to keep track of elections and calculate consensus.
      *
      * @param platformContext  the platform context containing configuration
@@ -256,6 +264,15 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         lastConsensusTime = null;
         initJudges = null;
         updateRoundGenerations(rounds.getFameDecidedBelow());
+    }
+
+    /**
+     * Set whether events are currently being sourced from the PCES.
+     *
+     * @param pcesMode true if we are currently replaying the PCES, false otherwise
+     */
+    public void setPcesMode(final boolean pcesMode) {
+        this.pcesMode = pcesMode;
     }
 
     /**
@@ -711,7 +728,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                         ConsensusUtils.getHashes(judges),
                         rounds.getMinimumJudgeInfoList(),
                         numConsensus,
-                        lastConsensusTime));
+                        lastConsensusTime),
+                pcesMode);
     }
 
     /**
@@ -782,7 +800,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      *     first saw it
      * @param receivedRound the round in which event was received
      */
-    private void setIsConsensusTrue(@NonNull final EventImpl event, final long receivedRound) {
+    private static void setIsConsensusTrue(@NonNull final EventImpl event, final long receivedRound) {
         event.setRoundReceived(receivedRound);
         event.setConsensus(true);
 
@@ -791,11 +809,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         final List<Instant> times = event.getRecTimes();
 
         // take middle. If there are 2 middle (even length) then use the 2nd (max) of them
-        event.setConsensusTimestamp(times.get(times.size() / 2));
+        event.setPreliminaryConsensusTimestamp(times.get(times.size() / 2));
 
         event.setReachedConsTimestamp(Instant.now()); // used for statistics
-
-        consensusMetrics.consensusReached(event);
     }
 
     /**
@@ -812,20 +828,21 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         EventImpl last = null;
         for (final EventImpl e : events) {
             last = e;
-            e.setConsensusOrder(numConsensus);
-            numConsensus++;
-
             // the minimum timestamp for this event
             final Instant minTimestamp =
                     lastConsensusTime == null ? null : ConsensusUtils.calcMinTimestampForNextEvent(lastConsensusTime);
             // advance this event's consensus timestamp to be at least minTimestamp
-            if (minTimestamp != null && e.getConsensusTimestamp().isBefore(minTimestamp)) {
-                e.setConsensusTimestamp(minTimestamp);
+            if (minTimestamp != null && e.getPreliminaryConsensusTimestamp().isBefore(minTimestamp)) {
+                e.setPreliminaryConsensusTimestamp(minTimestamp);
             }
-            lastConsensusTime = e.getLastTransTime();
-        }
-        if (last != null) {
-            last.setLastInRoundReceived(true);
+
+            e.getBaseEvent()
+                    .setConsensusData(new EventConsensusData(
+                            HapiUtils.asTimestamp(e.getPreliminaryConsensusTimestamp()), numConsensus));
+
+            lastConsensusTime = EventUtils.getLastTransTime(e.getBaseEvent());
+            numConsensus++;
+            consensusMetrics.consensusReached(e);
         }
     }
 
@@ -867,7 +884,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
      */
     private boolean witness(@NonNull final EventImpl x) {
         return round(x) > ConsensusConstants.ROUND_NEGATIVE_INFINITY
-                && (!x.getHashedData().hasSelfParent() || round(x) != round(selfParent(x)));
+                && (!x.hasSelfParent() || round(x) != round(selfParent(x)));
     }
 
     /**
@@ -1088,7 +1105,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         //
         // if this event has no parents, then it's the first round
         //
-        if (!x.getHashedData().hasSelfParent() && !x.getHashedData().hasOtherParent()) {
+        if (!x.hasSelfParent() && !x.hasOtherParent()) {
             x.setRoundCreated(ConsensusConstants.ROUND_FIRST);
             return x.getRoundCreated();
         }

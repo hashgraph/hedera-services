@@ -17,13 +17,13 @@
 package com.hedera.services.bdd.spec.utilops.checks;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenGetNftInfos;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.TokenGetNftInfosQuery;
 
 public class VerifyGetTokenNftInfosNotSupported extends UtilOp {
@@ -31,8 +31,7 @@ public class VerifyGetTokenNftInfosNotSupported extends UtilOp {
     protected boolean submitOp(HapiSpec spec) throws Throwable {
         TokenGetNftInfosQuery.Builder op = TokenGetNftInfosQuery.newBuilder().setTokenID(asToken("0.0.1001"));
         Query query = Query.newBuilder().setTokenGetNftInfos(op).build();
-        Response response =
-                spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls).getTokenNftInfos(query);
+        final var response = spec.targetNetworkOrThrow().send(query, TokenGetNftInfos, targetNodeFor(spec));
         assertEquals(NOT_SUPPORTED, response.getTokenGetNftInfos().getHeader().getNodeTransactionPrecheckCode());
         return false;
     }

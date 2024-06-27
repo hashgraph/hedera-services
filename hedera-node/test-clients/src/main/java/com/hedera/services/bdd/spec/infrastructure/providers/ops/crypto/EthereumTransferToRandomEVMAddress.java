@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 
 import static com.hedera.services.bdd.suites.HapiSuite.*;
-import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.PAY_TXN;
+import static com.hedera.services.bdd.suites.crypto.LeakyCryptoTestsSuite.PAY_TXN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.google.protobuf.ByteString;

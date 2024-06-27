@@ -32,7 +32,7 @@ import com.swirlds.logging.test.fixtures.LoggingMirror;
 import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.durability.DefaultRoundDurabilityBuffer;
 import com.swirlds.platform.event.preconsensus.durability.RoundDurabilityBuffer;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
@@ -71,7 +71,7 @@ class RoundDurabilityBufferTests {
     @NonNull
     private static ConsensusRound buildMockRound(@NonNull final Random randotron, final long keystoneSequenceNumber) {
 
-        final GossipEvent keystoneEvent = new TestingEventBuilder(randotron).build();
+        final PlatformEvent keystoneEvent = new TestingEventBuilder(randotron).build();
         keystoneEvent.setStreamSequenceNumber(keystoneSequenceNumber);
         final EventImpl keystoneEventImpl = new EventImpl(keystoneEvent, null, null);
 
@@ -81,7 +81,8 @@ class RoundDurabilityBufferTests {
                 keystoneEventImpl,
                 mock(Generations.class),
                 mock(EventWindow.class),
-                mock(ConsensusSnapshot.class));
+                mock(ConsensusSnapshot.class),
+                false);
     }
 
     @Test

@@ -122,7 +122,6 @@ public class Evm46ValidationSuite {
     private static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
     private static final String BALANCE_OF = "balanceOf";
     public static final List<Long> nonExistingSystemAccounts = List.of(351L, 352L, 353L, 354L, 355L, 356L, 357L, 358L);
-    public static final List<Long> invalidAliasNonExistingSystemAccounts = List.of(751L, 799L);
     public static final List<Long> existingSystemAccounts = List.of(800L, 999L, 1000L);
     public static final List<Long> systemAccounts =
             List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 799L, 800L, 999L, 1000L);

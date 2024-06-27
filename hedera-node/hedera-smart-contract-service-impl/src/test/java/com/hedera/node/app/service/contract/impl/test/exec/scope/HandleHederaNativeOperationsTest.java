@@ -55,7 +55,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
-import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaNativeOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -65,11 +64,10 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.DeleteCapableTransactionRecordBuilder;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Predicate;
@@ -87,6 +85,9 @@ class HandleHederaNativeOperationsTest {
 
     @Mock
     private MessageFrame frame;
+
+    @Mock
+    private StoreFactory storeFactory;
 
     @Mock
     private ReadableTokenStore tokenStore;
@@ -129,41 +130,47 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void getAccountUsesContextReadableStore() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(Account.DEFAULT);
         assertSame(Account.DEFAULT, subject.getAccount(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow()));
     }
 
     @Test
     void getAccountKeyUsesContextReadableStore() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(NON_SYSTEM_ACCOUNT_ID)).willReturn(SOMEBODY);
         assertSame(SOMEBODY.keyOrThrow(), subject.getAccountKey(NON_SYSTEM_ACCOUNT_ID));
     }
 
     @Test
     void getAccountKeyReturnsNullForMissing() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         assertNull(subject.getAccountKey(NON_SYSTEM_ACCOUNT_ID));
     }
 
     @Test
     void resolveAliasReturnsMissingNumIfNotPresent() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         assertEquals(MISSING_ENTITY_NUMBER, subject.resolveAlias(tuweniToPbjBytes(EIP_1014_ADDRESS)));
     }
 
     @Test
     void resolveAliasReturnsNumIfPresent() {
         final var alias = tuweniToPbjBytes(EIP_1014_ADDRESS);
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountIDByAlias(alias)).willReturn(NON_SYSTEM_ACCOUNT_ID);
         assertEquals(NON_SYSTEM_ACCOUNT_ID.accountNumOrThrow(), subject.resolveAlias(alias));
     }
 
     @Test
     void getTokenUsesStore() {
-        given(context.readableStore(ReadableTokenStore.class)).willReturn(tokenStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(tokenStore);
         given(tokenStore.get(FUNGIBLE_TOKEN_ID)).willReturn(FUNGIBLE_TOKEN);
         assertSame(FUNGIBLE_TOKEN, subject.getToken(FUNGIBLE_TOKEN_ID.tokenNum()));
     }
@@ -179,26 +186,12 @@ class HandleHederaNativeOperationsTest {
                         eq(synthLazyCreate), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
                 .thenReturn(cryptoCreateRecordBuilder);
 
-        final var synthLazyCreateFees = new Fees(1L, 2L, 3L);
-        given(context.dispatchComputeFees(synthLazyCreate, A_NEW_ACCOUNT_ID, ComputeDispatchFeesAsTopLevel.NO))
-                .willReturn(synthLazyCreateFees);
-
-        final var synthFinalizatonFees = new Fees(4L, 5L, 6L);
-        final var synthFinalizationTxn = TransactionBody.newBuilder()
-                .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
-                        .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY)))
-                .build();
-        given(context.dispatchComputeFees(synthFinalizationTxn, A_NEW_ACCOUNT_ID, ComputeDispatchFeesAsTopLevel.NO))
-                .willReturn(synthFinalizatonFees);
-
         given(cryptoCreateRecordBuilder.status()).willReturn(OK);
 
         final var status = subject.createHollowAccount(CANONICAL_ALIAS);
         assertEquals(OK, status);
 
         verify(cryptoCreateRecordBuilder).memo(LAZY_CREATION_MEMO);
-        verify(cryptoCreateRecordBuilder)
-                .transactionFee(synthLazyCreateFees.totalFee() + synthFinalizatonFees.totalFee());
     }
 
     @Test
@@ -210,44 +203,34 @@ class HandleHederaNativeOperationsTest {
         given(context.dispatchRemovablePrecedingTransaction(
                         eq(synthLazyCreate), eq(CryptoCreateRecordBuilder.class), eq(null), eq(A_NEW_ACCOUNT_ID)))
                 .willReturn(cryptoCreateRecordBuilder);
-
-        final var synthLazyCreateFees = new Fees(1L, 2L, 3L);
-        given(context.dispatchComputeFees(synthLazyCreate, A_NEW_ACCOUNT_ID, ComputeDispatchFeesAsTopLevel.NO))
-                .willReturn(synthLazyCreateFees);
-
-        final var synthFinalizatonFees = new Fees(4L, 5L, 6L);
-        final var synthFinalizationTxn = TransactionBody.newBuilder()
-                .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
-                        .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY)))
-                .build();
-        given(context.dispatchComputeFees(synthFinalizationTxn, A_NEW_ACCOUNT_ID, ComputeDispatchFeesAsTopLevel.NO))
-                .willReturn(synthFinalizatonFees);
         given(cryptoCreateRecordBuilder.status()).willReturn(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         final var status = assertDoesNotThrow(() -> subject.createHollowAccount(CANONICAL_ALIAS));
         assertThat(status).isEqualTo(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED);
 
         verify(cryptoCreateRecordBuilder).memo(LAZY_CREATION_MEMO);
-        verify(cryptoCreateRecordBuilder)
-                .transactionFee(synthLazyCreateFees.totalFee() + synthFinalizatonFees.totalFee());
     }
 
     @Test
     void finalizeHollowAccountAsContractUsesApiAndStore() {
-        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        final var entityNumGenerator = mock(EntityNumGenerator.class);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.entityNumGenerator()).willReturn(entityNumGenerator);
         given(accountStore.getAccountIDByAlias(CANONICAL_ALIAS)).willReturn(A_NEW_ACCOUNT_ID);
 
         subject.finalizeHollowAccountAsContract(CANONICAL_ALIAS);
 
         verify(tokenServiceApi).finalizeHollowAccountAsContract(A_NEW_ACCOUNT_ID);
-        verify(context).newEntityNum();
+        verify(entityNumGenerator).newEntityNum();
     }
 
     @Test
     void transferWithReceiverSigCheckUsesApi() {
-        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var contractAccountId = AccountID.newBuilder()
                 .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
                 .build();
@@ -268,7 +251,8 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void transferWithReceiverSigCheckReturnsInvalidSigIfAppropriate() {
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var contractAccountId = AccountID.newBuilder()
                 .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
                 .build();
@@ -289,8 +273,9 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void transferWithReceiverSigCheckSkipsCheckWithoutRequirement() {
-        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(context.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var contractAccountId = AccountID.newBuilder()
                 .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
                 .build();
@@ -322,7 +307,8 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void settingNonceUsesApi() {
-        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
 
         subject.setNonce(123L, 456L);
 
@@ -331,7 +317,8 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void getRelationshipUsesStore() {
-        given(context.readableStore(ReadableTokenRelationStore.class)).willReturn(relationStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(relationStore);
         given(relationStore.get(A_NEW_ACCOUNT_ID, FUNGIBLE_TOKEN_ID)).willReturn(A_FUNGIBLE_RELATION);
         assertSame(
                 A_FUNGIBLE_RELATION,
@@ -340,14 +327,16 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void getNftUsesStore() {
-        given(context.readableStore(ReadableNftStore.class)).willReturn(nftStore);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableNftStore.class)).willReturn(nftStore);
         given(nftStore.get(CIVILIAN_OWNED_NFT.nftIdOrThrow())).willReturn(CIVILIAN_OWNED_NFT);
         assertSame(CIVILIAN_OWNED_NFT, subject.getNft(NON_FUNGIBLE_TOKEN_ID.tokenNum(), NFT_SERIAL_NO));
     }
 
     @Test
     void customFeesCheckUsesApi() {
-        given(context.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(tokenServiceApi.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT))
                 .willReturn(true);
         final var result = subject.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT);

@@ -76,6 +76,9 @@ class EnhancedKeyStoreLoaderTest {
         assertThat(testDataDirectory.resolve("hybrid-invalid-case-1")).exists().isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("hybrid-invalid-case-2")).exists().isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-valid")).exists().isNotEmptyDirectory();
+        assertThat(testDataDirectory.resolve("enhanced-valid-no-agreement-key"))
+                .exists()
+                .isNotEmptyDirectory();
         assertThat(testDataDirectory.resolve("enhanced-invalid-case-1"))
                 .exists()
                 .isNotEmptyDirectory();
@@ -100,7 +103,7 @@ class EnhancedKeyStoreLoaderTest {
      */
     @ParameterizedTest
     @DisplayName("KeyStore Loader Positive Test")
-    @ValueSource(strings = {"legacy-valid", "hybrid-valid", "enhanced-valid"})
+    @ValueSource(strings = {"legacy-valid", "hybrid-valid", "enhanced-valid", "enhanced-valid-no-agreement-key"})
     void keyStoreLoaderPositiveTest(final String directoryName)
             throws IOException, KeyLoadingException, KeyStoreException {
         final Path keyDirectory = testDataDirectory.resolve(directoryName);
@@ -111,6 +114,7 @@ class EnhancedKeyStoreLoaderTest {
 
         assertThat(loader).isNotNull();
         assertThatCode(loader::scan).doesNotThrowAnyException();
+        assertThatCode(loader::generateIfNecessary).doesNotThrowAnyException();
         assertThatCode(loader::verify).doesNotThrowAnyException();
         assertThatCode(loader::injectInAddressBook).doesNotThrowAnyException();
 

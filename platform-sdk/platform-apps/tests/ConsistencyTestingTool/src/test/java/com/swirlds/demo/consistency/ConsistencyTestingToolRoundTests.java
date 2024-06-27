@@ -28,7 +28,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.Round;
@@ -80,9 +80,8 @@ class ConsistencyTestingToolRoundTests {
             mockTransactions.toArray(eventTransactionArray);
             final EventImpl mockEvent = mock(EventImpl.class);
             Mockito.when(mockEvent.getRoundReceived()).thenReturn(roundReceived);
-            Mockito.when(mockEvent.getBaseEvent()).thenReturn(mock(GossipEvent.class));
+            Mockito.when(mockEvent.getBaseEvent()).thenReturn(mock(PlatformEvent.class));
             Mockito.when(mockEvent.consensusTransactionIterator()).thenReturn(mockTransactions.iterator());
-            Mockito.when(mockEvent.getTransactions()).thenReturn((ConsensusTransactionImpl[]) eventTransactionArray);
 
             mockEvents.add(mockEvent);
         });
@@ -95,7 +94,8 @@ class ConsistencyTestingToolRoundTests {
                 mock(EventImpl.class),
                 mock(GraphGenerations.class),
                 mock(EventWindow.class),
-                mockSnapshot);
+                mockSnapshot,
+                false);
     }
 
     @Test

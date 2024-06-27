@@ -18,11 +18,9 @@ package com.hedera.node.app.throttle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
-import static com.hedera.node.app.service.file.impl.FileServiceImpl.BLOBS_KEY;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.throttle.CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY;
-import static com.hedera.node.app.throttle.CongestionThrottleService.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
+import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
+import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
+import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
@@ -38,6 +36,7 @@ import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema;
 import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -68,8 +67,8 @@ class ThrottleServiceManagerTest {
             List.of(new ThrottleUsageSnapshot(123L, EPOCH)), new ThrottleUsageSnapshot(456L, EPOCH));
     private static final CongestionLevelStarts MOCK_CONGESTION_LEVEL_STARTS =
             new CongestionLevelStarts(List.of(new Timestamp(1L, 2), EPOCH), List.of(new Timestamp(3L, 4), EPOCH));
-    private static final DeterministicThrottle.UsageSnapshot MOCK_USAGE_SNAPSHOT =
-            new DeterministicThrottle.UsageSnapshot(123L, Instant.ofEpochSecond(1_234_567L, 890));
+    private static final ThrottleUsageSnapshot MOCK_USAGE_SNAPSHOT =
+            new ThrottleUsageSnapshot(123L, new Timestamp(1_234_567L, 890));
 
     @Mock
     private ConfigProvider configProvider;
@@ -150,9 +149,8 @@ class ThrottleServiceManagerTest {
         inOrder.verify(backendThrottle).rebuildFor(MOCK_THROTTLE_DEFS);
         inOrder.verify(congestionMultipliers).resetExpectations();
         inOrder.verify(cryptoTransferThrottle)
-                .resetUsageTo(
-                        fromPbj(MOCK_THROTTLE_USAGE_SNAPSHOTS.tpsThrottles().getFirst()));
-        inOrder.verify(gasThrottle).resetUsageTo(fromPbj(MOCK_THROTTLE_USAGE_SNAPSHOTS.gasThrottleOrThrow()));
+                .resetUsageTo(MOCK_THROTTLE_USAGE_SNAPSHOTS.tpsThrottles().getFirst());
+        inOrder.verify(gasThrottle).resetUsageTo(MOCK_THROTTLE_USAGE_SNAPSHOTS.gasThrottleOrThrow());
         inOrder.verify(congestionMultipliers)
                 .resetUtilizationScaledThrottleMultiplierStarts(asNullTerminatedInstants(
                         MOCK_CONGESTION_LEVEL_STARTS.genericLevelStarts().getFirst()));
@@ -176,7 +174,7 @@ class ThrottleServiceManagerTest {
         subject.saveThrottleSnapshotsAndCongestionLevelStartsTo(hederaState);
 
         verify(writableThrottleSnapshots)
-                .put(new ThrottleUsageSnapshots(List.of(toPbj(MOCK_USAGE_SNAPSHOT)), toPbj(MOCK_USAGE_SNAPSHOT)));
+                .put(new ThrottleUsageSnapshots(List.of(MOCK_USAGE_SNAPSHOT), MOCK_USAGE_SNAPSHOT));
         verify(writableLevelStarts).put(MOCK_CONGESTION_LEVEL_STARTS);
     }
 
@@ -235,7 +233,7 @@ class ThrottleServiceManagerTest {
                 .willReturn(throttleUsageSnapshots);
         given(congestionLevelStarts.get()).willReturn(MOCK_CONGESTION_LEVEL_STARTS);
         given(throttleReadableStates.<CongestionLevelStarts>getSingleton(
-                        CongestionThrottleService.CONGESTION_LEVEL_STARTS_STATE_KEY))
+                        V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY))
                 .willReturn(congestionLevelStarts);
     }
 

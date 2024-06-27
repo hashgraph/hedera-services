@@ -31,7 +31,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -51,11 +51,11 @@ class StaleEventDetectorTests {
      * Extract self events from a stream containing both self events and stale self events. Corresponds to data tagged
      * with {@link StaleEventDetectorOutput#SELF_EVENT}.
      */
-    private List<GossipEvent> getSelfEvents(@NonNull final List<RoutableData<StaleEventDetectorOutput>> data) {
-        final List<GossipEvent> output = new ArrayList<>();
+    private List<PlatformEvent> getSelfEvents(@NonNull final List<RoutableData<StaleEventDetectorOutput>> data) {
+        final List<PlatformEvent> output = new ArrayList<>();
         for (final RoutableData<StaleEventDetectorOutput> datum : data) {
             if (datum.address() == StaleEventDetectorOutput.SELF_EVENT) {
-                output.add((GossipEvent) datum.data());
+                output.add((PlatformEvent) datum.data());
             }
         }
         return output;
@@ -68,9 +68,9 @@ class StaleEventDetectorTests {
      * @param selfEvent the self event that should have been returned
      */
     private void assertSelfEventReturned(
-            @NonNull final List<RoutableData<StaleEventDetectorOutput>> data, @NonNull final GossipEvent selfEvent) {
+            @NonNull final List<RoutableData<StaleEventDetectorOutput>> data, @NonNull final PlatformEvent selfEvent) {
 
-        final List<GossipEvent> selfEvents = getSelfEvents(data);
+        final List<PlatformEvent> selfEvents = getSelfEvents(data);
         assertEquals(1, selfEvents.size());
         assertSame(selfEvent, selfEvents.getFirst());
     }
@@ -83,7 +83,7 @@ class StaleEventDetectorTests {
      * @param data the output data
      */
     private void assertNoSelfEventReturned(@NonNull final List<RoutableData<StaleEventDetectorOutput>> data) {
-        final List<GossipEvent> selfEvents = getSelfEvents(data);
+        final List<PlatformEvent> selfEvents = getSelfEvents(data);
         assertEquals(0, selfEvents.size());
     }
 
@@ -91,11 +91,11 @@ class StaleEventDetectorTests {
      * Extract stale self events from a stream containing both self events and stale self events. Corresponds to data
      * tagged with {@link StaleEventDetectorOutput#STALE_SELF_EVENT}.
      */
-    private List<GossipEvent> getStaleSelfEvents(@NonNull final List<RoutableData<StaleEventDetectorOutput>> data) {
-        final List<GossipEvent> output = new ArrayList<>();
+    private List<PlatformEvent> getStaleSelfEvents(@NonNull final List<RoutableData<StaleEventDetectorOutput>> data) {
+        final List<PlatformEvent> output = new ArrayList<>();
         for (final RoutableData<StaleEventDetectorOutput> datum : data) {
             if (datum.address() == StaleEventDetectorOutput.STALE_SELF_EVENT) {
-                output.add((GossipEvent) datum.data());
+                output.add((PlatformEvent) datum.data());
             }
         }
         return output;
@@ -114,7 +114,7 @@ class StaleEventDetectorTests {
                 .build();
         final StaleEventDetector detector = new DefaultStaleEventDetector(platformContext, selfId);
 
-        final GossipEvent event = new TestingEventBuilder(randotron).build();
+        final PlatformEvent event = new TestingEventBuilder(randotron).build();
 
         assertThrows(IllegalStateException.class, () -> detector.addSelfEvent(event));
     }
@@ -135,7 +135,7 @@ class StaleEventDetectorTests {
         final long ancientThreshold = randotron.nextPositiveLong() + 100;
         final long eventBirthRound = ancientThreshold - randotron.nextLong(100);
 
-        final GossipEvent event = new TestingEventBuilder(randotron)
+        final PlatformEvent event = new TestingEventBuilder(randotron)
                 .setCreatorId(selfId)
                 .setBirthRound(eventBirthRound)
                 .build();
@@ -145,8 +145,8 @@ class StaleEventDetectorTests {
 
         final List<RoutableData<StaleEventDetectorOutput>> output = detector.addSelfEvent(event);
 
-        final List<GossipEvent> gossipEvents = getSelfEvents(output);
-        final List<GossipEvent> staleEvents = getStaleSelfEvents(output);
+        final List<PlatformEvent> platformEvents = getSelfEvents(output);
+        final List<PlatformEvent> staleEvents = getStaleSelfEvents(output);
 
         assertEquals(1, staleEvents.size());
         assertSame(event, staleEvents.getFirst());
@@ -164,9 +164,11 @@ class StaleEventDetectorTests {
      */
     @NonNull
     private ConsensusRound createConsensusRound(
-            @NonNull final Randotron randotron, @NonNull final List<GossipEvent> events, final long ancientThreshold) {
+            @NonNull final Randotron randotron,
+            @NonNull final List<PlatformEvent> events,
+            final long ancientThreshold) {
         final List<EventImpl> eventImpls = new ArrayList<>();
-        for (final GossipEvent consensusEvent : events) {
+        for (final PlatformEvent consensusEvent : events) {
             eventImpls.add(new EventImpl(consensusEvent));
         }
 
@@ -179,7 +181,8 @@ class StaleEventDetectorTests {
                 mock(EventImpl.class),
                 mock(Generations.class),
                 eventWindow,
-                mock(ConsensusSnapshot.class));
+                mock(ConsensusSnapshot.class),
+                false);
     }
 
     @Test
@@ -195,9 +198,9 @@ class StaleEventDetectorTests {
                 .build();
         final StaleEventDetector detector = new DefaultStaleEventDetector(platformContext, selfId);
 
-        final Set<GossipEvent> detectedStaleEvents = new HashSet<>();
-        final Set<GossipEvent> expectedStaleEvents = new HashSet<>();
-        final List<GossipEvent> consensusEvents = new ArrayList<>();
+        final Set<PlatformEvent> detectedStaleEvents = new HashSet<>();
+        final Set<PlatformEvent> expectedStaleEvents = new HashSet<>();
+        final List<PlatformEvent> consensusEvents = new ArrayList<>();
 
         long currentAncientThreshold = randotron.nextLong(100, 1_000);
         detector.setInitialEventWindow(new EventWindow(
@@ -218,7 +221,7 @@ class StaleEventDetectorTests {
             } else {
                 eventBuilder.setBirthRound(currentAncientThreshold + randotron.nextLong(3));
             }
-            final GossipEvent event = eventBuilder.build();
+            final PlatformEvent event = eventBuilder.build();
 
             final boolean willReachConsensus = !eventIsAncientBeforeAdded && randotron.nextBoolean(0.8);
 
@@ -277,7 +280,7 @@ class StaleEventDetectorTests {
         final long ancientThreshold1 = randotron.nextPositiveInt() + 100;
         final long eventBirthRound1 = ancientThreshold1 + randotron.nextPositiveInt(10);
 
-        final GossipEvent event1 = new TestingEventBuilder(randotron)
+        final PlatformEvent event1 = new TestingEventBuilder(randotron)
                 .setCreatorId(selfId)
                 .setBirthRound(eventBirthRound1)
                 .build();
@@ -302,7 +305,7 @@ class StaleEventDetectorTests {
         // Verify that we get otherwise normal behavior after the clear.
 
         final long eventBirthRound2 = ancientThreshold2 + randotron.nextPositiveInt(10);
-        final GossipEvent event2 = new TestingEventBuilder(randotron)
+        final PlatformEvent event2 = new TestingEventBuilder(randotron)
                 .setCreatorId(selfId)
                 .setBirthRound(eventBirthRound2)
                 .build();
@@ -315,7 +318,7 @@ class StaleEventDetectorTests {
         final ConsensusRound consensusRound = createConsensusRound(randotron, List.of(), ancientThreshold3);
         final List<RoutableData<StaleEventDetectorOutput>> output3 = detector.addConsensusRound(consensusRound);
         assertNoSelfEventReturned(output3);
-        final List<GossipEvent> staleEvents = getStaleSelfEvents(output3);
+        final List<PlatformEvent> staleEvents = getStaleSelfEvents(output3);
         assertEquals(1, staleEvents.size());
         assertSame(event2, staleEvents.getFirst());
     }

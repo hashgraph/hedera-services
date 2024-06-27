@@ -18,7 +18,6 @@ package com.swirlds.platform.event.creation.tipset;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
-import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
 import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
 
 import com.swirlds.base.time.Time;
@@ -32,7 +31,7 @@ import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.eventhandling.EventConfig;
@@ -170,12 +169,12 @@ public class TipsetEventCreator implements EventCreator {
      * {@inheritDoc}
      */
     @Override
-    public void registerEvent(@NonNull final GossipEvent event) {
+    public void registerEvent(@NonNull final PlatformEvent event) {
         if (eventWindow.isAncient(event)) {
             return;
         }
 
-        final NodeId eventCreator = event.getHashedData().getCreatorId();
+        final NodeId eventCreator = event.getCreatorId();
         if (!addressBook.contains(eventCreator)) {
             return;
         }
@@ -186,12 +185,9 @@ public class TipsetEventCreator implements EventCreator {
                 // Normally we will ingest self events before we get to this point, but it's possible
                 // to learn of self events for the first time here if we are loading from a restart or reconnect.
                 lastSelfEvent = event.getDescriptor();
-                lastSelfEventCreationTime = event.getHashedData().getTimeCreated();
-                lastSelfEventTransactionCount = event.getHashedData().getTransactions() == null
-                        ? 0
-                        : event.getHashedData().getTransactions().length;
-                childlessOtherEventTracker.registerSelfEventParents(
-                        event.getHashedData().getOtherParents());
+                lastSelfEventCreationTime = event.getTimeCreated();
+                lastSelfEventTransactionCount = event.getPayloadCount();
+                childlessOtherEventTracker.registerSelfEventParents(event.getOtherParents());
             } else {
                 // We already ingested this self event (when it was created),
                 return;
@@ -199,7 +195,7 @@ public class TipsetEventCreator implements EventCreator {
         }
 
         final EventDescriptor descriptor = event.getDescriptor();
-        final List<EventDescriptor> parentDescriptors = getParentDescriptors(event.getHashedData());
+        final List<EventDescriptor> parentDescriptors = event.getAllParents();
 
         tipsetTracker.addEvent(descriptor, parentDescriptors);
 

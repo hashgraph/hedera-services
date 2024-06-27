@@ -37,6 +37,9 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.network.protocol;
     exports com.swirlds.platform.network.topology;
     exports com.swirlds.platform.recovery;
+    exports com.swirlds.platform.sequence;
+    exports com.swirlds.platform.sequence.map;
+    exports com.swirlds.platform.sequence.set;
     exports com.swirlds.platform.state;
     exports com.swirlds.platform.stats;
     exports com.swirlds.platform.stats.atomic;
@@ -71,7 +74,7 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test,
             com.hedera.node.test.clients,
             com.swirlds.platform.core.test.fixtures,
-            com.hedera.node.app.service.mono.test.fixtures;
+            com.hedera.node.app.test.fixtures;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
             com.swirlds.platform.test,
@@ -127,6 +130,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.pool;
     exports com.swirlds.platform.state.snapshot;
 
+    requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
@@ -139,7 +143,6 @@ module com.swirlds.platform.core {
     requires transitive com.swirlds.virtualmap;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
-    requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
@@ -154,8 +157,8 @@ module com.swirlds.platform.core {
     requires jdk.net;
     requires org.bouncycastle.pkix;
     requires org.bouncycastle.provider;
-    requires static com.github.spotbugs.annotations;
-    requires static com.google.auto.service;
+    requires static transitive com.github.spotbugs.annotations;
+    requires static transitive com.google.auto.service;
 
     provides ConfigurationExtension with
             PlatformConfigurationExtension;

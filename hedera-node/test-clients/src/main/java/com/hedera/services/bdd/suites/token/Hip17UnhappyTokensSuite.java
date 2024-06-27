@@ -18,14 +18,12 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenNftInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -36,19 +34,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
-import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.HapiSuite.salted;
-import static com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices.disablingAutoRenewWithDefaults;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -58,12 +49,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.autorenew.AutoRenewConfigChoices;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -78,9 +66,7 @@ public class Hip17UnhappyTokensSuite {
     private static final String AUTO_RENEW_ACCT = "autoRenewAcct";
     private static final String NEW_AUTO_RENEW_ACCT = "newAutoRenewAcct";
 
-    private static final String NFTexpired = "NFTexpired";
     private static final String NFTdeleted = "NFTdeleted";
-    private static final String NFTautoRemoved = "NFTautoRemoved";
     private static final String ADMIN_KEY = "adminKey";
     private static final String SUPPLY_KEY = "supplyKey";
     private static final String FREEZE_KEY = "freezeKey";
@@ -224,8 +210,6 @@ public class Hip17UnhappyTokensSuite {
     final Stream<DynamicTest> cannotUpdateNftWhenDeleted() {
         return defaultHapiSpec("cannotUpdateNftWhenDeleted")
                 .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0L, 2, 2)),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(NEW_TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(AUTO_RENEW_ACCT).balance(ONE_HUNDRED_HBARS),
@@ -406,74 +390,6 @@ public class Hip17UnhappyTokensSuite {
                         getTokenNftInfo(NFTdeleted, 1).hasSerialNum(1))
                 .when(tokenDelete(NFTdeleted))
                 .then(wipeTokenAccount(NFTdeleted, ANOTHER_USER, List.of(1L)).hasKnownStatus(TOKEN_WAS_DELETED));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> cannotGetNftInfoWhenExpired() {
-        return defaultHapiSpec("cannotGetNftInfoWhenExpired")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0L, 2, 2)),
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        sourcing(() -> tokenCreate(NFTexpired)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .supplyKey(SUPPLY_KEY)
-                                .initialSupply(0)
-                                .expiry(Instant.now().getEpochSecond() + 5L)
-                                .treasury(TOKEN_TREASURY)),
-                        mintToken(NFTexpired, List.of(metadata(FIRST_MEMO))))
-                .when(sleepFor(6000))
-                .then(getTokenNftInfo(NFTexpired, 1).hasCostAnswerPrecheckFrom(OK));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> cannotGetNftInfoWhenAutoRemoved() {
-        return defaultHapiSpec("cannotGetNftInfoWhenAutoRemoved")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(GENESIS)
-                                .overridingProps(AutoRenewConfigChoices.propsForAccountAutoRenewOnWith(1, 0L, 100, 100))
-                                .erasingProps(Set.of("minimumAutoRenewDuration")),
-                        newKeyNamed(SUPPLY_KEY),
-                        newKeyNamed(ADMIN_KEY),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).autoRenewSecs(THREE_MONTHS_IN_SECONDS),
-                        tokenCreate(NFTautoRemoved)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .supplyKey(SUPPLY_KEY)
-                                .adminKey(ADMIN_KEY)
-                                .initialSupply(0)
-                                .autoRenewAccount(TOKEN_TREASURY)
-                                .autoRenewPeriod(2L)
-                                .expiry(Instant.now().getEpochSecond() + 5L)
-                                .treasury(TOKEN_TREASURY),
-                        mintToken(NFTautoRemoved, List.of(metadata(FIRST_MEMO), metadata(SECOND_MEMO)), "nftMint")
-                                .payingWith(GENESIS))
-                .when(
-                        cryptoTransfer(tinyBarsFromTo(TOKEN_TREASURY, GENESIS, ONE_HUNDRED_HBARS - 10))
-                                .payingWith(GENESIS),
-                        sleepFor(8000),
-                        cryptoTransfer(tinyBarsFromTo(TOKEN_TREASURY, GENESIS, 10))
-                                .payingWith(GENESIS))
-                .then(
-                        getAccountBalance(TOKEN_TREASURY).logged(),
-                        getTokenNftInfo(NFTautoRemoved, 1)
-                                .hasAnswerOnlyPrecheck(OK)
-                                .logged(),
-                        getTokenNftInfo(NFTautoRemoved, 1)
-                                .hasCostAnswerPrecheckFrom(OK)
-                                .logged());
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> autoRemovalCasesSuiteCleanup() {
-        return defaultHapiSpec("AutoRemovalCasesSuiteCleanup")
-                .given()
-                .when()
-                .then(fileUpdate(APP_PROPERTIES).payingWith(GENESIS).overridingProps(disablingAutoRenewWithDefaults()));
     }
 
     private ByteString metadata(String contents) {

@@ -16,19 +16,34 @@
 
 package com.swirlds.platform.pool;
 
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLICATION_PAYLOAD;
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
+import static com.swirlds.common.utility.CompareTo.isLessThan;
+import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
+
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.components.transaction.TransactionSupplier;
 import com.swirlds.platform.config.TransactionConfig;
+import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.eventhandling.TransactionPoolMetrics;
+import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
+import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Store a list of transactions created by self, both system and non-system, for wrapping in the next event to be
@@ -36,16 +51,19 @@ import java.util.Queue;
  */
 public class TransactionPoolNexus implements TransactionSupplier {
 
+    private static final Logger logger = LogManager.getLogger(TransactionPoolNexus.class);
+    private final RateLimitedLogger illegalTransactionLogger;
+
     /**
      * A list of transactions created by this node waiting to be put into a self-event.
      */
-    private final Queue<ConsensusTransactionImpl> bufferedTransactions = new LinkedList<>();
+    private final Queue<OneOf<PayloadOneOfType>> bufferedTransactions = new LinkedList<>();
 
     /**
      * A list of high-priority transactions created by this node waiting to be put into a self-event. Transactions in
      * this queue are always inserted into an event before transactions waiting in {@link #bufferedTransactions}.
      */
-    private final Queue<ConsensusTransactionImpl> priorityBufferedTransactions = new LinkedList<>();
+    private final Queue<OneOf<PayloadOneOfType>> priorityBufferedTransactions = new LinkedList<>();
 
     /**
      * The number of buffered signature transactions waiting to be put into events.
@@ -69,12 +87,34 @@ public class TransactionPoolNexus implements TransactionSupplier {
     private final TransactionPoolMetrics transactionPoolMetrics;
 
     /**
+     * The maximum size of a transaction in bytes.
+     */
+    private final int maximumTransactionSize;
+
+    /**
+     * The current status of the platform.
+     */
+    private PlatformStatus platformStatus = PlatformStatus.STARTING_UP;
+
+    /**
+     * The maximum amount of time the platform may be in an unhealthy state before we start rejecting transactions.
+     */
+    private final Duration maximumPermissibleUnhealthyDuration;
+
+    /**
+     * Whether the platform is currently in a healthy state.
+     */
+    private boolean healthy = true;
+
+    /**
      * Creates a new transaction pool for transactions waiting to be put in an event.
      *
      * @param platformContext the platform context
      */
     public TransactionPoolNexus(@NonNull final PlatformContext platformContext) {
         Objects.requireNonNull(platformContext);
+
+        illegalTransactionLogger = new RateLimitedLogger(logger, platformContext.getTime(), Duration.ofMinutes(10));
 
         final TransactionConfig transactionConfig =
                 platformContext.getConfiguration().getConfigData(TransactionConfig.class);
@@ -83,6 +123,106 @@ public class TransactionPoolNexus implements TransactionSupplier {
 
         transactionPoolMetrics = new TransactionPoolMetrics(
                 platformContext, this::getBufferedTransactionCount, this::getPriorityBufferedTransactionCount);
+
+        maximumTransactionSize = transactionConfig.transactionMaxBytes();
+
+        final EventCreationConfig eventCreationConfig =
+                platformContext.getConfiguration().getConfigData(EventCreationConfig.class);
+        maximumPermissibleUnhealthyDuration = eventCreationConfig.maximumPermissibleUnhealthyDuration();
+    }
+
+    // FUTURE WORK: these checks should be unified with the checks performed when a system transaction is submitted.
+    // The reason why this method coexists with submitTransaction() is due to legacy reasons, not because it
+    // actually makes sense to have this distinction.
+
+    /**
+     * Attempt to submit an application transaction. Similar to
+     * {@link #submitTransaction} but with extra safeguards.
+     *
+     * @param payload the transaction to submit
+     * @return true if the transaction passed all validity checks and was accepted by the consumer
+     */
+    public synchronized boolean submitApplicationTransaction(@NonNull final Bytes payload) {
+        if (!healthy || platformStatus != PlatformStatus.ACTIVE) {
+            return false;
+        }
+
+        if (payload == null) {
+            // FUTURE WORK: This really should throw, but to avoid changing existing API this will be changed later.
+            illegalTransactionLogger.error(EXCEPTION.getMarker(), "transaction is null");
+            return false;
+        }
+        final OneOf<PayloadOneOfType> transaction = new OneOf<>(APPLICATION_PAYLOAD, payload);
+        if (PayloadUtils.getPayloadSize(transaction) > maximumTransactionSize) {
+            // FUTURE WORK: This really should throw, but to avoid changing existing API this will be changed later.
+            illegalTransactionLogger.error(
+                    EXCEPTION.getMarker(),
+                    "transaction has {} bytes, maximum permissible transaction size is {}",
+                    payload.length(),
+                    maximumTransactionSize);
+            return false;
+        }
+
+        return submitTransaction(transaction, false);
+    }
+
+    /**
+     * Attempt to submit a transaction.
+     *
+     * @param transaction The transaction. It must have been created by self.
+     * @param priority    if true, then this transaction will be submitted before other waiting transactions that are
+     *                    not marked with the priority flag. Use with moderation, adding too many priority transactions
+     *                    (i.e. thousands per second) may disrupt the ability of the platform to perform some core
+     *                    functionalities.
+     * @return true if successful
+     */
+    public synchronized boolean submitTransaction(
+            @NonNull final OneOf<PayloadOneOfType> transaction, final boolean priority) {
+
+        Objects.requireNonNull(transaction);
+        final boolean isSystem = PayloadUtils.isSystemPayload(transaction);
+
+        // Always submit system transactions. If it's not a system transaction, then only submit it if we
+        // don't violate queue size capacity restrictions.
+        if (!isSystem
+                && (bufferedTransactions.size() + priorityBufferedTransactions.size()) > throttleTransactionQueueSize) {
+            transactionPoolMetrics.recordRejectedAppTransaction();
+            return false;
+        }
+
+        if (isSystem) {
+            bufferedSignatureTransactionCount++;
+            transactionPoolMetrics.recordSubmittedPlatformTransaction();
+        } else {
+            transactionPoolMetrics.recordAcceptedAppTransaction();
+        }
+
+        if (priority) {
+            priorityBufferedTransactions.add(transaction);
+        } else {
+            bufferedTransactions.add(transaction);
+        }
+
+        return true;
+    }
+
+    /**
+     * Update the platform status.
+     *
+     * @param platformStatus the new platform status
+     */
+    public synchronized void updatePlatformStatus(@NonNull final PlatformStatus platformStatus) {
+        this.platformStatus = platformStatus;
+    }
+
+    /**
+     * Report the amount of time that the system has been in an unhealthy state. Will receive a report of
+     * {@link Duration#ZERO} when the system enters a healthy state.
+     *
+     * @param duration the amount of time that the system has been in an unhealthy state
+     */
+    public synchronized void reportUnhealthyDuration(@NonNull final Duration duration) {
+        healthy = isLessThan(duration, maximumPermissibleUnhealthyDuration);
     }
 
     /**
@@ -92,16 +232,15 @@ public class TransactionPoolNexus implements TransactionSupplier {
      * @return the next transaction, or null if no transaction is available
      */
     @Nullable
-    @SuppressWarnings("ConstantConditions")
-    private ConsensusTransactionImpl getNextTransaction(final int currentEventSize) {
+    private OneOf<PayloadOneOfType> getNextTransaction(final int currentEventSize) {
         final int maxSize = maxTransactionBytesPerEvent - currentEventSize;
 
         if (!priorityBufferedTransactions.isEmpty()
-                && priorityBufferedTransactions.peek().getSerializedLength() <= maxSize) {
+                && PayloadUtils.getPayloadSize(priorityBufferedTransactions.peek()) <= maxSize) {
             return priorityBufferedTransactions.poll();
         }
 
-        if (!bufferedTransactions.isEmpty() && bufferedTransactions.peek().getSerializedLength() <= maxSize) {
+        if (!bufferedTransactions.isEmpty() && PayloadUtils.getPayloadSize(bufferedTransactions.peek()) <= maxSize) {
             return bufferedTransactions.poll();
         }
 
@@ -115,32 +254,32 @@ public class TransactionPoolNexus implements TransactionSupplier {
      */
     @NonNull
     @Override
-    public synchronized ConsensusTransactionImpl[] getTransactions() {
+    public synchronized List<OneOf<PayloadOneOfType>> getTransactions() {
         // Early return due to no transactions waiting
         if (bufferedTransactions.isEmpty() && priorityBufferedTransactions.isEmpty()) {
-            return new ConsensusTransactionImpl[0];
+            return Collections.emptyList();
         }
 
-        final List<ConsensusTransactionImpl> selectedTrans = new LinkedList<>();
+        final List<OneOf<PayloadOneOfType>> selectedTrans = new LinkedList<>();
         int currEventSize = 0;
 
         while (true) {
-            final ConsensusTransactionImpl transaction = getNextTransaction(currEventSize);
+            final OneOf<PayloadOneOfType> transaction = getNextTransaction(currEventSize);
 
             if (transaction == null) {
                 // No transaction of suitable size is available
                 break;
             }
 
-            currEventSize += transaction.getSerializedLength();
+            currEventSize += (int) PayloadUtils.getPayloadSize(transaction);
             selectedTrans.add(transaction);
 
-            if (transaction.isSystem() && isSignatureTransaction(transaction)) {
+            if (STATE_SIGNATURE_PAYLOAD.equals(transaction.kind())) {
                 bufferedSignatureTransactionCount--;
             }
         }
 
-        return selectedTrans.toArray(new ConsensusTransactionImpl[0]);
+        return selectedTrans;
     }
 
     /**
@@ -161,49 +300,6 @@ public class TransactionPoolNexus implements TransactionSupplier {
      */
     public synchronized boolean hasBufferedSignatureTransactions() {
         return bufferedSignatureTransactionCount > 0;
-    }
-
-    /**
-     * Add the given transaction to the list of transactions to be submitted to the network. If the queue is full, it
-     * does nothing and returns false immediately.
-     *
-     * @param transaction The transaction. It must have been created by self.
-     * @param priority    if true, then this transaction will be submitted before other waiting transactions that are
-     *                    not marked with the priority flag. Use with moderation, adding too many priority transactions
-     *                    (i.e. thousands per second) may disrupt the ability of the platform to perform some core
-     *                    functionalities.
-     * @return true if successful
-     */
-    @SuppressWarnings("ConstantConditions")
-    public synchronized boolean submitTransaction(
-            @NonNull final ConsensusTransactionImpl transaction, final boolean priority) {
-
-        Objects.requireNonNull(transaction);
-
-        // Always submit system transactions. If it's not a system transaction, then only submit it if we
-        // don't violate queue size capacity restrictions.
-        if (!transaction.isSystem()
-                && (bufferedTransactions.size() + priorityBufferedTransactions.size()) > throttleTransactionQueueSize) {
-            transactionPoolMetrics.recordRejectedAppTransaction();
-            return false;
-        }
-
-        if (transaction.isSystem()) {
-            if (isSignatureTransaction(transaction)) {
-                bufferedSignatureTransactionCount++;
-            }
-            transactionPoolMetrics.recordSubmittedPlatformTransaction();
-        } else {
-            transactionPoolMetrics.recordAcceptedAppTransaction();
-        }
-
-        if (priority) {
-            priorityBufferedTransactions.add(transaction);
-        } else {
-            bufferedTransactions.add(transaction);
-        }
-
-        return true;
     }
 
     /**

@@ -40,7 +40,7 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.preconsensus.PcesBirthRoundMigration;
 import com.swirlds.platform.event.preconsensus.PcesConfig_;
 import com.swirlds.platform.event.preconsensus.PcesFile;
@@ -117,7 +117,7 @@ class PcesBirthRoundMigrationTests {
      * @param events                 a list of all events in the stream, if there is a discontinuty then only include
      *                               events after the discontinuity
      */
-    private record PcesFilesWritten(@NonNull List<PcesFile> files, @NonNull List<GossipEvent> events) {}
+    private record PcesFilesWritten(@NonNull List<PcesFile> files, @NonNull List<PlatformEvent> events) {}
 
     /**
      * Generate a bunch of PCES files in the legacy format.
@@ -146,18 +146,18 @@ class PcesBirthRoundMigrationTests {
                 new StandardEventSource(),
                 new StandardEventSource());
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         for (int i = 0; i < eventCount; i++) {
             events.add(generator.generateEvent().getBaseEvent());
         }
-        events.sort(Comparator.comparingLong(GossipEvent::getGeneration));
+        events.sort(Comparator.comparingLong(PlatformEvent::getGeneration));
 
         final Path fullPcesPath = pcesPath.resolve("0");
 
         final List<PcesFile> files = new ArrayList<>();
         long origin = 0;
         boolean discontinutiyIntroduced = false;
-        final List<GossipEvent> postDiscontinuityEvents = new ArrayList<>();
+        final List<PlatformEvent> postDiscontinuityEvents = new ArrayList<>();
         for (int fileIndex = 0; fileIndex < fileCount; fileIndex++) {
 
             if (discontinuityType == DiscontinuityType.IN_EVENTS_THAT_ARE_NOT_MIGRATED && fileIndex == fileCount / 3) {
@@ -176,7 +176,7 @@ class PcesBirthRoundMigrationTests {
                 discontinutiyIntroduced = true;
             }
 
-            final List<GossipEvent> fileEvents =
+            final List<PlatformEvent> fileEvents =
                     events.subList(fileIndex * eventsPerFile, (fileIndex + 1) * eventsPerFile);
 
             final long lowerGenerationBound = fileEvents.getFirst().getGeneration();
@@ -193,7 +193,7 @@ class PcesBirthRoundMigrationTests {
             files.add(file);
 
             final PcesMutableFile mutableFile = file.getMutableFile();
-            for (final GossipEvent event : fileEvents) {
+            for (final PlatformEvent event : fileEvents) {
                 mutableFile.writeEvent(event);
                 if (discontinutiyIntroduced || discontinuityType == DiscontinuityType.NONE) {
                     postDiscontinuityEvents.add(event);
@@ -285,14 +285,14 @@ class PcesBirthRoundMigrationTests {
 
         // Read the events in the new file, make sure we see all events with a generation greater than
         // or equal to the middle generation.
-        final List<GossipEvent> expectedEvents = new ArrayList<>();
-        for (final GossipEvent event : filesWritten.events) {
+        final List<PlatformEvent> expectedEvents = new ArrayList<>();
+        for (final PlatformEvent event : filesWritten.events) {
             if (event.getGeneration() >= middleGeneration) {
                 expectedEvents.add(event);
             }
         }
-        final IOIterator<GossipEvent> iterator = new PcesFileIterator(birthRoundFile, 1, BIRTH_ROUND_THRESHOLD);
-        final List<GossipEvent> actualEvents = new ArrayList<>();
+        final IOIterator<PlatformEvent> iterator = new PcesFileIterator(birthRoundFile, 1, BIRTH_ROUND_THRESHOLD);
+        final List<PlatformEvent> actualEvents = new ArrayList<>();
         while (iterator.hasNext()) {
             actualEvents.add(iterator.next());
         }
@@ -427,14 +427,14 @@ class PcesBirthRoundMigrationTests {
 
         // Read the events in the new file, make sure we see all events with a generation greater than
         // or equal to the middle generation.
-        final List<GossipEvent> expectedEvents = new ArrayList<>();
-        for (final GossipEvent event : filesWritten.events) {
+        final List<PlatformEvent> expectedEvents = new ArrayList<>();
+        for (final PlatformEvent event : filesWritten.events) {
             if (event.getGeneration() >= middleGeneration) {
                 expectedEvents.add(event);
             }
         }
-        final IOIterator<GossipEvent> iterator = new PcesFileIterator(birthRoundFile, 1, BIRTH_ROUND_THRESHOLD);
-        final List<GossipEvent> actualEvents = new ArrayList<>();
+        final IOIterator<PlatformEvent> iterator = new PcesFileIterator(birthRoundFile, 1, BIRTH_ROUND_THRESHOLD);
+        final List<PlatformEvent> actualEvents = new ArrayList<>();
         while (iterator.hasNext()) {
             actualEvents.add(iterator.next());
         }

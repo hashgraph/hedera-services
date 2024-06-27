@@ -21,7 +21,7 @@ import static com.swirlds.metrics.api.Metrics.INTERNAL_CATEGORY;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.stats.AverageTimeStat;
@@ -75,7 +75,7 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
      * {@inheritDoc}
      */
     @Override
-    public void prehandleApplicationTransactions(@NonNull final GossipEvent event) {
+    public void prehandleApplicationTransactions(@NonNull final PlatformEvent event) {
         // FUTURE WORK: As a temporary workaround, convert to EventImpl. This workaround will be removed as part of the
         // event refactor
         final EventImpl eventImpl = new EventImpl(event, null, null);

@@ -107,7 +107,7 @@ public class IterableStorageManager {
 
         // Update contract metadata with the net change in slots used
         allSizeChanges.forEach(change -> {
-            if (change.netChange() != 0) {
+            if (change.numInsertions() != 0 || change.numRemovals() != 0) {
                 enhancement
                         .operations()
                         .updateStorageMetadata(

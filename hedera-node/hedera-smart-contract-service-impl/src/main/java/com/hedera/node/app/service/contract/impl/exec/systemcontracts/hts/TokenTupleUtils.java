@@ -69,22 +69,6 @@ public class TokenTupleUtils {
     }
 
     /**
-     * Returns a tuple of the {@code KeyValue} struct
-     * <br><a href="https://github.com/hashgraph/hedera-smart-contracts/blob/main/contracts/hts-precompile/IHederaTokenService.sol#L92">Link</a>
-     * @param key the key to get the tuple for
-     * @return Tuple encoding of the KeyValue
-     */
-    @NonNull
-    public static Tuple keyTupleFor(@NonNull final Key key) {
-        return Tuple.of(
-                false,
-                headlongAddressOf(key.contractIDOrElse(ZERO_CONTRACT_ID)),
-                key.ed25519OrElse(Bytes.EMPTY).toByteArray(),
-                key.ecdsaSecp256k1OrElse(Bytes.EMPTY).toByteArray(),
-                headlongAddressOf(key.delegatableContractIdOrElse(ZERO_CONTRACT_ID)));
-    }
-
-    /**
      * Returns a tuple containing the response code, fixedFees, fractionalFees and the royaltyFees for the token
      *
      * @param token the token to get the fees for

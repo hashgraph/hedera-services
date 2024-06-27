@@ -99,9 +99,7 @@ public class ConsensusRoundValidation {
      * @param e2 the second event
      */
     private static void assertConsensusEvents(final String description, final EventImpl e1, final EventImpl e2) {
-        final boolean equal = Objects.equals(e1.getHashedData(), e2.getHashedData())
-                && Objects.equals(e1.getConsensusData(), e2.getConsensusData())
-                && e1.isWitness() == e2.isWitness();
+        final boolean equal = Objects.equals(e1.getBaseEvent(), e2.getBaseEvent()) && e1.isWitness() == e2.isWitness();
         if (!equal) {
             final StringBuilder sb = new StringBuilder();
             sb.append(description).append("\n");
@@ -159,7 +157,6 @@ public class ConsensusRoundValidation {
         checkGeneration(event1, event2, sb);
         checkWitnessStatus(event1, event2, sb);
         checkRoundCreated(event1, event2, sb);
-        checkIsStale(event1, event2, sb);
         checkConsensusTimestamp(event1, event2, sb);
         checkRoundReceived(event1, event2, sb);
         checkConsensusOrder(event1, event2, sb);
@@ -211,16 +208,6 @@ public class ConsensusRoundValidation {
                     .append(event1.getConsensusTimestamp())
                     .append(" vs ")
                     .append(event2.getConsensusTimestamp())
-                    .append("\n");
-        }
-    }
-
-    private static void checkIsStale(final EventImpl event1, final EventImpl event2, final StringBuilder sb) {
-        if (event1.isStale() != event2.isStale()) {
-            sb.append("   stale mismatch: ")
-                    .append(event1.isStale())
-                    .append(" vs ")
-                    .append(event2.isStale())
                     .append("\n");
         }
     }

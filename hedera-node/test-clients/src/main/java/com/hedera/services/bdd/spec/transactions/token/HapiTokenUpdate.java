@@ -30,6 +30,7 @@ import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenUpdateUsage;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
+import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -507,15 +508,19 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     protected List<Function<HapiSpec, Key>> defaultSigners() {
         List<Function<HapiSpec, Key>> signers = new ArrayList<>();
         signers.add(spec -> spec.registry().getKey(effectivePayer(spec)));
+        signers.add(spec -> {
+            try {
+                return spec.registry().getAdminKey(token);
+            } catch (RegistryNotFound ignore) {
+                // Some tests attempt to update an immutable token,
+                // skip the admin key if it's not found
+                return Key.getDefaultInstance();
+            }
+        });
         newTreasury.ifPresent(n -> signers.add((spec -> spec.registry().getKey(n))));
         newAdminKey.ifPresent(n -> signers.add(spec -> spec.registry().getKey(n)));
         autoRenewAccount.ifPresent(a -> signers.add(spec -> spec.registry().getKey(a)));
         return signers;
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::updateToken;
     }
 
     @Override

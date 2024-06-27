@@ -16,6 +16,8 @@
 
 package com.hedera.services.cli.signedstate;
 
+import static java.util.Collections.emptySet;
+
 import com.hedera.services.cli.signedstate.DumpStateCommand.EmitSummary;
 import com.hedera.services.cli.signedstate.DumpStateCommand.Uniqify;
 import com.hedera.services.cli.signedstate.DumpStateCommand.WithIds;
@@ -206,16 +208,8 @@ public class DumpContractBytecodesSubcommand {
      */
     @NonNull
     Pair<Contracts, List<Integer>> getNonTrivialContracts() {
-        final var knownContracts = state.getContracts();
         final var zeroLengthContracts = new ArrayList<Integer>(10000);
-        knownContracts.contracts().removeIf(contract -> {
-            if (0 == contract.bytecode().length) {
-                zeroLengthContracts.addAll(contract.ids());
-                return true;
-            }
-            return false;
-        });
-        return Pair.of(knownContracts, zeroLengthContracts);
+        return Pair.of(new Contracts(emptySet(), emptySet(), 0), zeroLengthContracts);
     }
 
     /** Format a collection of pairs of a set of contract ids with their associated bytecode */

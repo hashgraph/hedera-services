@@ -17,14 +17,23 @@
 package com.hedera.services.bdd.junit.hedera;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 public interface HederaNode {
+    /**
+     * Gets the hostname of the node.
+     *
+     * @return the hostname of the node
+     */
+    String getHost();
+
     /**
      * Gets the port number of the gRPC service.
      *
@@ -51,25 +60,28 @@ public interface HederaNode {
     AccountID getAccountId();
 
     /**
-     * Gets the path to the node's record stream.
+     * Gets the path to a external file or directory used by the node.
      *
-     * @return the path to the node's record stream
+     * @param path the external path to get
+     * @return the requested external path
      */
-    Path getRecordStreamPath();
+    Path getExternalPath(@NonNull ExternalPath path);
 
     /**
      * Initializes the working directory for the node. Must be called before the node is started.
      *
      * @param configTxt the address book the node should start with
+     * @return this
      */
-    void initWorkingDir(String configTxt);
+    HederaNode initWorkingDir(String configTxt);
 
     /**
      * Starts the node software.
      *
      * @throws IllegalStateException if the working directory was not initialized
+     * @return this
      */
-    void start();
+    HederaNode start();
 
     /**
      * Stops the node software gracefully
@@ -85,20 +97,21 @@ public interface HederaNode {
      * Returns a future that resolves when the node has the given status.
      *
      * @param status the status to wait for
-     * @param timeout the maximum time to wait for the node to reach the status
+     * @param nodeStatusObserver if non-null, an observer that will receive the node's status each time it is checked
      * @return a future that resolves when the node has the given status
      */
-    CompletableFuture<Void> statusFuture(@NonNull PlatformStatus status, @NonNull Duration timeout);
+    CompletableFuture<Void> statusFuture(
+            @NonNull PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver);
 
     /**
      * Returns a future that resolves when the node has stopped.
      *
      * @return a future that resolves when the node has stopped
      */
-    CompletableFuture<Void> stopFuture(@NonNull Duration timeout);
+    CompletableFuture<Void> stopFuture();
 
     /**
-     * Returns the string that would identify this node as a target
+     * Returns the string that would summarize this node as a target
      * server in a {@link HapiSpec} that is submitting transactions
      * and sending queries via gRPC.
      *
@@ -109,7 +122,7 @@ public interface HederaNode {
      *
      * @return this node's HAPI spec identifier
      */
-    default String hapiSpecIdentifier() {
-        return "127.0.0.1:" + getPort() + ":0.0." + getAccountId().accountNumOrThrow();
+    default String hapiSpecInfo() {
+        return getHost() + ":" + getPort() + ":0.0." + getAccountId().accountNumOrThrow();
     }
 }

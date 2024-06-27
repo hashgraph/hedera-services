@@ -19,7 +19,7 @@ plugins {
 }
 
 dependencies {
-    api(enforcedPlatform("io.netty:netty-bom:4.1.87.Final"))
+    api(enforcedPlatform("io.netty:netty-bom:4.1.110.Final"))
 
     // Force commons compress version to close a security vulnerability
     api(javaModuleDependencies.gav("org.apache.commons.compress"))
@@ -80,14 +80,14 @@ dependencies.constraints {
     api("com.google.dagger:dagger-compiler:2.42") {
         because("dagger.compiler")
     }
-    api("io.grpc:grpc-netty:1.54.1") {
-        because("grpc.netty")
+    api("io.grpc:grpc-netty:1.64.0") {
+        because("io.grpc.netty")
     }
-    api("io.grpc:grpc-protobuf:1.54.1") {
-        because("grpc.protobuf")
+    api("io.grpc:grpc-protobuf:1.64.0") {
+        because("io.grpc.protobuf")
     }
-    api("io.grpc:grpc-stub:1.54.1") {
-        because("grpc.stub")
+    api("io.grpc:grpc-stub:1.64.0") {
+        because("io.grpc.stub")
     }
     api("com.esaulpaugh:headlong:6.1.1") {
         because("headlong")
@@ -98,16 +98,13 @@ dependencies.constraints {
     api("io.github.classgraph:classgraph:4.8.65") {
         because("io.github.classgraph")
     }
-    api("io.helidon.grpc:io.grpc:3.2.1") {
-        because("io.grpc")
-    }
-    api("io.netty:netty-handler:4.1.87.Final") {
+    api("io.netty:netty-handler:4.1.110.Final") {
         because("io.netty.handler")
     }
-    api("io.netty:netty-transport:4.1.87.Final") {
+    api("io.netty:netty-transport:4.1.110.Final") {
         because("io.netty.transport")
     }
-    api("io.netty:netty-transport-classes-epoll:4.1.87.Final") {
+    api("io.netty:netty-transport-classes-epoll:4.1.110.Final") {
         because("io.netty.transport.classes.epoll")
     }
     api("io.perfmark:perfmark-api:0.25.0") {
@@ -227,4 +224,10 @@ dependencies.constraints {
     api("uk.org.webcompere:system-stubs-jupiter:2.1.5") {
         because("uk.org.webcompere.systemstubs.jupiter")
     }
+}
+
+dependencies.constraints {
+    // required to merge 'javax.annotation-api' into 'com.google.code.findbugs:jsr305'
+    // to have all annotations on the classpath available at compile time
+    api("javax.annotation:javax.annotation-api:1.3.2")
 }

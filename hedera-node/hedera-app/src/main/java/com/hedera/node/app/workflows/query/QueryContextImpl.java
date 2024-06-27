@@ -25,12 +25,13 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.impl.BlockRecordInfoImpl;
+import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.QueryContext;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -118,9 +119,10 @@ public class QueryContextImpl implements QueryContext {
     public BlockRecordInfo blockRecordInfo() {
         if (blockRecordInfo == null) {
             final var states = state.getReadableStates(BlockRecordService.NAME);
-            final var blockInfoState = states.<BlockInfo>getSingleton(BlockRecordService.BLOCK_INFO_STATE_KEY)
+            final var blockInfoState = states.<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY)
                     .get();
-            final var runningHashState = states.<RunningHashes>getSingleton(BlockRecordService.RUNNING_HASHES_STATE_KEY)
+            final var runningHashState = states.<RunningHashes>getSingleton(
+                            V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY)
                     .get();
             if (blockInfoState == null) throw new NullPointerException("state cannot be null!");
             if (runningHashState == null) throw new NullPointerException("state cannot be null!");

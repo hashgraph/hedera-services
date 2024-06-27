@@ -19,7 +19,8 @@ package com.hedera.services.bdd.suites.fees;
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -27,7 +28,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -38,7 +44,6 @@ import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsL
 
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,12 +58,7 @@ public class CongestionPricingSuite {
     private static final Logger log = LogManager.getLogger(CongestionPricingSuite.class);
 
     private static final String FEES_PERCENT_CONGESTION_MULTIPLIERS = "fees.percentCongestionMultipliers";
-    private static final String ACTIVE_PROFILE_PROPERTY = "hedera.profiles.active";
-    private static final String defaultCongestionMultipliers =
-            HapiSpecSetup.getDefaultNodeProps().get(FEES_PERCENT_CONGESTION_MULTIPLIERS);
     private static final String FEES_MIN_CONGESTION_PERIOD = "fees.minCongestionPeriod";
-    private static final String defaultMinCongestionPeriod =
-            HapiSpecSetup.getDefaultNodeProps().get(FEES_MIN_CONGESTION_PERIOD);
     private static final String CIVILIAN_ACCOUNT = "civilian";
     private static final String SECOND_ACCOUNT = "second";
     private static final String FEE_MONITOR_ACCOUNT = "feeMonitor";
@@ -72,16 +72,21 @@ public class CongestionPricingSuite {
 
         AtomicLong normalPrice = new AtomicLong();
         AtomicLong sevenXPrice = new AtomicLong();
+        // Send enough gas with each transaction to keep the throttle over the
+        // 1% of 15M = 150_000 congestion limit
+        final var gasToOffer = 200_000L;
 
         return propertyPreservingHapiSpec("CanUpdateMultipliersDynamically")
-                .preserving(FEES_PERCENT_CONGESTION_MULTIPLIERS, FEES_MIN_CONGESTION_PERIOD)
+                .preserving("contracts.maxGasPerSec", FEES_PERCENT_CONGESTION_MULTIPLIERS, FEES_MIN_CONGESTION_PERIOD)
                 .given(
+                        overriding("contracts.maxGasPerSec", "15_000_000"),
                         cryptoCreate(CIVILIAN_ACCOUNT).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract),
                         contractCall(contract)
                                 .payingWith(CIVILIAN_ACCOUNT)
                                 .fee(ONE_HUNDRED_HBARS)
+                                .gas(gasToOffer)
                                 .sending(ONE_HBAR)
                                 .via("cheapCall"),
                         getTxnRecord("cheapCall")
@@ -106,6 +111,7 @@ public class CongestionPricingSuite {
                                     uncheckedSubmit(contractCall(contract)
                                                     .signedBy(CIVILIAN_ACCOUNT)
                                                     .fee(ONE_HUNDRED_HBARS)
+                                                    .gas(gasToOffer)
                                                     .sending(ONE_HBAR)
                                                     .txnId("uncheckedTxn" + i))
                                             .payingWith(GENESIS),
@@ -116,6 +122,7 @@ public class CongestionPricingSuite {
                         contractCall(contract)
                                 .payingWith(CIVILIAN_ACCOUNT)
                                 .fee(ONE_HUNDRED_HBARS)
+                                .gas(gasToOffer)
                                 .sending(ONE_HBAR)
                                 .via("pricyCall"))
                 .then(
@@ -157,10 +164,10 @@ public class CongestionPricingSuite {
                         cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(CIVILIAN_ACCOUNT, SECOND_ACCOUNT, 5L))
                                 .payingWith(FEE_MONITOR_ACCOUNT)
                                 .via("cheapCall"),
-                        getAccountInfo(FEE_MONITOR_ACCOUNT)
-                                .exposingBalance(balance -> {
-                                    log.info("Normal fee is {}", ONE_MILLION_HBARS - balance);
-                                    normalPrice.set(ONE_MILLION_HBARS - balance);
+                        getTxnRecord("cheapCall")
+                                .providingFeeTo(normalFee -> {
+                                    log.info("Normal fee is {}", normalFee);
+                                    normalPrice.set(normalFee);
                                 })
                                 .logged())
                 .when(
@@ -180,7 +187,7 @@ public class CongestionPricingSuite {
                                                             CIVILIAN_ACCOUNT, SECOND_ACCOUNT, 5L))
                                                     .txnId("uncheckedTxn" + i))
                                             .payingWith(GENESIS),
-                                    sleepFor(125)
+                                    sleepFor(125L * Math.min(1, 19 - i))
                                 })
                                 .flatMap(Arrays::stream)
                                 .toArray(HapiSpecOperation[]::new)),
@@ -189,12 +196,10 @@ public class CongestionPricingSuite {
                                 .fee(ONE_HUNDRED_HBARS)
                                 .via("pricyCall"))
                 .then(
-                        getAccountInfo(FEE_MONITOR_ACCOUNT)
-                                .exposingBalance(balance -> {
-                                    log.info("Congestion fee is {}", ONE_MILLION_HBARS - normalPrice.get() - balance);
-                                    sevenXPrice.set(ONE_MILLION_HBARS - normalPrice.get() - balance);
-                                })
-                                .logged(),
+                        getTxnRecord("pricyCall").payingWith(GENESIS).providingFeeTo(congestionFee -> {
+                            log.info("Congestion fee is {}", congestionFee);
+                            sevenXPrice.set(congestionFee);
+                        }),
 
                         /* Make sure the multiplier is reset before the next spec runs */
                         fileUpdate(THROTTLE_DEFS)

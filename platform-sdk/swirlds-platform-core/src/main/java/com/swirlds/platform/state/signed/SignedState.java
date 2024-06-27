@@ -34,7 +34,7 @@ import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.common.utility.Threshold;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.SignatureVerifier;
-import com.swirlds.platform.state.State;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
 import com.swirlds.platform.system.SwirldState;
@@ -99,7 +99,7 @@ public class SignedState implements SignedStateInfo {
     /**
      * The root of the merkle state.
      */
-    private final State state;
+    private final MerkleRoot state;
 
     /**
      * The timestamp of when this object was created.
@@ -157,6 +157,11 @@ public class SignedState implements SignedStateInfo {
     private final boolean deleteOnBackgroundThread;
 
     /**
+     * True if this round reached consensus during the replaying of the preconsensus event stream.
+     */
+    private final boolean pcesRound;
+
+    /**
      * Instantiate a signed state.
      *
      * @param platformContext          the platform context
@@ -170,14 +175,17 @@ public class SignedState implements SignedStateInfo {
      * @param deleteOnBackgroundThread if true, delete this state on the background thread, otherwise delete on the
      *                                 thread that removes the last reference count. Should only be set to true for
      *                                 states that have been sent to the state garbage collector.
+     * @param pcesRound                true if this round reached consensus during the replaying of the preconsensus
+     *                                 event stream
      */
     public SignedState(
             @NonNull final PlatformContext platformContext,
             @NonNull final SignatureVerifier signatureVerifier,
-            @NonNull final State state,
+            @NonNull final MerkleRoot state,
             @NonNull final String reason,
             final boolean freezeState,
-            final boolean deleteOnBackgroundThread) {
+            final boolean deleteOnBackgroundThread,
+            final boolean pcesRound) {
 
         state.reserve();
 
@@ -197,6 +205,7 @@ public class SignedState implements SignedStateInfo {
 
         this.freezeState = freezeState;
         this.deleteOnBackgroundThread = deleteOnBackgroundThread;
+        this.pcesRound = pcesRound;
     }
 
     /**
@@ -259,7 +268,7 @@ public class SignedState implements SignedStateInfo {
      *
      * @return the state contained in the signed state
      */
-    public @NonNull State getState() {
+    public @NonNull MerkleRoot getState() {
         return state;
     }
 
@@ -268,6 +277,15 @@ public class SignedState implements SignedStateInfo {
      */
     public boolean isFreezeState() {
         return freezeState;
+    }
+
+    /**
+     * Returns true if ths round reached consensus during the replaying of the preconsensus event stream.
+     *
+     * @return true if this round reached consensus during the replaying of the preconsensus event stream
+     */
+    public boolean isPcesRound() {
+        return pcesRound;
     }
 
     /**
