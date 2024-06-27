@@ -31,7 +31,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.estimatedFee;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.helpers.DispatchValidator.WorkflowCheck.INGEST;
+import static com.hedera.node.app.workflows.handle.dispatch.DispatchValidator.WorkflowCheck.INGEST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -80,6 +80,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -102,6 +103,8 @@ class IngestCheckerTest extends AppTestBase {
             SignatureMap.newBuilder().build();
 
     private static final Fees DEFAULT_FEES = new Fees(100L, 20L, 3L);
+
+    private final InstantSource instantSource = InstantSource.system();
 
     @Mock(strictness = LENIENT)
     CurrentPlatformStatus currentPlatformStatus;
@@ -167,7 +170,7 @@ class IngestCheckerTest extends AppTestBase {
         when(transactionChecker.check(tx)).thenReturn(transactionInfo);
 
         final var configProvider = HederaTestConfigBuilder.createConfigProvider();
-        this.deduplicationCache = new DeduplicationCacheImpl(configProvider);
+        this.deduplicationCache = new DeduplicationCacheImpl(configProvider, instantSource);
 
         when(solvencyPreCheck.getPayerAccount(any(), eq(ALICE.accountID()))).thenReturn(ALICE.account());
         when(dispatcher.dispatchComputeFees(any())).thenReturn(DEFAULT_FEES);
@@ -183,7 +186,8 @@ class IngestCheckerTest extends AppTestBase {
                 dispatcher,
                 feeManager,
                 authorizer,
-                synchronizedThrottleAccumulator);
+                synchronizedThrottleAccumulator,
+                instantSource);
     }
 
     @Nested
@@ -232,7 +236,8 @@ class IngestCheckerTest extends AppTestBase {
                 dispatcher,
                 feeManager,
                 authorizer,
-                synchronizedThrottleAccumulator);
+                synchronizedThrottleAccumulator,
+                instantSource);
 
         // Then the checker should throw a PreCheckException
         assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))

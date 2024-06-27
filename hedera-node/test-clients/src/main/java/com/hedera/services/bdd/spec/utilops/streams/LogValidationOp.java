@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.spec.utilops.streams;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
-import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.doIfNotInterrupted;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.doIfNotInterrupted;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;

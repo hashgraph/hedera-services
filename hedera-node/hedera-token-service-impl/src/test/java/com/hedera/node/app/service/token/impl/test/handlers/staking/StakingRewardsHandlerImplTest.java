@@ -47,6 +47,7 @@ import com.hedera.node.config.ConfigProvider;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -69,6 +70,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     @Mock
     private CryptoDeleteRecordBuilder recordBuilder;
 
+    private final InstantSource instantSource = InstantSource.system();
+
     private StakingRewardsHandlerImpl subject;
     private StakePeriodManager stakePeriodManager;
     private StakingRewardsDistributor rewardsPayer;
@@ -77,7 +80,6 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
     private StakingRewardsHelper stakingRewardHelper;
     protected final EntityNumber node0Id = EntityNumber.newBuilder().number(0L).build();
     protected final EntityNumber node1Id = EntityNumber.newBuilder().number(1L).build();
-    private final long stakingRewardAccountNum = 800L;
 
     @BeforeEach
     public void setUp() {
@@ -90,8 +92,8 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
         givenStoresAndConfig(context);
 
         stakingRewardHelper = new StakingRewardsHelper();
-        stakePeriodManager = new StakePeriodManager(configProvider);
-        stakeRewardCalculator = new StakeRewardCalculatorImpl(stakePeriodManager);
+        stakePeriodManager = new StakePeriodManager(configProvider, instantSource);
+        stakeRewardCalculator = new StakeRewardCalculatorImpl(stakePeriodManager, instantSource);
         rewardsPayer = new StakingRewardsDistributor(stakingRewardHelper, stakeRewardCalculator);
         stakeInfoHelper = new StakeInfoHelper();
         subject = new StakingRewardsHandlerImpl(rewardsPayer, stakePeriodManager, stakeInfoHelper);

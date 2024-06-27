@@ -342,7 +342,7 @@ public abstract class HapiSpecOperation implements SpecOperation {
         setKeyControlOverrides(spec);
         List<Key> keys = signersToUseFor(spec);
 
-        final Transaction.Builder builder = spec.txns().getReadyToSign(netDef, spec, bodyMutation);
+        final Transaction.Builder builder = spec.txns().getReadyToSign(netDef, bodyMutation, spec);
         final Transaction provisional = getSigned(spec, builder, keys);
         if (fee.isPresent()) {
             txn = provisional;
@@ -352,7 +352,7 @@ public abstract class HapiSpecOperation implements SpecOperation {
             final int numPayerKeys = hardcodedNumPayerKeys.orElse(spec.keys().controlledKeyCount(payerKey, overrides));
             final long customFee = feeFor(spec, provisional, numPayerKeys);
             netDef = netDef.andThen(b -> b.setTransactionFee(customFee));
-            txn = getSigned(spec, spec.txns().getReadyToSign(netDef, spec, bodyMutation), keys);
+            txn = getSigned(spec, spec.txns().getReadyToSign(netDef, bodyMutation, spec), keys);
         }
 
         return finalizedTxnFromTxnWithBodyBytesAndSigMap(txn);
