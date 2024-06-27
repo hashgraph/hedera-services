@@ -590,6 +590,15 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
+    /**
+     * This method is used to set the payer for the operation, without adding the payer's key.
+     */
+    public T payingWithNoSig(@NonNull final String name) {
+        requireNonNull(name);
+        payer = Optional.of(name);
+        return self();
+    }
+
     public T payingWithAliased(String name) {
         payingWithAlias = true;
         payer = Optional.of(name);

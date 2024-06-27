@@ -16,8 +16,8 @@
 
 package com.swirlds.platform.components.transaction.system;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -32,4 +32,4 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * @param <T>             the type of transaction
  */
 public record ScopedSystemTransaction<T>(
-        @NonNull NodeId submitterId, @Nullable SoftwareVersion softwareVersion, @NonNull T transaction) {}
+        @NonNull NodeId submitterId, @Nullable SemanticVersion softwareVersion, @NonNull T transaction) {}

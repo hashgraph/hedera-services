@@ -27,6 +27,7 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -62,10 +63,10 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.HapiUtils;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -101,7 +102,7 @@ public class HandleWorkflow {
     private final CacheWarmer cacheWarmer;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
-    private final SoftwareVersion version;
+    private final SemanticVersion version;
     private final InitTrigger initTrigger;
     private final HollowAccountCompletions hollowAccountCompletions;
     private final GenesisSetup genesisSetup;
@@ -126,7 +127,7 @@ public class HandleWorkflow {
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final SoftwareVersion version,
+            @NonNull final SemanticVersion version,
             @NonNull final InitTrigger initTrigger,
             @NonNull final HollowAccountCompletions hollowAccountCompletions,
             @NonNull final GenesisSetup genesisSetup,
@@ -357,7 +358,9 @@ public class HandleWorkflow {
      */
     private boolean isOlderSoftwareEvent(@NonNull final UserTxn userTxn) {
         return this.initTrigger != EVENT_STREAM_RECOVERY
-                && version.compareTo(userTxn.event().getSoftwareVersion()) > 0;
+                && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(
+                                version, userTxn.event().getSoftwareVersion())
+                        > 0;
     }
 
     /**
