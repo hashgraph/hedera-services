@@ -119,8 +119,8 @@ import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreat
 import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.existingSystemAccounts;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
 import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -2203,14 +2203,14 @@ public class CryptoTransferSuite {
                     .hasKnownStatus(SUCCESS);
 
             opsArray[existingSystemAccounts.size() + i] = contractCall(
-                    contract, "sendViaSend", mirrorAddrWith(existingSystemAccounts.get(i)))
+                            contract, "sendViaSend", mirrorAddrWith(existingSystemAccounts.get(i)))
                     .payingWith(SENDER)
                     .sending(ONE_HBAR * 10)
                     .gas(100000)
                     .hasKnownStatus(SUCCESS);
 
             opsArray[existingSystemAccounts.size() * 2 + i] = contractCall(
-                    contract, "sendViaCall", mirrorAddrWith(existingSystemAccounts.get(i)))
+                            contract, "sendViaCall", mirrorAddrWith(existingSystemAccounts.get(i)))
                     .payingWith(SENDER)
                     .sending(ONE_HBAR * 10)
                     .gas(100000)
