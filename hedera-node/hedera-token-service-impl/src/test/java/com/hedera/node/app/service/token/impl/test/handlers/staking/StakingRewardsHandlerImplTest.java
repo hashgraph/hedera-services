@@ -93,7 +93,7 @@ class StakingRewardsHandlerImplTest extends CryptoTokenHandlerTestBase {
 
         stakingRewardHelper = new StakingRewardsHelper();
         stakePeriodManager = new StakePeriodManager(configProvider, instantSource);
-        stakeRewardCalculator = new StakeRewardCalculatorImpl(stakePeriodManager);
+        stakeRewardCalculator = new StakeRewardCalculatorImpl(stakePeriodManager, instantSource);
         rewardsPayer = new StakingRewardsDistributor(stakingRewardHelper, stakeRewardCalculator);
         stakeInfoHelper = new StakeInfoHelper();
         subject = new StakingRewardsHandlerImpl(rewardsPayer, stakePeriodManager, stakeInfoHelper);

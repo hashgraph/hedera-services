@@ -25,6 +25,8 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.time.InstantSource;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -38,14 +40,17 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
     private static final Logger logger = LogManager.getLogger(StakeRewardCalculatorImpl.class);
 
     private final StakePeriodManager stakePeriodManager;
+    private final InstantSource instantSource;
 
     /**
      * Default constructor for injection.
      * @param stakePeriodManager the stake period manager
      */
     @Inject
-    public StakeRewardCalculatorImpl(@NonNull final StakePeriodManager stakePeriodManager) {
+    public StakeRewardCalculatorImpl(
+            @NonNull final StakePeriodManager stakePeriodManager, @NonNull final InstantSource instantSource) {
         this.stakePeriodManager = stakePeriodManager;
+        this.instantSource = Objects.requireNonNull(instantSource);
     }
 
     /** {@inheritDoc} */
