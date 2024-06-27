@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.extensions.ExtensionUtils.hapiTestMe
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  */
 public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachCallback {
     public static final AtomicReference<HederaNetwork> SHARED_NETWORK = new AtomicReference<>();
+    public static final AtomicReference<RepeatableKeyGenerator> REPEATABLE_KEY_GENERATOR = new AtomicReference<>();
 
     @Override
     public void beforeEach(@NonNull final ExtensionContext extensionContext) {

@@ -68,8 +68,7 @@ public interface HederaNetwork {
             @NonNull AccountID nodeAccountId);
 
     /**
-     * Returns the network type; for now this is always
-     * {@link TargetNetworkType#SHARED_HAPI_TEST_NETWORK}.
+     * Returns the network type.
      *
      * @return the network type
      */

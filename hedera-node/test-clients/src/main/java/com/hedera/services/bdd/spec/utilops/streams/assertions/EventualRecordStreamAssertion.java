@@ -37,12 +37,11 @@ import org.junit.jupiter.api.Assertions;
  *
  * <p><b>Important:</b> {@code HapiSpec#exec()} recognizes {@link EventualRecordStreamAssertion}
  * operations as a special case, in two ways.
- *
  * <ol>
  *   <li>If a spec includes at least one {@link EventualRecordStreamAssertion}, and all other
  *       operations have passed, it starts running "background traffic" to ensure record stream
  *       files are being written.
- *   <li>For each {@link EventualRecordStreamAssertion}, the spec then calls ts {@link
+ *   <li>For each {@link EventualRecordStreamAssertion}, the spec then calls its {@link
  *       #assertHasPassed()}, method which blocks until the assertion has either passed or timed
  *       out. (The default timeout is 3 seconds, since generally we expect the assertion to apply to
  *       the contents of a single record stream file, which are created every 2 seconds given steady
@@ -50,13 +49,20 @@ import org.junit.jupiter.api.Assertions;
  * </ol>
  */
 public class EventualRecordStreamAssertion extends EventualAssertion {
-    private static final String HAPI_TEST_STREAMS_LOC_TEST_NETWORK = "build/hapi-test/node0";
-    private static final String TEST_CONTAINER_NODE0_STREAMS = "build/network/itest/records/node_0";
+    /**
+     * The factory for the assertion to be tested.
+     */
     private final Function<HapiSpec, RecordStreamAssertion> assertionFactory;
 
+    /**
+     * Once this op is submitted, the assertion to be tested.
+     */
     @Nullable
     private RecordStreamAssertion assertion;
-
+    /**
+     * Once this op is submitted, the function to unsubscribe from the record stream.
+     */
+    @Nullable
     private Runnable unsubscribe;
 
     public EventualRecordStreamAssertion(final Function<HapiSpec, RecordStreamAssertion> assertionFactory) {
@@ -74,19 +80,20 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
         return new EventualRecordStreamAssertion(assertionFactory, true);
     }
 
+    /**
+     * Returns the record stream location for the first listed node in the network targeted
+     * by the given spec.
+     *
+     * @param spec the spec
+     * @return a record stream location for the first listed node in the network
+     */
     public static String recordStreamLocFor(@NonNull final HapiSpec spec) {
         Objects.requireNonNull(spec);
-        return switch (spec.targetNetworkType()) {
-            case REMOTE_NETWORK -> throw new IllegalArgumentException("Remote networks do not have accessible streams");
-            case SHARED_HAPI_TEST_NETWORK -> HAPI_TEST_STREAMS_LOC_TEST_NETWORK;
-            case CI_DOCKER_NETWORK -> TEST_CONTAINER_NODE0_STREAMS;
-            case STANDALONE_MONO_NETWORK -> spec.setup().defaultRecordLoc();
-            case EMBEDDED_NETWORK -> spec.targetNetworkOrThrow()
-                    .nodes()
-                    .getFirst()
-                    .getExternalPath(STREAMS_DIR)
-                    .toString();
-        };
+        return spec.targetNetworkOrThrow()
+                .nodes()
+                .getFirst()
+                .getExternalPath(STREAMS_DIR)
+                .toString();
     }
 
     @Override

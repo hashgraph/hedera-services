@@ -26,8 +26,6 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 public class RandomFileDeletion implements OpProvider {
@@ -56,10 +54,5 @@ public class RandomFileDeletion implements OpProvider {
                 .hasKnownStatusFrom(permissibleOutcomes);
 
         return Optional.of(op);
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return Collections.emptyList();
     }
 }

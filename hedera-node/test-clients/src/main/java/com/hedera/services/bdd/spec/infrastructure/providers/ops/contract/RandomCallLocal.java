@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.contract;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
-import static java.util.Collections.EMPTY_LIST;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
@@ -26,7 +25,6 @@ import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLo
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
 import java.util.Optional;
 
 public class RandomCallLocal implements OpProvider {
@@ -40,11 +38,6 @@ public class RandomCallLocal implements OpProvider {
             EntityNameProvider<ActionableContractCallLocal> localCalls, ResponseCodeEnum[] customOutcomes) {
         this.localCalls = localCalls;
         this.customOutcomes = customOutcomes;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return EMPTY_LIST;
     }
 
     @Override
