@@ -57,7 +57,7 @@ In the given example we would have 2 metric instances: one for `GET` and one for
 - Metric 1: `api_http_requests_total{method="GET"}`
 - Metric 2: `api_http_requests_total{method="POST"}`
 
-While today the name of a metric is the unique identifier of a metric the name and the labels are the unique identifier of a metric when using labels.
+While today the name of a metric is the unique identifier of a metric, the unique identifier will become the name and the labels once labels are added.
 By doing so both metrics can use the same name but are still unique as long as the labels are different.
 We will store measurements individually for each metric.
 If you later want to know the combined measurement of all metrics with the name `api_http_requests_total` you can use the prometheus query language to sum up the values of all metrics with that name.
