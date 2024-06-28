@@ -33,7 +33,7 @@ import com.swirlds.platform.event.creation.rules.MaximumRateRule;
 import com.swirlds.platform.event.creation.rules.PlatformHealthRule;
 import com.swirlds.platform.event.creation.rules.PlatformStatusRule;
 import com.swirlds.platform.pool.TransactionPoolNexus;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -116,7 +116,7 @@ public class DefaultEventCreationManager implements EventCreationManager {
      */
     @Override
     @Nullable
-    public BaseEventHashedData maybeCreateEvent() {
+    public UnsignedEvent maybeCreateEvent() {
         if (!eventCreationRules.isEventCreationPermitted()) {
             phase.activatePhase(eventCreationRules.getEventCreationStatus());
             return null;
@@ -124,7 +124,7 @@ public class DefaultEventCreationManager implements EventCreationManager {
 
         phase.activatePhase(ATTEMPTING_CREATION);
 
-        final BaseEventHashedData newEvent = creator.maybeCreateEvent();
+        final UnsignedEvent newEvent = creator.maybeCreateEvent();
         if (newEvent == null) {
             // The only reason why the event creator may choose not to create an event
             // is if there are no eligible parents.

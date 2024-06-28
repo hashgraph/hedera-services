@@ -16,34 +16,34 @@
 
 package com.swirlds.platform.system.events;
 
-import static com.swirlds.common.io.streams.SerializableDataOutputStream.getSerializedLength;
-
+import com.hedera.hapi.platform.event.EventCore;
+import com.hedera.hapi.platform.event.EventPayload;
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.crypto.AbstractSerializableHashable;
+import com.swirlds.common.AbstractHashable;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -53,9 +53,14 @@ import java.util.stream.Stream;
  * hashgraph and before its consensus can be determined. Some of this data is used to create a hash of an event and some
  * data is additional and does not affect the hash.
  */
-public class BaseEventHashedData extends AbstractSerializableHashable implements SelfSerializable {
+public class UnsignedEvent extends AbstractHashable {
     public static final int TO_STRING_BYTE_ARRAY_LENGTH = 5;
     private static final long CLASS_ID = 0x21c2620e9b6a2243L;
+
+    private static final long APPLICATION_TRANSACTION_CLASS_ID = 0x9ff79186f4c4db97L;
+    private static final int APPLICATION_TRANSACTION_VERSION = 1;
+    private static final long STATE_SIGNATURE_CLASS_ID = 0xaf7024c653caabf4L;
+    private static final int STATE_SIGNATURE_VERSION = 3;
 
     public static class ClassVersion {
         /**
@@ -67,47 +72,48 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
         public static final int BIRTH_ROUND = 4;
     }
 
-    ///////////////////////////////////////
-    // immutable, sent during normal syncs, affects the hash that is signed:
-    ///////////////////////////////////////
-
     /**
      * the software version of the node that created this event.
      */
-    private SoftwareVersion softwareVersion;
+    private final SoftwareVersion softwareVersion;
 
     /**
      * ID of this event's creator (translate before sending)
      */
-    private NodeId creatorId;
-
-    /**
-     * the round number in which this event was created, used to look up the effective roster at that time.
-     */
-    private long birthRound;
+    private final NodeId creatorId;
 
     /**
      * the self parent event descriptor
      */
-    private EventDescriptor selfParent;
+    private final EventDescriptor selfParent;
 
     /**
      * the other parents' event descriptors
      */
-    private List<EventDescriptor> otherParents;
+    private final List<EventDescriptor> otherParents;
 
     /** a combined list of all parents, selfParent + otherParents */
-    private List<EventDescriptor> allParents;
+    private final List<EventDescriptor> allParents;
 
     /**
      * creation time, as claimed by its creator
      */
-    private Instant timeCreated;
+    private final Instant timeCreated;
 
     /**
      * the payload: an array of transactions
      */
-    private ConsensusTransactionImpl[] transactions;
+    private final ConsensusTransactionImpl[] transactions;
+
+    /**
+     * The core event data.
+     */
+    private final EventCore eventCore;
+
+    /**
+     * The payloads of the event.
+     */
+    private final List<EventPayload> payloads;
 
     /**
      * The event descriptor for this event. Is not itself hashed.
@@ -115,15 +121,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
     private EventDescriptor descriptor;
 
     /**
-     * Class IDs of permitted transaction types.
-     */
-    private static final Set<Long> TRANSACTION_TYPES =
-            Set.of(StateSignatureTransaction.CLASS_ID, SwirldTransaction.CLASS_ID);
-
-    public BaseEventHashedData() {}
-
-    /**
-     * Create a BaseEventHashedData object
+     * Create a UnsignedEvent object
      *
      * @param softwareVersion the software version of the node that created this event.
      * @param creatorId       ID of this event's creator
@@ -133,8 +131,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
      * @param timeCreated     creation time, as claimed by its creator
      * @param transactions    the payload: an array of transactions included in this event instance
      */
-    public BaseEventHashedData(
-            @NonNull SoftwareVersion softwareVersion,
+    public UnsignedEvent(
+            @NonNull final SoftwareVersion softwareVersion,
             @NonNull final NodeId creatorId,
             @Nullable final EventDescriptor selfParent,
             @NonNull final List<EventDescriptor> otherParents,
@@ -149,8 +147,18 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
         otherParents.forEach(Objects::requireNonNull);
         this.otherParents = otherParents;
         this.allParents = createAllParentsList();
-        this.birthRound = birthRound;
         this.timeCreated = Objects.requireNonNull(timeCreated, "The timeCreated must not be null");
+
+        this.payloads = transactions.stream().map(EventPayload::new).toList();
+        this.eventCore = new EventCore(
+                creatorId.id(),
+                birthRound,
+                HapiUtils.asTimestamp(timeCreated),
+                this.allParents.stream()
+                        .map(ed -> new com.hedera.hapi.platform.event.EventDescriptor(
+                                ed.getHash().getBytes(), ed.getCreator().id(), ed.getGeneration(), ed.getBirthRound()))
+                        .toList(),
+                softwareVersion.getPbjSemanticVersion());
         this.transactions = transactions.stream()
                 .map(t -> switch (t.kind()) {
                     case STATE_SIGNATURE_PAYLOAD -> new StateSignatureTransaction(t.as());
@@ -161,53 +169,160 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
                 .toArray(new ConsensusTransactionImpl[0]);
     }
 
-    @Override
-    public int getMinimumSupportedVersion() {
-        return ClassVersion.BIRTH_ROUND;
+    /**
+     * Serialize the event for the purpose of creating a hash.
+     * Since events are being migrated to protobuf, calculating the hash of an event will change.
+     *
+     * @param out the stream to which this object is to be written
+     * @throws IOException if unsupported payload types are encountered
+     */
+    public void serializeLegacyHashBytes(@NonNull final SerializableDataOutputStream out) throws IOException {
+        out.writeLong(CLASS_ID);
+        serialize(out);
     }
 
-    @Override
-    public void serialize(final SerializableDataOutputStream out) throws IOException {
+    /**
+     * Serialize the event
+     *
+     * @param out the stream to which this object is to be written
+     *
+     * @throws IOException if unsupported payload types are encountered
+     */
+    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
+        out.writeInt(ClassVersion.BIRTH_ROUND);
         out.writeSerializable(softwareVersion, true);
-        out.writeSerializable(creatorId, false);
+        out.writeInt(NodeId.ClassVersion.ORIGINAL);
+        out.writeLong(eventCore.creatorNodeId());
         out.writeSerializable(selfParent, false);
         out.writeSerializableList(otherParents, false, true);
-        out.writeLong(birthRound);
-        out.writeInstant(timeCreated);
+        out.writeLong(eventCore.birthRound());
+        out.writeInstant(HapiUtils.asInstant(eventCore.timeCreated()));
 
         // write serialized length of transaction array first, so during the deserialization proces
         // it is possible to skip transaction array and move on to the next object
-        out.writeInt(getSerializedLength(transactions, true, false));
+        out.writeInt(PayloadUtils.getLegacyObjectSize(payloads));
         // transactions may include both system transactions and application transactions
         // so writeClassId set to true and allSameClass set to false
-        out.writeSerializableArray(transactions, true, false);
+        out.writeInt(payloads.size());
+        if (!payloads.isEmpty()) {
+            final boolean allSameClass = false;
+            out.writeBoolean(allSameClass);
+        }
+        for (final EventPayload payload : payloads) {
+            switch (payload.payload().kind()) {
+                case APPLICATION_PAYLOAD:
+                    serializeApplicationPayload(out, payload);
+                    break;
+                case STATE_SIGNATURE_PAYLOAD:
+                    serializeStateSignaturePayload(out, payload);
+                    break;
+                default:
+                    throw new IOException(
+                            "Unknown payload type: " + payload.payload().kind());
+            }
+        }
     }
 
-    @Override
-    public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
-        final TransactionConfig transactionConfig = ConfigurationHolder.getConfigData(TransactionConfig.class);
-        deserialize(in, version, transactionConfig.maxTransactionCountPerEvent());
+    private static void serializeApplicationPayload(
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventPayload payload) throws IOException {
+        out.writeLong(APPLICATION_TRANSACTION_CLASS_ID);
+        out.writeInt(APPLICATION_TRANSACTION_VERSION);
+        final Bytes bytes = payload.payload().as();
+        out.writeInt((int) bytes.length());
+        bytes.writeTo(out);
     }
 
-    private void deserialize(
-            @NonNull final SerializableDataInputStream in, final int version, final int maxTransactionCount)
-            throws IOException {
+    private static void serializeStateSignaturePayload(
+            @NonNull final SerializableDataOutputStream out, @NonNull final EventPayload payload) throws IOException {
+        final StateSignaturePayload stateSignaturePayload = payload.payload().as();
+
+        out.writeLong(STATE_SIGNATURE_CLASS_ID);
+        out.writeInt(STATE_SIGNATURE_VERSION);
+        out.writeInt((int) stateSignaturePayload.signature().length());
+        stateSignaturePayload.signature().writeTo(out);
+
+        out.writeInt((int) stateSignaturePayload.hash().length());
+        stateSignaturePayload.hash().writeTo(out);
+
+        out.writeLong(stateSignaturePayload.round());
+        out.writeInt(Integer.MIN_VALUE); // epochHash is always null
+    }
+
+    /**
+     * Deserialize the event.
+     *
+     * @param in the stream from which this object is to be read
+     * @return the deserialized event
+     * @throws IOException if unsupported payload types are encountered
+     */
+    public static UnsignedEvent deserialize(@NonNull final SerializableDataInputStream in) throws IOException {
+        final int version = in.readInt();
+        if (version != ClassVersion.BIRTH_ROUND) {
+            throw new IOException("Unsupported version: " + version);
+        }
+
         Objects.requireNonNull(in, "The input stream must not be null");
-        softwareVersion = in.readSerializable(StaticSoftwareVersion.getSoftwareVersionClassIdSet());
+        final SoftwareVersion softwareVersion =
+                in.readSerializable(StaticSoftwareVersion.getSoftwareVersionClassIdSet());
 
-        creatorId = in.readSerializable(false, NodeId::new);
+        final NodeId creatorId = in.readSerializable(false, NodeId::new);
         if (creatorId == null) {
             throw new IOException("creatorId is null");
         }
-        selfParent = in.readSerializable(false, EventDescriptor::new);
-        otherParents = in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
-        allParents = createAllParentsList();
-        birthRound = in.readLong();
+        final EventDescriptor selfParent = in.readSerializable(false, EventDescriptor::new);
+        final List<EventDescriptor> otherParents =
+                in.readSerializableList(AddressBook.MAX_ADDRESSES, false, EventDescriptor::new);
+        final long birthRound = in.readLong();
 
-        timeCreated = in.readInstant();
+        final Instant timeCreated = in.readInstant();
         in.readInt(); // read serialized length
-        transactions =
-                in.readSerializableArray(ConsensusTransactionImpl[]::new, maxTransactionCount, true, TRANSACTION_TYPES);
+        final List<OneOf<PayloadOneOfType>> transactionList = new ArrayList<>();
+        final int payloadSize = in.readInt();
+        if (payloadSize > 0) {
+            in.readBoolean(); // allSameClass
+        }
+        for (int i = 0; i < payloadSize; i++) {
+            final long classId = in.readLong();
+            final int classVersion = in.readInt();
+            if (classId == APPLICATION_TRANSACTION_CLASS_ID) {
+                transactionList.add(new OneOf<>(
+                        PayloadOneOfType.APPLICATION_PAYLOAD, deserializeApplicationPayload(in, classVersion)));
+            } else if (classId == STATE_SIGNATURE_CLASS_ID) {
+                transactionList.add(new OneOf<>(
+                        PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, deserializeStateSignaturePayload(in, classVersion)));
+            } else {
+                throw new IOException("Unknown classId: " + classId);
+            }
+        }
+
+        return new UnsignedEvent(
+                softwareVersion, creatorId, selfParent, otherParents, birthRound, timeCreated, transactionList);
+    }
+
+    @Nullable
+    private static Bytes deserializeApplicationPayload(
+            @NonNull final SerializableDataInputStream in, final int classVersion) throws IOException {
+        if (classVersion != APPLICATION_TRANSACTION_VERSION) {
+            throw new IOException("Unsupported application class version: " + classVersion);
+        }
+        final byte[] bytes = in.readByteArray(1000000);
+
+        if (bytes != null) {
+            return Bytes.wrap(bytes);
+        }
+        return null;
+    }
+
+    private static StateSignaturePayload deserializeStateSignaturePayload(
+            SerializableDataInputStream in, int classVersion) throws IOException {
+        if (classVersion != STATE_SIGNATURE_VERSION) {
+            throw new IOException("Unsupported state signature class version: " + classVersion);
+        }
+        final byte[] sigBytes = in.readByteArray(1000000);
+        final byte[] hashBytes = in.readByteArray(1000000);
+        final long round = in.readLong();
+        in.readInt(); // epochHash is always null
+        return new StateSignaturePayload(round, Bytes.wrap(sigBytes), Bytes.wrap(hashBytes));
     }
 
     @Override
@@ -220,12 +335,12 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
             return false;
         }
 
-        final BaseEventHashedData that = (BaseEventHashedData) o;
+        final UnsignedEvent that = (UnsignedEvent) o;
 
         return (Objects.equals(creatorId, that.creatorId))
                 && Objects.equals(selfParent, that.selfParent)
                 && Objects.equals(otherParents, that.otherParents)
-                && birthRound == that.birthRound
+                && eventCore.birthRound() == that.eventCore.birthRound()
                 && Objects.equals(timeCreated, that.timeCreated)
                 && Arrays.equals(transactions, that.transactions)
                 && (softwareVersion.compareTo(that.softwareVersion) == 0);
@@ -233,7 +348,8 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(softwareVersion, creatorId, selfParent, otherParents, birthRound, timeCreated);
+        int result =
+                Objects.hash(softwareVersion, creatorId, selfParent, otherParents, eventCore.birthRound(), timeCreated);
         result = 31 * result + Arrays.hashCode(transactions);
         return result;
     }
@@ -245,21 +361,11 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
                 .append("creatorId", creatorId)
                 .append("selfParent", selfParent)
                 .append("otherParents", otherParents)
-                .append("birthRound", birthRound)
+                .append("birthRound", eventCore.birthRound())
                 .append("timeCreated", timeCreated)
                 .append("transactions size", transactions == null ? "null" : transactions.length)
                 .append("hash", getHash() == null ? "null" : getHash().toHex(TO_STRING_BYTE_ARRAY_LENGTH))
                 .toString();
-    }
-
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    @Override
-    public int getVersion() {
-        return ClassVersion.BIRTH_ROUND;
     }
 
     /**
@@ -267,7 +373,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
      *
      * @return the software version of the node that created this event
      */
-    @Nullable
+    @NonNull
     public SoftwareVersion getSoftwareVersion() {
         return softwareVersion;
     }
@@ -288,7 +394,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
      * @return the birth round of the event
      */
     public long getBirthRound() {
-        return birthRound;
+        return eventCore.birthRound();
     }
 
     /**
@@ -448,9 +554,29 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
                 throw new IllegalStateException("The hash of the event must be set before creating the descriptor");
             }
 
-            descriptor = new EventDescriptor(getHash(), getCreatorId(), getGeneration(), getBirthRound());
+            descriptor = new EventDescriptor(getHash(), getCreatorId(), getGeneration(), eventCore.birthRound());
         }
 
         return descriptor;
+    }
+
+    /**
+     * Get the core event data.
+     *
+     * @return the core event data
+     */
+    @NonNull
+    public EventCore getEventCore() {
+        return eventCore;
+    }
+
+    /**
+     * Get the payloads of the event.
+     *
+     * @return list of payloads
+     */
+    @NonNull
+    public List<EventPayload> getPayloads() {
+        return payloads;
     }
 }
