@@ -16,8 +16,9 @@
 
 package com.swirlds.platform.system;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Set;
 
 /**
@@ -34,6 +35,11 @@ public final class StaticSoftwareVersion {
      */
     private static Set<Long> softwareVersionClassIdSet;
 
+    /**
+     * Semantic version of the software.
+     */
+    private static SemanticVersion semanticVersion;
+
     private StaticSoftwareVersion() {}
 
     /**
@@ -43,15 +49,7 @@ public final class StaticSoftwareVersion {
      */
     public static void setSoftwareVersion(@NonNull final SoftwareVersion softwareVersion) {
         softwareVersionClassIdSet = Set.of(softwareVersion.getClassId());
-    }
-
-    /**
-     * Set the current software version.
-     *
-     * @param softwareVersions the current software versions (there may be multiple versions during a migration)
-     */
-    public static void setSoftwareVersion(@NonNull final Set<Long> softwareVersions) {
-        softwareVersionClassIdSet = Objects.requireNonNull(softwareVersions);
+        semanticVersion = softwareVersion.getPbjSemanticVersion();
     }
 
     /**
@@ -73,5 +71,15 @@ public final class StaticSoftwareVersion {
             throw new IllegalStateException("Software version not set");
         }
         return softwareVersionClassIdSet;
+    }
+
+    /**
+     * Get the semantic version of the software.
+     *
+     * @return the semantic version of the software
+     */
+    @Nullable
+    public static SemanticVersion getSemanticVersion() {
+        return semanticVersion;
     }
 }

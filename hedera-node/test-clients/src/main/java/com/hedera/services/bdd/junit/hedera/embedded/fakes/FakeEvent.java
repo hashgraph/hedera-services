@@ -18,13 +18,12 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
@@ -32,13 +31,13 @@ import java.util.Iterator;
 public class FakeEvent implements Event {
     private final NodeId creatorId;
     private final Instant timeCreated;
-    private final SoftwareVersion version;
+    private final SemanticVersion version;
     public final SwirldTransaction transaction;
 
     public FakeEvent(
             @NonNull final NodeId creatorId,
             @NonNull final Instant timeCreated,
-            @NonNull final SoftwareVersion version,
+            @NonNull final SemanticVersion version,
             @NonNull final SwirldTransaction transaction) {
         this.version = requireNonNull(version);
         this.creatorId = requireNonNull(creatorId);
@@ -62,9 +61,9 @@ public class FakeEvent implements Event {
         return creatorId;
     }
 
-    @Nullable
+    @NonNull
     @Override
-    public SoftwareVersion getSoftwareVersion() {
+    public SemanticVersion getSoftwareVersion() {
         return requireNonNull(version);
     }
 }

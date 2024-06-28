@@ -37,7 +37,7 @@ import com.swirlds.platform.pool.TransactionPool;
 import com.swirlds.platform.state.hasher.StateHasher;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.StateSignatureCollector;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.StatusStateMachine;
 import com.swirlds.platform.wiring.components.GossipWiring;
@@ -62,7 +62,7 @@ public class PlatformCoordinator {
     private final ComponentWiring<OrphanBuffer, List<PlatformEvent>> orphanBufferWiring;
     private final GossipWiring gossipWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
-    private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
+    private final ComponentWiring<EventCreationManager, UnsignedEvent> eventCreationManagerWiring;
     private final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring;
     private final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>> stateSignatureCollectorWiring;
     private final ComponentWiring<TransactionHandler, StateAndRound> transactionHandlerWiring;
@@ -105,7 +105,7 @@ public class PlatformCoordinator {
             @NonNull final ComponentWiring<OrphanBuffer, List<PlatformEvent>> orphanBufferWiring,
             @NonNull final GossipWiring gossipWiring,
             @NonNull final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring,
-            @NonNull final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring,
+            @NonNull final ComponentWiring<EventCreationManager, UnsignedEvent> eventCreationManagerWiring,
             @NonNull final ComponentWiring<TransactionPrehandler, Void> applicationTransactionPrehandlerWiring,
             @NonNull
                     final ComponentWiring<StateSignatureCollector, List<ReservedSignedState>>

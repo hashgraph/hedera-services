@@ -18,7 +18,7 @@ package com.swirlds.platform.event.signing;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -34,5 +34,5 @@ public interface SelfEventSigner {
      */
     @InputWireLabel("self events")
     @NonNull
-    PlatformEvent signEvent(@NonNull BaseEventHashedData event);
+    PlatformEvent signEvent(@NonNull UnsignedEvent event);
 }
