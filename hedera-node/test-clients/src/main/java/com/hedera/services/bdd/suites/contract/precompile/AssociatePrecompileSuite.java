@@ -159,7 +159,8 @@ public class AssociatePrecompileSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("nonSupportedAbiCallGracefullyFailsWithMultipleContractCallsLegacy",
+        return propertyPreservingHapiSpec(
+                        "nonSupportedAbiCallGracefullyFailsWithMultipleContractCallsLegacy",
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES)
@@ -214,10 +215,11 @@ public class AssociatePrecompileSuite {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls",
-                NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec(
+                        "nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
@@ -234,18 +236,18 @@ public class AssociatePrecompileSuite {
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                THE_CONTRACT,
-                                "nonSupportedFunction",
-                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                        THE_CONTRACT,
+                                        "nonSupportedFunction",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via("notSupportedFunctionCallTxn")
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                THE_CONTRACT,
-                                TOKEN_ASSOCIATE_FUNCTION,
-                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                        THE_CONTRACT,
+                                        TOKEN_ASSOCIATE_FUNCTION,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER))))
@@ -269,7 +271,8 @@ public class AssociatePrecompileSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var invalidAbiArgument = new byte[20];
 
-        return propertyPreservingHapiSpec("invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCallsLegacy",
+        return propertyPreservingHapiSpec(
+                        "invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCallsLegacy",
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_NONCE)
@@ -334,10 +337,11 @@ public class AssociatePrecompileSuite {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var invalidAbiArgument = new byte[20];
 
-        return propertyPreservingHapiSpec("invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls",
-                NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                NONDETERMINISTIC_NONCE)
+        return propertyPreservingHapiSpec(
+                        "invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls",
+                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
@@ -354,19 +358,19 @@ public class AssociatePrecompileSuite {
                         newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
                         contractCall(
-                                THE_CONTRACT,
-                                TOKEN_ASSOCIATE_FUNCTION,
-                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                HapiParserUtil.asHeadlongAddress(invalidAbiArgument))
+                                        THE_CONTRACT,
+                                        TOKEN_ASSOCIATE_FUNCTION,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(invalidAbiArgument))
                                 .payingWith(GENESIS)
                                 .via("functionCallWithInvalidArgumentTxn")
                                 .gas(GAS_TO_OFFER)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         contractCall(
-                                THE_CONTRACT,
-                                TOKEN_ASSOCIATE_FUNCTION,
-                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
-                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                        THE_CONTRACT,
+                                        TOKEN_ASSOCIATE_FUNCTION,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER)
@@ -602,9 +606,9 @@ public class AssociatePrecompileSuite {
                 .when(withOpContext((spec, custom) -> allRunFor(
                         spec,
                         contractCall(
-                                NEGATIVE_ASSOCIATIONS_CONTRACT,
-                                "associateTokensWithNonExistingAccountAddress",
-                                (Object) new Address[] {tokenAddress1.get(), tokenAddress2.get()})
+                                        NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                        "associateTokensWithNonExistingAccountAddress",
+                                        (Object) new Address[] {tokenAddress1.get(), tokenAddress2.get()})
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER)
                                 .via(nonExistingAccount)
@@ -614,9 +618,9 @@ public class AssociatePrecompileSuite {
                         newKeyNamed(CONTRACT_KEY).shape(KEY_SHAPE.signedWith(sigs(ON, NEGATIVE_ASSOCIATIONS_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
-                                NEGATIVE_ASSOCIATIONS_CONTRACT,
-                                "associateTokensWithEmptyTokensArray",
-                                accountAddress.get())
+                                        NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                        "associateTokensWithEmptyTokensArray",
+                                        accountAddress.get())
                                 // match mono behaviour, this is a successful call, but it should not associate any
                                 // tokens
                                 .hasKnownStatus(SUCCESS)
@@ -625,7 +629,7 @@ public class AssociatePrecompileSuite {
                                 .via(nonExistingTokenArray)
                                 .logged(),
                         contractCall(NEGATIVE_ASSOCIATIONS_CONTRACT, "associateTokensWithNullAccount", (Object)
-                                new Address[] {tokenAddress1.get(), tokenAddress2.get()})
+                                        new Address[] {tokenAddress1.get(), tokenAddress2.get()})
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER)
                                 .via(zeroAccountAddress)
@@ -633,28 +637,28 @@ public class AssociatePrecompileSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN1),
                         contractCall(
-                                NEGATIVE_ASSOCIATIONS_CONTRACT,
-                                "associateTokensWithNullTokensArray",
-                                accountAddress.get())
+                                        NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                        "associateTokensWithNullTokensArray",
+                                        accountAddress.get())
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER)
                                 .signingWith(ACCOUNT)
                                 .via(nullTokenArray)
                                 .logged(),
                         contractCall(
-                                NEGATIVE_ASSOCIATIONS_CONTRACT,
-                                "associateTokensWithNonExistingTokensArray",
-                                accountAddress.get())
+                                        NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                        "associateTokensWithNonExistingTokensArray",
+                                        accountAddress.get())
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER)
                                 .signingWith(ACCOUNT)
                                 .via(nonExistingTokensInArray)
                                 .logged(),
                         contractCall(
-                                NEGATIVE_ASSOCIATIONS_CONTRACT,
-                                "associateTokensWithTokensArrayWithSomeNonExistingAddresses",
-                                accountAddress.get(),
-                                new Address[] {tokenAddress1.get(), tokenAddress2.get()})
+                                        NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                        "associateTokensWithTokensArrayWithSomeNonExistingAddresses",
+                                        accountAddress.get(),
+                                        new Address[] {tokenAddress1.get(), tokenAddress2.get()})
                                 .hasKnownStatus(SUCCESS)
                                 .gas(GAS_TO_OFFER)
                                 .signingWith(ACCOUNT)
@@ -799,36 +803,36 @@ public class AssociatePrecompileSuite {
                         newKeyNamed(CONTRACT_KEY).shape(KEY_SHAPE.signedWith(sigs(ON, NEGATIVE_ASSOCIATIONS_CONTRACT))),
                         cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
                         contractCall(
-                                NEGATIVE_ASSOCIATIONS_CONTRACT,
-                                "associateTokenWithNonExistingAccount",
-                                tokenAddress.get())
+                                        NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                        "associateTokenWithNonExistingAccount",
+                                        tokenAddress.get())
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER)
                                 .via(nonExistingAccount)
                                 .logged(),
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
                         contractCall(
-                                NEGATIVE_ASSOCIATIONS_CONTRACT,
-                                "associateTokenWithNullAccount",
-                                tokenAddress.get())
+                                        NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                        "associateTokenWithNullAccount",
+                                        tokenAddress.get())
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER)
                                 .via(nullAccount)
                                 .logged(),
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
                         contractCall(
-                                NEGATIVE_ASSOCIATIONS_CONTRACT,
-                                "associateTokenWithNonExistingTokenAddress",
-                                accountAddress.get())
+                                        NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                        "associateTokenWithNonExistingTokenAddress",
+                                        accountAddress.get())
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER)
                                 .via(nonExistingToken)
                                 .logged(),
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
                         contractCall(
-                                NEGATIVE_ASSOCIATIONS_CONTRACT,
-                                "associateTokenWithNullTokenAddress",
-                                accountAddress.get())
+                                        NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                        "associateTokenWithNullTokenAddress",
+                                        accountAddress.get())
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER)
                                 .via(nullToken)
