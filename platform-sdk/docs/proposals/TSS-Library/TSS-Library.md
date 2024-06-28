@@ -94,20 +94,26 @@ Before the protocol begins, all participants agree on the cryptographic paramete
 A participant directory is needed when initiating the protocol for the first time.
 This directory includes the number of participants, each participant’s EC public key, and the shares they own.
 
-Each participant generates a random private key and distributes it among the others.
-This allows for verification and aggregation of signatures produced by all shares.
-A value derived from this random private key is created for each share using mathematical functions. Each value is encrypted with the share owner's public key, ensuring only the intended recipient can read it.
-When a message is created, all encrypted values are included. Only the intended receivers can decrypt their respective portions of the secret element.
-This setup allows participants to share secret information securely.
-The message also contains additional information necessary for signature validation.
+Each participant generates portions of a secret share and distributes them among the other participants using the following process:
 
-Upon receiving a threshold number of messages, each participant decrypts the information encrypted with their public key, aggregates it, and generates a private key for each owned share.
-They also retrieve a public key for each share in the system to validate signatures.
-Individual signing can now begin. Participants use the private information of their shares to sign messages.
+1. A random private key is created and mathematically split into a known number of total shares.
+   * Using Shamir's Secret Sharing and interpolation polynomials.  
+2. Each portion is encrypted with the share owner's public key, ensuring only the intended recipient can read it.
+3. A message is created that includes all encrypted values so that only the intended recipients can decrypt their respective portions of the secret share.
 
-When signatures from at least threshold number of parties are combined, an aggregate signature is created. This aggregate signature can be validated using the combined value of the public shares in the directory.
-The process restarts whenever the number of participants or the shares assigned to each change.
-However, the initially generated group public key remains unchanged to maintain consistency. New secret information for shares is created using existing data, ensuring that the aggregate signature can still be verified with the original group public key.
+This setup allows participants to share secret information securely. The message also contains additional information necessary for its validation (Such as a polynomial commitment and a NIZK proof).
+
+Upon receiving a threshold number of messages, each participant:
+
+1. Validates the message and decrypts the information encrypted with their public key.
+2. Aggregates the decrypted information to generate a private key for each owned share.
+3. Retrieves a public key for each share in the system to validate signatures.
+
+Individual signing can then begin. Participants use the private information of their shares to sign messages.
+
+An aggregate signature is created when signatures from at least the threshold number of parties are combined. This aggregate signature can be validated using the combined value of the public shares in the directory.
+
+The process restarts whenever the number of participants or the shares assigned to each change. However, the initially generated group public key remains unchanged to maintain consistency. New secret information for shares is created using existing data, ensuring the aggregate signature can still be verified with the original group public key.
 
 #### Implementation details
 Before starting, all participants should agree on a `SignatureSchema` they will use.
@@ -400,7 +406,7 @@ This API will expose general arithmetic operations to work with Bilinear Pairing
 ###### `BilinearPairing`
 
 **Description**: This class provides access to each group (G₁, G₂) for a specific Pairing and the FiniteField associated with the curve.
-It provides an itialization method to load all necessary dependencies for the library to work. Callers are requested to invoke that method before start using the library.
+It provides an initialization method to load all necessary dependencies for the library to work. Callers are requested to invoke that method before start using the library.
 
 **Link**:  [BilinearPairing.java](pairings-api%2FBilinearPairing.java)
 
