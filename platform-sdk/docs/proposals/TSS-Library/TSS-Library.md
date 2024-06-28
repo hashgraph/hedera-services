@@ -390,9 +390,6 @@ This API will expose general arithmetic operations to work with Bilinear Pairing
 
 ##### Public API
 
-###### `PairingsLibrary`
-**Description**: Allows clients of this library to invoke the initialization, and provides a mechanism for implementors of this api to perform all necessary activities
-
 ###### `Curve`
 **Description**: Represents the different types of elliptic curves. Implementations of this API should decide if they provide any, one, or many curves.
 
@@ -403,6 +400,7 @@ This API will expose general arithmetic operations to work with Bilinear Pairing
 ###### `BilinearPairing`
 
 **Description**: This class provides access to each group (G₁, G₂) for a specific Pairing and the FiniteField associated with the curve.
+It provides an itialization method to load all necessary dependencies for the library to work. Callers are requested to invoke that method before start using the library.
 
 **Link**:  [BilinearPairing.java](pairings-api%2FBilinearPairing.java)
 
