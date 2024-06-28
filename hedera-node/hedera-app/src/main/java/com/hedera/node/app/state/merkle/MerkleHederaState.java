@@ -17,8 +17,6 @@
 package com.hedera.node.app.state.merkle;
 
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_HEDERASTATE_STATENODE;
-// https://github.com/hashgraph/hedera-services/issues/13781
-//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KEYVALUE;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVACCOUNTS;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVALIASES;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVBLOBS;
@@ -33,11 +31,18 @@ import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATEN
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVTOKENRELS;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVTOKENS;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVTOPICS;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_QUEUE;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_SINGLETON;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_QTXNRECORD;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_QUPGRADEDATA;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_SBLOCKINFO;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_SCONGESTIONLEVELSTARTS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_SENTITYID;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_SFREEZETIME;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_SMIDNIGHTRATES;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_SRUNNINGHASHES;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_SSTAKINGNETWORKREWARDS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_STHROTTLEUSAGESNAPSHOTS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_SUPGRADEFILEHASH;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_HEDERASTATE_STATENODE;
-// https://github.com/hashgraph/hedera-services/issues/13781
-//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KEYVALUE;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVACCOUNTS;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVALIASES;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVBLOBS;
@@ -52,12 +57,27 @@ import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENOD
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVTOKENRELS;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVTOKENS;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_KVTOPICS;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_QUEUE;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_SINGLETON;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_QTXNRECORD;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_QUPGRADEDATA;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_SBLOCKINFO;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_SCONGESTIONLEVELSTARTS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_SENTITYID;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_SFREEZETIME;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_SMIDNIGHTRATES;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_SRUNNINGHASHES;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_SSTAKINGNETWORKREWARDS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_STHROTTLEUSAGESNAPSHOTS;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_STATENODE_SUPGRADEFILEHASH;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
+import com.hedera.node.app.fees.FeeService;
+import com.hedera.node.app.fees.schemas.V0490FeeSchema;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
+import com.hedera.node.app.records.BlockRecordService;
+import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.ConsensusService;
@@ -66,6 +86,8 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.service.token.TokenService;
@@ -73,6 +95,10 @@ import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
+import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema;
+import com.hedera.node.app.throttle.CongestionThrottleService;
+import com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.FieldDefinition;
 import com.hedera.pbj.runtime.ProtoConstants;
@@ -91,7 +117,6 @@ import com.swirlds.common.utility.Labeled;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
-import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.metrics.api.Metrics;
@@ -349,6 +374,21 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
         return CURRENT_VERSION;
     }
 
+    // Protobuf serialization
+
+    private static final String LABEL_SENTITYID = EntityIdService.NAME + "." + V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
+    private static final String LABEL_SBLOCKINFO = BlockRecordService.NAME + "." + V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
+    private static final String LABEL_SMIDNIGHTRATES = FeeService.NAME + "." + V0490FeeSchema.MIDNIGHT_RATES_STATE_KEY;
+    private static final String LABEL_SRUNNINGHASHES = BlockRecordService.NAME + "." + V0490BlockRecordSchema.RUNNING_HASHES_STATE_KEY;
+    private static final String LABEL_STHROTTLEUSAGESNAPSHOTS = CongestionThrottleService.NAME + "." + V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
+    private static final String LABEL_SCONGESTIONLEVELSTARTS = CongestionThrottleService.NAME + "." + V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
+    private static final String LABEL_SSTAKINGNETWORKREWARDS = TokenService.NAME + "." + V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
+    private static final String LABEL_SUPGRADEFILEHASH = FreezeService.NAME + "." + V0490FreezeSchema.UPGRADE_FILE_HASH_KEY;
+    private static final String LABEL_SFREEZETIME = FreezeService.NAME + "." + V0490FreezeSchema.FREEZE_TIME_KEY;
+
+    private static final String LABEL_QTXNRECORD = RecordCacheService.NAME + "." + V0490RecordCacheSchema.TXN_RECORD_QUEUE;
+    private static final String LABEL_QUPGRADEDATA = FileService.NAME + "." + V0490FileSchema.UPGRADE_DATA_KEY;
+
     @Override
     protected int getProtoChildSizeInBytes(final int index) {
         // Hedera state nodes are wrapped into StateNode proto message to overcome (lack of)
@@ -374,12 +414,25 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
             throw new IllegalStateException("Unknown state: " + label);
         }
         if (def.singleton()) {
-            return FIELD_STATENODE_SINGLETON;
+            return switch (label) {
+                case LABEL_SENTITYID -> FIELD_STATENODE_SENTITYID;
+                case LABEL_SBLOCKINFO -> FIELD_STATENODE_SBLOCKINFO;
+                case LABEL_SMIDNIGHTRATES -> FIELD_STATENODE_SMIDNIGHTRATES;
+                case LABEL_SRUNNINGHASHES -> FIELD_STATENODE_SRUNNINGHASHES;
+                case LABEL_STHROTTLEUSAGESNAPSHOTS -> FIELD_STATENODE_STHROTTLEUSAGESNAPSHOTS;
+                case LABEL_SCONGESTIONLEVELSTARTS -> FIELD_STATENODE_SCONGESTIONLEVELSTARTS;
+                case LABEL_SSTAKINGNETWORKREWARDS -> FIELD_STATENODE_SSTAKINGNETWORKREWARDS;
+                case LABEL_SUPGRADEFILEHASH -> FIELD_STATENODE_SUPGRADEFILEHASH;
+                case LABEL_SFREEZETIME -> FIELD_STATENODE_SFREEZETIME;
+                default -> throw new IllegalStateException("Unknown singleton state: " + label);
+            };
         } else if (def.queue()) {
-            return FIELD_STATENODE_QUEUE;
+            return switch (label) {
+                case LABEL_QTXNRECORD -> FIELD_STATENODE_QTXNRECORD;
+                case LABEL_QUPGRADEDATA -> FIELD_STATENODE_QUPGRADEDATA;
+                default -> throw new IllegalStateException("Unknown queue state: " + label);
+            };
         } else if (def.onDisk()) {
-            // https://github.com/hashgraph/hedera-services/issues/13781
-            // return FIELD_STATENODE_KEYVALUE;
             return switch (label) {
                 case TokenService.NAME + "." + V0490TokenSchema.TOKENS_KEY -> FIELD_STATENODE_KVTOKENS;
                 case TokenService.NAME + "." + V0490TokenSchema.ACCOUNTS_KEY -> FIELD_STATENODE_KVACCOUNTS;
@@ -404,6 +457,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
     @Override
     protected FieldDefinition getChildProtoField(final int childIndex) {
+        // FUTURE WORK: check childIndex vs actual number of child nodes?
         return FIELD_HEDERASTATE_STATENODE;
     }
 
@@ -434,6 +488,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
     }
 
     @Override
+    protected boolean isChildNodeProtoTag(int fieldNum) {
+        return fieldNum == NUM_HEDERASTATE_STATENODE;
+    }
+
+    @Override
     protected MerkleNode protoDeserializeNextChild(
             @NonNull final ReadableSequentialData in,
             final Path artifactsDir)
@@ -460,13 +519,28 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
                 }
                 final int stateNodeLen = in.readVarInt(false);
                 in.limit(in.position() + stateNodeLen);
-                if (stateNodeFieldNum == NUM_STATENODE_SINGLETON) {
-                    return protoDeserializeSingleton(in, artifactsDir);
-                } else if (stateNodeFieldNum == NUM_STATENODE_QUEUE) {
-                    return protoDeserializeQueue(in, artifactsDir);
-                // https://github.com/hashgraph/hedera-services/issues/13781
-                // } else if (stateNodeFieldNum == NUM_STATENODE_KEYVALUE) {
-                //     return protoDeserializeKeyValue(in, artifactsDir);
+                if (stateNodeFieldNum == NUM_STATENODE_SENTITYID) {
+                    return protoDeserializeSingleton(in, artifactsDir, servicesRegistry.getStateDefinition(LABEL_SENTITYID));
+                } else if (stateNodeFieldNum == NUM_STATENODE_SBLOCKINFO) {
+                    return protoDeserializeSingleton(in, artifactsDir, servicesRegistry.getStateDefinition(LABEL_SBLOCKINFO));
+                } else if (stateNodeFieldNum == NUM_STATENODE_SMIDNIGHTRATES) {
+                    return protoDeserializeSingleton(in, artifactsDir, servicesRegistry.getStateDefinition(LABEL_SMIDNIGHTRATES));
+                } else if (stateNodeFieldNum == NUM_STATENODE_SRUNNINGHASHES) {
+                    return protoDeserializeSingleton(in, artifactsDir, servicesRegistry.getStateDefinition(LABEL_SRUNNINGHASHES));
+                } else if (stateNodeFieldNum == NUM_STATENODE_STHROTTLEUSAGESNAPSHOTS) {
+                    return protoDeserializeSingleton(in, artifactsDir, servicesRegistry.getStateDefinition(LABEL_STHROTTLEUSAGESNAPSHOTS));
+                } else if (stateNodeFieldNum == NUM_STATENODE_SCONGESTIONLEVELSTARTS) {
+                    return protoDeserializeSingleton(in, artifactsDir, servicesRegistry.getStateDefinition(LABEL_SCONGESTIONLEVELSTARTS));
+                } else if (stateNodeFieldNum == NUM_STATENODE_SSTAKINGNETWORKREWARDS) {
+                    return protoDeserializeSingleton(in, artifactsDir, servicesRegistry.getStateDefinition(LABEL_SSTAKINGNETWORKREWARDS));
+                } else if (stateNodeFieldNum == NUM_STATENODE_SUPGRADEFILEHASH) {
+                    return protoDeserializeSingleton(in, artifactsDir, servicesRegistry.getStateDefinition(LABEL_SUPGRADEFILEHASH));
+                } else if (stateNodeFieldNum == NUM_STATENODE_SFREEZETIME) {
+                    return protoDeserializeSingleton(in, artifactsDir, servicesRegistry.getStateDefinition(LABEL_SFREEZETIME));
+                } else if (stateNodeFieldNum == NUM_STATENODE_QTXNRECORD) {
+                    return protoDeserializeQueue(in, artifactsDir, servicesRegistry.getStateDefinition(LABEL_QTXNRECORD));
+                } else if (stateNodeFieldNum == NUM_STATENODE_QUPGRADEDATA) {
+                    return protoDeserializeQueue(in, artifactsDir, servicesRegistry.getStateDefinition(LABEL_QUPGRADEDATA));
                 } else if (stateNodeFieldNum == NUM_STATENODE_KVTOKENS) {
                     return protoDeserializeVirtualMap(in, artifactsDir, TokenService.NAME, V0490TokenSchema.TOKENS_KEY);
                 } else if (stateNodeFieldNum == NUM_STATENODE_KVACCOUNTS) {
@@ -508,16 +582,18 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
 
     private MerkleNode protoDeserializeSingleton(
             @NonNull final ReadableSequentialData in,
-            final Path artifactsDir)
+            final Path artifactsDir,
+            @NonNull final StateDefinition stateDef)
             throws MerkleSerializationException {
-        return new SingletonNode<>(in, artifactsDir, servicesRegistry::getStateDefinition);
+        return new SingletonNode<>(in, artifactsDir, stateDef.valueCodec());
     }
 
     private MerkleNode protoDeserializeQueue(
             @NonNull final ReadableSequentialData in,
-            final Path artifactsDir)
+            final Path artifactsDir,
+            @NonNull final StateDefinition stateDef)
             throws MerkleSerializationException {
-        return new QueueNode<>(in, artifactsDir, servicesRegistry::getStateDefinition);
+        return new QueueNode<>(in, artifactsDir, stateDef.valueCodec());
     }
 
     // https://github.com/hashgraph/hedera-services/issues/13781

@@ -30,8 +30,7 @@ class QueueNodeTest extends MerkleTestBase {
                 FRUIT_STATE_KEY,
                 queueNodeClassId(FRUIT_STATE_KEY),
                 singletonClassId(FRUIT_STATE_KEY),
-                STRING_CODEC,
-                FRUIT_PROTO_FIELD);
+                STRING_CODEC);
         assertNotEquals(0x990FF87AD2691DCL, node.getClassId());
     }
 

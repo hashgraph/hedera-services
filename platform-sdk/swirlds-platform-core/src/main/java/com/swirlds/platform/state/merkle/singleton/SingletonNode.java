@@ -37,7 +37,6 @@ import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.file.Path;
-import java.util.function.Function;
 
 /**
  * A merkle node with a string (the label) as the left child, and the merkle node value as the right
@@ -53,7 +52,7 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
     public static final int CLASS_VERSION = 1;
 
     // Only used for deserialization
-    private Function<String, StateDefinition> stateDefLookup;
+    private Codec<T> codec = null;
 
     /**
      * @deprecated Only exists for constructable registry as it works today. Remove ASAP!
@@ -69,14 +68,12 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
             @NonNull final String stateKey,
             long classId,
             @NonNull final Codec<T> codec,
-            @NonNull final FieldDefinition valueProtoField,
             @Nullable final T value) {
         setLeft(new StringLeaf(StateUtils.computeLabel(serviceName, stateKey)));
-        setRight(new ValueLeaf<>(classId, codec, valueProtoField, value));
+        setRight(new ValueLeaf<>(classId, codec, value));
     }
 
     private SingletonNode(@NonNull final SingletonNode<T> other) {
-        this.stateDefLookup = other.stateDefLookup;
         this.setLeft(other.getLeft().copy());
         this.setRight(other.getRight().copy());
     }
@@ -84,9 +81,9 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
     public SingletonNode(
             @NonNull final ReadableSequentialData in,
             final Path artifactsDir,
-            @NonNull final Function<String, StateDefinition> stateDefLookup)
+            @NonNull final Codec<T> codec)
             throws MerkleSerializationException {
-        this.stateDefLookup = stateDefLookup;
+        this.codec = codec;
         protoDeserialize(in, artifactsDir);
     }
 
@@ -133,7 +130,6 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
                 (fieldNum == NUM_SINGLETONSTATE_VALUE);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     protected MerkleNode protoDeserializeNextChild(
             @NonNull final ReadableSequentialData in,
@@ -141,17 +137,10 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
             throws MerkleSerializationException {
         final int childrenSoFar = getNumberOfChildren();
         if (childrenSoFar == 0) {
+            // FUTURE WORK: check that the label matches the state definition
             return new StringLeaf(in);
         } else if (childrenSoFar == 1) {
-            final StringLeaf left = getLeft();
-            final String label = left.getLabel();
-            final StateDefinition stateDef = stateDefLookup.apply(label);
-            if (stateDef == null) {
-                throw new MerkleSerializationException("Unknown singleton value: " + label);
-            }
-            final Codec<T> codec = stateDef.valueCodec();
-            final FieldDefinition protoField = stateDef.stateProtoField();
-            return new ValueLeaf<>(in, codec, protoField);
+            return new ValueLeaf<>(in, codec);
         } else {
             throw new MerkleSerializationException("Too many singleton state child nodes");
         }

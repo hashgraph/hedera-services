@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.test.fixtures.state;
 
-import com.hedera.pbj.runtime.FieldDefinition;
-import com.hedera.pbj.runtime.FieldType;
 import com.swirlds.platform.state.spi.ReadableSingletonStateBase;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -34,17 +32,6 @@ public class StateTestBase extends TestBase {
     protected static final String SPACE_STATE_KEY = "SPACE";
     protected static final String STEAM_STATE_KEY = "STEAM";
     public static final String COUNTRY_STATE_KEY = "COUNTRY";
-
-    protected static final FieldDefinition FRUIT_PROTO_FIELD = new FieldDefinition(
-            FRUIT_STATE_KEY, FieldType.MESSAGE, false, false, true, 1001);
-    protected static final FieldDefinition ANIMAL_PROTO_FIELD = new FieldDefinition(
-            ANIMAL_STATE_KEY, FieldType.MESSAGE, false, false, true, 1002);
-    protected static final FieldDefinition SPACE_PROTO_FIELD = new FieldDefinition(
-            SPACE_STATE_KEY, FieldType.MESSAGE, false, false, true, 1003);
-    protected static final FieldDefinition STEAM_PROTO_FIELD = new FieldDefinition(
-            STEAM_STATE_KEY, FieldType.MESSAGE, false, false, true, 1004);
-    protected static final FieldDefinition COUNTRY_PROTO_FIELD = new FieldDefinition(
-            COUNTRY_STATE_KEY, FieldType.MESSAGE, false, false, true, 1005);
 
     protected static final String A_KEY = "A";
     protected static final String B_KEY = "B";

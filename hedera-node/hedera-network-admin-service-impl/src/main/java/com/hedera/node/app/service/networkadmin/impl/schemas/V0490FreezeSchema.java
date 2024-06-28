@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.service.networkadmin.impl.schemas;
 
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_FREEZETIME;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_UPGRADEFILEHASH;
-
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -57,8 +54,8 @@ public class V0490FreezeSchema extends Schema {
     @SuppressWarnings("rawtypes")
     public Set<StateDefinition> statesToCreate() {
         return Set.of(
-                StateDefinition.singleton(UPGRADE_FILE_HASH_KEY, ProtoBytes.PROTOBUF, FIELD_SINGLETONVALUELEAF_UPGRADEFILEHASH),
-                StateDefinition.singleton(FREEZE_TIME_KEY, Timestamp.PROTOBUF, FIELD_SINGLETONVALUELEAF_FREEZETIME));
+                StateDefinition.singleton(UPGRADE_FILE_HASH_KEY, ProtoBytes.PROTOBUF),
+                StateDefinition.singleton(FREEZE_TIME_KEY, Timestamp.PROTOBUF));
     }
 
     @Override

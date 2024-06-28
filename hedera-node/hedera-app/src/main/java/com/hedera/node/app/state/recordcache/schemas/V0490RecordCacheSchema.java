@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.state.recordcache.schemas;
 
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_QUEUEVALUELEAF_TXNRECORD;
-
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.swirlds.state.spi.MigrationContext;
@@ -43,7 +41,7 @@ public class V0490RecordCacheSchema extends Schema {
     @Override
     @SuppressWarnings("rawtypes")
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(StateDefinition.queue(V0490RecordCacheSchema.TXN_RECORD_QUEUE, TransactionRecordEntry.PROTOBUF, FIELD_QUEUEVALUELEAF_TXNRECORD));
+        return Set.of(StateDefinition.queue(V0490RecordCacheSchema.TXN_RECORD_QUEUE, TransactionRecordEntry.PROTOBUF));
     }
 
     @Override

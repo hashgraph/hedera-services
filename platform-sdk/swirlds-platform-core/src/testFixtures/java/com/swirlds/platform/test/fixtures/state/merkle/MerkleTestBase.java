@@ -226,7 +226,6 @@ public class MerkleTestBase extends StateTestBase {
                 COUNTRY_STATE_KEY,
                 computeClassId(FIRST_SERVICE, COUNTRY_STATE_KEY, TEST_VERSION, SINGLETON_CLASS_ID_SUFFIX),
                 STRING_CODEC,
-                COUNTRY_PROTO_FIELD,
                 AUSTRALIA);
     }
 
@@ -237,8 +236,7 @@ public class MerkleTestBase extends StateTestBase {
                 STEAM_STATE_KEY,
                 computeClassId(FIRST_SERVICE, STEAM_STATE_KEY, TEST_VERSION, QUEUE_NODE_CLASS_ID_SUFFIX),
                 computeClassId(FIRST_SERVICE, STEAM_STATE_KEY, TEST_VERSION, SINGLETON_CLASS_ID_SUFFIX),
-                STRING_CODEC,
-                STEAM_PROTO_FIELD);
+                STRING_CODEC);
     }
 
     /** Sets up the {@link #registry}, ready to be used for serialization tests */

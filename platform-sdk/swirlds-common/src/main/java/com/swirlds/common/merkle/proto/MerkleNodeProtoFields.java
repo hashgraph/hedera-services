@@ -220,10 +220,20 @@ public final class MerkleNodeProtoFields {
 
     // message StateNode {
     //     oneof stateNode {
-    //         SingletonStateNode singleton = 10;
-    //         QueueStateNode queue = 11;
-    //         // https://github.com/hashgraph/hedera-services/issues/13781
-    //         // KeyValueStateNode keyValue = 12;
+    //         // Singletons
+    //         SingletonStateNode sEntityId = 101;
+    //         SingletonStateNode sBlockInfo = 102;
+    //         SingletonStateNode sMidnightRates = 103;
+    //         SingletonStateNode sRunningHashes = 104;
+    //         SingletonStateNode sThrottleUsageSnapshots = 105;
+    //         SingletonStateNode sCongestionLevelStarts = 106;
+    //         SingletonStateNode sStakingNetworkRewards = 107;
+    //         SingletonStateNode sUpgradeFileHash = 108;
+    //         SingletonStateNode sFreezeTime = 109;
+    //         // Queues
+    //         QueueStateNode qTxnRecord = 201;
+    //         QueueStateNode qUpgradeData = 202;
+    //         // Key/values
     //         VirtualMap kvTokens = 301;
     //         VirtualMap kvAccounts = 302;
     //         VirtualMap kvAliases = 303;
@@ -241,10 +251,17 @@ public final class MerkleNodeProtoFields {
     //     }
     // }
 
-    public static final int NUM_STATENODE_SINGLETON = 10;
-    public static final int NUM_STATENODE_QUEUE = 11;
-    // https://github.com/hashgraph/hedera-services/issues/13781
-    // public static final int NUM_STATENODE_KEYVALUE = 12;
+    public static final int NUM_STATENODE_SENTITYID = 101;
+    public static final int NUM_STATENODE_SBLOCKINFO = 102;
+    public static final int NUM_STATENODE_SMIDNIGHTRATES = 103;
+    public static final int NUM_STATENODE_SRUNNINGHASHES = 104;
+    public static final int NUM_STATENODE_STHROTTLEUSAGESNAPSHOTS = 105;
+    public static final int NUM_STATENODE_SCONGESTIONLEVELSTARTS = 106;
+    public static final int NUM_STATENODE_SSTAKINGNETWORKREWARDS = 107;
+    public static final int NUM_STATENODE_SUPGRADEFILEHASH = 108;
+    public static final int NUM_STATENODE_SFREEZETIME = 109;
+    public static final int NUM_STATENODE_QTXNRECORD = 201;
+    public static final int NUM_STATENODE_QUPGRADEDATA = 202;
     public static final int NUM_STATENODE_KVTOKENS = 301;
     public static final int NUM_STATENODE_KVACCOUNTS = 302;
     public static final int NUM_STATENODE_KVALIASES = 303;
@@ -260,15 +277,38 @@ public final class MerkleNodeProtoFields {
     public static final int NUM_STATENODE_KVTOPICS = 313;
     public static final int NUM_STATENODE_KVNODES = 314;
 
-    public static final FieldDefinition FIELD_STATENODE_SINGLETON = new FieldDefinition(
-            "singleton", FieldType.MESSAGE, false, true, true, NUM_STATENODE_SINGLETON);
+    public static final FieldDefinition FIELD_STATENODE_SENTITYID = new FieldDefinition(
+            "sEntityId", FieldType.MESSAGE, false, true, true, NUM_STATENODE_SENTITYID);
 
-    public static final FieldDefinition FIELD_STATENODE_QUEUE = new FieldDefinition(
-            "queue", FieldType.MESSAGE, false, true, true, NUM_STATENODE_QUEUE);
+    public static final FieldDefinition FIELD_STATENODE_SBLOCKINFO = new FieldDefinition(
+            "sBlockInfo", FieldType.MESSAGE, false, true, true, NUM_STATENODE_SBLOCKINFO);
 
-    // https://github.com/hashgraph/hedera-services/issues/13781
-    // public static final FieldDefinition FIELD_STATENODE_KEYVALUE = new FieldDefinition(
-    //         "keyValue", FieldType.MESSAGE, false, true, true, NUM_STATENODE_KEYVALUE);
+    public static final FieldDefinition FIELD_STATENODE_SMIDNIGHTRATES = new FieldDefinition(
+            "sMidnightRates", FieldType.MESSAGE, false, true, true, NUM_STATENODE_SMIDNIGHTRATES);
+
+    public static final FieldDefinition FIELD_STATENODE_SRUNNINGHASHES = new FieldDefinition(
+            "sRunningHashes", FieldType.MESSAGE, false, true, true, NUM_STATENODE_SRUNNINGHASHES);
+
+    public static final FieldDefinition FIELD_STATENODE_STHROTTLEUSAGESNAPSHOTS = new FieldDefinition(
+            "sThrottleUsageSnapshots", FieldType.MESSAGE, false, true, true, NUM_STATENODE_STHROTTLEUSAGESNAPSHOTS);
+
+    public static final FieldDefinition FIELD_STATENODE_SCONGESTIONLEVELSTARTS = new FieldDefinition(
+            "sCongestionLevelStarts", FieldType.MESSAGE, false, true, true, NUM_STATENODE_SCONGESTIONLEVELSTARTS);
+
+    public static final FieldDefinition FIELD_STATENODE_SSTAKINGNETWORKREWARDS = new FieldDefinition(
+            "sStakingNetworkRewards", FieldType.MESSAGE, false, true, true, NUM_STATENODE_SSTAKINGNETWORKREWARDS);
+
+    public static final FieldDefinition FIELD_STATENODE_SUPGRADEFILEHASH = new FieldDefinition(
+            "sUpgradeFileHash", FieldType.MESSAGE, false, true, true, NUM_STATENODE_SUPGRADEFILEHASH);
+
+    public static final FieldDefinition FIELD_STATENODE_SFREEZETIME = new FieldDefinition(
+            "sFreezeTime", FieldType.MESSAGE, false, true, true, NUM_STATENODE_SFREEZETIME);
+
+    public static final FieldDefinition FIELD_STATENODE_QTXNRECORD = new FieldDefinition(
+            "qTxnRecord", FieldType.MESSAGE, false, true, true, NUM_STATENODE_QTXNRECORD);
+
+    public static final FieldDefinition FIELD_STATENODE_QUPGRADEDATA = new FieldDefinition(
+            "qUpgradeData", FieldType.MESSAGE, false, true, true, NUM_STATENODE_QUPGRADEDATA);
 
     public static final FieldDefinition FIELD_STATENODE_KVTOKENS = new FieldDefinition(
             "tokens", FieldType.MESSAGE, false, true, true, NUM_STATENODE_KVTOKENS);
@@ -342,7 +382,7 @@ public final class MerkleNodeProtoFields {
     // message QueueStateNode {
     //     Hash hash = 1;
     //     StringLeaf label = 2;
-    //     repeated QueueValueLeaf value = 3;
+    //     Queue value = 3;
     // }
 
     public static final int NUM_QUEUESTATE_LABEL = 2;
@@ -352,7 +392,7 @@ public final class MerkleNodeProtoFields {
             "label", FieldType.MESSAGE, false, false, false, NUM_QUEUESTATE_LABEL);
 
     public static final FieldDefinition FIELD_QUEUESTATE_VALUE = new FieldDefinition(
-            "value", FieldType.MESSAGE, true, false, false, NUM_QUEUESTATE_VALUE);
+            "value", FieldType.MESSAGE, false, false, false, NUM_QUEUESTATE_VALUE);
 
     // https://github.com/hashgraph/hedera-services/issues/13781
     /*
@@ -376,58 +416,13 @@ public final class MerkleNodeProtoFields {
 
     // message SingletonValueLeaf {
     //     Hash hash = 1;
-    //     oneof value {
-    //         EntityId entityId = 101;
-    //         BlockInfo blockInfo = 102;
-    //         MidnightRates midnightRates = 103;
-    //         RunningHashes runningHashes = 104;
-    //         ThrottleUsageSnapshots throttleUsageSnapshots = 105;
-    //         CongestionLevelStarts congestionLevelStarts = 106;
-    //         StakingNetworkRewards stakingNetworkRewards = 107;
-    //         UpgradeFileHash upgradeFileHash = 108;
-    //         FreezeTime freezeTime = 108;
-    //     }
+    //     <singleton type> value = 2;
     // }
 
-    public static final int NUM_SINGLETONVALUELEAF_ENTITYID = 101;
-    public static final int NUM_SINGLETONVALUELEAF_BLOCKINFO = 102;
-    public static final int NUM_SINGLETONVALUELEAF_MIDNIGHTRATES = 103;
-    public static final int NUM_SINGLETONVALUELEAF_RUNNINGHASHES = 104;
-    public static final int NUM_SINGLETONVALUELEAF_THROTTLEUSAGESNAPSHOTS = 105;
-    public static final int NUM_SINGLETONVALUELEAF_CONGESTIONLEVELSTARTS = 106;
-    public static final int NUM_SINGLETONVALUELEAF_STAKINGNETWORKREWARDS = 107;
-    public static final int NUM_SINGLETONVALUELEAF_UPGRADEFILEHASH = 108;
-    public static final int NUM_SINGLETONVALUELEAF_FREEZETIME = 109;
+    public static final int NUM_SINGLETONVALUELEAF_VALUE = 2;
 
-    public static final FieldDefinition FIELD_SINGLETONVALUELEAF_ENTITYID = new FieldDefinition(
-            "entityId", FieldType.MESSAGE, false, false, true, NUM_SINGLETONVALUELEAF_ENTITYID);
-
-    public static final FieldDefinition FIELD_SINGLETONVALUELEAF_BLOCKINFO = new FieldDefinition(
-            "blockInfo", FieldType.MESSAGE, false, false, true, NUM_SINGLETONVALUELEAF_BLOCKINFO);
-
-    public static final FieldDefinition FIELD_SINGLETONVALUELEAF_MIDNIGHTRATES = new FieldDefinition(
-            "midnightRates", FieldType.MESSAGE, false, false, true, NUM_SINGLETONVALUELEAF_MIDNIGHTRATES);
-
-    public static final FieldDefinition FIELD_SINGLETONVALUELEAF_RUNNINGHASHES = new FieldDefinition(
-            "runningHashes", FieldType.MESSAGE, false, false, true, NUM_SINGLETONVALUELEAF_RUNNINGHASHES);
-
-    public static final FieldDefinition FIELD_SINGLETONVALUELEAF_THROTTLEUSAGESNAPSHOTS = new FieldDefinition(
-            "throttleUsageSnapshots", FieldType.MESSAGE, false, false, true,
-            NUM_SINGLETONVALUELEAF_THROTTLEUSAGESNAPSHOTS);
-
-    public static final FieldDefinition FIELD_SINGLETONVALUELEAF_CONGESTIONLEVELSTARTS = new FieldDefinition(
-            "congestionLevelStarts", FieldType.MESSAGE, false, false, true,
-            NUM_SINGLETONVALUELEAF_CONGESTIONLEVELSTARTS);
-
-    public static final FieldDefinition FIELD_SINGLETONVALUELEAF_STAKINGNETWORKREWARDS = new FieldDefinition(
-            "stakingNetworkRewards", FieldType.MESSAGE, false, false, true,
-            NUM_SINGLETONVALUELEAF_STAKINGNETWORKREWARDS);
-
-    public static final FieldDefinition FIELD_SINGLETONVALUELEAF_UPGRADEFILEHASH = new FieldDefinition(
-            "upgradeFileHash", FieldType.MESSAGE, false, false, true, NUM_SINGLETONVALUELEAF_UPGRADEFILEHASH);
-
-    public static final FieldDefinition FIELD_SINGLETONVALUELEAF_FREEZETIME = new FieldDefinition(
-            "freezeTime", FieldType.MESSAGE, false, false, true, NUM_SINGLETONVALUELEAF_FREEZETIME);
+    public static final FieldDefinition FIELD_SINGLETONVALUELEAF_VALUE = new FieldDefinition(
+            "value", FieldType.MESSAGE, false, false, false, NUM_SINGLETONVALUELEAF_VALUE);
 
     // FUTURE WORK: QueueValueLeaf or QueueValue?
 

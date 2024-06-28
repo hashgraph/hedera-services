@@ -92,10 +92,10 @@ class SerializationTest extends MerkleTestBase {
             @Override
             @SuppressWarnings("rawtypes")
             public Set<StateDefinition> statesToCreate() {
-                final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC, FRUIT_PROTO_FIELD);
-                final var animalDef = StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC, ANIMAL_PROTO_FIELD, 100);
-                final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC, COUNTRY_PROTO_FIELD);
-                final var steamDef = StateDefinition.queue(STEAM_STATE_KEY, STRING_CODEC, STEAM_PROTO_FIELD);
+                final var fruitDef = StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC);
+                final var animalDef = StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC, 100);
+                final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC);
+                final var steamDef = StateDefinition.queue(STEAM_STATE_KEY, STRING_CODEC);
                 return Set.of(fruitDef, animalDef, countryDef, steamDef);
             }
 

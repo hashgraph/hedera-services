@@ -17,20 +17,6 @@
 package com.hedera.node.app.service.token.impl.schemas;
 
 import static com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator.asAccountId;
-// https://github.com/hashgraph/hedera-services/issues/13781
-//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_ACCOUNTS;
-//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_ALIASES;
-//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_NFTS;
-//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_STAKINGINFO;
-//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_TOKENRELS;
-//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_TOKENS;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_STAKINGNETWORKREWARDS;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVACCOUNTS;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVALIASES;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVNFTS;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVSTAKINGINFO;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVTOKENRELS;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVTOKENS;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -112,26 +98,14 @@ public class V0490TokenSchema extends StakingInfoManagementSchema {
     @Override
     public Set<StateDefinition> statesToCreate() {
         return Set.of(
-                // https://github.com/hashgraph/hedera-services/issues/13781
-                // StateDefinition.onDisk(TOKENS_KEY, TokenID.PROTOBUF, Token.PROTOBUF, FIELD_KEYVALUEVALUELEAF_TOKENS, MAX_TOKENS),
-                StateDefinition.onDisk(TOKENS_KEY, TokenID.PROTOBUF, Token.PROTOBUF, FIELD_STATENODE_KVTOKENS, MAX_TOKENS),
-                // https://github.com/hashgraph/hedera-services/issues/13781
-                // StateDefinition.onDisk(ACCOUNTS_KEY, AccountID.PROTOBUF, Account.PROTOBUF, FIELD_KEYVALUEVALUELEAF_ACCOUNTS, MAX_ACCOUNTS),
-                StateDefinition.onDisk(ACCOUNTS_KEY, AccountID.PROTOBUF, Account.PROTOBUF, FIELD_STATENODE_KVACCOUNTS, MAX_ACCOUNTS),
-                // https://github.com/hashgraph/hedera-services/issues/13781
-                // StateDefinition.onDisk(ALIASES_KEY, ProtoBytes.PROTOBUF, AccountID.PROTOBUF, FIELD_KEYVALUEVALUELEAF_ALIASES, MAX_ACCOUNTS),
-                StateDefinition.onDisk(ALIASES_KEY, ProtoBytes.PROTOBUF, AccountID.PROTOBUF, FIELD_STATENODE_KVALIASES, MAX_ACCOUNTS),
-                // https://github.com/hashgraph/hedera-services/issues/13781
-                // StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, FIELD_KEYVALUEVALUELEAF_NFTS, MAX_MINTABLE_NFTS),
-                StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, FIELD_STATENODE_KVNFTS, MAX_MINTABLE_NFTS),
-                // https://github.com/hashgraph/hedera-services/issues/13781
-                // StateDefinition.onDisk(TOKEN_RELS_KEY, EntityIDPair.PROTOBUF, TokenRelation.PROTOBUF, FIELD_KEYVALUEVALUELEAF_TOKENRELS, MAX_TOKEN_RELS),
-                StateDefinition.onDisk(TOKEN_RELS_KEY, EntityIDPair.PROTOBUF, TokenRelation.PROTOBUF, FIELD_STATENODE_KVTOKENRELS, MAX_TOKEN_RELS),
-                // https://github.com/hashgraph/hedera-services/issues/13781
+                StateDefinition.onDisk(TOKENS_KEY, TokenID.PROTOBUF, Token.PROTOBUF, MAX_TOKENS),
+                StateDefinition.onDisk(ACCOUNTS_KEY, AccountID.PROTOBUF, Account.PROTOBUF, MAX_ACCOUNTS),
+                StateDefinition.onDisk(ALIASES_KEY, ProtoBytes.PROTOBUF, AccountID.PROTOBUF, MAX_ACCOUNTS),
+                StateDefinition.onDisk(NFTS_KEY, NftID.PROTOBUF, Nft.PROTOBUF, MAX_MINTABLE_NFTS),
+                StateDefinition.onDisk(TOKEN_RELS_KEY, EntityIDPair.PROTOBUF, TokenRelation.PROTOBUF, MAX_TOKEN_RELS),
                 StateDefinition.onDisk(
-                        // STAKING_INFO_KEY, EntityNumber.PROTOBUF, StakingNodeInfo.PROTOBUF, FIELD_KEYVALUEVALUELEAF_STAKINGINFO, MAX_STAKING_INFOS),
-                        STAKING_INFO_KEY, EntityNumber.PROTOBUF, StakingNodeInfo.PROTOBUF, FIELD_STATENODE_KVSTAKINGINFO, MAX_STAKING_INFOS),
-                StateDefinition.singleton(STAKING_NETWORK_REWARDS_KEY, NetworkStakingRewards.PROTOBUF, FIELD_SINGLETONVALUELEAF_STAKINGNETWORKREWARDS));
+                        STAKING_INFO_KEY, EntityNumber.PROTOBUF, StakingNodeInfo.PROTOBUF, MAX_STAKING_INFOS),
+                StateDefinition.singleton(STAKING_NETWORK_REWARDS_KEY, NetworkStakingRewards.PROTOBUF));
     }
 
     @Override

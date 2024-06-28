@@ -250,7 +250,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
             final var fruitMetadata2 = new StateMetadata<>(
                     FIRST_SERVICE,
                     new TestSchema(1),
-                    StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, LONG_CODEC, FRUIT_PROTO_FIELD));
+                    StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, LONG_CODEC));
 
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata2, () -> fruitMerkleMap);
@@ -334,7 +334,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
                 final var md = new StateMetadata<>(
                         serviceName,
                         new TestSchema(1),
-                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC, FRUIT_PROTO_FIELD));
+                        StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC));
 
                 final var node = createMerkleMap(label);
                 map.put(serviceName, node);

@@ -16,6 +16,8 @@
 
 package com.swirlds.platform.state.merkle.singleton;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_VALUE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_SINGLETONVALUELEAF_VALUE;
 import static com.swirlds.platform.state.merkle.StateUtils.readFromStream;
 import static com.swirlds.platform.state.merkle.StateUtils.writeToStream;
 import static java.util.Objects.requireNonNull;
@@ -55,7 +57,6 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
 
     private final long classId;
     private final Codec<T> codec;
-    private final FieldDefinition protoField;
     /** The actual value. For example, it could be an Account or SmartContract. */
     private T val;
 
@@ -66,7 +67,6 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     public ValueLeaf() {
         codec = null;
         classId = CLASS_ID;
-        protoField = null;
     }
 
     /**
@@ -76,10 +76,9 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
      * @param singletonClassId The class ID of the object
      * @param codec   The codec to use for serialization
      */
-    public ValueLeaf(final long singletonClassId, @NonNull final Codec<T> codec, final FieldDefinition protoField) {
+    public ValueLeaf(final long singletonClassId, @NonNull final Codec<T> codec) {
         this.codec = requireNonNull(codec);
         this.classId = singletonClassId;
-        this.protoField = protoField;
     }
 
     /**
@@ -91,20 +90,17 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public ValueLeaf(final long singletonClassId,
             @NonNull final Codec<T> codec,
-            @NonNull final FieldDefinition protoField,
             @Nullable final T value) {
-        this(singletonClassId, codec, protoField);
+        this(singletonClassId, codec);
         this.val = value;
     }
 
     public ValueLeaf(
             @NonNull final ReadableSequentialData in,
-            @NonNull final Codec<T> codec,
-            @NonNull final FieldDefinition protoField)
+            @NonNull final Codec<T> codec)
             throws MerkleSerializationException {
         this.classId = 0; // not used
         this.codec = Objects.requireNonNull(codec);
-        this.protoField = Objects.requireNonNull(protoField);
         protoDeserialize(in, null);
     }
 
@@ -114,7 +110,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
         throwIfImmutable();
         throwIfDestroyed();
 
-        final var cp = new ValueLeaf<>(classId, codec, protoField, val);
+        final var cp = new ValueLeaf<>(classId, codec, val);
         setImmutable(true);
         return cp;
     }
@@ -157,7 +153,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
     public int getProtoSizeInBytes() {
         int size = super.getProtoSizeInBytes(); // Includes hash
         if (val != null) {
-            size += ProtoWriterTools.sizeOfDelimited(protoField, codec.measureRecord(val));
+            size += ProtoWriterTools.sizeOfDelimited(FIELD_SINGLETONVALUELEAF_VALUE, codec.measureRecord(val));
         }
         return size;
     }
@@ -176,7 +172,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
         if (wireType != ProtoConstants.WIRE_TYPE_DELIMITED.ordinal()) {
             throw new MerkleSerializationException("Unexpected wire type: " + fieldTag);
         }
-        if (fieldNum == protoField.number()) {
+        if (fieldNum == NUM_SINGLETONVALUELEAF_VALUE) {
             final int len = in.readVarInt(false);
             final long oldLimit = in.limit();
             try {
@@ -189,7 +185,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
                 in.limit(oldLimit);
             }
         } else {
-            throw new MerkleSerializationException("Proto field mismatch, expected: " + protoField.number() + ", but was: " + fieldNum);
+            throw new MerkleSerializationException("Unexpected field tag: " + fieldTag);
         }
     }
 
@@ -203,7 +199,7 @@ public class ValueLeaf<T> extends PartialMerkleLeaf implements MerkleLeaf {
             super.protoSerialize(out, artifactsDir);
             if (val != null) {
                 final ValueReference<IOException> ex = new ValueReference<>();
-                ProtoWriterTools.writeDelimited(out, protoField, codec.measureRecord(val), o -> {
+                ProtoWriterTools.writeDelimited(out, FIELD_SINGLETONVALUELEAF_VALUE, codec.measureRecord(val), o -> {
                     try {
                         codec.write(val, o);
                     } catch (final IOException e) {

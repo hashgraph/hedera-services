@@ -16,8 +16,6 @@
 
 package com.hedera.node.app.ids.schemas;
 
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_ENTITYID;
-
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.config.data.HederaConfig;
@@ -57,7 +55,7 @@ public class V0490EntityIdSchema extends Schema {
     @NonNull
     @Override
     public Set<StateDefinition> statesToCreate() {
-        return Set.of(StateDefinition.singleton(ENTITY_ID_STATE_KEY, EntityNumber.PROTOBUF, FIELD_SINGLETONVALUELEAF_ENTITYID));
+        return Set.of(StateDefinition.singleton(ENTITY_ID_STATE_KEY, EntityNumber.PROTOBUF));
     }
 
     /**

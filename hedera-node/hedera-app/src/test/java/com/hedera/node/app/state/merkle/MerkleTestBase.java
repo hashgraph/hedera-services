@@ -69,7 +69,7 @@ public class MerkleTestBase extends com.swirlds.platform.test.fixtures.state.mer
         fruitMetadata = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
-                StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC, FRUIT_PROTO_FIELD));
+                StateDefinition.inMemory(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC));
     }
 
     /** Sets up the "Fruit" virtual map, label, and metadata. */
@@ -79,7 +79,7 @@ public class MerkleTestBase extends com.swirlds.platform.test.fixtures.state.mer
         fruitVirtualMetadata = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
-                StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC, FRUIT_PROTO_FIELD, 100));
+                StateDefinition.onDisk(FRUIT_STATE_KEY, STRING_CODEC, STRING_CODEC, 100));
     }
 
     /** Sets up the "Animal" merkle map, label, and metadata. */
@@ -89,7 +89,7 @@ public class MerkleTestBase extends com.swirlds.platform.test.fixtures.state.mer
         animalMetadata = new StateMetadata<>(
                 FIRST_SERVICE,
                 new TestSchema(1),
-                StateDefinition.inMemory(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC, ANIMAL_PROTO_FIELD));
+                StateDefinition.inMemory(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC));
     }
 
     /** Sets up the "Space" merkle map, label, and metadata. */
@@ -97,25 +97,24 @@ public class MerkleTestBase extends com.swirlds.platform.test.fixtures.state.mer
     protected void setupSpaceMerkleMap() {
         super.setupSpaceMerkleMap();
         spaceMetadata = new StateMetadata<>(
-                SECOND_SERVICE, new TestSchema(1), StateDefinition.inMemory(SPACE_STATE_KEY, LONG_CODEC, STRING_CODEC, SPACE_PROTO_FIELD));
+                SECOND_SERVICE, new TestSchema(1), StateDefinition.inMemory(SPACE_STATE_KEY, LONG_CODEC, STRING_CODEC));
     }
 
     @Override
     protected void setupSingletonCountry() {
         super.setupSingletonCountry();
         countryMetadata = new StateMetadata<>(
-                FIRST_SERVICE, new TestSchema(1), StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC, COUNTRY_PROTO_FIELD));
+                FIRST_SERVICE, new TestSchema(1), StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC));
     }
 
     @Override
     protected void setupSteamQueue() {
         super.setupSteamQueue();
         steamMetadata = new StateMetadata<>(
-                FIRST_SERVICE, new TestSchema(1), StateDefinition.queue(STEAM_STATE_KEY, STRING_CODEC, STEAM_PROTO_FIELD));
+                FIRST_SERVICE, new TestSchema(1), StateDefinition.queue(STEAM_STATE_KEY, STRING_CODEC));
     }
 
     /** Creates a new arbitrary virtual map with the given label, storageDir, and metadata */
-    @SuppressWarnings("unchecked")
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
             String label, StateMetadata<String, String> md) {
         return createVirtualMap(

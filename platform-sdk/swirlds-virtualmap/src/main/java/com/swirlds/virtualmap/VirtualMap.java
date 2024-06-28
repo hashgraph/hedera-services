@@ -19,6 +19,8 @@ package com.swirlds.virtualmap;
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VIRTUALMAP_STATE;
 import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VIRTUALMAP_VIRTUALROOT;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VIRTUALMAP_STATE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VIRTUALMAP_VIRTUALROOT;
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 
 import com.hedera.pbj.runtime.FieldDefinition;
@@ -406,8 +408,8 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
 
     @Override
     protected boolean isChildNodeProtoTag(final int fieldNum) {
-        return (fieldNum == FIELD_VIRTUALMAP_STATE.number()) ||
-                (fieldNum == FIELD_VIRTUALMAP_VIRTUALROOT.number());
+        return (fieldNum == NUM_VIRTUALMAP_STATE) ||
+                (fieldNum == NUM_VIRTUALMAP_VIRTUALROOT);
     }
 
     @Override

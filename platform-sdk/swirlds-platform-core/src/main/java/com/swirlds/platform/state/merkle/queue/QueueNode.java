@@ -71,11 +71,6 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
 
     private final long leafClassId;
 
-    // Only used for deserialization
-    private Function<String, StateDefinition> stateDefLookup;
-
-    private FieldDefinition valueProtoField;
-
     /**
      * @deprecated Only exists for constructable registry as it works today. Remove ASAP!
      */
@@ -86,7 +81,6 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
         this.codec = null;
         this.queueNodeClassId = CLASS_ID;
         this.leafClassId = ValueLeaf.CLASS_ID;
-        this.valueProtoField = null;
     }
 
     /**
@@ -99,12 +93,10 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
             @NonNull String stateKey,
             final long queueNodeClassId,
             final long leafClassId,
-            @NonNull final Codec<E> codec,
-            @NonNull final FieldDefinition valueProtoField) {
+            @NonNull final Codec<E> codec) {
         setLeft(new StringLeaf(StateUtils.computeLabel(serviceName, stateKey)));
         setRight(new FCQueue<ValueLeaf<E>>());
         this.codec = requireNonNull(codec);
-        this.valueProtoField = requireNonNull(valueProtoField);
         this.queueNodeClassId = queueNodeClassId;
         this.leafClassId = leafClassId;
     }
@@ -114,7 +106,6 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
         this.setLeft(other.getLeft().copy());
         this.setRight(other.getRight().copy());
         this.codec = other.codec;
-        this.valueProtoField = other.valueProtoField;
         this.queueNodeClassId = other.queueNodeClassId;
         this.leafClassId = other.leafClassId;
     }
@@ -122,12 +113,11 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     public QueueNode(
             @NonNull final ReadableSequentialData in,
             final Path artifactsDir,
-            @NonNull final Function<String, StateDefinition> stateDefLookup)
+            @NonNull final Codec<E> codec)
             throws MerkleSerializationException {
         this.queueNodeClassId = 0; // Not used
         this.leafClassId = ValueLeaf.CLASS_ID; // Not used
-        this.stateDefLookup = stateDefLookup;
-        // codec and valueProtoField will be initialized from protoDeserialize()
+        this.codec = codec;
         protoDeserialize(in, artifactsDir);
     }
 
@@ -154,7 +144,7 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
 
     /** Adds an element to this queue. */
     public void add(E element) {
-        getQueue().add(new ValueLeaf<>(leafClassId, codec, valueProtoField, element));
+        getQueue().add(new ValueLeaf<>(leafClassId, codec, element));
         // Log to transaction state log, what was added
         logQueueAdd(getLabel(), element);
     }
@@ -207,23 +197,15 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
                 (fieldNum == NUM_QUEUESTATE_VALUE);
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     protected MerkleNode protoDeserializeNextChild(@NonNull ReadableSequentialData in, Path artifactsDir)
             throws MerkleSerializationException {
         final int childrenSoFar = getNumberOfChildren();
         if (childrenSoFar == 0) {
+            // FUTURE WORK: check that the label matches the state definition
             return new StringLeaf(in);
         } else if (childrenSoFar == 1) {
-            final StringLeaf left = getLeft();
-            final String label = left.getLabel();
-            final StateDefinition stateDef = stateDefLookup.apply(label);
-            if (stateDef == null) {
-                throw new MerkleSerializationException("Unknown queue value: " + label);
-            }
-            codec = stateDef.valueCodec();
-            valueProtoField = stateDef.stateProtoField();
-            return new FCQueue<>(in, artifactsDir, t -> new ValueLeaf<>(t, codec, valueProtoField));
+            return new FCQueue<>(in, artifactsDir, t -> new ValueLeaf<>(t, codec));
         } else {
             throw new MerkleSerializationException("Too many queue state child nodes");
         }

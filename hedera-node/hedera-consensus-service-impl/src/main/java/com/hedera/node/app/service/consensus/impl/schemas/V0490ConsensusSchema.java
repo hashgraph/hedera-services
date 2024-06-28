@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.consensus.impl.schemas;
 
 import static com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl.TOPICS_KEY;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVTOPICS;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TopicID;
@@ -51,9 +50,7 @@ public class V0490ConsensusSchema extends Schema {
     @Override
     public Set<StateDefinition> statesToCreate() {
         return Set.of(StateDefinition.onDisk(
-                // https://github.com/hashgraph/hedera-services/issues/13781
-                // TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF, MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_TOPICS, MAX_TOPICS));
-                TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF, FIELD_STATENODE_KVTOPICS, MAX_TOPICS));
+                TOPICS_KEY, TopicID.PROTOBUF, Topic.PROTOBUF, MAX_TOPICS));
     }
 
     @Override

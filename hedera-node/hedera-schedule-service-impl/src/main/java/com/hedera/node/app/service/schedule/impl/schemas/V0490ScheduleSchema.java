@@ -16,14 +16,6 @@
 
 package com.hedera.node.app.service.schedule.impl.schemas;
 
-// https://github.com/hashgraph/hedera-services/issues/13781
-//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_SCHEDULESBYEQUALITY;
-//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_SCHEDULESBYEXPIRYSEC;
-//import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_KEYVALUEVALUELEAF_SCHEDULESBYID;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVSCHEDULESBYEQUALITY;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVSCHEDULESBYEXPIRYSEC;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVSCHEDULESBYID;
-
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
@@ -78,9 +70,6 @@ public final class V0490ScheduleSchema extends Schema {
                 SCHEDULES_BY_ID_KEY,
                 ScheduleID.PROTOBUF,
                 Schedule.PROTOBUF,
-                // https://github.com/hashgraph/hedera-services/issues/13781
-                // FIELD_KEYVALUEVALUELEAF_SCHEDULESBYID,
-                FIELD_STATENODE_KVSCHEDULESBYID,
                 MAX_SCHEDULES_BY_ID_KEY);
     }
 
@@ -89,9 +78,6 @@ public final class V0490ScheduleSchema extends Schema {
                 SCHEDULES_BY_EXPIRY_SEC_KEY,
                 ProtoLong.PROTOBUF,
                 ScheduleList.PROTOBUF,
-                // https://github.com/hashgraph/hedera-services/issues/13781
-                // FIELD_KEYVALUEVALUELEAF_SCHEDULESBYEXPIRYSEC,
-                FIELD_STATENODE_KVSCHEDULESBYEXPIRYSEC,
                 MAX_SCHEDULES_BY_EXPIRY_SEC_KEY);
     }
 
@@ -100,9 +86,6 @@ public final class V0490ScheduleSchema extends Schema {
                 SCHEDULES_BY_EQUALITY_KEY,
                 ProtoBytes.PROTOBUF,
                 ScheduleList.PROTOBUF,
-                // https://github.com/hashgraph/hedera-services/issues/13781
-                // FIELD_KEYVALUEVALUELEAF_SCHEDULESBYEQUALITY,
-                FIELD_STATENODE_KVSCHEDULESBYEQUALITY,
                 MAX_SCHEDULES_BY_EQUALITY);
     }
 }

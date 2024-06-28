@@ -286,7 +286,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.stateDefinition().stateKey(),
                                         md.singletonClassId(),
                                         md.stateDefinition().valueCodec(),
-                                        md.stateDefinition().stateProtoField(),
                                         null));
                     } else if (def.queue()) {
                         hederaState.putServiceStateIfAbsent(
@@ -296,8 +295,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.stateDefinition().stateKey(),
                                         md.queueNodeClassId(),
                                         md.singletonClassId(),
-                                        md.stateDefinition().valueCodec(),
-                                        md.stateDefinition().stateProtoField()));
+                                        md.stateDefinition().valueCodec()));
                     } else if (!def.onDisk()) {
                         hederaState.putServiceStateIfAbsent(md, () -> {
                             final var map = new MerkleMap<>();
@@ -387,7 +385,6 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             md.stateDefinition().stateKey(),
                             md.singletonClassId(),
                             md.stateDefinition().valueCodec(),
-                            md.stateDefinition().stateProtoField(),
                             null)));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     QueueNode.class,
@@ -396,15 +393,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                             md.stateDefinition().stateKey(),
                             md.queueNodeClassId(),
                             md.singletonClassId(),
-                            md.stateDefinition().valueCodec(),
-                            md.stateDefinition().stateProtoField())));
+                            md.stateDefinition().valueCodec())));
             constructableRegistry.registerConstructable(new ClassConstructorPair(StringLeaf.class, StringLeaf::new));
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     ValueLeaf.class,
                     () -> new ValueLeaf<>(
                             md.singletonClassId(),
-                            md.stateDefinition().valueCodec(),
-                            md.stateDefinition().stateProtoField())));
+                            md.stateDefinition().valueCodec())));
         } catch (ConstructableRegistryException e) {
             // This is a fatal error.
             throw new IllegalStateException(

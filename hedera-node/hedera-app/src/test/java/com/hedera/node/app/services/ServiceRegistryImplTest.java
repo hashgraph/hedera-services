@@ -62,12 +62,11 @@ final class ServicesRegistryImplTest {
     @Test
     void registerCallsTheConstructableRegistry() throws ConstructableRegistryException {
         final var registry = new ServicesRegistryImpl(cr, DEFAULT_CONFIG);
-        final var protoField = new FieldDefinition("singleton", FieldType.MESSAGE, false, false, true, 99);
         registry.register(TestService.newBuilder()
                 .name("registerCallsTheConstructableRegistryTest")
                 .schema(TestSchema.newBuilder()
                         .minorVersion(1)
-                        .stateToCreate(StateDefinition.singleton("Singleton", Timestamp.JSON, protoField))
+                        .stateToCreate(StateDefinition.singleton("Singleton", Timestamp.JSON))
                         .build())
                 .build());
         //noinspection removal

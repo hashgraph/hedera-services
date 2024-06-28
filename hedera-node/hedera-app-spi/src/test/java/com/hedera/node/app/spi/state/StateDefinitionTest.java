@@ -32,45 +32,43 @@ class StateDefinitionTest {
     @Mock
     private Codec<String> mockCodec;
 
-    private FieldDefinition protoField = new FieldDefinition("key", FieldType.MESSAGE, false, false, true, 999);
-
     @Test
     void singletonsCannotBeOnDisk() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new StateDefinition<>("KEY", mockCodec, mockCodec, protoField, 123, true, true, false));
+                () -> new StateDefinition<>("KEY", mockCodec, mockCodec, 123, true, true, false));
     }
 
     @Test
     void onDiskMustHintPositiveNumKeys() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new StateDefinition("KEY", mockCodec, mockCodec, protoField, 0, true, false, false));
+                () -> new StateDefinition("KEY", mockCodec, mockCodec, 0, true, false, false));
     }
 
     @Test
     void nonSingletonRequiresKeySerdes() {
         assertThrows(
-                NullPointerException.class, () -> new StateDefinition("KEY", null, mockCodec, protoField, 1, true, false, false));
+                NullPointerException.class, () -> new StateDefinition("KEY", null, mockCodec, 1, true, false, false));
     }
 
     @Test
     void inMemoryFactoryWorks() {
-        assertDoesNotThrow(() -> StateDefinition.inMemory("KEY", mockCodec, mockCodec, protoField));
+        assertDoesNotThrow(() -> StateDefinition.inMemory("KEY", mockCodec, mockCodec));
     }
 
     @Test
     void onDiskFactoryWorks() {
-        assertDoesNotThrow(() -> StateDefinition.onDisk("KEY", mockCodec, mockCodec, protoField, 123));
+        assertDoesNotThrow(() -> StateDefinition.onDisk("KEY", mockCodec, mockCodec, 123));
     }
 
     @Test
     void singletonFactoryWorks() {
-        assertDoesNotThrow(() -> StateDefinition.singleton("KEY", mockCodec, protoField));
+        assertDoesNotThrow(() -> StateDefinition.singleton("KEY", mockCodec));
     }
 
     @Test
     void constructorWorks() {
-        assertDoesNotThrow(() -> new StateDefinition("KEY", mockCodec, mockCodec, protoField, 123, true, false, false));
+        assertDoesNotThrow(() -> new StateDefinition("KEY", mockCodec, mockCodec, 123, true, false, false));
     }
 }

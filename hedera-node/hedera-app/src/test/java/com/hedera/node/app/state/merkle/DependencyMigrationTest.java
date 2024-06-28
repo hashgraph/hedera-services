@@ -19,7 +19,6 @@ package com.hedera.node.app.state.merkle;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
 import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
-import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONVALUELEAF_ENTITYID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -30,8 +29,6 @@ import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.hedera.pbj.runtime.FieldDefinition;
-import com.hedera.pbj.runtime.FieldType;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.spi.MigrationContext;
@@ -160,7 +157,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                     @NonNull
                     @Override
                     public Set<StateDefinition> statesToCreate() {
-                        return Set.of(StateDefinition.singleton(ENTITY_ID_STATE_KEY, EntityNumber.PROTOBUF, FIELD_SINGLETONVALUELEAF_ENTITYID));
+                        return Set.of(StateDefinition.singleton(ENTITY_ID_STATE_KEY, EntityNumber.PROTOBUF));
                     }
 
                     public void migrate(@NonNull MigrationContext ctx) {
@@ -217,7 +214,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                 registry.register(new Schema(VERSION) {
                     @NonNull
                     public Set<StateDefinition> statesToCreate() {
-                        return Set.of(StateDefinition.singleton(ENTITY_ID_STATE_KEY, EntityNumber.PROTOBUF, FIELD_SINGLETONVALUELEAF_ENTITYID));
+                        return Set.of(StateDefinition.singleton(ENTITY_ID_STATE_KEY, EntityNumber.PROTOBUF));
                     }
 
                     public void migrate(@NonNull MigrationContext ctx) {
@@ -301,7 +298,6 @@ class DependencyMigrationTest extends MerkleTestBase {
     private static class DependentService implements Service {
         static final String NAME = "DependentService";
         static final String STATE_KEY = "DS_MAPPINGS";
-        static final FieldDefinition FIELD_DEF = new FieldDefinition("dsMappings", FieldType.MESSAGE, false, false, true, 99);
 
         @NonNull
         @Override
@@ -315,7 +311,7 @@ class DependencyMigrationTest extends MerkleTestBase {
                 @NonNull
                 @Override
                 public Set<StateDefinition> statesToCreate() {
-                    return Set.of(StateDefinition.inMemory(STATE_KEY, LONG_CODEC, STRING_CODEC, FIELD_DEF));
+                    return Set.of(StateDefinition.inMemory(STATE_KEY, LONG_CODEC, STRING_CODEC));
                 }
 
                 public void migrate(@NonNull final MigrationContext ctx) {
