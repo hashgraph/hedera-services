@@ -16,9 +16,12 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTokenString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.DELEGATE_CONTRACT;
@@ -44,15 +47,21 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadCustomFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.CUSTOM_FEE_SCHEDULE_JSON;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_JSON;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
@@ -64,6 +73,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
@@ -125,13 +135,139 @@ public class CreatePrecompileSuite {
     private static final String CREATE_FUNGIBLE_TOKEN_WITH_KEYS_AND_EXPIRY_FUNCTION = "createTokenWithKeysAndExpiry";
 
     // TEST-001
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> fungibleTokenCreateHappyPathLegacy() {
+        final var tokenCreateContractAsKeyDelegate = "tokenCreateContractAsKeyDelegate";
+        final var createTokenNum = new AtomicLong();
+        final AtomicReference<byte[]> ed2551Key = new AtomicReference<>();
+        return propertyPreservingHapiSpec("fungibleTokenCreateHappyPathLegacy")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                        newKeyNamed(CONTRACT_ADMIN_KEY),
+                        cryptoCreate(ACCOUNT_TO_ASSOCIATE),
+                        uploadInitCode(TOKEN_CREATE_CONTRACT),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        contractCreate(TOKEN_CREATE_CONTRACT)
+                                .autoRenewAccountId(ACCOUNT)
+                                .adminKey(CONTRACT_ADMIN_KEY)
+                                .gas(GAS_TO_OFFER),
+                        newKeyNamed(THRESHOLD_KEY)
+                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT)))
+                                .exposingKeyTo(k -> ed2551Key.set(k.getThresholdKey()
+                                        .getKeys()
+                                        .getKeys(0)
+                                        .getEd25519()
+                                        .toByteArray())),
+                        cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
+                        cryptoUpdate(ACCOUNT_TO_ASSOCIATE).key(THRESHOLD_KEY))
+                .when(withOpContext((spec, opLog) -> {
+                    spec.registry()
+                            .saveKey(
+                                    ED25519KEY,
+                                    spec.registry()
+                                            .getKey(THRESHOLD_KEY)
+                                            .getThresholdKey()
+                                            .getKeys()
+                                            .getKeys(0));
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            TOKEN_CREATE_CONTRACT,
+                                            CREATE_FUNGIBLE_TOKEN_WITH_KEYS_AND_EXPIRY_FUNCTION,
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                            ed2551Key.get(),
+                                            spec.registry()
+                                                    .getKey(ECDSA_KEY)
+                                                    .getECDSASecp256K1()
+                                                    .toByteArray(),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                            AUTO_RENEW_PERIOD,
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getAccountID(ACCOUNT_TO_ASSOCIATE))))
+                                    .via(FIRST_CREATE_TXN)
+                                    .gas(GAS_TO_OFFER)
+                                    .sending(DEFAULT_AMOUNT_TO_SEND)
+                                    .payingWith(ACCOUNT)
+                                    .signedBy(THRESHOLD_KEY)
+                                    .refusingEthConversion()
+                                    .exposingResultTo(result -> {
+                                        log.info(EXPLICIT_CREATE_RESULT, result[0]);
+                                        final var res = (Address) result[0];
+                                        createTokenNum.set(res.value().longValueExact());
+                                    })
+                                    .hasKnownStatus(SUCCESS),
+                            newKeyNamed(TOKEN_CREATE_CONTRACT_AS_KEY).shape(CONTRACT.signedWith(TOKEN_CREATE_CONTRACT)),
+                            newKeyNamed(tokenCreateContractAsKeyDelegate)
+                                    .shape(DELEGATE_CONTRACT.signedWith(TOKEN_CREATE_CONTRACT)));
+                }))
+                .then(
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                getContractInfo(TOKEN_CREATE_CONTRACT)
+                                        .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
+                                        .logged(),
+                                getTxnRecord(FIRST_CREATE_TXN)
+                                        .andAllChildRecords()
+                                        .logged(),
+                                getAccountBalance(ACCOUNT).logged(),
+                                getAccountBalance(TOKEN_CREATE_CONTRACT).logged(),
+                                getContractInfo(TOKEN_CREATE_CONTRACT).logged(),
+                                childRecordsCheck(
+                                        FIRST_CREATE_TXN,
+                                        ResponseCodeEnum.SUCCESS,
+                                        TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS),
+                                        TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS),
+                                        TransactionRecordAsserts.recordWith().status(ResponseCodeEnum.SUCCESS)),
+                                sourcing(() -> getAccountInfo(ACCOUNT_TO_ASSOCIATE)
+                                        .logged()
+                                        .hasTokenRelationShipCount(1)),
+                                sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
+                                                .setTokenNum(createTokenNum.get())
+                                                .build()))
+                                        .logged()
+                                        .hasTokenType(TokenType.FUNGIBLE_COMMON)
+                                        .hasSymbol(TOKEN_SYMBOL)
+                                        .hasName(TOKEN_NAME)
+                                        .hasDecimals(8)
+                                        .hasTotalSupply(100)
+                                        .hasEntityMemo(MEMO)
+                                        .hasTreasury(ACCOUNT)
+                                        // Token doesn't inherit contract's auto-renew
+                                        // account if set in tokenCreate
+                                        .hasAutoRenewAccount(ACCOUNT)
+                                        .hasAutoRenewPeriod(AUTO_RENEW_PERIOD)
+                                        .hasSupplyType(TokenSupplyType.INFINITE)
+                                        .searchKeysGlobally()
+                                        .hasAdminKey(ED25519KEY)
+                                        .hasKycKey(ED25519KEY)
+                                        .hasFreezeKey(ECDSA_KEY)
+                                        .hasWipeKey(ECDSA_KEY)
+                                        .hasSupplyKey(TOKEN_CREATE_CONTRACT_AS_KEY)
+                                        .hasFeeScheduleKey(tokenCreateContractAsKeyDelegate)
+                                        .hasPauseKey(CONTRACT_ADMIN_KEY)
+                                        .hasPauseStatus(TokenPauseStatus.Unpaused)),
+                                cryptoDelete(ACCOUNT).hasKnownStatus(ACCOUNT_IS_TREASURY))),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> fungibleTokenCreateHappyPath() {
         final var tokenCreateContractAsKeyDelegate = "tokenCreateContractAsKeyDelegate";
         final var createTokenNum = new AtomicLong();
         final AtomicReference<byte[]> ed2551Key = new AtomicReference<>();
-        return defaultHapiSpec("fungibleTokenCreateHappyPath")
+        return propertyPreservingHapiSpec("fungibleTokenCreateHappyPath")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(CONTRACT_ADMIN_KEY),
                         cryptoCreate(ACCOUNT_TO_ASSOCIATE),
@@ -310,12 +446,88 @@ public class CreatePrecompileSuite {
     }
 
     // TEST-001
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> inheritsSenderAutoRenewAccountForTokenCreateLegacy() {
+        final var createTokenNum = new AtomicLong();
+        final AtomicReference<byte[]> ed2551Key = new AtomicReference<>();
+        return propertyPreservingHapiSpec("inheritsSenderAutoRenewAccountForTokenCreateLegacy")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        newKeyNamed(ECDSA_KEY).shape(SECP256K1),
+                        newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
+                        newKeyNamed(CONTRACT_ADMIN_KEY),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(ACCOUNT_TO_ASSOCIATE).key(ACCOUNT_TO_ASSOCIATE_KEY),
+                        uploadInitCode(TOKEN_CREATE_CONTRACT),
+                        contractCreate(TOKEN_CREATE_CONTRACT)
+                                .gas(GAS_TO_OFFER)
+                                .adminKey(CONTRACT_ADMIN_KEY)
+                                .autoRenewAccountId(ACCOUNT),
+                        newKeyNamed(THRESHOLD_KEY)
+                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, TOKEN_CREATE_CONTRACT)))
+                                .exposingKeyTo(k -> ed2551Key.set(k.getThresholdKey()
+                                        .getKeys()
+                                        .getKeys(0)
+                                        .getEd25519()
+                                        .toByteArray())),
+                        cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
+                        cryptoUpdate(ACCOUNT_TO_ASSOCIATE).key(THRESHOLD_KEY),
+                        getContractInfo(TOKEN_CREATE_CONTRACT)
+                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
+                                .logged())
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_CREATE_CONTRACT,
+                                        CREATE_FUNGIBLE_TOKEN_WITH_KEYS_AND_EXPIRY_FUNCTION,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        ed2551Key.get(),
+                                        spec.registry()
+                                                .getKey(ECDSA_KEY)
+                                                .getECDSASecp256K1()
+                                                .toByteArray(),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getContractId(TOKEN_CREATE_CONTRACT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        AUTO_RENEW_PERIOD,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT_TO_ASSOCIATE))))
+                                .via(FIRST_CREATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .payingWith(ACCOUNT)
+                                .alsoSigningWithFullPrefix(THRESHOLD_KEY)
+                                .refusingEthConversion()
+                                .exposingResultTo(result -> {
+                                    log.info(EXPLICIT_CREATE_RESULT, result[0]);
+                                    final var res = (Address) result[0];
+                                    createTokenNum.set(res.value().longValueExact());
+                                })
+                                .hasKnownStatus(SUCCESS))))
+                .then(
+                        sourcing(() -> getTokenInfo(asTokenString(TokenID.newBuilder()
+                                        .setTokenNum(createTokenNum.get())
+                                        .build()))
+                                .logged()
+                                .hasAutoRenewAccount(ACCOUNT)
+                                .hasPauseStatus(TokenPauseStatus.Unpaused)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> inheritsSenderAutoRenewAccountForTokenCreate() {
         final var createTokenNum = new AtomicLong();
         final AtomicReference<byte[]> ed2551Key = new AtomicReference<>();
-        return defaultHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
+        return propertyPreservingHapiSpec("inheritsSenderAutoRenewAccountForTokenCreate")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(ECDSA_KEY).shape(SECP256K1),
                         newKeyNamed(ACCOUNT_TO_ASSOCIATE_KEY),
                         newKeyNamed(CONTRACT_ADMIN_KEY),
@@ -1041,14 +1253,98 @@ public class CreatePrecompileSuite {
                         getContractInfo(TOKEN_CREATE_CONTRACT));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> createTokenWithFixedFeeThenTransferAndAssessFeeLegacy() {
+        final var createTokenNum = new AtomicLong();
+        final var FEE_COLLECTOR = "feeCollector";
+        final var RECIPIENT = "recipient";
+        final var SECOND_RECIPIENT = "secondRecipient";
+        return propertyPreservingHapiSpec("createTokenWithFixedFeeThenTransferAndAssessFeeLegacy")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(RECIPIENT).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(SECOND_RECIPIENT),
+                        cryptoCreate(FEE_COLLECTOR).balance(0L),
+                        uploadInitCode(TOKEN_MISC_OPERATIONS_CONTRACT),
+                        contractCreate(TOKEN_MISC_OPERATIONS_CONTRACT)
+                                .gas(GAS_TO_OFFER_2)
+                                .autoRenewAccountId(ACCOUNT),
+                        newKeyNamed(THRESHOLD_KEY)
+                                .shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_MISC_OPERATIONS_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(THRESHOLD_KEY),
+                        cryptoUpdate(FEE_COLLECTOR).key(THRESHOLD_KEY),
+                        cryptoUpdate(RECIPIENT).key(THRESHOLD_KEY),
+                        cryptoUpdate(SECOND_RECIPIENT).key(THRESHOLD_KEY),
+                        cryptoTransfer(TokenMovement.movingHbar(ONE_HUNDRED_HBARS)
+                                .between(GENESIS, TOKEN_MISC_OPERATIONS_CONTRACT)),
+                        getContractInfo(TOKEN_MISC_OPERATIONS_CONTRACT)
+                                .has(ContractInfoAsserts.contractWith().autoRenewAccountId(ACCOUNT))
+                                .logged())
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        TOKEN_MISC_OPERATIONS_CONTRACT,
+                                        "createTokenWithHbarsFixedFeeAndTransferIt",
+                                        10L,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(FEE_COLLECTOR))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(SECOND_RECIPIENT))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))))
+                                .via(FIRST_CREATE_TXN)
+                                .gas(GAS_TO_OFFER_2)
+                                .sending(DEFAULT_AMOUNT_TO_SEND)
+                                .payingWith(ACCOUNT)
+                                .exposingResultTo(result -> {
+                                    log.info(EXPLICIT_CREATE_RESULT, result[0]);
+                                    final var res = (Address) result[0];
+                                    createTokenNum.set(res.value().longValueExact());
+                                })
+                                .hasKnownStatus(SUCCESS))))
+                .then(
+                        withOpContext((spec, opLog) -> allRunFor(
+                                spec,
+                                getTxnRecord(FIRST_CREATE_TXN)
+                                        .andAllChildRecords()
+                                        .logged(),
+                                getAccountBalance(RECIPIENT)
+                                        .hasTokenBalance(
+                                                asTokenString(TokenID.newBuilder()
+                                                        .setTokenNum(createTokenNum.get())
+                                                        .build()),
+                                                0L),
+                                getAccountBalance(SECOND_RECIPIENT)
+                                        .hasTokenBalance(
+                                                asTokenString(TokenID.newBuilder()
+                                                        .setTokenNum(createTokenNum.get())
+                                                        .build()),
+                                                1L),
+                                getAccountBalance(ACCOUNT)
+                                        .hasTokenBalance(
+                                                asTokenString(TokenID.newBuilder()
+                                                        .setTokenNum(createTokenNum.get())
+                                                        .build()),
+                                                199L),
+                                getAccountBalance(FEE_COLLECTOR).hasTinyBars(10L))),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> createTokenWithFixedFeeThenTransferAndAssessFee() {
         final var createTokenNum = new AtomicLong();
         final var FEE_COLLECTOR = "feeCollector";
         final var RECIPIENT = "recipient";
         final var SECOND_RECIPIENT = "secondRecipient";
-        return defaultHapiSpec("createTokenWithFixedFeeThenTransferAndAssessFee")
+        return propertyPreservingHapiSpec("createTokenWithFixedFeeThenTransferAndAssessFee")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         cryptoCreate(RECIPIENT).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(SECOND_RECIPIENT),

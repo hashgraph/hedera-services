@@ -16,12 +16,15 @@
 
 package com.hedera.services.bdd.suites.ethereum;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -56,8 +59,10 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadCustomFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
@@ -65,9 +70,12 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.CUSTOM_FEE_SCHEDULE_JSON;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_HASH_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SENDER_ADDRESS;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_JSON;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -77,6 +85,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.THOUSAND_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -95,6 +104,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.queries.meta.AccountCreationDetails;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -202,7 +212,84 @@ public class HelloWorldEthereumSuite {
                                         createdIds -> assertFalse(createdIds.isEmpty(), "EthTx sig creation failed")));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> badRelayClientLegacy() {
+        final var adminKey = "adminKey";
+        final var exploitToken = "exploitToken";
+        final var exploitContract = "BadRelayClient";
+        final var maliciousTxn = "theft";
+        final var maliciousEOA = "maliciousEOA";
+        final var maliciousAutoCreation = "maliciousAutoCreation";
+        final var maliciousStartBalance = ONE_HUNDRED_HBARS;
+        final AtomicReference<String> maliciousEOAId = new AtomicReference<>();
+        final AtomicReference<String> relayerEvmAddress = new AtomicReference<>();
+        final AtomicReference<String> exploitTokenEvmAddress = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "badRelayClientLegacy",
+                        NONDETERMINISTIC_ETHEREUM_DATA,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        newKeyNamed(adminKey),
+                        newKeyNamed(maliciousEOA).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(RELAYER)
+                                .balance(10 * ONE_MILLION_HBARS)
+                                .exposingCreatedIdTo(
+                                        id -> relayerEvmAddress.set(asHexedSolidityAddress(0, 0, id.getAccountNum()))),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, maliciousEOA, maliciousStartBalance))
+                                .via(maliciousAutoCreation),
+                        withOpContext((spec, opLog) -> {
+                            final var lookup = getTxnRecord(maliciousAutoCreation)
+                                    .andAllChildRecords()
+                                    .logged();
+                            allRunFor(spec, lookup);
+                            final var childCreation = lookup.getFirstNonStakingChildRecord();
+                            maliciousEOAId.set(
+                                    asAccountString(childCreation.getReceipt().getAccountID()));
+                        }),
+                        uploadInitCode(exploitContract),
+                        contractCreate(exploitContract).adminKey(adminKey),
+                        sourcing(() -> tokenCreate(exploitToken)
+                                .treasury(maliciousEOAId.get())
+                                .symbol("IDYM")
+                                .symbol("I DRINK YOUR MILKSHAKE")
+                                .initialSupply(Long.MAX_VALUE)
+                                .decimals(0)
+                                .withCustom(fixedHbarFee(ONE_MILLION_HBARS, maliciousEOAId.get()))
+                                .signedBy(DEFAULT_PAYER, maliciousEOA)
+                                .exposingCreatedIdTo(id -> exploitTokenEvmAddress.set(
+                                        asHexedSolidityAddress(0, 0, asToken(id).getTokenNum())))))
+                .when(sourcing(() -> ethereumCall(
+                                exploitContract,
+                                "stealFrom",
+                                asHeadlongAddress(relayerEvmAddress.get()),
+                                asHeadlongAddress(exploitTokenEvmAddress.get()))
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(maliciousEOA)
+                        .payingWith(RELAYER)
+                        .via(maliciousTxn)
+                        .nonce(0)
+                        .gasLimit(1_000_000L)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)))
+                .then(
+                        getTxnRecord(maliciousTxn).andAllChildRecords().logged(),
+                        childRecordsCheck(
+                                maliciousTxn,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)),
+                        sourcing(() -> getAccountBalance(maliciousEOAId.get())
+                                .hasTinyBars(spec -> amount -> (amount > maliciousStartBalance)
+                                        ? Optional.of("Malicious" + " EOA balance" + " increased")
+                                        : Optional.empty())),
+                        getAliasedAccountInfo(maliciousEOA).has(accountWith().nonce(1L)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> badRelayClient() {
         final var adminKey = "adminKey";
         final var exploitToken = "exploitToken";
@@ -215,12 +302,14 @@ public class HelloWorldEthereumSuite {
         final AtomicReference<String> relayerEvmAddress = new AtomicReference<>();
         final AtomicReference<String> exploitTokenEvmAddress = new AtomicReference<>();
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "badRelayClient",
                         NONDETERMINISTIC_ETHEREUM_DATA,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(adminKey),
                         newKeyNamed(maliciousEOA).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER)

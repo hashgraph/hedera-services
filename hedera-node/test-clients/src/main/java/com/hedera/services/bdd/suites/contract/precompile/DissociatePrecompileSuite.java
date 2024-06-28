@@ -16,9 +16,12 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -47,10 +50,17 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadCustomFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.CUSTOM_FEE_SCHEDULE_JSON;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_JSON;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
@@ -70,6 +80,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -480,11 +491,53 @@ public class DissociatePrecompileSuite {
                         getAccountBalance(ACCOUNT).hasTokenBalance(TBD_TOKEN, initialSupply - 2 * nonZeroXfer));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> nestedDissociateWorksAsExpectedLegacy() {
+        final var NESTED_DISSOCIATE_FUNGIBLE_TXN = "nestedDissociateFungibleTxn";
+        return propertyPreservingHapiSpec("nestedDissociateWorksAsExpectedLegacy")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN).tokenType(FUNGIBLE_COMMON).treasury(TOKEN_TREASURY),
+                        uploadInitCode(OUTER_CONTRACT, NESTED_CONTRACT),
+                        contractCreate(NESTED_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCreate(
+                                OUTER_CONTRACT, asHeadlongAddress(getNestedContractAddress(NESTED_CONTRACT, spec))),
+                        // Test Case: Account paying and signing a nested fungible TOKEN DISSOCIATE TRANSACTION,
+                        // when we Dissociate the token to the signer
+                        //  → call → CONTRACT A → call → CONTRACT B → call → PRECOMPILE(HTS)
+                        newKeyNamed(CONTRACT_KEY_NESTED)
+                                .shape(THRESHOLD_KEY_SHAPE_2_CONTRACTS.signedWith(
+                                        sigs(ON, NESTED_CONTRACT, OUTER_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY_NESTED),
+                        contractCall(
+                                        OUTER_CONTRACT,
+                                        "associateDissociateContractCall",
+                                        asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(ACCOUNT))),
+                                        asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(VANILLA_TOKEN))))
+                                .payingWith(ACCOUNT)
+                                .hasRetryPrecheckFrom(BUSY)
+                                .via(NESTED_DISSOCIATE_FUNGIBLE_TXN)
+                                .gas(GAS_TO_OFFER))))
+                .then(
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> nestedDissociateWorksAsExpected() {
         final var NESTED_DISSOCIATE_FUNGIBLE_TXN = "nestedDissociateFungibleTxn";
-        return defaultHapiSpec("nestedDissociateWorksAsExpected")
+        return propertyPreservingHapiSpec("nestedDissociateWorksAsExpected")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN).tokenType(FUNGIBLE_COMMON).treasury(TOKEN_TREASURY),

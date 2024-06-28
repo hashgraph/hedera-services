@@ -17,10 +17,13 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
+import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asDotDelimitedLongArray;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -50,6 +53,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadCustomFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
@@ -57,10 +62,14 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.CUSTOM_FEE_SCHEDULE_JSON;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_JSON;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -82,6 +91,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -936,16 +946,66 @@ public class ContractKeysHTSSuite {
                                                 .including(NFT, ACCOUNT, RECEIVER, 1L))));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> callForAssociateWithDelegateContractKeyLegacy() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "callForAssociateWithDelegateContractKeyLegacy",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
+                        contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        newKeyNamed(DELEGATE_KEY)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via(VANILLA_TOKEN_ASSOCIATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS))))
+                .then(
+                        childRecordsCheck(
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> callForAssociateWithDelegateContractKey() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "callForAssociateWithDelegateContractKey",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
@@ -980,17 +1040,68 @@ public class ContractKeysHTSSuite {
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> callForAssociateWithContractKeyLegacy() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "callForAssociateWithContractKeyLegacy",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
+                        contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        newKeyNamed(CONTRACT_KEY)
+                                .shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via(VANILLA_TOKEN_ASSOCIATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS))))
+                .then(
+                        childRecordsCheck(
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> callForAssociateWithContractKey() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "callForAssociateWithContractKey",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
@@ -1209,19 +1320,74 @@ public class ContractKeysHTSSuite {
                 .then(getAccountBalance(TOKEN_TREASURY).hasTokenBalance(TOKEN_USAGE, 49));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorksLegacy() {
+        final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
+        final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorksLegacy",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        HIGHLY_NON_DETERMINISTIC_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
+                        uploadInitCode(outerContract, nestedContract),
+                        contractCreate(nestedContract))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCreate(
+                                outerContract, asHeadlongAddress(getNestedContractAddress(nestedContract, spec))),
+                        newKeyNamed(DELEGATE_KEY)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                        outerContract,
+                                        "associateDelegateCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("delegateAssociateCallWithDelegateContractKeyTxn")
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS)
+                                .gas(GAS_TO_OFFER))))
+                .then(
+                        childRecordsCheck(
+                                "delegateAssociateCallWithDelegateContractKeyTxn",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec(
-                        "DelegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks",
+        return propertyPreservingHapiSpec(
+                        "delegateCallForAssociatePrecompileSignedWithDelegateContractKeyWorks",
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         HIGHLY_NON_DETERMINISTIC_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
@@ -1308,16 +1474,105 @@ public class ContractKeysHTSSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> associatePrecompileWithDelegateContractKeyForNonFungibleWithKYCLegacy() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "associatePrecompileWithDelegateContractKeyForNonFungibleWithKYCLegacy",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        newKeyNamed(KYC_KEY),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(KYC_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(0)
+                                .supplyKey(GENESIS)
+                                .kycKey(KYC_KEY)
+                                .exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
+                        uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
+                        contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("kycNFTAssociateFailsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        newKeyNamed(DELEGATE_KEY)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("kycNFTAssociateTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("kycNFTSecondAssociateFailsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        childRecordsCheck(
+                                "kycNFTAssociateFailsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        childRecordsCheck(
+                                "kycNFTAssociateTxn",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        childRecordsCheck(
+                                "kycNFTSecondAssociateFailsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(ACCOUNT)
+                                .hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec(
-                        "AssociatePrecompileWithDelegateContractKeyForNonFungibleWithKYC",
+        return propertyPreservingHapiSpec(
+                        "associatePrecompileWithDelegateContractKeyForNonFungibleWithKYC",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1867,17 +2122,108 @@ public class ContractKeysHTSSuite {
                         getAccountInfo(ACCOUNT).hasNoTokenRelationship(KYC_TOKEN));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> associatePrecompileWithDelegateContractKeyForNonFungibleFrozenLegacy() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "associatePrecompileWithDelegateContractKeyForNonFungibleFrozenLegacy",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        newKeyNamed(FREEZE_KEY),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FROZEN_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(GENESIS)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(0)
+                                .freezeKey(FREEZE_KEY)
+                                .freezeDefault(true)
+                                .exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id))),
+                        uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
+                        contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("frozenNFTAssociateFailsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        newKeyNamed(DELEGATE_KEY)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("frozenNFTAssociateTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("frozenNFTSecondAssociateFailsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        childRecordsCheck(
+                                "frozenNFTAssociateFailsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        childRecordsCheck(
+                                "frozenNFTAssociateTxn",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        childRecordsCheck(
+                                "frozenNFTSecondAssociateFailsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(ACCOUNT)
+                                .hasToken(relationshipWith(FROZEN_TOKEN).freeze(Frozen)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> associatePrecompileWithDelegateContractKeyForNonFungibleFrozen() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec(
-                        "AssociatePrecompileWithDelegateContractKeyForNonFungibleFrozen",
+        return propertyPreservingHapiSpec(
+                        "associatePrecompileWithDelegateContractKeyForNonFungibleFrozen",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(FREEZE_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -1952,17 +2298,104 @@ public class ContractKeysHTSSuite {
                                 .hasToken(relationshipWith(FROZEN_TOKEN).freeze(Frozen)));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> associatePrecompileWithDelegateContractKeyForNonFungibleVanillaLegacy() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "associatePrecompileWithDelegateContractKeyForNonFungibleVanillaLegacy",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .supplyKey(GENESIS)
+                                .initialSupply(0)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
+                        contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("vanillaNFTAssociateFailsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        newKeyNamed(DELEGATE_KEY)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("vanillaNFTAssociateTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("vanillaNFTSecondAssociateFailsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        childRecordsCheck(
+                                "vanillaNFTAssociateFailsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        childRecordsCheck(
+                                "vanillaNFTAssociateTxn",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        childRecordsCheck(
+                                "vanillaNFTSecondAssociateFailsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> associatePrecompileWithDelegateContractKeyForNonFungibleVanilla() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec(
-                        "AssociatePrecompileWithDelegateContractKeyForNonFungibleVanilla",
+        return propertyPreservingHapiSpec(
+                        "associatePrecompileWithDelegateContractKeyForNonFungibleVanilla",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
@@ -2033,17 +2466,105 @@ public class ContractKeysHTSSuite {
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> associatePrecompileWithDelegateContractKeyForFungibleWithKYCLegacy() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "associatePrecompileWithDelegateContractKeyForFungibleWithKYCLegacy",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        newKeyNamed(KYC_KEY),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(KYC_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .kycKey(KYC_KEY)
+                                .exposingCreatedIdTo(id -> kycTokenID.set(asToken(id))),
+                        uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
+                        contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("kycTokenAssociateFailsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        newKeyNamed(DELEGATE_KEY)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("kycTokenAssociateTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(kycTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("kycTokenSecondAssociateFailsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        childRecordsCheck(
+                                "kycTokenAssociateFailsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        childRecordsCheck(
+                                "kycTokenAssociateTxn",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        childRecordsCheck(
+                                "kycTokenSecondAssociateFailsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(ACCOUNT)
+                                .hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> associatePrecompileWithDelegateContractKeyForFungibleWithKYC() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> kycTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec(
-                        "AssociatePrecompileWithDelegateContractKeyForFungibleWithKYC",
+        return propertyPreservingHapiSpec(
+                        "associatePrecompileWithDelegateContractKeyForFungibleWithKYC",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(KYC_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -2115,16 +2636,105 @@ public class ContractKeysHTSSuite {
                                 .hasToken(relationshipWith(KYC_TOKEN).kyc(Revoked)));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> associatePrecompileWithDelegateContractKeyForFungibleFrozenLegacy() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "associatePrecompileWithDelegateContractKeyForFungibleFrozenLegacy",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        newKeyNamed(FREEZE_KEY),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FROZEN_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .initialSupply(TOTAL_SUPPLY)
+                                .freezeKey(FREEZE_KEY)
+                                .freezeDefault(true)
+                                .exposingCreatedIdTo(id -> frozenTokenID.set(asToken(id))),
+                        uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
+                        contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("frozenTokenAssociateFailsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        newKeyNamed(DELEGATE_KEY)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("frozenTokenAssociateTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(frozenTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("frozenTokenSecondAssociateFailsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        childRecordsCheck(
+                                "frozenTokenAssociateFailsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        childRecordsCheck(
+                                "frozenTokenAssociateTxn",
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        childRecordsCheck(
+                                "frozenTokenSecondAssociateFailsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(ACCOUNT)
+                                .hasToken(relationshipWith(FROZEN_TOKEN).freeze(Frozen)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> associatePrecompileWithDelegateContractKeyForFungibleFrozen() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> frozenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec(
-                        "AssociatePrecompileWithDelegateContractKeyForFungibleFrozen",
+        return propertyPreservingHapiSpec(
+                        "associatePrecompileWithDelegateContractKeyForFungibleFrozen",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(FREEZE_KEY),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
@@ -2198,16 +2808,100 @@ public class ContractKeysHTSSuite {
                                 .hasToken(relationshipWith(FROZEN_TOKEN).freeze(Frozen)));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> associatePrecompileWithDelegateContractKeyForFungibleVanillaLegacy() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "associatePrecompileWithDelegateContractKeyForFungibleVanillaLegacy",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        uploadInitCode(ASSOCIATE_DISSOCIATE_CONTRACT),
+                        contractCreate(ASSOCIATE_DISSOCIATE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("vanillaTokenAssociateFailsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        newKeyNamed(DELEGATE_KEY)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, ASSOCIATE_DISSOCIATE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via(VANILLA_TOKEN_ASSOCIATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(
+                                        ASSOCIATE_DISSOCIATE_CONTRACT,
+                                        TOKEN_ASSOCIATE,
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("vanillaTokenSecondAssociateFailsTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
+                .then(
+                        childRecordsCheck(
+                                "vanillaTokenAssociateFailsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        childRecordsCheck(
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        childRecordsCheck(
+                                "vanillaTokenSecondAssociateFailsTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> associatePrecompileWithDelegateContractKeyForFungibleVanilla() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec(
-                        "AssociatePrecompileWithDelegateContractKeyForFungibleVanilla",
+        return propertyPreservingHapiSpec(
+                        "associatePrecompileWithDelegateContractKeyForFungibleVanilla",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
@@ -2276,19 +2970,73 @@ public class ContractKeysHTSSuite {
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
-    @HapiTest
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> delegateCallForAssociatePrecompileSignedWithContractKeyFailsLegacy() {
+        final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
+        final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec(
+                        "delegateCallForAssociatePrecompileSignedWithContractKeyFailsLegacy",
+                        HIGHLY_NON_DETERMINISTIC_FEES,
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> vanillaTokenTokenID.set(asToken(id))),
+                        uploadInitCode(outerContract, nestedContract),
+                        contractCreate(nestedContract))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCreate(
+                                outerContract, asHeadlongAddress(getNestedContractAddress(nestedContract, spec))),
+                        newKeyNamed(CONTRACT_KEY).shape(CONTRACT_KEY_SHAPE.signedWith(sigs(ON, outerContract))),
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+                        contractCall(
+                                        outerContract,
+                                        "associateDelegateCall",
+                                        HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("delegateAssociateCallWithContractKeyTxn")
+                                .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+                                .gas(GAS_TO_OFFER))))
+                .then(
+                        childRecordsCheck(
+                                "delegateAssociateCallWithContractKeyTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(htsPrecompileResult()
+                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(VANILLA_TOKEN),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> delegateCallForAssociatePrecompileSignedWithContractKeyFails() {
         final var outerContract = NESTED_ASSOCIATE_DISSOCIATE;
         final var nestedContract = ASSOCIATE_DISSOCIATE_CONTRACT;
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec(
-                        "DelegateCallForAssociatePrecompileSignedWithContractKeyFails",
+        return propertyPreservingHapiSpec(
+                        "delegateCallForAssociatePrecompileSignedWithContractKeyFails",
                         HIGHLY_NON_DETERMINISTIC_FEES,
                         NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
