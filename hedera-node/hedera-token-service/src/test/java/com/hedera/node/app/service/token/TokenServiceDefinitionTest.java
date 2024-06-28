@@ -40,6 +40,7 @@ class TokenServiceDefinitionTest {
                         new RpcMethodDefinition<>("updateToken", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("mintToken", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("burnToken", Transaction.class, TransactionResponse.class),
+                        new RpcMethodDefinition<>("rejectToken", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("deleteToken", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("wipeTokenAccount", Transaction.class, TransactionResponse.class),
                         new RpcMethodDefinition<>("freezeTokenAccount", Transaction.class, TransactionResponse.class),

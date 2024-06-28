@@ -46,6 +46,7 @@ import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.pipeline.VirtualRoot;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -247,9 +248,9 @@ public abstract class VirtualMapReconnectTestBase {
         public void saveRecords(
                 long firstLeafPath,
                 long lastLeafPath,
-                Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+                @NonNull Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+                @NonNull Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
+                @NonNull Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
                 boolean isReconnectContext)
                 throws IOException {
             final List<VirtualLeafRecord<TestKey, TestValue>> leaves =

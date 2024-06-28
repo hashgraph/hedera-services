@@ -19,7 +19,8 @@ package com.hedera.services.bdd.suites.fees;
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.THROTTLE_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.*;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -27,7 +28,12 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -71,8 +77,9 @@ public class CongestionPricingSuite {
         final var gasToOffer = 200_000L;
 
         return propertyPreservingHapiSpec("CanUpdateMultipliersDynamically")
-                .preserving(FEES_PERCENT_CONGESTION_MULTIPLIERS, FEES_MIN_CONGESTION_PERIOD)
+                .preserving("contracts.maxGasPerSec", FEES_PERCENT_CONGESTION_MULTIPLIERS, FEES_MIN_CONGESTION_PERIOD)
                 .given(
+                        overriding("contracts.maxGasPerSec", "15_000_000"),
                         cryptoCreate(CIVILIAN_ACCOUNT).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
                         uploadInitCode(contract),
                         contractCreate(contract),
@@ -180,7 +187,7 @@ public class CongestionPricingSuite {
                                                             CIVILIAN_ACCOUNT, SECOND_ACCOUNT, 5L))
                                                     .txnId("uncheckedTxn" + i))
                                             .payingWith(GENESIS),
-                                    sleepFor(125)
+                                    sleepFor(125L * Math.min(1, 19 - i))
                                 })
                                 .flatMap(Arrays::stream)
                                 .toArray(HapiSpecOperation[]::new)),

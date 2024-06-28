@@ -17,9 +17,12 @@
 package com.hedera.node.app.hapi.utils.throttles;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.productWouldOverflow;
+import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -27,15 +30,18 @@ import java.util.Objects;
  * A throttle with milli-TPS resolution that exists in a deterministic timeline.
  */
 public class DeterministicThrottle implements CongestibleThrottle {
-    private static final Instant NEVER = null;
-    private static final String NO_NAME = null;
+    private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
+    @Nullable
     private final String name;
+
+    @Nullable
+    private Timestamp lastDecisionTime;
+
     private final BucketThrottle delegate;
-    private Instant lastDecisionTime;
 
     public static DeterministicThrottle withTps(final int tps) {
-        return new DeterministicThrottle(BucketThrottle.withTps(tps), NO_NAME);
+        return new DeterministicThrottle(BucketThrottle.withTps(tps), null);
     }
 
     public static DeterministicThrottle withTpsNamed(final int tps, final String name) {
@@ -43,7 +49,7 @@ public class DeterministicThrottle implements CongestibleThrottle {
     }
 
     public static DeterministicThrottle withMtps(final long mtps) {
-        return new DeterministicThrottle(BucketThrottle.withMtps(mtps), NO_NAME);
+        return new DeterministicThrottle(BucketThrottle.withMtps(mtps), null);
     }
 
     public static DeterministicThrottle withMtpsNamed(final long mtps, final String name) {
@@ -51,7 +57,7 @@ public class DeterministicThrottle implements CongestibleThrottle {
     }
 
     public static DeterministicThrottle withTpsAndBurstPeriod(final int tps, final int burstPeriod) {
-        return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriod(tps, burstPeriod), NO_NAME);
+        return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriod(tps, burstPeriod), null);
     }
 
     public static DeterministicThrottle withTpsAndBurstPeriodNamed(
@@ -60,7 +66,7 @@ public class DeterministicThrottle implements CongestibleThrottle {
     }
 
     public static DeterministicThrottle withMtpsAndBurstPeriod(final long mtps, final int burstPeriod) {
-        return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod), NO_NAME);
+        return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriod(mtps, burstPeriod), null);
     }
 
     public static DeterministicThrottle withMtpsAndBurstPeriodNamed(
@@ -69,7 +75,7 @@ public class DeterministicThrottle implements CongestibleThrottle {
     }
 
     public static DeterministicThrottle withTpsAndBurstPeriodMs(final int tps, final long burstPeriodMs) {
-        return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriodMs(tps, burstPeriodMs), NO_NAME);
+        return new DeterministicThrottle(BucketThrottle.withTpsAndBurstPeriodMs(tps, burstPeriodMs), null);
     }
 
     public static DeterministicThrottle withTpsAndBurstPeriodMsNamed(
@@ -78,7 +84,7 @@ public class DeterministicThrottle implements CongestibleThrottle {
     }
 
     public static DeterministicThrottle withMtpsAndBurstPeriodMs(final long mtps, final long burstPeriodMs) {
-        return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), NO_NAME);
+        return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), null);
     }
 
     public static DeterministicThrottle withMtpsAndBurstPeriodMsNamed(
@@ -86,10 +92,10 @@ public class DeterministicThrottle implements CongestibleThrottle {
         return new DeterministicThrottle(BucketThrottle.withMtpsAndBurstPeriodMs(mtps, burstPeriodMs), name);
     }
 
-    private DeterministicThrottle(final BucketThrottle delegate, final String name) {
+    private DeterministicThrottle(final BucketThrottle delegate, @Nullable final String name) {
         this.name = name;
         this.delegate = delegate;
-        lastDecisionTime = NEVER;
+        lastDecisionTime = null;
     }
 
     public static long capacityRequiredFor(final int nTransactions) {
@@ -105,13 +111,32 @@ public class DeterministicThrottle implements CongestibleThrottle {
         return (nominal >= 0) ? Math.min(nominal, limit) : limit;
     }
 
+    /**
+     * Determines whether a given number of requests can be allowed through the throttle, given the current time.
+     * (I.e., without leaking any capacity from the bucket before testing for available space.)
+     *
+     * @param numReqs the number of requests to allow
+     * @return whether the requests can be allowed
+     */
     public boolean allowInstantaneous(final int numReqs) {
         return delegate.allowInstantaneous(numReqs);
     }
 
-    public boolean allow(final int numReqs, final Instant now) {
-        final var elapsedNanos = elapsedNanosBetween(lastDecisionTime, now);
-        lastDecisionTime = now;
+    /**
+     * Determines whether a given number of requests can be allowed through the throttle, given the current time.
+     *
+     * @param numReqs the number of requests to allow
+     * @param now the time at which the requests are being made
+     * @return whether the requests can be allowed
+     */
+    public boolean allow(final int numReqs, @NonNull final Instant now) {
+        requireNonNull(now);
+        final var elapsedNanos = nanosBetween(lastDecisionTime, now);
+        if (elapsedNanos < 0L) {
+            throw new IllegalArgumentException("Throttle timeline must advance, but " + now + " is not after "
+                    + Instant.ofEpochSecond(lastDecisionTime.seconds(), lastDecisionTime.nanos()));
+        }
+        lastDecisionTime = new Timestamp(now.getEpochSecond(), now.getNano());
         return delegate.allow(numReqs, elapsedNanos);
     }
 
@@ -125,16 +150,16 @@ public class DeterministicThrottle implements CongestibleThrottle {
         delegate.leakCapacity(amount);
     }
 
-    public void leakUntil(final Instant now) {
-        final var elapsedNanos = elapsedNanosBetween(lastDecisionTime, now);
-        lastDecisionTime = now;
-        delegate.leakFor(elapsedNanos);
-    }
-
+    /**
+     * Leaks capacity from the bucket equal to the last allowed use.
+     */
     public void reclaimLastAllowedUse() {
         delegate.reclaimLastAllowedUse();
     }
 
+    /**
+     * Resets the last allowed use to zero.
+     */
     public void resetLastAllowedUse() {
         delegate.resetLastAllowedUse();
     }
@@ -163,9 +188,9 @@ public class DeterministicThrottle implements CongestibleThrottle {
         return delegate.bucket().capacityFree();
     }
 
-    public UsageSnapshot usageSnapshot() {
+    public ThrottleUsageSnapshot usageSnapshot() {
         final var bucket = delegate.bucket();
-        return new UsageSnapshot(bucket.capacityUsed(), lastDecisionTime);
+        return new ThrottleUsageSnapshot(bucket.capacityUsed(), lastDecisionTime);
     }
 
     /**
@@ -179,8 +204,7 @@ public class DeterministicThrottle implements CongestibleThrottle {
         if (lastDecisionTime == null) {
             return 0.0;
         }
-        final var elapsedNanos =
-                Math.max(0, Duration.between(lastDecisionTime, now).toNanos());
+        final var elapsedNanos = Math.max(0, nanosBetween(lastDecisionTime, now));
         return delegate.percentUsed(elapsedNanos);
     }
 
@@ -198,7 +222,13 @@ public class DeterministicThrottle implements CongestibleThrottle {
         return delegate.instantaneousPercentUsed();
     }
 
-    public void resetUsageTo(final UsageSnapshot usageSnapshot) {
+    /**
+     * Resets the usage of this throttle to the state of a prior snapshot.
+     *
+     * @param usageSnapshot the snapshot to reset to
+     */
+    public void resetUsageTo(@NonNull final ThrottleUsageSnapshot usageSnapshot) {
+        requireNonNull(usageSnapshot);
         final var bucket = delegate.bucket();
         lastDecisionTime = usageSnapshot.lastDecisionTime();
         bucket.resetUsed(usageSnapshot.used());
@@ -208,12 +238,11 @@ public class DeterministicThrottle implements CongestibleThrottle {
         resetLastAllowedUse();
         final var bucket = delegate.bucket();
         bucket.resetUsed(0L);
-        lastDecisionTime = NEVER;
+        lastDecisionTime = null;
     }
 
-    /* NOTE: The Object methods below are only overridden to improve
-    readability of unit tests; Instances of this class are not used
-           in hash-based collections */
+    /* NOTE: The Object methods below are only overridden to improve readability of unit tests; instances
+    of this class are not used in hash-based collections */
     @Override
     public boolean equals(final Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) {
@@ -245,41 +274,43 @@ public class DeterministicThrottle implements CongestibleThrottle {
                 .append(" (used=")
                 .append(used())
                 .append(")")
-                .append(lastDecisionTime == NEVER ? "" : (", last decision @ " + lastDecisionTime))
+                .append(
+                        lastDecisionTime == null
+                                ? ""
+                                : (", last decision @ "
+                                        + Instant.ofEpochSecond(lastDecisionTime.seconds(), lastDecisionTime.nanos())))
                 .append("}")
                 .toString();
-    }
-
-    public record UsageSnapshot(long used, Instant lastDecisionTime) {
-        @Override
-        public String toString() {
-            final var sb = new StringBuilder("DeterministicThrottle.UsageSnapshot{");
-            return sb.append("used=")
-                    .append(used)
-                    .append(", last decision @ ")
-                    .append(lastDecisionTime == NEVER ? "<N/A>" : lastDecisionTime)
-                    .append("}")
-                    .toString();
-        }
     }
 
     public BucketThrottle delegate() {
         return delegate;
     }
 
-    public Instant lastDecisionTime() {
+    public Timestamp lastDecisionTime() {
         return lastDecisionTime;
     }
 
-    public static long elapsedNanosBetween(@Nullable final Instant lastDecisionTime, final Instant now) {
-        long elapsedNanos = 0L;
-        if (lastDecisionTime != NEVER) {
-            elapsedNanos = Duration.between(lastDecisionTime, now).toNanos();
-            if (elapsedNanos < 0L) {
-                throw new IllegalArgumentException(
-                        "Throttle timeline must advance, but " + now + " is not after " + lastDecisionTime + "!");
-            }
+    /**
+     * Returns the number of nanoseconds between two points in time. If the first point is missing (null),
+     * then the result is zero.
+     *
+     * <p>Takes a {@link Timestamp} for the starting point and an {@link Instant} for the ending point
+     * since we are always comparing time elapsed between a {@link #lastDecisionTime} (represented in
+     * state by the {@link Timestamp} in a {@link ThrottleUsageSnapshot}) to a current time obtained
+     * from the system clock or the platform as an {@link Instant}.
+     *
+     * @param start the start time
+     * @param end the end time
+     * @return the number of nanoseconds between the two times, or zero if the start time is missing
+     */
+    static long nanosBetween(@Nullable final Timestamp start, @NonNull final Instant end) {
+        requireNonNull(end);
+        if (start == null) {
+            return 0L;
         }
-        return elapsedNanos;
+        final var elapsedSeconds = Math.subtractExact(end.getEpochSecond(), start.seconds());
+        final var elapsedNanos = Math.multiplyExact(elapsedSeconds, NANOS_PER_SECOND);
+        return Math.addExact(elapsedNanos, end.getNano() - start.nanos());
     }
 }

@@ -267,7 +267,7 @@ public class BaseEventHashedData extends AbstractSerializableHashable implements
      *
      * @return the software version of the node that created this event
      */
-    @Nullable
+    @NonNull
     public SoftwareVersion getSoftwareVersion() {
         return softwareVersion;
     }
