@@ -119,7 +119,6 @@ public class NodeUpdateHandler implements TransactionHandler {
             addressBookValidator.validateGossipEndpoint(op.gossipEndpoint(), nodeConfig);
         if (!op.serviceEndpoint().isEmpty())
             addressBookValidator.validateServiceEndpoint(op.serviceEndpoint(), nodeConfig);
-        if (op.hasAdminKey()) addressBookValidator.validateAdminKeyInHandle(handleContext, op.adminKeyOrThrow());
 
         final var nodeBuilder = updateNode(op, existingNode);
         nodeStore.put(nodeBuilder.build());
