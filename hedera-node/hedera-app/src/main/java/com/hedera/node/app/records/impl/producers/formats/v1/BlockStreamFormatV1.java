@@ -27,10 +27,10 @@ import com.hedera.hapi.block.stream.output.CreateContractOutput;
 import com.hedera.hapi.block.stream.output.CreateScheduleOutput;
 import com.hedera.hapi.block.stream.output.CryptoTransferOutput;
 import com.hedera.hapi.block.stream.output.EthereumOutput;
+import com.hedera.hapi.block.stream.output.RunningHashVersion;
 import com.hedera.hapi.block.stream.output.SignScheduleOutput;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.SubmitMessageOutput;
-import com.hedera.hapi.block.stream.output.SubmitMessageOutputRunningHashVersion;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.block.stream.output.UtilPrngOutput;
@@ -230,7 +230,7 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         // TODO: Is there ever a case where we don't have a receipt?
         var receipt = item.transactionRecord().receiptOrThrow();
         return SubmitMessageOutput.newBuilder()
-                .topicRunningHashVersion(SubmitMessageOutputRunningHashVersion.fromProtobufOrdinal(
+                .topicRunningHashVersion(RunningHashVersion.fromProtobufOrdinal(
                         (int) receipt.topicRunningHashVersion()));
     }
 
