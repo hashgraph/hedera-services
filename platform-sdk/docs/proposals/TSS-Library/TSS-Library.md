@@ -390,7 +390,7 @@ This API will expose general arithmetic operations to work with Bilinear Pairing
 
 ##### Public API
 
-###### `PairingsLibrabry`
+###### `PairingsLibrary`
 **Description**: Allows clients of this library to invoke the initialization, and provides a mechanism for implementors of this api to perform all necessary activities
 
 ###### `Curve`
