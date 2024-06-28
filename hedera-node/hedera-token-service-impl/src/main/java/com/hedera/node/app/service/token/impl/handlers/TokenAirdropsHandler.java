@@ -28,6 +28,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
@@ -400,7 +401,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
 
                 if (isDebit) {
                     final var tokenRel = tokenRelStore.get(accountId, tokenID);
-                    validateTruePreCheck(tokenRel != null, INVALID_TRANSACTION);
+                    validateTruePreCheck(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
                     if (accountAmount.isApproval()) {
                         final var topLevelPayer = ctx.payer();
                         final var tokenAllowances = new ArrayList<>(account.tokenAllowances());
@@ -464,9 +465,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
             checkSender(senderId, nftTransfer, context, accountStore);
             final var senderAccount = accountStore.getAliasedAccountById(senderId);
             final var tokenRel = tokenRelStore.get(senderId, tokenID);
-            if (tokenRel == null) {
-                throw new PreCheckException(INVALID_TRANSACTION);
-            }
+            validateTruePreCheck(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
             final var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
             validateAccountID(receiverId, null);

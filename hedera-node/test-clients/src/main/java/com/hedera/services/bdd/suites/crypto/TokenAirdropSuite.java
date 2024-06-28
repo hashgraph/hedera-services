@@ -51,9 +51,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -463,14 +462,26 @@ public class TokenAirdropSuite {
                                 .supplyKey(NFT_SUPPLY_KEY)
                                 .maxSupply(10_000)
                                 .initialSupply(5000)
-                                .treasury(TOKEN_TREASURY))
+                                .treasury(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .treasury(TOKEN_TREASURY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(NFT_SUPPLY_KEY)
+                                .initialSupply(0),
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))))
                 .when()
                 .then(
                         tokenAirdrop(moving(50, FUNGIBLE_TOKEN)
                                         .between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                                 .payingWith(SENDER)
-                                .hasKnownStatus(INVALID_TRANSACTION)
+                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
                                 .via("senderWithMissingAssociation"),
+                        tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1)
+                                        .between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                                .payingWith(SENDER)
+                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
                         getTxnRecord("senderWithMissingAssociation").logged());
     }
 
