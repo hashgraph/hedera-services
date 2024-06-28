@@ -16,11 +16,10 @@
 
 package com.swirlds.platform.system.events;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.function.Consumer;
@@ -73,6 +72,6 @@ public interface Event {
      *
      * @return the software version
      */
-    @Nullable
-    SoftwareVersion getSoftwareVersion();
+    @NonNull
+    SemanticVersion getSoftwareVersion();
 }

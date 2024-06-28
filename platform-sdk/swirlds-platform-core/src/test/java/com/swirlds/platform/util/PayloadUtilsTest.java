@@ -40,7 +40,7 @@ class PayloadUtilsTest {
     @MethodSource("buildArgumentsSwirldTransactions")
     void testSizeComparisonsSwirldTransactions(
             final OneOf<PayloadOneOfType> payload, final SwirldTransaction swirldTransaction) {
-        assertEquals((int) PayloadUtils.getPayloadSize(payload), swirldTransaction.getSerializedLength());
+        assertEquals(PayloadUtils.getLegacyPayloadSize(payload), swirldTransaction.getSerializedLength());
         assertFalse(PayloadUtils.isSystemPayload(payload));
     }
 
@@ -62,7 +62,7 @@ class PayloadUtilsTest {
     @MethodSource("buildArgumentsStateSignatureTransaction")
     void testSizeComparisonsStateSignatureTransaction(
             final OneOf<PayloadOneOfType> payload, final StateSignatureTransaction stateSignatureTransaction) {
-        assertEquals((int) PayloadUtils.getPayloadSize(payload), stateSignatureTransaction.getSerializedLength());
+        assertEquals(PayloadUtils.getLegacyPayloadSize(payload), stateSignatureTransaction.getSerializedLength());
         assertTrue(PayloadUtils.isSystemPayload(payload));
     }
 
