@@ -73,6 +73,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_NFT_INFOS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_MINT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_PAUSE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REJECT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_UNPAUSE;
@@ -175,6 +176,7 @@ import java.util.function.Function;
  * @param freeze                     the permission for {@link HederaFunctionality#FREEZE} functionality
  * @param getAccountDetails          the permission for {@link HederaFunctionality#GET_ACCOUNT_DETAILS} functionality
  * @param tokenUpdateNfts            the permission for {@link HederaFunctionality#TOKEN_UPDATE_NFTS} functionality
+ * @param tokenReject                the permission for {@link HederaFunctionality#TOKEN_REJECT} functionality
  *
  * @param createNode                   the permission for {@link HederaFunctionality#NODE_CREATE} functionality
  * @param updateNode                   the permission for {@link HederaFunctionality#NODE_UPDATE} functionality
@@ -245,6 +247,7 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "2-58") PermissionedAccountsRange freeze,
         @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenReject,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange createNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
@@ -295,6 +298,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(SCHEDULE_DELETE, c -> c.scheduleDelete);
         permissionKeys.put(SCHEDULE_SIGN, c -> c.scheduleSign);
         permissionKeys.put(TOKEN_UPDATE_NFTS, c -> c.tokenUpdateNfts);
+        permissionKeys.put(TOKEN_REJECT, c -> c.tokenReject);
         /* Queries */
         permissionKeys.put(CONSENSUS_GET_TOPIC_INFO, c -> c.getTopicInfo);
         permissionKeys.put(CONTRACT_CALL_LOCAL, c -> c.contractCallLocalMethod);
