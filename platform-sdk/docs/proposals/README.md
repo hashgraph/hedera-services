@@ -78,7 +78,7 @@ create an auditable history.
 ## Voting on A Proposal
 
 Votes follow the [Apache Voting](https://www.apache.org/foundation/voting.html#expressing-votes-1-0-1-and-fractions)
-scheme. Votes are cast in comments on the PR on a range between -1 to -0, +0 to +1 with the following semantics:
+scheme. Votes range between -1 to -0, +0 to +1 with the following semantics:
 
 * -1: is a veto.
 * -0 >= x > -1: is a vote generally against the proposal.
@@ -87,8 +87,9 @@ scheme. Votes are cast in comments on the PR on a range between -1 to -0, +0 to 
 
 The magnitude of the numeric value of the vote indicates the strength of the sentiment behind the vote.
 
-+1 votes can also be expressed by approving the PR. -1 votes can be expressed by "Requesting Changes" on the PR and
-must be accompanied by a comment explaining the reason for the veto.
++1 votes are expressed by approving the PR. -1 votes are expressed by "Requesting Changes" on the PR and
+must be accompanied by a comment explaining the reason for the veto. Votes greater than -1 but less than +1 are cast
+using comments in the "Conversations" tab, not using inline comments.
 
 ---
 
@@ -96,8 +97,8 @@ must be accompanied by a comment explaining the reason for the veto.
 
 A proposal becomes `Accepted` when the following criteria have been fulfilled:
 
-1. The proposal has been in the Voting state for at least 3 business days. Business days are defined as SwirldsLabs
-   working days and excludes weekends and company holidays.
+1. The proposal has been in the Voting state for at least 3 business days. Business days are defined as Monday through
+   Friday.
 2. The proposal must have at least three +1 votes from platform code owners.
 3. The proposal must not have any -1 votes from platform code owners or architects.
 
