@@ -16,9 +16,12 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -40,13 +43,19 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadCustomFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.CUSTOM_FEE_SCHEDULE_JSON;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_JSON;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
@@ -60,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -144,17 +154,19 @@ public class AssociatePrecompileSuite {
     }
 
     /* -- HSCS-PREC-26 from HTS Precompile Test Plan -- */
-    @HapiTest
-    final Stream<DynamicTest> nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> nonSupportedAbiCallGracefullyFailsWithMultipleContractCallsLegacy() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
 
-        return defaultHapiSpec(
-                        "nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls",
+        return propertyPreservingHapiSpec("nonSupportedAbiCallGracefullyFailsWithMultipleContractCallsLegacy",
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
@@ -193,22 +205,78 @@ public class AssociatePrecompileSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(
                                                         htsPrecompileResult().withStatus(SUCCESS)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("nonSupportedAbiCallGracefullyFailsWithMultipleContractCalls",
+                NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        uploadInitCode(THE_CONTRACT),
+                        contractCreate(THE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                THE_CONTRACT,
+                                "nonSupportedFunction",
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via("notSupportedFunctionCallTxn")
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                THE_CONTRACT,
+                                TOKEN_ASSOCIATE_FUNCTION,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via(VANILLA_TOKEN_ASSOCIATE_TXN)
+                                .gas(GAS_TO_OFFER))))
+                .then(
+                        emptyChildRecordsCheck("notSupportedFunctionCallTxn", CONTRACT_REVERT_EXECUTED),
+                        childRecordsCheck(
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
                         getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)));
     }
 
     /* -- HSCS-PREC-27 from HTS Precompile Test Plan -- */
-    @HapiTest
-    final Stream<DynamicTest> invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCallsLegacy() {
         final AtomicReference<AccountID> accountID = new AtomicReference<>();
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final var invalidAbiArgument = new byte[20];
 
-        return defaultHapiSpec(
-                        "invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls",
+        return propertyPreservingHapiSpec("invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCallsLegacy",
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
                         cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
                         cryptoCreate(TOKEN_TREASURY),
                         tokenCreate(VANILLA_TOKEN)
@@ -235,6 +303,70 @@ public class AssociatePrecompileSuite {
                                         TOKEN_ASSOCIATE_FUNCTION,
                                         HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
+                                .payingWith(GENESIS)
+                                .via(VANILLA_TOKEN_ASSOCIATE_TXN)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS))))
+                .then(
+                        childRecordsCheck(
+                                "functionCallWithInvalidArgumentTxn",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith()
+                                        .status(INVALID_TOKEN_ID)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(INVALID_TOKEN_ID)))),
+                        childRecordsCheck(
+                                VANILLA_TOKEN_ASSOCIATE_TXN,
+                                SUCCESS,
+                                recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith()
+                                                .contractCallResult(
+                                                        htsPrecompileResult().withStatus(SUCCESS)))),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(VANILLA_TOKEN)),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls() {
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final var invalidAbiArgument = new byte[20];
+
+        return propertyPreservingHapiSpec("invalidlyFormattedAbiCallGracefullyFailsWithMultipleContractCalls",
+                NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
+                NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                NONDETERMINISTIC_NONCE)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(VANILLA_TOKEN)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                        uploadInitCode(THE_CONTRACT),
+                        contractCreate(THE_CONTRACT))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, THE_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_KEY),
+                        contractCall(
+                                THE_CONTRACT,
+                                TOKEN_ASSOCIATE_FUNCTION,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(invalidAbiArgument))
+                                .payingWith(GENESIS)
+                                .via("functionCallWithInvalidArgumentTxn")
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        contractCall(
+                                THE_CONTRACT,
+                                TOKEN_ASSOCIATE_FUNCTION,
+                                HapiParserUtil.asHeadlongAddress(asAddress(accountID.get())),
+                                HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())))
                                 .payingWith(GENESIS)
                                 .via(VANILLA_TOKEN_ASSOCIATE_TXN)
                                 .gas(GAS_TO_OFFER)
@@ -311,8 +443,8 @@ public class AssociatePrecompileSuite {
                 }));
     }
 
-    @HapiTest
-    final Stream<DynamicTest> associateTokensNegativeScenarios() {
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> associateTokensNegativeScenariosLegacy() {
         final AtomicReference<Address> tokenAddress1 = new AtomicReference<>();
         final AtomicReference<Address> tokenAddress2 = new AtomicReference<>();
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
@@ -322,8 +454,12 @@ public class AssociatePrecompileSuite {
         final var zeroAccountAddress = "zeroAccountAddress";
         final var nullTokenArray = "nullTokens";
         final var nonExistingTokensInArray = "nonExistingTokensInArray";
-        return defaultHapiSpec("associateTokensNegativeScenarios")
+
+        return propertyPreservingHapiSpec("associateTokensNegativeScenariosLegacy")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
                         uploadInitCode(NEGATIVE_ASSOCIATIONS_CONTRACT),
                         contractCreate(NEGATIVE_ASSOCIATIONS_CONTRACT),
                         cryptoCreate(TOKEN_TREASURY),
@@ -425,19 +561,144 @@ public class AssociatePrecompileSuite {
                         childRecordsCheck(
                                 nonExistingTokensInArray,
                                 CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> associateTokensNegativeScenarios() {
+        final AtomicReference<Address> tokenAddress1 = new AtomicReference<>();
+        final AtomicReference<Address> tokenAddress2 = new AtomicReference<>();
+        final AtomicReference<Address> accountAddress = new AtomicReference<>();
+        final var nonExistingAccount = "nonExistingAccount";
+        final var nonExistingTokenArray = "nonExistingTokenArray";
+        final var someNonExistingTokenArray = "someNonExistingTokenArray";
+        final var zeroAccountAddress = "zeroAccountAddress";
+        final var nullTokenArray = "nullTokens";
+        final var nonExistingTokensInArray = "nonExistingTokensInArray";
+
+        return propertyPreservingHapiSpec("associateTokensNegativeScenarios")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        uploadInitCode(NEGATIVE_ASSOCIATIONS_CONTRACT),
+                        contractCreate(NEGATIVE_ASSOCIATIONS_CONTRACT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(50L)
+                                .supplyKey(TOKEN_TREASURY)
+                                .adminKey(TOKEN_TREASURY)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingAddressTo(tokenAddress1::set),
+                        tokenCreate(TOKEN1)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(50L)
+                                .supplyKey(TOKEN_TREASURY)
+                                .adminKey(TOKEN_TREASURY)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingAddressTo(tokenAddress2::set),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(id -> accountAddress.set(idAsHeadlongAddress(id))))
+                .when(withOpContext((spec, custom) -> allRunFor(
+                        spec,
+                        contractCall(
+                                NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                "associateTokensWithNonExistingAccountAddress",
+                                (Object) new Address[] {tokenAddress1.get(), tokenAddress2.get()})
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .gas(GAS_TO_OFFER)
+                                .via(nonExistingAccount)
+                                .logged(),
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN1),
+                        newKeyNamed(CONTRACT_KEY).shape(KEY_SHAPE.signedWith(sigs(ON, NEGATIVE_ASSOCIATIONS_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+                        contractCall(
+                                NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                "associateTokensWithEmptyTokensArray",
+                                accountAddress.get())
+                                // match mono behaviour, this is a successful call, but it should not associate any
+                                // tokens
+                                .hasKnownStatus(SUCCESS)
+                                .gas(GAS_TO_OFFER)
+                                .signingWith(ACCOUNT)
+                                .via(nonExistingTokenArray)
+                                .logged(),
+                        contractCall(NEGATIVE_ASSOCIATIONS_CONTRACT, "associateTokensWithNullAccount", (Object)
+                                new Address[] {tokenAddress1.get(), tokenAddress2.get()})
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .gas(GAS_TO_OFFER)
+                                .via(zeroAccountAddress)
+                                .logged(),
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN1),
+                        contractCall(
+                                NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                "associateTokensWithNullTokensArray",
+                                accountAddress.get())
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .gas(GAS_TO_OFFER)
+                                .signingWith(ACCOUNT)
+                                .via(nullTokenArray)
+                                .logged(),
+                        contractCall(
+                                NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                "associateTokensWithNonExistingTokensArray",
+                                accountAddress.get())
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .gas(GAS_TO_OFFER)
+                                .signingWith(ACCOUNT)
+                                .via(nonExistingTokensInArray)
+                                .logged(),
+                        contractCall(
+                                NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                "associateTokensWithTokensArrayWithSomeNonExistingAddresses",
+                                accountAddress.get(),
+                                new Address[] {tokenAddress1.get(), tokenAddress2.get()})
+                                .hasKnownStatus(SUCCESS)
+                                .gas(GAS_TO_OFFER)
+                                .signingWith(ACCOUNT)
+                                .via(someNonExistingTokenArray)
+                                .logged(),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(TOKEN)),
+                        getAccountInfo(ACCOUNT).hasToken(relationshipWith(TOKEN1)))))
+                .then(
+                        childRecordsCheck(
+                                nonExistingAccount,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_ACCOUNT_ID)),
+                        childRecordsCheck(
+                                nonExistingTokenArray, SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                someNonExistingTokenArray, SUCCESS, recordWith().status(SUCCESS)),
+                        childRecordsCheck(
+                                zeroAccountAddress,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_ACCOUNT_ID)),
+                        childRecordsCheck(
+                                nullTokenArray,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)),
+                        childRecordsCheck(
+                                nonExistingTokensInArray,
+                                CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_TOKEN_ID)));
     }
 
-    @HapiTest
-    final Stream<DynamicTest> associateTokenNegativeScenarios() {
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> associateTokenNegativeScenariosLegacy() {
         final AtomicReference<Address> tokenAddress = new AtomicReference<>();
         final AtomicReference<Address> accountAddress = new AtomicReference<>();
         final var nonExistingAccount = "nonExistingAccount";
         final var nullAccount = "nullAccount";
         final var nonExistingToken = "nonExistingToken";
         final var nullToken = "nullToken";
-        return defaultHapiSpec("associateTokenNegativeScenarios")
+
+        return propertyPreservingHapiSpec("associateTokenNegativeScenariosLegacy")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
                         uploadInitCode(NEGATIVE_ASSOCIATIONS_CONTRACT),
                         contractCreate(NEGATIVE_ASSOCIATIONS_CONTRACT),
                         cryptoCreate(TOKEN_TREASURY),
@@ -484,6 +745,90 @@ public class AssociatePrecompileSuite {
                                         NEGATIVE_ASSOCIATIONS_CONTRACT,
                                         "associateTokenWithNullTokenAddress",
                                         accountAddress.get())
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .gas(GAS_TO_OFFER)
+                                .via(nullToken)
+                                .logged(),
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN))))
+                .then(
+                        childRecordsCheck(
+                                nonExistingAccount,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_ACCOUNT_ID)),
+                        childRecordsCheck(
+                                nullAccount,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_ACCOUNT_ID)),
+                        childRecordsCheck(
+                                nonExistingToken,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)),
+                        childRecordsCheck(
+                                nullToken,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_TOKEN_ID)),
+                        uploadCustomFeeSchedules(GENESIS, CUSTOM_FEE_SCHEDULE_JSON));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> associateTokenNegativeScenarios() {
+        final AtomicReference<Address> tokenAddress = new AtomicReference<>();
+        final AtomicReference<Address> accountAddress = new AtomicReference<>();
+        final var nonExistingAccount = "nonExistingAccount";
+        final var nullAccount = "nullAccount";
+        final var nonExistingToken = "nonExistingToken";
+        final var nullToken = "nullToken";
+
+        return propertyPreservingHapiSpec("associateTokenNegativeScenarios")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
+                        uploadInitCode(NEGATIVE_ASSOCIATIONS_CONTRACT),
+                        contractCreate(NEGATIVE_ASSOCIATIONS_CONTRACT),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(50L)
+                                .supplyKey(TOKEN_TREASURY)
+                                .adminKey(TOKEN_TREASURY)
+                                .treasury(TOKEN_TREASURY)
+                                .exposingAddressTo(tokenAddress::set),
+                        cryptoCreate(ACCOUNT).exposingCreatedIdTo(id -> accountAddress.set(idAsHeadlongAddress(id))))
+                .when(withOpContext((spec, custom) -> allRunFor(
+                        spec,
+                        newKeyNamed(CONTRACT_KEY).shape(KEY_SHAPE.signedWith(sigs(ON, NEGATIVE_ASSOCIATIONS_CONTRACT))),
+                        cryptoUpdate(ACCOUNT).key(CONTRACT_KEY),
+                        contractCall(
+                                NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                "associateTokenWithNonExistingAccount",
+                                tokenAddress.get())
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .gas(GAS_TO_OFFER)
+                                .via(nonExistingAccount)
+                                .logged(),
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
+                        contractCall(
+                                NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                "associateTokenWithNullAccount",
+                                tokenAddress.get())
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .gas(GAS_TO_OFFER)
+                                .via(nullAccount)
+                                .logged(),
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
+                        contractCall(
+                                NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                "associateTokenWithNonExistingTokenAddress",
+                                accountAddress.get())
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                .gas(GAS_TO_OFFER)
+                                .via(nonExistingToken)
+                                .logged(),
+                        getAccountInfo(ACCOUNT).hasNoTokenRelationship(TOKEN),
+                        contractCall(
+                                NEGATIVE_ASSOCIATIONS_CONTRACT,
+                                "associateTokenWithNullTokenAddress",
+                                accountAddress.get())
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                 .gas(GAS_TO_OFFER)
                                 .via(nullToken)

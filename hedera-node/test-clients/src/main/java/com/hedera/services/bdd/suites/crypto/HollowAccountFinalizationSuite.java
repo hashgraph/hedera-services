@@ -17,9 +17,12 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.assertions.TransferListAsserts.noCreditAboveNumber;
@@ -46,13 +49,17 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assumingNoStakingCh
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadCustomFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_JSON;
 import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -61,6 +68,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
+import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.AutoCreateUtils.createHollowAccountFrom;
@@ -75,6 +83,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
@@ -208,10 +217,45 @@ public class HollowAccountFinalizationSuite {
                 }));
     }
 
-    @HapiTest
-    final Stream<DynamicTest> hollowAccountCompletionWithTokenAssociation() {
-        return defaultHapiSpec("HollowAccountCompletionWithTokenAssociation")
+    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    final Stream<DynamicTest> hollowAccountCompletionWithTokenAssociationLegacy() {
+        return propertyPreservingHapiSpec("hollowAccountCompletionWithTokenAssociationLegacy")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
+                        uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
+                        cryptoCreate(TOKEN_TREASURY).balance(0L),
+                        tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY),
+                        cryptoCreate("test"))
+                .when(createHollowAccountFrom(SECP_256K1_SOURCE_KEY))
+                .then(withOpContext((spec, opLog) -> {
+                    final var ecdsaKey = spec.registry()
+                            .getKey(SECP_256K1_SOURCE_KEY)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddress = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    final var op2 = tokenAssociate("test", VANILLA_TOKEN)
+                            .payingWith(SECP_256K1_SOURCE_KEY)
+                            .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                            .via(TRANSFER_TXN_2);
+                    final var op3 = getAliasedAccountInfo(evmAddress)
+                            .has(accountWith().key(SECP_256K1_SOURCE_KEY).noAlias());
+                    final var hapiGetSecondTxnRecord =
+                            getTxnRecord(TRANSFER_TXN_2).andAllChildRecords().logged();
+                    final var uploadCustomFeeSchedules = uploadCustomFeeSchedules(GENESIS, FEE_SCHEDULE_JSON);
+
+                    allRunFor(spec, op2, op3, hapiGetSecondTxnRecord, uploadCustomFeeSchedules);
+                }));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> hollowAccountCompletionWithTokenAssociation() {
+        return propertyPreservingHapiSpec("hollowAccountCompletionWithTokenAssociation")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
