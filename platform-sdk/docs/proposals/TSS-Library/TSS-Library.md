@@ -36,8 +36,8 @@ the distribution aspect, the loading, and the in-memory interpretation from each
 - **Groth 21**: Publicly verifiable secret sharing and resharing schemes that enable secure and efficient distribution and management of secret shares,
   with many possible use cases supporting applications in distributed key generation and threshold signatures.
   Uses Shamir's secret sharing, ElGamal, and Zero-Knowledge Proofs.
-- **Distribute key generation**: Aims to solve the problem of getting n parties able to cryptographically sign and verify signatures in the presence of some corruption threshold in a decentralized network. 
-To do so, this algorithm generates a public key, and a secret key of which no single party knows, but has some share of.
+- **Distribute key generation**: Aims to solve the problem of getting n parties able to cryptographically sign and verify signatures in the presence of some corruption threshold in a decentralized network.
+  To do so, this algorithm generates a public key and a private key. The private key is distributed as key-splits (shares) such that no single party knows the private key.
 - **Shamir’s Secret Sharing**: In Shamir’s SS, a secret `s` is divided into `n` shares by a dealer, and shares are sent to shareholders secretly.
   The secret `s` is shared among `n` shareholders in such a way that:
   (a) any party with at least `t` shares can recover the secret, and (b) any party with fewer than `t` shares cannot obtain the secret.
@@ -69,6 +69,7 @@ To do so, this algorithm generates a public key, and a secret key of which no si
 ### Non-Goals
 - Implement support for elliptic curve cryptography in Java.
 - Support any system/architecture other than: Windows amd64, Linux amd64 and arm64, and MacOS amd64 and arm64.
+- Creation of the building artifacts and plugins for rust code.
 
 ## Changes
 
@@ -352,9 +353,28 @@ To implement the functionality detailed in the previous section, the following c
    This library's only client is the consensus node, so it will be in the hedera-services repository, under the `platform-sdk` folder.
 4. **swirlds-crypto-signatures**: Gradle module for the Bilinear Pairings Signature Library.
 5. **swirlds-crypto-pairings-api**: Gradle module for the Bilinear Pairings API. Minimizes the impact of adding or removing implementations.
-6. **swirlds-crypto-alt128**: Gradle module that will implement the Bilinear Pairings API using alt-bn128 elliptic curve.
+6. **swirlds-crypto-altbn128**: Gradle module that will implement the Bilinear Pairings API using alt-bn128 elliptic curve.
    That curve has been chosen due to EVM support. The arkworks rust library will provide the underlying cryptography implementation.
    The module will include Java and Rust codes that will be compiled for all possible system architectures and distributed in a jar under a predefined structure.
+
+### Handling of multilanguage modules and native code distribution
+The code provided by this solution will include multilanguage modules (rust + java). Rust code needs to be compiled into binary libraries and accessed through JNI.
+Given the non-GA state of Project Panama, this proposal does not consider it, but it has not been discarded for future change proposals.
+
+There are two possible ways of loading libraries and accessing them through JNI
+1) Libraries are installed in the SO and referenced through the classpath.
+2) Distributed with the application jars, unzipped, and loaded in runtime.
+
+We want to ensure that dependent software does not require the installation of any additional dependencies other than those distributed in the jars, so we are choosing option 2.
+
+In multilanguage projects, Rust code will be compiled first using `Cargo` into a binary library and then packaged in the same jar.
+While developing and on a developer’s machine, Rust code will be built for the architecture executing the build and packaged in the library’s jar, accessing the JNI wrapping code.
+Once the code is merged to develop, the CI/CD pipeline compiles the Rust code into a binary library for each of the multiple supported platforms, packages it into a jar, and publishes it to Maven.
+The dependency from the Maven repo will contain the Java code and the binary library cross-compiled for all supported architectures.
+
+We will provide a library `swirlds-native-support` that will help load and use native code through JNI.
+The low-level details of the build logic for this to work are outside the scope of this proposal.
+A high overview is mentioned for the benefit of readers and will be provided by the DevOps Team alongside the RE Team.
 
 ### Libraries Specifications
 #### Swirlds Crypto Pairings API
@@ -362,6 +382,9 @@ To implement the functionality detailed in the previous section, the following c
 This API will expose general arithmetic operations to work with Bilinear Pairings and EC curves that implementations must provide.
 
 ##### Public API
+
+###### `PairingsLibrabry`
+**Description**: Allows clients of this library to invoke the initialization, and provides a mechanism for implementors of this api to perform all necessary activities
 
 ###### `Curve`
 **Description**: Represents the different types of elliptic curves. Implementations of this API should decide if they provide any, one, or many curves.
@@ -471,11 +494,7 @@ This module will not depend on hedera-services artifacts, so it cannot include l
 ##### Dependencies
 swirlds-cryptography-pairings-API and runtime implementation
 ##### Other considerations
-We analyzed the possibility of implementing [JCA](https://docs.oracle.com/en/java/javase/11/security/java-cryptography-architecture-jca-reference-guide.html#GUID-9A793484-AE6A-4513-A603-BFEAE887DD8B) (Java-Cryptography-architecture).
 Some unknowns are worth investigating in a follow-up task:
-* Should we parametrize the EC curve with: [`java.security.spec.EllipticCurve`](https://docs.oracle.com/javase/1.5.0/docs/api/java/security/spec/EllipticCurve.html)? Implications?
-* What is the serialization format supported by arkworks?  Raw Key Bytes are formatted with PKCS#8 for private keys and X.509 for public keys.
-  Should we define a custom format for bytes serialized with arkworks? Should we reformat? What do we do with our custom content?
 
 #### Swirlds Crypto TSS Library
 ##### Overview
@@ -592,145 +611,113 @@ static {
 }
 ```
 
-#### Swirlds Crypto Pairings Impl
-##### Overview
-This module will be a multilanguage module following the structure:
-```
- swirlds-crypto-pairings-impl-X
- |-src
-    |-main
-    | |-java
-    | | |-com...
-    | |-rust
-    |   |-...
-    |-test
-      |-java
-      | |-com...
-      |-rust
-        |-...
-```
-Support for release engineering will be needed.
-This module should include Cargo for compiling rust source to binary files,
-It should be built in a way that the rust code is compiled for every supported architecture and only after that, packaged into the jar following the structure:
-```
- |-WEB-INF
-    |-arch64
-      |-macos
-        |-lib.dylib
-    |-amd64
-      |-macos
-        |-lib.dylib
-      |-linux
-        |-lib.so
-      |-windows
-        |-lib.dll
-    |-x86
-      |-linux
-        |-lib.so
-      |-windows
-        |-lib.dll
-```
-It will unzip and load the correct library packaged inside the jar and access it using JNI calls.
-The API interface is through JNI. Once built, this should become a runtime dependency.
-
-##### Build Process
-While developing and in a developer's machine, the project will be built for the architecture executing the build.
-Once the code is merged to develop, the CI/CD pipeline compiles the library for multiple platforms, packages it into a jar, and publishes it to Maven. 
-When using the dependency from the Maven repo, it will be cross-compiled for all supported architectures.
-
 #### Swirlds Native Support
 ##### Overview
-Our implementation of the `swirlds-cryptography-pairings-api` will use native compiled libraries under the hood accessed with JNI.
-Given the non-GA state of Project Panama, this proposal does not consider it, but it has not been discarded for future change proposals.
-
-While dealing with native code using JNI, there are two possible ways of making the library accessible to Java code:
-1. Make it available in the classpath: The library must be previously installed in the executing environment
-   and reference its location in the classpath env variable.
-2. Distribute it as an application dependency. The caveat here is that:
-
-   a. The distributed library must be compiled in every possible architecture on which the application will be executed.
-
-   b. The library must be unpackaged from the jar as it cannot be accessed while compressed.
-
-Two key points we are considering in the development of this solution are:
-a) ensuring that it is compatible with the Java module system.
-b) Ensure that dependent software does not require the installation of any additional dependencies other than what is distributed in the jars.
-
-That is why the native-support library will help load the native library by implementing option 2.
-For this to work, the native support library must be included as a dependency in the module accessing the JNI wrapping code.
-The native libraries will be accessed assuming the following structure in the module declaring the dependency:
-
-```
- native-library-client.jar
- |-WEB-INF
-    |-arch64
-      |-macos
-        |-libhedera_bls_jni.dylib
-    |-amd64
-      |-macos
-        |-libhedera_bls_jni.dylib
-      |-linux
-        |-libhedera_bls_jni.so
-      |-windows
-        |-libhedera_bls_jni.dll
-    |-x86
-      |-linux
-        |-libhedera_bls_jni.so
-      |-windows
-        |-libhedera_bls_jni.dll
-  ...
-```
-
-lib folder is organized in subfolders by the platform identifier, as returned by `System.getProperty("os.arch")` and `System.getProperty("os.name")`
+It helps other modules to load binary libraries packaged inside the library's jar into memory.
+It provides a way to describe the library for different architectures/ OS.
 
 ##### Constraints
 This module will not depend on hedera-services artifacts, so it cannot include logging, metrics, configuration, or any other helper module from that repo.
 
 ##### Public API
-###### `OSs`
-**Description**: An enum class listing all supported os.
+###### `OperatingSystem`
+**Description**: An enum class listing all supported OS.
 
-###### `Archs`
+**Link**: [OperatingSystem.java](native%2FOperatingSystem.java)
+
+###### `Architecture`
 **Description**: An enum class listing all supported architectures.
 
-###### `LibraryDescriptionEntry`
-**Description**: Given that the compilation of a native library produces files with different names under different OS and architectures, we need a way to assemble a catalog for all possible forms our library will take.
+**Link**: [Architecture.java](native%2FArchitecture.java)
 
+###### `LibraryDescriptionEntry`
+**Description**: Given that the compilation of binary libraries produces files with different names under different OS and architectures, we need a way to assemble a catalog for all possible forms our library will take.
 A record of 3 elements that defines the name of the binary file of the library to load in a specific system architecture and OS.
 
-**Example**:
-```java
-    LibraryDescriptionEntry entry = new LibraryDescriptionEntry(OSs.MAC_OS, Archs.ARC_64, "libhedera_bls_jni.dylib");
-```
 ###### `LibraryDescription`
 **Description**: A description of the library in all possible systems.
-```java
-    static final LibraryDescription LIB_HEDERA_BLS = new LibraryDescription(new LibraryDescriptionEntry(OSs.MAC_OS, Archs.ARC_64, "libhedera_bls_jni.dylib"), new LibraryDescriptionEntry(OSs.LINUX,  Archs.AMD_64, "libhedera_bls_jni.so") /*,... Others*/);
-```
-If the library name is the same for all system architectures with the only change of the extension, one can configure:
-```java
-  //For any system architecture load libhedera_bls_jni.dylib, libhedera_bls_jni.so or libhedera_bls_jni.dll depending on the os  
-  static final LibraryDescription LIB_HEDERA_BLS = new LibraryDescription("libhedera_bls_jni");
-```
-
 
 ###### `LibraryLoader`
-**Description**: Helper class that will load a library for the correct system:
+**Description**: Helper class that will load a library for the correct system
+
+##### Example
 
 ```java
-class AnySystemReferencedClass{
-    static {
-        LibraryLoader.load(LIB_HEDERA_BLS);
+static {
+    List<LibraryDescriptionEntry> entries = Lists.of(
+            new LibraryDescriptionEntry(OperatingSystem.DARWIN, Architecture.ARC64, "libhedera_bls_jni.dylib"),
+            new LibraryDescriptionEntry(OperatingSystem.LINUX, Architecture.AMD64, "libhedera_bls_jni.so") /*,... Others*/);
+    LibraryDescription libHederaDescription = new LibraryDescription(entries);
+    try {
+        LibraryLoader.load(libHederaDescription);
+    } catch (IOException e){
+        //Handle library loading problems
     }
 }
 ```
-The method will fail with a runtime exception if no description matches the current system architecture.
-The result of this invocation will be that the library will be packaged from the contained jar in the expected structure into a temporal folder and loaded into memory.   
+
+##### Implementation details
+Loading a library for a system architecture where no description is provided will result in a runtime exception.
+
+Under the hood, LibraryLoader will make use of:
+https://github.com/hashgraph/full-stack-testing/blob/c3fd5602525145be132770116f5bb5a1a1922dea/fullstack-core/fullstack-base-api/src/main/java/com/hedera/fullstack/base/api/resource/ResourceLoader.java
+
+
+
+#### Swirlds Crypto Pairings Alt-Bn128 
+##### Overview
+Implementation module of the parings API for alt-bn128 pairings friendly curve.
+The underlying cryptography primitives will be provided by `arkwrorks` accessed through custom Rust code and Java JNI interface.
+
+###### Code Organization Structure:
+```
+swirlds-crypto-pairings-altbn128
+    ├── main
+    │   ├── java
+    │   │   └── **
+    │   └── rust
+    │   │   └── **
+    └── test
+        └── java
+            └── **
+```
+
+###### Generated resources folder structure
+Rust code will be compiled first and the build process will create the following folder structure to place the binaries produced by the compilation process.
+They will be arranged by platform identifier, as returned by `System.getProperty("os.arch")` and `System.getProperty("os.name")`
+
+```
+resources/software
+    ├── LIBRARY_VERSION (Contains the version number or information for the original native library)
+    ├── darwin
+    │   ├── amd64
+    │   │   ├── native_lib.dylib **
+    │   │   └── jni_bindings.dylib
+    │   └── arm64
+    │   │   ├── native_lib.dylib **
+    │   │   └── jni_bindings.dylib
+    ├── linux
+    │   ├── amd64
+    │   │   ├── native_lib.so **
+    │   │   └── jni_bindings.so
+    │   ├── arm
+    │   │   ├── native_lib.so **
+    │   │   └── jni_bindings.so
+    │   └── arm64
+    │   │   ├── native_lib.so **
+    │   │   └── jni_bindings.so
+    └── windows
+        └── amd64
+            ├── native_lib.dll **
+            └── jni_bindings.dll
+
+** NOTE: native_lib is only required if not statically linked to the native JNI binding library
+```
+
 
 ## Test Plan
 Since cryptographic code is often difficult to test due to its complexity and the lack of a test oracle,
 we should design our test cases based on the cryptographic properties that these implementations should satisfy.
-
 
 **Properties**:
 
@@ -755,8 +742,6 @@ Some ideas:
 * https://csrc.nist.gov/CSRC/media/Events/lightweight-cryptography-workshop-2019/documents/papers/systematic-testing-of-lightweight-crypto-lwc2019.pdf
 
 The proposal is to move forward with the implementation while creating a work group to discuss and collect ideas for testing and validating these features.
-**Questions**:
-* What other properties are not mentioned here?
 
 ### Unit Tests
 One of the components that can be unit-tested is native support. SPI loading and failing. JNI wrapping.

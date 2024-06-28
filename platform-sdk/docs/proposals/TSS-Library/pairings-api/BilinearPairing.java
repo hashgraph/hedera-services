@@ -40,6 +40,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @see Field
  */
 public interface BilinearPairing {
+
+    /**
+     * Performs the initialization of the library.
+     * Implementations should include here all the stpes necessary to load the library, e.g.,
+     * perform native library loads.
+     * Implementations have to filter multiple invocations to this method if it doesn't make sense.
+     */
+    void init() throws IOException;
+
     /**
      * Returns the finite field “Fq” associated with the curves of G₁ and G₂.
      *
