@@ -702,7 +702,7 @@ public final class Hedera implements SwirldMain {
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .initTrigger(trigger)
-                .softwareVersion(version)
+                .softwareVersion(version.getPbjSemanticVersion())
                 .configProvider(configProvider)
                 .configProviderImpl(configProvider)
                 .self(extractSelfNodeInfo(platform, version))

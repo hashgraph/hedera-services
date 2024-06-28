@@ -108,9 +108,6 @@ public interface HandleWorkflowModule {
                 fileHandlers.fileSystemUndeleteHandler(),
                 networkAdminHandlers.freezeHandler(),
                 networkAdminHandlers.networkUncheckedSubmitHandler(),
-                addressBookHandlers.nodeCreateHandler(),
-                addressBookHandlers.nodeDeleteHandler(),
-                addressBookHandlers.nodeUpdateHandler(),
                 scheduleHandlers.scheduleCreateHandler(),
                 scheduleHandlers.scheduleSignHandler(),
                 scheduleHandlers.scheduleDeleteHandler(),
@@ -130,6 +127,10 @@ public interface HandleWorkflowModule {
                 tokenHandlers.tokenPauseHandler(),
                 tokenHandlers.tokenUnpauseHandler(),
                 tokenHandlers.tokenUpdateNftsHandler(),
+                tokenHandlers.tokenRejectHandler(),
+                addressBookHandlers.nodeCreateHandler(),
+                addressBookHandlers.nodeUpdateHandler(),
+                addressBookHandlers.nodeDeleteHandler(),
                 utilHandlers.prngHandler());
     }
 }
