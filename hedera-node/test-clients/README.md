@@ -1,11 +1,9 @@
-# Test Clients for Hedera Services
+# Testing Services
 
-Provides clients to the Hedera API whose primary purpose is to validate the
-behavior and performance of the network.
+The tests here specify expected behavior of Services as `HapiSpec` instances.
+
+Each `HapiSpec` is a sequence of `SpecOperation` instances, each of which does one of the following:
+ 1. Submits a transaction to a network.
 
 ## Overview
 
-At present, Hedera engineering is focusing only on the use and improvement of
-clients constructed from sequences of
-[`HapiSpecOperation`](src/main/java/com/hedera/services/bdd/spec/HapiSpecOperation.java)
-implementations. All other components in this folder should be taken as deprecated.
