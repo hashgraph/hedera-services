@@ -34,7 +34,7 @@ public final class CommonUpgradeResources {
     public static final String DEFAULT_UPGRADE_FILE_PATH = "testfiles/poeticUpgrade.zip";
     // This file is inside the pretend ZIP and PREPARE_UPGRADE should put it in the current artifacts directory
     public static final String FAKE_UPGRADE_FILE_NAME = "MrBleaney.txt";
-    public static final Path FAKE_ASSETS_LOC = Paths.get(DEFAULT_UPGRADE_FILE_PATH);
+    public static final Path FAKE_ASSETS_LOC = Paths.get("testfiles/fake-upgrade-assets");
     public static final int DEFAULT_APPENDS_PER_BURST = 512;
     public static final int DEFAULT_UPGRADE_DELAY = 2;
 

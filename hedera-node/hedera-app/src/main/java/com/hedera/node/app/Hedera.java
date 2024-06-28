@@ -351,11 +351,11 @@ public final class Hedera implements SwirldMain {
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
                 version,
-                trigger,
                 configProvider
                         .getConfiguration()
                         .getConfigData(HederaConfig.class)
                         .activeProfile(),
+                trigger,
                 previousVersion == null ? "<NONE>" : previousVersion);
         logger.info(
                 "Platform state includes freeze time={} and last frozen={}",
@@ -407,8 +407,10 @@ public final class Hedera implements SwirldMain {
             @NonNull final Metrics metrics) {
         final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getServicesVersion();
         final var currentVersion = version.getServicesVersion();
+        final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
         logger.info(
-                "Migrating from Services version {} to {} with trigger {}",
+                "{} from Services version {} @ {} with trigger {}",
+                () -> isUpgrade ? "Upgrading" : (previousVersion == null ? "Starting" : "Restarting"),
                 () -> previousVersion == null ? "<NONE>" : HapiUtils.toString(previousVersion),
                 () -> HapiUtils.toString(currentVersion),
                 () -> trigger);
@@ -425,7 +427,6 @@ public final class Hedera implements SwirldMain {
                 configProvider.getConfiguration(),
                 networkInfo,
                 metrics);
-        final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
         if (isUpgrade && !trigger.equals(RECONNECT)) {
             // (FUTURE) We should probably remove this mono-service vestige, as it not currently used anywhere and
             // is hard to reconcile with a form of migration compatible with block streams and zero-downtime
@@ -712,12 +713,12 @@ public final class Hedera implements SwirldMain {
         daggerApp.platformStateAccessor().setPlatformState(platformState);
     }
 
-    private static HederaSoftwareVersion getNodeStartupVersion(@NonNull final Configuration startupConfig) {
-        final var versionConfig = startupConfig.getConfigData(VersionConfig.class);
+    private static HederaSoftwareVersion getNodeStartupVersion(@NonNull final Configuration config) {
+        final var versionConfig = config.getConfigData(VersionConfig.class);
         return new HederaSoftwareVersion(
                 versionConfig.hapiVersion(),
                 versionConfig.servicesVersion(),
-                startupConfig.getConfigData(HederaConfig.class).configVersion());
+                config.getConfigData(HederaConfig.class).configVersion());
     }
 
     private void logConfiguration() {
