@@ -75,6 +75,10 @@
   "TokenUpdateNfts": {
     "DEFAULT": 0.001
   },
+  "TokenReject": {
+    "TOKEN_FUNGIBLE_COMMON": 0.001,
+    "TOKEN_NON_FUNGIBLE_UNIQUE": 0.001
+  },
   "TokenFeeScheduleUpdate": {
 	"DEFAULT": 0.001
   },
@@ -201,5 +205,14 @@
   },
   "UtilPrng": {
 	"DEFAULT": 0.001
+  },
+  "NodeCreate": {
+    "DEFAULT": 0.001
+  },
+  "NodeUpdate": {
+    "DEFAULT": 0.001
+  },
+  "NodeDelete": {
+    "DEFAULT": 0.001
   }
 }

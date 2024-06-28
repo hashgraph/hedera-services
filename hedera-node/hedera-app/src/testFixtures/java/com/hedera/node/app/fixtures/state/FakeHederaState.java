@@ -53,6 +53,10 @@ public class FakeHederaState implements HederaState {
     public FakeHederaState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
         final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>());
         serviceStates.putAll(dataSources);
+        // Purge any readable or writable states whose state definitions are now stale,
+        // since they don't include the new data sources we just added
+        readableStates.remove(serviceName);
+        writableStates.remove(serviceName);
         return this;
     }
 

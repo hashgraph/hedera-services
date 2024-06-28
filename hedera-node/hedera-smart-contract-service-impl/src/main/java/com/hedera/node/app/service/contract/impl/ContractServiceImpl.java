@@ -16,28 +16,28 @@
 
 package com.hedera.node.app.service.contract.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 
 /**
  * Implementation of the {@link ContractService}.
  */
-public enum ContractServiceImpl implements ContractService {
-    CONTRACT_SERVICE;
-
+public class ContractServiceImpl implements ContractService {
     public static final long INTRINSIC_GAS_LOWER_BOUND = 21_000L;
-    public static final long HBARS_TO_TINYBARS = 100_000_000L;
-    public static final String AUTO_MEMO = "auto-created account";
     public static final String LAZY_MEMO = "lazy-created account";
 
     private final ContractServiceComponent component;
 
-    ContractServiceImpl() {
-        this.component = DaggerContractServiceComponent.create();
+    public ContractServiceImpl(@NonNull final InstantSource instantSource) {
+        requireNonNull(instantSource);
+        this.component = DaggerContractServiceComponent.factory().create(instantSource);
     }
 
     @Override

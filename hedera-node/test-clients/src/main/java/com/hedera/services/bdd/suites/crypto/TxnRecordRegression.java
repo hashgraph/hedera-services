@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotEmbeddedTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
@@ -41,8 +42,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNKNOWN;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.queries.meta.HapiGetReceipt;
-import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -165,9 +167,31 @@ public class TxnRecordRegression {
                 .given()
                 .when()
                 .then(withOpContext((spec, ctxLog) -> {
-                    final HapiGetReceipt op =
-                            getReceipt(spec.txns().defaultTransactionID()).hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND);
-                    CustomSpecAssert.allRunFor(spec, op);
+                    allRunFor(
+                            spec,
+                            getReceipt(TransactionID.newBuilder()
+                                            .setAccountID(AccountID.newBuilder()
+                                                    .setAccountNum(Long.MAX_VALUE)
+                                                    .build())
+                                            .build())
+                                    .hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID),
+                            getReceipt(TransactionID.newBuilder()
+                                            .setTransactionValidStart(Timestamp.newBuilder()
+                                                    .setSeconds(Long.MAX_VALUE)
+                                                    .setNanos(Integer.MAX_VALUE)
+                                                    .build())
+                                            .build())
+                                    .hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID),
+                            getReceipt(TransactionID.newBuilder()
+                                            .setAccountID(AccountID.newBuilder()
+                                                    .setAccountNum(Long.MAX_VALUE)
+                                                    .build())
+                                            .setTransactionValidStart(Timestamp.newBuilder()
+                                                    .setSeconds(Long.MAX_VALUE)
+                                                    .setNanos(Integer.MAX_VALUE)
+                                                    .build())
+                                            .build())
+                                    .hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND));
                 }));
     }
 }

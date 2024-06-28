@@ -141,24 +141,8 @@ public class AddressBookValidator {
      */
     public void validateAdminKey(@Nullable Key key) throws PreCheckException {
         final var keyEmpty = isEmpty(key);
-        validateFalsePreCheck(key == null || keyEmpty, KEY_REQUIRED);
+        validateFalsePreCheck(keyEmpty, KEY_REQUIRED);
         validateTruePreCheck(isValid(key), INVALID_ADMIN_KEY);
-    }
-
-    /**
-     * Validates the admin key in the handle.
-     * @param handleContext
-     * @param key
-     */
-    public void validateAdminKeyInHandle(@NonNull final HandleContext handleContext, @NonNull final Key key) {
-        requireNonNull(handleContext);
-        requireNonNull(key);
-
-        try {
-            handleContext.attributeValidator().validateKey(key);
-        } catch (HandleException e) {
-            throw new HandleException(INVALID_ADMIN_KEY);
-        }
     }
 
     /**

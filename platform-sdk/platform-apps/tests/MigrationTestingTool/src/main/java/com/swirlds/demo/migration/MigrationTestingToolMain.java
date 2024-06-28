@@ -24,10 +24,12 @@ import com.swirlds.fcqueue.FCQueueStatistics;
 import com.swirlds.logging.legacy.payload.ApplicationFinishedPayload;
 import com.swirlds.merkle.map.MerkleMapMetrics;
 import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.SignatureException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -162,9 +164,12 @@ public class MigrationTestingToolMain implements SwirldMain {
     /**
      * {@inheritDoc}
      */
+    @NonNull
     @Override
-    public SwirldState newState() {
-        return new MigrationTestingToolState();
+    public MerkleRoot newMerkleStateRoot() {
+        final State state = new State();
+        state.setSwirldState(new MigrationTestingToolState());
+        return state;
     }
 
     /**

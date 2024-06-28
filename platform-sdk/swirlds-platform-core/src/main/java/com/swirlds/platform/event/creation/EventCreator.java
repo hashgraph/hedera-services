@@ -18,7 +18,7 @@ package com.swirlds.platform.event.creation;
 
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -48,7 +48,7 @@ public interface EventCreator {
      * @return the new event, or null if it is not legal to create a new event
      */
     @Nullable
-    BaseEventHashedData maybeCreateEvent();
+    UnsignedEvent maybeCreateEvent();
 
     /**
      * Reset the event creator to its initial state.

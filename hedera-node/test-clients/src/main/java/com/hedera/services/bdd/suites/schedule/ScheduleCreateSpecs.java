@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.schedule;
 
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
@@ -104,6 +105,7 @@ import java.security.SecureRandom;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
 public class ScheduleCreateSpecs {
     @HapiTest
@@ -449,6 +451,7 @@ public class ScheduleCreateSpecs {
     }
 
     @HapiTest
+    @Tag(NOT_REPEATABLE)
     final Stream<DynamicTest> detectsKeysChangedBetweenExpandSigsAndHandleTxn() {
         var keyGen = OverlappingKeyGenerator.withAtLeastOneOverlappingByte(2);
         String aKey = "a", bKey = "b";
