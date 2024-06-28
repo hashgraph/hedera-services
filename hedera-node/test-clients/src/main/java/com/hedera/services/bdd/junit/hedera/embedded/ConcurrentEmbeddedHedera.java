@@ -85,7 +85,10 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
             warnOfSkippedIngestChecks(nodeAccountId, nodeId);
             platform.ingestQueue()
                     .add(new FakeEvent(
-                            nodeId, now(), version, new SwirldTransaction(Bytes.wrap(transaction.toByteArray()))));
+                            nodeId,
+                            now(),
+                            version.getPbjSemanticVersion(),
+                            new SwirldTransaction(Bytes.wrap(transaction.toByteArray()))));
             return OK_RESPONSE;
         }
     }
@@ -120,8 +123,11 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
 
         @Override
         public boolean createTransaction(@NonNull byte[] transaction) {
-            return queue.add(
-                    new FakeEvent(defaultNodeId, now(), version, new SwirldTransaction(Bytes.wrap(transaction))));
+            return queue.add(new FakeEvent(
+                    defaultNodeId,
+                    now(),
+                    version.getPbjSemanticVersion(),
+                    new SwirldTransaction(Bytes.wrap(transaction))));
         }
 
         /**
@@ -143,7 +149,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                                     prehandledEvents.get(i),
                                     consensusOrder.getAndIncrement(),
                                     firstRoundTime.plusNanos(i * NANOS_BETWEEN_CONS_EVENTS),
-                                    version))
+                                    version.getPbjSemanticVersion()))
                             .toList();
                     final var round = new FakeRound(roundNo.getAndIncrement(), addressBook, consensusEvents);
                     hedera.handleWorkflow().handleRound(state, platformState, round);

@@ -49,6 +49,7 @@ public class NodeDeleteHandler implements TransactionHandler {
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        requireNonNull(txn);
         final NodeDeleteTransactionBody transactionBody = txn.nodeDeleteOrThrow();
         final long nodeId = transactionBody.nodeId();
 
