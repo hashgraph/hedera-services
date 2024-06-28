@@ -25,7 +25,6 @@ import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
@@ -144,9 +143,7 @@ public abstract class MethodBase implements ServerCalls.UnaryMethod<BufferedData
             callsHandledSpeedometer.cycle();
         } catch (final Exception e) {
             // Track the number of times we failed to handle a call
-            if (!(e instanceof StatusRuntimeException)) {
-                logger.error("Unexpected exception while handling a GRPC message", e);
-            }
+            logger.error("Possibly CATASTROPHIC failure while handling a GRPC message", e);
             callsFailedCounter.increment();
             responseObserver.onError(e);
         }
