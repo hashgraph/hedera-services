@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.PendingAirdropId;
 import com.hederahashgraph.api.proto.java.TokenCancelAirdropTransactionBody;
@@ -36,6 +37,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class HapiTokenCancelAirdrop extends HapiTxnOp<HapiTokenCancelAirdrop> {
 
@@ -95,6 +97,19 @@ public class HapiTokenCancelAirdrop extends HapiTxnOp<HapiTokenCancelAirdrop> {
                     .setReceiverId(receiverID)
                     .build();
         };
+    }
+
+    @Override
+    protected List<Function<HapiSpec, Key>> defaultSigners() {
+        return Stream.concat(
+                        Stream.of(spec -> spec.registry().getKey(effectivePayer(spec))),
+                        pendingAirdropIds.stream()
+                                .map(pendingAirdropId -> (Function<HapiSpec, Key>) spec -> spec.registry()
+                                        .getKey(spec.registry()
+                                                .getAccountIdName(pendingAirdropId
+                                                        .apply(spec)
+                                                        .getSenderId()))))
+                .toList();
     }
 
     @Override
