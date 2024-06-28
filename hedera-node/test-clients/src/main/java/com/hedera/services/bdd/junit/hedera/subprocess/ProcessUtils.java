@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DI
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ERROR_REDIRECT_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.guaranteedExtantFile;
+import static java.lang.ProcessBuilder.Redirect.DISCARD;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -126,7 +127,7 @@ public class ProcessUtils {
                     .directory(metadata.workingDirOrThrow().toFile());
             // When in CI redirect errors to a log for debugging; when running locally inherit IO
             if (System.getenv("CI") != null) {
-                builder.redirectError(redirectFile);
+                builder.redirectError(redirectFile).redirectOutput(DISCARD);
             } else {
                 builder.inheritIO();
             }
