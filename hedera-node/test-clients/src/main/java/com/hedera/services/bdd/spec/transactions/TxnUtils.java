@@ -121,7 +121,7 @@ public class TxnUtils {
     public static final int BYTES_4K = 4 * (1 << 10);
 
     private static final Pattern ID_LITERAL_PATTERN = Pattern.compile("\\d+[.]\\d+[.]\\d+");
-    private static final Pattern PORT_LITERAL_PATTERN = Pattern.compile("\\d+");
+    private static final Pattern NUMERIC_LITERAL_PATTERN = Pattern.compile("\\d+");
     private static final int BANNER_WIDTH = 80;
     private static final int BANNER_BOUNDARY_THICKNESS = 2;
     // Wait just a bit longer than the 2-second block period to be certain we've ended the period
@@ -201,8 +201,8 @@ public class TxnUtils {
         return ID_LITERAL_PATTERN.matcher(s).matches();
     }
 
-    public static boolean isPortLiteral(final String s) {
-        return PORT_LITERAL_PATTERN.matcher(s).matches();
+    public static boolean isNumericLiteral(final String s) {
+        return NUMERIC_LITERAL_PATTERN.matcher(s).matches();
     }
 
     public static AccountID asId(final String s, final HapiSpec lookupSpec) {
@@ -250,7 +250,7 @@ public class TxnUtils {
     }
 
     public static long asNodeIdLong(final String s, final HapiSpec lookupSpec) {
-        return isIdLiteral(s)
+        return isNumericLiteral(s)
                 ? asEntityNumber(s).getNumber()
                 : lookupSpec.registry().getNodeId(s).getNumber();
     }

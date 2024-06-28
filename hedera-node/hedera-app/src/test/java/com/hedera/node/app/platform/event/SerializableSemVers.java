@@ -294,6 +294,7 @@ public class SerializableSemVers implements SoftwareVersion {
     }
 
     @Override
+    @NonNull
     public com.hedera.hapi.node.base.SemanticVersion getPbjSemanticVersion() {
         return new com.hedera.hapi.node.base.SemanticVersion(
                 services.getMajor(), services.getMinor(), services.getPatch(), services.getPre(), services.getBuild());
