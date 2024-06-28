@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.perf.file;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpecSetup.getDefaultNodeProps;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -33,6 +34,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_FILE_SIZE_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -55,6 +57,7 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
 /**
  * Load provider that continually appends 5kb chunks to a random choice of one of a set of target
@@ -69,6 +72,7 @@ import org.junit.jupiter.api.DynamicTest;
  *       out of rotation" and a new target file created).
  * </ul>
  */
+@Tag(NOT_REPEATABLE)
 public class FileExpansionLoadProvider extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FileExpansionLoadProvider.class);
 
@@ -118,8 +122,8 @@ public class FileExpansionLoadProvider extends HapiSuite {
 
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
-                final List<HapiSpecOperation> ops = new ArrayList<>();
+            public List<SpecOperation> suggestedInitializers() {
+                final List<SpecOperation> ops = new ArrayList<>();
                 ops.add(newKeyNamed(key).shape(waclShape));
                 for (int i = 0, n = numActiveTargets.get(); i < n; i++) {
                     ops.add(fileCreate(targetNameFn.apply(i))

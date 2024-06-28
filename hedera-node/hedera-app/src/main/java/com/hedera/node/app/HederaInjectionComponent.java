@@ -16,6 +16,7 @@
 
 package com.hedera.node.app;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
@@ -31,14 +32,13 @@ import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.service.mono.state.PlatformStateAccessor;
-import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
-import com.hedera.node.app.service.mono.utils.SystemExits;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
+import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
@@ -49,11 +49,11 @@ import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
 import com.hedera.node.config.ConfigProvider;
 import com.swirlds.common.crypto.Cryptography;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.SelfNodeInfo;
 import dagger.BindsInstance;
@@ -65,9 +65,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
- * The infrastructure used to implement the platform contract for a Hedera Services node. This is needed for adding
- * dagger subcomponents. Currently, it extends {@link com.hedera.node.app.service.mono.ServicesApp}. But, in the future
- * this class will be cleaned up to not have multiple module dependencies
+ * The infrastructure used to implement the platform contract for a Hedera Services node.
  */
 @Singleton
 @Component(
@@ -98,10 +96,6 @@ public interface HederaInjectionComponent {
     GrpcServerManager grpcServerManager();
 
     Supplier<Charset> nativeCharset();
-
-    SystemExits systemExits();
-
-    NamedDigestFactory digestFactory();
 
     NetworkInfo networkInfo();
 
@@ -163,7 +157,13 @@ public interface HederaInjectionComponent {
         Builder instantSource(InstantSource instantSource);
 
         @BindsInstance
-        Builder softwareVersion(SoftwareVersion softwareVersion);
+        Builder contractServiceImpl(ContractServiceImpl contractService);
+
+        @BindsInstance
+        Builder softwareVersion(SemanticVersion softwareVersion);
+
+        @BindsInstance
+        Builder metrics(Metrics metrics);
 
         HederaInjectionComponent build();
     }

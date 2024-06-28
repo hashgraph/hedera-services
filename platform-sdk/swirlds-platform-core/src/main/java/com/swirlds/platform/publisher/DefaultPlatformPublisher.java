@@ -20,7 +20,7 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.platform.builder.ApplicationCallbacks;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
@@ -34,13 +34,13 @@ public class DefaultPlatformPublisher implements PlatformPublisher {
 
     private static final Logger logger = LogManager.getLogger(DefaultPlatformPublisher.class);
 
-    private final Consumer<GossipEvent> preconsensusEventConsumer;
+    private final Consumer<PlatformEvent> preconsensusEventConsumer;
     private boolean preconsensusEventConsumerErrorLogged = false;
 
     private final Consumer<ConsensusSnapshot> snapshotOverrideConsumer;
     private boolean snapshotOverrideConsumerErrorLogged = false;
 
-    private final Consumer<GossipEvent> staleEventConsumer;
+    private final Consumer<PlatformEvent> staleEventConsumer;
     private boolean staleEventConsumerErrorLogged = false;
 
     /**
@@ -58,7 +58,7 @@ public class DefaultPlatformPublisher implements PlatformPublisher {
      * {@inheritDoc}
      */
     @Override
-    public void publishPreconsensusEvent(@NonNull final GossipEvent event) {
+    public void publishPreconsensusEvent(@NonNull final PlatformEvent event) {
         if (preconsensusEventConsumer == null) {
             if (!preconsensusEventConsumerErrorLogged) {
                 // One log is sufficient to alert test validators, no need generate spam beyond the first log.
@@ -90,7 +90,7 @@ public class DefaultPlatformPublisher implements PlatformPublisher {
      * {@inheritDoc}
      */
     @Override
-    public void publishStaleEvent(@NonNull final GossipEvent event) {
+    public void publishStaleEvent(@NonNull final PlatformEvent event) {
         if (staleEventConsumer == null) {
             if (!staleEventConsumerErrorLogged) {
                 // One log is sufficient to alert test validators, no need generate spam beyond the first log.

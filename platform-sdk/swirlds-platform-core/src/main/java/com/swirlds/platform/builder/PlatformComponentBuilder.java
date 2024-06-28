@@ -359,7 +359,7 @@ public class PlatformComponentBuilder {
             eventSignatureValidator = new DefaultEventSignatureValidator(
                     blocks.platformContext(),
                     CryptoStatic::verifySignature,
-                    blocks.appVersion(),
+                    blocks.appVersion().getPbjSemanticVersion(),
                     blocks.initialState().get().getState().getPlatformState().getPreviousAddressBook(),
                     blocks.initialAddressBook(),
                     blocks.intakeEventCounter());
@@ -588,7 +588,7 @@ public class PlatformComponentBuilder {
                     (DetailedConsensusEvent event) -> event.isLastInRoundReceived()
                             && blocks.isInFreezePeriodReference()
                                     .get()
-                                    .test(event.getGossipEvent().getConsensusTimestamp()));
+                                    .test(event.getPlatformEvent().getConsensusTimestamp()));
         }
         return consensusEventStream;
     }
@@ -860,7 +860,7 @@ public class PlatformComponentBuilder {
             issDetector = new DefaultIssDetector(
                     blocks.platformContext(),
                     blocks.initialState().get().getState().getPlatformState().getAddressBook(),
-                    blocks.appVersion(),
+                    blocks.appVersion().getPbjSemanticVersion(),
                     ignorePreconsensusSignatures,
                     roundToIgnore);
         }

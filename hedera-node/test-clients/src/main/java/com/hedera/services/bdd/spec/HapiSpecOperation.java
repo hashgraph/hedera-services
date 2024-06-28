@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
@@ -34,7 +35,6 @@ import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
@@ -231,7 +231,7 @@ public abstract class HapiSpecOperation implements SpecOperation {
 
     private AccountID randomNodeFrom(final HapiSpec spec) {
         final List<HederaNode> nodes = spec.targetNetworkOrThrow().nodes();
-        return PbjConverter.fromPbj(nodes.get(r.nextInt(nodes.size())).getAccountId());
+        return fromPbj(nodes.get(r.nextInt(nodes.size())).getAccountId());
     }
 
     public Optional<Throwable> execFor(final HapiSpec spec) {
@@ -342,7 +342,7 @@ public abstract class HapiSpecOperation implements SpecOperation {
         setKeyControlOverrides(spec);
         List<Key> keys = signersToUseFor(spec);
 
-        final Transaction.Builder builder = spec.txns().getReadyToSign(netDef, spec, bodyMutation);
+        final Transaction.Builder builder = spec.txns().getReadyToSign(netDef, bodyMutation, spec);
         final Transaction provisional = getSigned(spec, builder, keys);
         if (fee.isPresent()) {
             txn = provisional;
@@ -352,7 +352,7 @@ public abstract class HapiSpecOperation implements SpecOperation {
             final int numPayerKeys = hardcodedNumPayerKeys.orElse(spec.keys().controlledKeyCount(payerKey, overrides));
             final long customFee = feeFor(spec, provisional, numPayerKeys);
             netDef = netDef.andThen(b -> b.setTransactionFee(customFee));
-            txn = getSigned(spec, spec.txns().getReadyToSign(netDef, spec, bodyMutation), keys);
+            txn = getSigned(spec, spec.txns().getReadyToSign(netDef, bodyMutation, spec), keys);
         }
 
         return finalizedTxnFromTxnWithBodyBytesAndSigMap(txn);

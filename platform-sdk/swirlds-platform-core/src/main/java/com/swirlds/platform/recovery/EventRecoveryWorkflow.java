@@ -41,7 +41,7 @@ import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.consensus.SyntheticSnapshot;
 import com.swirlds.platform.crypto.CryptoStatic;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import com.swirlds.platform.event.preconsensus.PcesMutableFile;
@@ -57,6 +57,7 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
+import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.state.snapshot.SignedStateFileWriter;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
@@ -150,7 +151,7 @@ public final class EventRecoveryWorkflow {
         logger.info(STARTUP.getMarker(), "Loading state from {}", signedStateFile);
 
         try (final ReservedSignedState initialState = SignedStateFileReader.readStateFile(
-                        platformContext, signedStateFile)
+                        platformContext, signedStateFile, SignedStateFileUtils::readState)
                 .reservedSignedState()) {
             StaticSoftwareVersion.setSoftwareVersion(
                     initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
@@ -322,7 +323,7 @@ public final class EventRecoveryWorkflow {
         ReservedSignedState signedState = initialState;
 
         // Apply events to the state
-        GossipEvent lastEvent = null;
+        PlatformEvent lastEvent = null;
         while (roundIterator.hasNext()
                 && (finalRound == -1 || roundIterator.peek().getRoundNum() <= finalRound)) {
             final StreamedRound round = roundIterator.next();
@@ -378,7 +379,7 @@ public final class EventRecoveryWorkflow {
         previousState.get().getState().throwIfImmutable();
         final MerkleRoot newState = previousState.get().getState().copy();
         final DetailedConsensusEvent lastEvent = (DetailedConsensusEvent) getLastEvent(round);
-        new StatefulEventHasher().hashEvent(lastEvent.getGossipEvent());
+        new StatefulEventHasher().hashEvent(lastEvent.getPlatformEvent());
 
         final PlatformState platformState = newState.getPlatformState();
 
@@ -391,7 +392,7 @@ public final class EventRecoveryWorkflow {
                 lastEvent.getConsensusOrder(),
                 currentRoundTimestamp,
                 config,
-                lastEvent.getGossipEvent()));
+                lastEvent.getPlatformEvent()));
         platformState.setCreationSoftwareVersion(
                 previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
 

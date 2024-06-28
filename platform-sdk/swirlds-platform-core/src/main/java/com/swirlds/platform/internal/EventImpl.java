@@ -16,11 +16,11 @@
 
 package com.swirlds.platform.internal;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.EventMetadata;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.events.ConsensusData;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -28,7 +28,6 @@ import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.util.iterator.SkippingIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
@@ -43,7 +42,7 @@ import java.util.TreeSet;
 public class EventImpl extends EventMetadata implements Comparable<EventImpl>, ConsensusEvent {
 
     /** The base event information, including some gossip specific information */
-    private GossipEvent baseEvent;
+    private PlatformEvent baseEvent;
     /** Consensus data calculated for an event */
     private ConsensusData consensusData;
 
@@ -58,16 +57,16 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
 
     public EventImpl() {}
 
-    public EventImpl(final GossipEvent gossipEvent, final EventImpl selfParent, final EventImpl otherParent) {
-        this(gossipEvent, new ConsensusData(), selfParent, otherParent);
+    public EventImpl(final PlatformEvent platformEvent, final EventImpl selfParent, final EventImpl otherParent) {
+        this(platformEvent, new ConsensusData(), selfParent, otherParent);
     }
 
-    public EventImpl(@NonNull final GossipEvent gossipEvent) {
-        this(gossipEvent, new ConsensusData(), null, null);
+    public EventImpl(@NonNull final PlatformEvent platformEvent) {
+        this(platformEvent, new ConsensusData(), null, null);
     }
 
     private EventImpl(
-            final GossipEvent baseEvent,
+            final PlatformEvent baseEvent,
             final ConsensusData consensusData,
             final EventImpl selfParent,
             final EventImpl otherParent) {
@@ -179,7 +178,7 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
     /**
      * @return the base event
      */
-    public GossipEvent getBaseEvent() {
+    public PlatformEvent getBaseEvent() {
         return baseEvent;
     }
 
@@ -206,7 +205,7 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
     //////////////////////////////////////////
 
     //////////////////////////////////////////
-    // BaseEventHashedData
+    // Unsigned Event
     //////////////////////////////////////////
 
     public Instant getTimeCreated() {
@@ -221,7 +220,7 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
      * @return array of transactions inside this event instance
      */
     public ConsensusTransactionImpl[] getTransactions() {
-        return baseEvent.getHashedData().getTransactions();
+        return baseEvent.getUnsignedEvent().getTransactions();
     }
 
     public boolean isCreatedBy(final NodeId id) {
@@ -271,8 +270,8 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
      * {@inheritDoc}
      */
     @Override
-    @Nullable
-    public SoftwareVersion getSoftwareVersion() {
+    @NonNull
+    public SemanticVersion getSoftwareVersion() {
         return baseEvent.getSoftwareVersion();
     }
 

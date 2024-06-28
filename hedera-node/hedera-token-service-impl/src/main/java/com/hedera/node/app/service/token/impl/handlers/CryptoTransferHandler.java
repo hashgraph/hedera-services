@@ -252,7 +252,7 @@ public class CryptoTransferHandler implements TransactionHandler {
             step.doIn(transferContext);
         }
 
-        final var recordBuilder = context.recordBuilder(CryptoTransferRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(CryptoTransferRecordBuilder.class);
         if (!transferContext.getAutomaticAssociations().isEmpty()) {
             transferContext.getAutomaticAssociations().forEach(recordBuilder::addAutomaticTokenAssociation);
         }
@@ -348,13 +348,14 @@ public class CryptoTransferHandler implements TransactionHandler {
             steps.add(assessHbarTransfers);
 
             // Step 4: Charge token transfers with an approval. Modify the allowances map on account
-            final var assessFungibleTokenTransfers = new AdjustFungibleTokenChangesStep(txn, topLevelPayer);
+            final var assessFungibleTokenTransfers =
+                    new AdjustFungibleTokenChangesStep(txn.tokenTransfers(), topLevelPayer);
             steps.add(assessFungibleTokenTransfers);
 
             // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT.
             // Will be a no-op for every txn except possibly the first (i.e., the top-level txn).
             // This is because assessed custom fees never change NFT owners
-            final var changeNftOwners = new NFTOwnersChangeStep(txn, topLevelPayer);
+            final var changeNftOwners = new NFTOwnersChangeStep(txn.tokenTransfers(), topLevelPayer);
             steps.add(changeNftOwners);
         }
 
@@ -618,6 +619,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 customFeeTokenTransfers,
                 triedAndFailedToUseCustomFees);
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(subType)
                 .addBytesPerTransaction(bpt)
                 .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())

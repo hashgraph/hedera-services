@@ -45,8 +45,8 @@ public record EthTxData(
         BigInteger value, // weibar, always positive - note that high-bit might be ON in RLP encoding: still positive
         byte[] callData,
         byte[] accessList,
-        int recId,
-        byte[] v,
+        int recId, // "recovery id" part of a v,r,s ECDSA signature - range 0..1
+        byte[] v, // actual `v` value, incoming, recovery id (`recId` above) (possibly) encoded with chain id
         byte[] r,
         byte[] s) {
 
@@ -153,6 +153,11 @@ public record EthTxData(
                 r,
                 s);
     }
+
+    // For more information on "recovery id" see
+    // https://coinsbench.com/understanding-digital-signatures-the-role-of-v-r-s-in-cryptographic-security-and-signature-b9d2b89bbc0c
+
+    // For more information on encoding `v` see EIP-155 - https://eips.ethereum.org/EIPS/eip-155
 
     public byte[] encodeTx() {
         if (accessList != null && accessList.length > 0) {

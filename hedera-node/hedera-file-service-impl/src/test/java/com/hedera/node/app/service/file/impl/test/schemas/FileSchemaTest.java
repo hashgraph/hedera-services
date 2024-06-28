@@ -23,14 +23,12 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.services.MigrationContextImpl;
 import com.hedera.node.app.spi.fixtures.info.FakeNetworkInfo;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
-import com.hedera.node.app.workflows.handle.record.MigrationContextImpl;
-import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
@@ -46,11 +44,8 @@ final class FileSchemaTest {
     private MapWritableStates newStates;
     private final NetworkInfo networkInfo = new FakeNetworkInfo();
 
-    private ConfigProvider configProvider;
-
     @BeforeEach
     void setUp() {
-        configProvider = new BootstrapConfigProviderImpl();
         newStates = MapWritableStates.builder()
                 .state(MapWritableKVState.builder(V0490FileSchema.BLOBS_KEY).build())
                 .build();

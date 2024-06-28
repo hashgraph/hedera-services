@@ -18,10 +18,9 @@ package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.config.IsEmbeddedTest.NO;
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
-import static com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
+import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
+import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
@@ -46,12 +45,11 @@ import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.info.UnavailableLedgerIdNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
+import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
-import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
-import com.hedera.node.app.service.mono.statedumpers.MerkleStateChild;
-import com.hedera.node.app.service.mono.utils.NamedDigestFactory;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
 import com.hedera.node.app.service.networkadmin.impl.NetworkServiceImpl;
 import com.hedera.node.app.service.schedule.impl.ScheduleServiceImpl;
@@ -62,9 +60,11 @@ import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.HederaLifecyclesImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
+import com.hedera.node.app.statedumpers.DumpCheckpoint;
+import com.hedera.node.app.statedumpers.MerkleStateChild;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.ingest.IngestWorkflow;
 import com.hedera.node.app.workflows.query.QueryWorkflow;
@@ -83,14 +83,15 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.transaction.Transaction;
@@ -99,6 +100,7 @@ import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.Charset;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
@@ -167,7 +169,21 @@ public final class Hedera implements SwirldMain {
      */
     private final HederaSoftwareVersion version;
 
+    /**
+     * Whether this node is running in an embedded test environment.
+     */
     private final IsEmbeddedTest isEmbeddedTest;
+
+    /**
+     * The source of time the node should use for screening transactions at ingest.
+     */
+    private final InstantSource instantSource;
+
+    /**
+     * The contract service singleton, kept as a field here to avoid constructing twice
+     * (once in constructor to register schemas, again inside Dagger component).
+     */
+    private final ContractServiceImpl contractServiceImpl;
 
     /**
      * The Hashgraph Platform. This is set during state initialization.
@@ -188,6 +204,8 @@ public final class Hedera implements SwirldMain {
      * The latest platform status we have received via notification.
      */
     private PlatformStatus platformStatus = STARTING_UP;
+
+    private Metrics metrics;
 
     /*==================================================================================================================
     *
@@ -210,11 +228,13 @@ public final class Hedera implements SwirldMain {
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
-            @NonNull final IsEmbeddedTest isEmbeddedTest) {
+            @NonNull final IsEmbeddedTest isEmbeddedTest,
+            @NonNull final InstantSource instantSource) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
         this.isEmbeddedTest = requireNonNull(isEmbeddedTest);
         this.serviceMigrator = requireNonNull(migrator);
+        this.instantSource = requireNonNull(instantSource);
         logger.info(
                 """
 
@@ -232,11 +252,12 @@ public final class Hedera implements SwirldMain {
                 "Creating Hedera Consensus Node {} with HAPI {}",
                 () -> HapiUtils.toString(version.getServicesVersion()),
                 () -> HapiUtils.toString(version.getHapiVersion()));
+        contractServiceImpl = new ContractServiceImpl(instantSource);
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
-                        CONTRACT_SERVICE,
+                        contractServiceImpl,
                         new FileServiceImpl(),
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
@@ -246,12 +267,14 @@ public final class Hedera implements SwirldMain {
                         new BlockRecordService(),
                         new FeeService(),
                         new CongestionThrottleService(),
-                        new NetworkServiceImpl())
+                        new NetworkServiceImpl(),
+                        new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
         try {
-            // And the factory for the MerkleHederaState class id must be our newState() method
-            constructableRegistry.registerConstructable(
-                    new ClassConstructorPair(MerkleHederaState.class, this::newState));
+            // And the factory for the MerkleHederaState class id must be our constructor
+            // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
+            constructableRegistry.registerConstructable(new ClassConstructorPair(
+                    MerkleHederaState.class, () -> new MerkleHederaState(new HederaLifecyclesImpl(this))));
         } catch (final ConstructableRegistryException e) {
             logger.error("Failed to register MerkleHederaState factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
@@ -289,8 +312,12 @@ public final class Hedera implements SwirldMain {
      */
     @Override
     @NonNull
-    public SwirldState newState() {
-        return new MerkleHederaState(new HederaLifecyclesImpl(this));
+    public MerkleRoot newMerkleStateRoot() {
+        final State state = new State();
+        state.setSwirldState(new MerkleHederaState(new HederaLifecyclesImpl(this)));
+        return state;
+        // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
+        // return new MerkleHederaState(new HederaLifecyclesImpl(this));
     }
 
     /*==================================================================================================================
@@ -302,7 +329,7 @@ public final class Hedera implements SwirldMain {
 
     /**
      * Invoked by the platform when the state should be initialized. This happens <b>BEFORE</b>
-     * {@link #init(Platform, NodeId)} and after {@link #newState()}.
+     * {@link #init(Platform, NodeId)} and after {@link #newMerkleStateRoot()}.
      */
     @SuppressWarnings("java:S1181") // catching Throwable instead of Exception when we do a direct System.exit()
     public void onStateInitialized(
@@ -319,7 +346,7 @@ public final class Hedera implements SwirldMain {
             throw new IllegalStateException("Platform should never change once set");
         }
         this.platform = requireNonNull(platform);
-        final var metrics = platform.getContext().getMetrics();
+        this.metrics = platform.getContext().getMetrics();
         this.configProvider = new ConfigProviderImpl(trigger == GENESIS, metrics);
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
@@ -419,8 +446,8 @@ public final class Hedera implements SwirldMain {
      * {@inheritDoc}
      *
      * <p>Called <b>AFTER</b> init and migrate have been called on the state (either the new state created from
-     * {@link #newState()} or an instance of {@link MerkleHederaState} created by the platform and loaded from the saved
-     * state).
+     * {@link #newMerkleStateRoot()} or an instance of {@link MerkleHederaState} created by the platform and
+     * loaded from the saved state).
      *
      * <p>(FUTURE) Consider moving this initialization into {@link #onStateInitialized(HederaState, Platform, PlatformState, InitTrigger, SoftwareVersion)}
      * instead, as there is no special significance to having it here instead.
@@ -482,9 +509,9 @@ public final class Hedera implements SwirldMain {
     /**
      * Gets whether the sha384 digest is available
      */
-    private boolean sha384DigestIsAvailable(@NonNull final NamedDigestFactory digestFactory) {
+    private boolean sha384DigestIsAvailable() {
         try {
-            digestFactory.forName("SHA-384");
+            MessageDigest.getInstance("SHA-384");
             return true;
         } catch (final NoSuchAlgorithmException e) {
             logger.error(e);
@@ -668,7 +695,7 @@ public final class Hedera implements SwirldMain {
         // Fully qualified so as to not confuse javadoc
         daggerApp = com.hedera.node.app.DaggerHederaInjectionComponent.builder()
                 .initTrigger(trigger)
-                .softwareVersion(version)
+                .softwareVersion(version.getPbjSemanticVersion())
                 .configProvider(configProvider)
                 .configProviderImpl(configProvider)
                 .self(extractSelfNodeInfo(platform, version))
@@ -677,7 +704,9 @@ public final class Hedera implements SwirldMain {
                 .crypto(CryptographyHolder.get())
                 .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
                 .servicesRegistry(servicesRegistry)
-                .instantSource(InstantSource.system())
+                .instantSource(instantSource)
+                .contractServiceImpl(contractServiceImpl)
+                .metrics(metrics)
                 .build();
         daggerApp.workingStateAccessor().setHederaState(state);
         daggerApp.platformStateAccessor().setPlatformState(platformState);
@@ -764,15 +793,14 @@ public final class Hedera implements SwirldMain {
                     System.getenv("LC_ALL"),
                     System.getenv("LANG"),
                     System.getProperty("file.encoding"));
-            daggerApp.systemExits().fail(1);
+            System.exit(1);
         }
 
         // Check that the digest factory supports SHA-384.
-        final var digestFactory = daggerApp.digestFactory();
-        if (!sha384DigestIsAvailable(digestFactory)) {
+        if (!sha384DigestIsAvailable()) {
             logger.error(
                     "Fatal precondition violation in HederaNode#{}: digest factory does not support SHA-384", nodeId);
-            daggerApp.systemExits().fail(1);
+            System.exit(1);
         }
     }
 
