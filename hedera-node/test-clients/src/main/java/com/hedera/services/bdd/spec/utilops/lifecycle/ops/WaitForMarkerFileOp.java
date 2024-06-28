@@ -16,17 +16,24 @@
 
 package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
+import static com.hedera.services.bdd.junit.hedera.MarkerFile.EXEC_IMMEDIATE_MF;
+import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.FAKE_UPGRADE_FILE_NAME;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.bdd.junit.hedera.ExternalPath;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
+import com.hedera.services.bdd.suites.freeze.CommonUpgradeResources;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Assertions;
 
 /**
  * Waits for the selected node or nodes specified by the {@link NodeSelector} to
@@ -54,5 +61,11 @@ public class WaitForMarkerFileOp extends AbstractLifecycleOp {
                 timeout);
         node.mfFuture(markerFile).orTimeout(timeout.toMillis(), MILLISECONDS).join();
         log.info("Node '{}' wrote marker file '{}'", node.getName(), markerFile.fileName());
+        if (markerFile == EXEC_IMMEDIATE_MF) {
+            final var fakeUpgradeFile = node.getExternalPath(UPGRADE_ARTIFACTS_DIR)
+                    .resolve(FAKE_UPGRADE_FILE_NAME)
+                    .toFile();
+            assertTrue(fakeUpgradeFile.exists(), "Upgrade ZIP was not extracted during PREPARE_UPGRADE");
+        }
     }
 }

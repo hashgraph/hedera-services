@@ -263,7 +263,14 @@ public class WorkingDirUtils {
         }
     }
 
-    private static void copyUnchecked(@NonNull final Path source, @NonNull final Path target) {
+    /**
+     * Copy a file from the source path to the target path, throwing an unchecked exception if an
+     * {@link IOException} occurs.
+     *
+     * @param source the source path
+     * @param target the target path
+     */
+    public static void copyUnchecked(@NonNull final Path source, @NonNull final Path target) {
         try {
             Files.copy(source, target);
         } catch (IOException e) {

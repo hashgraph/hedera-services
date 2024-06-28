@@ -49,8 +49,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
-import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.CURRENT_JAR_PATH;
-import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.DEFAULT_UPGRADE_ZIP_LOC;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
@@ -85,7 +83,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
@@ -429,12 +426,12 @@ public class UtilVerbs {
 
     public static TryToStartNodesOp restartNetwork() {
         return new TryToStartNodesOp(
-                NodeSelector.allNodes(), TryToStartNodesOp.UseUpgradeJar.NO, TryToStartNodesOp.ReassignPorts.YES);
+                NodeSelector.allNodes(), 0, TryToStartNodesOp.ReassignPorts.YES);
     }
 
-    public static TryToStartNodesOp restartNetworkFromUpgradeJar() {
+    public static TryToStartNodesOp restartNetworkWithConfigVersion(final int configVersion) {
         return new TryToStartNodesOp(
-                NodeSelector.allNodes(), TryToStartNodesOp.UseUpgradeJar.YES, TryToStartNodesOp.ReassignPorts.YES);
+                NodeSelector.allNodes(), configVersion, TryToStartNodesOp.ReassignPorts.YES);
     }
 
     public static ShutdownWithinOp shutdownWithin(String name, Duration timeout) {
@@ -461,8 +458,8 @@ public class UtilVerbs {
         return untilStartOfNextStakingPeriod(stakePeriodMins);
     }
 
-    public static BuildUpgradeZipOp buildUpgradeZipWith(@NonNull final SemanticVersion newVersion) {
-        return new BuildUpgradeZipOp(CURRENT_JAR_PATH, newVersion, DEFAULT_UPGRADE_ZIP_LOC);
+    public static BuildUpgradeZipOp buildUpgradeZipFrom(@NonNull final Path path) {
+        return new BuildUpgradeZipOp(path);
     }
 
     public static WaitForMarkerFileOp waitForMf(@NonNull final MarkerFile markerFile, @NonNull final Duration timeout) {

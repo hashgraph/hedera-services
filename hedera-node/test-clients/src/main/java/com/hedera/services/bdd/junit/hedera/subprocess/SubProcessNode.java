@@ -102,7 +102,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
 
     @Override
     public SubProcessNode start() {
-        return startWithJar(null);
+        return startWithConfigVersion(0);
     }
 
     @Override
@@ -172,16 +172,11 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         return this;
     }
 
-    public SubProcessNode startWithJar(@Nullable final Path jarPath) {
+    public SubProcessNode startWithConfigVersion(final int configVersion) {
         assertStopped();
         assertWorkingDirInitialized();
         destroyAnySubProcessNodeWithId(metadata.nodeId());
-        if (jarPath == null) {
-            processHandle = startSubProcessNodeFrom(metadata, null);
-        } else {
-            final var jarLoc = jarPath.normalize().toAbsolutePath().toString();
-            processHandle = startSubProcessNodeFrom(metadata, jarLoc);
-        }
+        processHandle = startSubProcessNodeFrom(metadata, configVersion);
         return this;
     }
 

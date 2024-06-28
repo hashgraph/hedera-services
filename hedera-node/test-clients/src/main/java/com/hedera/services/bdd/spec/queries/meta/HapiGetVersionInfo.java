@@ -30,7 +30,12 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
+
+import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -42,6 +47,8 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
     private Optional<SemanticVersion> expectedProto = Optional.empty();
     private Optional<SemanticVersion> expectedServices = Optional.empty();
     private String servicesSemVerBuild = "";
+    @Nullable
+    private Consumer<SemanticVersion> servicesVersionConsumer;
 
     @Override
     public HederaFunctionality type() {
@@ -55,6 +62,16 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 
     public HapiGetVersionInfo hasProtoSemVer(SemanticVersion sv) {
         expectedProto = Optional.of(sv);
+        return this;
+    }
+
+    public HapiGetVersionInfo exposingServicesVersionTo(@NonNull final Consumer<SemanticVersion> consumer) {
+        servicesVersionConsumer = Objects.requireNonNull(consumer);
+        return this;
+    }
+
+    public HapiGetVersionInfo hasProtoServicesVersion(SemanticVersion version) {
+        expectedServices = Optional.of(version);
         return this;
     }
 
@@ -84,6 +101,9 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
     protected void assertExpectationsGiven(HapiSpec spec) throws Throwable {
         SemanticVersion actualProto = response.getNetworkGetVersionInfo().getHapiProtoVersion();
         SemanticVersion actualServices = response.getNetworkGetVersionInfo().getHederaServicesVersion();
+        if (servicesVersionConsumer != null) {
+            servicesVersionConsumer.accept(actualServices);
+        }
         if (expectedProto.isPresent()) {
             Assertions.assertEquals(expectedProto.get(), actualProto, "Wrong HAPI proto version");
         }

@@ -28,7 +28,7 @@ import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -37,7 +37,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -46,9 +45,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -110,20 +108,21 @@ public class ProcessUtils {
      * Starts a sub-process node from the given metadata and main class reference, and returns its {@link ProcessHandle}.
      *
      * @param metadata the metadata of the node to start
-     * @param appJar if non-null, the JAR to use in place of the hedera-app build artifacts
+     * @param configVersion the version of the configuration to use
      * @return the {@link ProcessHandle} of the started node
      */
     public static ProcessHandle startSubProcessNodeFrom(
-            @NonNull final NodeMetadata metadata, @Nullable final String appJar) {
+            @NonNull final NodeMetadata metadata, final int configVersion) {
         final var builder = new ProcessBuilder();
         final var environment = builder.environment();
         environment.put("LC_ALL", "en.UTF-8");
         environment.put("LANG", "en_US.UTF-8");
         environment.put("grpc.port", Integer.toString(metadata.grpcPort()));
+        environment.put("hedera.config.version", Integer.toString(configVersion));
         try {
             final var redirectFile = guaranteedExtantFile(
                     metadata.workingDirOrThrow().resolve(OUTPUT_DIR).resolve(ERROR_REDIRECT_FILE));
-            builder.command(javaCommandLineFor(metadata, appJar))
+            builder.command(javaCommandLineFor(metadata))
                     .directory(metadata.workingDirOrThrow().toFile());
             // When in CI redirect errors to a log for debugging; when running locally inherit IO
             if (System.getenv("CI") != null) {
@@ -137,8 +136,7 @@ public class ProcessUtils {
         }
     }
 
-    private static List<String> javaCommandLineFor(
-            @NonNull final NodeMetadata metadata, @Nullable final String appJar) {
+    private static List<String> javaCommandLineFor(@NonNull final NodeMetadata metadata) {
         final List<String> commandLine = new ArrayList<>();
         commandLine.add(ProcessHandle.current().info().command().orElseThrow());
         // Only activate JDWP if not in CI
@@ -150,7 +148,7 @@ public class ProcessUtils {
         commandLine.addAll(List.of(
                 "-classpath",
                 // Use the same classpath that started this process, excluding test-clients
-                currentNonTestClientClasspath(appJar),
+                currentNonTestClientClasspath(),
                 // JVM system
                 "-Dfile.encoding=UTF-8",
                 "-Dprometheus.endpointPortNumber=" + metadata.prometheusPort(),
@@ -199,7 +197,7 @@ public class ProcessUtils {
                 EXECUTOR);
     }
 
-    private static String currentNonTestClientClasspath(@Nullable final String appJar) {
+    private static String currentNonTestClientClasspath() {
         // Could have been launched with -cp, or -classpath, or @/path/to/classpathFile.txt, or maybe module path?
         final var args = ProcessHandle.current().info().arguments().orElse(EMPTY_STRING_ARRAY);
 
@@ -222,11 +220,8 @@ public class ProcessUtils {
         if (classpath.isBlank()) {
             throw new IllegalStateException("Cannot discover the classpath. Was --module-path used instead?");
         }
-        Predicate<String> test = s -> !s.contains("test-clients");
-        if (appJar != null) {
-            test = test.and(s -> !s.contains("hedera-app/"));
-        }
-        return Stream.concat(Arrays.stream(classpath.split(":")).filter(test), Optional.ofNullable(appJar).stream())
+        return Arrays.stream(classpath.split(":"))
+                .filter(s -> !s.contains("test-clients"))
                 .collect(Collectors.joining(":"));
     }
 
