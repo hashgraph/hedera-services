@@ -232,7 +232,6 @@ public class HapiUtils {
             case NODE_CREATE -> HederaFunctionality.NODE_CREATE;
             case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
             case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
-            case TOKEN_REJECT -> HederaFunctionality.TOKEN_REJECT;
             case TOKEN_AIRDROP -> HederaFunctionality.TOKEN_AIRDROP;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
@@ -265,6 +264,7 @@ public class HapiUtils {
             case TRANSACTION_GET_RECEIPT -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TRANSACTION_GET_RECORD -> HederaFunctionality.TRANSACTION_GET_RECORD;
             case TRANSACTION_GET_FAST_RECORD -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
+            case NODE_GET_INFO -> HederaFunctionality.NODE_GET_INFO;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }

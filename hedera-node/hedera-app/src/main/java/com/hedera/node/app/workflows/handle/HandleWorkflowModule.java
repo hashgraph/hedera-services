@@ -132,9 +132,6 @@ public interface HandleWorkflowModule {
                 tokenHandlers.tokenUpdateNftsHandler(),
                 tokenHandlers.tokenAirdropsHandler(),
                 tokenHandlers.tokenRejectHandler(),
-                utilHandlers.prngHandler(),
-                addressBookHandlers.nodeCreateHandler(),
-                addressBookHandlers.nodeDeleteHandler(),
-                addressBookHandlers.nodeUpdateHandler());
+            utilHandlers.prngHandler());
     }
 }
