@@ -61,6 +61,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenFreezeAccountHandler
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenRejectHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
@@ -84,7 +85,7 @@ public record TransactionHandlers(
         @NonNull ContractDeleteHandler contractDeleteHandler,
         @NonNull ContractSystemDeleteHandler contractSystemDeleteHandler,
         @NonNull ContractSystemUndeleteHandler contractSystemUndeleteHandler,
-        @NonNull EthereumTransactionHandler etherumTransactionHandler,
+        @NonNull EthereumTransactionHandler ethereumTransactionHandler,
         @NonNull CryptoCreateHandler cryptoCreateHandler,
         @NonNull CryptoUpdateHandler cryptoUpdateHandler,
         @NonNull CryptoTransferHandler cryptoTransferHandler,
@@ -101,6 +102,9 @@ public record TransactionHandlers(
         @NonNull FileSystemUndeleteHandler fileSystemUndeleteHandler,
         @NonNull FreezeHandler freezeHandler,
         @NonNull NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler,
+        @NonNull NodeCreateHandler nodeCreateHandler,
+        @NonNull NodeDeleteHandler nodeDeleteHandler,
+        @NonNull NodeUpdateHandler nodeUpdateHandler,
         @NonNull ScheduleCreateHandler scheduleCreateHandler,
         @NonNull ScheduleSignHandler scheduleSignHandler,
         @NonNull ScheduleDeleteHandler scheduleDeleteHandler,
@@ -121,7 +125,5 @@ public record TransactionHandlers(
         @NonNull TokenUnpauseHandler tokenUnpauseHandler,
         @NonNull TokenUpdateNftsHandler tokenUpdateNftsHandler,
         @NonNull TokenAirdropsHandler tokenAirdropsHandler,
-        @NonNull UtilPrngHandler utilPrngHandler,
-        @NonNull NodeCreateHandler nodeCreateHandler,
-        @NonNull NodeDeleteHandler nodeDeleteHandler,
-        @NonNull NodeUpdateHandler nodeUpdateHandler) {}
+        @NonNull TokenRejectHandler tokenRejectHandler,
+        @NonNull UtilPrngHandler utilPrngHandler) {}

@@ -674,7 +674,7 @@ class PrivilegesVerifierTest {
     }
 
     private TransactionBody.Builder nodeAdminTxn() {
-        return txnWithPayer(53);
+        return txnWithPayer(55);
     }
 
     private TransactionBody.Builder txnWithPayer(long num) {

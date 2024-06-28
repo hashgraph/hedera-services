@@ -62,8 +62,8 @@ public final class Validations {
      * be thrown.
      */
     @NonNull
-    public static AccountID validateAccountID(@Nullable final AccountID subject, ResponseCodeEnum responseCodeEnum)
-            throws PreCheckException {
+    public static AccountID validateAccountID(
+            @Nullable final AccountID subject, @Nullable ResponseCodeEnum responseCodeEnum) throws PreCheckException {
         AccountID result = null;
         try {
             result = validateNullableAccountID(subject);

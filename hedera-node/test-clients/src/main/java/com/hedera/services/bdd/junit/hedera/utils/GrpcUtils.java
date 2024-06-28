@@ -170,6 +170,7 @@ public class GrpcUtils {
                     .wipeTokenAccount(transaction);
             case TokenAssociateToAccount -> clients.getTokenSvcStub(nodeAccountId, false)
                     .associateTokens(transaction);
+            case TokenReject -> clients.getTokenSvcStub(nodeAccountId, false).rejectToken(transaction);
             case TokenDissociateFromAccount -> clients.getTokenSvcStub(nodeAccountId, false)
                     .dissociateTokens(transaction);
             case TokenFeeScheduleUpdate -> clients.getTokenSvcStub(nodeAccountId, false)

@@ -21,6 +21,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -83,9 +84,9 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
     default void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
+            @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete)
             throws IOException {
         saveRecords(
                 firstLeafPath,
@@ -117,9 +118,9 @@ public interface VirtualDataSource<K extends VirtualKey, V extends VirtualValue>
     void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+            @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
             final boolean isReconnectContext)
             throws IOException;
 
