@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.services.bdd.spec.fees.Payment.Reason.TXN_FEE;
-import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
@@ -52,8 +51,6 @@ import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.infrastructure.DelegatingOpFinisher;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
-import com.hedera.services.bdd.spec.keys.KeyGenerator;
-import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
 import com.hederahashgraph.api.proto.java.Key;
@@ -108,7 +105,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     protected Optional<ResponseCodeEnum> expectedStatus = Optional.empty();
     protected Optional<ResponseCodeEnum> expectedPrecheck = Optional.empty();
-    protected Optional<KeyGenerator.Nature> keyGen = Optional.empty();
     protected Optional<EnumSet<ResponseCodeEnum>> permissibleStatuses = Optional.empty();
     protected Optional<EnumSet<ResponseCodeEnum>> permissiblePrechecks = Optional.empty();
     /** if response code in the set then allow to resubmit transaction */
@@ -326,7 +322,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     private void rechargePayerFor(HapiSpec spec) {
         long rechargeAmount = spec.registry().getRechargeAmount(payer.get());
         var bank = spec.setup().defaultPayerName();
-        spec.registry().setRechargingTime(payer.get(), Instant.now()); // record timestamp of last recharge event
+        spec.registry().setRechargingTime(payer.get(), spec.consensusTime()); // record timestamp of last recharge event
         allRunFor(spec, cryptoTransfer(tinyBarsFromTo(bank, payer.get(), rechargeAmount)));
     }
 
@@ -337,7 +333,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     private synchronized boolean payerNotRecentlyRecharged(HapiSpec spec) {
         Instant lastInstant = payer.map(spec.registry()::getRechargingTime).orElse(Instant.MIN);
         Integer rechargeWindow = payer.map(spec.registry()::getRechargingWindow).orElse(0);
-        return !lastInstant.plusSeconds(rechargeWindow).isAfter(Instant.now());
+        return !lastInstant.plusSeconds(rechargeWindow).isAfter(spec.consensusTime());
     }
 
     private void addIpbToPermissiblePrechecks() {
@@ -519,12 +515,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         }
     }
 
-    protected KeyGenerator effectiveKeyGen() {
-        return (keyGen.orElse(KeyGenerator.Nature.RANDOMIZED) == KeyGenerator.Nature.WITH_OVERLAPPING_PREFIXES)
-                ? OverlappingKeyGenerator.withDefaultOverlaps()
-                : DEFAULT_KEY_GEN;
-    }
-
     protected byte[] gasLongToBytes(final Long gas) {
         return Bytes.wrap(LONG_TUPLE.encode(Tuple.of(gas)).array()).toArray();
     }
@@ -615,6 +605,15 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
+    /**
+     * This method is used to set the payer for the operation, without adding the payer's key.
+     */
+    public T payingWithNoSig(@NonNull final String name) {
+        requireNonNull(name);
+        payer = Optional.of(name);
+        return self();
+    }
+
     public T payingWithAliased(String name) {
         payingWithAlias = true;
         payer = Optional.of(name);
@@ -658,11 +657,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T numPayerSigs(int hardcoded) {
         this.hardcodedNumPayerKeys = Optional.of(hardcoded);
-        return self();
-    }
-
-    public T ed25519Keys(KeyGenerator.Nature nature) {
-        keyGen = Optional.of(nature);
         return self();
     }
 

@@ -66,6 +66,7 @@ public class HbarAllowanceApprovalSuite {
     private static final String HBAR_APPROVE = "hbarApprove";
     private static final String HBAR_ALLOWANCE_CALL = "hbarAllowanceCall";
     private static final String HBAR_APPROVE_CALL = "hbarApproveCall";
+    private static final String HBAR_APPROVE_DELEGATE_CALL = "hbarApproveDelegateCall";
     private static final String CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_ENABLED =
             "contracts.systemContract.accountService.enabled";
 
@@ -226,7 +227,6 @@ public class HbarAllowanceApprovalSuite {
                                 .exposingEvmAddress(cb -> contractNum.set(asHeadlongAddress(cb))),
                         cryptoTransfer(tinyBarsFromTo(ACCOUNT, HRC632_CONTRACT, 1_000_000L)))
                 .when(withOpContext((spec, opLog) -> {
-                    // var accountAddress = "0.0." + accountNum.get().value();
                     var contractAddress = contractNum.get();
                     var spenderAddress = spenderNum.get();
                     allRunFor(
@@ -373,5 +373,46 @@ public class HbarAllowanceApprovalSuite {
                                                         isLiteralResult(
                                                                 new Object[] {Long.valueOf(22), BigInteger.valueOf(0)
                                                                 })))));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> hrc632ApproveFromContractFailsDelegateCall() {
+        final AtomicReference<Address> accountNum = new AtomicReference<>();
+        final AtomicReference<Address> spenderNum = new AtomicReference<>();
+        final AtomicReference<Address> contractNum = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("hrc632FromContract")
+                .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_ENABLED)
+                .given(
+                        overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_ENABLED, "true"),
+                        cryptoCreate(ACCOUNT)
+                                .balance(100 * ONE_HUNDRED_HBARS)
+                                .exposingCreatedIdTo(id -> accountNum.set(idAsHeadlongAddress(id))),
+                        cryptoCreate(SPENDER).exposingCreatedIdTo(id -> spenderNum.set(idAsHeadlongAddress(id))),
+                        uploadInitCode(HRC632_CONTRACT),
+                        contractCreate(HRC632_CONTRACT),
+                        getContractInfo(HRC632_CONTRACT)
+                                .exposingEvmAddress(cb -> contractNum.set(asHeadlongAddress(cb))),
+                        cryptoTransfer(tinyBarsFromTo(ACCOUNT, HRC632_CONTRACT, 1_000_000L)))
+                .when(withOpContext((spec, opLog) -> {
+                    var contractAddress = contractNum.get();
+                    var spenderAddress = spenderNum.get();
+                    allRunFor(
+                            spec,
+                            // try delegate call to system contract.  should fail
+                            contractCall(
+                                            HRC632_CONTRACT,
+                                            HBAR_APPROVE_DELEGATE_CALL,
+                                            contractAddress,
+                                            spenderAddress,
+                                            BigInteger.valueOf(1_000_000L))
+                                    .payingWith(ACCOUNT)
+                                    .gas(1_000_000)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                    .via(HBAR_APPROVE_TXN));
+                }))
+                .then(getTxnRecord(HBAR_APPROVE_TXN)
+                        .logged()
+                        .hasPriority(recordWith().status(CONTRACT_REVERT_EXECUTED)));
     }
 }

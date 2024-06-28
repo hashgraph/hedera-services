@@ -232,7 +232,8 @@ public class ReadableFreezeUpgradeActions {
 
         var line = new StringBuilder();
         int weight = 0;
-        final var name = "node" + node.nodeId();
+        final var val = node.nodeId() + 1;
+        final var name = "node" + val;
         final var alias = nameToAlias(name);
         final var pemFile = pathToWrite.resolve("s-public-" + alias + ".pem");
         final int INT = 0;

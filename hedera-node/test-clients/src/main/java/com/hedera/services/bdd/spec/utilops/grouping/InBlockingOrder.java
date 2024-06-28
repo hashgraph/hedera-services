@@ -22,7 +22,7 @@ import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 
-public class InBlockingOrder extends UtilOp {
+public class InBlockingOrder extends UtilOp implements GroupedOps<InBlockingOrder> {
     private final SpecOperation[] ops;
 
     public InBlockingOrder(SpecOperation... ops) {
@@ -42,5 +42,10 @@ public class InBlockingOrder extends UtilOp {
     @Override
     public String toString() {
         return "InBlockingOrder";
+    }
+
+    @Override
+    public InBlockingOrder failOnErrors() {
+        return this;
     }
 }

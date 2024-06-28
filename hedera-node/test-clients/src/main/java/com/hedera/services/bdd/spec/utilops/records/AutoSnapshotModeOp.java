@@ -37,28 +37,19 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * </ul>
  */
 public class AutoSnapshotModeOp extends UtilOp implements SnapshotOp {
-    private final AutoSnapshotRecordSource autoTakeSource;
-    private final AutoSnapshotRecordSource autoMatchSource;
-
     private SnapshotModeOp delegate;
     private final SnapshotMatchMode[] snapshotMatchModes;
 
     public static @Nullable SnapshotOp from(@NonNull final HapiSpec spec) {
         final var setup = spec.setup();
         if (setup.autoSnapshotManagement()) {
-            return new AutoSnapshotModeOp(
-                    setup.autoSnapshotTarget(), setup.autoMatchTarget(), spec.getSnapshotMatchModes());
+            return new AutoSnapshotModeOp(spec.getSnapshotMatchModes());
         } else {
             return null;
         }
     }
 
-    public AutoSnapshotModeOp(
-            @NonNull final AutoSnapshotRecordSource autoTakeSource,
-            @NonNull final AutoSnapshotRecordSource autoMatchSource,
-            @NonNull final SnapshotMatchMode[] snapshotMatchModes) {
-        this.autoTakeSource = autoTakeSource;
-        this.autoMatchSource = autoMatchSource;
+    public AutoSnapshotModeOp(@NonNull final SnapshotMatchMode[] snapshotMatchModes) {
         this.snapshotMatchModes = snapshotMatchModes;
     }
 

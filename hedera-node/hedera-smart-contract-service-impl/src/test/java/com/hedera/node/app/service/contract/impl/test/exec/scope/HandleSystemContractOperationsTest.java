@@ -43,6 +43,7 @@ import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
+import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -77,6 +78,9 @@ class HandleSystemContractOperationsTest {
     private SignatureVerification failed;
 
     @Mock
+    private KeyVerifier keyVerifier;
+
+    @Mock
     private RecordBuilders recordBuilders;
 
     private HandleSystemContractOperations subject;
@@ -96,8 +100,9 @@ class HandleSystemContractOperationsTest {
                 .willReturn(Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
         given(strategy.decideForPrimitive(TestHelpers.A_SECP256K1_KEY)).willReturn(Decision.INVALID);
         given(passed.passed()).willReturn(true);
-        given(context.verificationFor(AN_ED25519_KEY)).willReturn(passed);
-        given(context.verificationFor(TestHelpers.B_SECP256K1_KEY)).willReturn(failed);
+        given(context.keyVerifier()).willReturn(keyVerifier);
+        given(keyVerifier.verificationFor(AN_ED25519_KEY)).willReturn(passed);
+        given(keyVerifier.verificationFor(TestHelpers.B_SECP256K1_KEY)).willReturn(failed);
         doCallRealMethod().when(strategy).asSignatureTestIn(context, A_SECP256K1_KEY);
 
         subject.dispatch(TransactionBody.DEFAULT, strategy, A_NEW_ACCOUNT_ID, CryptoTransferRecordBuilder.class);

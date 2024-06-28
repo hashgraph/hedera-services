@@ -22,7 +22,7 @@ module com.hedera.node.app {
     requires transitive com.swirlds.state.api;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
-    requires transitive grpc.stub;
+    requires transitive io.grpc.stub;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;
@@ -42,7 +42,7 @@ module com.hedera.node.app {
     requires com.google.common;
     requires com.google.protobuf;
     requires com.hedera.evm;
-    requires grpc.netty;
+    requires io.grpc.netty;
     requires io.grpc;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
@@ -77,8 +77,6 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle to
             com.hedera.node.app.test.fixtures,
             com.hedera.node.test.clients;
-    exports com.hedera.node.app.workflows.handle.record to
-            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.version to
             com.hedera.node.app.test.fixtures,
             com.swirlds.platform,
@@ -87,23 +85,19 @@ module com.hedera.node.app {
     exports com.hedera.node.app.state.listeners to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.services;
-    exports com.hedera.node.app.workflows.handle.flow to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch.child.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch.user.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.txn.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.txn to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.txn.modules to
-            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.store;
+    exports com.hedera.node.app.workflows.handle.steps to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
+    exports com.hedera.node.app.workflows.handle.record to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
+    exports com.hedera.node.app.workflows.handle.throttle to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.dispatch;
+    exports com.hedera.node.app.workflows.handle.cache to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

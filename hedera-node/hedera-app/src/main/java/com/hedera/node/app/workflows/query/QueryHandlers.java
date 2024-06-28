@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.workflows.query;
 
-import com.hedera.node.app.service.addressbook.impl.handlers.NodeGetInfoHandler;
 import com.hedera.node.app.service.consensus.impl.handlers.ConsensusGetTopicInfoHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractCallLocalHandler;
 import com.hedera.node.app.service.contract.impl.handlers.ContractGetBySolidityIDHandler;
@@ -72,5 +71,4 @@ public record QueryHandlers(
         @NonNull TokenGetInfoHandler tokenGetInfoHandler,
         @NonNull TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler,
         @NonNull TokenGetNftInfoHandler tokenGetNftInfoHandler,
-        @NonNull TokenGetNftInfosHandler tokenGetNftInfosHandler,
-        @NonNull NodeGetInfoHandler nodeGetInfoHandler) {}
+        @NonNull TokenGetNftInfosHandler tokenGetNftInfosHandler) {}

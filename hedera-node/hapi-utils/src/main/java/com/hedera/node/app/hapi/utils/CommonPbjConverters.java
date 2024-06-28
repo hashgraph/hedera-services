@@ -36,20 +36,19 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.scheduled.SchedulableTransactionBody;
 import com.hedera.hapi.node.scheduled.ScheduleInfo;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.CustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.hapi.util.HapiUtils;
-import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.pbj.runtime.io.stream.WritableStreamingData;
+import com.hederahashgraph.api.proto.java.AccountID.AccountCase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayOutputStream;
@@ -80,6 +79,13 @@ public class CommonPbjConverters {
             builder.setDeleted(file.deleted());
         }
         return builder.build();
+    }
+
+    public static @NonNull com.hederahashgraph.api.proto.java.EntityNumber fromPbj(@NonNull EntityNumber entityNumber) {
+        requireNonNull(entityNumber);
+        return com.hederahashgraph.api.proto.java.EntityNumber.newBuilder()
+                .setNumber(entityNumber.number())
+                .build();
     }
 
     public static @NonNull com.hederahashgraph.api.proto.java.TransactionBody fromPbj(@NonNull TransactionBody tx) {
@@ -208,11 +214,17 @@ public class CommonPbjConverters {
         requireNonNull(accountID);
         final var builder =
                 AccountID.newBuilder().shardNum(accountID.getShardNum()).realmNum(accountID.getRealmNum());
-        if (accountID.getAccountCase() == com.hederahashgraph.api.proto.java.AccountID.AccountCase.ALIAS) {
+        if (accountID.getAccountCase() == AccountCase.ALIAS) {
             builder.alias(Bytes.wrap(accountID.getAlias().toByteArray()));
         } else {
             builder.accountNum(accountID.getAccountNum());
         }
+        return builder.build();
+    }
+
+    public static @NonNull EntityNumber toPbj(@NonNull com.hederahashgraph.api.proto.java.EntityNumber entityNumber) {
+        requireNonNull(entityNumber);
+        final var builder = EntityNumber.newBuilder().number(entityNumber.getNumber());
         return builder.build();
     }
 
@@ -280,7 +292,6 @@ public class CommonPbjConverters {
             case NodeCreate -> HederaFunctionality.NODE_CREATE;
             case NodeUpdate -> HederaFunctionality.NODE_UPDATE;
             case NodeDelete -> HederaFunctionality.NODE_DELETE;
-            case NodeGetInfo -> HederaFunctionality.NODE_GET_INFO;
             case ScheduleCreate -> HederaFunctionality.SCHEDULE_CREATE;
             case ScheduleDelete -> HederaFunctionality.SCHEDULE_DELETE;
             case ScheduleGetInfo -> HederaFunctionality.SCHEDULE_GET_INFO;
@@ -307,6 +318,7 @@ public class CommonPbjConverters {
             case TokenUnpause -> HederaFunctionality.TOKEN_UNPAUSE;
             case TokenUpdate -> HederaFunctionality.TOKEN_UPDATE;
             case TokenUpdateNfts -> HederaFunctionality.TOKEN_UPDATE_NFTS;
+            case TokenReject -> HederaFunctionality.TOKEN_REJECT;
             case TransactionGetReceipt -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TransactionGetRecord -> HederaFunctionality.TRANSACTION_GET_RECORD;
             case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
@@ -644,6 +656,9 @@ public class CommonPbjConverters {
             case MAX_CHILD_RECORDS_EXCEEDED -> ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
             case INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES -> ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
             case TRANSACTION_HAS_UNKNOWN_FIELDS -> ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
+            case TOKEN_REFERENCE_REPEATED -> ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
+            case TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED -> ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
+            case INVALID_OWNER_ID -> ResponseCodeEnum.INVALID_OWNER_ID;
             case ACCOUNT_IS_IMMUTABLE -> ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
             case ALIAS_ALREADY_ASSIGNED -> ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
             case INVALID_METADATA_KEY -> ResponseCodeEnum.INVALID_METADATA_KEY;
@@ -671,6 +686,8 @@ public class CommonPbjConverters {
             case TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED -> ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
             case SERVICE_ENDPOINTS_EXCEEDED_LIMIT -> ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
             case INVALID_IPV4_ADDRESS -> ResponseCodeEnum.INVALID_IPV4_ADDRESS;
+            case EMPTY_TOKEN_REFERENCE_LIST -> ResponseCodeEnum.EMPTY_TOKEN_REFERENCE_LIST;
+            case UPDATE_NODE_ACCOUNT_NOT_ALLOWED -> ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
@@ -790,24 +807,6 @@ public class CommonPbjConverters {
             return TransactionBody.PROTOBUF.parse(BufferedData.wrap(bytes));
         } catch (ParseException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    public static ThrottleUsageSnapshot toPbj(DeterministicThrottle.UsageSnapshot snapshot) {
-        final var lastDecisionTime = snapshot.lastDecisionTime();
-        if (lastDecisionTime == null) {
-            return new ThrottleUsageSnapshot(snapshot.used(), null);
-        } else {
-            return new ThrottleUsageSnapshot(snapshot.used(), HapiUtils.asTimestamp(lastDecisionTime));
-        }
-    }
-
-    public static DeterministicThrottle.UsageSnapshot fromPbj(ThrottleUsageSnapshot snapshot) {
-        final var lastDecisionTime = snapshot.lastDecisionTime();
-        if (lastDecisionTime == null) {
-            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), null);
-        } else {
-            return new DeterministicThrottle.UsageSnapshot(snapshot.used(), HapiUtils.asInstant(lastDecisionTime));
         }
     }
 

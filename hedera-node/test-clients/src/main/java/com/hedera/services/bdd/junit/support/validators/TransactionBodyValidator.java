@@ -27,7 +27,6 @@ import com.hedera.node.app.hapi.utils.CommonUtils;
 import com.hedera.node.app.hapi.utils.exception.UnknownHederaFunctionality;
 import com.hedera.services.bdd.junit.support.RecordStreamValidator;
 import com.hedera.services.bdd.junit.support.RecordWithSidecars;
-import com.hedera.services.bdd.suites.records.TransactionBodyValidation;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -41,8 +40,6 @@ import org.apache.logging.log4j.Logger;
 /**
  * This validator checks all the transactions submitted have {@link com.hederahashgraph.api.proto.java.TransactionBody}
  * set, by comparing checking if there are any NONE functionality transactions at the end of the CI test run:
- *
- * <p>It uses the {@link TransactionBodyValidation} suite to perform the queries.
  */
 public class TransactionBodyValidator implements RecordStreamValidator {
     private static final Logger log = LogManager.getLogger(TransactionBodyValidator.class);
@@ -52,24 +49,18 @@ public class TransactionBodyValidator implements RecordStreamValidator {
     @Override
     public void validateRecordsAndSidecars(@NonNull final List<RecordWithSidecars> recordsWithSidecars) {
         requireNonNull(recordsWithSidecars);
-        validateTransactionBody(recordsWithSidecars);
-    }
-
-    private void validateTransactionBody(final List<RecordWithSidecars> recordsWithSidecars) {
-        String errorMsg = "Invalid TransactionBody type HederaFunctionality.NONE with record: {}";
-
         for (final var recordWithSidecars : recordsWithSidecars) {
             final var items = recordWithSidecars.recordFile().getRecordStreamItemsList();
             for (final var item : items) {
                 try {
                     transactionBodyClassifier.incorporate(item);
                     if (transactionBodyClassifier.isInvalid()) {
-                        log.error(errorMsg, item);
-                        throw new IllegalStateException(errorMsg + item);
+                        log.error("Invalid TransactionBody type HederaFunctionality.NONE with record: {}", item);
+                        throw new IllegalStateException("Not a known operation - " + item);
                     }
                 } catch (InvalidProtocolBufferException e) {
-                    log.error(errorMsg, e);
-                    throw new IllegalStateException(errorMsg + item, e);
+                    log.error("Unable to parse item {}", item, e);
+                    throw new IllegalStateException(e);
                 }
             }
         }

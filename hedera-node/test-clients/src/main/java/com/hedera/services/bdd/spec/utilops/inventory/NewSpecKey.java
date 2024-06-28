@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.spec.utilops.inventory;
 
-import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Objects.requireNonNull;
@@ -26,7 +25,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyGenerator;
-import com.hedera.services.bdd.spec.keys.KeyLabel;
+import com.hedera.services.bdd.spec.keys.KeyLabels;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.persistence.SpecKey;
@@ -58,7 +57,7 @@ public class NewSpecKey extends UtilOp {
     private Optional<String> immediateExportPass = Optional.empty();
     private Optional<KeyType> type = Optional.empty();
     private Optional<SigControl> shape = Optional.empty();
-    private Optional<KeyLabel> labels = Optional.empty();
+    private Optional<KeyLabels> labels = Optional.empty();
     private Optional<KeyGenerator> generator = Optional.empty();
 
     public NewSpecKey(String name) {
@@ -102,12 +101,12 @@ public class NewSpecKey extends UtilOp {
         return this;
     }
 
-    public NewSpecKey labels(KeyLabel kl) {
+    public NewSpecKey labels(KeyLabels kl) {
         labels = Optional.of(kl);
         return this;
     }
 
-    public NewSpecKey generator(KeyGenerator gen) {
+    public NewSpecKey generator(@NonNull final KeyGenerator gen) {
         generator = Optional.of(gen);
         return this;
     }
@@ -139,7 +138,7 @@ public class NewSpecKey extends UtilOp {
             return false;
         }
 
-        final var keyGen = generator.orElse(DEFAULT_KEY_GEN);
+        final var keyGen = generator.orElse(spec.keyGenerator());
         Key key;
         if (shape.isPresent()) {
             if (labels.isPresent()) {
@@ -176,7 +175,7 @@ public class NewSpecKey extends UtilOp {
     }
 
     static void exportWithPass(HapiSpec spec, String name, String exportLoc, String exportPass) throws IOException {
-        spec.keys().exportSimpleKey(exportLoc, name, exportPass);
+        spec.keys().exportEd25519Key(exportLoc, name, exportPass);
         final var passLoc = exportLoc.replace(".pem", ".pass");
         Files.writeString(Paths.get(passLoc), exportPass);
     }

@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -74,7 +75,7 @@ public class RunTransfers extends HapiSuite {
 
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(inParallel(IntStream.range(0, TOTAL_ACCOUNTS)
                         .mapToObj(i -> cryptoCreate(String.format("account%d", i)))
                         .toArray(HapiSpecOperation[]::new)));

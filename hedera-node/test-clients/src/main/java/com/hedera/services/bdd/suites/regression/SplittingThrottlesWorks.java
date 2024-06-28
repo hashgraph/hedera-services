@@ -29,6 +29,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -97,7 +98,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
 
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(cryptoCreate(CIVILIAN)
                         .payingWith(GENESIS)
                         .balance(ONE_MILLION_HBARS)
