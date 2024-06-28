@@ -2375,7 +2375,7 @@ public class CryptoTransferSuite {
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
-    final Stream<DynamicTest> createHollowAccountWithHBARTransferDeleteItAndCompleteIt() {
+    final Stream<DynamicTest> createHollowAccountOnDeletedAliasViaHBARTransferAndCompleteIt() {
         final var hollowAccountKey = "hollowAccountKey";
         final AtomicReference<ByteString> treasuryAlias = new AtomicReference<>();
         final AtomicReference<ByteString> hollowAccountAlias = new AtomicReference<>();
@@ -2466,7 +2466,7 @@ public class CryptoTransferSuite {
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
-    final Stream<DynamicTest> createHollowAccountWithFtTransferDeleteItAndCompleteIt() {
+    final Stream<DynamicTest> createHollowAccountOnDeletedAliasViaFtTransferAndCompleteIt() {
         final var hollowAccountKey = "hollowAccountKey";
         final AtomicReference<TokenID> fungibleTokenId = new AtomicReference<>();
         final AtomicReference<ByteString> treasuryAlias = new AtomicReference<>();
