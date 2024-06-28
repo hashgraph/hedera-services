@@ -198,7 +198,7 @@ class EventDeduplicatorTests {
                 final PlatformEvent duplicateEvent = new PlatformEvent(
                         submittedEvents
                                 .get(random.nextInt(submittedEvents.size()))
-                                .getHashedData(),
+                                .getUnsignedEvent(),
                         randomSignatureBytes(random) // randomize the signature
                         );
 

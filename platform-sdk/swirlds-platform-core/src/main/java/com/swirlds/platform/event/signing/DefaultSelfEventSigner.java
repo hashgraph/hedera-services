@@ -20,7 +20,7 @@ import com.swirlds.common.crypto.Signature;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.crypto.PlatformSigner;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
@@ -45,7 +45,7 @@ public class DefaultSelfEventSigner implements SelfEventSigner {
      */
     @NonNull
     @Override
-    public PlatformEvent signEvent(@NonNull final BaseEventHashedData event) {
+    public PlatformEvent signEvent(@NonNull final UnsignedEvent event) {
         final Signature signature = new PlatformSigner(keysAndCerts).sign(event.getHash());
         return new PlatformEvent(event, signature.getSignatureBytes());
     }
