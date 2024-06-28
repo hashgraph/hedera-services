@@ -285,7 +285,9 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
             @NonNull final MerkleNode parent,
             final int childIndex,
             final boolean nodeAlreadyPresent) {
-        assert parent.isInternal();
+        if (!parent.isInternal()) {
+            throw new IllegalArgumentException("parent is not an internal node: " + parent);
+        }
         final MerkleNode child = parent.asInternal().getChild(childIndex);
         // The child may be missing per the getChild() specification,
         // and this method cannot reason about a `null`, so just bail.
