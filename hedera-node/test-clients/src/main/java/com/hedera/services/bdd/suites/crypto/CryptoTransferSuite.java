@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
@@ -97,7 +96,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadCustomFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithChilds;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
@@ -2365,7 +2363,7 @@ public class CryptoTransferSuite {
                         .hasKnownStatus(INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE));
     }
 
-    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> createHollowAccountWithFtTransferAndCompleteIt() {
         final var tokenA = "tokenA";
         final var tokenB = "tokenB";
@@ -2385,7 +2383,6 @@ public class CryptoTransferSuite {
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
-                        uploadCustomFeeSchedules(GENESIS, "CustomFeeSchedule.json"),
                         newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
                         cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
                         // Create FT1
@@ -2456,13 +2453,11 @@ public class CryptoTransferSuite {
                         getAliasedAccountInfo(hollowAccountKey)
                                 .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1))
                                 .hasAlreadyUsedAutomaticAssociations(2))))
-                .then(
-                        validateChargedUsdWithChilds(
-                                transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd),
-                        uploadCustomFeeSchedules(GENESIS, "FeeSchedule.json"));
+                .then(validateChargedUsdWithChilds(
+                        transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
     }
 
-    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> createHollowAccountWithNftTransferAndCompleteIt() {
         final var tokenA = "tokenA";
         final var tokenB = "tokenB";
@@ -2482,7 +2477,6 @@ public class CryptoTransferSuite {
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
-                        uploadCustomFeeSchedules(GENESIS, "CustomFeeSchedule.json"),
                         newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
@@ -2566,13 +2560,11 @@ public class CryptoTransferSuite {
                         getAliasedAccountInfo(hollowAccountKey)
                                 .has(accountWith().key(hollowAccountKey).maxAutoAssociations(-1))
                                 .hasAlreadyUsedAutomaticAssociations(2))))
-                .then(
-                        validateChargedUsdWithChilds(
-                                transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd),
-                        uploadCustomFeeSchedules(GENESIS, "FeeSchedule.json"));
+                .then(validateChargedUsdWithChilds(
+                        transferTokenAAndBToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
     }
 
-    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> createHollowAccountWithMultipleSendersAndCompleteIt() {
         final var ALICE = "ALICE";
         final var BOB = "BOB";
@@ -2594,7 +2586,6 @@ public class CryptoTransferSuite {
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
-                        uploadCustomFeeSchedules(GENESIS, "CustomFeeSchedule.json"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ALICE).balance(10_000 * ONE_MILLION_HBARS),
                         cryptoCreate(BOB).balance(10_000 * ONE_MILLION_HBARS),
@@ -2663,13 +2654,11 @@ public class CryptoTransferSuite {
                         getAccountInfo(DAVE).hasToken(relationshipWith(FUNGIBLE_TOKEN)),
                         // Verify the hollow account is completed
                         getAliasedAccountInfo(CAROL).has(accountWith().key(CAROL)))))
-                .then(
-                        validateChargedUsdWithChilds(
-                                transfersToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd),
-                        uploadCustomFeeSchedules(GENESIS, "FeeSchedule.json"));
+                .then(validateChargedUsdWithChilds(
+                        transfersToHollowAccountTxn, expectedCryptoTransferAndAssociationUsd));
     }
 
-    @LeakyHapiTest({PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES})
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> createHollowAccountWithMultipleReceiversAndCompleteIt() {
         final var ALICE = "ALICE";
         final var BOB = "BOB";
@@ -2691,7 +2680,6 @@ public class CryptoTransferSuite {
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
-                        uploadCustomFeeSchedules(GENESIS, "CustomFeeSchedule.json"),
                         cryptoCreate(ALICE).balance(1_000 * ONE_MILLION_HBARS),
                         newKeyNamed(BOB).shape(SECP_256K1_SHAPE),
                         newKeyNamed(CAROL).shape(SECP_256K1_SHAPE),
@@ -2770,9 +2758,7 @@ public class CryptoTransferSuite {
                         getAccountInfo(DAVE).hasToken(relationshipWith(NON_FUNGIBLE_TOKEN)),
                         // Verify the hollow account is completed
                         getAliasedAccountInfo(CAROL).has(accountWith().key(CAROL)))))
-                .then(
-                        validateChargedUsdWithChilds(
-                                transferTokensToHollowAccountsTxn, expectedCryptoTransferAndAssociationUsd),
-                        uploadCustomFeeSchedules(GENESIS, "FeeSchedule.json"));
+                .then(validateChargedUsdWithChilds(
+                        transferTokensToHollowAccountsTxn, expectedCryptoTransferAndAssociationUsd));
     }
 }

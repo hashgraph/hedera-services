@@ -165,6 +165,8 @@ public abstract class HapiSuite {
     public static final String EXCHANGE_RATES =
             HapiSpecSetup.getDefaultInstance().exchangeRatesName();
     public static final String FEE_SCHEDULE = HapiSpecSetup.getDefaultInstance().feeScheduleName();
+    public static final String FEE_SCHEDULE_JSON = "FeeSchedule.json";
+    public static final String CUSTOM_FEE_SCHEDULE_JSON = "CustomFeeSchedule.json";
     public static final String APP_PROPERTIES =
             HapiSpecSetup.getDefaultInstance().appPropertiesFile();
     public static final String API_PERMISSIONS =
