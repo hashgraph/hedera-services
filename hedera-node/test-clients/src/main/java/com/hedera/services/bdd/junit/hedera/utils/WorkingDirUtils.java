@@ -288,8 +288,8 @@ public class WorkingDirUtils {
      * Load the address book from the given path, using {@link RandomAddressBookBuilder} to
      * set a {@code sigCert} for each address.
      *
-     * @param path The path to the address book file.
-     * @return The loaded address book.
+     * @param path the path to the address book file
+     * @return the loaded address book
      */
     public static AddressBook loadAddressBook(@NonNull final Path path) {
         requireNonNull(path);
