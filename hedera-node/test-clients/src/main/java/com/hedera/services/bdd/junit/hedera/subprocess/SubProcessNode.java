@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.DOWN;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.NA;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.UP;
@@ -32,6 +33,7 @@ import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen;
 import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -65,6 +67,10 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
      * within a minute or so, it's not going to be; and we should fall back to log scanning.)
      */
     private static final int MAX_PROMETHEUS_RETRIES = 666;
+    /**
+     * How many retries to make between checking if a bind exception has been thrown in the logs.
+     */
+    private static final int BINDING_CHECK_INTERVAL = 10;
 
     private final Pattern statusPattern;
     private final GrpcPinger grpcPinger;
@@ -116,7 +122,8 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         final var retryCount = new AtomicInteger();
         return conditionFuture(
                 () -> {
-                    final var lookupAttempt = retryCount.get() <= MAX_PROMETHEUS_RETRIES
+                    final var nominalSoFar = retryCount.get() <= MAX_PROMETHEUS_RETRIES;
+                    final var lookupAttempt = nominalSoFar
                             ? prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort())
                             : statusFromLog();
                     var grpcStatus = NA;
@@ -125,9 +132,25 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
                         grpcStatus = grpcPinger.isLive(metadata.grpcPort()) ? UP : DOWN;
                         statusReached = grpcStatus == UP;
                     }
+                    var bindExceptionSeen = BindExceptionSeen.NA;
+                    // This extra logic just barely justifies its existence by giving up
+                    // immediately when a bind exception is seen in the logs, since in
+                    // practice these are never transient; it also lets us try reassigning
+                    // ports when first starting the network to maybe salvage the run
+                    if (!statusReached
+                            && status == ACTIVE
+                            && !nominalSoFar
+                            && retryCount.get() % BINDING_CHECK_INTERVAL == 0) {
+                        bindExceptionSeen = swirldsLogContains("java.net.BindException")
+                                ? BindExceptionSeen.YES
+                                : BindExceptionSeen.NO;
+                    }
                     if (nodeStatusObserver != null) {
-                        nodeStatusObserver.accept(
-                                new NodeStatus(lookupAttempt, grpcStatus, retryCount.getAndIncrement()));
+                        nodeStatusObserver.accept(new NodeStatus(
+                                lookupAttempt, grpcStatus, bindExceptionSeen, retryCount.getAndIncrement()));
+                    }
+                    if (bindExceptionSeen == BindExceptionSeen.YES) {
+                        throw new IllegalStateException("Address already in use");
                     }
                     return statusReached;
                 },
@@ -165,14 +188,22 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
     /**
      * Reassigns the ports used by this node.
      *
-     * @param grpcPort
-     * @param gossipPort
-     * @param tlsGossipPort
-     * @param prometheusPort
+     * @param grpcPort the new gRPC port
+     * @param gossipPort the new gossip port
+     * @param tlsGossipPort the new TLS gossip port
+     * @param prometheusPort the new Prometheus port
      */
     public void reassignPorts(
             final int grpcPort, final int gossipPort, final int tlsGossipPort, final int prometheusPort) {
         metadata = metadata.withNewPorts(grpcPort, gossipPort, tlsGossipPort, prometheusPort);
+    }
+
+    private boolean swirldsLogContains(@NonNull final String text) {
+        try (var lines = Files.lines(getExternalPath(SWIRLDS_LOG))) {
+            return lines.anyMatch(line -> line.contains(text));
+        } catch (IOException ignore) {
+            return false;
+        }
     }
 
     private boolean stopWith(@NonNull final BooleanFunction<ProcessHandle> stop) {

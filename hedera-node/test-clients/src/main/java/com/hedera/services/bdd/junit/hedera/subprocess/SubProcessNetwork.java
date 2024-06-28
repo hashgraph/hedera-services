@@ -54,6 +54,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
     // We need 5 ports for each node in the network (gRPC, gRPC, gossip, gossip TLS, prometheus)
     private static final int PORTS_PER_NODE = 5;
+    private static final int MAX_PORT_REASSIGNMENTS = 3;
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final int FIRST_CANDIDATE_PORT = 30000;
     private static final int LAST_CANDIDATE_PORT = 40000;
@@ -77,8 +78,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
     private SubProcessNetwork(@NonNull final String networkName, @NonNull final List<SubProcessNode> nodes) {
         super(networkName, nodes.stream().map(node -> (HederaNode) node).toList());
+        this.initialSize = nodes.size();
         this.configTxt = configTxtForLocal(name(), nodes(), nextGossipPort, nextGossipTlsPort);
-        initialSize = nodes.size();
     }
 
     /**
@@ -130,9 +131,27 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     public void awaitReady(@NonNull final Duration timeout) {
         if (ready.get() == null) {
             final var future = runAsync(() -> {
-                final var deadline = Instant.now().plus(timeout);
-                nodes.forEach(node -> awaitStatus(node, ACTIVE, Duration.between(Instant.now(), deadline)));
-                this.clients = HapiClients.clientsFor(this);
+                AssertionError error = null;
+                var retries = MAX_PORT_REASSIGNMENTS;
+                var bindException = false;
+                do {
+                    if (bindException) {
+                        nodes.forEach(HederaNode::terminate);
+                        assignNewPorts();
+                        nodes.forEach(HederaNode::start);
+                    }
+                    final var deadline = Instant.now().plus(timeout);
+                    try {
+                        nodes.forEach(node -> awaitStatus(node, ACTIVE, Duration.between(Instant.now(), deadline)));
+                        this.clients = HapiClients.clientsFor(this);
+                    } catch (AssertionError e) {
+                        error = e;
+                        bindException = error.getMessage().contains("bindExceptionSeen=YES");
+                    }
+                } while (clients == null && bindException && retries-- > 0);
+                if (clients == null) {
+                    throw error;
+                }
             });
             if (!ready.compareAndSet(null, future)) {
                 // We only need one thread to wait for readiness

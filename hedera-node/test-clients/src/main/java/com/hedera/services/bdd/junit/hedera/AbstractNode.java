@@ -33,6 +33,7 @@ import java.nio.file.Path;
 
 public abstract class AbstractNode implements HederaNode {
     private static final String HGCAA_LOG = "hgcaa.log";
+    private static final String SWIRLDS_LOG = "swirlds.log";
     private static final String LOG4J2_XML = "log4j2.xml";
 
     protected NodeMetadata metadata;
@@ -72,6 +73,7 @@ public abstract class AbstractNode implements HederaNode {
         final var workingDir = requireNonNull(metadata.workingDir());
         return switch (path) {
             case APPLICATION_LOG -> workingDir.resolve(OUTPUT_DIR).resolve(HGCAA_LOG);
+            case SWIRLDS_LOG -> workingDir.resolve(OUTPUT_DIR).resolve(SWIRLDS_LOG);
             case ADDRESS_BOOK -> workingDir.resolve(CONFIG_TXT);
             case GENESIS_PROPERTIES -> workingDir
                     .resolve(DATA_DIR)
