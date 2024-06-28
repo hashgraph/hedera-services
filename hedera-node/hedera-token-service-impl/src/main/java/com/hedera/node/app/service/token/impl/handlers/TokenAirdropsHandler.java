@@ -59,7 +59,6 @@ import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -372,6 +371,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
     /**
      * As part of pre-handle, token transfers in the transfer list are plausible.
      *
+     * @param tokenID      The ID of the token we are transferring
      * @param transfers    The transfers to check
      * @param ctx          The context we gather signing keys into
      * @param accountStore The account store to use to look up accounts
@@ -435,6 +435,15 @@ public class TokenAirdropsHandler implements TransactionHandler {
         }
     }
 
+    /**
+     * As part of pre-handle, nft transfers in the transfer list are plausible.
+     *
+     * @param tokenID          The ID of the token we are transferring
+     * @param nftTransfersList The nft transfers to check
+     * @param context          The context we gather signing keys into
+     * @param accountStore     The account store to use to look up accounts
+     * @throws PreCheckException If the transaction is invalid
+     */
     private void checkNftTransfers(
             final TokenID tokenID,
             final List<NftTransfer> nftTransfersList,
@@ -445,7 +454,6 @@ public class TokenAirdropsHandler implements TransactionHandler {
 
         final var nftStore = context.createStore(ReadableNftStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
-        final var airdropStore = context.createStore(ReadableAirdropStore.class);
         final var tokenRelStore = context.createStore(ReadableTokenRelationStore.class);
         final var token = getIfUsable(tokenID, tokenStore);
 

@@ -408,7 +408,7 @@ public class TokenAirdropSuite {
                 .then(tokenAirdrop(
                                 moving(-15, FUNGIBLE_TOKEN).between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                         .payingWith(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                        .hasKnownStatus(NEGATIVE_ALLOWANCE_AMOUNT));
+                        .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS));
     }
 
     @HapiTest
