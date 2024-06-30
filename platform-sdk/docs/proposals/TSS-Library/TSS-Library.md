@@ -782,23 +782,25 @@ After this proposal is accepted we will invite security team to define the neces
 ## Implementation and Delivery Plan
 
 1. Stage 1
-    * Preconditions
-        * A new repository
-        * CI/CD pipelines to reference built artifacts in hedera-services
-    * Implementation of the public interface for the TSS library
-    * Implementation of the public API for Pairings API
-    * Implementation of native-support library
-    * Work on the test plan and validation
-    * Enable a mock implementation for the TSS library so it can be used on the platform side.
-    * Define Test plan
-    * Define security plan
+   * Preconditions:
+     * hedera-cryptography repository.
+     * Gradle multilanguage module with rust compilation plugin.
+     * CI/CD pipelines for building artifacts in hedera-cryptography.
+   * Define Test plan.
+   * Define security plan.
+   * Implementation of native-support library.
+   * Implementation of Pairings API using JNI, arkworks, and alt-bn1238.
+   * Execute Test Plan and validation.
+   * Execute Security Audits.
+   * Implementation of EC-key utility.
 2. Stage 2
-    * Preconditions
-        * Gradle multilanguage module with rust compilation plugin
-    *  Implementation of Pairings API using JNI, arkworks, and alt-bn1238
-    *  Implementation of EC-key utility.
-3. Stage 3
-    * Enable dynamic loading of Pairings API implementation using SPI.
+   * Preconditions:
+      * CI/CD pipelines to reference built artifacts in hedera-cryptography from hedera-services.
+   * Implementation of the public interface for the TSS library.
+   * Enable a mock implementation for the TSS library, so it can be used on the platform side?
+   * Implementation TSS library.
+   * Execute Test Plan and validation.
+   * Execute Security Audits.
 
 ## External References
 - https://eprint.iacr.org/2021/339
