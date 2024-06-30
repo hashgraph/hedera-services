@@ -49,9 +49,7 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
     }
 
     public TryToStartNodesOp(
-            @NonNull final NodeSelector selector,
-            int configVersion,
-            @NonNull final ReassignPorts reassignPorts) {
+            @NonNull final NodeSelector selector, int configVersion, @NonNull final ReassignPorts reassignPorts) {
         super(selector);
         this.configVersion = configVersion;
         this.reassignPorts = requireNonNull(reassignPorts);

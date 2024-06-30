@@ -28,7 +28,6 @@ import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -46,7 +45,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -111,8 +109,7 @@ public class ProcessUtils {
      * @param configVersion the version of the configuration to use
      * @return the {@link ProcessHandle} of the started node
      */
-    public static ProcessHandle startSubProcessNodeFrom(
-            @NonNull final NodeMetadata metadata, final int configVersion) {
+    public static ProcessHandle startSubProcessNodeFrom(@NonNull final NodeMetadata metadata, final int configVersion) {
         final var builder = new ProcessBuilder();
         final var environment = builder.environment();
         environment.put("LC_ALL", "en.UTF-8");

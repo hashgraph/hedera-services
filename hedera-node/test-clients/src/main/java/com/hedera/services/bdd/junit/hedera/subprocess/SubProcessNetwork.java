@@ -17,17 +17,23 @@
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SUBPROCESS_NETWORK;
+import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.stream.Collectors.toSet;
 
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
+import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -37,6 +43,7 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
@@ -186,6 +193,25 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     /**
+     * Removes the matching node from the network and updates the <i>config.txt</i> file for the remaining nodes
+     * from the given source.
+     *
+     * @param selector the selector for the node to remove
+     * @param upgradeConfigTxt the upgrade address book source
+     */
+    public void removeNode(@NonNull final NodeSelector selector, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+        requireNonNull(selector);
+        requireNonNull(upgradeConfigTxt);
+        final var node = getRequiredNode(selector);
+        node.terminate();
+        nodes.remove(node);
+        configTxt = switch (upgradeConfigTxt) {
+            case IMPLIED_BY_NETWORK_NODES -> configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
+            case DAB_GENERATED -> consensusDabConfigTxt();};
+        refreshNodeConfigTxt();
+    }
+
+    /**
      * Creates a network of live (sub-process) nodes with the given name and size. This method is
      * synchronized because we don't want to re-use any ports across different networks.
      *
@@ -227,6 +253,17 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 throw new UncheckedIOException(e);
             }
         });
+    }
+
+    private String consensusDabConfigTxt() {
+        final Set<String> configTxts = nodes.stream()
+                .map(node -> rethrowIO(() -> Files.readString(
+                        node.getExternalPath(UPGRADE_ARTIFACTS_DIR).resolve(CONFIG_TXT))))
+                .collect(toSet());
+        if (configTxts.size() != 1) {
+            throw new IllegalStateException("DAB generated inconsistent config.txt files in network");
+        }
+        return configTxts.iterator().next();
     }
 
     private static void initializeNextPortsForNetwork(final int size) {

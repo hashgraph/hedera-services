@@ -30,12 +30,10 @@ import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.hederahashgraph.api.proto.java.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
-
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -47,6 +45,7 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
     private Optional<SemanticVersion> expectedProto = Optional.empty();
     private Optional<SemanticVersion> expectedServices = Optional.empty();
     private String servicesSemVerBuild = "";
+
     @Nullable
     private Consumer<SemanticVersion> servicesVersionConsumer;
 

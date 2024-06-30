@@ -22,11 +22,9 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.rm;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
-import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -96,9 +94,9 @@ public class BuildUpgradeZipOp extends UtilOp {
 
     private static void copyFakeAssets(@NonNull final Path from, @NonNull final Path to) {
         try (var files = Files.walk(from)) {
-            files
-                    .filter(file -> !file.equals(from))
-                    .forEach(file -> copyUnchecked(file, to.resolve(file.getFileName().toString())));
+            files.filter(file -> !file.equals(from))
+                    .forEach(file ->
+                            copyUnchecked(file, to.resolve(file.getFileName().toString())));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

@@ -23,17 +23,14 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.services.bdd.junit.hedera.ExternalPath;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
-import com.hedera.services.bdd.suites.freeze.CommonUpgradeResources;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.Assertions;
 
 /**
  * Waits for the selected node or nodes specified by the {@link NodeSelector} to

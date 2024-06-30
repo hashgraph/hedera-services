@@ -104,10 +104,12 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
             final var servicesVersion = (hederaConfig.configVersion() == 0)
                     ? versionConfig.servicesVersion()
-                    : versionConfig.servicesVersion().copyBuilder().build("" + hederaConfig.configVersion()).build();
-            responseBuilder
-                    .hederaServicesVersion(servicesVersion)
-                    .hapiProtoVersion(versionConfig.hapiVersion());
+                    : versionConfig
+                            .servicesVersion()
+                            .copyBuilder()
+                            .build("" + hederaConfig.configVersion())
+                            .build();
+            responseBuilder.hederaServicesVersion(servicesVersion).hapiProtoVersion(versionConfig.hapiVersion());
         }
 
         return Response.newBuilder().networkGetVersionInfo(responseBuilder).build();

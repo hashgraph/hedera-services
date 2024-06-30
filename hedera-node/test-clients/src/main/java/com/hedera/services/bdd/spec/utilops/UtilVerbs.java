@@ -88,6 +88,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -156,6 +157,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAsser
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
 import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
+import com.hedera.services.bdd.spec.utilops.upgrade.RemoveNodeOp;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
@@ -425,13 +427,24 @@ public class UtilVerbs {
     }
 
     public static TryToStartNodesOp restartNetwork() {
-        return new TryToStartNodesOp(
-                NodeSelector.allNodes(), 0, TryToStartNodesOp.ReassignPorts.YES);
+        return new TryToStartNodesOp(NodeSelector.allNodes(), 0, TryToStartNodesOp.ReassignPorts.YES);
+    }
+
+    /**
+     * Returns an operation that removes a subprocess node from the network and refreshes the
+     * address books on all remaining nodes using the given <i>config.txt</i> source.
+     *
+     * @param selector the selector for the node to remove
+     * @param upgradeConfigTxt the source of the new <i>config.txt</i> file
+     * @return the operation that removes the node
+     */
+    public static RemoveNodeOp removeNodeAndRefreshConfigTxt(
+            @NonNull final NodeSelector selector, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+        return new RemoveNodeOp(selector, upgradeConfigTxt);
     }
 
     public static TryToStartNodesOp restartNetworkWithConfigVersion(final int configVersion) {
-        return new TryToStartNodesOp(
-                NodeSelector.allNodes(), configVersion, TryToStartNodesOp.ReassignPorts.YES);
+        return new TryToStartNodesOp(NodeSelector.allNodes(), configVersion, TryToStartNodesOp.ReassignPorts.YES);
     }
 
     public static ShutdownWithinOp shutdownWithin(String name, Duration timeout) {
@@ -466,7 +479,15 @@ public class UtilVerbs {
         return new WaitForMarkerFileOp(NodeSelector.allNodes(), markerFile, timeout);
     }
 
-    public static ConfigTxtValidationOp validateAddressBooks(@NonNull final Consumer<AddressBook> bookValidator) {
+    /**
+     * Returns an operation that validates that each node's generated <i>config.txt</i> in its upgrade
+     * artifacts directory passes the given validator.
+     *
+     * @param bookValidator the validator to apply to each node's <i>config.txt</i>
+     * @return the operation that validates the <i>config.txt</i> files
+     */
+    public static ConfigTxtValidationOp validateUpgradeAddressBooks(
+            @NonNull final Consumer<AddressBook> bookValidator) {
         return new ConfigTxtValidationOp(NodeSelector.allNodes(), bookValidator);
     }
 
