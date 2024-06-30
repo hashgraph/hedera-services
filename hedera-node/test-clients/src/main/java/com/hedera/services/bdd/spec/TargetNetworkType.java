@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites;
+package com.hedera.services.bdd.spec;
 
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 
