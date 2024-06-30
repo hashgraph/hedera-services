@@ -184,10 +184,12 @@ To help consistently meet these criteria, we use the following minimum checklist
 - [x] Boilerplate needed to set up the test does not repeat in any other `@HapiTest` in the same class.
 - [x] If the test includes a contract call, the semantics of the function being called are described in a single
   sentence comment that directly precedes the call, even if that comment appears in other test in the same class.
-- [x] If the test uses `@LeakyHapiTest`, it specifies the reason for the link in the annotation attribute.
-- [x] If the test leaks property overrides, there no other `@LeakyHapiTest` **in the entire module** that leaks the
-  exact same property overrides; if so, all such tests are grouped in a single test class that uses `@BeforeAll`
-  and `@AfterAll` to manage the shared overrides and replaces the leaky annotations with `@HapiTest`.
+- [x] If the test uses `@LeakyHapiTest`, it specifies the reason for the link in the annotation attribute; for
+  example, `@LeakyHapiTest(NO_CONCURRENT_CREATIONS)` if the test depends on no other entities being created
+  while it executes.
+- [x] If the test leaks property overrides, there is no other `@LeakyHapiTest` **in the entire module** that
+  leaks the exact same property overrides; if so, all such tests are grouped in a single test class that uses
+  `@BeforeAll` and `@AfterAll` to manage the shared overrides and replaces the leaky annotations with `@HapiTest`.
 
 ## JUnit Jupiter integrations
 
