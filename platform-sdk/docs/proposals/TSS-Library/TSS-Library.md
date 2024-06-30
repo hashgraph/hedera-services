@@ -192,6 +192,7 @@ The polynomial `Xₖ` is a polynomial with degree `t-1` (t=threshold) with the f
 Each `sᵢ = Xₖ(sidᵢ)` constitutes a point on the polynomial.
 
 Once the `sᵢ` value has been calculated for each `ShareId`: `sidᵢ`, the value: `Cᵢ` will be produced by encrypting the `sᵢ` using the `sidᵢ` owner's public key.
+
 ![img.svg](img.svg)
 
 The TssMessage will contain all the encrypted values for all shares.
