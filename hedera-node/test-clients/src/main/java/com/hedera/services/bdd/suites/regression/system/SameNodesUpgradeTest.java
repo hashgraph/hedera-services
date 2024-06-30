@@ -49,6 +49,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
+// NOTE - not currently enabled due to challenges with JRS integration, will be done on branch
+// 14051-enable-update-hapitests
 @Tag(UPGRADE)
 public class SameNodesUpgradeTest implements LifecycleTest {
     private static final Duration EXEC_IMMEDIATE_MF_TIMEOUT = Duration.ofSeconds(10);
