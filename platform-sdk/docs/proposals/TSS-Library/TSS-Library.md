@@ -682,7 +682,7 @@ https://github.com/hashgraph/full-stack-testing/blob/c3fd5602525145be132770116f5
 
 
 
-#### Swirlds Crypto Pairings Alt-Bn128 
+#### Swirlds Crypto Pairings Alt-128 
 ##### Overview
 Implementation module of the parings API for alt-bn128 pairings friendly curve.
 The underlying cryptography primitives will be provided by `arkwrorks` accessed through custom Rust code and Java JNI interface.
