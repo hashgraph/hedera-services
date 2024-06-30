@@ -70,6 +70,9 @@ the distribution aspect, the loading, and the in-memory interpretation from each
 - Implement support for elliptic curve cryptography in Java.
 - Support any system/architecture other than: Windows amd64, Linux amd64 and arm64, and MacOS amd64 and arm64.
 - Creation of the building artifacts and plugins for rust code.
+- This proposal covers the implementation of a tool similar to ssh-keygen to generate those keys, but the generation, persistence, distribution
+  and loading of those keys is outside the scope of this proposal.
+
 
 ## Changes
 
@@ -83,16 +86,13 @@ It includes a distributed resharing protocol that preserves the public key but c
 which may or may not overlap with the original set of shareholders.
 
 #### Overview
-This proposal covers the implementation of a tool similar to ssh-keygen to generate those keys, but the generation, persistence, distribution
-and loading of those keys is outside the scope of this proposal.
 
 Participants can hold one or more shares, each of which can be used to sign a message.
 The goal is to generate an aggregate signature which is valid if a threshold number of individual signatures are combined.
 
 Each participant brings their own Elliptic Curve (EC) key pair (private and public). They share their public keys with all other participants while securing their private keys.
-Before the protocol begins, all participants agree on the cryptographic parameters.
-A participant directory is needed when initiating the protocol for the first time.
-This directory includes the number of participants, each participant’s EC public key, and the shares they own.
+Before the protocol begins, all participants agree on the cryptographic parameters (type of curve and what group of the pairing will be used for public-keys and signatures).
+A participant directory is built when initiating the protocol. This directory includes the number of participants, each participant’s EC public key, and the shares they own.
 
 Each participant generates portions of a secret share and distributes them among the other participants using the following process:
 
@@ -101,6 +101,8 @@ Each participant generates portions of a secret share and distributes them among
 2. Each portion is encrypted with the share owner's public key, ensuring only the intended recipient can read it.
 3. A message is created that includes all encrypted values so that only the intended recipients can decrypt their respective portions of the secret share.
 
+(e.g.: for a directory of 10 participants and 10 shares distributing 1 share each with a threshold value of 6, Participant 1 will generate a message out of a random key,
+that will contain 10 portions of that key, each one encrypted under each participants' public key)
 This setup allows participants to share secret information securely. The message also contains additional information necessary for its validation (Such as a polynomial commitment and a NIZK proof).
 
 Upon receiving a threshold number of messages, each participant:
@@ -109,11 +111,15 @@ Upon receiving a threshold number of messages, each participant:
 2. Aggregates the decrypted information to generate a private key for each owned share.
 3. Retrieves a public key for each share in the system to validate signatures.
 
+(e.g.: for a directory of 5 participants and 10 shares with a threshold value of 6 where Participant 1 has 2 shares; 
+Participant 1 will collect at least 6 valid messages from all participants, take the first and second portions of each message, decrypt and aggregate them respectively, so they become the first and second owned secret share )
+
 Individual signing can then begin. Participants use the private information of their shares to sign messages.
 
 An aggregate signature is created when signatures from at least the threshold number of parties are combined. This aggregate signature can be validated using the combined value of the public shares in the directory.
 
-The process restarts whenever the number of participants or the shares assigned to each change. However, the initially generated group public key remains unchanged to maintain consistency. New secret information for shares is created using existing data, ensuring the aggregate signature can still be verified with the original group public key.
+The process restarts whenever the number of participants or the shares assigned to each change. However, the initially generated group public key remains unchanged to maintain consistency. 
+New secret information for shares is created using existing data, ensuring the aggregate signature can still be verified with the original group public key.
 
 #### Implementation details
 Before starting, all participants should agree on a `SignatureSchema` they will use.
@@ -295,8 +301,8 @@ each participant will decrypt all `Cᵢ` to generate an aggregated value `sᵢ` 
 
 ![img_1.svg](img_1.svg)
 
-Also, we will extract a `PublicShare` for each `ShareId`: `sidₛ` in the directory from the list of valid messages.
-The PublicShare for share `s` is computed by evaluating each polynomial commitment in the common set of messages at `sidₛ` and then aggregating the results.
+Also, we will extract a `PublicShare` for each `ShareId`: `sidᵢ` in the directory from the list of valid messages.
+The PublicShare for share `s` is computed by evaluating each polynomial commitment in the common set of messages at `sidᵢ` and then aggregating the results.
 
 At this point, the participant executing the scheme can start signing, sharing signatures, and validating individual signatures produced by other parties in the scheme.
 
@@ -694,8 +700,8 @@ swirlds-crypto-pairings-altbn128
 ```
 
 ###### Generated resources folder structure
-Rust code will be compiled first and the build process will create the following folder structure to place the binaries produced by the compilation process.
-They will be arranged by platform identifier, as returned by `System.getProperty("os.arch")` and `System.getProperty("os.name")`
+Rust code will be compiled first and the build process will create the following folder structure where binaries files will be placed and then distributed.
+They will be arranged by platform identifier, as returned by `System.getProperty("os.name")` and `System.getProperty("os.arch")`.
 
 ```
 resources/software
