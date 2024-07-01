@@ -8,4 +8,6 @@ module com.hedera.node.test.clients.yahcli {
     requires info.picocli;
     requires net.i2p.crypto.eddsa;
     requires org.apache.logging.log4j;
+    requires org.junit.jupiter.api;
+    requires org.yaml.snakeyaml;
 }

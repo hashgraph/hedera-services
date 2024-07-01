@@ -20,10 +20,7 @@ import static com.hedera.services.bdd.junit.TestTags.RESTART;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restartNetwork;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutdownNetworkWithin;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActiveNetwork;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForFrozenNetwork;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -38,13 +35,9 @@ import org.junit.jupiter.api.Tag;
  * again.
  */
 @Tag(RESTART)
-public class MixedOpsRestartTest {
+public class MixedOpsRestartTest implements LifecycleTest {
     private static final int MIXED_OPS_BURST_TPS = 50;
-    private static final long PORT_UNBINDING_TIMEOUT_MS = 180_000L;
     private static final Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
-    private static final Duration FREEZE_TIMEOUT = Duration.ofSeconds(90);
-    private static final Duration RESTART_TIMEOUT = Duration.ofSeconds(180);
-    private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(60);
 
     @HapiTest
     final Stream<DynamicTest> restartMixedOps() {
@@ -55,15 +48,7 @@ public class MixedOpsRestartTest {
                 .when(
                         // Freeze the network
                         freezeOnly().startingIn(10).seconds().payingWith(GENESIS),
-                        // Wait for all nodes to be in FREEZE status
-                        waitForFrozenNetwork(FREEZE_TIMEOUT),
-                        // Shut down all nodes, since the platform doesn't automatically go back to ACTIVE status
-                        shutdownNetworkWithin(SHUTDOWN_TIMEOUT),
-                        // This sleep is needed, since the ports of shutdown nodes may still be in time_wait status,
-                        // which will cause an error that address is already in use when restarting nodes.
-                        // Sleep long enough (120s or 180 secs for TIME_WAIT status to be finished based on
-                        // kernel settings), so restarting nodes succeeds.
-                        sleepFor(PORT_UNBINDING_TIMEOUT_MS),
+                        confirmFreezeAndShutdown(),
                         // (Re)start all nodes
                         restartNetwork(),
                         // Wait for all nodes to be ACTIVE

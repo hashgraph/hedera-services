@@ -19,7 +19,9 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.GENESIS_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.updateUpgradeArtifactsProperty;
 
 import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
@@ -60,6 +62,13 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
         System.setProperty(
                 "hedera.recordStream.logDir",
                 getExternalPath(STREAMS_DIR).getParent().toString());
+        return this;
+    }
+
+    @Override
+    public EmbeddedNode initWorkingDir(@NonNull String configTxt) {
+        super.initWorkingDir(configTxt);
+        updateUpgradeArtifactsProperty(getExternalPath(APPLICATION_PROPERTIES), getExternalPath(UPGRADE_ARTIFACTS_DIR));
         return this;
     }
 

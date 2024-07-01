@@ -29,7 +29,6 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,9 +50,9 @@ public class RandomFileUpdate implements OpProvider {
     private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(FILE_DELETED, INVALID_FILE_ID, INSUFFICIENT_TX_FEE, INVALID_SIGNATURE);
 
-    private final EntityNameProvider<FileID> files;
+    private final EntityNameProvider files;
 
-    public RandomFileUpdate(EntityNameProvider<FileID> files) {
+    public RandomFileUpdate(EntityNameProvider files) {
         this.files = files;
     }
 
