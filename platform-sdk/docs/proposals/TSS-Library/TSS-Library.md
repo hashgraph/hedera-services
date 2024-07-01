@@ -334,10 +334,7 @@ Multiple signatures can be aggregated to create an aggregate `TssSignature`. An 
 #### Security Considerations
 As long as an adversary Participant knows fewer than a threshold number of decryption keys, they cannot recover enough information to start forging threshold signatures.
 Adversarial participants may learn the shares of the participants whose keys they have compromised, but more is needed to recover the secret.
-For security, adversarial parties are free to choose low or zero entropy values for protocol inputs such as shareIds.
-There will still be sufficient entropy in the entire protocol from the honest nodes.
 For security, adversarial parties might choose low or zero entropy values for protocol inputs such as shareIds, but here will still be sufficient entropy in the overall protocol from honest nodes.
-
 
 #### Summary diagram
 The following diagram exposes the steps necessary for bootstrapping and using the library. In orange are all the steps where the library is involved.
