@@ -116,10 +116,6 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
             validateAccountID(airdrop.receiverId(), null);
             validateAccountID(airdrop.senderId(), null);
 
-            // Ensure one token type per single pending airdrop
-            validateFalsePreCheck(
-                    airdrop.hasFungibleTokenType() && airdrop.hasNonFungibleToken(), INVALID_TRANSACTION_BODY);
-
             if (airdrop.hasFungibleTokenType()) {
                 final var tokenID = airdrop.fungibleTokenType();
                 validateTruePreCheck(tokenID != null && !tokenID.equals(TokenID.DEFAULT), INVALID_TOKEN_ID);
