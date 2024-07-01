@@ -680,7 +680,7 @@ static {
 ##### Implementation details
 Loading a library for a system architecture where no description is provided will result in a runtime exception.
 
-Under the hood, LibraryLoader will make use a class similar to:
+Under the hood, LibraryLoader will make use of a class similar to:
 https://github.com/hashgraph/full-stack-testing/blob/c3fd5602525145be132770116f5bb5a1a1922dea/fullstack-core/fullstack-base-api/src/main/java/com/hedera/fullstack/base/api/resource/ResourceLoader.java
 
 
