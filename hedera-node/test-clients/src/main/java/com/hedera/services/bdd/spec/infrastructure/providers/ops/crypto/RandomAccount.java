@@ -31,7 +31,6 @@ import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.List;
 import java.util.Optional;
@@ -46,21 +45,19 @@ public class RandomAccount implements OpProvider {
 
     private final boolean fuzzIdentifiers;
     private final AtomicInteger opNo = new AtomicInteger();
-    private final EntityNameProvider<Key> keys;
+    private final EntityNameProvider keys;
     private final RegistrySourcedNameProvider<AccountID> accounts;
     private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(INVALID_ACCOUNT_ID, INVALID_ALIAS_KEY, ALIAS_ALREADY_ASSIGNED);
     private final ResponseCodeEnum[] permissiblePrechecks =
             standardPrechecksAnd(KEY_REQUIRED, INVALID_ALIAS_KEY, ALIAS_ALREADY_ASSIGNED, INVALID_SIGNATURE);
 
-    public RandomAccount(EntityNameProvider<Key> keys, RegistrySourcedNameProvider<AccountID> accounts) {
+    public RandomAccount(EntityNameProvider keys, RegistrySourcedNameProvider<AccountID> accounts) {
         this(keys, accounts, false);
     }
 
     public RandomAccount(
-            EntityNameProvider<Key> keys,
-            RegistrySourcedNameProvider<AccountID> accounts,
-            final boolean fuzzIdentifiers) {
+            EntityNameProvider keys, RegistrySourcedNameProvider<AccountID> accounts, final boolean fuzzIdentifiers) {
         this.keys = keys;
         this.accounts = accounts;
         this.fuzzIdentifiers = fuzzIdentifiers;
