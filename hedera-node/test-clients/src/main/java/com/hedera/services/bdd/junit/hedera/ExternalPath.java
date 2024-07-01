@@ -21,9 +21,11 @@ package com.hedera.services.bdd.junit.hedera;
  */
 public enum ExternalPath {
     APPLICATION_LOG,
+    SWIRLDS_LOG,
     ADDRESS_BOOK,
     GENESIS_PROPERTIES,
     APPLICATION_PROPERTIES,
     LOG4J2_XML,
     STREAMS_DIR,
+    UPGRADE_ARTIFACTS_DIR,
 }

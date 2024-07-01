@@ -25,6 +25,7 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.service.proto.java.AddressBookServiceGrpc.AddressBookServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.ConsensusServiceGrpc.ConsensusServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.CryptoServiceGrpc.CryptoServiceBlockingStub;
 import com.hederahashgraph.service.proto.java.FileServiceGrpc.FileServiceBlockingStub;
@@ -174,6 +175,12 @@ public class HapiClients {
     public TokenServiceBlockingStub getTokenSvcStub(AccountID nodeId, boolean useTls) {
         return nextStubsFromPool(stubId(nodeId, useTls))
                 .tokenSvcStubs()
+                .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
+    }
+
+    public AddressBookServiceBlockingStub getAddressBookSvcStub(AccountID nodeId, boolean useTls) {
+        return nextStubsFromPool(stubId(nodeId, useTls))
+                .addressBookSvcStubs()
                 .withDeadlineAfter(DEADLINE_SECS, TimeUnit.SECONDS);
     }
 

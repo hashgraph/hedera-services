@@ -57,6 +57,7 @@ public class AddressBookUtils {
                 .append("\n")
                 .append("\n# This next line is, hopefully, ignored.\n")
                 .append("app, HederaNode.jar\n\n#The following nodes make up this network\n");
+        var maxNodeId = 0L;
         for (final var node : nodes) {
             sb.append("address, ")
                     .append(node.getNodeId())
@@ -72,8 +73,9 @@ public class AddressBookUtils {
                     .append("0.0.")
                     .append(node.getAccountId().accountNumOrThrow())
                     .append("\n");
+            maxNodeId = Math.max(node.getNodeId(), maxNodeId);
         }
-        sb.append("\nnextNodeId, ").append(nodes.size()).append("\n");
+        sb.append("\nnextNodeId, ").append(maxNodeId + 1).append("\n");
         return sb.toString();
     }
 
