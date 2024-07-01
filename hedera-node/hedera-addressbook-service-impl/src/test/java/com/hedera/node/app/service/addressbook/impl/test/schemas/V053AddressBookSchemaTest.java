@@ -89,7 +89,6 @@ class V053AddressBookSchemaTest extends AddressBookTestBase {
     private void setupMigrationContext() {
         given(migrationContext.newStates()).willReturn(writableStates);
         given(writableStates.get(NODES_KEY)).willReturn(writableKVState);
-        given(writableKVState.isModified()).willReturn(true);
 
         final var nodeInfo1 = new NodeInfoImpl(
                 1,

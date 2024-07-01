@@ -26,7 +26,6 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
@@ -92,9 +91,6 @@ public class V053AddressBookSchema extends Schema {
                     EntityNumber.newBuilder().number(nodeInfo.nodeId()).build(), node);
         });
 
-        if (writableNodes.isModified()) {
-            ((WritableKVStateBase) writableNodes).commit();
-        }
         log.info("Migrated {} nodes from address book", addressBook.size());
     }
 }
