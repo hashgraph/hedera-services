@@ -185,7 +185,6 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                     config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
             if (unlimitedAssociationsEnabled) {
                 final var syntheticAssociation = TransactionBody.newBuilder()
-                        .transactionID(context.body().transactionID())
                         .tokenAssociate(TokenAssociateTransactionBody.newBuilder()
                                 .account(account.accountId())
                                 .tokens(token.tokenId())
