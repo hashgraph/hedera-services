@@ -673,6 +673,8 @@ public class CommonPbjConverters {
             case TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED -> ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
             case SERVICE_ENDPOINTS_EXCEEDED_LIMIT -> ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
             case INVALID_IPV4_ADDRESS -> ResponseCodeEnum.INVALID_IPV4_ADDRESS;
+            case EMPTY_PENDING_AIRDROP_ID_LIST -> ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
+            case PENDING_AIRDROP_ID_REPEATED -> ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
