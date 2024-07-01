@@ -27,11 +27,8 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadGivenFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithChild;
 import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
-import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
@@ -59,16 +56,12 @@ class UnlimitedAustoAssociationSuite {
     @BeforeAll
     static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
         // Multiple tests use the same contract, so we upload it once here
-        specManager.setup(
-                overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE),
-                uploadGivenFeeSchedules(GENESIS, "AirdropAssociationFeeSchedules.json"));
+        specManager.setup(overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE));
     }
 
     @AfterAll
     static void afterAll(@NonNull final SpecManager specManager) throws Throwable {
-        specManager.teardown(
-                overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
-                uploadDefaultFeeSchedules(GENESIS));
+        specManager.teardown(overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE));
     }
 
     //    @DisplayName("Auto-associate tokens will create a child record for association")
