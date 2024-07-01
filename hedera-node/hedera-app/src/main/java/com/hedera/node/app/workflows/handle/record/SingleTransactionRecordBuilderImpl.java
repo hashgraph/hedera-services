@@ -297,6 +297,7 @@ public class SingleTransactionRecordBuilderImpl
                 .transferList(transferList)
                 .tokenTransferLists(tokenTransferLists)
                 .assessedCustomFees(assessedCustomFees)
+                .transactionFee(transactionFee)
                 .automaticTokenAssociations(newAutomaticTokenAssociations)
                 .paidStakingRewards(paidStakingRewards)
                 .build();

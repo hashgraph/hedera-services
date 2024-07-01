@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
@@ -57,10 +58,10 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     private ExpiryValidator expiryValidator;
 
     @Mock
-    private TokenServiceApi tokenServiceApi;
+    private RecordBuilders recordBuilders;
 
     @Mock
-    private RecordBuilders recordBuilders;
+    private FeeRecordBuilder feeRecordBuilder;
 
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
@@ -96,17 +97,17 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     @Test
     void autoAssociateWithDispatchComputeFees() {
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(FeeRecordBuilder.class)).willReturn(feeRecordBuilder);
         final var modifiedConfiguration = HederaTestConfigBuilder.create()
                 .withValue("entities.unlimitedAutoAssociationsEnabled", true)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(modifiedConfiguration);
         given(handleContext.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
 
         subject.doIn(transferContext);
 
         verify(handleContext, times(2)).dispatchComputeFees(any(), any(), any());
-        verify(tokenServiceApi, times(2)).chargeNetworkFee(any(), anyLong(), any());
+        verify(feeRecordBuilder, times(2)).transactionFee(anyLong());
     }
 
     void givenValidTxn() {

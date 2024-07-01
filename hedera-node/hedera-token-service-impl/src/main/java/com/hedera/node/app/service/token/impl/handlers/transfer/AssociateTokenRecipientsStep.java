@@ -193,12 +193,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 final var fees = handleContext.dispatchComputeFees(
                         syntheticCreation.build(), topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
 
-                final var storeFactory = handleContext.storeFactory();
-                final var tokenApi = storeFactory.serviceApi(TokenServiceApi.class);
-                tokenApi.chargeNetworkFee(
-                        topLevelPayer,
-                        fees.nodeFee() + fees.networkFee() + fees.serviceFee(),
-                        handleContext.recordBuilders().getOrCreate(FeeRecordBuilder.class));
+                final var recordBuilder = handleContext.recordBuilders().getOrCreate(FeeRecordBuilder.class);
+                recordBuilder.transactionFee(recordBuilder.transactionFee() + fees.nodeFee() + fees.networkFee() + fees.serviceFee());
             }
 
             final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
