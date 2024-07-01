@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.stack;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.swirlds.state.HederaState;
@@ -29,6 +30,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
 
@@ -50,17 +52,18 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     @Inject
     public SavepointStackImpl(@NonNull final HederaState root) {
         this.root = requireNonNull(root, "root must not be null");
-        setupSavepoint(root);
+        setupSavepoint(root, new ArrayList<>());
     }
 
-    private void setupSavepoint(@NonNull final HederaState state) {
-        final var newSavePoint = new SavePoint(new WrappedHederaState(state), new ArrayList<>());
+    private void setupSavepoint(@NonNull final HederaState state, List<SingleTransactionRecordBuilder> records) {
+        final var newSavePoint = new SavePoint(new WrappedHederaState(state), records);
         stack.push(newSavePoint);
     }
 
     @Override
     public void createSavepoint() {
-        setupSavepoint(stack.isEmpty() ? root : peek().state());
+        // TODO : This will be fixed in the next PR
+        setupSavepoint(stack.isEmpty() ? root : peek().state(), new ArrayList<>());
     }
 
     @Override
@@ -68,7 +71,9 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         if (stack.size() <= 1) {
             throw new IllegalStateException("The savepoint stack is empty");
         }
-        stack.pop().state().commit();
+        final var poppedStack = stack.pop();
+        poppedStack.state().commit();
+        pushRecordsToParentStack(poppedStack.recordBuilders());
     }
 
     @Override
@@ -83,10 +88,13 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * Commits all state changes captured in this stack.
      */
     public void commitFullStack() {
+        final var currentRecords = new ArrayList<SingleTransactionRecordBuilder>();
         while (!stack.isEmpty()) {
-            stack.pop().state().commit();
+            final var poppedStack = stack.pop();
+            poppedStack.state().commit();
+            currentRecords.addAll(poppedStack.recordBuilders());
         }
-        setupSavepoint(root);
+        setupSavepoint(root, currentRecords);
     }
 
     /**
@@ -94,7 +102,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      */
     public void rollbackFullStack() {
         stack.clear();
-        setupSavepoint(root);
+        setupSavepoint(root, new ArrayList<>());
     }
 
     @Override
@@ -156,5 +164,13 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
             throw new IllegalStateException("The stack has already been committed");
         }
         return writableStatesMap.computeIfAbsent(serviceName, s -> new WritableStatesStack(this, s));
+    }
+
+    private void pushRecordsToParentStack(final List<SingleTransactionRecordBuilder> recordBuilders) {
+        if (stack.peek() != null) {
+            stack.peek().recordBuilders().addAll(recordBuilders);
+        } else {
+            throw new IllegalStateException("There is no parent stack to push the records to");
+        }
     }
 }
