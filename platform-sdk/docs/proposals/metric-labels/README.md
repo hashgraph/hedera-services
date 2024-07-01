@@ -233,6 +233,56 @@ For that endpoint we just need to remove the hard coded `nodeId` label and add a
 The CSV exporter use the `nodeId` today to create the file name.
 Since the CSV exporter is only used by the platform module we can continue with that approach.
 
+Let's assume we would have the following metrics:
+
+| Type           | Name   | Category   | labels | Value |
+ |---------------|--------|------------|-------|-------|
+ | Counter          | myCounter1 | private_category | nodeId=1 | 1 |
+ | Counter          | myCounter2 | private_category | nodeId=1 | 1 |
+ | Counter          | myCounter3 | private_category | nodeId=1 | 1 |
+ | Counter          | myCounter4 | private_category | nodeId=1, foo=bar | 1 |
+ | DoubleGauge | myDoubleGauge | public_category | nodeId=1 | 1 |
+ | DoubleGauge | myDoubleGauge | private_category | nodeId=1, foo=bar | 1 |
+        
+
+Today a CSV file is created like this:
+```
+filename:,/var/folders/d8/16q746f12zq6tb1ngwngp8gh0000gn/T/junit15732516610471683378/MainNetStats42.csv,
+myCounter1:,myCounter1,
+myCounter2:,myCounter2,
+myCounter3:,myCounter3,
+myCounter4:,myCounter4,
+myDoubleGauge:,myDoubleGauge,
+myDoubleGauge:,myDoubleGauge,
+
+,,private_category,private_category,private_category,private_category,public_category,private_category,
+,,myCounter1,myCounter2,myCounter3,myCounter4,myDoubleGauge,myDoubleGauge,
+,,1,2,3,4,1.230,4.560,
+```
+
+The first section of the list is metadata that defines the file name (that includes the `nodeId`) and a list of all metric names.
+The metric category is ignored here. As you can see the 2 gauges with same name but different category are ends in 2 times the same line.
+This proposal would not change that behavior.
+
+The second section of the list defines the metrics and their values. This part will be changed to include the labels.
+
+```
+,,private_category,private_category,private_category,private_category,public_category,
+,,myCounter1,myCounter2,myCounter3,myCounter4,myDoubleGauge,
+,,1,2,3,4,1.230,4.560,
+```
+
+Here the first row defines the category of the metric and the second row the name. The 3rd row contains the values.
+An additional row between the categories and values will be added to include the labels of the metric.
+Since a metric can contain multiple labels the cell content must be quoted:
+
+```
+,,private_category,private_category,private_category,private_category,public_category,private_category,
+,,myCounter1,myCounter2,myCounter3,myCounter4,myDoubleGauge,myDoubleGauge,
+,,"nodeId=1","nodeId=1","nodeId=1","nodeId=1, foo=bar","nodeId=1","nodeId=1, foo=bar",
+,,1,2,3,4,1.230,4.560,
+```
+
 ## Testing
 
 The metrics module is tested by unit tests today. We need to add tests for the new concept of labels.
