@@ -16,31 +16,48 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw;
 
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.standardized;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
-import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.ByteBuffer;
+import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.precompile.ECRECPrecompiledContract;
 
 /** HIP-632 method: `isAuthorizedRaw` */
 public class IsAuthorizedRawCall extends AbstractCall {
 
     private final VerificationStrategy verificationStrategy;
-    private final TransactionBody transactionBody;
     private final AccountID sender;
+    private final long address;
+    private final byte[] messageHash;
+    private final byte[] signature;
 
-    public IsAuthorizedRawCall(@NonNull final HasCallAttempt attempt, @NonNull final TransactionBody transactionBody) {
+    private GasCalculator noCalculationGasCalculator = new CustomGasCalculator();
+
+    private static long HARDCODED_GAS_REQUIREMENT_GAS = 1_500_000L;
+
+    public IsAuthorizedRawCall(
+            @NonNull final HasCallAttempt attempt,
+            final long address,
+            @NonNull final byte[] messageHash,
+            @NonNull final byte[] signature) {
         super(attempt.systemContractGasCalculator(), attempt.enhancement(), false);
-        this.transactionBody = requireNonNull(transactionBody);
+        this.address = requireNonNull(address);
+        this.messageHash = requireNonNull(messageHash);
+        this.signature = requireNonNull(signature);
+
         this.verificationStrategy = attempt.defaultVerificationStrategy();
         this.sender = attempt.senderId();
     }
@@ -49,16 +66,52 @@ public class IsAuthorizedRawCall extends AbstractCall {
     @Override
     public PricedResult execute(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
-        final var recordBuilder = systemContractOperations()
-                .dispatch(transactionBody, verificationStrategy, sender, ContractCallRecordBuilder.class);
 
-        final var gasRequirement = gasCalculator.gasRequirement(transactionBody, DispatchType.APPROVE, sender);
+        boolean authorized = true;
 
-        final var status = recordBuilder.status();
-        if (status != ResponseCodeEnum.SUCCESS) {
-            return reversionWith(gasRequirement, recordBuilder);
-        } else {
-            return completionWith(gasRequirement, recordBuilder, encodedRc(standardized(status)));
+        final Optional<byte[]> key = getAccountKey(address);
+        if (key.isEmpty()) authorized = false;
+
+        if (authorized) {
+            authorized = switch (signature.length) {
+                case 65 -> validateEcSignature(key);
+                case 64 -> validateEdSignature(key);
+                default -> false;};
         }
+
+        final var gasRequirement = gasCalculator.gasCostInTinybars(HARDCODED_GAS_REQUIREMENT_GAS);
+
+        final var result = authorized
+                ? gasOnly(successResult(encodedAuthorizationOutput(authorized), gasRequirement), SUCCESS, false)
+                : reversionWith(INVALID_SIGNATURE, gasRequirement);
+        return result;
+    }
+
+    /** Return the one-and-only simple key for the Hedera address/account */
+    @NonNull
+    Optional<byte[]> getAccountKey(long address) {
+        return Optional.empty();
+    }
+
+    /** Validate EVM signature - EC key - via ECRECOVER */
+    private boolean validateEcSignature(@NonNull Optional<byte[]> key) {
+        final var ecPrecompile = new ECRECPrecompiledContract(noCalculationGasCalculator);
+        final Bytes input = formatEcrecoverInput(messageHash, signature);
+        return true;
+    }
+
+    /** Validate (native Hedera) ED signature */
+    private boolean validateEdSignature(@NonNull Optional<byte[]> key) {
+        return false;
+    }
+
+    @NonNull
+    ByteBuffer encodedAuthorizationOutput(final boolean authorized) {
+        return IsAuthorizedRawTranslator.IS_AUTHORIZED_RAW.getOutputs().encodeElements(authorized);
+    }
+
+    @NonNull
+    Bytes formatEcrecoverInput(@NonNull final byte[] messageHash, @NonNull final byte[] signature) {
+        return null;
     }
 }

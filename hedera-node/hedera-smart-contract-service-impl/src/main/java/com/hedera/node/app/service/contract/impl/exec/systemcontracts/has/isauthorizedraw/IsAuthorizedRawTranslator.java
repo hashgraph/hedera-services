@@ -19,10 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isaut
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.token.CryptoAllowance;
-import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV051;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
@@ -77,43 +73,15 @@ public class IsAuthorizedRawTranslator extends AbstractCallTranslator<HasCallAtt
         requireNonNull(attempt);
 
         if (matchesIsAuthorizedRawSelector(attempt.selector())) {
-            return new IsAuthorizedRawCall(attempt, bodyForIsAuthorizedRaw(attempt));
+
+            final var call = IS_AUTHORIZED_RAW.decodeCall(attempt.inputBytes());
+            var address = ((BigInteger) call.get(ADDRESS_ARG)).longValueExact();
+            var messageHash = (byte[]) call.get(HASH_ARG);
+            var signature = (byte[]) call.get(SIGNATURE_ARG);
+
+            return new IsAuthorizedRawCall(attempt, address, messageHash, signature);
         }
         return null;
-    }
-
-    @NonNull
-    private TransactionBody bodyForIsAuthorizedRaw(@NonNull final HasCallAttempt attempt) {
-        requireNonNull(attempt);
-        final var call = IS_AUTHORIZED_RAW.decodeCall(attempt.inputBytes());
-        var address = ((BigInteger) call.get(ADDRESS_ARG)).longValueExact();
-        var messageHash = (byte[]) call.get(HASH_ARG);
-        var signature = (byte[]) call.get(SIGNATURE_ARG);
-
-        return TransactionBody.DEFAULT; // TODO
-    }
-
-    @NonNull
-    private CryptoApproveAllowanceTransactionBody cryptoApproveTransactionBody(
-            @NonNull final AccountID owner, @NonNull final AccountID operatorId, @NonNull final BigInteger amount) {
-        requireNonNull(owner);
-        requireNonNull(operatorId);
-        requireNonNull(amount);
-        return CryptoApproveAllowanceTransactionBody.newBuilder()
-                .cryptoAllowances(CryptoAllowance.newBuilder()
-                        .owner(owner)
-                        .spender(operatorId)
-                        .amount(amount.longValue())
-                        .build())
-                .build();
-    }
-
-    @NonNull
-    private TransactionBody bodyOf(
-            @NonNull final CryptoApproveAllowanceTransactionBody approveAllowanceTransactionBody) {
-        return TransactionBody.newBuilder()
-                .cryptoApproveAllowance(approveAllowanceTransactionBody)
-                .build();
     }
 
     @NonNull
