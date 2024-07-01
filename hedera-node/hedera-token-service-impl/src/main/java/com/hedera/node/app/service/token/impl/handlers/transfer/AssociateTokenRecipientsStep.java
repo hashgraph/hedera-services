@@ -181,9 +181,9 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
 
-            final var unlimitedAssociationsEnabled =
+            final var unlimitedAutoAssociationsEnabled =
                     config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
-            if (unlimitedAssociationsEnabled) {
+            if (unlimitedAutoAssociationsEnabled) {
                 final var syntheticAssociation = TransactionBody.newBuilder()
                         .tokenAssociate(TokenAssociateTransactionBody.newBuilder()
                                 .account(account.accountId())
