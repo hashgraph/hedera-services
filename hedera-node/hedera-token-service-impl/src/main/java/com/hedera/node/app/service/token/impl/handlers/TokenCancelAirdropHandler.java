@@ -154,16 +154,12 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
 
         pendingAirdropIds.stream()
                 .peek(pendingAirdropId -> {
-                    validateTrue(pendingStore.exists(pendingAirdropId), INVALID_TRANSACTION_BODY);
                     validateTrue(payer.equals(pendingAirdropId.senderIdOrThrow()), INVALID_ACCOUNT_ID);
                     if (pendingAirdropId.hasFungibleTokenType()) {
                         getIfUsable(pendingAirdropId.fungibleTokenTypeOrThrow(), tokenStore);
                     } else {
                         final var nft = pendingAirdropId.nonFungibleTokenOrThrow();
                         validateTrue(nftStore.get(nft) != null, INVALID_NFT_ID);
-                        validateTrue(
-                                nftStore.get(nft.tokenIdOrThrow(), nft.serialNumber()) != null,
-                                INVALID_TOKEN_NFT_SERIAL_NUMBER);
                     }
                     getIfUsable(
                             pendingAirdropId.senderIdOrThrow(),
@@ -175,6 +171,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
                             accountStore,
                             context.expiryValidator(),
                             INVALID_ACCOUNT_ID);
+                    validateTrue(pendingStore.exists(pendingAirdropId), INVALID_TRANSACTION_BODY);
                 })
                 .forEach(pendingStore::remove);
     }
