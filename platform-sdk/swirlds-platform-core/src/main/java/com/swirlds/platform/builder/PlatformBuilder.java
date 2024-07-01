@@ -33,6 +33,7 @@ import static com.swirlds.platform.state.signed.StartupStateUtils.getInitialStat
 import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.detectSoftwareUpgrade;
 
+import com.swirlds.base.function.CheckedBiFunction;
 import com.swirlds.base.time.Time;
 import com.swirlds.common.concurrent.ExecutorFactory;
 import com.swirlds.common.context.DefaultPlatformContext;
@@ -41,6 +42,7 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.CryptographyFactory;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.io.filesystem.FileSystemManager;
+import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.crypto.MerkleCryptography;
@@ -75,7 +77,6 @@ import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.util.BootstrapUtils;
@@ -88,10 +89,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -108,7 +107,8 @@ public final class PlatformBuilder {
 
     private final String appName;
     private final SoftwareVersion softwareVersion;
-    private final Supplier<SwirldState> genesisStateBuilder;
+    private final Supplier<MerkleRoot> genesisStateBuilder;
+    private final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader;
     private final NodeId selfId;
     private final String swirldName;
 
@@ -160,21 +160,32 @@ public final class PlatformBuilder {
     /**
      * Create a new platform builder.
      *
+     * <p>When this builder is used to create a platform, it tries to load an existing app state from
+     * a snapshot on disk, if exists, using the provided {@code snapshotStateReader} function. If there
+     * is no snapshot on disk, or the reader throws an exception trying to load the snapshot, a new
+     * genesis state is created using {@code genesisStateBuilder} supplier.
+     *
+     * <p>Note: if an existing snapshot can't be loaded, or a new genesist state can't be created, the
+     * corresponding functions must throw an exception rather than return a null value.
+     *
      * @param appName             the name of the application, currently used for deciding where to store states on
      *                            disk
      * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
      * @param selfId              the ID of this node
      * @param softwareVersion     the software version of the application
      * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
+     * @param snapshotStateReader a function to read an existing state snapshot, if exists
      */
     @NonNull
     public static PlatformBuilder create(
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Supplier<SwirldState> genesisStateBuilder,
+            @NonNull final Supplier<MerkleRoot> genesisStateBuilder,
+            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
             @NonNull final NodeId selfId) {
-        return new PlatformBuilder(appName, swirldName, softwareVersion, genesisStateBuilder, selfId);
+        return new PlatformBuilder(
+                appName, swirldName, softwareVersion, genesisStateBuilder, snapshotStateReader, selfId);
     }
 
     /**
@@ -186,18 +197,21 @@ public final class PlatformBuilder {
      * @param selfId              the ID of this node
      * @param softwareVersion     the software version of the application
      * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
+     * @param snapshotStateReader a function to read an existing state snapshot, if exists
      */
     private PlatformBuilder(
             @NonNull final String appName,
             @NonNull final String swirldName,
             @NonNull final SoftwareVersion softwareVersion,
-            @NonNull final Supplier<SwirldState> genesisStateBuilder,
+            @NonNull final Supplier<MerkleRoot> genesisStateBuilder,
+            @NonNull final CheckedBiFunction<MerkleDataInputStream, Path, MerkleRoot, IOException> snapshotStateReader,
             @NonNull final NodeId selfId) {
 
         this.appName = Objects.requireNonNull(appName);
         this.swirldName = Objects.requireNonNull(swirldName);
         this.softwareVersion = Objects.requireNonNull(softwareVersion);
         this.genesisStateBuilder = Objects.requireNonNull(genesisStateBuilder);
+        this.snapshotStateReader = Objects.requireNonNull(snapshotStateReader);
         this.selfId = Objects.requireNonNull(selfId);
 
         StaticSoftwareVersion.setSoftwareVersion(softwareVersion);
@@ -289,23 +303,6 @@ public final class PlatformBuilder {
     @NonNull
     public PlatformBuilder withExecutorFactory(@NonNull final ExecutorFactory executorFactory) {
         this.executorFactory = Objects.requireNonNull(executorFactory);
-        return this;
-    }
-
-    /**
-     * Provide the platform with the class ID of the previous software version. Needed at migration boundaries if the
-     * class ID of the software version has changed.
-     *
-     * @param previousSoftwareVersionClassId the class ID of the previous software version
-     * @return this
-     */
-    @NonNull
-    public PlatformBuilder withPreviousSoftwareVersionClassId(final long previousSoftwareVersionClassId) {
-        throwIfAlreadyUsed();
-        final Set<Long> softwareVersions = new HashSet<>();
-        softwareVersions.add(softwareVersion.getClassId());
-        softwareVersions.add(previousSoftwareVersionClassId);
-        StaticSoftwareVersion.setSoftwareVersion(softwareVersions);
         return this;
     }
 
@@ -518,6 +515,7 @@ public final class PlatformBuilder {
                 platformContext,
                 softwareVersion,
                 genesisStateBuilder,
+                snapshotStateReader,
                 appName,
                 swirldName,
                 selfId,

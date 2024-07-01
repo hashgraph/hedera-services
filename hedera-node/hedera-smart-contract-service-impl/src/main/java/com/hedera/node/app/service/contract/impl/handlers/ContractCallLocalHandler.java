@@ -48,7 +48,7 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
+import java.time.InstantSource;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -61,12 +61,16 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 public class ContractCallLocalHandler extends PaidQueryHandler {
     private final Provider<QueryComponent.Factory> provider;
     private final GasCalculator gasCalculator;
+    private final InstantSource instantSource;
 
     @Inject
     public ContractCallLocalHandler(
-            @NonNull final Provider<Factory> provider, @NonNull final GasCalculator gasCalculator) {
-        this.provider = provider;
-        this.gasCalculator = gasCalculator;
+            @NonNull final Provider<Factory> provider,
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final InstantSource instantSource) {
+        this.provider = requireNonNull(provider);
+        this.gasCalculator = requireNonNull(gasCalculator);
+        this.instantSource = requireNonNull(instantSource);
     }
 
     @Override
@@ -117,7 +121,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
 
-        final var component = provider.get().create(context, Instant.now(), CONTRACT_CALL_LOCAL);
+        final var component = provider.get().create(context, instantSource.instant(), CONTRACT_CALL_LOCAL);
         final var outcome = component.contextQueryProcessor().call();
 
         final var responseHeader = outcome.isSuccess()

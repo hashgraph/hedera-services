@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.platform.event;
 
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
@@ -39,7 +40,12 @@ public class EventMigrationTest {
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
-        StaticSoftwareVersion.setSoftwareVersion(Set.of(SerializableSemVers.CLASS_ID));
+        SemanticVersion semanticVersion = SemanticVersion.newBuilder()
+                .setMajor(0)
+                .setMinor(46)
+                .setPatch(3)
+                .build();
+        StaticSoftwareVersion.setSoftwareVersion(new SerializableSemVers(semanticVersion, semanticVersion));
     }
 
     /**

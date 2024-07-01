@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.suites.regression.factories.HollowAccountFuzzingFactory.hollowAccountFuzzingTest;
@@ -25,7 +26,9 @@ import com.hedera.services.bdd.junit.HapiTest;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
+@Tag(NOT_REPEATABLE)
 public class HollowAccountFuzzing {
     private static final String PROPERTIES = "hollow-account-fuzzing.properties";
 

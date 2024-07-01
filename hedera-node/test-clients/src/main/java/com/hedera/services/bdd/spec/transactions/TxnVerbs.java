@@ -88,6 +88,7 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycGrant;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenKycRevoke;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenMint;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenPause;
+import com.hedera.services.bdd.spec.transactions.token.HapiTokenReject;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnfreeze;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUnpause;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdate;
@@ -100,6 +101,7 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenReference;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -310,6 +312,16 @@ public class TxnVerbs {
 
     public static HapiTokenUpdateNfts tokenUpdateNfts(String token, String metadata, List<Long> serialNumbers) {
         return new HapiTokenUpdateNfts(token, metadata, serialNumbers);
+    }
+
+    @SafeVarargs
+    public static HapiTokenReject tokenReject(String account, Function<HapiSpec, TokenReference>... referencesSources) {
+        return new HapiTokenReject(account, referencesSources);
+    }
+
+    @SafeVarargs
+    public static HapiTokenReject tokenReject(Function<HapiSpec, TokenReference>... referencesSources) {
+        return new HapiTokenReject(referencesSources);
     }
 
     public static HapiTokenFeeScheduleUpdate tokenFeeScheduleUpdate(String token) {

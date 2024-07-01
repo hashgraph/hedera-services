@@ -49,17 +49,24 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.ethereumCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.explicitContractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.explicitEthereumTransaction;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertCreationMaxAssociations;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertCreationViaCallMaxAssociations;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -80,6 +87,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
@@ -100,6 +108,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -118,6 +127,7 @@ import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.utility.CommonUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -135,11 +145,13 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
+@SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class ContractCreateSuite {
 
     public static final String EMPTY_CONSTRUCTOR_CONTRACT = "EmptyConstructor";
     public static final String PARENT_INFO = "parentInfo";
     private static final String PAYER = "payer";
+    private static final String ALICE = "alice";
 
     private static final Logger log = LogManager.getLogger(ContractCreateSuite.class);
 
@@ -150,6 +162,13 @@ public class ContractCreateSuite {
             "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
     private static final String EXPECTED_DEPLOYER_ADDRESS = "4e59b44847b379578588920ca78fbf26c0b4956c";
     private static final String DEPLOYER = "DeployerContract";
+    public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS = "contracts.allowAutoAssociations";
+    public static final String ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED =
+            "entities.unlimitedAutoAssociationsEnabled";
+    public static final String LEDGER_MAX_AUTO_ASSOCIATIONS = "ledger.maxAutoAssociations";
+
+    private static final String FUNGIBLE_TOKEN = "fungible";
+    private static final String MULTI_KEY = "multiKey";
 
     @HapiTest
     final Stream<DynamicTest> createDeterministicDeployer() {
@@ -295,7 +314,8 @@ public class ContractCreateSuite {
                                 .refusingEthConversion(),
                         explicitEthereumTransaction(neverToBe, (spec, b) -> {
                                     final var signedEthTx = signMessage(
-                                            placeholderEthTx(), getPrivateKeyFromSpec(spec, SECP_256K1_SOURCE_KEY));
+                                            placeholderEthTx(),
+                                            getEcdsaPrivateKeyFromSpec(spec, SECP_256K1_SOURCE_KEY));
                                     b.setCallData(systemFileId)
                                             .setEthereumData(ByteString.copyFrom(signedEthTx.encodeTx()));
                                 })
@@ -312,6 +332,82 @@ public class ContractCreateSuite {
                         getContractInfo(EMPTY_CONSTRUCTOR_CONTRACT)
                                 .has(contractWith().immutableContractKey(EMPTY_CONSTRUCTOR_CONTRACT))
                                 .logged());
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> contractCreationsHaveValidAssociations() {
+        final var initCreateContract = "ParentChildTransfer";
+        final var slotUserContract = "SlotUser";
+        final var multiPurpose = "Multipurpose";
+        final var createContract = "CreateTrivial";
+        return propertyPreservingHapiSpec("contractCreationsHaveValidAssociations")
+                .preserving(
+                        CONTRACTS_ALLOW_AUTO_ASSOCIATIONS,
+                        ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED,
+                        LEDGER_MAX_AUTO_ASSOCIATIONS)
+                .given(
+                        overridingThree(
+                                CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, TRUE_VALUE,
+                                ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE,
+                                LEDGER_MAX_AUTO_ASSOCIATIONS, "5000"),
+                        newKeyNamed(MULTI_KEY),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .initialSupply(1000)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TOKEN_TREASURY),
+                        uploadInitCode(initCreateContract, createContract, multiPurpose, slotUserContract))
+                .when(
+                        contractCreate(initCreateContract)
+                                .refusingEthConversion()
+                                .via("constructorWithoutExplicitAssociations")
+                                .hasKnownStatus(SUCCESS),
+                        cryptoTransfer(moving(100, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, initCreateContract))
+                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                        contractCreate(createContract)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(0)
+                                .hasKnownStatus(SUCCESS),
+                        contractCreate(multiPurpose)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(3)
+                                .hasKnownStatus(SUCCESS),
+                        contractCreate(slotUserContract)
+                                .refusingEthConversion()
+                                .via("constructorCreate")
+                                .maxAutomaticTokenAssociations(5)
+                                .hasKnownStatus(SUCCESS),
+                        contractCall(createContract, "create")
+                                .via("createViaCall")
+                                .hasKnownStatus(SUCCESS),
+                        ethereumCall(createContract, "create")
+                                .type(EthTxData.EthTransactionType.EIP1559)
+                                .signingWith(SECP_256K1_SOURCE_KEY)
+                                .payingWith(RELAYER)
+                                .via("ethereumCreate")
+                                .nonce(0)
+                                .maxFeePerGas(50L)
+                                .maxPriorityGas(2L)
+                                .gasLimit(1_000_000L)
+                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))
+                .then(
+                        getContractInfo(initCreateContract)
+                                .has(contractWith().maxAutoAssociations(0))
+                                .logged(),
+                        getContractInfo(multiPurpose)
+                                .has(contractWith().maxAutoAssociations(3))
+                                .logged(),
+                        getContractInfo(slotUserContract)
+                                .has(contractWith().maxAutoAssociations(5))
+                                .logged(),
+                        assertCreationMaxAssociations("constructorWithoutExplicitAssociations", 1, 0),
+                        assertCreationMaxAssociations("constructorCreate", 1, 5),
+                        assertCreationViaCallMaxAssociations("createViaCall", 0, 0),
+                        assertCreationViaCallMaxAssociations("ethereumCreate", 0, 0));
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
@@ -863,10 +959,10 @@ public class ContractCreateSuite {
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> cannotSetMaxAutomaticAssociations() {
         return propertyPreservingHapiSpec("cannotSetMaxAutomaticAssociations")
-                .preserving("contracts.allowAutoAssociations")
+                .preserving(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS)
                 .given(
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
-                        overriding("contracts.allowAutoAssociations", FALSE_VALUE))
+                        overriding(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, FALSE_VALUE))
                 .when()
                 .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
                         .maxAutomaticTokenAssociations(10)

@@ -28,23 +28,21 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoDelete;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
 
 public class RandomAccountDeletionWithReceiver implements OpProvider {
 
-    private final EntityNameProvider<AccountID> receiverAccounts;
+    private final EntityNameProvider receiverAccounts;
 
-    private final EntityNameProvider<AccountID> accountsToDelete;
+    private final EntityNameProvider accountsToDelete;
 
     private final ResponseCodeEnum[] permissiblePrechecks = standardPrechecksAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
     private final ResponseCodeEnum[] permissibleOutcomes = {
         SUCCESS, LIVE_HASH_NOT_FOUND, INSUFFICIENT_PAYER_BALANCE, UNKNOWN, ACCOUNT_DELETED, INVALID_ACCOUNT_ID
     };
 
-    public RandomAccountDeletionWithReceiver(
-            EntityNameProvider<AccountID> receiverAccounts, EntityNameProvider<AccountID> accountsToDelete) {
+    public RandomAccountDeletionWithReceiver(EntityNameProvider receiverAccounts, EntityNameProvider accountsToDelete) {
         this.receiverAccounts = receiverAccounts;
         this.accountsToDelete = accountsToDelete;
     }

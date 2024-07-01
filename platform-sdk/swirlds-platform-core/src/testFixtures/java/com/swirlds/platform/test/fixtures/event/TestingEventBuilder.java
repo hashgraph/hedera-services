@@ -20,6 +20,7 @@ import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.APPLI
 import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
 import static com.swirlds.platform.system.events.EventConstants.MINIMUM_ROUND_CREATED;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
@@ -32,8 +33,8 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -203,8 +204,8 @@ public class TestingEventBuilder {
      * @param softwareVersion the software version
      * @return this instance
      */
-    public @NonNull TestingEventBuilder setSoftwareVersion(@Nullable final SoftwareVersion softwareVersion) {
-        this.softwareVersion = softwareVersion;
+    public @NonNull TestingEventBuilder setSoftwareVersion(@Nullable final SemanticVersion softwareVersion) {
+        this.softwareVersion = new BasicSoftwareVersion(softwareVersion.major());
         return this;
     }
 
@@ -553,7 +554,7 @@ public class TestingEventBuilder {
             transactions = generateTransactions();
         }
 
-        final BaseEventHashedData hashedData = new BaseEventHashedData(
+        final UnsignedEvent unsignedEvent = new UnsignedEvent(
                 softwareVersion,
                 creatorId,
                 selfParentDescriptor,
@@ -565,7 +566,7 @@ public class TestingEventBuilder {
         final byte[] signature = new byte[SignatureType.RSA.signatureLength()];
         random.nextBytes(signature);
 
-        final PlatformEvent platformEvent = new PlatformEvent(hashedData, signature);
+        final PlatformEvent platformEvent = new PlatformEvent(unsignedEvent, signature);
 
         platformEvent.setHash(RandomUtils.randomHash(random));
 

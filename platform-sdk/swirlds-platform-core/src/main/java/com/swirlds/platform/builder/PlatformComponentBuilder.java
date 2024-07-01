@@ -360,7 +360,7 @@ public class PlatformComponentBuilder {
             eventSignatureValidator = new DefaultEventSignatureValidator(
                     blocks.platformContext(),
                     CryptoStatic::verifySignature,
-                    blocks.appVersion(),
+                    blocks.appVersion().getPbjSemanticVersion(),
                     blocks.initialState().get().getState().getPlatformState().getPreviousAddressBook(),
                     blocks.initialAddressBook(),
                     blocks.intakeEventCounter());
@@ -861,7 +861,7 @@ public class PlatformComponentBuilder {
             issDetector = new DefaultIssDetector(
                     blocks.platformContext(),
                     blocks.initialState().get().getState().getPlatformState().getAddressBook(),
-                    blocks.appVersion(),
+                    blocks.appVersion().getPbjSemanticVersion(),
                     ignorePreconsensusSignatures,
                     roundToIgnore);
         }

@@ -28,6 +28,7 @@ import com.swirlds.platform.builder.PlatformComponentBuilder;
 import com.swirlds.platform.config.BasicConfig_;
 import com.swirlds.platform.crypto.KeysAndCerts;
 import com.swirlds.platform.eventhandling.EventConfig_;
+import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.address.AddressBook;
@@ -93,7 +94,12 @@ public class TurtleNode {
                 .build();
 
         final PlatformBuilder platformBuilder = PlatformBuilder.create(
-                        "foo", "bar", new BasicSoftwareVersion(1), TurtleTestingToolState::new, nodeId)
+                        "foo",
+                        "bar",
+                        new BasicSoftwareVersion(1),
+                        TurtleTestingToolState::getStateRootNode,
+                        SignedStateFileUtils::readState,
+                        nodeId)
                 .withModel(model)
                 .withCryptography(platformContext.getCryptography())
                 .withMetrics(platformContext.getMetrics())
