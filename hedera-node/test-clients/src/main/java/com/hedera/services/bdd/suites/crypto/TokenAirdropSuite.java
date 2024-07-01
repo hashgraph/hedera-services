@@ -34,6 +34,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithAllowance;
@@ -43,6 +46,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.FEE_COLLECTOR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
@@ -53,7 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -68,6 +72,7 @@ import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
@@ -156,14 +161,14 @@ public class TokenAirdropSuite {
                                 .via("fungible airdrop"))
                 .then(
                         getTxnRecord("fungible airdrop")
-                                .andAllChildRecords()
+                                // .andAllChildRecords()
                                 // assert pending airdrops
                                 .hasPriority(recordWith()
                                         .pendingAirdrops(includingFungiblePendingAirdrop(
                                                 moveToReceiverWith0AutoAssociations,
                                                 moveToReceiverWithoutFreeAutoAssociations)))
                                 // assert transfers
-                                .hasChildRecords(recordWith()
+                                .hasPriority(recordWith()
                                         .tokenTransfers(includingFungibleMovement(moving(30, FUNGIBLE_TOKEN)
                                                 .distributing(
                                                         SENDER,
@@ -231,7 +236,7 @@ public class TokenAirdropSuite {
                         .via("non fungible airdrop"))
                 .then(
                         getTxnRecord("non fungible airdrop")
-                                .andAllChildRecords()
+                                // .andAllChildRecords()
                                 // check if tokens are in the pending list
                                 .hasPriority(recordWith()
                                         .pendingAirdrops(includingNftPendingAirdrop(
@@ -239,15 +244,15 @@ public class TokenAirdropSuite {
                                                         .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
                                                 movingUnique(NON_FUNGIBLE_TOKEN, 2L)
                                                         .between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))))
-                                .hasChildRecords(recordWith()
+                                .hasPriority(recordWith()
                                         .tokenTransfers(
                                                 includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 3L)
                                                         .between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))))
-                                .hasChildRecords(recordWith()
+                                .hasPriority(recordWith()
                                         .tokenTransfers(
                                                 includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 4L)
                                                         .between(SENDER, RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS))))
-                                .hasChildRecords(recordWith()
+                                .hasPriority(recordWith()
                                         .tokenTransfers(
                                                 includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 5L)
                                                         .between(SENDER, ASSOCIATED_RECEIVER))))
@@ -318,7 +323,7 @@ public class TokenAirdropSuite {
                                 .payingWith(SENDER)
                                 .via("first"),
                         getTxnRecord("first")
-                                .andAllChildRecords()
+                                // .andAllChildRecords()
                                 // assert pending airdrops
                                 .hasPriority(recordWith()
                                         .pendingAirdrops(includingFungiblePendingAirdrop(moving(10, FUNGIBLE_TOKEN)
@@ -333,9 +338,9 @@ public class TokenAirdropSuite {
                                 .via("second"),
                         // assert sender and receiver accounts to ensure first airdrop is still in pending state
                         getTxnRecord("second")
-                                .andAllChildRecords()
+                                // .andAllChildRecords()
                                 // assert transfers
-                                .hasChildRecords(recordWith()
+                                .hasPriority(recordWith()
                                         .tokenTransfers(includingFungibleMovement(moving(10, FUNGIBLE_TOKEN)
                                                 .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))))
                                 .logged(),
@@ -408,7 +413,7 @@ public class TokenAirdropSuite {
                 .then(tokenAirdrop(
                                 moving(-15, FUNGIBLE_TOKEN).between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                         .payingWith(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
-                        .hasKnownStatus(NEGATIVE_ALLOWANCE_AMOUNT));
+                        .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS));
     }
 
     @HapiTest
@@ -463,14 +468,26 @@ public class TokenAirdropSuite {
                                 .supplyKey(NFT_SUPPLY_KEY)
                                 .maxSupply(10_000)
                                 .initialSupply(5000)
-                                .treasury(TOKEN_TREASURY))
+                                .treasury(TOKEN_TREASURY),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .treasury(TOKEN_TREASURY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(NFT_SUPPLY_KEY)
+                                .initialSupply(0),
+                        mintToken(
+                                NON_FUNGIBLE_TOKEN,
+                                List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))))
                 .when()
                 .then(
                         tokenAirdrop(moving(50, FUNGIBLE_TOKEN)
                                         .between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                                 .payingWith(SENDER)
-                                .hasKnownStatus(INVALID_TRANSACTION)
+                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT)
                                 .via("senderWithMissingAssociation"),
+                        tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1)
+                                        .between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                                .payingWith(SENDER)
+                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
                         getTxnRecord("senderWithMissingAssociation").logged());
     }
 
@@ -587,6 +604,44 @@ public class TokenAirdropSuite {
                                         .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
                         .payingWith(OWNER)
                         .hasPrecheck(INVALID_ACCOUNT_AMOUNTS));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> tokenWithCustomFeesPaidByReceiverFails() {
+        return defaultHapiSpec("tokenWithCustomFeesFails")
+                .given(
+                        newKeyNamed(NFT_SUPPLY_KEY),
+                        cryptoCreate(TOKEN_TREASURY).balance(100 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(OWNER),
+                        cryptoCreate(FEE_COLLECTOR).balance(0L),
+                        cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .treasury(TOKEN_TREASURY)
+                                .supplyKey(NFT_SUPPLY_KEY)
+                                .tokenType(FUNGIBLE_COMMON)
+                                .withCustom(fractionalFee(1, 10L, 1L, OptionalLong.empty(), TOKEN_TREASURY))
+                                .initialSupply(Long.MAX_VALUE),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .maxSupply(10L)
+                                .initialSupply(0)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(NFT_SUPPLY_KEY)
+                                .treasury(TOKEN_TREASURY)
+                                .withCustom(
+                                        royaltyFeeWithFallback(1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), OWNER)))
+                .when(
+                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                        cryptoTransfer(moving(100, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
+                .then(
+                        tokenAirdrop(moving(25, FUNGIBLE_TOKEN)
+                                        .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                                .payingWith(OWNER)
+                                .hasKnownStatus(INVALID_TRANSACTION),
+                        tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1)
+                                        .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                                .payingWith(OWNER)
+                                .hasKnownStatus(INVALID_TRANSACTION));
     }
 
     @HapiTest
