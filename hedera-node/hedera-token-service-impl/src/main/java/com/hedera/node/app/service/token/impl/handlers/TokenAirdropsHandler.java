@@ -30,7 +30,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
-import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.LAZY_MEMO;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
@@ -44,10 +43,12 @@ import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.c
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateFungibleTransfers;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateNftTransfers;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createAccountAmount;
+import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkPayer;
+import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkReceiver;
+import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkSender;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -82,7 +83,6 @@ import com.hedera.node.app.service.token.impl.util.CryptoCreateFeeCalculator;
 import com.hedera.node.app.service.token.impl.util.CryptoTransferFeeCalculator;
 import com.hedera.node.app.service.token.impl.util.TokenAssociateToAccountFeeCalculator;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
-import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenAirdropsRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -112,25 +112,23 @@ import javax.inject.Singleton;
 @Singleton
 public class TokenAirdropsHandler implements TransactionHandler {
 
-    private final TokenAirdropValidator validator;
-    private final CryptoTransferValidator transferValidator;
+    private final CryptoTransferValidator validator;
 
     /**
      * Default constructor for injection.
      */
     @Inject
-    public TokenAirdropsHandler(
-            @NonNull final TokenAirdropValidator validator, @NonNull final CryptoTransferValidator transferValidator) {
+    public TokenAirdropsHandler(@NonNull final CryptoTransferValidator validator) {
         this.validator = validator;
-        this.transferValidator = transferValidator;
     }
 
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        validateTrue(tokensConfig.airdropsEnabled(), NOT_SUPPORTED);
         pureChecks(context.body());
+
+        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        validateTruePreCheck(tokensConfig.airdropsEnabled(), NOT_SUPPORTED);
 
         final var op = context.body().tokenAirdropOrThrow();
         final var accountStore = context.createStore(ReadableAccountStore.class);
@@ -149,7 +147,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         requireNonNull(txn);
         final var op = txn.tokenAirdropOrThrow();
-        validator.pureChecks(op);
+        validator.airdropsPureChecks(op);
     }
 
     @Override
@@ -256,7 +254,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
 
         final var transferContext = new TransferContextImpl(context, cryptoTransferBody, true);
 
-        executeTransfer(syntheticCryptoTransferTxn, transferContext, context, transferValidator, recordBuilder);
+        executeTransfer(syntheticCryptoTransferTxn, transferContext, context, validator, recordBuilder);
     }
 
     // TODO: add documentation
@@ -492,13 +490,14 @@ public class TokenAirdropsHandler implements TransactionHandler {
             final var senderId = nftTransfer.senderAccountIDOrElse(AccountID.DEFAULT);
             validateAccountID(senderId, null);
             checkSender(senderId, nftTransfer, context, accountStore);
+            checkPayer(senderId, context);
             final var senderAccount = accountStore.getAliasedAccountById(senderId);
             final var tokenRel = tokenRelStore.get(senderId, tokenID);
             validateTruePreCheck(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
             final var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
             validateAccountID(receiverId, null);
-            checkReceiver(receiverId, context, tokenMeta, accountStore);
+            checkReceiver(receiverId, senderId, nftTransfer, context, tokenMeta, null, accountStore);
             final var receiverAccount = accountStore.getAliasedAccountById(receiverId);
 
             if (senderAccount == null || receiverAccount == null) {
@@ -524,69 +523,6 @@ public class TokenAirdropsHandler implements TransactionHandler {
                 validateTrue(treasuryId != null, INVALID_ACCOUNT_ID);
                 validateTrue(treasuryId.equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
             }
-        }
-    }
-
-    private void checkSender(
-            final AccountID senderId,
-            final NftTransfer nftTransfer,
-            final PreHandleContext meta,
-            final ReadableAccountStore accountStore)
-            throws PreCheckException {
-
-        checkPayer(senderId, meta);
-        // Lookup the sender account and verify it.
-        final var senderAccount = accountStore.getAliasedAccountById(senderId);
-        if (senderAccount == null) {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
-        }
-
-        // If the sender account is immutable, then we throw an exception.
-        final var key = senderAccount.key();
-        if (key == null || !isValid(key)) {
-            // If the sender account has no key, then fail with ACCOUNT_IS_IMMUTABLE.
-            throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
-        } else if (!nftTransfer.isApproval()) {
-            meta.requireKey(key);
-        }
-    }
-
-    private void checkReceiver(
-            final AccountID receiverId,
-            final PreHandleContext meta,
-            final ReadableTokenStore.TokenMetadata tokenMeta,
-            final ReadableAccountStore accountStore)
-            throws PreCheckException {
-
-        // Lookup the receiver account and verify it.
-        final var receiverAccount = accountStore.getAliasedAccountById(receiverId);
-        if (receiverAccount == null) {
-            // It may be that the receiver account does not yet exist. If it is being addressed by alias,
-            // then this is OK, as we will automatically create the account. Otherwise, fail.
-            if (!isAlias(receiverId)) {
-                throw new PreCheckException(INVALID_ACCOUNT_ID);
-            } else {
-                return;
-            }
-        }
-        final var receiverKey = receiverAccount.key();
-        if (isStakingAccount(meta.configuration(), receiverAccount.accountId())) {
-            // If the receiver account has no key, then fail with ACCOUNT_IS_IMMUTABLE.
-            throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
-        } else if (receiverAccount.receiverSigRequired()) {
-            // If receiverSigRequired is set, and if there is no key on the receiver's account, then fail with
-            // INVALID_TRANSFER_ACCOUNT_ID. Otherwise, add the key.
-            meta.requireKeyOrThrow(receiverKey, INVALID_TRANSFER_ACCOUNT_ID);
-        } else if (tokenMeta.hasRoyaltyWithFallback()) {
-            // It may be that this transfer has royalty fees associated with it. If it does, we throw an error as
-            // Token Airdrops does not support royalty with fallback fees
-            throw new PreCheckException(INVALID_TRANSACTION);
-        }
-    }
-
-    private void checkPayer(AccountID sender, PreHandleContext context) throws PreCheckException {
-        if (context.payer() != sender) {
-            context.requireKeyOrThrow(context.payerKey(), INVALID_ACCOUNT_ID);
         }
     }
 

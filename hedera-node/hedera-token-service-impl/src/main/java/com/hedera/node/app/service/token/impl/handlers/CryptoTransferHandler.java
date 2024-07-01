@@ -19,13 +19,13 @@ package com.hedera.node.app.service.token.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TREASURY_ACCOUNT_FOR_TOKEN;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor.executeTransfer;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor.transferPureChecks;
-import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkReceiver;
+import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkSender;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static java.util.Objects.requireNonNull;
 
@@ -302,106 +302,6 @@ public class CryptoTransferHandler implements TransactionHandler {
             validateAccountID(receiverId, null);
             checkReceiver(receiverId, senderId, nftTransfer, meta, tokenMeta, op, accountStore);
         }
-    }
-
-    private void checkReceiver(
-            final AccountID receiverId,
-            final AccountID senderId,
-            final NftTransfer nftTransfer,
-            final PreHandleContext meta,
-            final TokenMetadata tokenMeta,
-            final CryptoTransferTransactionBody op,
-            final ReadableAccountStore accountStore)
-            throws PreCheckException {
-
-        // Lookup the receiver account and verify it.
-        final var receiverAccount = accountStore.getAliasedAccountById(receiverId);
-        if (receiverAccount == null) {
-            // It may be that the receiver account does not yet exist. If it is being addressed by alias,
-            // then this is OK, as we will automatically create the account. Otherwise, fail.
-            if (!isAlias(receiverId)) {
-                throw new PreCheckException(INVALID_ACCOUNT_ID);
-            } else {
-                return;
-            }
-        }
-
-        final var receiverKey = receiverAccount.key();
-        if (isStakingAccount(meta.configuration(), receiverAccount.accountId())) {
-            // If the receiver account has no key, then fail with INVALID_ACCOUNT_ID.
-            // NOTE: should change to ACCOUNT_IS_IMMUTABLE after modularization
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
-        } else if (receiverAccount.receiverSigRequired()) {
-            // If receiverSigRequired is set, and if there is no key on the receiver's account, then fail with
-            // INVALID_TRANSFER_ACCOUNT_ID. Otherwise, add the key.
-            meta.requireKeyOrThrow(receiverKey, INVALID_TRANSFER_ACCOUNT_ID);
-        } else if (tokenMeta.hasRoyaltyWithFallback()
-                && !receivesFungibleValue(nftTransfer.senderAccountID(), op, accountStore)) {
-            // It may be that this transfer has royalty fees associated with it. If it does, then we need
-            // to check that the receiver signed the transaction, UNLESS the sender or receiver is
-            // the treasury, in which case fallback fees will not be applied when the transaction is handled,
-            // so the receiver key does not need to sign.
-            final var treasuryId = tokenMeta.treasuryAccountId();
-            if (!treasuryId.equals(senderId) && !treasuryId.equals(receiverId)) {
-                meta.requireKeyOrThrow(receiverId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
-            }
-        }
-    }
-
-    private void checkSender(
-            final AccountID senderId,
-            final NftTransfer nftTransfer,
-            final PreHandleContext meta,
-            final ReadableAccountStore accountStore)
-            throws PreCheckException {
-
-        // Lookup the sender account and verify it.
-        final var senderAccount = accountStore.getAliasedAccountById(senderId);
-        if (senderAccount == null) {
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
-        }
-
-        // If the sender account is immutable, then we throw an exception.
-        final var key = senderAccount.key();
-        if (key == null || !isValid(key)) {
-            if (isHollow(senderAccount)) {
-                meta.requireSignatureForHollowAccount(senderAccount);
-            } else {
-                // If the sender account has no key, then fail with INVALID_ACCOUNT_ID.
-                // NOTE: should change to ACCOUNT_IS_IMMUTABLE
-                throw new PreCheckException(INVALID_ACCOUNT_ID);
-            }
-        } else if (!nftTransfer.isApproval()) {
-            meta.requireKey(key);
-        }
-    }
-
-    private boolean receivesFungibleValue(
-            final AccountID target, final CryptoTransferTransactionBody op, final ReadableAccountStore accountStore) {
-        for (final var adjust : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
-            final var unaliasedAccount = accountStore.getAliasedAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
-            final var unaliasedTarget = accountStore.getAliasedAccountById(target);
-            if (unaliasedAccount != null
-                    && unaliasedTarget != null
-                    && adjust.amount() > 0
-                    && unaliasedAccount.equals(unaliasedTarget)) {
-                return true;
-            }
-        }
-        for (final var transfers : op.tokenTransfers()) {
-            for (final var adjust : transfers.transfers()) {
-                final var unaliasedAccount =
-                        accountStore.getAliasedAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
-                final var unaliasedTarget = accountStore.getAliasedAccountById(target);
-                if (unaliasedAccount != null
-                        && unaliasedTarget != null
-                        && adjust.amount() > 0
-                        && unaliasedAccount.equals(unaliasedTarget)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     @NonNull

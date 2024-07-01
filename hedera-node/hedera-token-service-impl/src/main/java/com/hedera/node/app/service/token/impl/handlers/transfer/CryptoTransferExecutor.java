@@ -173,7 +173,7 @@ public class CryptoTransferExecutor {
         requireNonNull(txn);
         final var op = txn.cryptoTransfer();
         validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
-        validator.pureChecks(op);
+        validator.cryptoTransferPureChecks(op);
     }
 
     public static void doPreHandle(
