@@ -19,7 +19,7 @@ package com.hedera.services.bdd.junit.hedera.subprocess;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
-import static com.hedera.services.bdd.suites.TargetNetworkType.SHARED_HAPI_TEST_NETWORK;
+import static com.hedera.services.bdd.suites.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
@@ -86,12 +86,12 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
 
     /**
      * Returns the network type; for now this is always
-     * {@link TargetNetworkType#SHARED_HAPI_TEST_NETWORK}.
+     * {@link TargetNetworkType#SUBPROCESS_NETWORK}.
      *
      * @return the network type
      */
     public TargetNetworkType type() {
-        return SHARED_HAPI_TEST_NETWORK;
+        return SUBPROCESS_NETWORK;
     }
 
     /**
