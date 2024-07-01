@@ -53,9 +53,9 @@ import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.Transaction;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
@@ -153,7 +153,7 @@ class TipsetEventCreatorTests {
 
     private void validateNewEvent(
             @NonNull final Map<Hash, EventImpl> events,
-            @NonNull final BaseEventHashedData newEvent,
+            @NonNull final UnsignedEvent newEvent,
             @NonNull final List<OneOf<PayloadOneOfType>> expectedTransactions,
             @NonNull final SimulatedNode simulatedNode,
             final boolean slowNode) {
@@ -233,7 +233,7 @@ class TipsetEventCreatorTests {
     private void linkAndDistributeEvent(
             @NonNull final Map<NodeId, SimulatedNode> eventCreators,
             @NonNull final Map<Hash, EventImpl> events,
-            @NonNull final BaseEventHashedData event) {
+            @NonNull final UnsignedEvent event) {
 
         distributeEvent(eventCreators, linkEvent(eventCreators, events, event));
     }
@@ -245,7 +245,7 @@ class TipsetEventCreatorTests {
     private EventImpl linkEvent(
             @NonNull final Map<NodeId, SimulatedNode> eventCreators,
             @NonNull final Map<Hash, EventImpl> events,
-            @NonNull final BaseEventHashedData event) {
+            @NonNull final UnsignedEvent event) {
 
         eventCreators.get(event.getCreatorId()).tipsetTracker.addEvent(event.getDescriptor(), event.getAllParents());
 
@@ -327,7 +327,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                 // In this test, it should be impossible for a node to be unable to create an event.
                 assertNotNull(event);
@@ -388,7 +388,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                 // It's possible a node may not be able to create an event. But we are guaranteed
                 // to be able to create at least one event per cycle.
@@ -453,7 +453,7 @@ class TipsetEventCreatorTests {
                     final NodeId nodeId = address.getNodeId();
                     final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                    final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                    final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                     // It's possible a node may not be able to create an event. But we are guaranteed
                     // to be able to create at least one event per cycle.
@@ -527,7 +527,7 @@ class TipsetEventCreatorTests {
                     final NodeId nodeId = address.getNodeId();
                     final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                    final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                    final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                     if (count == 0) {
                         // The first time we attempt to create an event we should be able to do so.
@@ -611,7 +611,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                 // It's possible a node may not be able to create an event. But we are guaranteed
                 // to be able to create at least one event per cycle.
@@ -708,7 +708,7 @@ class TipsetEventCreatorTests {
                 final NodeId nodeId = address.getNodeId();
                 final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                 // It's possible a node may not be able to create an event. But we are guaranteed
                 // to be able to create at least one event per cycle.
@@ -798,7 +798,7 @@ class TipsetEventCreatorTests {
             final NodeId nodeId = address.getNodeId();
             final EventCreator eventCreator = nodes.get(nodeId).eventCreator;
 
-            final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+            final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
             // In this test, it should be impossible for a node to be unable to create an event.
             assertNotNull(event);
@@ -866,7 +866,7 @@ class TipsetEventCreatorTests {
         final EventCreator eventCreator = buildEventCreator(random, time, addressBook, nodeA, Collections::emptyList);
 
         // Create some genesis events
-        final BaseEventHashedData eventA1 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
         final PlatformEvent eventB1 = createTestEvent(
@@ -884,15 +884,15 @@ class TipsetEventCreatorTests {
         // We should be able to create a total of 3 before we exhaust all possible parents.
 
         // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
-        final BaseEventHashedData eventA2 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA2 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA2);
 
         // This will advance the snapshot, total advancement weight is 2 (2+1/4 > 2/3)
-        final BaseEventHashedData eventA3 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA3 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA3);
 
         // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
-        final BaseEventHashedData eventA4 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA4 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA4);
 
         // It should not be possible to create another event since we have exhausted all possible other parents.
@@ -945,7 +945,7 @@ class TipsetEventCreatorTests {
         final EventCreator eventCreator = buildEventCreator(random, time, addressBook, nodeA, Collections::emptyList);
 
         // Create some genesis events
-        final BaseEventHashedData eventA1 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA1 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA1);
 
         final PlatformEvent eventB1 = createTestEvent(
@@ -967,15 +967,15 @@ class TipsetEventCreatorTests {
         // We should be able to create a total of 3 before we exhaust all possible parents in the address book.
 
         // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
-        final BaseEventHashedData eventA2 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA2 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA2);
 
         // This will advance the snapshot, total advancement weight is 2 (2+1/4 > 2/3)
-        final BaseEventHashedData eventA3 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA3 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA3);
 
         // This will not advance the snapshot, total advancement weight is 1 (1+1/4 !> 2/3)
-        final BaseEventHashedData eventA4 = eventCreator.maybeCreateEvent();
+        final UnsignedEvent eventA4 = eventCreator.maybeCreateEvent();
         assertNotNull(eventA4);
 
         // It should not be possible to create another event since we have exhausted all possible other parents in the
@@ -1079,7 +1079,7 @@ class TipsetEventCreatorTests {
                                     : AncientMode.GENERATION_THRESHOLD));
                 }
 
-                final BaseEventHashedData event = eventCreator.maybeCreateEvent();
+                final UnsignedEvent event = eventCreator.maybeCreateEvent();
 
                 // In this test, it should be impossible for a node to be unable to create an event.
                 assertNotNull(event);

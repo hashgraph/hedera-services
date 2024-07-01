@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.misc;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -23,6 +24,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -37,7 +39,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
+@Tag(NOT_REPEATABLE)
 public class PerpetualTransfers {
     private AtomicLong duration = new AtomicLong(1);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
@@ -57,7 +61,7 @@ public class PerpetualTransfers {
         AtomicBoolean fromAtoB = new AtomicBoolean(true);
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(cryptoCreate("A"), cryptoCreate("B"));
             }
 
