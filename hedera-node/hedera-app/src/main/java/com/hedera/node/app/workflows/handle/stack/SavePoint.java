@@ -23,6 +23,7 @@ import java.util.List;
 
 /**
  * A save point that contains the current state and the record builders created in the current savepoint.
+ * Currently, recordBuilders is not used in the codebase. It will be used in future PRs
  */
 public record SavePoint(
         @NonNull WrappedHederaState state, @NonNull List<SingleTransactionRecordBuilder> recordBuilders) {}

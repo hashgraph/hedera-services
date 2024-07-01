@@ -36,6 +36,11 @@ import javax.inject.Inject;
 
 /**
  * The default implementation of {@link SavepointStack}.
+ * The {@link SavepointStackImpl} is a stack of {@link HederaState} instances that can be used to create savepoints.
+ * Each savepoint captures the state of the {@link HederaState} at the time the savepoint was created and all the changes
+ * made to the state from the time savepoint is created. It also captures all the records {@link SingleTransactionRecordBuilder}
+ * created in the savepoint.
+ * Currently, records are not used in the codebase. It will be used in future PRs.
  */
 public class SavepointStackImpl implements SavepointStack, HederaState {
 
@@ -62,7 +67,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     @Override
     public void createSavepoint() {
-        // TODO : This will be fixed in the next PR
+        // FUTURE: Add record builders to the savepoint. Need to check how smart-contract service is using this.
         setupSavepoint(stack.isEmpty() ? root : peek().state(), new ArrayList<>());
     }
 
