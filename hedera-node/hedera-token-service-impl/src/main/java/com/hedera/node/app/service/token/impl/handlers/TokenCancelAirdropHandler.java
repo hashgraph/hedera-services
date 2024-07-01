@@ -107,9 +107,9 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
 
         validateFalsePreCheck(op.pendingAirdrops().isEmpty(), EMPTY_PENDING_AIRDROP_ID_LIST);
 
-        final var uniqueTokenReferences = new HashSet<PendingAirdropId>();
+        final var uniquePendingAirdrops = new HashSet<PendingAirdropId>();
         for (final var airdrop : op.pendingAirdrops()) {
-            if (!uniqueTokenReferences.add(airdrop)) {
+            if (!uniquePendingAirdrops.add(airdrop)) {
                 throw new PreCheckException(PENDING_AIRDROP_ID_REPEATED);
             }
             validateAccountID(airdrop.receiverId(), null);
