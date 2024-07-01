@@ -1083,20 +1083,29 @@ public class UtilVerbs {
 
     public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
         return withOpContext((spec, opLog) -> {
-            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, defaultFeeSchedules()));
+            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, feeSchedulesWith("FeeSchedule.json")));
             if (!spec.tryReinitializingFees()) {
                 throw new IllegalStateException("New fee schedules won't be available, dying!");
             }
         });
     }
 
-    private static ByteString defaultFeeSchedules() {
+    public static HapiSpecOperation uploadGivenFeeSchedules(String payer, String feeSchedules) {
+        return withOpContext((spec, opLog) -> {
+            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, feeSchedulesWith(feeSchedules)));
+            if (!spec.tryReinitializingFees()) {
+                throw new IllegalStateException("New fee schedules won't be available, dying!");
+            }
+        });
+    }
+
+    private static ByteString feeSchedulesWith(String feeSchedules) {
         SysFileSerde<String> serde = new FeesJsonToGrpcBytes();
         var baos = new ByteArrayOutputStream();
         try {
-            var schedulesIn = HapiFileCreate.class.getClassLoader().getResourceAsStream("FeeSchedule.json");
+            var schedulesIn = HapiFileCreate.class.getClassLoader().getResourceAsStream(feeSchedules);
             if (schedulesIn == null) {
-                throw new IllegalStateException("No FeeSchedule.json resource available!");
+                throw new IllegalStateException("No " + feeSchedules + " resource available!");
             }
             schedulesIn.transferTo(baos);
             baos.close();
@@ -1464,6 +1473,20 @@ public class UtilVerbs {
 
     public static CustomSpecAssert validateChargedUsd(String txn, double expectedUsd, double allowedPercentDiff) {
         return validateChargedUsdWithin(txn, expectedUsd, allowedPercentDiff);
+    }
+
+    public static CustomSpecAssert validateChargedUsdWithChild(
+            String txn, double expectedUsd, double allowedPercentDiff) {
+        return assertionsHold((spec, assertLog) -> {
+            final var actualUsdCharged = getChargedUsdFromChild(spec, txn);
+            assertEquals(
+                    expectedUsd,
+                    actualUsdCharged,
+                    (allowedPercentDiff / 100.0) * expectedUsd,
+                    String.format(
+                            "%s fee (%s) more than %.2f percent different than expected!",
+                            CryptoTransferSuite.sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
+        });
     }
 
     public static CustomSpecAssert validateChargedUsdWithin(String txn, double expectedUsd, double allowedPercentDiff) {
@@ -1905,6 +1928,24 @@ public class UtilVerbs {
         allRunFor(spec, subOp);
         final var rcd = subOp.getResponseRecord();
         return (1.0 * rcd.getTransactionFee())
+                / ONE_HBAR
+                / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
+                * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
+                / 100;
+    }
+
+    private static double getChargedUsdFromChild(@NonNull final HapiSpec spec, @NonNull final String txn) {
+        requireNonNull(spec);
+        requireNonNull(txn);
+        var subOp = getTxnRecord(txn).andAllChildRecords().logged();
+        allRunFor(spec, subOp);
+        final var rcd = subOp.getResponseRecord();
+        final var fees = subOp.getChildRecords().isEmpty()
+                ? 0L
+                : subOp.getChildRecords().stream()
+                        .mapToLong(TransactionRecord::getTransactionFee)
+                        .sum();
+        return (1.0 * (rcd.getTransactionFee() + fees))
                 / ONE_HBAR
                 / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
                 * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
