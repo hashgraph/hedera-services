@@ -22,7 +22,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
@@ -72,7 +71,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var accountStore = context.createStore(ReadableAccountStore.class);
 
         for (final var airdrop : allPendingAirdrops) {
-            validateTrue(airdrop.hasSenderId(), INVALID_TRANSACTION_BODY);
+            validateTrue(airdrop.hasSenderId(), INVALID_ACCOUNT_ID);
             verifyAndRequireKeyForSender(airdrop.senderIdOrThrow(), context, accountStore);
         }
     }
