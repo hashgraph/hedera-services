@@ -55,6 +55,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -134,6 +136,7 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ConfigTxtValidationOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.PurgeUpgradeArtifactsOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutdownWithinOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.TryToStartNodesOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForMarkerFileOp;
@@ -265,6 +268,21 @@ public class UtilVerbs {
 
     public static HapiFreeze telemetryUpgrade() {
         return new HapiFreeze(TELEMETRY_UPGRADE);
+    }
+
+    /**
+     * Returns an operation that ensures staking is activated. In general this is the one
+     * property override that doesn't need default values to be preserved, since all production
+     * network behavior must work with staking active in any case.
+     *
+     * @return the operation that ensures staking is activated
+     */
+    public static HapiSpecOperation ensureStakingActivated() {
+        return blockingOrder(
+                overridingTwo(
+                        "staking.startThreshold", "" + 0,
+                        "staking.rewardBalanceThreshold", "" + 0),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)));
     }
 
     public static HapiFreeze freezeOnly() {
@@ -403,7 +421,11 @@ public class UtilVerbs {
     }
 
     public static WaitForStatusOp waitForActive(String name, Duration timeout) {
-        return new WaitForStatusOp(NodeSelector.byName(name), ACTIVE, timeout);
+        return waitForActive(NodeSelector.byName(name), timeout);
+    }
+
+    public static WaitForStatusOp waitForActive(@NonNull final NodeSelector selector, @NonNull final Duration timeout) {
+        return new WaitForStatusOp(selector, ACTIVE, timeout);
     }
 
     public static WaitForStatusOp waitForBehind(String name, Duration timeout) {
@@ -423,7 +445,11 @@ public class UtilVerbs {
     }
 
     public static TryToStartNodesOp restartNode(String name) {
-        return new TryToStartNodesOp(NodeSelector.byName(name));
+        return restartNode(NodeSelector.byName(name));
+    }
+
+    public static TryToStartNodesOp restartNode(@NonNull final NodeSelector selector) {
+        return new TryToStartNodesOp(selector);
     }
 
     public static TryToStartNodesOp restartNetwork() {
@@ -447,8 +473,20 @@ public class UtilVerbs {
         return new TryToStartNodesOp(NodeSelector.allNodes(), configVersion, TryToStartNodesOp.ReassignPorts.YES);
     }
 
-    public static ShutdownWithinOp shutdownWithin(String name, Duration timeout) {
-        return new ShutdownWithinOp(NodeSelector.byName(name), timeout);
+    public static TryToStartNodesOp restartWithConfigVersion(
+            @NonNull final NodeSelector selector, final int configVersion) {
+        return new TryToStartNodesOp(selector, configVersion, TryToStartNodesOp.ReassignPorts.YES);
+    }
+
+    public static ShutdownWithinOp shutdownWithin(@NonNull final String name, @NonNull final Duration timeout) {
+        return shutdownWithin(NodeSelector.byName(name), timeout);
+    }
+
+    public static ShutdownWithinOp shutdownWithin(
+            @NonNull final NodeSelector selector, @NonNull final Duration timeout) {
+        requireNonNull(selector);
+        requireNonNull(timeout);
+        return new ShutdownWithinOp(selector, timeout);
     }
 
     public static ShutdownWithinOp shutdownNetworkWithin(@NonNull final Duration timeout) {
@@ -489,6 +527,15 @@ public class UtilVerbs {
     public static ConfigTxtValidationOp validateUpgradeAddressBooks(
             @NonNull final Consumer<AddressBook> bookValidator) {
         return new ConfigTxtValidationOp(NodeSelector.allNodes(), bookValidator);
+    }
+
+    /**
+     * Returns an operation that purges the upgrade artifacts directory on each node.
+     *
+     * @return the operation that purges the upgrade artifacts directory
+     */
+    public static PurgeUpgradeArtifactsOp purgeUpgradeArtifacts() {
+        return new PurgeUpgradeArtifactsOp(NodeSelector.allNodes());
     }
 
     /**

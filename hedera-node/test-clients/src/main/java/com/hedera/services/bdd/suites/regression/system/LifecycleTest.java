@@ -23,10 +23,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipFrom
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.purgeUpgradeArtifacts;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restartNetworkWithConfigVersion;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restartWithConfigVersion;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutdownNetworkWithin;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutdownWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActive;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActiveNetwork;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForFrozenNetwork;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForMf;
@@ -36,9 +40,11 @@ import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.DEFAU
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.FAKE_ASSETS_LOC;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileAppendsPerBurst;
 import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgradeFileHashAt;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.burstOfTps;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.SpecOperation;
+import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
@@ -51,10 +57,13 @@ import java.util.function.Supplier;
  * restarts, software upgrades, and reconnects.
  */
 public interface LifecycleTest {
+    int MIXED_OPS_BURST_TPS = 50;
     Duration FREEZE_TIMEOUT = Duration.ofSeconds(90);
     Duration RESTART_TIMEOUT = Duration.ofSeconds(180);
     Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(60);
+    Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
     Duration EXEC_IMMEDIATE_MF_TIMEOUT = Duration.ofSeconds(10);
+    Duration RESTART_TO_ACTIVE_TIMEOUT = Duration.ofSeconds(180);
 
     /**
      * Returns an operation that asserts that the current version of the network has the given
@@ -68,6 +77,21 @@ public interface LifecycleTest {
             @NonNull final Supplier<SemanticVersion> versionSupplier, final int configVersion) {
         return sourcing(() ->
                 getVersionInfo().hasProtoServicesVersion(fromBaseAndConfig(versionSupplier.get(), configVersion)));
+    }
+
+    /**
+     * Returns an operation that terminates and reconnects the given node.
+     *
+     * @param selector the node to reconnect
+     * @param configVersion the configuration version to reconnect at
+     * @return the operation
+     */
+    default HapiSpecOperation reconnectNode(@NonNull final NodeSelector selector, final int configVersion) {
+        return blockingOrder(
+                shutdownWithin(selector, SHUTDOWN_TIMEOUT),
+                burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
+                restartWithConfigVersion(selector, configVersion),
+                waitForActive(selector, RESTART_TO_ACTIVE_TIMEOUT));
     }
 
     /**
@@ -85,6 +109,7 @@ public interface LifecycleTest {
                         FAKE_UPGRADE_ZIP_LOC,
                         TxnUtils.BYTES_4K,
                         upgradeFileAppendsPerBurst())),
+                purgeUpgradeArtifacts(),
                 // Issue PREPARE_UPGRADE; need sourcing() here because we want to hash only after creating the ZIP
                 sourcing(() -> prepareUpgrade()
                         .withUpdateFile(DEFAULT_UPGRADE_FILE_ID)
@@ -146,5 +171,16 @@ public interface LifecycleTest {
         return (configVersion == 0)
                 ? version
                 : version.toBuilder().setBuild("" + configVersion).build();
+    }
+
+    /**
+     * Returns a {@link SemanticVersion} that combines the given version with the given configuration version.
+     *
+     * @param version the base version
+     * @return the config version
+     */
+    static int configVersionOf(@NonNull SemanticVersion version) {
+        final var build = version.getBuild();
+        return build.isBlank() ? 0 : Integer.parseInt(build.substring(build.indexOf("c") + 1));
     }
 }
