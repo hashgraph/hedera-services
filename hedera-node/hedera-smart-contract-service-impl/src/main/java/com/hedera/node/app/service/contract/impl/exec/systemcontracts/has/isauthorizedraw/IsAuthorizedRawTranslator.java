@@ -1,0 +1,124 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw;
+
+import static java.util.Objects.requireNonNull;
+
+import com.esaulpaugh.headlong.abi.Function;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.token.CryptoAllowance;
+import com.hedera.hapi.node.token.CryptoApproveAllowanceTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.contract.impl.annotations.ServicesV051;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
+import com.hedera.node.config.data.ContractsConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
+import java.util.Arrays;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+/**
+ * Translates {@code isAuthorizedRaw()} calls to the HAS system contract. HIP-632.
+ */
+@Singleton
+public class IsAuthorizedRawTranslator extends AbstractCallTranslator<HasCallAttempt> {
+
+    public static final Function IS_AUTHORIZED_RAW =
+            new Function("isAuthorizedRaw(address,bytes,bytes)", ReturnTypes.BOOL);
+    private static final int ADDRESS_ARG = 0;
+    private static final int HASH_ARG = 1;
+    private static final int SIGNATURE_ARG = 2;
+
+    private final FeatureFlags featureFlags;
+
+    @Inject
+    public IsAuthorizedRawTranslator(@ServicesV051 @NonNull final FeatureFlags featureFlags) {
+        // Dagger2
+        this.featureFlags = featureFlags;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean matches(@NonNull final HasCallAttempt attempt) {
+        requireNonNull(attempt);
+        final boolean matchesCall = matchesIsAuthorizedRawSelector(attempt.selector());
+        final boolean callEnabled = attempt.configuration()
+                .getConfigData(ContractsConfig.class)
+                .systemContractAccountServiceIsAuthorizedRawEnabled();
+        return matchesCall && callEnabled;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Call callFrom(@NonNull final HasCallAttempt attempt) {
+        requireNonNull(attempt);
+
+        if (matchesIsAuthorizedRawSelector(attempt.selector())) {
+            return new IsAuthorizedRawCall(attempt, bodyForIsAuthorizedRaw(attempt));
+        }
+        return null;
+    }
+
+    @NonNull
+    private TransactionBody bodyForIsAuthorizedRaw(@NonNull final HasCallAttempt attempt) {
+        requireNonNull(attempt);
+        final var call = IS_AUTHORIZED_RAW.decodeCall(attempt.inputBytes());
+        var address = ((BigInteger) call.get(ADDRESS_ARG)).longValueExact();
+        var messageHash = (byte[]) call.get(HASH_ARG);
+        var signature = (byte[]) call.get(SIGNATURE_ARG);
+
+        return TransactionBody.DEFAULT; // TODO
+    }
+
+    @NonNull
+    private CryptoApproveAllowanceTransactionBody cryptoApproveTransactionBody(
+            @NonNull final AccountID owner, @NonNull final AccountID operatorId, @NonNull final BigInteger amount) {
+        requireNonNull(owner);
+        requireNonNull(operatorId);
+        requireNonNull(amount);
+        return CryptoApproveAllowanceTransactionBody.newBuilder()
+                .cryptoAllowances(CryptoAllowance.newBuilder()
+                        .owner(owner)
+                        .spender(operatorId)
+                        .amount(amount.longValue())
+                        .build())
+                .build();
+    }
+
+    @NonNull
+    private TransactionBody bodyOf(
+            @NonNull final CryptoApproveAllowanceTransactionBody approveAllowanceTransactionBody) {
+        return TransactionBody.newBuilder()
+                .cryptoApproveAllowance(approveAllowanceTransactionBody)
+                .build();
+    }
+
+    @NonNull
+    private boolean matchesIsAuthorizedRawSelector(@NonNull final byte[] selector) {
+        requireNonNull(selector);
+        return Arrays.equals(selector, IS_AUTHORIZED_RAW.selector());
+    }
+}
