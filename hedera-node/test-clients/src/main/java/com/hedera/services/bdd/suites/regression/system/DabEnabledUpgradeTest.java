@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.regression.system;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
 import static com.hedera.services.bdd.junit.TestTags.UPGRADE;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
+import static com.hedera.services.bdd.junit.hedera.NodeSelector.exceptNodeId;
 import static com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt.DAB_GENERATED;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.nodeIdsFrom;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -173,8 +174,9 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
         final Stream<DynamicTest> addedNodeTest() {
             return hapiTest(
                     prepareFakeUpgrade(),
-                    validateUpgradeAddressBooks(
-                            addressBook -> assertThat(nodeIdsFrom(addressBook)).contains(4L)),
+                    // node4 was not active before this the upgrade, so it could not have written a config.txt
+                    validateUpgradeAddressBooks(exceptNodeId(4L), addressBook -> assertThat(nodeIdsFrom(addressBook))
+                            .contains(4L)),
                     upgradeToConfigVersion(3, addNodeAndRefreshConfigTxt(4L, DAB_GENERATED)));
         }
     }

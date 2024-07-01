@@ -53,6 +53,16 @@ public abstract class AbstractNode implements HederaNode {
     }
 
     @Override
+    public int getGossipPort() {
+        return metadata.gossipPort();
+    }
+
+    @Override
+    public int getGossipTlsPort() {
+        return metadata.gossipTlsPort();
+    }
+
+    @Override
     public long getNodeId() {
         return metadata.nodeId();
     }

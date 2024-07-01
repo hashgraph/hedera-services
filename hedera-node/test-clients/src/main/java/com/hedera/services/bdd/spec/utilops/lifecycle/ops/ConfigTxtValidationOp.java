@@ -18,10 +18,10 @@ package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.loadAddressBook;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
-import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
 import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,7 +40,7 @@ public class ConfigTxtValidationOp extends AbstractLifecycleOp {
     @Override
     protected void run(@NonNull final HederaNode node) {
         final var configTxtPath = node.getExternalPath(UPGRADE_ARTIFACTS_DIR).resolve(CONFIG_TXT);
-        final var addressBook = WorkingDirUtils.loadAddressBook(configTxtPath);
+        final var addressBook = loadAddressBook(configTxtPath);
         bookValidator.accept(addressBook);
     }
 }

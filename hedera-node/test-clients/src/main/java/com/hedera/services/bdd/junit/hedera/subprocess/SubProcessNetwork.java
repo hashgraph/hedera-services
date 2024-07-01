@@ -51,6 +51,7 @@ import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -183,6 +184,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         reinitializePorts();
         nodes.forEach(node -> {
             final int nodeId = (int) node.getNodeId();
+            configTxt = configTxt.replaceAll("" + node.getGossipPort(), "" + (nextGossipPort + nodeId * 2));
+            configTxt = configTxt.replaceAll("" + node.getGossipTlsPort(), "" + (nextGossipTlsPort + nodeId * 2));
             ((SubProcessNode) node)
                     .reassignPorts(
                             nextGrpcPort + nodeId * 2,
@@ -190,7 +193,6 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                             nextGossipTlsPort + nodeId * 2,
                             nextPrometheusPort + nodeId);
         });
-        configTxt = configTxtForLocal(name(), nodes(), nextGossipPort, nextGossipTlsPort);
         refreshNodeConfigTxt();
         this.clients = HapiClients.clientsFor(this);
     }
@@ -246,7 +248,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                         PROMETHEUS_CLIENT));
         configTxt = switch (upgradeConfigTxt) {
             case IMPLIED_BY_NETWORK_NODES -> configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
-            case DAB_GENERATED -> consensusDabConfigTxt();};
+            case DAB_GENERATED -> consensusDabConfigTxt(node -> node.getNodeId() != nodeId);};
         ((SubProcessNode) nodes.get(insertionPoint)).initWorkingDir(configTxt);
         refreshNodeConfigTxt();
     }
@@ -320,7 +322,12 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     }
 
     private String consensusDabConfigTxt() {
+        return consensusDabConfigTxt(ignore -> true);
+    }
+
+    private String consensusDabConfigTxt(@NonNull final Predicate<HederaNode> filter) {
         final Set<String> configTxts = nodes.stream()
+                .filter(filter)
                 .map(node -> rethrowIO(() -> Files.readString(
                         node.getExternalPath(UPGRADE_ARTIFACTS_DIR).resolve(CONFIG_TXT))))
                 .collect(toSet());

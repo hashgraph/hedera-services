@@ -42,6 +42,20 @@ public interface HederaNode {
     int getGrpcPort();
 
     /**
+     * Gets the gossip port number.
+     *
+     * @return the gossip port number
+     */
+    int getGossipPort();
+
+    /**
+     * Gets the TLS gossip port number.
+     *
+     * @return the TLS gossip port number
+     */
+    int getGossipTlsPort();
+
+    /**
      * Gets the node ID, such as 0, 1, 2, or 3.
      * @return the node ID
      */
@@ -90,6 +104,7 @@ public interface HederaNode {
 
     /**
      * Stops the node software forcibly.
+     * @return true if the node was stopped, false otherwise
      */
     boolean terminate();
 

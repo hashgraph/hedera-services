@@ -540,7 +540,20 @@ public class UtilVerbs {
      */
     public static ConfigTxtValidationOp validateUpgradeAddressBooks(
             @NonNull final Consumer<AddressBook> bookValidator) {
-        return new ConfigTxtValidationOp(NodeSelector.allNodes(), bookValidator);
+        return validateUpgradeAddressBooks(NodeSelector.allNodes(), bookValidator);
+    }
+
+    /**
+     * Returns an operation that validates that each node's generated <i>config.txt</i> in its upgrade
+     * artifacts directory passes the given validator.
+     *
+     * @param selector the selector for the nodes to validate
+     * @param bookValidator the validator to apply to each node's <i>config.txt</i>
+     * @return the operation that validates the <i>config.txt</i> files
+     */
+    public static ConfigTxtValidationOp validateUpgradeAddressBooks(
+            @NonNull final NodeSelector selector, @NonNull final Consumer<AddressBook> bookValidator) {
+        return new ConfigTxtValidationOp(selector, bookValidator);
     }
 
     /**
