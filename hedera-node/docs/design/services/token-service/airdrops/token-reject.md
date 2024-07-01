@@ -140,6 +140,8 @@ All of the expected behaviour described below should be present only if the new 
 - Given account with some token in its balance and treasury account with `receiver_sig_required` enabled when `TokenReject` for the same token is performed then the `TokenReject` should succeed
 - Given account with some fungible token in its balance that is frozen when `TokenReject` for the same token is performed then the `TokenReject` should fail
 - Given account with some fungible token in its balance that is paused when `TokenReject` for the same token is performed then the `TokenReject` should fail
+- Given account with some NFT in its balance that is frozen when `TokenReject` for the same NFT is performed then the `TokenReject` should fail
+- Given account with some NFT in its balance that is paused when `TokenReject` for the same NFT is performed then the `TokenReject` should fail
 - Given token allowance from owner to sender account when `TokenReject` for the same token is performed on the owner account then the token allowance should be canceled
 - Given token allowance from owner to sender account when `TokenReject` for the same token is performed on the sender account then the token allowance should not be affected
 - Given token allowance from owner to sender account when `TokenReject` for the same token is performed on the sender account then the sender account should be able to perform `TokenAirdrop` for the same token within the existing allowance
