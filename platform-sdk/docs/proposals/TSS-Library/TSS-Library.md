@@ -92,7 +92,7 @@ The goal is to generate an aggregate signature which is valid if a threshold num
 
 Each participant brings their own Elliptic Curve (EC) key pair (private and public). They share their public keys with all other participants while securing their private keys.
 Before the protocol begins, all participants agree on the cryptographic parameters (type of curve and what group of the pairing will be used for public-keys and signatures).
-A participant directory is built when initiating the protocol. This directory includes the number of participants, each participant’s EC public key, and the shares they own.
+A participant directory is built when initializing the protocol. This directory includes the number of participants, each participant’s EC public key, and the shares they own.
 
 Each participant generates portions of a secret share and distributes them among the other participants using the following process:
 
@@ -198,15 +198,15 @@ Once the `sᵢ` value has been calculated for each `ShareId`: `sidᵢ`, the valu
 The TssMessage will contain all the encrypted values for all shares.
 
 ###### Generation of the Polynomial Commitment
-Secret sharing poses a problem for the receiver: did it get a correct share? 
-The dealer may give her a bad share that does not correspond to the dealing, or give so many fake shares to different receiver that they do not correspond to a real dealing. 
-We include a Feldman commitment to the polynomial.
+Secret sharing poses a problem for the receiver: did it get a correct share?
+The dealer may send a bad share that does not correspond to the dealing, or send so many fake shares to different receivers that the aggregate does not correspond to a real dealing.
+We include a Feldman commitment to the polynomial as a mechanism to detect this form of bad dealing.
 
 ```
  g = a point generator of `SignatureScheme.publicKeyGroup`
  aₒ...aₜ₋₁ = coefficients of the polynomial being commited to.
 ```
-For each coefficient in the polynomial `Xₖ` `a₍ₒ₎` to `a₍ₜ₋₁₎`, computes a commitment value by calculating: `gᵢ * aᵢ ` (g multiplied by polynomial coefficient `a₍ᵢ₎` )
+For each coefficient in the polynomial `Xₖ` `a₍ₒ₎` to `a₍ₜ₋₁₎`, compute a commitment value by calculating: `gᵢ * aᵢ ` (g multiplied by polynomial coefficient `a₍ᵢ₎` )
 
 ###### Generation of the NIZKs proofs
 
@@ -216,7 +216,7 @@ Given the input:
 
 * witness: private data for the proof, including the actual share and the randomness used in the encryption process and private shares(sᵢ).
 
-* statement: The information to proof (sidᵢs,public_keys, polynomial_commitment, encrypted_shares )
+* statement: The information to prove (sidᵢs,public_keys, polynomial_commitment, encrypted_shares )
 
 * rng: source of randomness
 
@@ -227,7 +227,7 @@ Given the input:
 5. `g` = `SignatureScheme.publicKeyGroup.generator`
   5.1    `F = g^ρ`
   5.2    `A = g^α`
-6. Calculate `Y` by transforming element of the statements (public keys, sids) multiplied by `ρ`, then adding `A`
+6. Calculate `Y` by transforming elements of the statement (public keys, sids) multiplied by `ρ`, then adding `A`
     
 7. Serialize (`x`, `F`, `A`, `Y`)
 8. Recompute the pseudorandom number generator seed using the hash of (7)
