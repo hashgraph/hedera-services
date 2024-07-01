@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
+
+
 package com.swirlds.pairings.nativ3support;
 
 public enum Architecture {
     AMD64("amd64"),
-    ARM("arm"),
     ARM64("arm64"),
-    I386("i386"),
-    PPC64LE("ppc64le"),
-    S390X("s390x");
+    I386("i386");
 
     private final String directoryName;
 
@@ -46,14 +45,8 @@ public enum Architecture {
             return AMD64;
         } else if (osArch.contains("arm64") || osArch.contains("aarch64")) {
             return ARM64;
-        } else if (osArch.contains("arm")) {
-            return ARM;
         } else if (osArch.contains("i386")) {
             return I386;
-        } else if (osArch.contains("ppc64le")) {
-            return PPC64LE;
-        } else if (osArch.contains("s390x")) {
-            return S390X;
         } else {
             throw new IllegalStateException("Unsupported architecture: " + osArch);
         }

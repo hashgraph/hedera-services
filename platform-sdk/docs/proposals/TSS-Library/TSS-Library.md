@@ -447,8 +447,56 @@ It provides an initialization method to load all necessary dependencies for the 
 
 **Link**: [PairingResult.java](pairings-api%2FPairingResult.java)
 
+
+###### `PairingResult`
+
+**Description**: An interface representing the result of a pairing operation, with methods to compare it to other group elements.
+
+**Link**: [PairingResult.java](pairings-api%2FPairingResult.java)
+
 ##### Examples:
-###### 1. Bootstrapping
+###### Get a Pairing instance for a given curve
+```java
+static {
+    //This will get an initialized instance of the pairing 
+    BilinearPairing pairing = BilinearPairingService.instanceOf(Curve.ALT_BN128);
+}
+```
+###### Work with the field associated to the pairing
+
+```java
+
+static {
+    final Field field = pairing.getField();
+    final FieldElement indexElement = field.elementFromLong(10L);
+    final FieldElement randomElement = field.randomElement(new SecureRandom());
+    final FieldElement otherElement = indexElement.power(BigInteger.valueOf(100));
+    final byte[] seed = new byte[getSeedSize()];
+    random.nextBytes(seed);
+    final FieldElement anotherElement = field.randomElement(seed);
+    final FieldElement resultAddition = randomElement.add(anotherElement);
+    final FieldElement resultMultiplication = randomElement.multiply(anotherElement);
+}
+```
+###### Work with the groups associated to the pairing
+```java
+import javax.swing.GroupLayout.Group;
+
+static {
+    final Group group1 = pairing.getGroup1();
+    final Group group2 = pairing.getGroup2();
+
+    final Group g2 = group1.getOppositeGroup();
+    final GroupElement g1Generator = group1.getGenerator();
+    final GroupElement g2Generator = group2.getGenerator();
+    final GroupElement zero = group1.zeroElement();
+
+    final byte[] serialization = zero.toBytes();
+    
+    final GroupElement element =  group1.elementFromBytes(/*Some byte array representing a group element*/);
+    g1Generator.isSameGroup(g2Generator); //false
+}
+```
 
 
 #### Swirlds Crypto Pairings Signature Library

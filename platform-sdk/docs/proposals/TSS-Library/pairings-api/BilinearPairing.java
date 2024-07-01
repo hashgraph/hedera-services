@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 
 package com.swirlds.pairings.api;
 
@@ -40,14 +41,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @see Field
  */
 public interface BilinearPairing {
-
-    /**
-     * Performs the initialization of the library.
-     * Implementations should include here all the stpes necessary to load the library, e.g.,
-     * perform native library loads.
-     * Implementations have to filter multiple invocations to this method if it doesn't make sense.
-     */
-    void init() throws IOException;
 
     /**
      * Returns the finite field “Fq” associated with the curves of G₁ and G₂.
