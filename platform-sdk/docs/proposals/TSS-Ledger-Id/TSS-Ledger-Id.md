@@ -180,7 +180,7 @@ recover the ledger signature on the message.
 Transferring the ability to generate ledger signatures from one set of consensus nodes to another is done by having
 each node generate a `TssMessage` for each share that fractures the share into a number of subshares or `shares of
 shares`. Each `share of a share` is encrypted with the public key of the node in the next consensus roster that it
-belongs to so that only the intended node can use the `share of a share` to recover that node's share's private key.  
+belongs to so that only the intended node can use the `share of a share` to recover that node's share's private key.
 The collection of `TssMessages` generated from nodes in the previous consensus roster forms the `key material` for
 the new consensus roster. To bootstrap a network and generate the ledger private and public keys, each node creates
 a random share for themselves and generates a `TssMessage` containing `shares of shares` for the total number of shares
@@ -221,17 +221,20 @@ This modeling of weight uses small integer precision.
 Given that we have a low resolution for modeling weight, the number of shares assigned to each node will be
 calculated as follows:
 
-* Let `N` be the max number of shares that any node can have.
+* Let `M` be the max number of shares that any node can have.
 * Let `maxweight` be the max weight assigned to any node.
 * Let `weight(node)` be the weight assigned to the node.
 * Let `numShares(node)` be the number of shares assigned to the node.
-* then `numShares(node) = ceiling(N * weight(node) / maxweight)` where the operations are floating point.
+* then `numShares(node) = ceiling(M * weight(node) / maxweight)` where the operations are floating point.
 
 ##### Threshold for recovery of Signatures and Ledger Id.
 
 Our public claim is that we can tolerate up to 1/3 of the stake assigned to malicious nodes. Our
-threshold for recovery of ledger signatures and the ledger id must be greater than 1/3 of the total number of shares.
-The integer threshold should be `ceiling((N + 1) / 3)` where `N` is the total number of shares.
+threshold for recovery of ledger signatures and the ledger id must be strictly greater than the following values: 
+1. `floor(TS/3)` where `TS` is the total number of shares.
+2. `M` where `M` is the max number of shares assigned to any node.
+ 
+The integer threshold we will use is `ceiling(TS /2)` where `TS` is the total number of shares.
 
 ##### TSS Algorithm - Alternatives Considered
 
@@ -323,7 +326,7 @@ The following capabilities are the goals of this proposal:
    into a ledger signature after they come to consensus.
 2. `TSS Genesis on Existing Network` - Able to setup an existing network with a ledger public/private key pair.
 3. `TSS Genesis for New Network` - Able to setup a new network with a ledger public/private key pair.
-4. `Keying A New Roster` - Able to transfer the ability to sign a message with the ledger private key from one set of
+4. `Keying The Next Roster` - Able to transfer the ability to sign a message with the ledger private key from one set of
    consensus nodes to another.
 
 ### Non-Goals
@@ -423,9 +426,9 @@ The following are new components in the system:
 1. TSS State Manager (Not Wired)
 2. TSS Message Creator (Wired)
 3. TSS Message Validator (Wired)
-4. TSS Key Manager (Wired)
-5. TSS Signing Manager (Wired)
-6. Roster Initializer (Not Wired)
+4. TSS Signing Manager (Wired)
+
+![TSS Platform Wiring](./TSS-Wiring-Diagram.drawio.png)
 
 The following components are removed from or replaced in the system:
 
@@ -486,10 +489,10 @@ Internal Elements:
 
 Inputs:
 
-1. Active Roster
-2. Candidate Roster
-3. Self TSS Message
-4. Voting Closed Notification
+1. Active Roster (Constructor)
+2. Candidate Roster (Wire)
+3. Self TSS Message (Wire)
+4. Voting Closed Notification (Wire)
 
 Input Invariants:
 
@@ -540,26 +543,25 @@ that we want to adopt, and as a sequence of TSS messages that have reached conse
 
 Internal Elements:
 
-1. active roster field
-2. candidate roster field
-3. TSS Message list
-4. vote bit vector
+1. active roster field 
+2. candidate roster field 
+3. TSS Messages List 
+4. TSS Vote List
 
 Inputs:
 
-1. Active Roster
-2. Candidate Roster
-3. TSS Message
+1. Active Roster (Constructor)
+2. Candidate Roster (Wire)
+3. TSS Message List and TSS Vote List (Constructor)
+4. TSS Message (Wire)
+5. TSS Vote (Wire)
 
 Input Invariants
 
-11. TSS Messages for the candidate roster must be received after the candidate roster is set.
-
-`On Active Roster`:
-
-1. Set the active roster.
-2. If the candidate roster is set and equals active roster, clear the candidate roster and the TSS Message List.
-3. else, Validate the TSS Message List
+1. Existing messages and votes in state are loaded via constructor. 
+2. TSS Messages for the candidate roster must be received after the candidate roster is set.
+3. TSS Votes for the candidate roster must be received after the candidate roster is set.
+4. The TSS Message must exist before for its TSS Vote is received. 
 
 `On Candidate Roster`:
 
@@ -574,6 +576,13 @@ Input Invariants
    metrics, do nothing else.
 3. append the TSS Message to the TSS Message List.
 4. If the active and candidate rosters are set, validate the TSS Message List
+5. If the TSS Message List is able to recover the Ledger Id, send vote vector indicating which TSS Messages were used.
+
+`On TSS Vote`:
+
+1. If voting is closed or the vote is a duplicate of an existing vote, do nothing.
+2. Add the vote to the total and check if the threshold is met. 
+3. If the threshold is met, send the voting closed notification to the TSS Message Creator.
 
 ###### Validate TSS Message List
 
@@ -586,10 +595,6 @@ Input Invariants
     3. If the message is valid, update the vote vector and increment the count of yes votes.
     4. If the count of yes votes is greater than or equal to the threshold in the candidate roster, then send the
        vote vector as a system transaction and exit the validation process.
-
-##### TSS Key Manager
-
-TODO:  Separate out the computation of the shares into the TSS Key Manager.
 
 ##### TSS Signing Manager
 
@@ -657,7 +662,7 @@ Remove this section if not applicable.
 
 #### TSS Genesis for Existing Networks
 
-#### Keying A New Roster
+#### Keying The Next Roster
 
 #### Ledger Signing API
 
