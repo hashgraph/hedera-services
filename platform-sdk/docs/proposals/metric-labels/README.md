@@ -312,8 +312,8 @@ Let's have a look at the pros and cons of both options to understand the differe
 The following sample creates a metric with labels at creation time:
 
 ```java
-final Label transactionTypeLabel = new Label("transactionType", "fileUpload");
-final Counter.Config config = new Counter.Config("transactionsCategory", "transactionCount").withLabels(transactionTypeLabel);
+final Label transactionServiceLabel = new Label("service", "fileService");
+final Counter.Config config = new Counter.Config("transactionsCategory", "transactionCount").withLabels(transactionServiceLabel);
 final Counter counter = metrics.getOrCreate(config);
 
 counter.increment();
@@ -334,11 +334,11 @@ class TransactionFilter {
 
     void handle(Transaction transaction) {
         if(transaction.getType().equals("fileUploadTransaction")) {
-            Counter.Config configWithLabel = config.withLabels(new Label("transactionType", "fileUpload"));
+            Counter.Config configWithLabel = config.withLabels(new Label("service", "fileService"));
             Counter counter = metrics.getOrCreate(config);
             counter.increment();
-        } else if(transaction.getType().equals("fileDeleteTransaction")) {
-            Counter.Config configWithLabel = config.withLabels(new Label("transactionType", "fileDelete"));
+        } else if(transaction.getType().equals("tokenCreateTransaction")) {
+            Counter.Config configWithLabel = config.withLabels(new Label("service", "tokenService"));
             Counter counter = metrics.getOrCreate(config);
             counter.increment();
         }
@@ -346,7 +346,7 @@ class TransactionFilter {
 }
 ```
 
-As you can see the value of the `transactionType` label depends on a runtime value.
+As you can see the value of the `service` label depends on a runtime value.
 Based on that the config of the metric must be created at runtime.
 Today we often create metrics in constructors or static blocks.
 This will not be possible if a label needs to be defined at measurement time.
@@ -367,9 +367,9 @@ class TransactionFilter {
 
     void handle(Transaction transaction) {
         if(transaction.getType().equals("fileUploadTransaction")) {
-            counter.increment(new Label("transactionType", "fileUpload"));
-        } else if(transaction.getType().equals("fileDeleteTransaction")) {
-            counter.increment(new Label("transactionType", "fileDelete"));
+            counter.increment(new Label("service", "fileService"));
+        } else if(transaction.getType().equals("tokenCreateTransaction")) {
+            counter.increment(new Label("service", "tokenService"));
         }
     }
 }
