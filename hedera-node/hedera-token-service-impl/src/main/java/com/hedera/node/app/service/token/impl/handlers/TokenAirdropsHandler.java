@@ -34,9 +34,9 @@ import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.LAZY_MEMO;
 import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
+import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor.executeTransfer;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createFungibleTokenPendingAirdropId;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createNftPendingAirdropId;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createPendingAirdropRecord;
@@ -44,9 +44,8 @@ import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.c
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateFungibleTransfers;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateNftTransfers;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createAccountAmount;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsableForAliasedId;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
@@ -68,7 +67,6 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
@@ -80,10 +78,10 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.impl.util.CryptoCreateFeeCalculator;
 import com.hedera.node.app.service.token.impl.util.CryptoTransferFeeCalculator;
 import com.hedera.node.app.service.token.impl.util.TokenAssociateToAccountFeeCalculator;
+import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenAirdropsRecordBuilder;
@@ -243,7 +241,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
         if (!tokenTransferListList.isEmpty()) {
             executeCryptoTransfer(context, tokenTransferListList, recordBuilder);
         }
-        }
+    }
 
     private void executeCryptoTransfer(
             @NonNull final HandleContext context,

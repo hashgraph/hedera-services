@@ -48,27 +48,27 @@ public class CryptoCreateFeeCalculator {
         CryptoCreateTransactionBody op = body.cryptoCreateAccountOrThrow();
 
         final var keySize =
-            op.hasKey() ? getAccountKeyStorageSize(CommonPbjConverters.fromPbj(op.keyOrElse(Key.DEFAULT))) : 0L;
+                op.hasKey() ? getAccountKeyStorageSize(CommonPbjConverters.fromPbj(op.keyOrElse(Key.DEFAULT))) : 0L;
         final var unlimitedAutoAssociations =
-            feeContext.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
+                feeContext.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
         final var maxAutoAssociationsSize =
-            !unlimitedAutoAssociations && op.maxAutomaticTokenAssociations() > 0 ? INT_SIZE : 0L;
+                !unlimitedAutoAssociations && op.maxAutomaticTokenAssociations() > 0 ? INT_SIZE : 0L;
         final var baseSize = op.memo().length() + keySize + maxAutoAssociationsSize;
         final var lifeTime = op.autoRenewPeriodOrElse(Duration.DEFAULT).seconds();
         final var feeCalculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
         final var fee = feeCalculator
-            .addBytesPerTransaction(baseSize + (2 * LONG_SIZE) + BOOL_SIZE)
-            .addRamByteSeconds((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime)
-            .addNetworkRamByteSeconds(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
+                .addBytesPerTransaction(baseSize + (2 * LONG_SIZE) + BOOL_SIZE)
+                .addRamByteSeconds((CRYPTO_ENTITY_SIZES.fixedBytesInAccountRepr() + baseSize) * lifeTime)
+                .addNetworkRamByteSeconds(BASIC_ENTITY_ID_SIZE * USAGE_PROPERTIES.legacyReceiptStorageSecs());
         if (!unlimitedAutoAssociations && op.maxAutomaticTokenAssociations() > 0) {
             fee.addRamByteSeconds(op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER);
         }
         if (IMMUTABILITY_SENTINEL_KEY.equals(op.key())) {
             final var updateTxnBody = TransactionBody.newBuilder()
-                .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
-                    .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build()))
-                .transactionID(body.transactionID())
-                .build();
+                    .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+                            .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build()))
+                    .transactionID(body.transactionID())
+                    .build();
 
             final var lazyCreationFee = feeContext.dispatchComputeFees(updateTxnBody, feeContext.payer());
             return fee.calculate().plus(lazyCreationFee);
