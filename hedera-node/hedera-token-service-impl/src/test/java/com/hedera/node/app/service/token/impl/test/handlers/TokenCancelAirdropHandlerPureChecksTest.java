@@ -22,11 +22,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.PendingAirdropId;
+import com.hedera.hapi.node.base.PendingAirdropId.TokenReferenceOneOfType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.TokenCancelAirdropTransactionBody;
@@ -152,6 +154,9 @@ public class TokenCancelAirdropHandlerPureChecksTest extends CryptoTokenHandlerT
         final var txn = newTokenCancelAirdrop(pendingAirdropIdWithBothTypes);
 
         assertDoesNotThrow(() -> subject.pureChecks(txn));
+        assertThat(pendingAirdropIdWithBothTypes.hasFungibleTokenType()).isFalse();
+        assertThat(pendingAirdropIdWithBothTypes.hasNonFungibleToken()).isTrue();
+        assertThat(pendingAirdropIdWithBothTypes.tokenReference().kind()).isEqualTo(TokenReferenceOneOfType.NON_FUNGIBLE_TOKEN);
     }
 
     @Test
