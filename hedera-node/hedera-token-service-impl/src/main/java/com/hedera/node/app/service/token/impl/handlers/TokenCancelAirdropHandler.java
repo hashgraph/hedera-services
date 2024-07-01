@@ -18,7 +18,6 @@ package com.hedera.node.app.service.token.impl.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
@@ -77,16 +76,12 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
 
         pendingAirdropIds.stream()
                 .peek(pendingAirdropId -> {
-                    validateTrue(pendingStore.exists(pendingAirdropId), INVALID_TRANSACTION_BODY);
                     validateTrue(payer.equals(pendingAirdropId.senderIdOrThrow()), INVALID_ACCOUNT_ID);
                     if (pendingAirdropId.hasFungibleTokenType()) {
                         getIfUsable(pendingAirdropId.fungibleTokenTypeOrThrow(), tokenStore);
                     } else {
                         final var nft = pendingAirdropId.nonFungibleTokenOrThrow();
                         validateTrue(nftStore.get(nft) != null, INVALID_NFT_ID);
-                        validateTrue(
-                                nftStore.get(nft.tokenIdOrThrow(), nft.serialNumber()) != null,
-                                INVALID_TOKEN_NFT_SERIAL_NUMBER);
                     }
                     getIfUsable(
                             pendingAirdropId.senderIdOrThrow(),
@@ -98,6 +93,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
                             accountStore,
                             context.expiryValidator(),
                             INVALID_ACCOUNT_ID);
+                    validateTrue(pendingStore.exists(pendingAirdropId), INVALID_TRANSACTION_BODY);
                 })
                 .forEach(pendingStore::remove);
     }
