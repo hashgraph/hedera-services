@@ -247,6 +247,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         configTxt = switch (upgradeConfigTxt) {
             case IMPLIED_BY_NETWORK_NODES -> configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
             case DAB_GENERATED -> consensusDabConfigTxt();};
+        ((SubProcessNode) nodes.get(insertionPoint)).initWorkingDir(configTxt);
         refreshNodeConfigTxt();
     }
 

@@ -164,8 +164,12 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
                             accountId.ifPresent(builder::setAccountId);
                             description.ifPresent(builder::setDescription);
                             builder.setAdminKey(key);
-                            builder.addAllGossipEndpoint(gossipEndpoints);
-                            builder.addAllServiceEndpoint(grpcEndpoints);
+                            if (!gossipEndpoints.isEmpty()) {
+                                builder.clearGossipEndpoint().addAllGossipEndpoint(gossipEndpoints);
+                            }
+                            if (!grpcEndpoints.isEmpty()) {
+                                builder.clearServiceEndpoint().addAllServiceEndpoint(grpcEndpoints);
+                            }
                             gossipCaCertificate.ifPresent(s -> builder.setGossipCaCertificate(ByteString.copyFrom(s)));
                             grpcCertificateHash.ifPresent(s -> builder.setGrpcCertificateHash(ByteString.copyFrom(s)));
                         });
