@@ -26,6 +26,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -60,10 +61,12 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     }
 
     public HederaSoftwareVersion(
-            final SemanticVersion hapiVersion, final SemanticVersion servicesVersion, final int configVersion) {
+            final SemanticVersion hapiVersion,
+            @NonNull final SemanticVersion servicesVersion,
+            final int configVersion) {
         this.hapiVersion = hapiVersion;
         this.configVersion = configVersion;
-        this.servicesVersion = servicesVersion;
+        this.servicesVersion = Objects.requireNonNull(servicesVersion, "servicesVersion must not be null");
     }
 
     public SemanticVersion getHapiVersion() {
@@ -209,6 +212,7 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     }
 
     @Override
+    @NonNull
     public SemanticVersion getPbjSemanticVersion() {
         return toUpgradeComparableSemVer(configVersion, servicesVersion);
     }

@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
@@ -25,7 +26,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
-import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.*;
+import static com.hedera.services.bdd.suites.crypto.LeakyCryptoTestsSuite.*;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
 import static java.util.stream.Collectors.joining;
 
@@ -38,6 +39,7 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
 /**
  * We want to make this suite exercise all forms of identity a Hedera account may have, under all
@@ -45,6 +47,7 @@ import org.junit.jupiter.api.DynamicTest;
  *
  * <p>See <a href="https://github.com/hashgraph/hedera-services/issues/4565">#4565</a> for details.
  */
+@Tag(NOT_REPEATABLE)
 public class AddressAliasIdFuzzing {
     private static final Logger log = LogManager.getLogger(AddressAliasIdFuzzing.class);
 

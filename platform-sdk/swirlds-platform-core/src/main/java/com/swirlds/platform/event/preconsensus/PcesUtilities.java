@@ -24,7 +24,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -64,10 +64,10 @@ public final class PcesUtilities {
 
         // Find the true upper bound in the file.
         long newUpperBound = originalFile.getLowerBound();
-        try (final IOIterator<GossipEvent> iterator = new PcesFileIterator(originalFile, 0, fileType)) {
+        try (final IOIterator<PlatformEvent> iterator = new PcesFileIterator(originalFile, 0, fileType)) {
 
             while (iterator.hasNext()) {
-                final GossipEvent next = iterator.next();
+                final PlatformEvent next = iterator.next();
                 newUpperBound = Math.max(newUpperBound, next.getAncientIndicator(fileType));
             }
 

@@ -21,7 +21,7 @@ import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFu
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getPrivateKeyFromSpec;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
@@ -30,7 +30,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.FIVE_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.MAX_CALL_DATA_SIZE;
 import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_TO_TINYBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.WEIBARS_IN_A_TINYBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.util.Integers;
@@ -77,11 +77,11 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     private EthTxData.EthTransactionType type = EthTxData.EthTransactionType.EIP1559;
     private long nonce = 0L;
     private boolean useSpecNonce = true;
-    private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
-    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
+    private BigInteger gasPrice = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
+    private BigInteger maxFeePerGas = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(DEFAULT_GAS_PRICE_TINYBARS));
     private long maxPriorityGas = 1_000L;
     private Optional<Long> maxGasAllowance = Optional.of(FIVE_HBARS);
-    private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO);
+    private Optional<BigInteger> valueSent = Optional.of(BigInteger.ZERO); // weibar
     private Consumer<Object[]> resultObserver = null;
     private Consumer<ByteString> eventDataObserver = null;
     private Optional<FileID> ethFileID = Optional.empty();
@@ -114,7 +114,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
     public HapiEthereumCall(String account, long amount) {
         this.account = account;
-        this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
+        this.valueSent = Optional.of(WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(amount)));
         this.abi = Optional.of(FALLBACK_ABI);
         this.params = Optional.of(new Object[0]);
         this.payer = Optional.of(RELAYER);
@@ -122,7 +122,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
 
     public HapiEthereumCall(ByteString account, long amount) {
         this.alias = account;
-        this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
+        this.valueSent = Optional.of(WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(amount)));
         this.abi = Optional.of(FALLBACK_ABI);
         this.params = Optional.of(new Object[0]);
         this.payer = Optional.of(RELAYER);
@@ -131,7 +131,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     public static HapiEthereumCall explicitlyTo(@NonNull final byte[] to, long amount) {
         final var call = new HapiEthereumCall();
         call.explicitTo = to;
-        call.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
+        call.valueSent = Optional.of(WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(amount)));
         call.abi = Optional.of(FALLBACK_ABI);
         call.params = Optional.of(new Object[0]);
         call.payer = Optional.of(RELAYER);
@@ -160,7 +160,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         this.privateKeyRef = contractCall.getPrivateKeyRef();
         this.deferStatusResolution = contractCall.getDeferStatusResolution();
         if (contractCall.getValueSent().isPresent()) {
-            this.valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(
+            this.valueSent = Optional.of(WEIBARS_IN_A_TINYBAR.multiply(
                     BigInteger.valueOf(contractCall.getValueSent().orElseThrow())));
         }
         if (!contractCall.otherSigs.isEmpty()) {
@@ -214,8 +214,13 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
         return sigMapPrefixes(uniqueWithFullPrefixesFor(keys));
     }
 
-    public HapiEthereumCall sending(long amount) {
-        valueSent = Optional.of(WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(amount)));
+    public HapiEthereumCall sending(long amountInTinybars) {
+        valueSent = Optional.of(WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(amountInTinybars)));
+        return this;
+    }
+
+    public HapiEthereumCall sendingWeibars(final BigInteger amountInWeibars) {
+        valueSent = Optional.of(amountInWeibars);
         return this;
     }
 
@@ -246,12 +251,12 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
     }
 
     public HapiEthereumCall gasPrice(long gasPrice) {
-        this.gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(gasPrice));
+        this.gasPrice = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(gasPrice));
         return this;
     }
 
     public HapiEthereumCall maxFeePerGas(long maxFeePerGas) {
-        this.maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(maxFeePerGas));
+        this.maxFeePerGas = WEIBARS_IN_A_TINYBAR.multiply(BigInteger.valueOf(maxFeePerGas));
         return this;
     }
 
@@ -346,7 +351,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 null,
                 null);
 
-        byte[] privateKeyByteArray = getPrivateKeyFromSpec(spec, privateKeyRef);
+        byte[] privateKeyByteArray = getEcdsaPrivateKeyFromSpec(spec, privateKeyRef);
         var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
         spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 

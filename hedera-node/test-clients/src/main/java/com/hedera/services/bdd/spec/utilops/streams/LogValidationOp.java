@@ -16,7 +16,8 @@
 
 package com.hedera.services.bdd.spec.utilops.streams;
 
-import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.doIfNotInterrupted;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.doIfNotInterrupted;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -54,7 +55,7 @@ public class LogValidationOp extends UtilOp {
         doIfNotInterrupted(() -> MILLISECONDS.sleep(delay.toMillis()));
         nodesToValidate(spec).forEach(node -> {
             try {
-                new HgcaaLogValidator(node.getApplicationLogPath()
+                new HgcaaLogValidator(node.getExternalPath(APPLICATION_LOG)
                                 .toAbsolutePath()
                                 .normalize()
                                 .toString())

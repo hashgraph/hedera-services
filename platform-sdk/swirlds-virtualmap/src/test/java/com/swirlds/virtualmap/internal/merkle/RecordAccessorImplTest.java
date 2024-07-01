@@ -37,6 +37,7 @@ import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.InMemoryDataSource;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -332,9 +333,9 @@ public class RecordAccessorImplTest {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+                @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
+                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
                 final boolean isReconnectContext)
                 throws IOException {
             delegate.saveRecords(

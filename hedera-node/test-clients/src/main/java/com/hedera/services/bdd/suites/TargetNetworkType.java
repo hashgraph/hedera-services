@@ -20,24 +20,20 @@ import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 
 /**
  * Enumerates the different types of network that can be targeted by a test suite. There are some
- * operations (currently just {@link SnapshotModeOp}) that
- * only make sense when running against a certain type of network.
+ * operations (currently just {@link SnapshotModeOp}) that only make sense when running against
+ * a certain type of network.
  */
 public enum TargetNetworkType {
     /**
-     * A network launched by the {@link com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener}.
+     * A network whose nodes are running in child subprocesses of the test process.
      */
-    SHARED_HAPI_TEST_NETWORK,
+    SUBPROCESS_NETWORK,
     /**
-     * A mono-service network started via Gradle task (can be removed once mono-service is no longer in use).
+     * A long-lived remote network.
      */
-    STANDALONE_MONO_NETWORK,
+    REMOTE_NETWORK,
     /**
-     * A Docker network launched in CI via TestContainers.
+     * An embedded "network" with a single Hedera instance whose workflows invoked directly, without gRPC.
      */
-    CI_DOCKER_NETWORK,
-    /**
-     * A long-lived remote network
-     */
-    REMOTE_NETWORK
+    EMBEDDED_NETWORK,
 }

@@ -34,7 +34,10 @@ import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class CryptoTransferHandlerTestBase extends StepsBase {
     protected static final AccountID ACCOUNT_3333 = asAccount(3333);
     protected static final AccountID ACCOUNT_4444 = asAccount(4444);
