@@ -50,6 +50,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.EntitiesConfig;
+import com.hedera.node.config.data.FeesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -181,9 +182,9 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
 
-            final var unlimitedAutoAssociationsEnabled =
-                    config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
-            if (unlimitedAutoAssociationsEnabled) {
+            final var senderPaysAutoAssociation =
+                    config.getConfigData(FeesConfig.class).senderPaysAutoAssociation();
+            if (senderPaysAutoAssociation) {
                 final var syntheticAssociation = TransactionBody.newBuilder()
                         .tokenAssociate(TokenAssociateTransactionBody.newBuilder()
                                 .account(account.accountId())
