@@ -28,9 +28,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUN
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
+import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor.executeTransfer;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createFungibleTokenPendingAirdropId;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createNftPendingAirdropId;
@@ -54,6 +57,7 @@ import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
@@ -340,7 +344,10 @@ public class TokenAirdropsHandler implements TransactionHandler {
             @NonNull final PreHandleContext ctx,
             @NonNull final ReadableAccountStore accountStore)
             throws PreCheckException {
+        final var tokenStore = ctx.createStore(ReadableTokenStore.class);
         final var tokenRelStore = ctx.createStore(ReadableTokenRelationStore.class);
+        // Fail if we have custom fees attached to the token
+        validateTruePreCheck(tokenHasNoCustomFeesPaidByReceiver(tokenID, tokenStore), INVALID_TRANSACTION);
         // We're going to iterate over all the transfers in the transfer list. Each transfer is known as an
         // "account amount". Each of these represents the transfer of fungible token INTO a single account or OUT of a
         // single account.
@@ -357,7 +364,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
 
                 if (isDebit) {
                     final var tokenRel = tokenRelStore.get(accountId, tokenID);
-                    validateTruePreCheck(tokenRel != null, INVALID_TRANSACTION);
+                    validateTruePreCheck(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
                     if (accountAmount.isApproval()) {
                         final var topLevelPayer = ctx.payer();
                         final var tokenAllowances = new ArrayList<>(account.tokenAllowances());
@@ -414,6 +421,8 @@ public class TokenAirdropsHandler implements TransactionHandler {
         final var tokenRelStore = context.createStore(ReadableTokenRelationStore.class);
         final var token = getIfUsable(tokenID, tokenStore);
 
+        validateTruePreCheck(tokenHasNoCustomFeesPaidByReceiver(tokenID, tokenStore), INVALID_TRANSACTION);
+
         for (final var nftTransfer : nftTransfersList) {
             // Validate accounts
             final var senderId = nftTransfer.senderAccountIDOrElse(AccountID.DEFAULT);
@@ -421,9 +430,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
             checkSender(senderId, nftTransfer, context, accountStore);
             final var senderAccount = accountStore.getAliasedAccountById(senderId);
             final var tokenRel = tokenRelStore.get(senderId, tokenID);
-            if (tokenRel == null) {
-                throw new PreCheckException(INVALID_TRANSACTION);
-            }
+            validateTruePreCheck(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
 
             final var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
             validateAccountID(receiverId, null);
@@ -530,5 +537,25 @@ public class TokenAirdropsHandler implements TransactionHandler {
             final var approvedSpender = nft.spenderId();
             validateTrue(approvedSpender != null && approvedSpender.equals(spender), SPENDER_DOES_NOT_HAVE_ALLOWANCE);
         }
+    }
+
+    private boolean tokenHasNoCustomFeesPaidByReceiver(TokenID tokenId, ReadableTokenStore tokenStore) {
+        final var token = getIfUsable(tokenId, tokenStore, PERMIT_PAUSED);
+        final var feeMeta = customFeeMetaFrom(token);
+        if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
+            for (var fee : feeMeta.customFees()) {
+                if (fee.hasFractionalFee()
+                        && !requireNonNull(fee.fractionalFee()).netOfTransfers()) {
+                    return false;
+                }
+            }
+        } else if (feeMeta.tokenType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+            for (var fee : feeMeta.customFees()) {
+                if (fee.hasRoyaltyFee()) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
