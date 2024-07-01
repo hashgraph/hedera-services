@@ -465,7 +465,6 @@ static {
 ###### Work with the field associated to the pairing
 
 ```java
-
 static {
     final Field field = pairing.getField();
     final FieldElement indexElement = field.elementFromLong(10L);
@@ -480,8 +479,6 @@ static {
 ```
 ###### Work with the groups associated to the pairing
 ```java
-import javax.swing.GroupLayout.Group;
-
 static {
     final Group group1 = pairing.getGroup1();
     final Group group2 = pairing.getGroup2();
@@ -831,28 +828,29 @@ we need to test each configuration 100 times to get confident mins, maxes, and a
 ## Security Audit
 After this proposal is accepted we will invite security team to define the necessary steps for auditing the code.
 
-## Implementation and Delivery Plan
+## Implementation and Delivery Plan by stages
+**Stage 1**
+* Preconditions:
+  * hedera-cryptography repository.
+  * Gradle multilanguage module with rust compilation plugin.
+  * CI/CD pipelines for building artifacts in hedera-cryptography.
+* Define the Test plan.
+* Define a security plan.
+* Implementation of native-support library.
+* Implementation of Pairings API using JNI, arkworks, and alt-bn1238.
+* Execute Test Plan and validation.
+* Execute Security Audits.
+* Implementation of EC-key utility.
 
-1. Stage 1
-   * Preconditions:
-     * hedera-cryptography repository.
-     * Gradle multilanguage module with rust compilation plugin.
-     * CI/CD pipelines for building artifacts in hedera-cryptography.
-   * Define Test plan.
-   * Define security plan.
-   * Implementation of native-support library.
-   * Implementation of Pairings API using JNI, arkworks, and alt-bn1238.
-   * Execute Test Plan and validation.
-   * Execute Security Audits.
-   * Implementation of EC-key utility.
-2. Stage 2
-   * Preconditions:
-      * CI/CD pipelines to reference built artifacts in hedera-cryptography from hedera-services.
-   * Implementation of the public interface for the TSS library.
-   * Enable a mock implementation for the TSS library, so it can be used on the platform side?
-   * Implementation TSS library.
-   * Execute Test Plan and validation.
-   * Execute Security Audits.
+**Stage 2**
+* Preconditions:
+  * CI/CD pipelines to reference built artifacts in hedera-cryptography from hedera-services.
+  * Implementation of the public interface for the TSS library.
+* Enable a mock implementation for the TSS library on the platform side?
+* Implementation of TSS library.
+* Execute Test Plan and validation.
+* Execute Security Audits.
+
 
 ## External References
 - https://eprint.iacr.org/2021/339
