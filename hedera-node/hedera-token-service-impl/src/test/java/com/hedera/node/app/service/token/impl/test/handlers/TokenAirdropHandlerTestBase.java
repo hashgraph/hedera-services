@@ -29,6 +29,7 @@ import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropsHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
+import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,12 +62,14 @@ public class TokenAirdropHandlerTestBase extends StepsBase {
 
     protected TokenAirdropsHandler subject;
     protected TokenAirdropValidator validator;
+    protected CryptoTransferValidator transferValidator;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
         validator = new TokenAirdropValidator();
-        subject = new TokenAirdropsHandler(validator);
+        transferValidator = new CryptoTransferValidator();
+        subject = new TokenAirdropsHandler(validator, transferValidator);
     }
 
     protected TransactionBody newTokenAirdrop(final TokenTransferList... tokenTransferLists) {

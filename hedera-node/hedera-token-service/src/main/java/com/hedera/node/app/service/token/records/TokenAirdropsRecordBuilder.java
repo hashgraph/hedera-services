@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 
@@ -25,7 +24,7 @@ import java.util.List;
  * A {@code RecordBuilder} specialization for tracking the effects of a {@code TokenAirdrops}
  * transaction.
  */
-public interface TokenAirdropsRecordBuilder extends SingleTransactionRecordBuilder {
+public interface TokenAirdropsRecordBuilder extends CryptoTransferRecordBuilder {
 
     TokenAirdropsRecordBuilder pendingAirdropList(@NonNull List<PendingAirdropRecord> pendingAirdropRecords);
 

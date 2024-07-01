@@ -53,7 +53,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -156,14 +155,14 @@ public class TokenAirdropSuite {
                                 .via("fungible airdrop"))
                 .then(
                         getTxnRecord("fungible airdrop")
-                                .andAllChildRecords()
+                                // .andAllChildRecords()
                                 // assert pending airdrops
                                 .hasPriority(recordWith()
                                         .pendingAirdrops(includingFungiblePendingAirdrop(
                                                 moveToReceiverWith0AutoAssociations,
                                                 moveToReceiverWithoutFreeAutoAssociations)))
                                 // assert transfers
-                                .hasChildRecords(recordWith()
+                                .hasPriority(recordWith()
                                         .tokenTransfers(includingFungibleMovement(moving(30, FUNGIBLE_TOKEN)
                                                 .distributing(
                                                         SENDER,
@@ -231,7 +230,7 @@ public class TokenAirdropSuite {
                         .via("non fungible airdrop"))
                 .then(
                         getTxnRecord("non fungible airdrop")
-                                .andAllChildRecords()
+                                // .andAllChildRecords()
                                 // check if tokens are in the pending list
                                 .hasPriority(recordWith()
                                         .pendingAirdrops(includingNftPendingAirdrop(
@@ -239,15 +238,15 @@ public class TokenAirdropSuite {
                                                         .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
                                                 movingUnique(NON_FUNGIBLE_TOKEN, 2L)
                                                         .between(SENDER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))))
-                                .hasChildRecords(recordWith()
+                                .hasPriority(recordWith()
                                         .tokenTransfers(
                                                 includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 3L)
                                                         .between(SENDER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))))
-                                .hasChildRecords(recordWith()
+                                .hasPriority(recordWith()
                                         .tokenTransfers(
                                                 includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 4L)
                                                         .between(SENDER, RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS))))
-                                .hasChildRecords(recordWith()
+                                .hasPriority(recordWith()
                                         .tokenTransfers(
                                                 includingNonfungibleMovement(movingUnique(NON_FUNGIBLE_TOKEN, 5L)
                                                         .between(SENDER, ASSOCIATED_RECEIVER))))
@@ -318,7 +317,7 @@ public class TokenAirdropSuite {
                                 .payingWith(SENDER)
                                 .via("first"),
                         getTxnRecord("first")
-                                .andAllChildRecords()
+                                // .andAllChildRecords()
                                 // assert pending airdrops
                                 .hasPriority(recordWith()
                                         .pendingAirdrops(includingFungiblePendingAirdrop(moving(10, FUNGIBLE_TOKEN)
@@ -333,9 +332,9 @@ public class TokenAirdropSuite {
                                 .via("second"),
                         // assert sender and receiver accounts to ensure first airdrop is still in pending state
                         getTxnRecord("second")
-                                .andAllChildRecords()
+                                // .andAllChildRecords()
                                 // assert transfers
-                                .hasChildRecords(recordWith()
+                                .hasPriority(recordWith()
                                         .tokenTransfers(includingFungibleMovement(moving(10, FUNGIBLE_TOKEN)
                                                 .between(SENDER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))))
                                 .logged(),
