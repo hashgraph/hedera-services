@@ -42,7 +42,6 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody.Builder;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.api.FeeRecordBuilder;
-import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -194,7 +193,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                         syntheticCreation.build(), topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
 
                 final var recordBuilder = handleContext.recordBuilders().getOrCreate(FeeRecordBuilder.class);
-                recordBuilder.transactionFee(recordBuilder.transactionFee() + fees.nodeFee() + fees.networkFee() + fees.serviceFee());
+                recordBuilder.transactionFee(
+                        recordBuilder.transactionFee() + fees.nodeFee() + fees.networkFee() + fees.serviceFee());
             }
 
             final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
