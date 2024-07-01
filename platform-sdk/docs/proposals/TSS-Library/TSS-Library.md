@@ -447,6 +447,9 @@ It provides an initialization method to load all necessary dependencies for the 
 
 **Link**: [PairingResult.java](pairings-api%2FPairingResult.java)
 
+##### Examples:
+###### 1. Bootstrapping
+
 
 #### Swirlds Crypto Pairings Signature Library
 ##### Overview
@@ -741,21 +744,22 @@ we should design our test cases based on the cryptographic properties that these
 
 Protection of private keys. Our scheme protects the secrecy of the group’s and members’ private keys; otherwise, private keys can generate only one group signature.
 
-Unforgibility of group signature. Our scheme ensures that (a) any t or more than t members can work
-together to generate a valid group signature, and (b)fewer than t members cannot generate a valid group signature.
+Unforgeability of group signature. Our scheme ensures that (a) a subset containing t, or more than t, members can work
+together to generate a valid group signature, and (b) fewer than t members cannot generate a valid group signature.
 
 Fixed length of threshold signature. Our scheme ensures that the size of a threshold signature is fixed (i.e., not depending on the number of signers).
 
-Efficiency of verification. Verifying a group signature is based on the group’s public key.
+Efficiency of verification. Verifying a group signature is based on the group’s public key and may be computed efficiently in an EVM context.
 
-* Generation of Private and Public Key Pairs: Tests the generation of key pairs for correctness by having the IUT produce 10 key
+* Generation of Private and Public Key Pairs: Tests the generation of key pairs for correctness by having the implementation under test produce 10 key
   pairs. The private key provided is used to compute the public key, Q’. The calculated value Q’ is then compared to the supplied public key, Q.
-* Public Key Validation: Generate 12 key pairs for each supported curve, modify some public keys to introduce errors, and determine whether it can detect them.
+* Public Key Validation: Generate 12 key pairs for each supported curve, modify some public keys to introduce errors, and verify that we can detect those errors.
 * Signature Generation: Ten preconfigured known messages per curve supported are supplied. Generate a signature for each message. The message, public key, and signature components are returned.
   The signatures are compared against previous known signatures.
-* Signature Verification: For each curve supported, 15 pseudorandom messages, a public key, Q, and a signature component (r, s) are supplied if some of the provided values are modified so that signature verification should fail.
+* Signature Verification: For each curve supported, 15 pseudorandom messages, a public key, Q, and a signature component (r, s) are supplied. Modify some of the provided values and verify that signature verification fails.
+* Perform a Signature verification via EVM code of a signature produced with the library.
 
-Some ideas:
+* Some ideas:
 * [Cryptographic-Algorithm-Validation-Program](https://csrc.nist.gov/CSRC/media//Projects/Cryptographic-Algorithm-Validation-Program/documents/dss/ECDSAVS.pdf):
 * https://csrc.nist.gov/CSRC/media/Events/lightweight-cryptography-workshop-2019/documents/papers/systematic-testing-of-lightweight-crypto-lwc2019.pdf
 
