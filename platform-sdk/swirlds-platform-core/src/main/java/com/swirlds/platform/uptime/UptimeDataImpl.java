@@ -23,7 +23,7 @@ import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -160,7 +160,7 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
      * {@inheritDoc}
      */
     @Override
-    public void recordLastEvent(@NonNull final EventImpl event) {
+    public void recordLastEvent(@NonNull final ConsensusEvent event, final long round) {
         final NodeUptimeData nodeData = data.get(event.getCreatorId());
         if (nodeData == null) {
             logger.warn(
@@ -168,21 +168,21 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
             return;
         }
 
-        nodeData.setLastEventRound(event.getRoundReceived()).setLastEventTime(event.getConsensusTimestamp());
+        nodeData.setLastEventRound(round).setLastEventTime(event.getConsensusTimestamp());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void recordLastJudge(@NonNull final EventImpl event) {
+    public void recordLastJudge(@NonNull final ConsensusEvent event, final long round) {
         final NodeUptimeData nodeData = data.get(event.getCreatorId());
         if (nodeData == null) {
             logger.warn(
                     EXCEPTION.getMarker(), "Node {} is not being tracked by the uptime tracker.", event.getCreatorId());
             return;
         }
-        nodeData.setLastJudgeRound(event.getRoundReceived()).setLastJudgeTime(event.getConsensusTimestamp());
+        nodeData.setLastJudgeRound(round).setLastJudgeTime(event.getConsensusTimestamp());
     }
 
     /**

@@ -25,8 +25,6 @@ import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 public class RandomTopicInfo implements OpProvider {
@@ -40,11 +38,6 @@ public class RandomTopicInfo implements OpProvider {
 
     public RandomTopicInfo(EntityNameProvider<TopicID> topics) {
         this.topics = topics;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return Collections.emptyList();
     }
 
     @Override

@@ -16,14 +16,17 @@
 
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.asBytes;
 import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.asBytes;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.Builder;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -41,6 +44,7 @@ import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -48,6 +52,45 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class AddressBookTestBase {
+    private static final String A_NAME = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private static final String B_NAME = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
+    private static final Function<String, Builder> KEY_BUILDER =
+            value -> Key.newBuilder().ed25519(Bytes.wrap(value.getBytes()));
+    private static final Key A_THRESHOLD_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    KEY_BUILDER.apply(C_NAME).build())
+                            .build()))
+            .build();
+    private static final Key A_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_THRESHOLD_KEY)))
+            .build();
+    private static final Key B_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_COMPLEX_KEY)))
+            .build();
+    protected final Key key = A_COMPLEX_KEY;
+    protected final Key anotherKey = B_COMPLEX_KEY;
+
+    final Key invalidKey = Key.newBuilder()
+            .ecdsaSecp256k1((Bytes.fromHex("0000000000000000000000000000000000000000")))
+            .build();
     protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
 
     protected final AccountID payerId = AccountID.newBuilder().accountNum(2).build();
@@ -186,7 +229,22 @@ public class AddressBookTestBase {
                 Bytes.wrap(gossipCaCertificate),
                 Bytes.wrap(grpcCertificateHash),
                 0,
-                deleted);
+                deleted,
+                key);
+    }
+
+    protected void givenValidNodeWithAdminKey(Key adminKey) {
+        node = new Node(
+                nodeId.number(),
+                accountId,
+                "description",
+                null,
+                null,
+                Bytes.wrap(gossipCaCertificate),
+                Bytes.wrap(grpcCertificateHash),
+                0,
+                false,
+                adminKey);
     }
 
     protected Node createNode() {
@@ -199,6 +257,7 @@ public class AddressBookTestBase {
                 .gossipCaCertificate(Bytes.wrap(gossipCaCertificate))
                 .grpcCertificateHash(Bytes.wrap(grpcCertificateHash))
                 .weight(0)
+                .adminKey(key)
                 .build();
     }
 }

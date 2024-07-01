@@ -51,8 +51,8 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.QueryHandler;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
 import com.hedera.node.config.ConfigProvider;
@@ -68,7 +68,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.io.IOException;
-import java.time.Instant;
+import java.time.InstantSource;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.function.Function;
@@ -108,6 +108,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final ExchangeRateManager exchangeRateManager;
     private final FeeManager feeManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+    private final InstantSource instantSource;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -125,6 +126,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param exchangeRateManager the {@link ExchangeRateManager} to get the {@link ExchangeRateInfo}
      * @param feeManager the {@link FeeManager} to calculate the fees
      * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
+     * @param instantSource the {@link InstantSource} to get the current time
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -140,7 +142,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final Authorizer authorizer,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
-            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator) {
+            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
+            @NonNull final InstantSource instantSource) {
         this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
         this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
         this.ingestChecker = requireNonNull(ingestChecker, "ingestChecker must not be null");
@@ -154,6 +157,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "hapiThrottling must not be null");
+        this.instantSource = requireNonNull(instantSource);
     }
 
     @Override
@@ -162,12 +166,11 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         requireNonNull(responseBuffer);
 
         // We use wall-clock time when calculating fees
-        final var consensusTime = Instant.now();
+        final var consensusTime = instantSource.instant();
 
         // 1. Parse and check header
         final Query query = parseQuery(requestBuffer);
         logger.debug("Received query: {}", query);
-
         final var function = functionOf(query);
 
         Response response;
@@ -290,7 +293,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 response = createErrorResponse(handler, responseType, FAIL_INVALID, 0L);
             }
         } else {
-            response = DEFAULT_UNSUPPORTED_RESPONSE;
+            throw new StatusRuntimeException(Status.INVALID_ARGUMENT);
         }
 
         try {

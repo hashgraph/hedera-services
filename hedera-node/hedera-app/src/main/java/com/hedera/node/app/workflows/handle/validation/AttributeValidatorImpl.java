@@ -28,6 +28,7 @@ import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -62,6 +63,15 @@ public class AttributeValidatorImpl implements AttributeValidator {
         // If key is mappable in all levels, validate the key is valid
         if (!isValid(key)) {
             throw new HandleException(BAD_ENCODING);
+        }
+    }
+
+    @Override
+    public void validateKey(@NonNull final Key key, @NonNull final ResponseCodeEnum responseCodeEnum) {
+        try {
+            validateKey(key);
+        } catch (HandleException e) {
+            throw new HandleException(responseCodeEnum);
         }
     }
 

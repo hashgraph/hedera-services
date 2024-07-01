@@ -86,8 +86,11 @@ public abstract class ConfigProviderBase implements ConfigProvider {
         };
 
         try {
-            final Path propertiesPath =
-                    Optional.ofNullable(System.getenv(envName)).map(Path::of).orElseGet(() -> Path.of(defaultPath));
+            final Path propertiesPath = Optional.ofNullable(System.getenv(envName))
+                    .or(() -> Optional.ofNullable(
+                            System.getProperty(envName.toLowerCase().replace("_", "."))))
+                    .map(Path::of)
+                    .orElseGet(() -> Path.of(defaultPath));
             addSource.accept(propertiesPath, priority);
         } catch (final Exception e) {
             throw new IllegalStateException("Can not create config source for application properties", e);

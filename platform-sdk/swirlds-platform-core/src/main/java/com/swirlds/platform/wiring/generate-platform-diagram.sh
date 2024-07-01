@@ -36,7 +36,7 @@ pcli diagram \
     -s 'HealthMonitor:health info:🏥' \
     -g 'Orphan Buffer:OrphanBuffer,OrphanBufferSplitter' \
     -g 'Event Intake:EventHasher,InternalEventValidator,EventDeduplicator,EventSignatureValidator,Orphan Buffer,PostHashCollector' \
-    -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,EventWindowManager,getKeystoneEventSequenceNumber,getConsensusEvents' \
+    -g 'Consensus Engine:ConsensusEngine,ConsensusEngineSplitter,EventWindowManager,getKeystoneEventSequenceNumber,getCesEvents' \
     -g 'State Snapshot Manager:saveToDiskFilter,StateSnapshotManager,extractOldestMinimumGenerationOnDisk,toStateWrittenToDiskAction,toNotification' \
     -g 'State File Management:State Snapshot Manager,📀,💾' \
     -g 'State Signature Collector:StateSignatureCollector,reservedStateSplitter,allStatesReserver,completeStateFilter,completeStatesReserver,extractConsensusSignatureTransactions,extractPreconsensusSignatureTransactions,LatestCompleteStateNotifier' \

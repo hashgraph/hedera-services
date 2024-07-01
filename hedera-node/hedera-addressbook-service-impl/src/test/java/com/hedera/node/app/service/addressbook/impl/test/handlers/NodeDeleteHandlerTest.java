@@ -22,8 +22,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -39,14 +41,18 @@ import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -57,6 +63,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class NodeDeleteHandlerTest extends AddressBookTestBase {
+
+    @Mock
+    private StoreFactory storeFactory;
 
     @Mock
     private ReadableAccountStore accountStore;
@@ -89,7 +98,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("pureChecks throws exception when node id is negative or zero")
-    public void testPureChecksThrowsExceptionWhenFileIdIsNull() {
+    void testPureChecksThrowsExceptionWhenFileIdIsNull() {
         NodeDeleteTransactionBody transactionBody = mock(NodeDeleteTransactionBody.class);
         TransactionBody transaction = mock(TransactionBody.class);
         given(handleContext.body()).willReturn(transaction);
@@ -103,21 +112,25 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("pureChecks does not throw exception when node id is not null")
-    public void testPureChecksDoesNotThrowExceptionWhenNodeIdIsNotNull() {
+    void testPureChecksDoesNotThrowExceptionWhenNodeIdIsNotNull() {
         given(handleContext.body()).willReturn(newDeleteTxn());
 
         assertThatCode(() -> subject.pureChecks(handleContext.body())).doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName("check that fees are free for delete node trx")
-    public void testCalculateFeesInvocations() {
+    @DisplayName("check that fees are 1 for delete node trx")
+    public void testCalculateFeesInvocations() throws IOException {
         final var feeCtx = mock(FeeContext.class);
+        final var feeCalcFact = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);
-        given(feeCtx.feeCalculator(notNull())).willReturn(feeCalc);
-        given(feeCalc.calculate()).willReturn(Fees.FREE);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFact);
+        given(feeCalcFact.feeCalculator(any())).willReturn(feeCalc);
 
-        assertThat(subject.calculateFees(feeCtx)).isEqualTo(Fees.FREE);
+        given(feeCalc.addVerificationsPerTransaction(anyLong())).willReturn(feeCalc);
+        given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));
+
+        assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(1, 0, 0));
     }
 
     @Test
@@ -125,14 +138,15 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     void fileDoesntExist() {
         final var txn = newDeleteTxn().nodeDeleteOrThrow();
 
+        given(handleContext.storeFactory()).willReturn(storeFactory);
         writableNodeState = emptyWritableNodeState();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         writableStore = new WritableNodeStore(writableStates, testConfig, storeMetricsService);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(INVALID_NODE_ID);
@@ -145,14 +159,15 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
         node = null;
 
+        given(handleContext.storeFactory()).willReturn(storeFactory);
         writableNodeState = writableNodeStateWithOneKey();
         given(writableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(writableNodeState);
         writableStore = new WritableNodeStore(writableStates, testConfig, storeMetricsService);
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
         HandleException thrown = (HandleException) catchThrowable(() -> subject.handle(handleContext));
         assertThat(thrown.getStatus()).isEqualTo(INVALID_NODE_ID);
     }
@@ -168,7 +183,8 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
 
         subject.handle(handleContext);
 
@@ -192,9 +208,15 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
         given(handleContext.body())
                 .willReturn(TransactionBody.newBuilder().nodeDelete(txn).build());
-        given(handleContext.writableStore(WritableNodeStore.class)).willReturn(writableStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
         // expect:
         assertFailsWith(() -> subject.handle(handleContext), ResponseCodeEnum.NODE_DELETED);
+    }
+
+    @Test
+    void preHandleDoesNothing() {
+        assertDoesNotThrow(() -> subject.preHandle(mock(PreHandleContext.class)));
     }
 
     private TransactionBody newDeleteTxn() {
