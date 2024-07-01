@@ -24,7 +24,9 @@ import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.nodeId
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.operations.transactions.TouchBalancesOperation.touchBalanceOf;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.addNodeAndRefreshConfigTxt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureStakingActivated;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.removeNodeAndRefreshConfigTxt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -39,9 +41,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
+import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.dsl.annotations.AccountSpec;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
@@ -55,12 +59,28 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 
-// NOTE - not currently running in CI
+/**
+ * Asserts expected behavior of the network when upgrading with DAB enabled.
+ * <p>
+ * The test framework simulates DAB by copying the <i>config.txt</i> from the node's upgrade artifacts into their
+ * working directories, instead of regenerating a <i>config.txt</i> to match its {@link HederaNode} instances. It
+ * <p>
+ * There are three upgrades in this test. The first leaves the address book unchanged, the second removes `node1`,
+ * and the last one adds a new `node5`.
+ * <p>
+ * Halfway through the sequence, we also verify that reconnect is still possible  with only `node0` and `node2`
+ * left online while `node3` reconnects; which we accomplish by giving most of the stake to those nodes.
+ * <p>
+ * We also verify that an account staking to a deleted node cannot earn rewards.
+ * <p>
+ * See <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#user-stories">here</a>
+ * for the associated HIP-869 user stories.
+ */
 @Tag(UPGRADE)
 @DisplayName("Upgrading with DAB enabled")
 @HapiTestLifecycle
 @OrderedInIsolation
-public class UpgradeWithDabTest implements LifecycleTest {
+public class DabEnabledUpgradeTest implements LifecycleTest {
     @AccountSpec(balance = ONE_BILLION_HBARS, stakedNodeId = 0)
     static SpecAccount NODE0_STAKER;
 
@@ -131,6 +151,31 @@ public class UpgradeWithDabTest implements LifecycleTest {
             return hapiTest(
                     getVersionInfo().exposingServicesVersionTo(startVersion::set),
                     sourcing(() -> reconnectNode(byNodeId(3), configVersionOf(startVersion.get()))));
+        }
+    }
+
+    @Nested
+    @Order(2)
+    @DisplayName("after adding node4")
+    @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+    class AfterAddingNode4 {
+        private static final AccountID NEW_ACCOUNT_ID =
+                AccountID.newBuilder().setAccountNum(7L).build();
+
+        @BeforeAll
+        static void beforeAll(@NonNull final SpecManager manager) throws Throwable {
+            manager.setup(nodeCreate("node4").accountId(NEW_ACCOUNT_ID).withAvailableSubProcessPorts());
+        }
+
+        @HapiTest
+        @Order(0)
+        @DisplayName("exports an address book with node4")
+        final Stream<DynamicTest> addedNodeTest() {
+            return hapiTest(
+                    prepareFakeUpgrade(),
+                    validateUpgradeAddressBooks(
+                            addressBook -> assertThat(nodeIdsFrom(addressBook)).contains(4L)),
+                    upgradeToConfigVersion(3, addNodeAndRefreshConfigTxt(4L, DAB_GENERATED)));
         }
     }
 }

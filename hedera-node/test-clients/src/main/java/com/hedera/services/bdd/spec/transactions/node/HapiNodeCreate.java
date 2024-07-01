@@ -18,12 +18,14 @@ package com.hedera.services.bdd.spec.transactions.node;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
+import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -36,7 +38,7 @@ import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -50,17 +52,29 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     private static final Logger LOG = LogManager.getLogger(HapiNodeCreate.class);
 
     private boolean advertiseCreation = false;
+    private boolean useAvailableSubProcessPorts = false;
     private final String nodeName;
     private Optional<AccountID> accountId = Optional.empty();
     private Optional<String> description = Optional.empty();
     private List<ServiceEndpoint> gossipEndpoints = Collections.emptyList();
-    private List<ServiceEndpoint> serviceEndpoints = Collections.emptyList();
+    private List<ServiceEndpoint> grpcEndpoints = Collections.emptyList();
     private Optional<byte[]> gossipCaCertificate = Optional.empty();
     private Optional<byte[]> grpcCertificateHash = Optional.empty();
     private Optional<LongConsumer> newNumObserver = Optional.empty();
 
+    @Nullable
+    private Key key;
+
+    @Nullable
+    private String keyName;
+
     public HapiNodeCreate(@NonNull final String nodeName) {
         this.nodeName = nodeName;
+    }
+
+    @Override
+    protected Key lookupKey(final HapiSpec spec, final String name) {
+        return name.equals(nodeName) ? key : spec.registry().getKey(name);
     }
 
     @Override
@@ -88,13 +102,18 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         return this;
     }
 
+    public HapiNodeCreate withAvailableSubProcessPorts() {
+        useAvailableSubProcessPorts = true;
+        return this;
+    }
+
     public HapiNodeCreate gossipEndpoint(final List<ServiceEndpoint> gossipEndpoint) {
         this.gossipEndpoints = gossipEndpoint;
         return this;
     }
 
     public HapiNodeCreate serviceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
-        this.serviceEndpoints = serviceEndpoint;
+        this.grpcEndpoints = serviceEndpoint;
         return this;
     }
 
@@ -131,13 +150,22 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
+        key = key != null ? key : netOf(spec, Optional.ofNullable(keyName));
+        if (useAvailableSubProcessPorts) {
+            if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
+                throw new IllegalStateException("Target is not a SubProcessNetwork");
+            }
+            gossipEndpoints = subProcessNetwork.gossipEndpointsForNextNodeId();
+            grpcEndpoints = List.of(subProcessNetwork.grpcEndpointForNextNodeId());
+        }
         final NodeCreateTransactionBody opBody = spec.txns()
                 .<NodeCreateTransactionBody, NodeCreateTransactionBody.Builder>body(
                         NodeCreateTransactionBody.class, builder -> {
                             accountId.ifPresent(builder::setAccountId);
                             description.ifPresent(builder::setDescription);
+                            builder.setAdminKey(key);
                             builder.addAllGossipEndpoint(gossipEndpoints);
-                            builder.addAllServiceEndpoint(serviceEndpoints);
+                            builder.addAllServiceEndpoint(grpcEndpoints);
                             gossipCaCertificate.ifPresent(s -> builder.setGossipCaCertificate(ByteString.copyFrom(s)));
                             grpcCertificateHash.ifPresent(s -> builder.setGrpcCertificateHash(ByteString.copyFrom(s)));
                         });
@@ -146,9 +174,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        // TODO issue #13981
-        // Need to add adminKey also as a signer
-        return Arrays.asList(spec -> spec.registry().getKey(effectivePayer(spec)));
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> key);
     }
 
     @Override

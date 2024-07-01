@@ -36,7 +36,10 @@ import java.util.stream.Stream;
  */
 public class AddressBookUtils {
     public static final long CLASSIC_FIRST_NODE_ACCOUNT_NUM = 3;
-    public static final String[] CLASSIC_NODE_NAMES = new String[] {"Alice", "Bob", "Carol", "Dave"};
+    public static final String[] CLASSIC_NODE_NAMES = new String[] {
+        "Alice", "Bob", "Carol", "Dave", "Eve", "Faythe", "Grace", "Heidi", "Ivy", "Judy", "Kathy", "Lana",
+        "Mallory", "Nadia", "Olivia", "Peggy", "Quinn", "Rita", "Sue", "Tina", "Ursula", "Vera", "Wendy", "Xena",
+    };
 
     private AddressBookUtils() {
         throw new UnsupportedOperationException("Utility Class");

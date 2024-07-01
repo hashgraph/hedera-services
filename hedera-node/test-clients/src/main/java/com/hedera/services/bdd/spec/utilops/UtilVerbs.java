@@ -159,6 +159,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStr
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
+import com.hedera.services.bdd.spec.utilops.upgrade.AddNodeOp;
 import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
 import com.hedera.services.bdd.spec.utilops.upgrade.RemoveNodeOp;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -469,13 +470,26 @@ public class UtilVerbs {
         return new RemoveNodeOp(selector, upgradeConfigTxt);
     }
 
+    /**
+     * Returns an operation that removes a subprocess node from the network and refreshes the
+     * address books on all remaining nodes using the given <i>config.txt</i> source.
+     *
+     * @param nodeId id of the node to add
+     * @param upgradeConfigTxt the source of the new <i>config.txt</i> file
+     * @return the operation that removes the node
+     */
+    public static AddNodeOp addNodeAndRefreshConfigTxt(
+            @NonNull final long nodeId, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+        return new AddNodeOp(nodeId, upgradeConfigTxt);
+    }
+
     public static TryToStartNodesOp restartNetworkWithConfigVersion(final int configVersion) {
         return new TryToStartNodesOp(NodeSelector.allNodes(), configVersion, TryToStartNodesOp.ReassignPorts.YES);
     }
 
     public static TryToStartNodesOp restartWithConfigVersion(
             @NonNull final NodeSelector selector, final int configVersion) {
-        return new TryToStartNodesOp(selector, configVersion, TryToStartNodesOp.ReassignPorts.YES);
+        return new TryToStartNodesOp(selector, configVersion);
     }
 
     public static ShutdownWithinOp shutdownWithin(@NonNull final String name, @NonNull final Duration timeout) {

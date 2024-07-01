@@ -296,11 +296,11 @@ public class ReadableFreezeUpgradeActions {
                     .append(", ")
                     .append(weight)
                     .append(", ")
-                    .append(gossipEndpoints.get(INT).ipAddressV4().asUtf8String())
+                    .append(ipV4AddressFromOctets(gossipEndpoints.get(INT).ipAddressV4()))
                     .append(", ")
                     .append(gossipEndpoints.get(INT).port())
                     .append(", ")
-                    .append(gossipEndpoints.get(EXT).ipAddressV4().asUtf8String())
+                    .append(ipV4AddressFromOctets(gossipEndpoints.get(EXT).ipAddressV4()))
                     .append(", ")
                     .append(gossipEndpoints.get(EXT).port())
                     .append(", ")
@@ -320,6 +320,18 @@ public class ReadableFreezeUpgradeActions {
         } else {
             log.error("Node has {} gossip endpoints, expected greater than 1", gossipEndpoints.size());
         }
+    }
+
+    private String ipV4AddressFromOctets(Bytes encoded) {
+        return new StringBuilder()
+                .append(encoded.getByte(0) & 0xFF)
+                .append(".")
+                .append(encoded.getByte(1) & 0xFF)
+                .append(".")
+                .append(encoded.getByte(2) & 0xFF)
+                .append(".")
+                .append(encoded.getByte(3) & 0xFF)
+                .toString();
     }
 
     private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {

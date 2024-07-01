@@ -16,33 +16,33 @@
 
 package com.hedera.services.bdd.spec.utilops.upgrade;
 
-import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Objects;
 
 /**
- * Removes the selected node or nodes specified by the {@link NodeSelector} and refreshes the
+ * Adds the node with "classic" metadata implied by the given node id and refreshes the
  * {@link SubProcessNetwork} address book using the given {@link UpgradeConfigTxt} source.
  */
-public class RemoveNodeOp extends UtilOp {
-    private final NodeSelector selector;
+public class AddNodeOp extends UtilOp {
+    private final long nodeId;
     private final UpgradeConfigTxt upgradeConfigTxt;
 
-    public RemoveNodeOp(@NonNull final NodeSelector selector, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
-        this.selector = Objects.requireNonNull(selector);
-        this.upgradeConfigTxt = Objects.requireNonNull(upgradeConfigTxt);
+    public AddNodeOp(final long nodeId, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+        this.nodeId = nodeId;
+        this.upgradeConfigTxt = requireNonNull(upgradeConfigTxt);
     }
 
     @Override
-    protected boolean submitOp(@NonNull final HapiSpec spec) throws Throwable {
+    protected boolean submitOp(HapiSpec spec) throws Throwable {
         if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
             throw new IllegalStateException("Can only remove nodes from a SubProcessNetwork");
         }
-        subProcessNetwork.removeNode(selector, upgradeConfigTxt);
+        subProcessNetwork.addNode(nodeId, upgradeConfigTxt);
         return false;
     }
 }
