@@ -21,21 +21,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELET
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCallLocal;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
 
 public class RandomCallLocal implements OpProvider {
-    private final EntityNameProvider<ActionableContractCallLocal> localCalls;
+    private final EntityNameProvider localCalls;
 
     private final ResponseCodeEnum[] permissibleCostAnswerPrechecks = standardPrechecksAnd(CONTRACT_DELETED);
     private final ResponseCodeEnum[] permissibleAnswerOnlyPrechecks = standardPrechecksAnd(CONTRACT_DELETED);
     private final ResponseCodeEnum[] customOutcomes;
 
-    public RandomCallLocal(
-            EntityNameProvider<ActionableContractCallLocal> localCalls, ResponseCodeEnum[] customOutcomes) {
+    public RandomCallLocal(EntityNameProvider localCalls, ResponseCodeEnum[] customOutcomes) {
         this.localCalls = localCalls;
         this.customOutcomes = customOutcomes;
     }

@@ -26,7 +26,7 @@ More example usages are given below.
 
 ## Target networks and bootstrap accounts
 
-Target networks are defined via lists of nodes in the [_config.yml_](./config.yml)
+Target networks are defined via lists of nodes in the [_config.yml_](../devops-utils/validation-scenarios/config.yml)
 
 Each target network must have a bootstrap account with a single key; the key must
 be present in PEM format under the _keys/_ directory with the naming convention 
