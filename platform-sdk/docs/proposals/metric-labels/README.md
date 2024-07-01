@@ -17,8 +17,7 @@ Why this proposal uses the name "metric labels" (like prometheus does) other lib
 Today the metrics module only supports the definition of metrics without adding custom labels.
 While each metric has a hardcoded category, name, and nodeId no other custom information can be added.
 This proposal suggests adding a new concept called "metric labels" to the metrics module and
-migrate the `category`, `name`, and `nodeId` information to labels.
-While the category and name are defined as String values the nodeId is a class called `NodeId`.
+migrate the `nodeId` information to a label.
 By doing so the metrics module becomes more flexible and can be used 100% independent of the
 platform module since it does not depend on the platform module's `nodeId` anymore.
 
@@ -35,7 +34,7 @@ platform module since it does not depend on the platform module's `nodeId` anymo
 
 ## Non-Goals
 
-Even with the new concept the metrics api should be only used in our (hashgraph) code.
+Even with the new concept the metrics api should be only used in our project code (including projects like block-node, ...).
 The metrics module should not be used by the end user.
 Here the preferred solution is still that we forward our metrics to a monitoring system that the custom application code uses.
 
@@ -74,7 +73,7 @@ In prometheus that defines the unique identifier of a metric.
 
 When using labels to create dashboards in Grafana prometheus provides a rich query language to filter and group metrics: https://prometheus.io/docs/prometheus/latest/querying/examples/
 
-We will use the same practices and definition as in prometheus regarding labels.
+We will use the same practices and definition as in prometheus regarding labels (see https://prometheus.io/docs/practices/naming/#labels and https://prometheus.io/docs/practices/instrumentation/#use-labels).
 
 ### Public API
 
@@ -82,14 +81,8 @@ The metrics module will be extended by a new data type called `Label`.
 A label is a key-value pair that can be defined as a `record`:
 
 ```java
-record Label(@NonNull String key, @Nullable String value) {}
+record Label(@NonNull String key, @NonNull String value) {}
 ``` 
-
-> [!NOTE]  
-The value of a label can be `null`.
-For our prometheus endpoint a label with a `null` value will be handled as if the label would not exist.
-This would allow us to define a label without a value and with a possible extension (see "Future Work") we define a concrete value for a label later.
-Today best practice is to not use labels with a `null` value.
 
 The `Metric` interface will be extended by a new method called `getLabels()` that returns a list of labels:
 
@@ -100,6 +93,9 @@ interface Metric {
     
     @NonNull
     Set<Label> getLabels();
+    
+    @Nullable
+    Optional<String> label(@NonNull String key);
 }
 ```
 
@@ -111,11 +107,29 @@ abstract class MetricConfig {
     
     //...
     
+    /**
+    * Returns a config with the given labels next to the already defined labels.
+    */
     @NonNull
     MetricConfig withLabels(@NonNull Label... labels) {...}
     
+    /**
+    * Returns a config with the given labels next to the already defined labels.
+    */
     @NonNull
     MetricConfig withLabels(@NonNull Set<Label> labels) {...}
+    
+    /**
+    * Returns a config with the given label next to the already defined labels.
+    */
+    @NonNull
+    MetricConfig withLabel(@NonNull String key, @NonNull String value) {...}
+    
+    /**
+    * Returns a config with the given label next to the already defined labels.
+    */
+    @NonNull
+    MetricConfig withLabel(@NonNull Label label) {...}
 }
 ```
 
@@ -341,3 +355,4 @@ By doing so we can add more information to the metrics that can be used by the m
 - https://www.javadoc.io/doc/io.micrometer/micrometer-core/1.1.0/io/micrometer/core/instrument/Tag.html
 - https://github.com/vert-x3/vertx-micrometer-metrics/blob/master/src/main/java/io/vertx/micrometer/Label.java
 - https://geode.apache.org/docs/guide/115/tools_modules/micrometer/micrometer-meters.html
+- https://prometheus.io/docs/prometheus/latest/querying/basics/#instant-vector-selectors
