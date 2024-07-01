@@ -23,10 +23,12 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -38,6 +40,9 @@ import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -131,10 +136,47 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         }
     }
 
+    @SuppressWarnings("java:S3864")
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
+        requireNonNull(context);
         var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
         validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
+
+        final var txn = context.body();
+        final var op = txn.tokenCancelAirdropOrThrow();
+        final var pendingAirdropIds = op.pendingAirdrops();
+        final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
+        final var nftStore = context.storeFactory().readableStore(ReadableNftStore.class);
+        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
+        final var pendingStore = context.storeFactory().writableStore(WritableAirdropStore.class);
+        final var payer = context.payer();
+
+        pendingAirdropIds.stream()
+                .peek(pendingAirdropId -> {
+                    validateTrue(pendingStore.exists(pendingAirdropId), INVALID_TRANSACTION_BODY);
+                    validateTrue(payer.equals(pendingAirdropId.senderIdOrThrow()), INVALID_ACCOUNT_ID);
+                    if (pendingAirdropId.hasFungibleTokenType()) {
+                        getIfUsable(pendingAirdropId.fungibleTokenTypeOrThrow(), tokenStore);
+                    } else {
+                        final var nft = pendingAirdropId.nonFungibleTokenOrThrow();
+                        validateTrue(nftStore.get(nft) != null, INVALID_NFT_ID);
+                        validateTrue(
+                                nftStore.get(nft.tokenIdOrThrow(), nft.serialNumber()) != null,
+                                INVALID_TOKEN_NFT_SERIAL_NUMBER);
+                    }
+                    getIfUsable(
+                            pendingAirdropId.senderIdOrThrow(),
+                            accountStore,
+                            context.expiryValidator(),
+                            INVALID_ACCOUNT_ID);
+                    getIfUsable(
+                            pendingAirdropId.receiverIdOrThrow(),
+                            accountStore,
+                            context.expiryValidator(),
+                            INVALID_ACCOUNT_ID);
+                })
+                .forEach(pendingStore::remove);
     }
 
     @NonNull
