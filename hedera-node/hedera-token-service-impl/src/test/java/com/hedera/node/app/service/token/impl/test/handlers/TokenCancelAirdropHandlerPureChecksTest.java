@@ -16,9 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
@@ -84,7 +85,7 @@ public class TokenCancelAirdropHandlerPureChecksTest extends CryptoTokenHandlerT
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
-                .has(responseCode(INVALID_TRANSACTION_BODY));
+                .has(responseCode(PENDING_AIRDROP_ID_REPEATED));
     }
 
     @Test
@@ -93,7 +94,7 @@ public class TokenCancelAirdropHandlerPureChecksTest extends CryptoTokenHandlerT
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
-                .has(responseCode(INVALID_TRANSACTION_BODY));
+                .has(responseCode(PENDING_AIRDROP_ID_REPEATED));
     }
 
     @Test
@@ -156,7 +157,8 @@ public class TokenCancelAirdropHandlerPureChecksTest extends CryptoTokenHandlerT
         assertDoesNotThrow(() -> subject.pureChecks(txn));
         assertThat(pendingAirdropIdWithBothTypes.hasFungibleTokenType()).isFalse();
         assertThat(pendingAirdropIdWithBothTypes.hasNonFungibleToken()).isTrue();
-        assertThat(pendingAirdropIdWithBothTypes.tokenReference().kind()).isEqualTo(TokenReferenceOneOfType.NON_FUNGIBLE_TOKEN);
+        assertThat(pendingAirdropIdWithBothTypes.tokenReference().kind())
+                .isEqualTo(TokenReferenceOneOfType.NON_FUNGIBLE_TOKEN);
     }
 
     @Test
@@ -177,7 +179,7 @@ public class TokenCancelAirdropHandlerPureChecksTest extends CryptoTokenHandlerT
 
         Assertions.assertThatThrownBy(() -> subject.pureChecks(txn))
                 .isInstanceOf(PreCheckException.class)
-                .has(responseCode(INVALID_TRANSACTION_BODY));
+                .has(responseCode(EMPTY_PENDING_AIRDROP_ID_LIST));
     }
 
     private TransactionBody newTokenCancelAirdrop(final PendingAirdropId... pendingAirdropIds) {
