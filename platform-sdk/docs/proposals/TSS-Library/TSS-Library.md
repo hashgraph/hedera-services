@@ -18,7 +18,7 @@ and it can be used to verify the aggregate of a set of partial signatures produc
 
 This is important for producing proofs that are easily consumable and verifiable by external entities.
 
-This proposal covers the implementation of all necessary components to provide the consensus node and block node with
+This proposal covers the implementation of all necessary components to provide the consensus node and future library users with
 the functionality to sign and verify blocks using a Threshold Signature Scheme (TSS) and EC Cryptography.
 
 The related proposal, TSS-Ledger-Id, provides an overview of the process and background for TSS and how it impacts the platform’s functionality.
@@ -59,12 +59,13 @@ the distribution aspect, the loading, and the in-memory interpretation from each
 
 
 ### Goals
-- **Usability**: Design user-friendly libraries with a public API that are easy to integrate with other projects, such as consensus node and block node.
+- **Usability**: Design user-friendly libraries with a public API that are easy to integrate with other projects, such as consensus node and other library users.
 - **EVM support**: Generated signature and public keys should be compatible with EVM precompiled functions
   so that signature validation can be done on smart contracts without incurring an excessive gas cost.
 - **Security**: Our produced code should be able to pass internal and external security audits.
 - **Flexibility**: Minimize the impact of introducing support for other elliptic curves.
-- **Independent Release**: When applicable, the new libraries should have the release cycle separate from the platform.They should be implemented in a way that is easy for both platform and block node to depend on.
+- **Independent Release**: When applicable, the new libraries should have the release cycle separate from the platform. 
+ They should be implemented in a way that is easy for both platform and block node to depend on.
 
 ### Non-Goals
 - Implement support for elliptic curve cryptography in Java.
@@ -91,8 +92,8 @@ Participants can hold one or more shares, each of which can be used to sign a me
 The goal is to generate an aggregate signature which is valid if a threshold number of individual signatures are combined.
 
 Each participant brings their own Elliptic Curve (EC) key pair (private and public). They share their public keys with all other participants while securing their private keys.
-Before the protocol begins, all participants agree on the cryptographic parameters (type of curve and what group of the pairing will be used for public-keys and signatures).
-A participant directory is built when initializing the protocol. This directory includes the number of participants, each participant’s EC public key, and the shares they own.
+Before the protocol begins, all participants agree on the cryptographic parameters (type of curve and what group of the pairing will be used for public keys and signatures).
+When the protocol is initialized, a participant directory is built. This directory includes the number of participants, each participant’s EC public key, and the shares they own.
 
 Each participant generates portions of a secret share and distributes them among the other participants using the following process:
 
@@ -311,8 +312,7 @@ At this point, the participant executing the scheme can start signing, sharing s
 
 #####  Rekey Stage
 This Section describes the rekey process executed each time some of the scheme’s parameters change, such as the number of participants or the number of shares assigned to each participant.
-The rekeying process can happen, too, if the parameters are the same as the genesis procedure.
-
+This rekeying process may also be conducted for reasons other than parameter changes; to rotate shares, for example.
 
 The rekeying process is similar to the bootstrap process, but it starts with the previous list of owned private `SecretShare`.
 The main difference with the genesis stage is that every participant generates a `TssMessage` out of each previously owned `SecretShare`.
@@ -327,15 +327,17 @@ Once finished, the list of `SecretShare`s will be updated but the previously gen
 After genesis or rekeying stages, the library can sign any message.
 Using each `SecretShare` owned by the participant, a message can be signed, producing a `TssSignature`
 
-Multiple signatures can be aggregated to create an aggregate `TssSignature`. An aggregate `TssSignature` can be validated against the LedgerId if
-`t` (t=threshold) valid signatures are aggregated. If the threshold is met and the signature is valid, the library will respond with true; if not, it will be false.
+Multiple signatures can be aggregated to create an aggregate `TssSignature`. An aggregate `TssSignature` can be validated against the LedgerId (public key)  if
+`t` (t=threshold) valid signatures are aggregated. If the threshold is met and the signature is valid, the library will respond with true; if not, it will respond with false.
 
 
 #### Security Considerations
 As long as an adversary Participant knows fewer than a threshold number of decryption keys, they cannot recover enough information to start forging threshold signatures.
 Adversarial participants may learn the shares of the participants whose keys they have compromised, but more is needed to recover the secret.
+Suggested change
 For security, adversarial parties are free to choose low or zero entropy values for protocol inputs such as shareIds.
 There will still be sufficient entropy in the entire protocol from the honest nodes.
+For security, adversarial parties might choose low or zero entropy values for protocol inputs such as shareIds, but here will still be sufficient entropy in the overall protocol from honest nodes.
 
 
 #### Summary diagram
@@ -354,20 +356,23 @@ To implement the functionality detailed in the previous section, the following c
    assemble shared public keys (ledgerId), and sign the block node Merkle tree hash.
 2. **Bilinear Pairings Signature Library**: This library provides cryptographic objects (PrivateKey, PublicKey, and Signature)
    and operations for the block node and consensus node to sign and verify signatures. The consensus node uses this library indirectly through the TSS Library.
-3. **Bilinear Pairings API**: Layer of abstraction to be included at compilation time providing the cryptography primitives
-   and the arithmetic operations for working with a specific EC curve and the underlying Groups, Fields, and Pairings
-   and minimizes the impact of changing or including different curve implementations.
-4. **Bilinear Pairings Impl**: This is an implementation of the Bilinear Pairings API that will be loaded at runtime using Java’s SPI.
-   Multiple implementations can be provided to support different types of curves. It allows changing or switching dependencies.
-5. **Native Support Lib**: Provides a set of generic functions loading native libraries in different system architectures when packaged in a jar
+3. **Bilinear Pairings API**: An API definition for the cryptography primitives
+   and arithmetic operations required to work with a specific EC curve and the
+   underlying Groups, Fields, and Pairings. This API minimizes the impact of
+   changing to different curve implementations.
+4. **Bilinear Pairings**: An implementation of the Bilinear Pairings API that will be loaded at runtime using Java’s service provider (SPI) mechanism.
+   Multiple implementations can be provided to support different types of curves and
+   the Java service provider approach facilitates easily changing between
+   implementations and dependencies.
+6. **Native Support Lib**: Provides a set of generic functions loading native libraries in different system architectures when packaged in a jar
    using a predefined organization so they can be accessed with JNI.
 6. **[Arkworks](https://github.com/arkworks-rs)**: A Rust ecosystem for cryptography. Our implementation uses it as the library responsible for elliptic curve cryptography.
-7. **EC-Key Utils** is a utility module that enables the node operator to generate a bootstrapping public/private key pair.
+7. **EC-Key Utils** is a utility module that enables the node operator to generate a bootstrap public/private key pair.
 
 ### Module organization and repositories
 ![img_6.png](img_6.svg)
 1. **hedera-cryptography**: This is a separate repository for hosting cryptography-related libraries.
-   It is necessary to facilitate our build process, which includes Rust libraries. It also provides independent release cycles between consensus node code and block node code.
+   It is necessary to facilitate our build process, which includes Rust libraries. It also provides independent release cycles between consensus node code and other library users.
 2. **swirlds-native-support**: Gradle module that enables loading into memory compiled native libraries so they can be used with JNI.
 3. **swirlds-crypto-tss**: Gradle module for the TSS Library.
    This library's only client is the consensus node, so it will be in the hedera-services repository, under the `platform-sdk` folder.
@@ -375,15 +380,15 @@ To implement the functionality detailed in the previous section, the following c
 5. **swirlds-crypto-pairings-api**: Gradle module for the Bilinear Pairings API. Minimizes the impact of adding or removing implementations.
 6. **swirlds-crypto-altbn128**: Gradle module that will implement the Bilinear Pairings API using alt-bn128 elliptic curve.
    That curve has been chosen due to EVM support. The arkworks rust library will provide the underlying cryptography implementation.
-   The module will include Java and Rust codes that will be compiled for all possible system architectures and distributed in a jar under a predefined structure.
+   The module will include Java and Rust code that will be compiled for all supported system architectures and distributed in a jar with a predefined structure.
 
 ### Handling of multilanguage modules and native code distribution
-The code provided by this solution will include multilanguage modules (rust + java). Rust code needs to be compiled into binary libraries and accessed through JNI.
-Given the non-GA state of Project Panama, this proposal does not consider it, but it has not been discarded for future change proposals.
+The software provided by this approach will require multi-language modules (rust + java). Rust code must be compiled into binary libraries and accessed through JNI.
+Given the immature state of development, Project Panama is not considered for this proposal; but Project Panama may be considered for future development.
 
 There are two possible ways of loading libraries and accessing them through JNI
-1) Libraries are installed in the SO and referenced through the classpath.
-2) Distributed with the application jars, unzipped, and loaded in runtime.
+1) Libraries are installed on the system as shared object(SO) libraries and found via the classpath and system library path.
+2) Distributed with the application jars, unpacked, and loaded at runtime.
 
 We want to ensure that dependent software does not require the installation of any additional dependencies other than those distributed in the jars, so we are choosing option 2.
 
@@ -430,7 +435,7 @@ It provides an initialization method to load all necessary dependencies for the 
 
 ###### `Group`
 
-**Description**: This class provides methods to obtain elements belonging to the group represented by the instance.
+**Description**:  An interface to define methods that obtain elements belonging to the group(s) supported by an implementation.
 
 **Link**: [Group.java](pairings-api%2FGroup.java)
 
@@ -487,32 +492,31 @@ SignatureSchema signatureSchema = SignatureSchema.from(Curve.ALT_BN128, GroupAss
 ```
 ###### Generating a Private Key
 ```java
-   PairingPrivateKey pk = PairingPrivateKey.create(signatureSchema, new SecureRandom());
+   PairingPrivateKey privateKey = PairingPrivateKey.create(signatureSchema, new SecureRandom());
    
 ```
 ###### Generating a Public Key
 ```java
-   PairingPublicKey pbk = PairingPublicKey.create(pk);
+   PairingPublicKey publicKey = PairingPublicKey.create(privateKey);
    
 ```
 ###### Generating a Signature
 ```java
     byte[] message = new byte[]{};
-    PairingSignature s = PairingSignature.sign(pk, message );
+    PairingSignature signature = PairingSignature.sign(privateKey, message );
    
 ```
 ###### Verifying a Signature
 ```java
 static{
-    s.verify(pbk, message);
+    signature.verify(publicKey, message);
 }
 ```
 ##### Constraints
 This module will not depend on hedera-services artifacts, so it cannot include logging, metrics, configuration, or any other helper module from that repo.
 ##### Dependencies
 swirlds-cryptography-pairings-API and runtime implementation
-##### Other considerations
-Some unknowns are worth investigating in a follow-up task:
+
 
 #### Swirlds Crypto TSS Library
 ##### Overview
@@ -539,7 +543,7 @@ This library would accept Integer.MAX_VALUE -1 participants.
 **Link**:[TssMessage.java](tss%2FTssMessage.java)
 
 ###### `TssShareId`
-**Description**: This class represents the unique identification of a share in the system. It a FieldElement, so it can be used as input in the polynomial.
+**Description**: This class represents the unique identification of a share in the system. It contains a FieldElement that can be used as input in the polynomial.
 
 **Link**:[TssShareId.java](tss%2FTssShareId.java)
 
@@ -566,7 +570,7 @@ This library would accept Integer.MAX_VALUE -1 participants.
    List<PairingPublicKey> persistentPublicKeys = Requirements.loadECPublicKeys();
    TssParticipantDirectory participantDirectory =
            TssParticipantDirectory.createBuilder()
-           .self(/**/ 0, persistentParticipantKey)
+           .self(/*Identification, different for each participant*/ 0, persistentParticipantKey)
            .withParticipant(/*Identification:*/0, /*Number of Shares*/5, persistentPublicKeys.get(0))
            .withParticipant(/*Identification:*/1, /*Number of Shares*/2, persistentPublicKeys.get(1))
            .withParticipant(/*Identification:*/2, /*Number of Shares*/1, persistentPublicKeys.get(2))
@@ -582,7 +586,7 @@ This library would accept Integer.MAX_VALUE -1 participants.
 ###### 1. Create TssMessage
 ```java
    //Creates a TssMessage out of a randomly generated share 
-   TssMessage m = service.generateTssMessage(directory);
+   TssMessage message = service.generateTssMessage(directory);
 ```
 
 ###### 2. Validation of TssMessage
@@ -618,9 +622,9 @@ static {
 
     //Validation of individual signatures
     List<TssShareSignature> validSignatures = new ArrayList<>(signatures.size());
-    for (TssShareSignature s : signatures) {
-        if (service.verify(participantDirectory, publicShares, s)) {
-            validSignatures.add(s);
+    for (TssShareSignature signature : signatures) {
+        if (service.verify(participantDirectory, publicShares, signature)) {
+            validSignatures.add(signature);
         }
     }
 
@@ -631,8 +635,8 @@ static {
 
 #### Swirlds Native Support
 ##### Overview
-It helps other modules to load binary libraries packaged inside the library's jar into memory.
-It provides a way to describe the library for different architectures/ OS.
+This library provides classes that assist other modules to load native libraries packaged in dependency jars.
+This library provides a pattern to describe libraries for different architectures and operating systems.
 
 ##### Constraints
 This module will not depend on hedera-services artifacts, so it cannot include logging, metrics, configuration, or any other helper module from that repo.
@@ -653,7 +657,7 @@ This module will not depend on hedera-services artifacts, so it cannot include l
 A record of 3 elements that defines the name of the binary file of the library to load in a specific system architecture and OS.
 
 ###### `LibraryDescription`
-**Description**: A description of the library in all possible systems.
+**Description**: A description of the library in all supported systems.
 
 ###### `LibraryLoader`
 **Description**: Helper class that will load a library for the correct system
@@ -677,7 +681,7 @@ static {
 ##### Implementation details
 Loading a library for a system architecture where no description is provided will result in a runtime exception.
 
-Under the hood, LibraryLoader will make use of:
+Under the hood, LibraryLoader will make use a class similar to:
 https://github.com/hashgraph/full-stack-testing/blob/c3fd5602525145be132770116f5bb5a1a1922dea/fullstack-core/fullstack-base-api/src/main/java/com/hedera/fullstack/base/api/resource/ResourceLoader.java
 
 
