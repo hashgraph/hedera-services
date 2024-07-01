@@ -73,6 +73,7 @@ import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -189,6 +190,7 @@ public class SingleTransactionRecordBuilderImpl
     // its record stream item is built; lets the contract service externalize certain dispatched
     // CryptoCreate transactions as ContractCreate synthetic transactions
     private final ExternalizedRecordCustomizer customizer;
+    private HandleContext.TransactionCategory txnCategory;
 
     private TokenID tokenID;
     private TokenType tokenType;
@@ -1218,36 +1220,7 @@ public class SingleTransactionRecordBuilderImpl
         return paidStakingRewards;
     }
 
-    @Override
-    public String toString() {
-        return "SingleTransactionRecordBuilderImpl{" + "transaction="
-                + transaction + ", transactionBytes="
-                + transactionBytes + ", consensusNow="
-                + consensusNow + ", parentConsensus="
-                + parentConsensus + ", transactionID="
-                + transactionID + ", tokenTransferLists="
-                + tokenTransferLists + ", assessedCustomFees="
-                + assessedCustomFees + ", automaticTokenAssociations="
-                + automaticTokenAssociations + ", paidStakingRewards="
-                + paidStakingRewards + ", transactionRecordBuilder="
-                + transactionRecordBuilder + ", transferList="
-                + transferList + ", status="
-                + status + ", exchangeRate="
-                + exchangeRate + ", serialNumbers="
-                + serialNumbers + ", newTotalSupply="
-                + newTotalSupply + ", transactionReceiptBuilder="
-                + transactionReceiptBuilder + ", contractStateChanges="
-                + contractStateChanges + ", contractActions="
-                + contractActions + ", contractBytecodes="
-                + contractBytecodes + ", deletedAccountBeneficiaries="
-                + deletedAccountBeneficiaries + ", explicitRewardReceiverIds="
-                + explicitRewardReceiverIds + ", transactionFee="
-                + transactionFee + ", contractFunctionResult="
-                + contractFunctionResult + ", reversingBehavior="
-                + reversingBehavior + ", customizer="
-                + customizer + ", tokenID="
-                + tokenID + ", tokenType="
-                + tokenType + ", inProgressBody="
-                + inProgressBody() + '}';
+    public ReversingBehavior getReversingBehavior() {
+        return reversingBehavior;
     }
 }

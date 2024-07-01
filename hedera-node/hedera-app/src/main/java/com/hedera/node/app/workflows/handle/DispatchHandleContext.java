@@ -247,7 +247,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public ExchangeRateInfo exchangeRateInfo() {
-        return exchangeRateManager.exchangeRateInfo(stack.peek());
+        return exchangeRateManager.exchangeRateInfo(stack.peek().state());
     }
 
     @Override

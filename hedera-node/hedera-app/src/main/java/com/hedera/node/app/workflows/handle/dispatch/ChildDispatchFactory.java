@@ -173,7 +173,7 @@ public class ChildDispatchFactory {
         final var childTxnInfo = getTxnInfoFrom(txBody);
         final var recordBuilder = recordBuilderFactory.recordBuilderFor(
                 childTxnInfo, recordListBuilder, config, category, reversingBehavior, customizer);
-        final var childStack = new SavepointStackImpl(stack.peek());
+        final var childStack = new SavepointStackImpl(stack.peek().state());
         return newChildDispatch(
                 recordBuilder,
                 childTxnInfo,

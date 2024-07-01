@@ -572,6 +572,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                         final var childStack = (SavepointStackImpl) childContext.savepointStack();
                         childStack
                                 .peek()
+                                .state()
                                 .getWritableStates(FOOD_SERVICE)
                                 .get(FRUIT_STATE_KEY)
                                 .put(A_KEY, ACAI);
@@ -655,8 +656,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         @Test
         void testDispatchPrecedingWithChangedDataDoesntFail() {
             final var context = createContext(txBody, HandleContext.TransactionCategory.USER);
-            when(stack.peek()).thenReturn(new WrappedHederaState(baseState));
-            when(stack.peek().getWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
+            when(stack.peek().state()).thenReturn(new WrappedHederaState(baseState));
+            when(stack.peek().state().getWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
             final Map<String, String> newData = new HashMap<>(BASE_DATA);
             newData.put(B_KEY, BLUEBERRY);
 

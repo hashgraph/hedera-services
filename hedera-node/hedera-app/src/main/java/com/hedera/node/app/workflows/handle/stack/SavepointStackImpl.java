@@ -26,6 +26,7 @@ import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +38,7 @@ import javax.inject.Inject;
 public class SavepointStackImpl implements SavepointStack, HederaState {
 
     private final HederaState root;
-    private final Deque<WrappedHederaState> stack = new ArrayDeque<>();
+    private final Deque<SavePoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
 
     /**
@@ -53,13 +54,13 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     }
 
     private void setupSavepoint(@NonNull final HederaState state) {
-        final var newState = new WrappedHederaState(state);
-        stack.push(newState);
+        final var newSavePoint = new SavePoint(new WrappedHederaState(state), new ArrayList<>());
+        stack.push(newSavePoint);
     }
 
     @Override
     public void createSavepoint() {
-        setupSavepoint(stack.isEmpty() ? root : peek());
+        setupSavepoint(stack.isEmpty() ? root : peek().state());
     }
 
     @Override
@@ -67,7 +68,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         if (stack.size() <= 1) {
             throw new IllegalStateException("The savepoint stack is empty");
         }
-        stack.pop().commit();
+        stack.pop().state().commit();
     }
 
     @Override
@@ -83,7 +84,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      */
     public void commitFullStack() {
         while (!stack.isEmpty()) {
-            stack.pop().commit();
+            stack.pop().state().commit();
         }
         setupSavepoint(root);
     }
@@ -108,7 +109,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @throws IllegalStateException if the stack has been committed already
      */
     @NonNull
-    public WrappedHederaState peek() {
+    public SavePoint peek() {
         if (stack.isEmpty()) {
             throw new IllegalStateException("The stack has already been committed");
         }
