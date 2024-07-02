@@ -85,6 +85,6 @@ public record SelfNodeInfoImpl(
     @NonNull
     @Override
     public SemanticVersion appVersion() {
-        return version.getServicesVersion();
+        return version.getPbjSemanticVersion();
     }
 }

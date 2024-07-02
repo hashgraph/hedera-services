@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -296,11 +297,11 @@ public class ReadableFreezeUpgradeActions {
                     .append(", ")
                     .append(weight)
                     .append(", ")
-                    .append(ipV4AddressFromOctets(gossipEndpoints.get(INT).ipAddressV4()))
+                    .append(hostNameFor(gossipEndpoints.get(INT)))
                     .append(", ")
                     .append(gossipEndpoints.get(INT).port())
                     .append(", ")
-                    .append(ipV4AddressFromOctets(gossipEndpoints.get(EXT).ipAddressV4()))
+                    .append(hostNameFor(gossipEndpoints.get(EXT)))
                     .append(", ")
                     .append(gossipEndpoints.get(EXT).port())
                     .append(", ")
@@ -322,16 +323,19 @@ public class ReadableFreezeUpgradeActions {
         }
     }
 
-    private String ipV4AddressFromOctets(Bytes encoded) {
-        return new StringBuilder()
-                .append(encoded.getByte(0) & 0xFF)
-                .append(".")
-                .append(encoded.getByte(1) & 0xFF)
-                .append(".")
-                .append(encoded.getByte(2) & 0xFF)
-                .append(".")
-                .append(encoded.getByte(3) & 0xFF)
-                .toString();
+    private String hostNameFor(@NonNull final ServiceEndpoint endpoint) {
+        return endpoint.ipAddressV4().length() == 4
+                ? ipV4AddressFromOctets(endpoint.ipAddressV4())
+                : endpoint.domainName();
+    }
+
+    private String ipV4AddressFromOctets(@NonNull final Bytes encoded) {
+        return (encoded.getByte(0) & 0xFF) + "."
+                + (encoded.getByte(1) & 0xFF)
+                + "."
+                + (encoded.getByte(2) & 0xFF)
+                + "."
+                + (encoded.getByte(3) & 0xFF);
     }
 
     private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {

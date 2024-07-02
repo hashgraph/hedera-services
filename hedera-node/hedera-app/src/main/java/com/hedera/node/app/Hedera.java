@@ -250,7 +250,7 @@ public final class Hedera implements SwirldMain {
         servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
         logger.info(
                 "Creating Hedera Consensus Node {} with HAPI {}",
-                () -> HapiUtils.toString(version.getServicesVersion()),
+                () -> HapiUtils.toString(version.getPbjSemanticVersion()),
                 () -> HapiUtils.toString(version.getHapiVersion()));
         contractServiceImpl = new ContractServiceImpl(instantSource);
         // Register all service schema RuntimeConstructable factories before platform init
@@ -405,14 +405,14 @@ public final class Hedera implements SwirldMain {
             @Nullable final HederaSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
             @NonNull final Metrics metrics) {
-        final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getServicesVersion();
-        final var currentVersion = version.getServicesVersion();
+        final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getPbjSemanticVersion();
+        final var currentVersion = version.getPbjSemanticVersion();
         final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
         logger.info(
                 "{} from Services version {} @ {} with trigger {}",
                 () -> isUpgrade ? "Upgrading" : (previousVersion == null ? "Starting" : "Restarting"),
-                () -> previousVersion == null ? "<NONE>" : HapiUtils.toString(previousVersion),
-                () -> HapiUtils.toString(currentVersion),
+                () -> previousVersion == null ? "<N/A>" : version.readableServicesVersion(),
+                version::readableServicesVersion,
                 () -> trigger);
         final var selfNodeInfo = extractSelfNodeInfo(platform, version);
         final var networkInfo = new UnavailableLedgerIdNetworkInfo(selfNodeInfo, platform);

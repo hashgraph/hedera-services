@@ -69,12 +69,14 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         this.servicesVersion = Objects.requireNonNull(servicesVersion, "servicesVersion must not be null");
     }
 
-    public SemanticVersion getHapiVersion() {
-        return hapiVersion;
+    @Override
+    @NonNull
+    public SemanticVersion getPbjSemanticVersion() {
+        return toUpgradeComparableSemVer(configVersion, servicesVersion);
     }
 
-    public SemanticVersion getServicesVersion() {
-        return servicesVersion;
+    public SemanticVersion getHapiVersion() {
+        return hapiVersion;
     }
 
     @Override
@@ -179,7 +181,16 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         // This is called by the platform when printing information on saved states to logs
         return "HederaSoftwareVersion{" + "hapiVersion="
                 + HapiUtils.toString(hapiVersion) + ", servicesVersion="
-                + HapiUtils.toString(servicesVersion) + (configVersion == 0 ? "" : "-c" + configVersion) + '}';
+                + readableServicesVersion() + '}';
+    }
+
+    /**
+     * Returns a readable form of the services version with the config version if non-zero.
+     *
+     * @return a readable form of the services version
+     */
+    public String readableServicesVersion() {
+        return HapiUtils.toString(servicesVersion) + (configVersion == 0 ? "" : "-c" + configVersion);
     }
 
     /**
@@ -209,11 +220,5 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         final var alphaMatch = ALPHA_PRE_PATTERN.matcher(pre);
         // alpha versions come before everything else
         return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
-    }
-
-    @Override
-    @NonNull
-    public SemanticVersion getPbjSemanticVersion() {
-        return toUpgradeComparableSemVer(configVersion, servicesVersion);
     }
 }

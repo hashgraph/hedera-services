@@ -71,7 +71,7 @@ val ciCheckTagExpressions =
     mapOf(
         "hapiTestCrypto" to "CRYPTO",
         "hapiTestToken" to "TOKEN",
-        "hapiTestRestart" to "RESTART",
+        "hapiTestRestart" to "RESTART|UPGRADE",
         "hapiTestSmartContract" to "SMART_CONTRACT",
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
