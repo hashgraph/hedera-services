@@ -250,7 +250,7 @@ public final class Hedera implements SwirldMain {
         servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
         logger.info(
                 "Creating Hedera Consensus Node {} with HAPI {}",
-                () -> HapiUtils.toString(version.getPbjSemanticVersion()),
+                () -> version.readableServicesVersion(),
                 () -> HapiUtils.toString(version.getHapiVersion()));
         contractServiceImpl = new ContractServiceImpl(instantSource);
         // Register all service schema RuntimeConstructable factories before platform init

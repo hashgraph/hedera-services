@@ -107,7 +107,7 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
                     : versionConfig
                             .servicesVersion()
                             .copyBuilder()
-                            .build("" + hederaConfig.configVersion())
+                            .build("c" + hederaConfig.configVersion())
                             .build();
             responseBuilder.hederaServicesVersion(servicesVersion).hapiProtoVersion(versionConfig.hapiVersion());
         }

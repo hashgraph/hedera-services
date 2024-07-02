@@ -170,7 +170,7 @@ public interface LifecycleTest {
     static SemanticVersion fromBaseAndConfig(@NonNull SemanticVersion version, int configVersion) {
         return (configVersion == 0)
                 ? version
-                : version.toBuilder().setBuild("" + configVersion).build();
+                : version.toBuilder().setBuild("c" + configVersion).build();
     }
 
     /**
