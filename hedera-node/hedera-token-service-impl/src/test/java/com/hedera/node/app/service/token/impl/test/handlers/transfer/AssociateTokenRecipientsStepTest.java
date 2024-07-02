@@ -105,7 +105,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
         subject.doIn(transferContext);
 
-        verify(handleContext, times(2)).dispatchPrecedingTransaction(any(), any(), any(), any());
+        verify(handleContext, times(2)).dispatchRemovablePrecedingTransaction(any(), any(), any(), any());
     }
 
     void givenValidTxn() {
