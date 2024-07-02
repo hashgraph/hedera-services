@@ -690,26 +690,15 @@ This module will not depend on hedera-services artifacts, so it cannot include l
 
 **Link**: [Architecture.java](native%2FArchitecture.java)
 
-###### `LibraryDescriptionEntry`
-**Description**: Given that the compilation of binary libraries produces files with different names under different OS and architectures, we need a way to assemble a catalog for all possible forms our library will take.
-A record of 3 elements that defines the name of the binary file of the library to load in a specific system architecture and OS.
-
-###### `LibraryDescription`
-**Description**: A description of the library in all supported systems.
-
 ###### `LibraryLoader`
-**Description**: Helper class that will load a library for the correct system
+**Description**: Helper class that will load a library for the current O.S/Architecture
 
 ##### Example
 
 ```java
 static {
-    List<LibraryDescriptionEntry> entries = Lists.of(
-            new LibraryDescriptionEntry(OperatingSystem.DARWIN, Architecture.ARC64, "libhedera_bls_jni.dylib"),
-            new LibraryDescriptionEntry(OperatingSystem.LINUX, Architecture.AMD64, "libhedera_bls_jni.so") /*,... Others*/);
-    LibraryDescription libHederaDescription = new LibraryDescription(entries);
     try {
-        LibraryLoader.load(libHederaDescription);
+        LibraryLoader.load("libhedera_bls_jni");
     } catch (IOException e){
         //Handle library loading problems
     }
