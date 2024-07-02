@@ -1981,7 +1981,7 @@ public class UtilVerbs {
     private static double getChargedUsdFromChild(@NonNull final HapiSpec spec, @NonNull final String txn) {
         requireNonNull(spec);
         requireNonNull(txn);
-        var subOp = getTxnRecord(txn).andAllChildRecords().logged();
+        var subOp = getTxnRecord(txn).andAllChildRecords();
         allRunFor(spec, subOp);
         final var rcd = subOp.getResponseRecord();
         final var fees = subOp.getChildRecords().isEmpty()

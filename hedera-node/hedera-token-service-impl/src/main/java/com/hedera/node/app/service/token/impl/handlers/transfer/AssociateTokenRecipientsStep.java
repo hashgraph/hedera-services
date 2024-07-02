@@ -50,7 +50,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.EntitiesConfig;
-import com.hedera.node.config.data.FeesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -182,9 +181,9 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
 
-            final var senderPaysAutoAssociation =
-                    config.getConfigData(FeesConfig.class).senderPaysAutoAssociation();
-            if (senderPaysAutoAssociation) {
+            final var unlimitedAssociationsEnabled =
+                    config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
+            if (unlimitedAssociationsEnabled) {
                 final var syntheticAssociation = TransactionBody.newBuilder()
                         .tokenAssociate(TokenAssociateTransactionBody.newBuilder()
                                 .account(account.accountId())
@@ -194,6 +193,12 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 // We don't need to verify signatures for this internal dispatch. So we specify the keyVerifier to null
                 context.dispatchPrecedingTransaction(
                         syntheticAssociation, SingleTransactionRecordBuilder.class, null, context.payer());
+                // increment the usedAutoAssociations count
+                final var accountModified = requireNonNull(accountStore.get(accountId))
+                        .copyBuilder()
+                        .usedAutoAssociations(account.usedAutoAssociations() + 1)
+                        .build();
+                accountStore.put(accountModified);
 
                 // We still need to return this association to the caller. Since this is used to set in record automatic
                 // associations.

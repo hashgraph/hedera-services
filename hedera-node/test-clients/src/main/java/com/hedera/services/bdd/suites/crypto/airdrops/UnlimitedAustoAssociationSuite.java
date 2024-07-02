@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.crypto.airdrops;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -64,45 +65,6 @@ class UnlimitedAustoAssociationSuite {
         specManager.teardown(overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE));
     }
 
-    //    @DisplayName("Auto-associate tokens will create a child record for association")
-    //    @HapiTest
-    //    final Stream<DynamicTest> autoAssociateTokensHappyPath(@AccountSpec(name = "firstUser") final SpecAccount
-    // firstUser,
-    //                                                           @AccountSpec(name = "secondUser") final SpecAccount
-    // secondUser,
-    //                                                           @FungibleTokenSpec(name = "tokenA",
-    //                                                                   keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY})
-    //                                                               final SpecFungibleToken tokenA,
-    //                                                           @NonFungibleTokenSpec(name = "tokenB",
-    //                                                                   numPreMints = 2,
-    //                                                                   keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY})
-    //                                                               final SpecNonFungibleToken tokenB) {
-    //        final String transferToFU = "transferToFU";
-    //        final String transferToSU = "transferToSU";
-    //        return propertyPreservingHapiSpec("autoAssociateTokensHappyPath")
-    //                .preserving("entities.unlimitedAutoAssociationsEnabled")
-    //                .given()
-    //                .when(
-    //                        cryptoTransfer(moving(1, tokenA.name()).between(firstUser.name(), secondUser.name()))
-    //                                .signedBy(firstUser.name())
-    //                                .payingWith(firstUser.name())
-    //                                .via(transferToFU),
-    //                        getTxnRecord(transferToFU)
-    //                                .andAllChildRecords()
-    //                                .hasNewTokenAssociation(tokenA.name(), secondUser.name())
-    //                                .logged(),
-    //                        // Transfer NFT
-    //                        cryptoTransfer(movingUnique(tokenB.name(), 1)
-    //                                .between(firstUser.name(), secondUser.name()))
-    //                                .signedBy(firstUser.name())
-    //                                .payingWith(firstUser.name())
-    //                                .via(transferToSU),
-    //                        getTxnRecord(transferToSU)
-    //                                .andAllChildRecords()
-    //                                .hasNewTokenAssociation(tokenB.name(), secondUser.name())
-    //                                .logged())
-    //                .then();
-    //    }
     @DisplayName("Auto-associate tokens will create a child record for association")
     @HapiTest
     final Stream<DynamicTest> autoAssociateTokensHappyPath() {
@@ -143,6 +105,9 @@ class UnlimitedAustoAssociationSuite {
                         .andAllChildRecords()
                         .hasChildRecordCount(1)
                         .hasNewTokenAssociation(tokenB, secondUser)
+                        .logged(),
+                getAccountInfo(secondUser)
+                        //                        .hasAlreadyUsedAutomaticAssociations(2)
                         .logged(),
                 // Total fee should include  a token association fee ($0.05) and CryptoTransfer fee ($0.001)
                 validateChargedUsdWithChild(transferFungible, 0.05 + 0.001, 0.1),

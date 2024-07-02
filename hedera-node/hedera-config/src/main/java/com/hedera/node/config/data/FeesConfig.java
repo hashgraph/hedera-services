@@ -27,5 +27,4 @@ public record FeesConfig(
         @ConfigProperty(defaultValue = "60") @NetworkProperty int minCongestionPeriod,
         @ConfigProperty(defaultValue = "90,10x,95,25x,99,100x") CongestionMultipliers percentCongestionMultipliers,
         @ConfigProperty(defaultValue = "DEFAULT(0,1:1)") EntityScaleFactors percentUtilizationScaleFactors,
-        @ConfigProperty(defaultValue = "380") @NetworkProperty int tokenTransferUsageMultiplier,
-        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean senderPaysAutoAssociation) {}
+        @ConfigProperty(defaultValue = "380") @NetworkProperty int tokenTransferUsageMultiplier) {}
