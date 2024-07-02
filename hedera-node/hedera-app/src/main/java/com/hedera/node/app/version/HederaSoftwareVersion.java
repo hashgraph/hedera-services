@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.version;
 
+import static com.hedera.hapi.util.HapiUtils.alphaNumberOrMaxValue;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -27,7 +28,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 /**
  * An implementation of {@link SoftwareVersion} which can be saved in state and holds information about the HAPI and
@@ -44,7 +44,6 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     public static final long CLASS_ID = 0x6f2b1bc2df8cbd0cL;
     public static final int RELEASE_027_VERSION = 1;
     public static final int RELEASE_048_VERSION = 2;
-    public static final Pattern ALPHA_PRE_PATTERN = Pattern.compile("alpha[.](\\d+)");
 
     private int configVersion;
     private SemanticVersion hapiVersion;
@@ -211,14 +210,5 @@ public class HederaSoftwareVersion implements SoftwareVersion {
             builder.build("");
         }
         return builder.build();
-    }
-
-    private static int alphaNumberOrMaxValue(@Nullable final String pre) {
-        if (pre == null) {
-            return Integer.MAX_VALUE;
-        }
-        final var alphaMatch = ALPHA_PRE_PATTERN.matcher(pre);
-        // alpha versions come before everything else
-        return alphaMatch.matches() ? Integer.parseInt(alphaMatch.group(1)) : Integer.MAX_VALUE;
     }
 }

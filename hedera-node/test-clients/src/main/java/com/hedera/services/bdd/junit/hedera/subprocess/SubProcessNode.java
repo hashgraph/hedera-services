@@ -39,6 +39,7 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -148,9 +149,6 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
                         nodeStatusObserver.accept(new NodeStatus(
                                 lookupAttempt, grpcStatus, bindExceptionSeen, retryCount.getAndIncrement()));
                     }
-                    if (bindExceptionSeen == BindExceptionSeen.YES) {
-                        throw new IllegalStateException("Address already in use");
-                    }
                     return statusReached;
                 },
                 () -> retryCount.get() > MAX_PROMETHEUS_RETRIES ? LOG_SCAN_BACKOFF_MS : PROMETHEUS_BACKOFF_MS);
@@ -195,8 +193,8 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
     private boolean swirldsLogContains(@NonNull final String text) {
         try (var lines = Files.lines(getExternalPath(SWIRLDS_LOG))) {
             return lines.anyMatch(line -> line.contains(text));
-        } catch (IOException ignore) {
-            return false;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
