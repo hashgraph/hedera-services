@@ -313,6 +313,7 @@ public class HandleWorkflow {
             }
             return finalRecordStream(userTxn);
         } catch (final Exception e) {
+            e.printStackTrace();
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
             return failInvalidRecordStream(userTxn);
         }

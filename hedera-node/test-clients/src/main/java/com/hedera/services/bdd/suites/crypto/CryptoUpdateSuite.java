@@ -566,7 +566,7 @@ public class CryptoUpdateSuite {
                         getContractInfo(CONTRACT)
                                 .payingWith(GENESIS)
                                 .has(contractWith()
-                                        .hasAlreadyUsedAutomaticAssociations(originalMax)
+                                        .hasAlreadyUsedAutomaticAssociations(0)
                                         .maxAutoAssociations(originalMax)),
                         contractUpdate(CONTRACT)
                                 .newMaxAutomaticAssociations(newBadMax)
