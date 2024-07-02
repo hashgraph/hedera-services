@@ -38,6 +38,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -180,10 +181,9 @@ public class IsAuthorizedRawCall extends AbstractCall {
         if (output.isEmpty()) return false;
 
         // ECRECOVER produced an address:  Must match our account's alias address
-        final var recoveredAddress = output.slice(12); // LAST 20 bytes are where the EVM address is
-        final var recoveredAddressAsInt = recoveredAddress.toBigInteger(ByteOrder.LITTLE_ENDIAN);
-        final var givenAddressAsInt = address.value();
-        final var addressesMatch = givenAddressAsInt.equals(recoveredAddressAsInt);
+        final var recoveredAddress = output.slice(12).toArray(); // LAST 20 bytes are where the EVM address is
+        final var givenAddress = explicitFromHeadlong(address);
+        final var addressesMatch = 0 == Arrays.compare(recoveredAddress, givenAddress);
 
         return addressesMatch;
     }
