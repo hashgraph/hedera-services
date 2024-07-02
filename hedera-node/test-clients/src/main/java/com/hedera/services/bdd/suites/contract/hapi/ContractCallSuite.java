@@ -2757,20 +2757,6 @@ public class ContractCallSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
-        return hapiTest(
-                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
-                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .maxAutomaticTokenAssociations(5)
-                        .hasPrecheck(NOT_SUPPORTED),
-                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).maxAutomaticTokenAssociations(0),
-                contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .newMaxAutomaticAssociations(5)
-                        .hasPrecheck(NOT_SUPPORTED),
-                contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT).newMemo("Hola!"));
-    }
-
-    @HapiTest
     final Stream<DynamicTest> lazyCreateInConstructor() {
         final var depositAmount = 1000;
 

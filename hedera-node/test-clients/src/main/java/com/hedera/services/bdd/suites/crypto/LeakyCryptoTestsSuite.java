@@ -1237,10 +1237,8 @@ public class LeakyCryptoTestsSuite {
         final String tokenBcreateTxn = "tokenBCreate";
         final String transferToFU = "transferToFU";
 
-        return propertyPreservingHapiSpec("autoAssociationWorksForContracts", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("contracts.allowAutoAssociations")
+        return defaultHapiSpec("autoAssociationWorksForContracts", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
                         newKeyNamed(SUPPLY_KEY),
                         uploadInitCode(theContract),
                         contractCreate(theContract).maxAutomaticTokenAssociations(2),
@@ -1306,10 +1304,8 @@ public class LeakyCryptoTestsSuite {
         final var otherCollector = "otherCollector";
         final var finalTxn = "finalTxn";
 
-        return propertyPreservingHapiSpec("CustomFeesHaveExpectedAutoCreateInteractions", FULLY_NONDETERMINISTIC)
-                .preserving("contracts.allowAutoAssociations")
+        return defaultHapiSpec("CustomFeesHaveExpectedAutoCreateInteractions", FULLY_NONDETERMINISTIC)
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
                         wellKnownTokenEntities(),
                         cryptoCreate(otherCollector),
                         cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(42),

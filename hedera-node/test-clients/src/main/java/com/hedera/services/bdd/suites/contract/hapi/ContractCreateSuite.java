@@ -67,6 +67,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -162,7 +163,6 @@ public class ContractCreateSuite {
             "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
     private static final String EXPECTED_DEPLOYER_ADDRESS = "4e59b44847b379578588920ca78fbf26c0b4956c";
     private static final String DEPLOYER = "DeployerContract";
-    public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS = "contracts.allowAutoAssociations";
     public static final String ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED =
             "entities.unlimitedAutoAssociationsEnabled";
     public static final String LEDGER_MAX_AUTO_ASSOCIATIONS = "ledger.maxAutoAssociations";
@@ -342,12 +342,10 @@ public class ContractCreateSuite {
         final var createContract = "CreateTrivial";
         return propertyPreservingHapiSpec("contractCreationsHaveValidAssociations")
                 .preserving(
-                        CONTRACTS_ALLOW_AUTO_ASSOCIATIONS,
                         ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED,
                         LEDGER_MAX_AUTO_ASSOCIATIONS)
                 .given(
-                        overridingThree(
-                                CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, TRUE_VALUE,
+                        overridingTwo(
                                 ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE,
                                 LEDGER_MAX_AUTO_ASSOCIATIONS, "5000"),
                         newKeyNamed(MULTI_KEY),
@@ -818,17 +816,14 @@ public class ContractCreateSuite {
                         .logged());
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> contractCreateShouldChargeTheSame() {
         final var createFeeWithMaxAutoAssoc = 10L;
         final var contract1 = "EmptyOne";
         final var contract2 = "EmptyTwo";
-        return propertyPreservingHapiSpec("contractCreateShouldChargeTheSame")
-                .preserving("contracts.allowAutoAssociations")
+        return defaultHapiSpec("contractCreateShouldChargeTheSame")
                 .given(
                         uploadInitCode(contract1),
-                        uploadInitCode(contract2),
-                        overriding("contracts.allowAutoAssociations", TRUE_VALUE))
+                        uploadInitCode(contract2))
                 .when(
                         contractCreate(contract1)
                                 .via(contract1)
@@ -954,19 +949,6 @@ public class ContractCreateSuite {
                                 .logged())
                 .when()
                 .then();
-    }
-
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
-    final Stream<DynamicTest> cannotSetMaxAutomaticAssociations() {
-        return propertyPreservingHapiSpec("cannotSetMaxAutomaticAssociations")
-                .preserving(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS)
-                .given(
-                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
-                        overriding(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, FALSE_VALUE))
-                .when()
-                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .maxAutomaticTokenAssociations(10)
-                        .hasKnownStatus(NOT_SUPPORTED));
     }
 
     private EthTxData placeholderEthTx() {
