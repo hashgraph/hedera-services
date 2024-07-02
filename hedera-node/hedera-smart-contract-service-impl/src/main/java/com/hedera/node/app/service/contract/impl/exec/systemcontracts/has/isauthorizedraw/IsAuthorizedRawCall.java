@@ -116,7 +116,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
         // Gotta have an account that the given address is an alias for
         final Optional<Account> account;
         if (authorized) {
-            // TODO: Given code above account always exists
+            // (Given code above account always exists - but keeping this in case we move things around)
             account = Optional.ofNullable(enhancement.nativeOperations().getAccount(accountNum));
             authorized = account.isPresent();
         } else account = Optional.empty();
@@ -222,8 +222,9 @@ public class IsAuthorizedRawCall extends AbstractCall {
     @NonNull
     public Optional<Byte> reverseV(final byte v) {
 
-        // Odd, seems that the specification of ECRECOVER wasn't updated for EIP-155 - Besu
-        // (at least) really wants v ∈ {27, 28}.
+        // We're getting the recovery value from a signature where it is only given a byte.  So
+        // this isn't the EIP-155 recovery value where the chain id is encoded in it (it's too
+        // small for most chain ids).  But I'm not 100% sure of that ... so ...
 
         if (v == 0 || v == 1) return Optional.of((byte) (v + 27));
         if (v == 27 || v == 28) return Optional.of(v);
