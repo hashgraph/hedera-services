@@ -1231,11 +1231,8 @@ public class SingleTransactionRecordBuilderImpl
      * Returns the {@link TransactionRecord.Builder} of the record. It can be PRECEDING, CHILD, USER or SCHEDULED.
      * @return the {@link TransactionRecord.Builder} of the record
      */
-    public TransactionCategory getCategory() {
+    @Override
+    public TransactionCategory category() {
         return category;
-    }
-
-    public boolean isInternalDispatchedRecord() {
-        return !category.equals(USER);
     }
 }
