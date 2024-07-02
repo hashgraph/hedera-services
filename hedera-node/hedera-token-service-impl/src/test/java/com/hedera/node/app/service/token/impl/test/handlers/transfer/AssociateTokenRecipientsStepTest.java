@@ -81,6 +81,11 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNull();
         assertThat(writableTokenRelStore.get(spenderId, nonFungibleTokenId)).isNull();
 
+        final var modifiedConfiguration = HederaTestConfigBuilder.create()
+                .withValue("entities.unlimitedAutoAssociationsEnabled", false)
+                .getOrCreateConfig();
+        given(handleContext.configuration()).willReturn(modifiedConfiguration);
+
         subject.doIn(transferContext);
 
         assertThat(writableTokenRelStore.get(ownerId, fungibleTokenId)).isNotNull();
