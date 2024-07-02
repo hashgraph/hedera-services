@@ -811,6 +811,13 @@ we need to test each configuration 100 times to get confident mins, maxes, and a
 ## Security Audit
 After this proposal is accepted we will invite security team to define the necessary steps for auditing the code.
 
+## Alternatives Considered
+- As mentioned before, Java Foreign Function Interface is still immature so it was not considered for this proposal.
+- Using JCA through Bouncy Castle implementation was analyzed. BC provides support for EC-Curves, but it does not support Pairings which are required for BLS signatures.
+  [beacon-chain](https://github.com/harmony-dev/beacon-chain-java/tree/master) implemented the support using bouncy castle + [Milagro](https://incubator.apache.org/projects/milagro.html) 
+but Milagro project is reported to have little coverage, not audited. Milagro podling has been retired on 2024-03-21.
+
+
 ## Implementation and Delivery Plan by stages
 **Stage 1**
 * Preconditions:
