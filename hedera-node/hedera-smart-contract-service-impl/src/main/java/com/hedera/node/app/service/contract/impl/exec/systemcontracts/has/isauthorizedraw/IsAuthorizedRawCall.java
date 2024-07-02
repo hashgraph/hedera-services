@@ -55,7 +55,8 @@ public class IsAuthorizedRawCall extends AbstractCall {
     private final byte[] signature;
 
     private static final GasCalculator noCalculationGasCalculator = new CustomGasCalculator();
-    private static final ECRECPrecompiledContract ecPrecompile = new ECRECPrecompiledContract(noCalculationGasCalculator);
+    private static final ECRECPrecompiledContract ecPrecompile =
+            new ECRECPrecompiledContract(noCalculationGasCalculator);
 
     private static final long HARDCODED_GAS_REQUIREMENT_GAS = 1_500_000L;
 

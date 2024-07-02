@@ -16,9 +16,7 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.calculateSignableMessage;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPrivateKey;
-import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -35,18 +33,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyF
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.suites.utils.contracts.BoolResult;
-import java.math.BigInteger;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,10 +68,11 @@ public class IsAuthorizedSuite {
                         contractCreate(HRC632_CONTRACT))
                 .when(withOpContext((spec, opLog) -> {
                     final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
-//                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-//                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-//                    final var addressBytes = recoverAddressFromPubKey(tmp);
-//                    var signedBytes = EthTxSigs.signMessage(messageHash, getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY));
+                    //                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+                    //                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    //                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    //                    var signedBytes = EthTxSigs.signMessage(messageHash,
+                    // getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY));
 
                     // Approach 2: Generate Public key & address to make sure test suite is not giving another one.
                     final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
@@ -85,17 +80,17 @@ public class IsAuthorizedSuite {
                     final var signedBytes = EthTxSigs.signMessage(messageHash, privateKey);
 
                     var call = contractCall(
-                            HRC632_CONTRACT,
-                            "isAuthorizedRawCall",
-                            asHeadlongAddress(addressBytes), messageHash, signedBytes)
+                                    HRC632_CONTRACT,
+                                    "isAuthorizedRawCall",
+                                    asHeadlongAddress(addressBytes),
+                                    messageHash,
+                                    signedBytes)
                             .via("authorizeCall");
                     allRunFor(spec, call);
                 }))
-                .then(
-                        getTxnRecord("authorizeCall")
-                                .hasPriority(recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))
-                                ));
+                .then(getTxnRecord("authorizeCall")
+                        .hasPriority(recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))));
     }
 }
