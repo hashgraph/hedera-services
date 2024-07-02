@@ -51,9 +51,9 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @HapiTestLifecycle
-@DisplayName("UnlimitedAssociations")
+@DisplayName("UnlimitedAutoAssociationSuite")
 @Tag(TOKEN)
-class UnlimitedAustoAssociationSuite {
+class UnlimitedAutoAssociationSuite {
     @BeforeAll
     static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
         // Multiple tests use the same contract, so we upload it once here
