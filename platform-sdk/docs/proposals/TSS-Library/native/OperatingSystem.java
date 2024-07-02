@@ -43,7 +43,7 @@ public enum OperatingSystem {
         final String osName = System.getProperty("os.name").toLowerCase();
         if (osName.contains("win")) {
             return WINDOWS;
-        } else if (osName.contains("nix") || osName.contains("nux") || osName.contains("aix")) {
+        } else if (osName.contains("nix") || osName.contains("nux") ) {
             return LINUX;
         } else if (osName.contains("mac")) {
             return DARWIN;
