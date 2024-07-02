@@ -91,7 +91,10 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
         final var gasRequirement = gasCalculator.gasCostInTinybars(HARDCODED_GAS_REQUIREMENT_GAS);
 
+        // FUTURE: Fail fast if large gas requirement isn't satisfied
+
         final var signatureType =
+                // FUTURE: Consider a response code for "invalid argument to precompile"
                 switch (signature.length) {
                     case 65 -> SignatureType.EC;
                     case 64 -> SignatureType.ED;
@@ -107,6 +110,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
         // Validate parameters according to signature type
         if (authorized) {
+            // FUTURE: Consider a response code for "invalid argument to precompile"6
             authorized = switch (signatureType) {
                 case EC -> messageHash.length == 32;
                 case ED -> true;
@@ -124,12 +128,14 @@ public class IsAuthorizedRawCall extends AbstractCall {
         // If ED then require a key on the account
         final Optional<Key> key;
         if (authorized && signatureType == SignatureType.ED) {
+            // FUTURE: Consider a response code for "account must have key"
             key = Optional.ofNullable(account.get().key());
             authorized = key.isPresent();
         } else key = Optional.empty();
 
         // Key must be simple (for isAuthorizedRaw)
         if (authorized && key.isPresent()) {
+            // FUTURE: Consider a response code for "key must be simple"
             final Key ky = key.get();
             final boolean keyIsSimple = !ky.hasKeyList() && !ky.hasThresholdKey();
             authorized = keyIsSimple;
@@ -137,12 +143,14 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
         // Key must match signature type
         if (authorized && key.isPresent()) {
+            // FUTURE: Consider INVALID_SIGNATURE_TYPE_MISMATCHING response code
             authorized = switch (signatureType) {
                 case ED -> key.get().hasEd25519();
                 case EC -> false;
                 default -> false;};
         }
 
+        // Finally: Do the signature validation we came here for
         if (authorized) {
             authorized = switch (signatureType) {
                 case EC -> validateEcSignature(address, frame);
