@@ -285,7 +285,9 @@ public class HapiUtils {
                 .append(version.minor())
                 .append(".")
                 .append(version.patch());
-        if (version.pre() != null && !version.pre().isBlank() && alphaNumberOrMaxValue(version.pre()) != Integer.MAX_VALUE) {
+        if (version.pre() != null
+                && !version.pre().isBlank()
+                && alphaNumberOrMaxValue(version.pre()) != Integer.MAX_VALUE) {
             baseVersion.append("-").append(version.pre());
         }
         if (version.build() != null && !version.build().isBlank()) {
