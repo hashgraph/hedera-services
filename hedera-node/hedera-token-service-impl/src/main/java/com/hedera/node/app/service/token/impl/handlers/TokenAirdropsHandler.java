@@ -157,7 +157,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
             boolean shouldExecuteCryptoTransfer = false;
             var transferListBuilder = TokenTransferList.newBuilder().token(tokenId);
 
-            // process fungible token transfers
+            // process fungible token transfers if any
             if (!xfers.transfers().isEmpty()) {
                 // 1. separate transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
@@ -167,16 +167,16 @@ public class TokenAirdropsHandler implements TransactionHandler {
                         .findFirst();
 
                 // 2. create and save pending airdrops in to state
-                fungibleLists.pendingFungibleAmounts().forEach(amount -> {
+                fungibleLists.pendingFungibleAmounts().forEach(accountAmount -> {
                     var pendingId = createFungibleTokenPendingAirdropId(
-                            tokenId, senderAccount.orElseThrow().accountID(), amount.accountID());
-                    var pendingValue = createPendingAirdropValue(amount.amount());
+                            tokenId, senderAccount.orElseThrow().accountID(), accountAmount.accountID());
+                    var pendingValue = createPendingAirdropValue(accountAmount.amount());
                     var record = createPendingAirdropRecord(pendingId, pendingValue);
                     pendingStore.put(pendingId, pendingValue);
-                    recordBuilder.pendingAirdropList(record);
+                    recordBuilder.addPendingAirdrop(record);
                 });
 
-                // 3. create account amounts and add to transfer list
+                // 3. create account amounts and add them to the transfer list
                 if (!fungibleLists.transferFungibleAmounts().isEmpty()) {
                     shouldExecuteCryptoTransfer = true;
                     List<AccountAmount> amounts = new LinkedList<>();
@@ -197,7 +197,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
                 }
             }
 
-            // process non-fungible tokens
+            // process non-fungible tokens transfers if any
             if (!xfers.nftTransfers().isEmpty()) {
                 // 1. separate NFT transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
@@ -209,7 +209,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
                             tokenId, item.serialNumber(), item.senderAccountID(), item.receiverAccountID());
                     pendingStore.put(pendingId, PendingAirdropValue.DEFAULT);
                     var record = createPendingAirdropRecord(pendingId, PendingAirdropValue.DEFAULT);
-                    recordBuilder.pendingAirdropList(record);
+                    recordBuilder.addPendingAirdrop(record);
                 });
 
                 // 3. add to transfer list
