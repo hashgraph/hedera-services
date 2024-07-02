@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_OUTCOMES;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_PRECHECKS;
@@ -45,8 +44,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewAccount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -108,7 +105,6 @@ public class CryptoCreateSuite {
     public static final String NO_KEYS = "noKeys";
     public static final String SHORT_KEY = "shortKey";
     public static final String EMPTY_KEY_STRING = "emptyKey";
-    public static final String UNLIMITED_AUTO_ASSOCIATIONS_ENABLED = "entities.unlimitedAutoAssociationsEnabled";
     private static final String ED_KEY = "EDKEY";
 
     @HapiTest
@@ -232,10 +228,8 @@ public class CryptoCreateSuite {
         final var unlimitedAutoAssocSlots = "unlimitedAutoAssocSlots";
         final var token = "token";
 
-        return propertyPreservingHapiSpec("usdFeeAsExpected")
-                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
+        return defaultHapiSpec("usdFeeAsExpected")
                 .given(
-                        overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE),
                         cryptoCreate(CIVILIAN).balance(5 * ONE_HUNDRED_HBARS),
                         getAccountBalance(CIVILIAN).hasTinyBars(5 * ONE_HUNDRED_HBARS))
                 .when(
@@ -926,16 +920,9 @@ public class CryptoCreateSuite {
     final Stream<DynamicTest> createAnAccountWithNegativeMaxAutoAssocAndBalance() {
         double v13PriceUsd = 0.05;
         final var negativeAutoAssocSlots = "negativeAutoAssocSlots";
-        return propertyPreservingHapiSpec("createAnAccountWithNoMaxAutoAssocAndBalance")
-                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
+        return defaultHapiSpec("createAnAccountWithNoMaxAutoAssocAndBalance")
                 .given(
-                        overridingThree(
-                                LAZY_CREATION_ENABLED,
-                                TRUE_VALUE,
-                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
-                                TRUE_VALUE,
-                                UNLIMITED_AUTO_ASSOCIATIONS_ENABLED,
-                                TRUE_VALUE),
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_KEY).shape(ED25519),
                         cryptoCreate(ED_KEY).balance(ONE_HUNDRED_HBARS),
