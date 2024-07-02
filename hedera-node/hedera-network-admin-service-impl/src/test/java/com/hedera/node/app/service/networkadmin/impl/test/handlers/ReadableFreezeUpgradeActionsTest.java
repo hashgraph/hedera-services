@@ -170,7 +170,7 @@ class ReadableFreezeUpgradeActionsTest {
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
         final Bytes invalidArchive = Bytes.wrap("Not a valid zip archive".getBytes(StandardCharsets.UTF_8));
-        subject.extractSoftwareUpgrade(invalidArchive).join();
+        subject.extractSoftwareUpgrade(invalidArchive, false).join();
 
         assertThat(logCaptor.errorLogs())
                 .anyMatch(l -> l.startsWith("Failed to unzip archive for NMT consumption java.io.IOException:" + " "));
@@ -188,24 +188,22 @@ class ReadableFreezeUpgradeActionsTest {
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
-        subject.extractSoftwareUpgrade(realArchive).join();
+        subject.extractSoftwareUpgrade(realArchive, false).join();
 
-        assertThat(logCaptor.infoLogs()).anyMatch(l -> l.equals("Node state is empty, cannot generate config.txt"));
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
     }
 
     @Test
-    void preparesForUpgradeWithDAB() throws IOException {
+    void preparesForUpgradeWithDABDisabled() throws IOException {
         setupNoiseFiles();
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
-        setupNodes();
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
-        subject.extractSoftwareUpgrade(realArchive).join();
+        subject.extractSoftwareUpgrade(realArchive, false).join();
 
-        assertDABFilesCreated(EXEC_IMMEDIATE_MARKER, zipOutputDir.toPath());
+        assertDABFilesNotCreated(zipOutputDir.toPath());
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
     }
 
@@ -490,5 +488,10 @@ class ReadableFreezeUpgradeActionsTest {
             assertArrayEquals(pemFile2, pemFile2Bytes);
             assertArrayEquals(pemFile4, pemFile4Bytes);
         }
+    }
+
+    private void assertDABFilesNotCreated(final Path baseDir) {
+        final Path configFilePath = baseDir.resolve("config.txt");
+        assertFalse(configFilePath.toFile().exists());
     }
 }

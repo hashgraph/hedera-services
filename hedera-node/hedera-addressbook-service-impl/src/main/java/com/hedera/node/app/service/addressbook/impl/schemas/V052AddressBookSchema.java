@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.config.data.NodesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.MigrationContext;
@@ -59,6 +60,13 @@ public class V052AddressBookSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
+
+        final var enableDAB =
+                ctx.configuration().getConfigData(NodesConfig.class).enableDAB();
+        if (!enableDAB) {
+            log.info("DAB is disabled, skipping migration");
+            return;
+        }
         final WritableKVState<EntityNumber, Node> writableNodes =
                 ctx.newStates().get(NODES_KEY);
         final var networkInfo = ctx.networkInfo();

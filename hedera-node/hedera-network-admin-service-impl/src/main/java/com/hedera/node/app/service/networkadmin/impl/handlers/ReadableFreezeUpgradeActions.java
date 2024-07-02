@@ -152,7 +152,7 @@ public class ReadableFreezeUpgradeActions {
         return extractNow(archiveData, TELEMETRY_UPGRADE_DESC, EXEC_TELEMETRY_MARKER, now);
     }
 
-    public CompletableFuture<Void> extractSoftwareUpgrade(@NonNull final Bytes archiveData) {
+    public CompletableFuture<Void> extractSoftwareUpgrade(@NonNull final Bytes archiveData, boolean enableDAB) {
         requireNonNull(archiveData);
         return extractNow(archiveData, PREPARE_UPGRADE_DESC, EXEC_IMMEDIATE_MARKER, null);
     }
@@ -179,16 +179,23 @@ public class ReadableFreezeUpgradeActions {
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
         // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
-        return runAsync(() -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now), executor);
+        return runAsync(
+                () -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now, false), executor);
     }
 
     private void extractAndReplaceArtifacts(
-            Path artifactsLoc, Bytes archiveData, long size, String desc, String marker, Timestamp now) {
+            Path artifactsLoc,
+            Bytes archiveData,
+            long size,
+            String desc,
+            String marker,
+            Timestamp now,
+            boolean enableDAB) {
         try {
             FileUtils.cleanDirectory(artifactsLoc.toFile());
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
-            if (desc.equals(PREPARE_UPGRADE_DESC)) {
+            if (desc.equals(PREPARE_UPGRADE_DESC) && enableDAB) {
                 generateConfigPem(artifactsLoc);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
@@ -314,7 +321,7 @@ public class ReadableFreezeUpgradeActions {
                 log.error(MANUAL_REMEDIATION_ALERT);
                 return;
             }
-            extractSoftwareUpgrade(curSpecialFileContents).join();
+            extractSoftwareUpgrade(curSpecialFileContents, false).join();
         } catch (final IOException e) {
             log.error(
                     "Cannot redo NMT upgrade prep, file 0.0.{} changed since FREEZE_UPGRADE",
