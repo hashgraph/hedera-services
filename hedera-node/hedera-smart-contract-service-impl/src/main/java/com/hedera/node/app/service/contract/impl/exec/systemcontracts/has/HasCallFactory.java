@@ -72,8 +72,7 @@ public class HasCallFactory implements CallFactory {
             @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
-        final var proxyUpdater = proxyUpdaterFor(frame);
-        final var enhancement = proxyUpdater.enhancement();
+        final var enhancement = proxyUpdaterFor(frame).enhancement();
         return new HasCallAttempt(
                 input,
                 frame.getSenderAddress(),

@@ -87,6 +87,8 @@ public class IsAuthorizedRawCall extends AbstractCall {
     public PricedResult execute(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
 
+        final var gasRequirement = gasCalculator.gasCostInTinybars(HARDCODED_GAS_REQUIREMENT_GAS);
+
         final var signatureType =
                 switch (signature.length) {
                     case 65 -> SignatureType.EC;
@@ -96,8 +98,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
         var accountNum = accountNumberForEvmReference(address, nativeOperations());
         if (!isValidAccount(accountNum, signatureType)) {
-            return gasOnly(
-                    revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement()), INVALID_ACCOUNT_ID, true);
+            return gasOnly(revertResult(INVALID_ACCOUNT_ID, gasRequirement), INVALID_ACCOUNT_ID, true);
         }
 
         boolean authorized = true;
@@ -147,10 +148,8 @@ public class IsAuthorizedRawCall extends AbstractCall {
                 default -> false;};
         }
 
-        final var gasRequirement = gasCalculator.gasCostInTinybars(HARDCODED_GAS_REQUIREMENT_GAS);
-
         final var result = authorized
-                ? gasOnly(successResult(encodedAuthorizationOutput(authorized), gasRequirement), SUCCESS, false)
+                ? gasOnly(successResult(encodedAuthorizationOutput(authorized), gasRequirement), SUCCESS, true)
                 : reversionWith(INVALID_SIGNATURE, gasRequirement);
         return result;
     }

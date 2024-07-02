@@ -96,7 +96,7 @@ public interface FeatureFlags {
         return false;
     }
 
-    default boolean isHASIsAuthorizedRawMethodEnabled(@NonNull Configuration config) {
+    default boolean isAuthorizedRawMethodEnabled(@NonNull Configuration config) {
         return false;
     }
 }
