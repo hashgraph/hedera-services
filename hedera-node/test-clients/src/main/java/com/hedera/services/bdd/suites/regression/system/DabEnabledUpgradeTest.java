@@ -36,6 +36,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNex
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_BILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.regression.system.LifecycleTest.configVersionOf;
+import static java.lang.Integer.MAX_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -76,8 +77,12 @@ import org.junit.jupiter.api.TestMethodOrder;
  * <p>
  * See <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#user-stories">here</a>
  * for the associated HIP-869 user stories.
+ * <p>
+ * Since this test upgrades the software version, it must run after any other test that does a restart assuming
+ * the config version is still zero.
  */
 @Tag(UPGRADE)
+@Order(MAX_VALUE)
 @DisplayName("Upgrading with DAB enabled")
 @HapiTestLifecycle
 @OrderedInIsolation
