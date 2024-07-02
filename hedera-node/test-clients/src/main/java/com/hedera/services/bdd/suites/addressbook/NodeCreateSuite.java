@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
@@ -42,7 +43,7 @@ public class NodeCreateSuite {
         final String description = "His vorpal blade went snicker-snack!";
 
         return hapiTest(
-                nodeCreate("ntb").description(description),
+                nodeCreate("ntb").signedBy(GENESIS).description(description),
                 viewNode(
                         "ntb", node -> assertEquals(description, node.description(), "Node was created successfully")));
     }

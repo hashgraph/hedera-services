@@ -184,25 +184,10 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             final var unlimitedAssociationsEnabled =
                     config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
             if (unlimitedAssociationsEnabled) {
-                final var syntheticAssociation = TransactionBody.newBuilder()
-                        .tokenAssociate(TokenAssociateTransactionBody.newBuilder()
-                                .account(account.accountId())
-                                .tokens(token.tokenId())
-                                .build())
-                        .build();
-                // We don't need to verify signatures for this internal dispatch. So we specify the keyVerifier to null
-                context.dispatchRemovablePrecedingTransaction(
-                        syntheticAssociation, SingleTransactionRecordBuilder.class, null, context.payer());
-                // increment the usedAutoAssociations count
-                final var accountModified = requireNonNull(accountStore.getAliasedAccountById(accountId))
-                        .copyBuilder()
-                        .usedAutoAssociations(account.usedAutoAssociations() + 1)
-                        .build();
-                accountStore.put(accountModified);
-
+                dispatchAutoAssociation(token, accountStore, tokenRelStore, context, account);
                 // We still need to return this association to the caller. Since this is used to set in record automatic
                 // associations.
-                return asTokenAssociation(token.tokenId(), account.accountId());
+                return asTokenAssociation(tokenId, accountId);
             } else {
                 // Once the unlimitedAssociationsEnabled is enabled, this block of code can be removed and
                 // all auto-associations will be done through the synthetic transaction and charged.
@@ -214,6 +199,37 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
             return null;
         }
+    }
+
+    private void dispatchAutoAssociation(
+            final @NonNull Token token,
+            final @NonNull WritableAccountStore accountStore,
+            final @NonNull WritableTokenRelationStore tokenRelStore,
+            final @NonNull HandleContext context,
+            final @NonNull Account account) {
+        final var accountId = account.accountIdOrThrow();
+        final var tokenId = token.tokenIdOrThrow();
+        final var syntheticAssociation = TransactionBody.newBuilder()
+                .tokenAssociate(TokenAssociateTransactionBody.newBuilder()
+                        .account(account.accountId())
+                        .tokens(token.tokenId())
+                        .build())
+                .build();
+        // We don't need to verify signatures for this internal dispatch. So we specify the keyVerifier to null
+        context.dispatchRemovablePrecedingTransaction(
+                syntheticAssociation, SingleTransactionRecordBuilder.class, null, context.payer());
+        // increment the usedAutoAssociations count
+        final var accountModified = requireNonNull(accountStore.getAliasedAccountById(accountId))
+                .copyBuilder()
+                .usedAutoAssociations(account.usedAutoAssociations() + 1)
+                .build();
+        accountStore.put(accountModified);
+        // We need to set this as auto-association
+        final var newTokenRel = requireNonNull(tokenRelStore.get(accountId, tokenId))
+                .copyBuilder()
+                .automaticAssociation(true)
+                .build();
+        tokenRelStore.put(newTokenRel);
     }
 
     private void validateFungibleAllowance(
