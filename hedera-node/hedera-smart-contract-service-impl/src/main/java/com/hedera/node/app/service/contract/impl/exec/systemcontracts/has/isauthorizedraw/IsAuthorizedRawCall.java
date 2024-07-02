@@ -23,14 +23,18 @@ import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.com
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
+import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.ECRECPrecompiledContract;
@@ -40,17 +44,29 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
     private final VerificationStrategy verificationStrategy;
     private final AccountID sender;
-    private final long address;
+    private final byte[] address;
     private final byte[] messageHash;
     private final byte[] signature;
+
+    private Optional<java.util.function.Function<Address, HederaEvmAccount>> getHederaAccount;
 
     private GasCalculator noCalculationGasCalculator = new CustomGasCalculator();
 
     private static long HARDCODED_GAS_REQUIREMENT_GAS = 1_500_000L;
 
+    enum SignatureType {
+        Invalid,
+        EC,
+        ED
+    };
+
+    // From Ethereum yellow paper (for reference only):
+    private static BigInteger secp256k1n =
+            new BigInteger("115792089237316195423570985008687907852837564279074904382605163141518161494337");
+
     public IsAuthorizedRawCall(
             @NonNull final HasCallAttempt attempt,
-            final long address,
+            @NonNull final byte[] address,
             @NonNull final byte[] messageHash,
             @NonNull final byte[] signature) {
         super(attempt.systemContractGasCalculator(), attempt.enhancement(), false);
@@ -60,6 +76,8 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
         this.verificationStrategy = attempt.defaultVerificationStrategy();
         this.sender = attempt.senderId();
+
+        this.getHederaAccount = attempt.getGetHederaAccount();
     }
 
     @NonNull
@@ -67,15 +85,62 @@ public class IsAuthorizedRawCall extends AbstractCall {
     public PricedResult execute(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
 
-        boolean authorized = true;
+        boolean authorized = getHederaAccount.isPresent();
 
-        final Optional<byte[]> key = getAccountKey(address);
-        if (key.isEmpty()) authorized = false;
+        final var signatureType =
+                switch (signature.length) {
+                    case 65 -> SignatureType.EC;
+                    case 64 -> SignatureType.ED;
+                    default -> SignatureType.Invalid;
+                };
+
+        // Validate parameters
+        if (authorized) {
+            authorized = address.length == 20; // An EVM address
+        }
+
+        // Validate parameters according to signature type
+        if (authorized) {
+            authorized = switch (signatureType) {
+                case EC -> messageHash.length == 32;
+                case ED -> true;
+                case Invalid -> false;};
+        }
+
+        // Gotta have an account that the given address is an alias for
+        final Optional<HederaEvmAccount> account;
+        if (authorized) {
+            final var besuAddress = Address.wrap(Bytes.wrap(address));
+            account = Optional.ofNullable(getHederaAccount.get().apply(besuAddress));
+            authorized = account.isPresent();
+        } else account = Optional.empty();
+
+        // If ED then require a key on the account
+        final Optional<Key> key;
+        if (authorized && signatureType == SignatureType.ED) {
+            key = Optional.ofNullable(account.get().toNativeAccount().key());
+            authorized = key.isPresent();
+        } else key = Optional.empty();
+
+        // Key must be simple (for isAuthorizedRaw)
+        if (authorized && key.isPresent()) {
+            final Key ky = key.get();
+            final boolean keyIsSimple = !ky.hasKeyList() && !ky.hasThresholdKey();
+            authorized = keyIsSimple;
+        }
+
+        // Key must match signature type
+        if (authorized && key.isPresent()) {
+            authorized = switch (signatureType) {
+                case ED -> key.get().hasEd25519();
+                case EC -> false;
+                default -> false;};
+        }
 
         if (authorized) {
-            authorized = switch (signature.length) {
-                case 65 -> validateEcSignature(key);
-                case 64 -> validateEdSignature(key);
+            authorized = switch (signatureType) {
+                case EC -> validateEcSignature(account.get());
+                case ED -> validateEdSignature(account.get(), key.get());
                 default -> false;};
         }
 
@@ -94,14 +159,14 @@ public class IsAuthorizedRawCall extends AbstractCall {
     }
 
     /** Validate EVM signature - EC key - via ECRECOVER */
-    private boolean validateEcSignature(@NonNull Optional<byte[]> key) {
+    boolean validateEcSignature(@NonNull final HederaEvmAccount account) {
         final var ecPrecompile = new ECRECPrecompiledContract(noCalculationGasCalculator);
         final Bytes input = formatEcrecoverInput(messageHash, signature);
         return true;
     }
 
     /** Validate (native Hedera) ED signature */
-    private boolean validateEdSignature(@NonNull Optional<byte[]> key) {
+    boolean validateEdSignature(@NonNull final HederaEvmAccount account, @NonNull final Key key) {
         return false;
     }
 
@@ -112,6 +177,11 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
     @NonNull
     Bytes formatEcrecoverInput(@NonNull final byte[] messageHash, @NonNull final byte[] signature) {
+        // From evm.codes:
+        //   [ 0;  31]  hash
+        //   [32;  63]  v == recovery identifier (27 or 28)
+        //   [64;  95]  r == x-value ∈ (0, secp256k1n);
+        //   [96; 127]  s ∈ (0; sep256k1n ÷ 2 + 1)
         return null;
     }
 }

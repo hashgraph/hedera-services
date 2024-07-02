@@ -32,10 +32,12 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Cal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AddressIdConverter;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -46,6 +48,8 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public class HasCallAttempt extends AbstractCallAttempt {
     public static final Function REDIRECT_FOR_ACCOUNT = new Function("redirectForAccount(address,bytes)");
+
+    private final Optional<java.util.function.Function<Address, HederaEvmAccount>> getHederaAccount;
 
     @Nullable
     private final Account redirectAccount;
@@ -63,7 +67,8 @@ public class HasCallAttempt extends AbstractCallAttempt {
             @NonNull final VerificationStrategies verificationStrategies,
             @NonNull final SystemContractGasCalculator gasCalculator,
             @NonNull final List<CallTranslator> callTranslators,
-            final boolean isStaticCall) {
+            final boolean isStaticCall,
+            @Nullable final java.util.function.Function<Address, HederaEvmAccount> getHederaEvmAccount) {
         super(
                 input,
                 senderAddress,
@@ -77,12 +82,41 @@ public class HasCallAttempt extends AbstractCallAttempt {
                 callTranslators,
                 isStaticCall,
                 REDIRECT_FOR_ACCOUNT);
-
+        this.getHederaAccount = Optional.ofNullable(getHederaEvmAccount);
         if (isRedirect()) {
             this.redirectAccount = linkedAccount(redirectAddress);
         } else {
-            redirectAccount = null;
+            this.redirectAccount = null;
         }
+    }
+
+    // too many parameters
+    @SuppressWarnings("java:S107")
+    public HasCallAttempt(
+            @NonNull final Bytes input,
+            @NonNull final Address senderAddress,
+            @NonNull final Address authorizingAddress,
+            final boolean onlyDelegatableContractKeysActive,
+            @NonNull final HederaWorldUpdater.Enhancement enhancement,
+            @NonNull final Configuration configuration,
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final VerificationStrategies verificationStrategies,
+            @NonNull final SystemContractGasCalculator gasCalculator,
+            @NonNull final List<CallTranslator> callTranslators,
+            final boolean isStaticCall) {
+        this(
+                input,
+                senderAddress,
+                authorizingAddress,
+                onlyDelegatableContractKeysActive,
+                enhancement,
+                configuration,
+                addressIdConverter,
+                verificationStrategies,
+                gasCalculator,
+                callTranslators,
+                isStaticCall,
+                null);
     }
 
     /**
@@ -148,5 +182,9 @@ public class HasCallAttempt extends AbstractCallAttempt {
                     .resolveAlias(com.hedera.pbj.runtime.io.buffer.Bytes.wrap(evmAddress));
             return enhancement.nativeOperations().getAccount(addressNum);
         }
+    }
+
+    public Optional<java.util.function.Function<Address, HederaEvmAccount>> getGetHederaAccount() {
+        return getHederaAccount;
     }
 }

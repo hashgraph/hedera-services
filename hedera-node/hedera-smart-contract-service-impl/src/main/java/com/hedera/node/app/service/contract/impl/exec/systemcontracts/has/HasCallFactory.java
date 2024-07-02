@@ -72,7 +72,8 @@ public class HasCallFactory implements CallFactory {
             @NonNull final MessageFrame frame) {
         requireNonNull(input);
         requireNonNull(frame);
-        final var enhancement = proxyUpdaterFor(frame).enhancement();
+        final var proxyUpdater = proxyUpdaterFor(frame);
+        final var enhancement = proxyUpdater.enhancement();
         return new HasCallAttempt(
                 input,
                 frame.getSenderAddress(),
@@ -84,6 +85,7 @@ public class HasCallFactory implements CallFactory {
                 verificationStrategies,
                 systemContractGasCalculatorOf(frame),
                 callTranslators,
-                frame.isStatic());
+                frame.isStatic(),
+                proxyUpdater::getHederaAccount);
     }
 }
