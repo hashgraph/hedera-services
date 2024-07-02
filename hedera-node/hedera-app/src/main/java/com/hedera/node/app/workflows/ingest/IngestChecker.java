@@ -19,6 +19,9 @@ package com.hedera.node.app.workflows.ingest;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_ADD_LIVE_HASH;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_DELETE_LIVE_HASH;
 import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_DELETE;
+import static com.hedera.hapi.node.base.HederaFunctionality.NODE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
@@ -81,7 +84,7 @@ import org.apache.logging.log4j.Logger;
 public final class IngestChecker {
     private static final Logger logger = LogManager.getLogger(IngestChecker.class);
     private static final Set<HederaFunctionality> UNSUPPORTED_TRANSACTIONS =
-            EnumSet.of(CRYPTO_ADD_LIVE_HASH, CRYPTO_DELETE_LIVE_HASH);
+            EnumSet.of(CRYPTO_ADD_LIVE_HASH, CRYPTO_DELETE_LIVE_HASH, NODE_CREATE, NODE_UPDATE, NODE_DELETE);
     private static final Set<HederaFunctionality> PRIVILEGED_TRANSACTIONS =
             EnumSet.of(FREEZE, SYSTEM_DELETE, SYSTEM_UNDELETE);
 
