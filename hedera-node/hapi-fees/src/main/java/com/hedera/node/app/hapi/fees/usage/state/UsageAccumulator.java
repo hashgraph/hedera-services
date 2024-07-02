@@ -111,7 +111,9 @@ public class UsageAccumulator {
         final int memoBytes = baseMeta.memoUtf8Bytes();
         final int numTransfers = baseMeta.numExplicitTransfers();
 
-        gas = sbs = sbpr = 0;
+        gas = 0;
+        sbs = 0;
+        sbpr = 0;
 
         bpr = INT_SIZE;
         vpt = sigUsage.numSigs();
@@ -321,8 +323,8 @@ public class UsageAccumulator {
         return HashCodeBuilder.reflectionHashCode(this);
     }
 
-    private void setUniversalBpt(final long bpt) {
-        this.bpt = bpt;
+    private void setUniversalBpt(final long universalBpt) {
+        this.bpt = universalBpt;
     }
 
     private void setBpr(final long bpr) {

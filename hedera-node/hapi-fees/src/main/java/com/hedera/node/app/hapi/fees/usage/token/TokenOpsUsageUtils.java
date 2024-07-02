@@ -145,12 +145,12 @@ public enum TokenOpsUsageUtils {
     }
 
     public <R> R retrieveRawDataFrom(
-            final SubType subType, final IntSupplier getDataForNFT, final Producer<R> producer) {
+            final SubType subType, final IntSupplier getDataForNft, final Producer<R> producer) {
         int serialNumsCount = 0;
         int bpt = 0;
         int transferRecordRb = 0;
         if (subType == TOKEN_NON_FUNGIBLE_UNIQUE) {
-            serialNumsCount = getDataForNFT.getAsInt();
+            serialNumsCount = getDataForNft.getAsInt();
             transferRecordRb = TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(1, 0, serialNumsCount);
             bpt = serialNumsCount * LONG_SIZE;
         } else {
@@ -164,7 +164,7 @@ public enum TokenOpsUsageUtils {
 
     @FunctionalInterface
     interface Producer<R> {
-        R create(int bpt, SubType subType, long recordDb, int t);
+        R create(int bpt, SubType subType, long recordDb, int serialNumsCount);
     }
 
     public int getTokenTxnBaseSize(final TransactionBody txn) {

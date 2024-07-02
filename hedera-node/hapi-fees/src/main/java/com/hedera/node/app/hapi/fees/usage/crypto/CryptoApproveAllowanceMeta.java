@@ -32,7 +32,7 @@ import java.util.Set;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-/** Metadata for CryptoApproveAllowance */
+/** Metadata for CryptoApproveAllowance. */
 public class CryptoApproveAllowanceMeta {
     private final long effectiveNow;
     private final long msgBytesUsed;
