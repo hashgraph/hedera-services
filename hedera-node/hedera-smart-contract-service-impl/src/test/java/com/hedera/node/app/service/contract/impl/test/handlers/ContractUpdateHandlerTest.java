@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
@@ -67,7 +66,6 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
@@ -119,9 +117,6 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
     @Mock
     private TokensConfig tokensConfig;
-
-    @Mock
-    private ContractsConfig contractsConfig;
 
     @Mock
     private ContractUpdateRecordBuilder recordBuilder;
@@ -396,38 +391,6 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(context.body()).thenReturn(txn);
 
         assertFailsWith(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT, () -> subject.handle(context));
-    }
-
-    @Test
-    void maxAutomaticTokenAssociationsWhenItIsNotAllowedFails() {
-        final var maxAutomaticTokenAssociations = 10;
-
-        when(configuration.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
-        when(configuration.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
-        when(configuration.getConfigData(TokensConfig.class)).thenReturn(tokensConfig);
-        when(configuration.getConfigData(ContractsConfig.class)).thenReturn(contractsConfig);
-        when(ledgerConfig.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations + 1);
-        when(entitiesConfig.limitTokenAssociations()).thenReturn(true);
-        when(tokensConfig.maxPerAccount()).thenReturn(maxAutomaticTokenAssociations + 1);
-        when(contractsConfig.allowAutoAssociations()).thenReturn(false);
-        when(context.configuration()).thenReturn(configuration);
-
-        when(contract.maxAutoAssociations()).thenReturn(maxAutomaticTokenAssociations - 1);
-        when(accountStore.getContractById(targetContract)).thenReturn(contract);
-        given(context.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
-        final var txn = TransactionBody.newBuilder()
-                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
-                        .contractID(targetContract)
-                        .adminKey(adminKey)
-                        .memo("memo")
-                        .maxAutomaticTokenAssociations(maxAutomaticTokenAssociations))
-                .transactionID(transactionID)
-                .build();
-
-        when(context.body()).thenReturn(txn);
-
-        assertFailsWith(NOT_SUPPORTED, () -> subject.handle(context));
     }
 
     @Test
