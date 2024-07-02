@@ -16,26 +16,41 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
+import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.calculateSignableMessage;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPrivateKey;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
+import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.esaulpaugh.headlong.abi.Address;
+import com.esaulpaugh.headlong.util.Integers;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.junit.HapiTest;
-import java.util.concurrent.atomic.AtomicReference;
+import com.hedera.services.bdd.suites.utils.contracts.BoolResult;
+import java.math.BigInteger;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -49,10 +64,7 @@ public class IsAuthorizedSuite {
 
     @HapiTest
     final Stream<DynamicTest> isAuthorizedRawHappyPath() {
-        final AtomicReference<Address> accountNum = new AtomicReference<>();
-        final AtomicReference<Address> spenderNum = new AtomicReference<>();
-
-        return propertyPreservingHapiSpec("hrc632AllowanceFromContract")
+        return propertyPreservingHapiSpec("isAuthorizedRawHappyPath")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -61,10 +73,29 @@ public class IsAuthorizedSuite {
                         uploadInitCode(HRC632_CONTRACT),
                         contractCreate(HRC632_CONTRACT))
                 .when(withOpContext((spec, opLog) -> {
-                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
+//                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
+//                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+//                    final var addressBytes = recoverAddressFromPubKey(tmp);
+//                    var signedBytes = EthTxSigs.signMessage(messageHash, getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY));
+
+                    // Approach 2: Generate Public key & address to make sure test suite is not giving another one.
+                    final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
+                    final var addressBytes = recoverAddressFromPrivateKey(privateKey);
+                    final var signedBytes = EthTxSigs.signMessage(messageHash, privateKey);
+
+                    var call = contractCall(
+                            HRC632_CONTRACT,
+                            "isAuthorizedRawCall",
+                            asHeadlongAddress(addressBytes), messageHash, signedBytes)
+                            .via("authorizeCall");
+                    allRunFor(spec, call);
                 }))
-                .then();
+                .then(
+                        getTxnRecord("authorizeCall")
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))
+                                ));
     }
 }

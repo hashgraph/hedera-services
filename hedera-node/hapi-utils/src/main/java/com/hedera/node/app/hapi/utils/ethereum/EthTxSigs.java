@@ -99,7 +99,15 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
                 s);
     }
 
-    static byte[] calculateSignableMessage(EthTxData ethTx) {
+    public static byte[] signMessage(final byte[] messageHash, byte[] privateKey) {
+        final LibSecp256k1.secp256k1_ecdsa_recoverable_signature signature =
+                new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
+        LibSecp256k1.secp256k1_ecdsa_sign_recoverable(
+                CONTEXT, signature, messageHash, privateKey, null, null);
+        return signature.data;
+    }
+
+   public static byte[] calculateSignableMessage(EthTxData ethTx) {
         return switch (ethTx.type()) {
             case LEGACY_ETHEREUM -> (ethTx.chainId() != null && ethTx.chainId().length > 0)
                     ? RLPEncoder.encodeAsList(

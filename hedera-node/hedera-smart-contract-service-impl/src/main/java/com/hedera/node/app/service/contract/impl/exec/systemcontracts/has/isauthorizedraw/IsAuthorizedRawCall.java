@@ -54,16 +54,16 @@ public class IsAuthorizedRawCall extends AbstractCall {
     private final byte[] messageHash;
     private final byte[] signature;
 
-    private static GasCalculator noCalculationGasCalculator = new CustomGasCalculator();
-    private static ECRECPrecompiledContract ecPrecompile = new ECRECPrecompiledContract(noCalculationGasCalculator);
+    private static final GasCalculator noCalculationGasCalculator = new CustomGasCalculator();
+    private static final ECRECPrecompiledContract ecPrecompile = new ECRECPrecompiledContract(noCalculationGasCalculator);
 
-    private static long HARDCODED_GAS_REQUIREMENT_GAS = 1_500_000L;
+    private static final long HARDCODED_GAS_REQUIREMENT_GAS = 1_500_000L;
 
     enum SignatureType {
         Invalid,
         EC,
         ED
-    };
+    }
 
     // From Ethereum yellow paper (for reference only):
     private static BigInteger secp256k1n =
