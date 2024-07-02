@@ -21,12 +21,16 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.PendingAirdropId;
+import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 import java.util.SortedMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -38,12 +42,22 @@ import org.apache.logging.log4j.Logger;
 public class V0500TokenSchema extends StakingInfoManagementSchema {
     private static final Logger log = LogManager.getLogger(V0500TokenSchema.class);
     private static final String SHARED_VALUES_KEY = "V0500_FIRST_STORAGE_KEYS";
+    private static final long MAX_PENDING_AIRDROPS = 1_000_000_000L;
+    public static final String AIRDROPS_KEY = "PENDING_AIRDROPS";
 
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(50).patch(0).build();
 
     public V0500TokenSchema() {
         super(VERSION);
+    }
+
+    @SuppressWarnings("rawtypes")
+    @NonNull
+    @Override
+    public Set<StateDefinition> statesToCreate() {
+        return Set.of(StateDefinition.onDisk(
+                AIRDROPS_KEY, PendingAirdropId.PROTOBUF, PendingAirdropValue.PROTOBUF, MAX_PENDING_AIRDROPS));
     }
 
     @Override

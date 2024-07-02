@@ -320,12 +320,13 @@ public class CommonPbjConverters {
             case TokenUnpause -> HederaFunctionality.TOKEN_UNPAUSE;
             case TokenUpdate -> HederaFunctionality.TOKEN_UPDATE;
             case TokenUpdateNfts -> HederaFunctionality.TOKEN_UPDATE_NFTS;
-            case TokenReject -> HederaFunctionality.TOKEN_REJECT;
             case TransactionGetReceipt -> HederaFunctionality.TRANSACTION_GET_RECEIPT;
             case TransactionGetRecord -> HederaFunctionality.TRANSACTION_GET_RECORD;
             case TransactionGetFastRecord -> HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
             case UncheckedSubmit -> HederaFunctionality.UNCHECKED_SUBMIT;
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
+            case TokenReject -> HederaFunctionality.TOKEN_REJECT;
+            case TokenAirdrop -> HederaFunctionality.TOKEN_AIRDROP;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
         };
     }
@@ -656,9 +657,6 @@ public class CommonPbjConverters {
             case MAX_CHILD_RECORDS_EXCEEDED -> ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
             case INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES -> ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES;
             case TRANSACTION_HAS_UNKNOWN_FIELDS -> ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
-            case TOKEN_REFERENCE_REPEATED -> ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
-            case TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED -> ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
-            case INVALID_OWNER_ID -> ResponseCodeEnum.INVALID_OWNER_ID;
             case ACCOUNT_IS_IMMUTABLE -> ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
             case ALIAS_ALREADY_ASSIGNED -> ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
             case INVALID_METADATA_KEY -> ResponseCodeEnum.INVALID_METADATA_KEY;
@@ -681,6 +679,9 @@ public class CommonPbjConverters {
             case FQDN_SIZE_TOO_LARGE -> ResponseCodeEnum.FQDN_SIZE_TOO_LARGE;
             case INVALID_ENDPOINT -> ResponseCodeEnum.INVALID_ENDPOINT;
             case GOSSIP_ENDPOINTS_EXCEEDED_LIMIT -> ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
+            case TOKEN_REFERENCE_REPEATED -> ResponseCodeEnum.TOKEN_REFERENCE_REPEATED;
+            case INVALID_OWNER_ID -> ResponseCodeEnum.INVALID_OWNER_ID;
+            case TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED -> ResponseCodeEnum.TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED;
             case SERVICE_ENDPOINTS_EXCEEDED_LIMIT -> ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
             case INVALID_IPV4_ADDRESS -> ResponseCodeEnum.INVALID_IPV4_ADDRESS;
             case EMPTY_TOKEN_REFERENCE_LIST -> ResponseCodeEnum.EMPTY_TOKEN_REFERENCE_LIST;
