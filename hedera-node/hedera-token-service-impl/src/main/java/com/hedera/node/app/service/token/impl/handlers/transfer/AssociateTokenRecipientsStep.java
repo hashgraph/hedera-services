@@ -201,6 +201,16 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         }
     }
 
+    /**
+     * Dispatches a synthetic transaction to associate the token with the account. It will increment the usedAutoAssociations
+     * count on the account and set the token relation as automaticAssociation.
+     * This is done only if the unlimitedAutoAssociationsEnabled is enabled.
+     * @param token The token to associate with the account
+     * @param accountStore The account store
+     * @param tokenRelStore The token relation store
+     * @param context The context
+     * @param account The account to associate the token with
+     */
     private void dispatchAutoAssociation(
             final @NonNull Token token,
             final @NonNull WritableAccountStore accountStore,
