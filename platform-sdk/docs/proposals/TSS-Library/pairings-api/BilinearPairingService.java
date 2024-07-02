@@ -73,7 +73,7 @@ public final class BilinearPairingService {
         final Iterator<BilinearPairingProvider> iterator = serviceLoader.iterator();
 
         while (iterator.hasNext()) {
-            final BilinearPairingProvider provider : iterator.next()
+            final BilinearPairingProvider provider : iterator.next();
             if (algorithm == provider.curve()) {
                 return provider;
             }
