@@ -66,6 +66,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
@@ -168,6 +169,7 @@ class ReadableFreezeUpgradeActionsTest {
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
+        given(nodeStore.keys()).willReturn(Collections.emptyIterator());
 
         final Bytes invalidArchive = Bytes.wrap("Not a valid zip archive".getBytes(StandardCharsets.UTF_8));
         subject.extractSoftwareUpgrade(invalidArchive).join();
@@ -183,6 +185,7 @@ class ReadableFreezeUpgradeActionsTest {
     @Test
     void preparesForUpgrade() throws IOException {
         setupNoiseFiles();
+        given(nodeStore.keys()).willReturn(Collections.emptyIterator());
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
@@ -190,7 +193,7 @@ class ReadableFreezeUpgradeActionsTest {
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
         subject.extractSoftwareUpgrade(realArchive).join();
 
-        assertThat(logCaptor.infoLogs()).anyMatch(l -> l.equals("Node state is empty, cannot generate config.txt"));
+        assertThat(logCaptor.errorLogs()).anyMatch(l -> l.equals("Node state is empty, which should be impossible"));
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
     }
 
@@ -464,6 +467,7 @@ class ReadableFreezeUpgradeActionsTest {
                 .append("address, 1, 1, node2, 5, 127.0.0.1, 1234, 35.186.191.247, 50211, 0.0.3\n")
                 .append("address, 2, 2, node3, 10, 127.0.0.2, 1245, 35.186.191.245, 50221, 0.0.4\n")
                 .append("address, 4, 4, node5, 20, 127.0.0.4, 1445, test.domain.com, 50225, 0.0.8\n")
+                .append("nextNodeId, 5")
                 .toString();
         final byte[] pemFile1Bytes = Bytes.wrap(
                         "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec")

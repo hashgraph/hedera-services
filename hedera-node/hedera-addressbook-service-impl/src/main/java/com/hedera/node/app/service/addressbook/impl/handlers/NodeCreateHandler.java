@@ -29,12 +29,15 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -123,6 +126,18 @@ public class NodeCreateHandler implements TransactionHandler {
         final var recordBuilder = handleContext.recordBuilders().getOrCreate(NodeCreateRecordBuilder.class);
 
         recordBuilder.nodeID(node.nodeId());
+    }
+
+    @NonNull
+    @Override
+    public Fees calculateFees(@NonNull final FeeContext feeContext) {
+        final var calculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
+        calculator.resetUsage();
+        // The price of node create should be increased based on number of signatures.
+        // The first signature is free and is accounted in the base price, so we only need to add
+        // the price of the rest of the signatures.
+        calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
+        return calculator.calculate();
     }
 
     private long getNextNodeID(@NonNull final WritableNodeStore nodeStore) {
