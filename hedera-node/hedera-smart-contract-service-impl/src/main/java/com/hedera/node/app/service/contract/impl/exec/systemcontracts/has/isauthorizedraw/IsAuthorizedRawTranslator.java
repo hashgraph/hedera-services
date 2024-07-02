@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isaut
 
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV051;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
@@ -74,7 +75,7 @@ public class IsAuthorizedRawTranslator extends AbstractCallTranslator<HasCallAtt
         if (matchesIsAuthorizedRawSelector(attempt.selector())) {
 
             final var call = IS_AUTHORIZED_RAW.decodeCall(attempt.inputBytes());
-            var address = (byte[]) call.get(ADDRESS_ARG);
+            var address = (Address) call.get(ADDRESS_ARG);
             var messageHash = (byte[]) call.get(HASH_ARG);
             var signature = (byte[]) call.get(SIGNATURE_ARG);
 

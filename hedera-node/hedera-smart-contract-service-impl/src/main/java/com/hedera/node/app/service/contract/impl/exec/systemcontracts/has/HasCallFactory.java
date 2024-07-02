@@ -85,7 +85,6 @@ public class HasCallFactory implements CallFactory {
                 verificationStrategies,
                 systemContractGasCalculatorOf(frame),
                 callTranslators,
-                frame.isStatic(),
-                proxyUpdater::getHederaAccount);
+                frame.isStatic());
     }
 }

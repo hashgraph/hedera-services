@@ -16,25 +16,30 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
-import com.hedera.node.app.service.contract.impl.state.HederaEvmAccount;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.ECRECPrecompiledContract;
@@ -44,11 +49,10 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
     private final VerificationStrategy verificationStrategy;
     private final AccountID sender;
-    private final byte[] address;
+
+    private final Address address;
     private final byte[] messageHash;
     private final byte[] signature;
-
-    private Optional<java.util.function.Function<Address, HederaEvmAccount>> getHederaAccount;
 
     private GasCalculator noCalculationGasCalculator = new CustomGasCalculator();
 
@@ -66,7 +70,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
     public IsAuthorizedRawCall(
             @NonNull final HasCallAttempt attempt,
-            @NonNull final byte[] address,
+            final Address address,
             @NonNull final byte[] messageHash,
             @NonNull final byte[] signature) {
         super(attempt.systemContractGasCalculator(), attempt.enhancement(), false);
@@ -76,16 +80,12 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
         this.verificationStrategy = attempt.defaultVerificationStrategy();
         this.sender = attempt.senderId();
-
-        this.getHederaAccount = attempt.getGetHederaAccount();
     }
 
     @NonNull
     @Override
     public PricedResult execute(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
-
-        boolean authorized = getHederaAccount.isPresent();
 
         final var signatureType =
                 switch (signature.length) {
@@ -94,10 +94,13 @@ public class IsAuthorizedRawCall extends AbstractCall {
                     default -> SignatureType.Invalid;
                 };
 
-        // Validate parameters
-        if (authorized) {
-            authorized = address.length == 20; // An EVM address
+        var accountNum = accountNumberForEvmReference(address, nativeOperations());
+        if (!isValidAccount(accountNum, signatureType)) {
+            return gasOnly(
+                    revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement()), INVALID_ACCOUNT_ID, true);
         }
+
+        boolean authorized = true;
 
         // Validate parameters according to signature type
         if (authorized) {
@@ -108,17 +111,17 @@ public class IsAuthorizedRawCall extends AbstractCall {
         }
 
         // Gotta have an account that the given address is an alias for
-        final Optional<HederaEvmAccount> account;
+        final Optional<Account> account;
         if (authorized) {
-            final var besuAddress = Address.wrap(Bytes.wrap(address));
-            account = Optional.ofNullable(getHederaAccount.get().apply(besuAddress));
+            // TODO: Given code above account always exists
+            account = Optional.ofNullable(enhancement.nativeOperations().getAccount(accountNum));
             authorized = account.isPresent();
         } else account = Optional.empty();
 
         // If ED then require a key on the account
         final Optional<Key> key;
         if (authorized && signatureType == SignatureType.ED) {
-            key = Optional.ofNullable(account.get().toNativeAccount().key());
+            key = Optional.ofNullable(account.get().key());
             authorized = key.isPresent();
         } else key = Optional.empty();
 
@@ -152,21 +155,16 @@ public class IsAuthorizedRawCall extends AbstractCall {
         return result;
     }
 
-    /** Return the one-and-only simple key for the Hedera address/account */
-    @NonNull
-    Optional<byte[]> getAccountKey(long address) {
-        return Optional.empty();
-    }
-
     /** Validate EVM signature - EC key - via ECRECOVER */
-    boolean validateEcSignature(@NonNull final HederaEvmAccount account) {
+    boolean validateEcSignature(@NonNull final Account account) {
         final var ecPrecompile = new ECRECPrecompiledContract(noCalculationGasCalculator);
         final Bytes input = formatEcrecoverInput(messageHash, signature);
+        // TODO
         return true;
     }
 
     /** Validate (native Hedera) ED signature */
-    boolean validateEdSignature(@NonNull final HederaEvmAccount account, @NonNull final Key key) {
+    boolean validateEdSignature(@NonNull final Account account, @NonNull final Key key) {
         return false;
     }
 
@@ -182,6 +180,24 @@ public class IsAuthorizedRawCall extends AbstractCall {
         //   [32;  63]  v == recovery identifier (27 or 28)
         //   [64;  95]  r == x-value ∈ (0, secp256k1n);
         //   [96; 127]  s ∈ (0; sep256k1n ÷ 2 + 1)
+
+        // TODO
         return null;
+    }
+
+    @NonNull
+    boolean isValidAccount(final long accountNum, @NonNull final SignatureType signatureType) {
+        // If the account num is negative, it is invalid
+        if (accountNum < 0) {
+            return false;
+        }
+
+        // If the signature is for an ecdsa key, the HIP states that the account must have an evm address rather than a
+        // long zero address
+        if (signatureType == SignatureType.EC) {
+            return !isLongZeroAddress(explicitFromHeadlong(address));
+        }
+
+        return true;
     }
 }
