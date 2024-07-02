@@ -183,7 +183,6 @@ import java.util.function.Function;
  * @param createNode                   the permission for {@link HederaFunctionality#NODE_CREATE} functionality
  * @param updateNode                   the permission for {@link HederaFunctionality#NODE_UPDATE} functionality
  * @param deleteNode                   the permission for {@link HederaFunctionality#NODE_DELETE} functionality
- * @param getNodeInfo                  the permission for {@link HederaFunctionality#NODE_GET_INFO} functionality
  */
 @ConfigData
 public record ApiPermissionConfig(
@@ -254,8 +253,7 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenAirdrop,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange createNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getNodeInfo) {
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
