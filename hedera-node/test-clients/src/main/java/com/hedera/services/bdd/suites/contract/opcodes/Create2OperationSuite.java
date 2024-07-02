@@ -1914,19 +1914,19 @@ public class Create2OperationSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        final int givenOpsSize = 7;
+        final int givenOpsSize = 6;
         HapiSpecOperation[] givenOps = new HapiSpecOperation[givenOpsSize + (fungibleTransfersSize * 2)];
-        givenOps[1] = newKeyNamed(adminKey);
-        givenOps[2] = newKeyNamed(MULTI_KEY);
-        givenOps[3] = uploadInitCode(contract);
-        givenOps[4] = contractCreate(contract)
+        givenOps[0] = newKeyNamed(adminKey);
+        givenOps[1] = newKeyNamed(MULTI_KEY);
+        givenOps[2] = uploadInitCode(contract);
+        givenOps[3] = contractCreate(contract)
                 .payingWith(GENESIS)
                 .adminKey(adminKey)
                 .entityMemo(ENTITY_MEMO)
                 .via(CREATE_2_TXN)
                 .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num)));
-        givenOps[5] = cryptoCreate(PARTY).maxAutomaticTokenAssociations(2);
-        givenOps[6] = setIdentifiers(Optional.empty(), Optional.empty(), Optional.of(partyId), Optional.of(partyAlias));
+        givenOps[4] = cryptoCreate(PARTY).maxAutomaticTokenAssociations(2);
+        givenOps[5] = setIdentifiers(Optional.empty(), Optional.empty(), Optional.of(partyId), Optional.of(partyAlias));
 
         int j = 0;
         for (int i = givenOpsSize; i < fungibleTransfersSize + givenOpsSize; i++) {

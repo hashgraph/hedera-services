@@ -528,9 +528,9 @@ public class CryptoUpdateSuite {
         return propertyPreservingHapiSpec("updateMaxAutoAssociationsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving("contracts.allowAutoAssociations")
                 .given(
+                        overriding("contracts.allowAutoAssociations", "true"),
                         cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ADMIN_KEY),
-                        overriding("contracts.allowAutoAssociations", "true"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(originalMax),
                         tokenCreate(tokenA)
@@ -559,7 +559,7 @@ public class CryptoUpdateSuite {
                         getContractInfo(CONTRACT)
                                 .payingWith(GENESIS)
                                 .has(contractWith()
-                                        .hasAlreadyUsedAutomaticAssociations(0)
+                                        .hasAlreadyUsedAutomaticAssociations(originalMax)
                                         .maxAutoAssociations(originalMax)),
                         contractUpdate(CONTRACT)
                                 .newMaxAutomaticAssociations(newBadMax)

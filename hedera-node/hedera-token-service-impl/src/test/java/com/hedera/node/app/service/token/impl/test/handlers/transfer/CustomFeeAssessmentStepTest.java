@@ -386,6 +386,16 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                                 .transfers(List.of(aaWith(payerId, -10), aaWith(ownerId, +10)))
                                 .build())
                 .build();
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
+                .will((invocation) -> {
+                    final var relation = new TokenRelation(fungibleTokenId, ownerId, 1, false, true, true, null, null);
+                    final var relation1 =
+                            new TokenRelation(fungibleTokenIDB, payerId, 1, false, true, true, null, null);
+                    writableTokenRelStore.put(relation);
+                    writableTokenRelStore.put(relation1);
+                    return new SingleTransactionRecordBuilderImpl(consensusInstant);
+                });
         givenDifferentTxn(body, payerId);
 
         writableTokenStore.put(fungibleWithNoKyc

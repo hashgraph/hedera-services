@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDE
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
@@ -41,6 +42,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
@@ -61,7 +63,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -158,12 +159,15 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                 .logged()));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> autoAccountCreationsUnlimitedAssociationsDisabled() {
         final var creationTime = new AtomicLong();
         final long transferFee = 188608L;
-        return defaultHapiSpec("autoAccountCreationsUnlimitedAssociationsDisabled", NONDETERMINISTIC_TRANSACTION_FEES)
+        return propertyPreservingHapiSpec(
+                        "autoAccountCreationsUnlimitedAssociationsDisabled", NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),

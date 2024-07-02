@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
@@ -90,6 +91,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -151,7 +153,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.services.bdd.junit.ContextRequirement;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts;
@@ -1327,7 +1331,7 @@ public class CryptoTransferSuite {
                                                         .balance(5)))));
     }
 
-    @HapiTest
+    @LeakyHapiTest(ContextRequirement.PROPERTY_OVERRIDES)
     final Stream<DynamicTest> royaltyCollectorsCanUseAutoAssociation() {
         final var uniqueWithRoyalty = "uniqueWithRoyalty";
         final var firstFungible = "firstFungible";
@@ -1340,8 +1344,10 @@ public class CryptoTransferSuite {
         final var secondRoyaltyAmount = exchangeAmount / 15;
         final var netExchangeAmount = exchangeAmount - firstRoyaltyAmount - secondRoyaltyAmount;
 
-        return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
+        return propertyPreservingHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(firstRoyaltyCollector).maxAutomaticTokenAssociations(plentyOfSlots),
                         cryptoCreate(secondRoyaltyCollector).maxAutomaticTokenAssociations(plentyOfSlots),
