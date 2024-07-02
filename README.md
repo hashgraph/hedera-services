@@ -32,7 +32,7 @@ If you have a question on how to use the product, please see our
 
 ## Contributing
 
-Contributions are welcome. Please see the [contributing guide](https://github.com/hashgraph/.github/blob/main/CONTRIBUTING.md) to see how you can get involved.
+Contributions are welcome. Please see the [contributing guide](https://github.com/hashgraph/hedera-services/blob/develop/CONTRIBUTING.md) to see how you can get involved.
 
 ## Code of Conduct
 
