@@ -36,7 +36,6 @@ public record ContractsConfig(
         @ConfigProperty(value = "localCall.estRetBytes", defaultValue = "4096") @NetworkProperty
                 int localCallEstRetBytes,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean allowCreate2,
-        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean allowAutoAssociations,
         @ConfigProperty(defaultValue = "0") @NetworkProperty long maxNumWithHapiSigsAccess,
         @ConfigProperty(value = "nonces.externalization.enabled", defaultValue = "true") @NetworkProperty
                 boolean noncesExternalizationEnabled,
