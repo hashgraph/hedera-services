@@ -30,7 +30,6 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
-import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
 public class RandomHbarTransferLazyCreate implements OpProvider {
@@ -39,9 +38,9 @@ public class RandomHbarTransferLazyCreate implements OpProvider {
     private final HapiSpecRegistry registry;
     private static final long GAS_TO_OFFER = 5_000_000L;
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
-    private final EntityNameProvider<Key> keys;
+    private final EntityNameProvider keys;
 
-    public RandomHbarTransferLazyCreate(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
+    public RandomHbarTransferLazyCreate(HapiSpecRegistry registry, EntityNameProvider keys) {
         this.registry = registry;
         this.keys = keys;
     }

@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.utilops.inventory;
 
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
+import static com.hedera.services.bdd.spec.keys.deterministic.Bip0039.randomMnemonic;
 import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.util.Objects.requireNonNull;
 
@@ -28,7 +29,6 @@ import com.hedera.services.bdd.spec.keys.KeyGenerator;
 import com.hedera.services.bdd.spec.keys.KeyLabels;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
-import com.hedera.services.bdd.spec.persistence.SpecKey;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import com.hederahashgraph.api.proto.java.Key;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -118,7 +118,7 @@ public class NewSpecKey extends UtilOp {
                 throw new IllegalStateException("Must have an export location for the key info");
             }
 
-            final var mnemonic = SpecKey.randomMnemonic();
+            final var mnemonic = randomMnemonic();
             final var seed = Bip0032.seedFrom(mnemonic);
             final var curvePoint = Bip0032.privateKeyFrom(seed);
             final EdDSAPrivateKey privateKey = Ed25519Utils.keyFrom(curvePoint);

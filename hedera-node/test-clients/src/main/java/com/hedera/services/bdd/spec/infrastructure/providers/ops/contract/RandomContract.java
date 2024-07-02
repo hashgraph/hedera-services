@@ -31,7 +31,6 @@ import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourc
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,12 +43,12 @@ public class RandomContract implements OpProvider {
     private int ceilingNum = DEFAULT_CEILING_NUM;
 
     private final AtomicInteger opNo = new AtomicInteger();
-    private final EntityNameProvider<Key> keys;
+    private final EntityNameProvider keys;
     private final RegistrySourcedNameProvider<ContractID> contracts;
     private final SupportedContract[] choices = SupportedContract.values();
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(INVALID_CONTRACT_ID);
 
-    public RandomContract(EntityNameProvider<Key> keys, RegistrySourcedNameProvider<ContractID> contracts) {
+    public RandomContract(EntityNameProvider keys, RegistrySourcedNameProvider<ContractID> contracts) {
         this.keys = keys;
         this.contracts = contracts;
     }

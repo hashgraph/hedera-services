@@ -185,7 +185,6 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      * </ol>
      * @return The size of the state.
      */
-    @NonNull
     public long size() {
         final var sizeOfBackingMap = sizeOfDataSource();
         int numAdditions = 0;
