@@ -191,10 +191,10 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                                 .build())
                         .build();
                 // We don't need to verify signatures for this internal dispatch. So we specify the keyVerifier to null
-                context.dispatchPrecedingTransaction(
+                context.dispatchRemovablePrecedingTransaction(
                         syntheticAssociation, SingleTransactionRecordBuilder.class, null, context.payer());
                 // increment the usedAutoAssociations count
-                final var accountModified = requireNonNull(accountStore.get(accountId))
+                final var accountModified = requireNonNull(accountStore.getAliasedAccountById(accountId))
                         .copyBuilder()
                         .usedAutoAssociations(account.usedAutoAssociations() + 1)
                         .build();
