@@ -32,11 +32,12 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ConfigTxtValidationOp extends AbstractLifecycleOp {
-    private static final Logger log = LoggerFactory.getLogger(ConfigTxtValidationOp.class);
+    private static final Logger log = LogManager.getLogger(ConfigTxtValidationOp.class);
+
     private static final Duration CONFIG_TXT_TIMEOUT = Duration.ofSeconds(10);
     private final Consumer<AddressBook> bookValidator;
 
