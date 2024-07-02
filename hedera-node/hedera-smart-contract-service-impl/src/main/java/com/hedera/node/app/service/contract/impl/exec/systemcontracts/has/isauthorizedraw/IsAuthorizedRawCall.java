@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE_TYPE_MISMATCHING_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
@@ -27,11 +29,10 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.is
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
-import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -39,6 +40,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Function;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -46,9 +48,6 @@ import org.hyperledger.besu.evm.precompile.ECRECPrecompiledContract;
 
 /** HIP-632 method: `isAuthorizedRaw` */
 public class IsAuthorizedRawCall extends AbstractCall {
-
-    private final VerificationStrategy verificationStrategy;
-    private final AccountID sender;
 
     private final Address address;
     private final byte[] messageHash;
@@ -60,7 +59,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
     private static final long HARDCODED_GAS_REQUIREMENT_GAS = 1_500_000L;
 
-    enum SignatureType {
+    public enum SignatureType {
         Invalid,
         EC,
         ED
@@ -79,9 +78,6 @@ public class IsAuthorizedRawCall extends AbstractCall {
         this.address = requireNonNull(address);
         this.messageHash = requireNonNull(messageHash);
         this.signature = requireNonNull(signature);
-
-        this.verificationStrategy = attempt.defaultVerificationStrategy();
-        this.sender = attempt.senderId();
     }
 
     @NonNull
@@ -91,77 +87,66 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
         final var gasRequirement = HARDCODED_GAS_REQUIREMENT_GAS;
 
-        // FUTURE: Fail fast if large gas requirement isn't satisfied
+        Function<ResponseCodeEnum, PricedResult> bail = rce -> reversionWith(rce, gasRequirement);
 
-        final var signatureType =
-                // FUTURE: Consider a response code for "invalid argument to precompile"
+        // Fail fast if user didn't supply monstrous amount of gas
+        final var availableGas = frame.getRemainingGas();
+        if (availableGas < HARDCODED_GAS_REQUIREMENT_GAS) return bail.apply(INSUFFICIENT_GAS);
+
+        // Figure out what kind of signature we're dealing with thus what kind of account+key we need
+        var signatureType =
                 switch (signature.length) {
                     case 65 -> SignatureType.EC;
                     case 64 -> SignatureType.ED;
                     default -> SignatureType.Invalid;
                 };
-
-        var accountNum = accountNumberForEvmReference(address, nativeOperations());
-        if (!isValidAccount(accountNum, signatureType)) {
-            return reversionWith(INVALID_ACCOUNT_ID, gasRequirement);
-        }
-
-        boolean stillWorking = true;
+        if (signatureType == SignatureType.Invalid)
+            return bail.apply(FAIL_INVALID /* should be: "invalid argument to precompile" */);
 
         // Validate parameters according to signature type
-        if (stillWorking) {
-            // FUTURE: Consider a response code for "invalid argument to precompile"
-            stillWorking = switch (signatureType) {
-                case EC -> messageHash.length == 32;
-                case ED -> true;
-                case Invalid -> false;};
-        }
+        if (!switch (signatureType) {
+            case EC -> messageHash.length == 32;
+            case ED -> true;
+            default -> throw new IllegalStateException("Unexpected value: " + signatureType);
+        }) return bail.apply(FAIL_INVALID /* should be: "invalid argument to precompile */);
 
         // Gotta have an account that the given address is an alias for
-        final Optional<Account> account;
-        if (stillWorking) {
-            // (Given code above account always exists - but keeping this in case we move things around)
-            account = Optional.ofNullable(enhancement.nativeOperations().getAccount(accountNum));
-            stillWorking = account.isPresent();
-        } else account = Optional.empty();
+        var accountNum = accountNumberForEvmReference(address, nativeOperations());
+        if (!isValidAccount(accountNum, signatureType)) return bail.apply(INVALID_ACCOUNT_ID);
+        final var account = requireNonNull(enhancement.nativeOperations().getAccount(accountNum));
 
         // If ED then require a key on the account
-        final Optional<Key> key;
-        if (stillWorking && signatureType == SignatureType.ED) {
-            // FUTURE: Consider a response code for "account must have key"
-            key = Optional.ofNullable(account.get().key());
-            stillWorking = key.isPresent();
+        Optional<Key> key;
+        if (signatureType == SignatureType.ED) {
+            key = Optional.ofNullable(account.key());
+            if (key.isEmpty()) return bail.apply(FAIL_INVALID /* should be: "account must have key" */);
         } else key = Optional.empty();
 
         // Key must be simple (for isAuthorizedRaw)
-        if (stillWorking && key.isPresent()) {
-            // FUTURE: Consider a response code for "key must be simple"
+        if (key.isPresent()) {
             final Key ky = key.get();
             final boolean keyIsSimple = !ky.hasKeyList() && !ky.hasThresholdKey();
-            stillWorking = keyIsSimple;
+            if (!keyIsSimple) return bail.apply(FAIL_INVALID /* should be: "account key must be simple" */);
         }
 
         // Key must match signature type
-        if (stillWorking && key.isPresent()) {
-            // FUTURE: Consider INVALID_SIGNATURE_TYPE_MISMATCHING response code
-            stillWorking = switch (signatureType) {
+        if (key.isPresent()) {
+            if (!switch (signatureType) {
                 case ED -> key.get().hasEd25519();
                 case EC -> false;
-                default -> false;};
+                default -> false;
+            }) return bail.apply(INVALID_SIGNATURE_TYPE_MISMATCHING_KEY);
         }
 
         // Finally: Do the signature validation we came here for
         boolean authorized = false;
-        if (stillWorking) {
-            authorized = switch (signatureType) {
-                case EC -> validateEcSignature(address, frame);
-                case ED -> validateEdSignature(account.get(), key.get());
-                default -> false;};
-        }
+        authorized = switch (signatureType) {
+            case EC -> validateEcSignature(address, frame);
+            case ED -> validateEdSignature(account, key.get());
+            default -> false;};
 
-        final var result = stillWorking
-                ? gasOnly(successResult(encodedAuthorizationOutput(authorized), gasRequirement), SUCCESS, true)
-                : reversionWith(INVALID_SIGNATURE, gasRequirement);
+        final var result =
+                gasOnly(successResult(encodedAuthorizationOutput(authorized), gasRequirement), SUCCESS, true);
         return result;
     }
 
@@ -244,7 +229,6 @@ public class IsAuthorizedRawCall extends AbstractCall {
         return Optional.empty();
     }
 
-    @NonNull
     public boolean isValidAccount(final long accountNum, @NonNull final SignatureType signatureType) {
         // If the account num is negative, it is invalid
         if (accountNum < 0) {
