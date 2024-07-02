@@ -55,9 +55,8 @@ public abstract class BilinearPairingProvider {
      * Performs the initialization steps of the library.
      */
     public BilinearPairingProvider init() throws IOException{
-        if (!initialized.get()) {
+        if (!initialized.getAndSet(true)) {
             loader.reload();
-            initialized.set(true);
         }
         return this;
     }

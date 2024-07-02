@@ -28,12 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class BilinearPairingService {
 
     /**
-     * The service loader instance.
-     */
-    private static final ServiceLoader<BilinearPairingProvider> loader =
-            ServiceLoader.load(BilinearPairingProvider.class);
-
-    /**
      * Atomic boolean so that we don't repeatedly attempt to reload the resource.
      */
     private static final AtomicBoolean initialized = new AtomicBoolean(false);
@@ -63,16 +57,6 @@ public final class BilinearPairingService {
     }
 
     /**
-     * Initialize this implementation once when called.
-     */
-    private static void initialize() {
-        if (!initialized.get()) {
-            loader.reload();
-            initialized.set(true);
-        }
-    }
-
-    /**
      * Locates a {@link BilinearPairingProvider} instance based on the search criteria provided.
      *
      * @param algorithm    the algorithm value for which to locate an implementation.
@@ -83,9 +67,12 @@ public final class BilinearPairingService {
      */
     private static BilinearPairingProvider findInstance(final Curve algorithm) {
 
-        initialize();
+        final ServiceLoader<BilinearPairingProvider> serviceLoader =
+                ServiceLoader.load(BilinearPairingProvider.class, classloader);
 
-        for (final BilinearPairingProvider provider : loader) {
+        final Iterator<BilinearPairingProvider> iterator = serviceLoader.iterator();
+
+        for (final BilinearPairingProvider provider : iterator) {
             if (algorithm == provider.curve()) {
                 return provider;
             }
