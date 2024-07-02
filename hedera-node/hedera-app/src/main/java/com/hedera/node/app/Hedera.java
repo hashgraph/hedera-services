@@ -567,10 +567,12 @@ public final class Hedera implements SwirldMain {
         final var readableStoreFactory = new ReadableStoreFactory(state);
         final var creator =
                 daggerApp.networkInfo().nodeInfo(event.getCreatorId().id());
-        if (creator == null) {
-            // We were given an event for a node that *does not exist in the address book*. This will be logged as
-            // a warning, as this should never happen, and we will skip the event, which may well result in an ISS.
-            logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
+        if (creator == null && !isSoOrdered(event.getSoftwareVersion(), version.getPbjSemanticVersion())) {
+            logger.warn(
+                    "Received event (version {} vs current {}) from node {} which is not in the address book",
+                    com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
+                    com.hedera.hapi.util.HapiUtils.toString(version.getPbjSemanticVersion()),
+                    event.getCreatorId());
             return;
         }
 

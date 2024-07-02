@@ -222,11 +222,11 @@ public class ReadableFreezeUpgradeActions {
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
             writeSecondMarker(marker, now);
-        } catch (final IOException e) {
+        } catch (final Throwable t) {
             // catch and log instead of throwing because upgrade process looks at the presence or absence
             // of marker files to determine whether to proceed with the upgrade
             // if second marker is present, that means the zip file was successfully extracted
-            log.error("Failed to unzip archive for NMT consumption", e);
+            log.error("Failed to unzip archive for NMT consumption", t);
             log.error(MANUAL_REMEDIATION_ALERT);
         }
     }
@@ -245,6 +245,7 @@ public class ReadableFreezeUpgradeActions {
                 final var bw = new BufferedWriter(fw)) {
             activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
             writeNextNodeId(activeNodes, bw);
+            bw.flush();
         } catch (final IOException e) {
             log.error("Failed to generate {} with exception : {}", configTxt, e);
         }
