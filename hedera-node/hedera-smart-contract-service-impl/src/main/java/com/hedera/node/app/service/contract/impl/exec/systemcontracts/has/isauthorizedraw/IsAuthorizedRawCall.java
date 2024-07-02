@@ -19,7 +19,6 @@ package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isaut
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
@@ -38,6 +37,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCal
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -54,7 +54,9 @@ public class IsAuthorizedRawCall extends AbstractCall {
     private final byte[] messageHash;
     private final byte[] signature;
 
-    private GasCalculator noCalculationGasCalculator = new CustomGasCalculator();
+    private static GasCalculator noCalculationGasCalculator = new CustomGasCalculator();
+    private static MessageFrame dummyMessageFrame = MessageFrame.builder().build();
+    private static ECRECPrecompiledContract ecPrecompile = new ECRECPrecompiledContract(noCalculationGasCalculator);
 
     private static long HARDCODED_GAS_REQUIREMENT_GAS = 1_500_000L;
 
@@ -73,7 +75,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
             final Address address,
             @NonNull final byte[] messageHash,
             @NonNull final byte[] signature) {
-        super(attempt.systemContractGasCalculator(), attempt.enhancement(), false);
+        super(attempt.systemContractGasCalculator(), attempt.enhancement(), true);
         this.address = requireNonNull(address);
         this.messageHash = requireNonNull(messageHash);
         this.signature = requireNonNull(signature);
@@ -98,7 +100,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
         var accountNum = accountNumberForEvmReference(address, nativeOperations());
         if (!isValidAccount(accountNum, signatureType)) {
-            return gasOnly(revertResult(INVALID_ACCOUNT_ID, gasRequirement), INVALID_ACCOUNT_ID, true);
+            return reversionWith(INVALID_ACCOUNT_ID, gasRequirement);
         }
 
         boolean authorized = true;
@@ -143,7 +145,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
         if (authorized) {
             authorized = switch (signatureType) {
-                case EC -> validateEcSignature(account.get());
+                case EC -> validateEcSignature(address);
                 case ED -> validateEdSignature(account.get(), key.get());
                 default -> false;};
         }
@@ -155,33 +157,81 @@ public class IsAuthorizedRawCall extends AbstractCall {
     }
 
     /** Validate EVM signature - EC key - via ECRECOVER */
-    boolean validateEcSignature(@NonNull final Account account) {
-        final var ecPrecompile = new ECRECPrecompiledContract(noCalculationGasCalculator);
-        final Bytes input = formatEcrecoverInput(messageHash, signature);
-        // TODO
-        return true;
+    boolean validateEcSignature(@NonNull final Address address) {
+
+        // Call the ECRECOVER precompile directly (meaning, not by executing EVM bytecode, just by
+        // using the class provided by Besu).
+
+        final var input = formatEcrecoverInput(messageHash, signature);
+        if (input.isEmpty()) return false;
+        final var ecrecoverResult = ecPrecompile.computePrecompile(Bytes.wrap(input.get()), dummyMessageFrame);
+
+        // ECRECOVER's output here always has status SUCCESS.  But the result Bytes are either empty or the recovered
+        // address.
+        final var output = ecrecoverResult.getOutput();
+        if (output.isEmpty()) return false;
+
+        // ECRECOVER produced an address:  Must match our account's alias address
+        final var recoveredAddress = output.toBigInteger(ByteOrder.LITTLE_ENDIAN);
+        final var givenAddress = address.value();
+        final var addressesMatch = givenAddress.equals(recoveredAddress);
+
+        return addressesMatch;
     }
 
     /** Validate (native Hedera) ED signature */
     boolean validateEdSignature(@NonNull final Account account, @NonNull final Key key) {
-        return false;
+        return false; // TBD
     }
 
+    /** Encode the _output_ of our system contract: it's a boolean */
     @NonNull
     ByteBuffer encodedAuthorizationOutput(final boolean authorized) {
         return IsAuthorizedRawTranslator.IS_AUTHORIZED_RAW.getOutputs().encodeElements(authorized);
     }
 
+    /** Format our message hash and signature for input to the ECRECOVER precompile */
     @NonNull
-    Bytes formatEcrecoverInput(@NonNull final byte[] messageHash, @NonNull final byte[] signature) {
-        // From evm.codes:
+    Optional<byte[]> formatEcrecoverInput(@NonNull final byte[] messageHash, @NonNull final byte[] signature) {
+        // Signature:
+        //   [ 0;  31]  r
+        //   [32;  63]  s
+        //   [64;  64]  v (but possibly 0..1 instead of 27..28)
+
+        // From evm.codes, input to ECRECOVER:
         //   [ 0;  31]  hash
         //   [32;  63]  v == recovery identifier (27 or 28)
         //   [64;  95]  r == x-value ∈ (0, secp256k1n);
         //   [96; 127]  s ∈ (0; sep256k1n ÷ 2 + 1)
 
-        // TODO
-        return null;
+        if (messageHash.length != 32 || signature.length != 65) return Optional.empty();
+        final var ov = reverseV(signature[64]);
+        if (ov.isEmpty()) return Optional.empty();
+
+        byte[] r = new byte[128];
+        System.arraycopy(messageHash, 0, r, 0, 32);
+        System.arraycopy(signature, 0, r, 64, 32);
+        System.arraycopy(signature, 32, r, 96, 32);
+        byte v = signature[64];
+        r[63] = ov.get();
+
+        return Optional.of(r);
+    }
+
+    /** Make sure v ∈ {27, 28} - but after EIP-155 it might come in with a chain id ... */
+    Optional<Byte> reverseV(final byte v) {
+
+        // Odd, seems that the specification of ECRECOVER wasn't updated for EIP-155 - Besu
+        // (at least) really wants v ∈ {27, 28}.
+
+        if (v == 0 || v == 1) return Optional.of((byte) (v + 27));
+        if (v == 27 || v == 28) return Optional.of(v);
+        if (v >= 35) {
+            // EIP-155 case - low bit is _opposite_ of parity (35 is magic number for encoding chain id)
+            final var parity = ~v & 1;
+            return Optional.of((byte) (parity + 27));
+        }
+        return Optional.empty();
     }
 
     @NonNull
