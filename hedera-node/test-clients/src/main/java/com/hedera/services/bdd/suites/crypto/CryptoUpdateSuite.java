@@ -144,9 +144,7 @@ public class CryptoUpdateSuite {
         return propertyPreservingHapiSpec("updateForMaxAutoAssociationsForAccountsWorks")
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overriding(
-                                "entities.unlimitedAutoAssociationsEnabled",
-                                "true"),
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT_ALICE).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
                         cryptoCreate(ACCOUNT_PETER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),

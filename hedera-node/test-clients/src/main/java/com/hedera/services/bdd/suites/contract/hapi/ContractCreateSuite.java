@@ -66,7 +66,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyF
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -80,7 +79,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -107,7 +105,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
@@ -341,13 +338,13 @@ public class ContractCreateSuite {
         final var multiPurpose = "Multipurpose";
         final var createContract = "CreateTrivial";
         return propertyPreservingHapiSpec("contractCreationsHaveValidAssociations")
-                .preserving(
-                        ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED,
-                        LEDGER_MAX_AUTO_ASSOCIATIONS)
+                .preserving(ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, LEDGER_MAX_AUTO_ASSOCIATIONS)
                 .given(
                         overridingTwo(
-                                ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE,
-                                LEDGER_MAX_AUTO_ASSOCIATIONS, "5000"),
+                                ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED,
+                                TRUE_VALUE,
+                                LEDGER_MAX_AUTO_ASSOCIATIONS,
+                                "5000"),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
@@ -821,9 +818,7 @@ public class ContractCreateSuite {
         final var contract1 = "EmptyOne";
         final var contract2 = "EmptyTwo";
         return defaultHapiSpec("contractCreateShouldChargeTheSame")
-                .given(
-                        uploadInitCode(contract1),
-                        uploadInitCode(contract2))
+                .given(uploadInitCode(contract1), uploadInitCode(contract2))
                 .when(
                         contractCreate(contract1)
                                 .via(contract1)

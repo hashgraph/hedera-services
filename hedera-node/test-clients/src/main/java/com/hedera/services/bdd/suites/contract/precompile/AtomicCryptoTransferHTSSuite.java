@@ -55,7 +55,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
@@ -324,8 +323,7 @@ public class AtomicCryptoTransferHTSSuite {
                         NONDETERMINISTIC_NONCE)
                 .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
-                        overriding(
-                                "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(SENDER2).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
@@ -1530,8 +1528,7 @@ public class AtomicCryptoTransferHTSSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
-                .preserving("contracts.precompile.atomicCryptoTransfer.enabled",
-                        CONTRACTS_PERMITTED_DELEGATE_CALLERS)
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled", CONTRACTS_PERMITTED_DELEGATE_CALLERS)
                 .given(
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS),
