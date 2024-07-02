@@ -172,9 +172,10 @@ public class IsAuthorizedRawCall extends AbstractCall {
         if (output.isEmpty()) return false;
 
         // ECRECOVER produced an address:  Must match our account's alias address
-        final var recoveredAddress = output.toBigInteger(ByteOrder.LITTLE_ENDIAN);
-        final var givenAddress = address.value();
-        final var addressesMatch = givenAddress.equals(recoveredAddress);
+        final var recoveredAddress = output.slice(12); // LAST 20 bytes are where the EVM address is
+        final var recoveredAddressAsInt = recoveredAddress.toBigInteger(ByteOrder.LITTLE_ENDIAN);
+        final var givenAddressAsInt = address.value();
+        final var addressesMatch = givenAddressAsInt.equals(recoveredAddressAsInt);
 
         return addressesMatch;
     }
