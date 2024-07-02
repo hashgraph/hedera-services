@@ -81,7 +81,8 @@ public class IsAuthorizedSuite {
                                     asHeadlongAddress(addressBytes),
                                     messageHash,
                                     signedBytes)
-                            .via("authorizeCall");
+                            .via("authorizeCall")
+                            .gas(2_000_000L);
                     allRunFor(spec, call);
                 }))
                 .then(getTxnRecord("authorizeCall")

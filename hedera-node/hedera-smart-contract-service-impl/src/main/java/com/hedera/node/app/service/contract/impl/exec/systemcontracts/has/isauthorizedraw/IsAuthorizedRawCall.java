@@ -37,7 +37,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCal
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
@@ -90,7 +89,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
     public PricedResult execute(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
 
-        final var gasRequirement = gasCalculator.gasCostInTinybars(HARDCODED_GAS_REQUIREMENT_GAS);
+        final var gasRequirement = HARDCODED_GAS_REQUIREMENT_GAS;
 
         // FUTURE: Fail fast if large gas requirement isn't satisfied
 
@@ -107,12 +106,12 @@ public class IsAuthorizedRawCall extends AbstractCall {
             return reversionWith(INVALID_ACCOUNT_ID, gasRequirement);
         }
 
-        boolean authorized = true;
+        boolean stillWorking = true;
 
         // Validate parameters according to signature type
-        if (authorized) {
-            // FUTURE: Consider a response code for "invalid argument to precompile"6
-            authorized = switch (signatureType) {
+        if (stillWorking) {
+            // FUTURE: Consider a response code for "invalid argument to precompile"
+            stillWorking = switch (signatureType) {
                 case EC -> messageHash.length == 32;
                 case ED -> true;
                 case Invalid -> false;};
@@ -120,46 +119,47 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
         // Gotta have an account that the given address is an alias for
         final Optional<Account> account;
-        if (authorized) {
+        if (stillWorking) {
             // (Given code above account always exists - but keeping this in case we move things around)
             account = Optional.ofNullable(enhancement.nativeOperations().getAccount(accountNum));
-            authorized = account.isPresent();
+            stillWorking = account.isPresent();
         } else account = Optional.empty();
 
         // If ED then require a key on the account
         final Optional<Key> key;
-        if (authorized && signatureType == SignatureType.ED) {
+        if (stillWorking && signatureType == SignatureType.ED) {
             // FUTURE: Consider a response code for "account must have key"
             key = Optional.ofNullable(account.get().key());
-            authorized = key.isPresent();
+            stillWorking = key.isPresent();
         } else key = Optional.empty();
 
         // Key must be simple (for isAuthorizedRaw)
-        if (authorized && key.isPresent()) {
+        if (stillWorking && key.isPresent()) {
             // FUTURE: Consider a response code for "key must be simple"
             final Key ky = key.get();
             final boolean keyIsSimple = !ky.hasKeyList() && !ky.hasThresholdKey();
-            authorized = keyIsSimple;
+            stillWorking = keyIsSimple;
         }
 
         // Key must match signature type
-        if (authorized && key.isPresent()) {
+        if (stillWorking && key.isPresent()) {
             // FUTURE: Consider INVALID_SIGNATURE_TYPE_MISMATCHING response code
-            authorized = switch (signatureType) {
+            stillWorking = switch (signatureType) {
                 case ED -> key.get().hasEd25519();
                 case EC -> false;
                 default -> false;};
         }
 
         // Finally: Do the signature validation we came here for
-        if (authorized) {
+        boolean authorized = false;
+        if (stillWorking) {
             authorized = switch (signatureType) {
                 case EC -> validateEcSignature(address, frame);
                 case ED -> validateEdSignature(account.get(), key.get());
                 default -> false;};
         }
 
-        final var result = authorized
+        final var result = stillWorking
                 ? gasOnly(successResult(encodedAuthorizationOutput(authorized), gasRequirement), SUCCESS, true)
                 : reversionWith(INVALID_SIGNATURE, gasRequirement);
         return result;
