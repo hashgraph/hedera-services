@@ -53,7 +53,6 @@ public class CryptoTransferFeeCalculator {
 
     public static Fees calculate(
             FeeContext feeContext, @Nullable TransferList transferList, List<TokenTransferList> tokenTransferList) {
-
         final var config = feeContext.configuration();
         final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
 

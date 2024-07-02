@@ -30,10 +30,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.LAZY_MEMO;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
-import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor.executeTransfer;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createFungibleTokenPendingAirdropId;
@@ -48,7 +45,6 @@ import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidati
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkSender;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.TokenValidations.PERMIT_PAUSED;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -56,8 +52,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.AccountID.AccountOneOfType;
-import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.PendingAirdropValue;
@@ -68,7 +62,6 @@ import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
@@ -79,7 +72,6 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.impl.util.CryptoCreateFeeCalculator;
 import com.hedera.node.app.service.token.impl.util.CryptoTransferFeeCalculator;
 import com.hedera.node.app.service.token.impl.util.TokenAssociateToAccountFeeCalculator;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
@@ -92,9 +84,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -257,7 +247,10 @@ public class TokenAirdropsHandler implements TransactionHandler {
         executeTransfer(syntheticCryptoTransferTxn, transferContext, context, validator, recordBuilder);
     }
 
-    // TODO: add documentation
+    /**
+     *  Calculate the fees for the token airdrop transaction. The fees are calculated by combining the
+     *  default airdrop fees, the crypto transfer fees and the token association fees.
+     */
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
@@ -269,12 +262,13 @@ public class TokenAirdropsHandler implements TransactionHandler {
                 feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT).calculate();
         final var cryptoTransferFees = CryptoTransferFeeCalculator.calculate(feeContext, null, op.tokenTransfers());
         final var tokenAssociationFees = calculateTokenAssociationFees(feeContext, op);
-        final var accountAutoCreationFees = calculateAccountAutoCreationFees(feeContext, op);
-        return combineFees(
-                List.of(defaultAirdropFees, cryptoTransferFees, tokenAssociationFees, accountAutoCreationFees));
+        return combineFees(List.of(defaultAirdropFees, cryptoTransferFees, tokenAssociationFees));
     }
 
-    // TODO: add documentation
+    /**
+     * Calculate the fees for the token associations that need to be created as part of the airdrop. It gathers all the
+     * token associations that need to be created and calculates the fees for each token association.
+     */
     private Fees calculateTokenAssociationFees(FeeContext feeContext, TokenAirdropTransactionBody op) {
         // Gather all the token associations that need to be created
         var tokenAssociationsMap = new HashMap<AccountID, Set<TokenID>>();
@@ -314,71 +308,6 @@ public class TokenAirdropsHandler implements TransactionHandler {
         }
 
         return combineFees(feeList);
-    }
-
-    // TODO: add documentation
-    private Fees calculateAccountAutoCreationFees(FeeContext feeContext, TokenAirdropTransactionBody op) {
-        // Get all receivers
-        final var receivers = new ArrayList<AccountID>();
-        for (var transfer : op.tokenTransfers()) {
-            transfer.transfers().forEach(t -> receivers.add(t.accountID()));
-            transfer.nftTransfers().forEach(t -> receivers.add(t.receiverAccountID()));
-        }
-
-        // For each non-existing receiver, calculate the fees for creating the account
-        final List<Fees> fees = new ArrayList<>();
-        final var accountStore = feeContext.readableStore(ReadableAccountStore.class);
-        for (var receiver : receivers) {
-            // if the recipient does not exist, and they are referred by their public ECDSA key or evm_address
-            if (AccountOneOfType.ALIAS.equals(receiver.account().kind())
-                    && accountStore.getAccountById(receiver) == null) {
-
-                final var entitiesConfig = feeContext.configuration().getConfigData(EntitiesConfig.class);
-                final int autoAssociations =
-                        entitiesConfig.unlimitedAutoAssociationsEnabled() ? UNLIMITED_AUTOMATIC_ASSOCIATIONS : 0;
-
-                final var syntheticCreation = createHollowAccount(receiver.alias(), 0L, autoAssociations)
-                        .transactionID(feeContext.body().transactionID())
-                        .build();
-
-                try {
-                    fees.add(CryptoCreateFeeCalculator.calculate(syntheticCreation, feeContext));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return combineFees(fees);
-    }
-
-    // TODO: reuse?
-
-    /**
-     * Create a transaction body for new hollow-account with the given alias.
-     * @param alias alias of the account
-     * @param balance initial balance of the account
-     * @param maxAutoAssociations maxAutoAssociations of the account
-     * @return transaction body for new hollow-account
-     */
-    private TransactionBody.Builder createHollowAccount(
-            @NonNull final Bytes alias, final long balance, final int maxAutoAssociations) {
-        final var baseBuilder = createAccountBase(balance, maxAutoAssociations);
-        baseBuilder.key(IMMUTABILITY_SENTINEL_KEY).alias(alias).memo(LAZY_MEMO);
-        return TransactionBody.newBuilder().cryptoCreateAccount(baseBuilder.build());
-    }
-
-    /**
-     * Create a transaction body for new account with the given balance and other common fields.
-     * @param balance initial balance of the account
-     * @param maxAutoAssociations maxAutoAssociations of the account
-     * @return transaction body for new account
-     */
-    private CryptoCreateTransactionBody.Builder createAccountBase(final long balance, final int maxAutoAssociations) {
-        return CryptoCreateTransactionBody.newBuilder()
-                .initialBalance(balance)
-                .maxAutomaticTokenAssociations(maxAutoAssociations)
-                .autoRenewPeriod(Duration.newBuilder().seconds(THREE_MONTHS_IN_SECONDS));
     }
 
     private Fees combineFees(List<Fees> fees) {
