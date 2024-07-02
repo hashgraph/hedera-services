@@ -368,7 +368,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         cryptoCreateValidator.validateKey(
                 op.keyOrThrow(), // cannot be null by this point
                 context.attributeValidator(),
-                !context.recordBuilders()
+                context.recordBuilders()
                         .getOrCreate(SingleTransactionRecordBuilder.class)
                         .isInternalDispatch());
 
