@@ -22,7 +22,7 @@ import com.swirlds.cli.utility.SubcommandOf;
 import picocli.CommandLine;
 
 /**
- * A collection of operations on for blocks (a.k.a. the block stream)
+ * A collection of operations on block (.blk) files, a.k.a. the block stream
  */
 @CommandLine.Command(name = "block", mixinStandardHelpOptions = true, description = "Operations on block files.")
 @SubcommandOf(PlatformCli.class)
