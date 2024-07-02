@@ -66,10 +66,15 @@ public class CustomCallOperation extends CallOperation {
     @Override
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
+            final long cost = cost(frame, false);
+            if (frame.getRemainingGas() < cost) {
+                return new OperationResult(cost, ExceptionalHaltReason.INSUFFICIENT_GAS);
+            }
+
             final var toAddress = to(frame);
             final var isMissing = mustBePresent(frame, toAddress) && !addressChecks.isPresent(toAddress, frame);
             if (isMissing) {
-                return new OperationResult(cost(frame), INVALID_SOLIDITY_ADDRESS);
+                return new OperationResult(cost, INVALID_SOLIDITY_ADDRESS);
             }
             return super.execute(frame, evm);
         } catch (final UnderflowException ignore) {

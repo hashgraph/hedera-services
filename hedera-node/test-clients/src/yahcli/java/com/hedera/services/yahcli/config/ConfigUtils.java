@@ -30,7 +30,19 @@ import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hedera.services.bdd.spec.utilops.inventory.AccessoryUtils;
 import com.hedera.services.bdd.suites.meta.VersionInfoSpec;
 import com.hedera.services.yahcli.Yahcli;
-import com.hedera.services.yahcli.suites.*;
+import com.hedera.services.yahcli.suites.BalanceSuite;
+import com.hedera.services.yahcli.suites.CostOfEveryThingSuite;
+import com.hedera.services.yahcli.suites.CreateSuite;
+import com.hedera.services.yahcli.suites.FreezeHelperSuite;
+import com.hedera.services.yahcli.suites.RekeySuite;
+import com.hedera.services.yahcli.suites.ScheduleSuite;
+import com.hedera.services.yahcli.suites.SendSuite;
+import com.hedera.services.yahcli.suites.SpecialFileHashSuite;
+import com.hedera.services.yahcli.suites.StakeSetupSuite;
+import com.hedera.services.yahcli.suites.StakeSuite;
+import com.hedera.services.yahcli.suites.SysFileDownloadSuite;
+import com.hedera.services.yahcli.suites.SysFileUploadSuite;
+import com.hedera.services.yahcli.suites.UpgradeHelperSuite;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -91,7 +103,6 @@ public class ConfigUtils {
             RekeySuite.class,
             SysFileUploadSuite.class,
             SysFileDownloadSuite.class,
-            SchedulesValidationSuite.class,
             FreezeHelperSuite.class,
             UpgradeHelperSuite.class,
             CostOfEveryThingSuite.class,

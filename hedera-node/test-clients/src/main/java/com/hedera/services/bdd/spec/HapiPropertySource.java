@@ -27,7 +27,6 @@ import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
-import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -83,20 +82,6 @@ public interface HapiPropertySource {
                 }
             };
         }
-    }
-
-    default HapiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
-        return HapiSpec.CostSnapshotMode.valueOf(get(property));
-    }
-
-    /**
-     * Returns the property as a {@link AutoSnapshotRecordSource} value.
-     *
-     * @param property the property to get
-     * @return the {@link AutoSnapshotRecordSource} value
-     */
-    default AutoSnapshotRecordSource getAutoSnapshotRecordSource(@NonNull final String property) {
-        return AutoSnapshotRecordSource.valueOf(get(property));
     }
 
     default HapiSpec.UTF8Mode getUTF8Mode(String property) {

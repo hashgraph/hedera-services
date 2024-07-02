@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.doThrow;
@@ -50,6 +51,10 @@ import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
 import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -555,6 +560,21 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ADMIN_KEY);
         assertThat(context.payerKey()).isEqualTo(anotherKey);
         assertThat(context.requiredNonPayerKeys()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("check that fees are 1 for delete node trx")
+    public void testCalculateFeesInvocations() {
+        final var feeCtx = mock(FeeContext.class);
+        final var feeCalcFact = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFact);
+        given(feeCalcFact.feeCalculator(any())).willReturn(feeCalc);
+
+        given(feeCalc.addVerificationsPerTransaction(anyLong())).willReturn(feeCalc);
+        given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));
+
+        assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(1, 0, 0));
     }
 
     private void setupHandle() {
