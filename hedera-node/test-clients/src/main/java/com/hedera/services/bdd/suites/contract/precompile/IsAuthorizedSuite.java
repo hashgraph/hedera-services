@@ -40,6 +40,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import com.hedera.services.bdd.suites.utils.contracts.BoolResult;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -62,17 +63,12 @@ public class IsAuthorizedSuite {
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
                         uploadInitCode(HRC632_CONTRACT),
                         contractCreate(HRC632_CONTRACT))
                 .when(withOpContext((spec, opLog) -> {
                     final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
-                    //                    final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
-                    //                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                    //                    final var addressBytes = recoverAddressFromPubKey(tmp);
-                    //                    var signedBytes = EthTxSigs.signMessage(messageHash,
-                    // getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY));
 
                     // Approach 2: Generate Public key & address to make sure test suite is not giving another one.
                     final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
