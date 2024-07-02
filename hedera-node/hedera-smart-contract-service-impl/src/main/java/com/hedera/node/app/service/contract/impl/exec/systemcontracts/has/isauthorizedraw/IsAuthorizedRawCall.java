@@ -16,12 +16,18 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.revertResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.accountNumberForEvmReference;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static java.util.Objects.requireNonNull;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
@@ -40,7 +46,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
     private final VerificationStrategy verificationStrategy;
     private final AccountID sender;
-    private final long address;
+    private final Address address;
     private final byte[] messageHash;
     private final byte[] signature;
 
@@ -50,7 +56,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
     public IsAuthorizedRawCall(
             @NonNull final HasCallAttempt attempt,
-            final long address,
+            final Address address,
             @NonNull final byte[] messageHash,
             @NonNull final byte[] signature) {
         super(attempt.systemContractGasCalculator(), attempt.enhancement(), false);
@@ -67,9 +73,15 @@ public class IsAuthorizedRawCall extends AbstractCall {
     public PricedResult execute(@NonNull final MessageFrame frame) {
         requireNonNull(frame);
 
+        var accountNum = accountNumberForEvmReference(address, nativeOperations());
+        if (isInvalidAccount(accountNum)) {
+            return gasOnly(
+                    revertResult(INVALID_ACCOUNT_ID, gasCalculator.viewGasRequirement()), INVALID_ACCOUNT_ID, true);
+        }
+
         boolean authorized = true;
 
-        final Optional<byte[]> key = getAccountKey(address);
+        final Optional<byte[]> key = getAccountKey(accountNum);
         if (key.isEmpty()) authorized = false;
 
         if (authorized) {
@@ -113,5 +125,21 @@ public class IsAuthorizedRawCall extends AbstractCall {
     @NonNull
     Bytes formatEcrecoverInput(@NonNull final byte[] messageHash, @NonNull final byte[] signature) {
         return null;
+    }
+
+    @NonNull
+    boolean isInvalidAccount(final long accountNum) {
+        // If the account num is negative, it is invalid
+        if (accountNum < 0) {
+            return true;
+        }
+
+        // If the signature is for an ecdsa key, the HIP states that the account must have an evm address rather than a
+        // long zero address
+        if (signature.length == 65) {
+            return isLongZeroAddress(explicitFromHeadlong(address));
+        }
+
+        return false;
     }
 }
