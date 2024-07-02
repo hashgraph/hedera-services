@@ -157,7 +157,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
     }
 
     /** Validate EVM signature - EC key - via ECRECOVER */
-    boolean validateEcSignature(@NonNull final Address address, @NonNull final MessageFrame frame) {
+    public boolean validateEcSignature(@NonNull final Address address, @NonNull final MessageFrame frame) {
 
         // Call the ECRECOVER precompile directly (meaning, not by executing EVM bytecode, just by
         // using the class provided by Besu).
@@ -181,7 +181,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
     }
 
     /** Validate (native Hedera) ED signature */
-    boolean validateEdSignature(@NonNull final Account account, @NonNull final Key key) {
+    public boolean validateEdSignature(@NonNull final Account account, @NonNull final Key key) {
         return false; // TBD
     }
 
@@ -193,7 +193,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
     /** Format our message hash and signature for input to the ECRECOVER precompile */
     @NonNull
-    Optional<byte[]> formatEcrecoverInput(@NonNull final byte[] messageHash, @NonNull final byte[] signature) {
+    public Optional<byte[]> formatEcrecoverInput(@NonNull final byte[] messageHash, @NonNull final byte[] signature) {
         // Signature:
         //   [ 0;  31]  r
         //   [32;  63]  s
@@ -201,7 +201,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
         // From evm.codes, input to ECRECOVER:
         //   [ 0;  31]  hash
-        //   [32;  63]  v == recovery identifier (27 or 28)
+        //   [32;  63]  v == recovery identifier ∈ {27,28}
         //   [64;  95]  r == x-value ∈ (0, secp256k1n);
         //   [96; 127]  s ∈ (0; sep256k1n ÷ 2 + 1)
 
@@ -209,18 +209,18 @@ public class IsAuthorizedRawCall extends AbstractCall {
         final var ov = reverseV(signature[64]);
         if (ov.isEmpty()) return Optional.empty();
 
-        byte[] r = new byte[128];
-        System.arraycopy(messageHash, 0, r, 0, 32);
-        System.arraycopy(signature, 0, r, 64, 32);
-        System.arraycopy(signature, 32, r, 96, 32);
-        byte v = signature[64];
-        r[63] = ov.get();
+        byte[] result = new byte[128];
+        System.arraycopy(messageHash, 0, result, 0, 32); // hash
+        result[63] = ov.get(); //                           v
+        System.arraycopy(signature, 0, result, 64, 32); //  r
+        System.arraycopy(signature, 32, result, 96, 32); // s
 
-        return Optional.of(r);
+        return Optional.of(result);
     }
 
     /** Make sure v ∈ {27, 28} - but after EIP-155 it might come in with a chain id ... */
-    Optional<Byte> reverseV(final byte v) {
+    @NonNull
+    public Optional<Byte> reverseV(final byte v) {
 
         // Odd, seems that the specification of ECRECOVER wasn't updated for EIP-155 - Besu
         // (at least) really wants v ∈ {27, 28}.
@@ -228,15 +228,15 @@ public class IsAuthorizedRawCall extends AbstractCall {
         if (v == 0 || v == 1) return Optional.of((byte) (v + 27));
         if (v == 27 || v == 28) return Optional.of(v);
         if (v >= 35) {
-            // EIP-155 case - low bit is _opposite_ of parity (35 is magic number for encoding chain id)
-            final var parity = ~v & 1;
+            // EIP-155 case (35 is magic number for encoding chain id)
+            final var parity = (v - 35) % 2;
             return Optional.of((byte) (parity + 27));
         }
         return Optional.empty();
     }
 
     @NonNull
-    boolean isValidAccount(final long accountNum, @NonNull final SignatureType signatureType) {
+    public boolean isValidAccount(final long accountNum, @NonNull final SignatureType signatureType) {
         // If the account num is negative, it is invalid
         if (accountNum < 0) {
             return false;
