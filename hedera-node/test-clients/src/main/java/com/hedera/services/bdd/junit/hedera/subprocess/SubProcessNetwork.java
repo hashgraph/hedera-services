@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
@@ -30,6 +31,9 @@ import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.spec.TargetNetworkType;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -37,6 +41,8 @@ import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A network of Hedera nodes started in subprocesses and accessed via gRPC. Unlike
@@ -44,6 +50,11 @@ import java.util.stream.IntStream;
  * stopping and restarting.
  */
 public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetwork {
+    private static final Logger log = LogManager.getLogger(SubProcessNetwork.class);
+
+    // We need 5 ports for each node in the network (gRPC, gRPC, gossip, gossip TLS, prometheus)
+    private static final int PORTS_PER_NODE = 5;
+    private static final int MAX_PORT_REASSIGNMENTS = 3;
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final int FIRST_CANDIDATE_PORT = 30000;
     private static final int LAST_CANDIDATE_PORT = 40000;
@@ -60,13 +71,15 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     private static int nextPrometheusPort;
     private static boolean nextPortsInitialized = false;
 
-    private final String configTxt;
+    private final int initialSize;
+    private final AtomicReference<CompletableFuture<Void>> ready = new AtomicReference<>();
 
-    private AtomicReference<CompletableFuture<Void>> ready = new AtomicReference<>();
+    private String configTxt;
 
-    private SubProcessNetwork(@NonNull final String networkName, @NonNull final List<HederaNode> nodes) {
-        super(networkName, nodes);
-        this.configTxt = configTxtForLocal(name(), nodes, nextGossipPort, nextGossipTlsPort);
+    private SubProcessNetwork(@NonNull final String networkName, @NonNull final List<SubProcessNode> nodes) {
+        super(networkName, nodes.stream().map(node -> (HederaNode) node).toList());
+        this.initialSize = nodes.size();
+        this.configTxt = configTxtForLocal(name(), nodes(), nextGossipPort, nextGossipTlsPort);
     }
 
     /**
@@ -90,6 +103,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      *
      * @return the network type
      */
+    @Override
     public TargetNetworkType type() {
         return SUBPROCESS_NETWORK;
     }
@@ -97,6 +111,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     /**
      * Starts all nodes in the network.
      */
+    @Override
     public void start() {
         nodes.forEach(node -> node.initWorkingDir(configTxt).start());
     }
@@ -104,6 +119,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     /**
      * Forcibly stops all nodes in the network.
      */
+    @Override
     public void terminate() {
         nodes.forEach(HederaNode::terminate);
     }
@@ -111,12 +127,31 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     /**
      * Waits for all nodes in the network to be ready within the given timeout.
      */
+    @Override
     public void awaitReady(@NonNull final Duration timeout) {
         if (ready.get() == null) {
             final var future = runAsync(() -> {
-                final var deadline = Instant.now().plus(timeout);
-                nodes.forEach(node -> awaitStatus(node, ACTIVE, Duration.between(Instant.now(), deadline)));
-                this.clients = HapiClients.clientsFor(this);
+                AssertionError error = null;
+                var retries = MAX_PORT_REASSIGNMENTS;
+                var bindException = false;
+                do {
+                    if (bindException) {
+                        nodes.forEach(HederaNode::terminate);
+                        assignNewPorts();
+                        nodes.forEach(HederaNode::start);
+                    }
+                    final var deadline = Instant.now().plus(timeout);
+                    try {
+                        nodes.forEach(node -> awaitStatus(node, ACTIVE, Duration.between(Instant.now(), deadline)));
+                        this.clients = HapiClients.clientsFor(this);
+                    } catch (AssertionError e) {
+                        error = e;
+                        bindException = error.getMessage().contains("bindExceptionSeen=YES");
+                    }
+                } while (clients == null && bindException && retries-- > 0);
+                if (clients == null) {
+                    throw error;
+                }
             });
             if (!ready.compareAndSet(null, future)) {
                 // We only need one thread to wait for readiness
@@ -124,6 +159,30 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
             }
         }
         ready.get().join();
+    }
+
+    /**
+     * Assigns new ports to all nodes in the network.
+     *
+     * <p>Overwrites the existing <i>config.txt</i> file for each node in the network with the new ports.
+     */
+    public void assignNewPorts() {
+        final var firstGrpcPort = nodes().getFirst().getGrpcPort();
+        final var totalPortsUsed = initialSize * PORTS_PER_NODE;
+        final var newFirstGrpcPort = firstGrpcPort + totalPortsUsed;
+        initializeNextPortsForNetwork(initialSize, newFirstGrpcPort);
+        nodes.forEach(node -> {
+            final int nodeId = (int) node.getNodeId();
+            ((SubProcessNode) node)
+                    .reassignPorts(
+                            nextGrpcPort + nodeId * 2,
+                            nextGossipPort + nodeId * 2,
+                            nextGossipTlsPort + nodeId * 2,
+                            nextPrometheusPort + nodeId);
+        });
+        configTxt = configTxtForLocal(name(), nodes(), nextGossipPort, nextGossipTlsPort);
+        refreshNodeConfigTxt();
+        this.clients = HapiClients.clientsFor(this);
     }
 
     /**
@@ -141,7 +200,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         final var network = new SubProcessNetwork(
                 name,
                 IntStream.range(0, size)
-                        .<HederaNode>mapToObj(nodeId -> new SubProcessNode(
+                        .mapToObj(nodeId -> new SubProcessNode(
                                 classicMetadataFor(
                                         nodeId,
                                         name,
@@ -158,9 +217,34 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         return network;
     }
 
+    private void refreshNodeConfigTxt() {
+        log.info("Refreshing config.txt for network '{}' - \n{}", name(), configTxt);
+        nodes.forEach(node -> {
+            final var configTxtLoc = node.getExternalPath(ADDRESS_BOOK);
+            try {
+                Files.writeString(configTxtLoc, configTxt);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
+
     private static void initializeNextPortsForNetwork(final int size) {
-        // We need 5 ports for each node in the network (gRPC, gRPC, gossip, gossip TLS, prometheus)
-        nextGrpcPort = randomPortAfter(FIRST_CANDIDATE_PORT, size * 5);
+        initializeNextPortsForNetwork(size, randomPortAfter(FIRST_CANDIDATE_PORT, size * PORTS_PER_NODE));
+    }
+
+    private static void initializeNextPortsForNetwork(final int size, final int firstGrpcPort) {
+        // Suppose firstGrpcPort is 10000 with 4 nodes in the network, then:
+        //   - nextGrpcPort = 10000
+        //   - nextGossipPort = 10008
+        //   - nextGossipTlsPort = 10009
+        //   - nextPrometheusPort = 10016
+        // So for a nodeId of 2, the assigned ports are:
+        //   - grpcPort = nextGrpcPort + nodeId * 2 = 10004
+        //   - gossipPort = nextGossipPort + nodeId * 2 = 10012
+        //   - gossipTlsPort = nextGossipTlsPort + nodeId * 2 = 10013
+        //   - prometheusPort = nextPrometheusPort + nodeId = 10018
+        nextGrpcPort = firstGrpcPort;
         nextGossipPort = nextGrpcPort + 2 * size;
         nextGossipTlsPort = nextGossipPort + 1;
         nextPrometheusPort = nextGossipPort + 2 * size;

@@ -63,8 +63,8 @@ public interface SocketFactory {
             serverSocket.setOption(java.net.StandardSocketOptions.IP_TOS, socketConfig.ipTos());
         }
         final InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByAddress(ALL_INTERFACES), port);
-        serverSocket.bind(endpoint); // try to grab a port on this computer
         serverSocket.setReuseAddress(true);
+        serverSocket.bind(endpoint); // try to grab a port on this computer
         // do NOT do clientSocket.setSendBufferSize or clientSocket.setReceiveBufferSize
         // because it causes a major bug in certain situations
 

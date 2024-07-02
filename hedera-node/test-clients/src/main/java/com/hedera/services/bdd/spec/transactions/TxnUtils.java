@@ -17,10 +17,6 @@
 package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
-import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
-import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_MATRICES_CONST;
-import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.HRS_DIVISOR;
-import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asEntityNumber;
@@ -68,8 +64,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EntityNumber;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -449,16 +443,6 @@ public class TxnUtils {
     private static final char[] UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
     private static final char[] ALNUM = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
-    public static String readableTxnId(final TransactionID txnId) {
-        final var validStart = txnId.getTransactionValidStart();
-        final var startInstant = Instant.ofEpochSecond(validStart.getSeconds(), validStart.getNanos());
-        return new StringBuilder()
-                .append(HapiPropertySource.asAccountString(txnId.getAccountID()))
-                .append("@")
-                .append(startInstant)
-                .toString();
-    }
-
     public static String readableTokenTransfers(final List<TokenTransferList> tokenTransfers) {
         return tokenTransfers.stream()
                 .map(scopedXfers -> String.format(
@@ -510,40 +494,7 @@ public class TxnUtils {
         return deduction.isPresent() ? OptionalLong.of(deduction.get().getAmount()) : OptionalLong.empty();
     }
 
-    public static FeeData defaultPartitioning(final FeeComponents components, final int numPayerKeys) {
-        final var partitions = FeeData.newBuilder();
-
-        final long networkRbh = nonDegenerateDiv(BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, HRS_DIVISOR);
-        final var network = FeeComponents.newBuilder()
-                .setConstant(FEE_MATRICES_CONST)
-                .setBpt(components.getBpt())
-                .setVpt(components.getVpt())
-                .setRbh(networkRbh);
-
-        final var node = FeeComponents.newBuilder()
-                .setConstant(FEE_MATRICES_CONST)
-                .setBpt(components.getBpt())
-                .setVpt(numPayerKeys)
-                .setBpr(components.getBpr())
-                .setSbpr(components.getSbpr());
-
-        final var service = FeeComponents.newBuilder()
-                .setConstant(FEE_MATRICES_CONST)
-                .setRbh(components.getRbh())
-                .setSbh(components.getSbh())
-                .setTv(components.getTv());
-
-        partitions.setNetworkdata(network).setNodedata(node).setServicedata(service);
-
-        return partitions.build();
-    }
-
-    public static long nonDegenerateDiv(final long dividend, final int divisor) {
-        return (dividend == 0) ? 0 : Math.max(1, dividend / divisor);
-    }
-
     // Following methods are for negative test cases purpose, use with caution
-
     public static Transaction replaceTxnMemo(final Transaction txn, final String newMemo) {
         try {
             final TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
@@ -556,7 +507,6 @@ public class TxnUtils {
     }
 
     public static Transaction replaceTxnPayerAccount(final Transaction txn, final AccountID accountID) {
-        final Transaction newTxn = Transaction.getDefaultInstance();
         try {
             final TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
             txnBody.setTransactionID(TransactionID.newBuilder()

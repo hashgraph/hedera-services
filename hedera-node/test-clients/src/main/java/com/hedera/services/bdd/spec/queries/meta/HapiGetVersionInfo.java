@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.queries.meta;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.pbjToProto;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 
@@ -54,6 +55,12 @@ public class HapiGetVersionInfo extends HapiQueryOp<HapiGetVersionInfo> {
 
     public HapiGetVersionInfo hasProtoSemVer(SemanticVersion sv) {
         expectedProto = Optional.of(sv);
+        return this;
+    }
+
+    public HapiGetVersionInfo hasServicesVersion(com.hedera.hapi.node.base.SemanticVersion version) {
+        expectedServices = Optional.of(
+                pbjToProto(version, com.hedera.hapi.node.base.SemanticVersion.class, SemanticVersion.class));
         return this;
     }
 
