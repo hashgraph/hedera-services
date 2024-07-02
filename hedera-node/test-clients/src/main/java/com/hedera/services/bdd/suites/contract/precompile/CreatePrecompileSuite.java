@@ -533,6 +533,7 @@ public class CreatePrecompileSuite {
                                 TransactionRecordAsserts.recordWith().status(SUCCESS),
                                 TransactionRecordAsserts.recordWith().status(SUCCESS),
                                 TransactionRecordAsserts.recordWith().status(SUCCESS),
+                                TransactionRecordAsserts.recordWith().status(SUCCESS),
                                 TransactionRecordAsserts.recordWith().status(SUCCESS)),
                         sourcing(() -> getAccountBalance(ACCOUNT)
                                 .hasTokenBalance(
