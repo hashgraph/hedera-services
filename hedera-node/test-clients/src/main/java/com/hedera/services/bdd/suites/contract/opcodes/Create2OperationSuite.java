@@ -1683,7 +1683,6 @@ public class Create2OperationSuite {
                         NONDETERMINISTIC_LOG_DATA)
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
