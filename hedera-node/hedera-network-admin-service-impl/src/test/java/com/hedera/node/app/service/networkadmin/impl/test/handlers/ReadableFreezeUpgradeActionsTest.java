@@ -170,7 +170,7 @@ class ReadableFreezeUpgradeActionsTest {
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
         final Bytes invalidArchive = Bytes.wrap("Not a valid zip archive".getBytes(StandardCharsets.UTF_8));
-        subject.extractSoftwareUpgrade(invalidArchive, false).join();
+        subject.extractSoftwareUpgrade(invalidArchive).join();
 
         assertThat(logCaptor.errorLogs())
                 .anyMatch(l -> l.startsWith("Failed to unzip archive for NMT consumption java.io.IOException:" + " "));
@@ -188,7 +188,7 @@ class ReadableFreezeUpgradeActionsTest {
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
-        subject.extractSoftwareUpgrade(realArchive, false).join();
+        subject.extractSoftwareUpgrade(realArchive).join();
 
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);
     }
@@ -201,7 +201,7 @@ class ReadableFreezeUpgradeActionsTest {
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
 
         final Bytes realArchive = Bytes.wrap(Files.readAllBytes(zipArchivePath));
-        subject.extractSoftwareUpgrade(realArchive, false).join();
+        subject.extractSoftwareUpgrade(realArchive).join();
 
         assertDABFilesNotCreated(zipOutputDir.toPath());
         assertMarkerCreated(EXEC_IMMEDIATE_MARKER, null);

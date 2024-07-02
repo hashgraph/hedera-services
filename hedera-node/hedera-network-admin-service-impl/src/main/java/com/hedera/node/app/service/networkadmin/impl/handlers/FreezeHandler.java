@@ -45,7 +45,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
-import com.hedera.node.config.data.NodesConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -153,8 +152,6 @@ public class FreezeHandler implements TransactionHandler {
         final ReadableNodeStore nodeStore = storeFactory.readableStore(ReadableNodeStore.class);
         final ReadableStakingInfoStore stakingInfoStore = storeFactory.readableStore(ReadableStakingInfoStore.class);
         final WritableFreezeStore freezeStore = storeFactory.writableStore(WritableFreezeStore.class);
-        final NodesConfig nodesConfig = context.configuration().getConfigData(NodesConfig.class);
-        final boolean enableDAB = nodesConfig.enableDAB();
 
         final FreezeTransactionBody freezeTxn = txn.freezeOrThrow();
 
@@ -178,7 +175,7 @@ public class FreezeHandler implements TransactionHandler {
                                     >= filesConfig.softwareUpdateRange().left()
                             && updateFileID.fileNum()
                                     <= filesConfig.softwareUpdateRange().right()) {
-                        upgradeActions.extractSoftwareUpgrade(upgradeFileStore.getFull(updateFileID), enableDAB);
+                        upgradeActions.extractSoftwareUpgrade(upgradeFileStore.getFull(updateFileID));
                     }
                 } catch (IOException e) {
                     throw new IllegalStateException("Error extracting upgrade file", e);

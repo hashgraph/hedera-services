@@ -29,7 +29,6 @@ import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
 import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
@@ -78,30 +77,12 @@ class V052AddressBookSchemaTest extends AddressBookTestBase {
     }
 
     @Test
-    void migrateAsExpected() {
-        setupMigrationContext();
-
-        assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
-        assertThat(logCaptor.infoLogs()).contains("Started migrating nodes from address book");
-        assertThat(logCaptor.infoLogs()).contains("Migrated 2 nodes from address book");
-    }
-
-    @Test
     void migrateDisabled() {
-        final var config = HederaTestConfigBuilder.create()
-                .withValue("nodes.enableDAB", false)
-                .getOrCreateConfig();
-        given(migrationContext.configuration()).willReturn(config);
-
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
         assertThat(logCaptor.infoLogs()).contains("DAB is disabled, skipping migration");
     }
 
     private void setupMigrationContext() {
-        final var config = HederaTestConfigBuilder.create()
-                .withValue("nodes.enableDAB", true)
-                .getOrCreateConfig();
-        given(migrationContext.configuration()).willReturn(config);
         given(migrationContext.newStates()).willReturn(writableStates);
         given(writableStates.get(NODES_KEY)).willReturn(writableKVState);
 
