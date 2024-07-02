@@ -55,7 +55,6 @@ public class IsAuthorizedRawCall extends AbstractCall {
     private final byte[] signature;
 
     private static GasCalculator noCalculationGasCalculator = new CustomGasCalculator();
-    private static MessageFrame dummyMessageFrame = MessageFrame.builder().build();
     private static ECRECPrecompiledContract ecPrecompile = new ECRECPrecompiledContract(noCalculationGasCalculator);
 
     private static long HARDCODED_GAS_REQUIREMENT_GAS = 1_500_000L;
@@ -145,7 +144,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
         if (authorized) {
             authorized = switch (signatureType) {
-                case EC -> validateEcSignature(address);
+                case EC -> validateEcSignature(address, frame);
                 case ED -> validateEdSignature(account.get(), key.get());
                 default -> false;};
         }
@@ -157,14 +156,14 @@ public class IsAuthorizedRawCall extends AbstractCall {
     }
 
     /** Validate EVM signature - EC key - via ECRECOVER */
-    boolean validateEcSignature(@NonNull final Address address) {
+    boolean validateEcSignature(@NonNull final Address address, @NonNull final MessageFrame frame) {
 
         // Call the ECRECOVER precompile directly (meaning, not by executing EVM bytecode, just by
         // using the class provided by Besu).
 
         final var input = formatEcrecoverInput(messageHash, signature);
         if (input.isEmpty()) return false;
-        final var ecrecoverResult = ecPrecompile.computePrecompile(Bytes.wrap(input.get()), dummyMessageFrame);
+        final var ecrecoverResult = ecPrecompile.computePrecompile(Bytes.wrap(input.get()), frame);
 
         // ECRECOVER's output here always has status SUCCESS.  But the result Bytes are either empty or the recovered
         // address.
