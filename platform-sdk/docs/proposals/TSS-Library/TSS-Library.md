@@ -448,12 +448,6 @@ It provides an initialization method to load all necessary dependencies for the 
 **Link**: [PairingResult.java](pairings-api%2FPairingResult.java)
 
 
-###### `PairingResult`
-
-**Description**: An interface representing the result of a pairing operation, with methods to compare it to other group elements.
-
-**Link**: [PairingResult.java](pairings-api%2FPairingResult.java)
-
 ##### Examples:
 ###### Get a Pairing instance for a given curve
 ```java
@@ -837,7 +831,7 @@ After this proposal is accepted we will invite security team to define the neces
 * Define the Test plan.
 * Define a security plan.
 * Implementation of native-support library.
-* Implementation of Pairings API using JNI, arkworks, and alt-bn1238.
+* Implementation of Pairings API using JNI, arkworks, and alt-bn128.
 * Execute Test Plan and validation.
 * Execute Security Audits.
 * Implementation of EC-key utility.
