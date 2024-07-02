@@ -77,12 +77,9 @@ class V052AddressBookSchemaTest extends AddressBookTestBase {
     }
 
     @Test
-    void migrateAsExpected() {
-        setupMigrationContext();
-
+    void migrateDisabled() {
         assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
-        assertThat(logCaptor.infoLogs()).contains("Started migrating nodes from address book");
-        assertThat(logCaptor.infoLogs()).contains("Migrated 2 nodes from address book");
+        assertThat(logCaptor.infoLogs()).contains("DAB is disabled, skipping migration");
     }
 
     private void setupMigrationContext() {
