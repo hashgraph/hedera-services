@@ -1,4 +1,4 @@
-# Threshold Signature Scheme (TSS) Ledger ID
+# TSS-Ledger-ID
 
 ---
 
@@ -230,10 +230,11 @@ calculated as follows:
 ##### Threshold for recovery of Signatures and Ledger Id.
 
 Our public claim is that we can tolerate up to 1/3 of the stake assigned to malicious nodes. Our
-threshold for recovery of ledger signatures and the ledger id must be strictly greater than the following values: 
+threshold for recovery of ledger signatures and the ledger id must be strictly greater than the following values:
+
 1. `floor(TS/3)` where `TS` is the total number of shares.
 2. `M` where `M` is the max number of shares assigned to any node.
- 
+
 The integer threshold we will use is `ceiling(TS /2)` where `TS` is the total number of shares.
 
 ##### TSS Algorithm - Alternatives Considered
@@ -364,7 +365,8 @@ components that interact with the data structures.
 
 #### State Datastructures
 
-The state needs to store the relevant ledger id, consensus rosters, and key material.
+The state needs to store the relevant ledger id, consensus rosters, key material, and partially constructed ledger
+signatures.
 
 ##### Ledger Id
 
@@ -376,15 +378,14 @@ Merkle Leaf by itself is appropriate.
 ##### Consensus Rosters
 
 It is expected that the TSS-Roster proposal has introduced a 3rd roster in the state called the `Candidate Roster`
-in addition to the `Active Roster` and the `Previous Roster`. These rosters are stored in the state as their own
-singleton.
+in addition to the `Active Roster` and the `Previous Roster`. These rosters are stored in the state in a singleton.
 
 This proposal extends the roster data format in two ways:
 
-1. Each `RosterEntry` has a field for the number of shares allocated to the node. This value will not get big and
-   can fit in a byte or short.
-2. Each `RosterEntry` has a new long term public EC key called a `tssEcKey` that is needed in the Groth21 algorithm to
+1. Each `RosterEntry` has a new long term public EC key called a `tssEcKey` that is needed in the Groth21 algorithm to
    key rosters.
+
+The number of shares assigned to each node is calculated from the weight as indicated in a previous section.
 
 ##### Key Material (TSS Data Map)
 
@@ -418,6 +419,14 @@ Lifecycle Invariants
 2. When a roster is no longer stored in the state, the corresponding key material should be removed.
 3. Every roster that has become active after the TSS Genesis process must have sufficient key material to be
    able to recover the ledger id.
+
+##### Partial Ledger Signatures
+
+For a configured number of rounds, share signatures on a message are stored in the state until a threshold number of
+them have been collected to produce the ledger id. Each time a signature on a message is added to the collection,
+the round counter resets. Once the ledger id is produced, it is stored with the other signatures and no new
+signatures are added to the collection. Once a configured number of rounds have passed after the last signature
+added to a collection for a message, the signatures are removed from the state.
 
 #### New or Updated Components
 
@@ -543,9 +552,9 @@ that we want to adopt, and as a sequence of TSS messages that have reached conse
 
 Internal Elements:
 
-1. active roster field 
-2. candidate roster field 
-3. TSS Messages List 
+1. active roster field
+2. candidate roster field
+3. TSS Messages List
 4. TSS Vote List
 
 Inputs:
@@ -558,10 +567,10 @@ Inputs:
 
 Input Invariants
 
-1. Existing messages and votes in state are loaded via constructor. 
+1. Existing messages and votes in state are loaded via constructor.
 2. TSS Messages for the candidate roster must be received after the candidate roster is set.
 3. TSS Votes for the candidate roster must be received after the candidate roster is set.
-4. The TSS Message must exist before for its TSS Vote is received. 
+4. The TSS Message must exist before for its TSS Vote is received.
 
 `On Candidate Roster`:
 
@@ -581,7 +590,7 @@ Input Invariants
 `On TSS Vote`:
 
 1. If voting is closed or the vote is a duplicate of an existing vote, do nothing.
-2. Add the vote to the total and check if the threshold is met. 
+2. Add the vote to the total and check if the threshold is met.
 3. If the threshold is met, send the voting closed notification to the TSS Message Creator.
 
 ###### Validate TSS Message List
@@ -599,72 +608,121 @@ Input Invariants
 ##### TSS Signing Manager
 
 The TSS Signing Manager is responsible for computing a node's private shares from the TSS Messages and for
-generating ledger signatures on messages. The Signing manager operates on its own thread.
+generating ledger signatures by submitting a node's share signature to be gossiped to the rest of the network and
+accumulating a threshold number of share signatures to recover the ledger signatures. Each recovered ledger
+signature is published to interested parties through the `PlatformPublisher`.
 
 Public API:
 
-1. Future<PairingSignature> signMessage(byte[] message) throws NotReadyException
+1. State API: void sign(byte[] message) throws NotReadyException
+2. `PlatformPublisher` provides a consumer for ledger signatures
 
 Internal Elements:
 
-1. active roster
-2. active private shares
-3. active public shares
-4. current round
-5. latest roster round
-6. Map<round, roster> roundRosterMap
-7. Map<round, Pair(private shares, public shares)> roundSharesMap
-8. Map<Message Hash, List<PairingSignature>> messageSignaturesMap
-9. Map<Message Hash, Future<PairingSignature>> messageSignatureFuturesMap
+1. Map<RosterHash, Roster> rosters
+2. Map<RosterHash, List<TssMessage>> tssMessages
+3. Map<RosterHash, Pair<List<Private Share Keys>, List<Public Share Keys>>> shares
+4. Map<MessageHash, RosterHash> messageRosterMap
+5. Map<MessageHash, List<PairingSignature>> messageSignatures
+6. activeRosterHash
+7. current round
 
 Inputs:
 
-1. roster key material: Triple(round, active roster, TSS Messages for active roster)
-2. TssSignatureMessage
-3. EventWindow
+1. Rosters in state (Constructor)
+2. TssMessages in state (Constructor)
+3. Active Roster (Constructor)
+4. Share Signatures in state (Constructor)
+5. TssShareSignature (Wire)
+6. message (Wire)
+7. EventWindow (Wire)
 
 Input Invariants:
 
-1. TssSignatureMessages received must be for previous signMessage(byte[] message) calls.
+1. TssShareSignature received must be for previous signMessage(byte[] message) calls.
 
-On Roster Key Material:
+`On Message`:
 
-1. update the roundRosterMap with the roster.
-2. computeShares(TSS Messages)
+1. Use the private shares of the active roster to create TssShareSignatures from the node and gossip them out.
+2. Construct an empy list of PairingSignatures for the message.
 
-On TssSignatureMessage:
+`On TssShareSignature`:
 
 1. get the hash of the message the signature is for.
-2. if the message hash is not a key in the messageSignaturesMap, do nothing.
+2. get the roster that signed the message.
+3. validate the share signature
+4. Add the signature to the collection for the message.
+5. If a threshold number have been collected, compute the ledger signature and publish it on the output wire.
 
-The TSS key manager is special logic that only runs when the system starts up.  (When DAB phase 3 is implemented,
-this will happen whenever the active consensus roster is updated.)
+`On EventWindow`:
 
-- if we are not upgrading, then the TSS key manager is responsible for computing this node’s private key and the
-  network’s public key, and for distributing that data to components that need it.
-    - if we don’t have TSS message validity completed when we start up, we have no choice but to block until it has been
-      completed
-- if we are upgrading and the candidate roster has sufficient “yes” votes, the TSS key manager is responsible for
-  computing the same information but for the candidate address book (which becomes the active address book in the first
-  round following the upgrade)
-    - similar to the restart case, we must block if we have not yet validated TSS messages
+1. Update the current round.
+2. cleanup the message signatures for any collections that are older than the configured number of rounds.
 
 ##### Roster Initializer
 
+The Roster Initializer replaces the AddressBookInitializer and is responsible for the rotation of the consensus rosters
+on software upgrade. If the candidate roster has enough key material to recover the ledger id, then the candidate
+roster is adopted as the active roster and the active roster becomes the previous roster. If the candidate roster
+does not have enough key material to recover the ledger id, then the active roster remains the active roster.
+
+A roster rotation must be recorded in the state before the rest of the platform uses the state.
+
 ### Core Behaviors
 
-Describe any new or modified behavior. What are the new or modified algorithms and protocols? Include any diagrams that
-help explain the behavior.
+The TSS-Roster alters the address book life-cycle.
 
-Remove this section if not applicable.
+This proposal adds the ability to sign messages with the ledger private key and does not modify any existing
+behavior after the TSS-Roster proposal.
+
+The new behavior is related to the genesis process of creating the ledger id and transferring the ability to sign
+messages from one roster to the next roster.
 
 #### TSS Genesis for New Networks
 
+At the start of a new network there will be a new pre-genesis phase to generate the key material for the genesis
+roster and then restart the network from round 0 with the new key material and ledger id.
+
+The following startup sequence is modified from existing practices.
+
+1. Inversion of Control - The app hands a genesis state, genesis roster, and private keys to the platform.
+2. The platform copies the genesis state and starts gossiping with peers without accepting user transactions.
+3. The platform automatically begins to key the genesis roster with a ledger id.
+4. Once the ledger id is created and a threshold number of nodes have voted to being ready to restart, the platform
+   updates the state with the key material and ledger id and restarts from round 0.
+5. Any nodes which failed to produce the key material for themselves will need to receive the key material through a
+   reconnect.
+
 #### TSS Genesis for Existing Networks
+
+Prior to the release that enables the TSS Genesis process for existing networks the following must have been  
+delivered in a prior releases:
+
+1. Each node must have their long term EC keys.
+2. The TSS-Roster proposal must have been delivered to introduce the new candidate roster lifecycle.
+
+On software upgrade with the first release that contains the code to perform the TSS Genesis process:
+
+1. Business as usual until the candidate roster is set.
+2. Once set, the candidate roster has TSS key material generated for it from random shares that are generated for
+   the existing roster, 1 share per node. This creates a random ledger id.
+3. On the next software upgrade the candidate roster will be adopted and the ability to sign messages with the ledger
+   private key will become active.
+
+If the TSS-Ledger-Id is delivered in release N, then the TSS-Roster proposal and long term EC keys should be
+delivered in release N-1. The ability to sign messages with the ledger private key will be active in release N+1.
 
 #### Keying The Next Roster
 
+Once a candidate roster is set, the platform goes through a process of keying the next roster and votes when it is
+ready to restart and adopt the new roster.
+
 #### Ledger Signing API
+
+After the network has been upgraded with the TSS-Ledger-Id proposal, on the next software upgrade the platform will
+be able to sign messages with the ledger private key. Ledger signatures take multiple rounds of consensus to
+produce and are generated asynchronously through the `PlatformPublisher`. The App must register a consumer with
+the platform to receive the ledger signatures when they are produced.
 
 ### Public API
 
@@ -688,22 +746,29 @@ Remove this section if not applicable.
 
 ### Configuration
 
-Describe any new or modified configuration.
+The following are new configuration:
 
-Remove this section if not applicable.
+1. `tss.maxSharesPerNode` - The maximum number of shares that can be assigned to a node.
+2. `tss.signatureRounds` - The number of rounds that share signatures are kept in the state before being removed.
+3. `tss.tssMessageTimeout` - The time period that a TSS Message is resent if it is not confirmed by consensus.
 
 ### Metrics
 
-Are there new metrics? Are the computation of existing metrics changing? Are there expected observable metric impacts
-that change how someone should relate to the metric?
+The following metrics should be added to the platform:
 
-Remove this section if not applicable.
+1. When a candidate roster is set.
+2. The number of TSS Messages collected for a candidate roster.
+3. The number of votes collected for a candidate roster.
+4. The time it takes to generate a ledger signature.
+5. The time it takes to compute shares from the key material.
+6. The number of TSS Messages that are resubmitted.
 
 ### Performance
 
-Describe any expected performance impacts. This section is mandatory for platform wiring changes.
-
-Remove this section if not applicable.
+The `TSS State Manager` routes TSS related system transactions to the relevant components and updates the TSS
+related data structures in the state. The routing should be a negligible impact provided the receiving components
+receive the messages and handles them on their own thread. The state updates should be simple crud operations,
+adds and deletes to data structures. The merkle leaves with updated state will need to be rehashed.
 
 ---
 
@@ -711,31 +776,47 @@ Remove this section if not applicable.
 
 ### Unit Tests
 
-Describe critical test scenarios and any higher level functionality tests that can run at the unit test level.
+Apart from the obvious unit testing of methods and classes, the following scenarios should be unit tested:
 
-Examples:
-
-* Subtle edge cases that might be overlooked.
-* Use of simulators or frameworks to test complex component interaction.
-
-Remove this section if not applicable.
+* Failure Scenarios
+    * Bad TssMessages
+    * Failure to reach threshold number of votes
+    * Bad TssShareSignatures
+* Turtle Tests
+    * Reconnect
+    * Down Nodes during Genesis and Re keying
+    * Multi-Release Migration
+    * Signing API, constructing signatures across software upgrade.
 
 ### Integration Tests
 
-Describe any integration tests needed. Integration tests include migration, reconnect, restart, etc.
+If Turtle is not available, then the turtle tests will become integration tests.
 
-Remove this section if not applicable.
+Additional Integration Tests:
+
+* TSS Genesis for New Networks
+* TSS Genesis for Existing Networks
+    * multiple software upgrades.
 
 ### Performance Tests
 
-Describe any performance tests needed. Performance tests include high TPS, specific work loads that stress the system,
-JMH benchmarks, or longevity tests.
+The following need performance profiles:
 
-Remove this section if not applicable.
+1. How long does it take to generate the key material for a new candidate roster as a function of roster size?
+2. How long does it take to generate the ledger signatures?
+3. How much space is being used in the state for all TSS related data structures?
 
 ---
 
 ## Implementation and Delivery Plan
 
 How should the proposal be implemented? Is there a necessary order to implementation? What are the stages or phases
-needed for the delivery of capabilities? What configuration flags will be used to manage deployment of capability? 
+needed for the delivery of capabilities? What configuration flags will be used to manage deployment of capability?
+
+
+
+---
+
+## Open Questions
+
+1. De we need to complete signature collection and construction before freeze and restart?
