@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.infrastructure;
+package com.hedera.node.app.service.contract.impl.exec.utils;
 
-import java.util.Optional;
-import java.util.Set;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
-public interface EntityNameProvider {
-    Optional<String> getQualifying();
-
-    Optional<String> getQualifyingExcept(Set<String> ineligible);
+public class OperationUtils {
+    public static boolean isDeficientGas(@NonNull final MessageFrame frame, @NonNull final long cost) {
+        return frame.getRemainingGas() < cost;
+    }
 }

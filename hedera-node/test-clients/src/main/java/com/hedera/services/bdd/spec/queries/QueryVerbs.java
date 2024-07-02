@@ -34,17 +34,13 @@ import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountRecords;
 import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileContents;
 import com.hedera.services.bdd.spec.queries.file.HapiGetFileInfo;
-import com.hedera.services.bdd.spec.queries.meta.HapiGetExecTime;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetReceipt;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetVersionInfo;
 import com.hedera.services.bdd.spec.queries.schedule.HapiGetScheduleInfo;
-import com.hedera.services.bdd.spec.queries.token.HapiGetAccountNftInfos;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfo;
-import com.hedera.services.bdd.spec.queries.token.HapiGetTokenNftInfos;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -198,14 +194,6 @@ public class QueryVerbs {
         return new HapiGetVersionInfo();
     }
 
-    public static HapiGetExecTime getExecTime(final String... txnIds) {
-        return new HapiGetExecTime(List.of(txnIds)).nodePayment(1234L);
-    }
-
-    public static HapiGetExecTime getExecTimeNoPayment(final String... txnIds) {
-        return new HapiGetExecTime(List.of(txnIds));
-    }
-
     public static HapiGetTokenInfo getTokenInfo(final String token) {
         return new HapiGetTokenInfo(token);
     }
@@ -216,13 +204,5 @@ public class QueryVerbs {
 
     public static HapiGetTokenNftInfo getTokenNftInfo(final String token, final long serialNum) {
         return new HapiGetTokenNftInfo(token, serialNum);
-    }
-
-    public static HapiGetTokenNftInfos getTokenNftInfos(final String token, final long start, final long end) {
-        return new HapiGetTokenNftInfos(token, start, end);
-    }
-
-    public static HapiGetAccountNftInfos getAccountNftInfos(final String account, final long start, final long end) {
-        return new HapiGetAccountNftInfos(account, start, end);
     }
 }
