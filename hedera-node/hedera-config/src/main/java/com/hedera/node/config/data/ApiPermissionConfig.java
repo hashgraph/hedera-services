@@ -59,6 +59,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_SIGN;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SYSTEM_UNDELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ACCOUNT_WIPE;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_AIRDROP;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_BURN;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
@@ -177,6 +178,7 @@ import java.util.function.Function;
  * @param getAccountDetails          the permission for {@link HederaFunctionality#GET_ACCOUNT_DETAILS} functionality
  * @param tokenUpdateNfts            the permission for {@link HederaFunctionality#TOKEN_UPDATE_NFTS} functionality
  * @param tokenReject                the permission for {@link HederaFunctionality#TOKEN_REJECT} functionality
+ * @param tokenAirdrop               the permission for {@link HederaFunctionality#TOKEN_AIRDROP} functionality
  *
  * @param createNode                   the permission for {@link HederaFunctionality#NODE_CREATE} functionality
  * @param updateNode                   the permission for {@link HederaFunctionality#NODE_UPDATE} functionality
@@ -248,10 +250,10 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenReject,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenAirdrop,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange createNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getNodeInfo) {
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -299,6 +301,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(SCHEDULE_SIGN, c -> c.scheduleSign);
         permissionKeys.put(TOKEN_UPDATE_NFTS, c -> c.tokenUpdateNfts);
         permissionKeys.put(TOKEN_REJECT, c -> c.tokenReject);
+        permissionKeys.put(TOKEN_AIRDROP, c -> c.tokenAirdrop);
         /* Queries */
         permissionKeys.put(CONSENSUS_GET_TOPIC_INFO, c -> c.getTopicInfo);
         permissionKeys.put(CONTRACT_CALL_LOCAL, c -> c.contractCallLocalMethod);

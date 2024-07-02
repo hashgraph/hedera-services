@@ -226,12 +226,13 @@ public class HapiUtils {
             case TOKEN_UPDATE -> HederaFunctionality.TOKEN_UPDATE;
             case TOKEN_UPDATE_NFTS -> HederaFunctionality.TOKEN_UPDATE_NFTS;
             case TOKEN_WIPE -> HederaFunctionality.TOKEN_ACCOUNT_WIPE;
-            case TOKEN_REJECT -> HederaFunctionality.TOKEN_REJECT;
             case UTIL_PRNG -> HederaFunctionality.UTIL_PRNG;
             case UNCHECKED_SUBMIT -> HederaFunctionality.UNCHECKED_SUBMIT;
             case NODE_CREATE -> HederaFunctionality.NODE_CREATE;
             case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
             case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
+            case TOKEN_REJECT -> HederaFunctionality.TOKEN_REJECT;
+            case TOKEN_AIRDROP -> HederaFunctionality.TOKEN_AIRDROP;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
