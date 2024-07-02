@@ -44,12 +44,10 @@ import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -88,12 +86,6 @@ class FreezeHandlerTest {
     @Mock(strictness = LENIENT)
     private Account account;
 
-    @Mock
-    private ReadableNodeStore nodeStore;
-
-    @Mock
-    private ReadableStakingInfoStore stakingInfoStore;
-
     private final FileID fileUpgradeFileId = FileID.newBuilder().fileNum(150L).build();
     private final FileID anotherFileUpgradeFileId =
             FileID.newBuilder().fileNum(157).build();
@@ -118,15 +110,11 @@ class FreezeHandlerTest {
 
         given(preHandleContext.createStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(preHandleContext.createStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
-        given(preHandleContext.createStore(ReadableNodeStore.class)).willReturn(nodeStore);
-        given(preHandleContext.createStore(ReadableStakingInfoStore.class)).willReturn(stakingInfoStore);
 
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.readableStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
         given(storeFactory.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
-        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
-        given(storeFactory.readableStore(ReadableStakingInfoStore.class)).willReturn(stakingInfoStore);
     }
 
     @Test

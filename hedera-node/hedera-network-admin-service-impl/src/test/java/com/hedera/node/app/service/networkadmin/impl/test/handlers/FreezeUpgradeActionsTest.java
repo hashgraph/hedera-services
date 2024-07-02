@@ -25,12 +25,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
-import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
 import com.hedera.node.app.spi.fixtures.util.LogCaptureExtension;
 import com.hedera.node.app.spi.fixtures.util.LoggingSubject;
@@ -84,20 +82,13 @@ class FreezeUpgradeActionsTest {
     @Mock
     private WritableUpgradeFileStore upgradeFileStore;
 
-    @Mock
-    private ReadableNodeStore nodeStore;
-
-    @Mock
-    private ReadableStakingInfoStore stakingInfoStore;
-
     @BeforeEach
     void setUp() throws IOException {
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
         final Executor freezeExectuor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
-        subject = new FreezeUpgradeActions(
-                adminServiceConfig, freezeStore, freezeExectuor, upgradeFileStore, nodeStore, stakingInfoStore);
+        subject = new FreezeUpgradeActions(adminServiceConfig, freezeStore, freezeExectuor, upgradeFileStore);
 
         // set up test zip
         zipSourceDir = Files.createTempDirectory("zipSourceDir");

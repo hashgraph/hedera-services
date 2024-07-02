@@ -16,11 +16,9 @@
 
 package com.hedera.node.app.state.listeners;
 
-import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
-import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
@@ -73,15 +71,8 @@ public class ReconnectListener implements ReconnectCompleteListener {
             final var networkAdminConfig = configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class);
             final var freezeStore = readableStoreFactory.getStore(ReadableFreezeStore.class);
             final var upgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);
-            final var upgradeNodeStore = readableStoreFactory.getStore(ReadableNodeStore.class);
-            final var upgradeStakingInfoStore = readableStoreFactory.getStore(ReadableStakingInfoStore.class);
-            final var upgradeActions = new ReadableFreezeUpgradeActions(
-                    networkAdminConfig,
-                    freezeStore,
-                    executor,
-                    upgradeFileStore,
-                    upgradeNodeStore,
-                    upgradeStakingInfoStore);
+            final var upgradeActions =
+                    new ReadableFreezeUpgradeActions(networkAdminConfig, freezeStore, executor, upgradeFileStore);
             upgradeActions.catchUpOnMissedSideEffects(platformStateAccessor.getPlatformState());
         }
     }

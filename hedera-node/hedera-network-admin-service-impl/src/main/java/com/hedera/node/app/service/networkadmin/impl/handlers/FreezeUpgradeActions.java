@@ -19,10 +19,8 @@ package com.hedera.node.app.service.networkadmin.impl.handlers;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
-import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Executor;
@@ -40,10 +38,8 @@ public class FreezeUpgradeActions extends ReadableFreezeUpgradeActions {
             @NonNull final NetworkAdminConfig adminServiceConfig,
             @NonNull final WritableFreezeStore freezeStore,
             @NonNull final Executor executor,
-            @NonNull final ReadableUpgradeFileStore upgradeFileStore,
-            @NonNull final ReadableNodeStore nodeStore,
-            @NonNull final ReadableStakingInfoStore stakingInfoStore) {
-        super(adminServiceConfig, freezeStore, executor, upgradeFileStore, nodeStore, stakingInfoStore);
+            @NonNull final ReadableUpgradeFileStore upgradeFileStore) {
+        super(adminServiceConfig, freezeStore, executor, upgradeFileStore);
         this.freezeStore = freezeStore;
     }
 
