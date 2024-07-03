@@ -35,6 +35,7 @@ import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy;
 import com.hedera.node.app.service.contract.impl.exec.scope.ActiveContractVerificationStrategy.UseTopLevelSigs;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
+import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -151,11 +152,13 @@ class ActiveContractVerificationStrategyTest {
 
     @Test
     void signatureTestUsesContextVerificationWhenNotEthSenderKey() {
+        final var keyVerifier = mock(KeyVerifier.class);
         final var verification = mock(SignatureVerification.class);
         final var subject = mock(VerificationStrategy.class);
         doCallRealMethod().when(subject).asSignatureTestIn(context, null);
         given(verification.passed()).willReturn(true);
-        given(context.verificationFor(B_SECP256K1_KEY)).willReturn(verification);
+        given(context.keyVerifier()).willReturn(keyVerifier);
+        given(keyVerifier.verificationFor(B_SECP256K1_KEY)).willReturn(verification);
         given(subject.decideForPrimitive(B_SECP256K1_KEY))
                 .willReturn(VerificationStrategy.Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
 

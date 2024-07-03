@@ -38,6 +38,7 @@ import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.ScheduleTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
+import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
@@ -76,6 +77,9 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     protected StoreFactory storeFactory;
+
+    @Mock(strictness = Mock.Strictness.LENIENT)
+    protected KeyVerifier keyVerifier;
 
     protected final TransactionKeys testChildKeys =
             createChildKeys(adminKey, schedulerKey, payerKey, optionKey, otherKey);
@@ -168,11 +172,12 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(storeFactory.readableStore(ReadableScheduleStore.class)).willReturn(scheduleStore);
         given(storeFactory.writableStore(WritableScheduleStore.class)).willReturn(writableSchedules);
-        given(mockContext.verificationFor(eq(payerKey), any())).willReturn(passedVerification(payerKey));
-        given(mockContext.verificationFor(eq(adminKey), any())).willReturn(passedVerification(adminKey));
-        given(mockContext.verificationFor(eq(schedulerKey), any())).willReturn(failedVerification(schedulerKey));
-        given(mockContext.verificationFor(eq(optionKey), any())).willReturn(failedVerification(optionKey));
-        given(mockContext.verificationFor(eq(otherKey), any())).willReturn(failedVerification(otherKey));
+        given(mockContext.keyVerifier()).willReturn(keyVerifier);
+        given(keyVerifier.verificationFor(eq(payerKey), any())).willReturn(passedVerification(payerKey));
+        given(keyVerifier.verificationFor(eq(adminKey), any())).willReturn(passedVerification(adminKey));
+        given(keyVerifier.verificationFor(eq(schedulerKey), any())).willReturn(failedVerification(schedulerKey));
+        given(keyVerifier.verificationFor(eq(optionKey), any())).willReturn(failedVerification(optionKey));
+        given(keyVerifier.verificationFor(eq(otherKey), any())).willReturn(failedVerification(otherKey));
         given(mockContext.dispatchChildTransaction(
                         any(),
                         eq(ScheduleRecordBuilder.class),

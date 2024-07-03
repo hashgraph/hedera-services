@@ -27,14 +27,10 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.queries.QueryUtils;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.AssessedCustomFee;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.NftID;
-import com.hederahashgraph.api.proto.java.PendingAirdropId;
 import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
-import com.hederahashgraph.api.proto.java.PendingAirdropValue;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
@@ -130,49 +126,19 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
             final List<TokenMovement> movements, final boolean fungible) {
 
         return spec -> {
-            // build pending airdrop records
-            // iterate over movements without aggregating them
+            // convert movements to pending airdrop records
             List<PendingAirdropRecord> expectedRecords = new ArrayList<>();
-            AccountAmount senderAmount = null;
             movements.forEach(tokenMovement -> {
                 if (fungible) {
-                    var tokenXfer = tokenMovement.specializedFor(spec);
-                    var aaSender = tokenXfer.getTransfers(0);
-                    var aaReceiver = tokenXfer.getTransfers(1);
-                    var tokenId = tokenXfer.getToken();
-                    var pendingAirdropId = PendingAirdropId.newBuilder()
-                            .setSenderId(aaSender.getAccountID())
-                            .setReceiverId(aaReceiver.getAccountID())
-                            .setFungibleTokenType(tokenId)
-                            .build();
-                    var pendingAirdropValue = PendingAirdropValue.newBuilder()
-                            .setAmount(aaReceiver.getAmount())
-                            .build();
-                    var expectedRecord = PendingAirdropRecord.newBuilder()
-                            .setPendingAirdropId(pendingAirdropId)
-                            .setPendingAirdropValue(pendingAirdropValue)
-                            .build();
-                    expectedRecords.add(expectedRecord);
+                    var pendingAirdropRecords = tokenMovement.specializedForPendingAirdrop(spec);
+                    if (!pendingAirdropRecords.isEmpty()) {
+                        expectedRecords.addAll(pendingAirdropRecords);
+                    }
                 } else {
-                    var tokenXfer = tokenMovement.specializedForNft(spec);
-                    var aaSender = tokenXfer.getNftTransfers(0).getSenderAccountID();
-                    var aaReceiver = tokenXfer.getNftTransfers(0).getReceiverAccountID();
-                    var tokenId = tokenXfer.getToken();
-                    var pendingAirdropId = PendingAirdropId.newBuilder()
-                            .setSenderId(aaSender)
-                            .setReceiverId(aaReceiver)
-                            .setNonFungibleToken(NftID.newBuilder()
-                                    .setTokenID(tokenId)
-                                    .setSerialNumber(
-                                            tokenXfer.getNftTransfers(0).getSerialNumber()))
-                            .build();
-                    var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
-                    var expectedRecord = PendingAirdropRecord.newBuilder()
-                            .setPendingAirdropId(pendingAirdropId)
-                            .setPendingAirdropValue(pendingAirdropValue)
-                            .build();
-
-                    expectedRecords.add(expectedRecord);
+                    var pendingAirdropRecords = tokenMovement.specializedForNftPendingAirdop(spec);
+                    if (!pendingAirdropRecords.isEmpty()) {
+                        expectedRecords.addAll(pendingAirdropRecords);
+                    }
                 }
             });
             return (ErroringAsserts<List<PendingAirdropRecord>>) allPendingAirdrops -> {

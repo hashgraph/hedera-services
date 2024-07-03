@@ -16,8 +16,7 @@
 
 package com.hedera.node.app.workflows;
 
-import com.hedera.node.app.workflows.handle.HandleWorkflowInjectionModule;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTransactionComponent;
+import com.hedera.node.app.workflows.handle.HandleWorkflowModule;
 import com.hedera.node.app.workflows.ingest.IngestWorkflowInjectionModule;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflowInjectionModule;
 import com.hedera.node.app.workflows.query.QueryWorkflowInjectionModule;
@@ -28,10 +27,9 @@ import dagger.Module;
  */
 @Module(
         includes = {
-            HandleWorkflowInjectionModule.class,
+            HandleWorkflowModule.class,
             IngestWorkflowInjectionModule.class,
             PreHandleWorkflowInjectionModule.class,
             QueryWorkflowInjectionModule.class
-        },
-        subcomponents = {UserTransactionComponent.class})
+        })
 public interface WorkflowsInjectionModule {}

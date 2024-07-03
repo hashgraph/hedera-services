@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
@@ -38,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
 public class UmbrellaRedux {
     public static final String DEFAULT_PROPERTIES = "regression-mixed_ops.properties";
@@ -51,6 +53,7 @@ public class UmbrellaRedux {
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
 
     @HapiTest
+    @Tag(NOT_REPEATABLE)
     final Stream<DynamicTest> umbrellaRedux() {
         var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("UmbrellaRedux")
