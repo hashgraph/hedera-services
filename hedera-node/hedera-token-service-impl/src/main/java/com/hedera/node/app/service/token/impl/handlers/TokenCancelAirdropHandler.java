@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
@@ -56,6 +57,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenCancelAirdropHandler extends BaseTokenHandler implements TransactionHandler {
+
+    private final int MAX_ALLOWED_PENDING_AIRDROPS_TO_CANCEL = 10;
 
     @Inject
     public TokenCancelAirdropHandler() {
@@ -106,7 +109,8 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var op = txn.tokenCancelAirdropOrThrow();
 
         validateFalsePreCheck(op.pendingAirdrops().isEmpty(), EMPTY_PENDING_AIRDROP_ID_LIST);
-
+        validateFalsePreCheck(
+                op.pendingAirdrops().size() > MAX_ALLOWED_PENDING_AIRDROPS_TO_CANCEL, MAX_PENDING_AIRDROP_ID_EXCEEDED);
         final var uniquePendingAirdrops = new HashSet<PendingAirdropId>();
         for (final var airdrop : op.pendingAirdrops()) {
             if (!uniquePendingAirdrops.add(airdrop)) {
