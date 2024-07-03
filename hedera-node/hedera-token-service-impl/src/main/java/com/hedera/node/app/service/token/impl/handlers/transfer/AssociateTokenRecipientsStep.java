@@ -39,6 +39,8 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
+import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -46,6 +48,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.EntitiesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -156,7 +159,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
      * @param token The token to associate with the account
      * @param accountStore The account store
      * @param tokenRelStore The token relation store
-     * @param handleContext The context
+     * @param context The context
      */
     private TokenAssociation validateAndBuildAutoAssociation(
             @NonNull final AccountID accountId,
@@ -164,11 +167,11 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             @NonNull final Token token,
             @NonNull final WritableAccountStore accountStore,
             @NonNull final WritableTokenRelationStore tokenRelStore,
-            @NonNull final HandleContext handleContext) {
+            @NonNull final HandleContext context) {
         final var account =
-                getIfUsableForAliasedId(accountId, accountStore, handleContext.expiryValidator(), INVALID_ACCOUNT_ID);
+                getIfUsableForAliasedId(accountId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
-        final var config = handleContext.configuration();
+        final var config = context.configuration();
         final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
         if (tokenRel == null && account.maxAutoAssociations() != 0) {
@@ -177,13 +180,66 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateTrue(validAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
-            final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
-            return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
+
+            final var unlimitedAssociationsEnabled =
+                    config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
+            if (unlimitedAssociationsEnabled) {
+                dispatchAutoAssociation(token, accountStore, tokenRelStore, context, account);
+                // We still need to return this association to the caller. Since this is used to set in record automatic
+                // associations.
+                return asTokenAssociation(tokenId, accountId);
+            } else {
+                // Once the unlimitedAssociationsEnabled is enabled, this block of code can be removed and
+                // all auto-associations will be done through the synthetic transaction and charged.
+                final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
+                return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
+            }
         } else {
             validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
             validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
             return null;
         }
+    }
+
+    /**
+     * Dispatches a synthetic transaction to associate the token with the account. It will increment the usedAutoAssociations
+     * count on the account and set the token relation as automaticAssociation.
+     * This is done only if the unlimitedAutoAssociationsEnabled is enabled.
+     * @param token The token to associate with the account
+     * @param accountStore The account store
+     * @param tokenRelStore The token relation store
+     * @param context The context
+     * @param account The account to associate the token with
+     */
+    private void dispatchAutoAssociation(
+            final @NonNull Token token,
+            final @NonNull WritableAccountStore accountStore,
+            final @NonNull WritableTokenRelationStore tokenRelStore,
+            final @NonNull HandleContext context,
+            final @NonNull Account account) {
+        final var accountId = account.accountIdOrThrow();
+        final var tokenId = token.tokenIdOrThrow();
+        final var syntheticAssociation = TransactionBody.newBuilder()
+                .tokenAssociate(TokenAssociateTransactionBody.newBuilder()
+                        .account(account.accountId())
+                        .tokens(token.tokenId())
+                        .build())
+                .build();
+        // We don't need to verify signatures for this internal dispatch. So we specify the keyVerifier to null
+        context.dispatchRemovablePrecedingTransaction(
+                syntheticAssociation, SingleTransactionRecordBuilder.class, null, context.payer());
+        // increment the usedAutoAssociations count
+        final var accountModified = requireNonNull(accountStore.getAliasedAccountById(accountId))
+                .copyBuilder()
+                .usedAutoAssociations(account.usedAutoAssociations() + 1)
+                .build();
+        accountStore.put(accountModified);
+        // We need to set this as auto-association
+        final var newTokenRel = requireNonNull(tokenRelStore.get(accountId, tokenId))
+                .copyBuilder()
+                .automaticAssociation(true)
+                .build();
+        tokenRelStore.put(newTokenRel);
     }
 
     private void validateFungibleAllowance(

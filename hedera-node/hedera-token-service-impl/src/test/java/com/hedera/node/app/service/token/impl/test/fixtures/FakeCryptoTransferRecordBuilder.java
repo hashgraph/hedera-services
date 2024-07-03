@@ -25,6 +25,7 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -64,6 +65,11 @@ public class FakeCryptoTransferRecordBuilder {
             @Override
             public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
                 return this;
+            }
+
+            @Override
+            public HandleContext.TransactionCategory category() {
+                return HandleContext.TransactionCategory.USER;
             }
 
             private List<AccountAmount> paidStakingRewards;
