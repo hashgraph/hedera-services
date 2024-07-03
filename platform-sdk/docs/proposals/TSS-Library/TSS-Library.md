@@ -541,7 +541,7 @@ SignatureSchema signatureSchema = SignatureSchema.from(Curve.ALT_BN128, GroupAss
 ###### Generating a Signature
 ```java
     byte[] message = new byte[]{};
-    PairingSignature signature = PairingSignature.sign(privateKey, message );
+    PairingSignature signature = PairingPrivateKey.sign(message );
    
 ```
 ###### Verifying a Signature
