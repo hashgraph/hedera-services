@@ -155,6 +155,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
+import com.hedera.services.bdd.junit.ContextRequirement;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -1333,7 +1334,7 @@ public class CryptoTransferSuite {
                                                         .balance(5)))));
     }
 
-    @HapiTest
+    @LeakyHapiTest(ContextRequirement.PROPERTY_OVERRIDES)
     final Stream<DynamicTest> royaltyCollectorsCanUseAutoAssociation() {
         final var uniqueWithRoyalty = "uniqueWithRoyalty";
         final var firstFungible = "firstFungible";
@@ -1346,8 +1347,10 @@ public class CryptoTransferSuite {
         final var secondRoyaltyAmount = exchangeAmount / 15;
         final var netExchangeAmount = exchangeAmount - firstRoyaltyAmount - secondRoyaltyAmount;
 
-        return defaultHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
+        return propertyPreservingHapiSpec("RoyaltyCollectorsCanUseAutoAssociation")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(firstRoyaltyCollector).maxAutomaticTokenAssociations(plentyOfSlots),
                         cryptoCreate(secondRoyaltyCollector).maxAutomaticTokenAssociations(plentyOfSlots),

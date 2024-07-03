@@ -1162,6 +1162,7 @@ public class AtomicCryptoTransferHTSSuite {
                         childRecordsCheck(
                                 successfulTransferFromTxn,
                                 SUCCESS,
+                                recordWith().status(SUCCESS),
                                 recordWith()
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
@@ -1281,6 +1282,7 @@ public class AtomicCryptoTransferHTSSuite {
                         childRecordsCheck(
                                 successfulTransferFromTxn,
                                 SUCCESS,
+                                recordWith().status(SUCCESS),
                                 recordWith()
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()

@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
+import static com.hedera.hapi.node.base.SubType.DEFAULT;
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_ID_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
@@ -36,7 +37,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
@@ -200,14 +200,31 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
         requireNonNull(feeContext);
         final var body = feeContext.body();
         final var op = body.tokenAssociateOrThrow();
-        final var accountId = op.accountOrThrow();
-        final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
-        final var account = readableAccountStore.getAccountById(accountId);
 
-        return feeContext
-                .feeCalculatorFactory()
-                .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(body), sigValueObj, account));
+        final var calculator = feeContext.feeCalculatorFactory().feeCalculator(DEFAULT);
+        final var unlimitedAssociationsEnabled =
+                feeContext.configuration().getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
+
+        // If the unlimited auto-associations feature is enabled, we calculate the fees in a new way, because the
+        // association price is changed to $0.05. When the feature is enabled the feeSchedules.json will be updated
+        // to reflect the price change and the else case will be removed.
+        // Until then, we calculate the fees using the legacy method.
+        // NOTE: If this flag is disabled, the feeSchedules.json should be modified as well
+        if (unlimitedAssociationsEnabled) {
+            calculator.resetUsage();
+            calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
+            calculator.addBytesPerTransaction(op.tokens().size());
+            return calculator.calculate();
+        } else {
+            final var accountId = op.accountOrThrow();
+            final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
+            final var account = readableAccountStore.getAccountById(accountId);
+            return feeContext
+                    .feeCalculatorFactory()
+                    .feeCalculator(DEFAULT)
+                    .legacyCalculate(
+                            sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(body), sigValueObj, account));
+        }
     }
 
     private FeeData usageGiven(
