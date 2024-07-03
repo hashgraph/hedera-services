@@ -349,7 +349,7 @@ To implement the functionality detailed in the previous section, the following c
 ![img_5.png](img_5.svg)
 
 1. **TSS Lib**: The consensus node will use the TSS library to create shares, create TSS messages to send to other nodes,
-   assemble shared public keys (ledgerId), and sign the block node Merkle tree hash.
+   assemble shared public keys (ledgerId), and sign block hashes.
 2. **Bilinear Pairings Signature Library**: This library provides cryptographic objects (PrivateKey, PublicKey, and Signature)
    and operations for the block node and consensus node to sign and verify signatures. The consensus node uses this library indirectly through the TSS Library.
 3. **Bilinear Pairings API**: An API definition for the cryptography primitives
