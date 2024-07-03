@@ -632,7 +632,7 @@ This library accepts Integer.MAX_VALUE -1 participants.
 static {
     List<TssMessage> messages = Requirements.receiveTssMessages();
     for(TssMessage m : messages){
-        service.validate(participantDirectory, m);
+        service.verifyTssMessage(participantDirectory, m);
     }
 }
 ```
