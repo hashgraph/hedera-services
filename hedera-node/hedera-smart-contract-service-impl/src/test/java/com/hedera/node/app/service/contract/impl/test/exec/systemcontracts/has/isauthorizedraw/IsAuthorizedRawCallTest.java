@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
@@ -52,7 +53,7 @@ class IsAuthorizedRawCallTest extends CallTestBase {
     void setup() {
         given(attempt.systemContractGasCalculator()).willReturn(gasCalculator);
         given(attempt.enhancement()).willReturn(mockEnhancement());
-        given(frame.getRemainingGas()).willReturn(10_000_000L);
+        lenient().when(frame.getRemainingGas()).thenReturn(10_000_000L);
     }
 
     @Test
