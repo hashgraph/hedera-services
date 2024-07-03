@@ -26,6 +26,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.message
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.revertOutputFor;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.signature;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -76,6 +77,14 @@ class IsAuthorizedRawCallTest extends CallTestBase {
 
         assertEquals(State.REVERT, result.getState());
         assertEquals(revertOutputFor(INVALID_ACCOUNT_ID), result.getOutput());
+    }
+
+    @Test
+    void canValidateED() {
+        subject = getSubject(APPROVED_HEADLONG_ADDRESS);
+
+        final var actual = subject.validateEdSignature(null, null);
+        assertFalse(actual);
     }
 
     @ParameterizedTest

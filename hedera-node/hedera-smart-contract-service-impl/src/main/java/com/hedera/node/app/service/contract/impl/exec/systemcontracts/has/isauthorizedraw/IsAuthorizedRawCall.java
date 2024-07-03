@@ -35,6 +35,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
+import com.swirlds.common.crypto.CryptographyHolder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -54,9 +55,13 @@ public class IsAuthorizedRawCall extends AbstractCall {
     private final byte[] signature;
 
     private static final GasCalculator noCalculationGasCalculator = new CustomGasCalculator();
+
+    // Besu's ECRECOVER precompile class will be used _directly_ (no need to execute bytecodes):
     private static final ECRECPrecompiledContract ecPrecompile =
             new ECRECPrecompiledContract(noCalculationGasCalculator);
 
+    // FUTURE: Gas for system contract method calls needs to be a) determined by measurement of
+    // resources consumed, and b) incorporated into the fee schedule
     private static final long HARDCODED_GAS_REQUIREMENT_GAS = 1_500_000L;
 
     public enum SignatureType {
@@ -83,18 +88,16 @@ public class IsAuthorizedRawCall extends AbstractCall {
     @NonNull
     @Override
     public PricedResult execute(@NonNull final MessageFrame frame) {
-        requireNonNull(frame);
+        requireNonNull(frame, "frame");
 
-        final var gasRequirement = HARDCODED_GAS_REQUIREMENT_GAS;
-
-        Function<ResponseCodeEnum, PricedResult> bail = rce -> reversionWith(rce, gasRequirement);
+        final Function<ResponseCodeEnum, PricedResult> bail = rce -> reversionWith(rce, HARDCODED_GAS_REQUIREMENT_GAS);
 
         // Fail fast if user didn't supply monstrous amount of gas
         final var availableGas = frame.getRemainingGas();
         if (availableGas < HARDCODED_GAS_REQUIREMENT_GAS) return bail.apply(INSUFFICIENT_GAS);
 
         // Figure out what kind of signature we're dealing with thus what kind of account+key we need
-        var signatureType =
+        final var signatureType =
                 switch (signature.length) {
                     case 65 -> SignatureType.EC;
                     case 64 -> SignatureType.ED;
@@ -111,12 +114,12 @@ public class IsAuthorizedRawCall extends AbstractCall {
         }) return bail.apply(FAIL_INVALID /* should be: "invalid argument to precompile */);
 
         // Gotta have an account that the given address is an alias for
-        var accountNum = accountNumberForEvmReference(address, nativeOperations());
+        final var accountNum = accountNumberForEvmReference(address, nativeOperations());
         if (!isValidAccount(accountNum, signatureType)) return bail.apply(INVALID_ACCOUNT_ID);
         final var account = requireNonNull(enhancement.nativeOperations().getAccount(accountNum));
 
         // If ED then require a key on the account
-        Optional<Key> key;
+        final Optional<Key> key;
         if (signatureType == SignatureType.ED) {
             key = Optional.ofNullable(account.key());
             if (key.isEmpty()) return bail.apply(FAIL_INVALID /* should be: "account must have key" */);
@@ -138,20 +141,23 @@ public class IsAuthorizedRawCall extends AbstractCall {
             }) return bail.apply(INVALID_SIGNATURE_TYPE_MISMATCHING_KEY);
         }
 
-        // Finally: Do the signature validation we came here for
-        boolean authorized = false;
-        authorized = switch (signatureType) {
-            case EC -> validateEcSignature(address, frame);
-            case ED -> validateEdSignature(account, key.get());
-            default -> false;};
+        // Finally: Do the signature validation we came here for!
+        final boolean authorized =
+                switch (signatureType) {
+                    case EC -> validateEcSignature(address, frame);
+                    case ED -> validateEdSignature(account, key.get());
+                    default -> false;
+                };
 
-        final var result =
-                gasOnly(successResult(encodedAuthorizationOutput(authorized), gasRequirement), SUCCESS, true);
+        final var result = gasOnly(
+                successResult(encodedAuthorizationOutput(authorized), HARDCODED_GAS_REQUIREMENT_GAS), SUCCESS, true);
         return result;
     }
 
-    /** Validate EVM signature - EC key - via ECRECOVER */
+    /** Validate EVM signature - EC key - via the ECRECOVER precompile */
     public boolean validateEcSignature(@NonNull final Address address, @NonNull final MessageFrame frame) {
+        requireNonNull(address, "address");
+        requireNonNull(frame, "frame");
 
         // Call the ECRECOVER precompile directly (meaning, not by executing EVM bytecode, just by
         // using the class provided by Besu).
@@ -160,22 +166,28 @@ public class IsAuthorizedRawCall extends AbstractCall {
         if (input.isEmpty()) return false;
         final var ecrecoverResult = ecPrecompile.computePrecompile(Bytes.wrap(input.get()), frame);
 
-        // ECRECOVER's output here always has status SUCCESS.  But the result Bytes are either empty or the recovered
-        // address.
-        final var output = ecrecoverResult.getOutput();
-        if (output.isEmpty()) return false;
+        // ECRECOVER's output always has status SUCCESS but the result Bytes are either empty or the recovered address.
+        if (ecrecoverResult.getOutput().isEmpty()) return false;
+        final var recoveredAddress =
+                ecrecoverResult.getOutput().slice(12).toArray(); // LAST 20 bytes are where the EVM address is
 
         // ECRECOVER produced an address:  Must match our account's alias address
-        final var recoveredAddress = output.slice(12).toArray(); // LAST 20 bytes are where the EVM address is
         final var givenAddress = explicitFromHeadlong(address);
         final var addressesMatch = 0 == Arrays.compare(recoveredAddress, givenAddress);
 
         return addressesMatch;
     }
 
-    /** Validate (native Hedera) ED signature */
+    /** Validate (native Hedera) ED25519 signature */
     public boolean validateEdSignature(@NonNull final Account account, @NonNull final Key key) {
-        return false; // TBD
+        requireNonNull(account, "account");
+        requireNonNull(key, "key");
+
+        // Use of `com.swirlds.common.crypto.CryptographyHolder` straight from the Platform is deprecated:
+        // FUTURE: Get the `Cryptography` engine from the services app via the context (needs to be invented)
+
+        return CryptographyHolder.get()
+                .verifySync(messageHash, signature, key.ed25519OrThrow().toByteArray());
     }
 
     /** Encode the _output_ of our system contract: it's a boolean */
@@ -187,6 +199,9 @@ public class IsAuthorizedRawCall extends AbstractCall {
     /** Format our message hash and signature for input to the ECRECOVER precompile */
     @NonNull
     public Optional<byte[]> formatEcrecoverInput(@NonNull final byte[] messageHash, @NonNull final byte[] signature) {
+        requireNonNull(messageHash, "messageHash");
+        requireNonNull(signature, "signature");
+
         // Signature:
         //   [ 0;  31]  r
         //   [32;  63]  s
@@ -202,7 +217,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
         final var ov = reverseV(signature[64]);
         if (ov.isEmpty()) return Optional.empty();
 
-        byte[] result = new byte[128];
+        final byte[] result = new byte[128];
         System.arraycopy(messageHash, 0, result, 0, 32); // hash
         result[63] = ov.get(); //                           v
         System.arraycopy(signature, 0, result, 64, 32); //  r
@@ -213,11 +228,14 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
     /** Make sure v ∈ {27, 28} - but after EIP-155 it might come in with a chain id ... */
     @NonNull
-    public Optional<Byte> reverseV(final byte v) {
+    public Optional<Byte> reverseV(@NonNull final byte v) {
+        requireNonNull(v, "v");
 
         // We're getting the recovery value from a signature where it is only given a byte.  So
         // this isn't the EIP-155 recovery value where the chain id is encoded in it (it's too
         // small for most chain ids).  But I'm not 100% sure of that ... so ...
+
+        // FUTURE: Determine if in fact input `v` _ever_ has a EIP-155 encoded chain id ...
 
         if (v == 0 || v == 1) return Optional.of((byte) (v + 27));
         if (v == 27 || v == 28) return Optional.of(v);
@@ -230,6 +248,8 @@ public class IsAuthorizedRawCall extends AbstractCall {
     }
 
     public boolean isValidAccount(final long accountNum, @NonNull final SignatureType signatureType) {
+        requireNonNull(signatureType, "signatureType");
+
         // If the account num is negative, it is invalid
         if (accountNum < 0) {
             return false;

@@ -44,12 +44,9 @@ public class IsAuthorizedRawTranslator extends AbstractCallTranslator<HasCallAtt
     private static final int HASH_ARG = 1;
     private static final int SIGNATURE_ARG = 2;
 
-    private final FeatureFlags featureFlags;
-
     @Inject
     public IsAuthorizedRawTranslator(@ServicesV051 @NonNull final FeatureFlags featureFlags) {
-        // Dagger2
-        this.featureFlags = featureFlags;
+        requireNonNull(featureFlags, "featureFlags");
     }
 
     /**
@@ -57,7 +54,8 @@ public class IsAuthorizedRawTranslator extends AbstractCallTranslator<HasCallAtt
      */
     @Override
     public boolean matches(@NonNull final HasCallAttempt attempt) {
-        requireNonNull(attempt);
+        requireNonNull(attempt, "attempt");
+
         final boolean matchesCall = matchesIsAuthorizedRawSelector(attempt.selector());
         final boolean callEnabled = attempt.configuration()
                 .getConfigData(ContractsConfig.class)
@@ -70,23 +68,23 @@ public class IsAuthorizedRawTranslator extends AbstractCallTranslator<HasCallAtt
      */
     @Override
     public Call callFrom(@NonNull final HasCallAttempt attempt) {
-        requireNonNull(attempt);
+        requireNonNull(attempt, "attempt");
 
         if (matchesIsAuthorizedRawSelector(attempt.selector())) {
 
             final var call = IS_AUTHORIZED_RAW.decodeCall(attempt.inputBytes());
-            var address = (Address) call.get(ADDRESS_ARG);
-            var messageHash = (byte[]) call.get(HASH_ARG);
-            var signature = (byte[]) call.get(SIGNATURE_ARG);
+            final var address = (Address) call.get(ADDRESS_ARG);
+            final var messageHash = (byte[]) call.get(HASH_ARG);
+            final var signature = (byte[]) call.get(SIGNATURE_ARG);
 
             return new IsAuthorizedRawCall(attempt, address, messageHash, signature);
         }
         return null;
     }
 
-    @NonNull
     private boolean matchesIsAuthorizedRawSelector(@NonNull final byte[] selector) {
-        requireNonNull(selector);
+        requireNonNull(selector, "selector");
+
         return Arrays.equals(selector, IS_AUTHORIZED_RAW.selector());
     }
 }
