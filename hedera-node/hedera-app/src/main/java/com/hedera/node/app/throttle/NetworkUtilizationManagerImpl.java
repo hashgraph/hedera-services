@@ -24,6 +24,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
@@ -102,14 +103,14 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     }
 
     @Override
-    public List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots() {
+    public List<ThrottleUsageSnapshot> getUsageSnapshots() {
         return backendThrottle.allActiveThrottles().stream()
                 .map(DeterministicThrottle::usageSnapshot)
                 .toList();
     }
 
     @Override
-    public void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {
+    public void resetUsageThrottlesTo(@NonNull final List<ThrottleUsageSnapshot> snapshots) {
         backendThrottle.resetUsageThrottlesTo(snapshots);
     }
 }

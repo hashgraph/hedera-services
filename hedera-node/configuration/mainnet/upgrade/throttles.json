@@ -94,7 +94,8 @@
             "TokenPause",
             "TokenUnpause",
             "TokenUpdateNfts",
-            "TokenAirdrop"
+            "TokenAirdrop",
+            "TokenReject"
           ]
         }
       ]

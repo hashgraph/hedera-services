@@ -18,7 +18,6 @@ package com.hedera.services.bdd.spec.dsl.entities;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
-import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.keys.SigControl.SECP256K1_ON;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
@@ -76,8 +75,7 @@ public class SpecKey extends AbstractSpecEntity<NoOp, Key> {
                         switch (type) {
                             case ED25519 -> ED25519_ON;
                             case SECP_256K1 -> SECP256K1_ON;
-                        },
-                        DEFAULT_KEY_GEN);
+                        });
         return new Creation<>(noOp(), toPbj(key));
     }
 

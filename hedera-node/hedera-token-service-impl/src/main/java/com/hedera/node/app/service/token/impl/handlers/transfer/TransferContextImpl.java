@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.service.token.AliasUtils;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -58,6 +59,7 @@ public class TransferContextImpl implements TransferContext {
     private final TokensConfig tokensConfig;
     private final List<TokenAssociation> automaticAssociations = new ArrayList<>();
     private final List<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
+    private final CryptoTransferTransactionBody body;
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
     /**
@@ -77,6 +79,31 @@ public class TransferContextImpl implements TransferContext {
     public TransferContextImpl(
             final HandleContext context, final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
         this.context = context;
+        this.body = context.body().cryptoTransferOrThrow();
+        this.accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
+        this.autoAccountCreator = new AutoAccountCreator(context);
+        this.autoCreationConfig = context.configuration().getConfigData(AutoCreationConfig.class);
+        this.lazyCreationConfig = context.configuration().getConfigData(LazyCreationConfig.class);
+        this.tokensConfig = context.configuration().getConfigData(TokensConfig.class);
+        this.enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments =
+                enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
+    }
+
+    /**
+     * Create a new {@link TransferContextImpl} instance.
+     * Allow initializing transfer context from another handler, by providing synthetic tnx body.
+     *
+     * @param context The context to use.
+     * @param syntheticBody The body of a crypto transfer transaction
+     * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments Whether to enforce mono service restrictions
+     *                                                                      on auto creation custom fee payments.
+     */
+    public TransferContextImpl(
+            final HandleContext context,
+            final CryptoTransferTransactionBody syntheticBody,
+            final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
+        this.context = context;
+        this.body = syntheticBody;
         this.accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         this.autoAccountCreator = new AutoAccountCreator(context);
         this.autoCreationConfig = context.configuration().getConfigData(AutoCreationConfig.class);
@@ -174,8 +201,7 @@ public class TransferContextImpl implements TransferContext {
     @Override
     public void validateHbarAllowances() {
         final var topLevelPayer = context.payer();
-        final var op = context.body().cryptoTransferOrThrow();
-        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
+        for (final var aa : body.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
             if (aa.isApproval() && aa.amount() < 0L) {
                 maybeValidateHbarAllowance(
                         accountStore.getAliasedAccountById(aa.accountIDOrElse(AccountID.DEFAULT)),

@@ -16,7 +16,12 @@
 
 package com.hedera.node.app.hapi.utils.throttles;
 
-import java.time.Duration;
+import static com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle.nanosBetween;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 
 /**
@@ -27,7 +32,7 @@ import java.time.Instant;
 public class GasLimitDeterministicThrottle implements CongestibleThrottle {
     private static final String THROTTLE_NAME = "Gas";
     private final GasLimitBucketThrottle delegate;
-    private Instant lastDecisionTime;
+    private Timestamp lastDecisionTime;
     private final long capacity;
 
     /**
@@ -50,11 +55,14 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
      * @return true if there is enough capacity to handle this transaction; false if it should be
      * throttled.
      */
-    public boolean allow(Instant now, long txGasLimit) {
-        final var elapsedNanos = DeterministicThrottle.elapsedNanosBetween(lastDecisionTime, now);
-        var decision = delegate.allow(txGasLimit, elapsedNanos);
-        lastDecisionTime = now;
-        return decision;
+    public boolean allow(@NonNull final Instant now, final long txGasLimit) {
+        final var elapsedNanos = nanosBetween(lastDecisionTime, now);
+        if (elapsedNanos < 0L) {
+            throw new IllegalArgumentException("Throttle timeline must advance, but " + now + " is not after "
+                    + Instant.ofEpochSecond(lastDecisionTime.seconds(), lastDecisionTime.nanos()));
+        }
+        lastDecisionTime = new Timestamp(now.getEpochSecond(), now.getNano());
+        return delegate.allow(txGasLimit, elapsedNanos);
     }
 
     /**
@@ -77,8 +85,7 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
         if (lastDecisionTime == null) {
             return 0.0;
         }
-        final var elapsedNanos =
-                Math.max(0, Duration.between(lastDecisionTime, now).toNanos());
+        final var elapsedNanos = Math.max(0, nanosBetween(lastDecisionTime, now));
         return delegate.percentUsed(elapsedNanos);
     }
 
@@ -148,12 +155,13 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
         return delegate;
     }
 
-    public DeterministicThrottle.UsageSnapshot usageSnapshot() {
+    public ThrottleUsageSnapshot usageSnapshot() {
         final var bucket = delegate.bucket();
-        return new DeterministicThrottle.UsageSnapshot(bucket.capacityUsed(), lastDecisionTime);
+        return new ThrottleUsageSnapshot(bucket.capacityUsed(), lastDecisionTime);
     }
 
-    public void resetUsageTo(final DeterministicThrottle.UsageSnapshot usageSnapshot) {
+    public void resetUsageTo(@NonNull final ThrottleUsageSnapshot usageSnapshot) {
+        requireNonNull(usageSnapshot);
         final var bucket = delegate.bucket();
         lastDecisionTime = usageSnapshot.lastDecisionTime();
         bucket.resetUsed(usageSnapshot.used());
@@ -171,9 +179,5 @@ public class GasLimitDeterministicThrottle implements CongestibleThrottle {
 
     public void resetLastAllowedUse() {
         delegate.resetLastAllowedUse();
-    }
-
-    Instant getLastDecisionTime() {
-        return lastDecisionTime;
     }
 }
