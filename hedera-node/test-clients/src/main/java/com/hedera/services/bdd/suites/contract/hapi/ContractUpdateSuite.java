@@ -54,7 +54,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PROPS;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
@@ -505,9 +504,7 @@ public class ContractUpdateSuite {
         return propertyPreservingHapiSpec("tryContractUpdateWithMaxAutoAssociations")
                 .preserving("ledger.maxAutoAssociations")
                 .given(
-                        overriding(
-                                "ledger.maxAutoAssociations",
-                                "5000"),
+                        overriding("ledger.maxAutoAssociations", "5000"),
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY))
