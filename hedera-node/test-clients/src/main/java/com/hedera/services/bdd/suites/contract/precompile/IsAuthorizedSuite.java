@@ -44,6 +44,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_TYPE_MISMATCHING_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
@@ -346,5 +347,39 @@ public class IsAuthorizedSuite {
                     allRunFor(spec, call);
                 }))
                 .then();
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> isAuthorizedEdRawInvalidSignatureLength() {
+        final AtomicReference<Address> accountNum = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("isAuthorizedEdRawDifferentHash")
+                .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
+                .given(
+                        overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
+                        newKeyNamed(ED25519_KEY).shape(ED25519).generator(new RepeatableKeyGenerator()),
+                        cryptoCreate(ACCOUNT)
+                                .balance(ONE_MILLION_HBARS)
+                                .key(ED25519_KEY)
+                                .exposingCreatedIdTo(id -> accountNum.set(idAsHeadlongAddress(id))),
+                        uploadInitCode(HRC632_CONTRACT),
+                        contractCreate(HRC632_CONTRACT))
+                .when(withOpContext((spec, opLog) -> {
+                    final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
+                    final byte[] invalidSignature = new byte[65];
+
+                    var call = contractCall(
+                                    HRC632_CONTRACT,
+                                    "isAuthorizedRawCall",
+                                    accountNum.get(),
+                                    messageHash,
+                                    invalidSignature)
+                            .via("authorizeCall")
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .gas(2_000_000L);
+                    allRunFor(spec, call);
+                }))
+                .then(childRecordsCheck(
+                        "authorizeCall", CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_ACCOUNT_ID)));
     }
 }
