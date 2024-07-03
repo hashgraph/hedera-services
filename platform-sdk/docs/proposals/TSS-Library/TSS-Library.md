@@ -23,7 +23,7 @@ the functionality to sign and verify blocks using a Threshold Signature Scheme (
 
 The related proposal, TSS-Ledger-Id, provides an overview of the process and background for TSS and how it impacts the platform’s functionality.
 
-This proposal assumes no relation with the platform and defines a generic components that any consumer can integrate.
+This proposal assumes no relation with the platform and defines a generic component that any consumer can integrate.
 It only assumes that there exists a channel to connect participants, where the identity of the message sender has been previously validated.
 
 The process of sending messages through that channel and receiving the responses is outside the scope of this proposal.
