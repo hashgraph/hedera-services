@@ -59,6 +59,12 @@ public class V052AddressBookSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         requireNonNull(ctx);
+
+        if (true) { // use this to not remove the code from line 68
+            log.info("DAB is disabled, skipping migration");
+            return;
+        }
+
         final WritableKVState<EntityNumber, Node> writableNodes =
                 ctx.newStates().get(NODES_KEY);
         final var networkInfo = ctx.networkInfo();
