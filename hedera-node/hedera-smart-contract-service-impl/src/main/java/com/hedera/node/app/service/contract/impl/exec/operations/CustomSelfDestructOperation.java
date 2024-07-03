@@ -77,22 +77,8 @@ public class CustomSelfDestructOperation extends AbstractOperation {
     public OperationResult execute(@NonNull final MessageFrame frame, @NonNull final EVM evm) {
         try {
             final var beneficiaryAddress = Words.toAddress(frame.popStackItem());
-            // Enforce Hedera-specific checks on the beneficiary address
-            if (addressChecks.isSystemAccount(beneficiaryAddress)
-                    || !addressChecks.isPresent(beneficiaryAddress, frame)) {
-                return haltFor(null, 0, INVALID_SOLIDITY_ADDRESS);
-            }
-
             final var tbdAddress = frame.getRecipientAddress();
             final var proxyWorldUpdater = (ProxyWorldUpdater) frame.getWorldUpdater();
-            // Enforce Hedera-specific restrictions on account deletion for non-static frames
-            if (!frame.isStatic()) {
-                final var maybeHaltReason =
-                        proxyWorldUpdater.tryTrackingSelfDestructBeneficiary(tbdAddress, beneficiaryAddress, frame);
-                if (maybeHaltReason.isPresent()) {
-                    return haltFor(null, 0, maybeHaltReason.get());
-                }
-            }
 
             // Now proceed with the self-destruct
             final var inheritance =
@@ -106,6 +92,20 @@ public class CustomSelfDestructOperation extends AbstractOperation {
                 return new OperationResult(cost, ILLEGAL_STATE_CHANGE);
             } else if (frame.getRemainingGas() < cost) {
                 return new OperationResult(cost, INSUFFICIENT_GAS);
+            }
+
+            // Enforce Hedera-specific checks on the beneficiary address
+            if (addressChecks.isSystemAccount(beneficiaryAddress)
+                    || !addressChecks.isPresent(beneficiaryAddress, frame)) {
+                return haltFor(null, 0, INVALID_SOLIDITY_ADDRESS);
+            }
+            // Enforce Hedera-specific restrictions on account deletion for non-static frames
+            if (!frame.isStatic()) {
+                final var maybeHaltReason =
+                        proxyWorldUpdater.tryTrackingSelfDestructBeneficiary(tbdAddress, beneficiaryAddress, frame);
+                if (maybeHaltReason.isPresent()) {
+                    return haltFor(null, 0, maybeHaltReason.get());
+                }
             }
 
             // This will enforce the Hedera signing requirements (while treating any Key{contractID=tbdAddress}

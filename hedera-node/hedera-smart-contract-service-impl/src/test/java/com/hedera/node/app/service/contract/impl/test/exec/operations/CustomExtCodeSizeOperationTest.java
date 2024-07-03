@@ -86,6 +86,7 @@ class CustomExtCodeSizeOperationTest {
         given(addressChecks.isNonUserAccount(Address.fromHexString("0x123"))).willReturn(true);
         given(frame.getStackItem(anyInt())).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
         givenWellKnownFrameWith(Address.fromHexString("0x123"));
+        given(frame.getRemainingGas()).willReturn(123L);
         final var expected = new Operation.OperationResult(123L, null);
         assertSameResult(expected, subject.execute(frame, evm));
         verify(frame).popStackItem();
@@ -96,6 +97,7 @@ class CustomExtCodeSizeOperationTest {
     void rejectsMissingNonSystemAddressIfAllowCallFeatureFlagOff() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
             givenWellKnownFrameWith(Address.fromHexString("0x123"));
+            given(frame.getRemainingGas()).willReturn(123L);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             frameUtils
                     .when(() -> FrameUtils.contractRequired(any(), any(), any()))
@@ -108,8 +110,7 @@ class CustomExtCodeSizeOperationTest {
     @Test
     void delegatesForPresentAddress() {
         try (MockedStatic<FrameUtils> frameUtils = Mockito.mockStatic(FrameUtils.class)) {
-            givenWellKnownFrameWith(Address.fromHexString("0x123"));
-            given(frame.popStackItem()).willReturn(Bytes32.leftPad(Bytes.ofUnsignedLong(1)));
+            given(gasCalculator.getExtCodeSizeOperationGasCost()).willReturn(123L);
             frameUtils.when(() -> FrameUtils.proxyUpdaterFor(frame)).thenReturn(updater);
             final var expected = new Operation.OperationResult(123L, INSUFFICIENT_GAS);
             assertSameResult(expected, subject.execute(frame, evm));
