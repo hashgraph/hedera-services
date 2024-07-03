@@ -32,6 +32,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyFromSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
@@ -41,7 +42,9 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_TYPE_MISMATCHING_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -198,6 +201,40 @@ public class IsAuthorizedSuite {
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(resultWith().contractCallResult(BoolResult.flag(false)))));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> isAuthorizedEcdsaRawInvalidSignatureLength() {
+        return propertyPreservingHapiSpec("isAuthorizedEcdsaRawInvalidSignatureLength")
+                .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
+                .given(
+                        overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                        uploadInitCode(HRC632_CONTRACT),
+                        contractCreate(HRC632_CONTRACT))
+                .when(withOpContext((spec, opLog) -> {
+                    final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
+
+                    final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
+                    final var addressBytes = recoverAddressFromPrivateKey(privateKey);
+                    final byte[] invalidSignature = new byte[64];
+
+                    var call = contractCall(
+                                    HRC632_CONTRACT,
+                                    "isAuthorizedRawCall",
+                                    asHeadlongAddress(addressBytes),
+                                    messageHash,
+                                    invalidSignature)
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .via("authorizeCall")
+                            .gas(2_000_000L);
+                    allRunFor(spec, call);
+                }))
+                .then(childRecordsCheck(
+                        "authorizeCall",
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(INVALID_SIGNATURE_TYPE_MISMATCHING_KEY)));
     }
 
     @HapiTest
