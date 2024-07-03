@@ -171,6 +171,12 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         return writableStatesMap.computeIfAbsent(serviceName, s -> new WritableStatesStack(this, s));
     }
 
+    /**
+     * When the savepoint is committed, the records are pushed to the parent stack.
+     * At the end of the transaction, when we commit full stack, we need to push the records to the root stack,
+     * and we will assign consensus timestamps at the end.
+     * @param recordBuilders the list of record builders to push to the parent stack
+     */
     private void pushRecordsToParentStack(final List<SingleTransactionRecordBuilder> recordBuilders) {
         if (stack.peek() != null) {
             stack.peek().recordBuilders().addAll(recordBuilders);
