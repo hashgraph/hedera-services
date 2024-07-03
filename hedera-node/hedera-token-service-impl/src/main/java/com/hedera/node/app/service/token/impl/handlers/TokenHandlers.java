@@ -101,8 +101,9 @@ public class TokenHandlers {
      * @param tokenGetAccountNftInfosHandler token get account nft infos handler
      * @param tokenGetNftInfoHandler token get nft info handler
      * @param tokenGetNftInfosHandler token get nft infos handler
+     * @param tokenAirdropHandler token airdrops handler
      * @param tokenUpdateNftsHandler token update nfts handler
-     * @param tokenAirdropsHandler token airdrops handler
+     * @param tokenRejectHandler token reject handler
      * @param tokenCancelAirdropHandler token cancel airdrop handler
      */
     @Inject
