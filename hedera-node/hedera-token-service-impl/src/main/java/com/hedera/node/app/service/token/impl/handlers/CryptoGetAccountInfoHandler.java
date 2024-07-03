@@ -57,6 +57,7 @@ import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -69,15 +70,17 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
     private final CryptoOpsUsage cryptoOpsUsage;
+    private final InstantSource instantSource;
 
     /**
      * Default constructor for injection.
      * @param cryptoOpsUsage the usage of the crypto operations for calculating fees
      */
     @Inject
-    public CryptoGetAccountInfoHandler(final CryptoOpsUsage cryptoOpsUsage) {
-        this.cryptoOpsUsage = cryptoOpsUsage;
-        // Dagger2
+    public CryptoGetAccountInfoHandler(
+            @NonNull final CryptoOpsUsage cryptoOpsUsage, @NonNull final InstantSource instantSource) {
+        this.cryptoOpsUsage = requireNonNull(cryptoOpsUsage);
+        this.instantSource = requireNonNull(instantSource);
     }
 
     @Override
@@ -187,7 +190,8 @@ public class CryptoGetAccountInfoHandler extends PaidQueryHandler {
                     stakingConfig.periodMins(),
                     stakingRewardsStore.isStakingRewardsActivated(),
                     account,
-                    stakingInfoStore));
+                    stakingInfoStore,
+                    instantSource.instant()));
             return Optional.of(info.build());
         }
     }

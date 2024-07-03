@@ -40,6 +40,7 @@ import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
+import java.time.InstantSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,11 +76,13 @@ class QuerySystemContractOperationsTest {
     @Mock
     private ExchangeRateInfo exchangeRateInfo;
 
+    private final InstantSource instantSource = InstantSource.system();
+
     private QuerySystemContractOperations subject;
 
     @BeforeEach
     void setUp() {
-        subject = new QuerySystemContractOperations(context);
+        subject = new QuerySystemContractOperations(context, instantSource);
     }
 
     @Test

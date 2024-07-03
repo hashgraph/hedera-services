@@ -33,7 +33,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeChildRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeParentRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenAirdropsHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
@@ -49,6 +49,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHan
 import com.hedera.node.app.service.token.impl.handlers.TokenHandlers;
 import com.hedera.node.app.service.token.impl.handlers.TokenMintHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenPauseHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenRejectHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenRevokeKycFromAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnfreezeAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenUnpauseHandler;
@@ -264,9 +265,14 @@ public interface TokenServiceInjectionModule {
      */
     TokenUpdateHandler tokenUpdateHandler();
     /**
-     * Returns the {@link TokenAirdropsHandler}
+     * Returns the {@link TokenRejectHandler}
+     * @return the handler
      */
-    TokenAirdropsHandler tokenAirdropHandler();
+    TokenRejectHandler tokenRejectHandler();
+    /**
+     * Returns the {@link TokenAirdropHandler}
+     */
+    TokenAirdropHandler tokenAirdropHandler();
     /**
      * Returns the {@link TokenHandlers}
      * @return the handler

@@ -23,11 +23,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_ENTITIES_IN_PRICE_R
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
-import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.TOKEN_ID_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
@@ -36,20 +34,14 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.hapi.fees.usage.SigUsage;
-import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
-import com.hedera.node.app.hapi.fees.usage.token.TokenAssociateUsage;
-import com.hedera.node.app.hapi.utils.CommonPbjConverters;
-import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.util.TokenAssociateToAccountFeeCalculator;
 import com.hedera.node.app.service.token.impl.validators.TokenListChecks;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -60,7 +52,6 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
-import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
@@ -199,28 +190,6 @@ public class TokenAssociateToAccountHandler extends BaseTokenHandler implements 
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         requireNonNull(feeContext);
         final var body = feeContext.body();
-        final var op = body.tokenAssociateOrThrow();
-        final var accountId = op.accountOrThrow();
-        final var readableAccountStore = feeContext.readableStore(ReadableAccountStore.class);
-        final var account = readableAccountStore.getAccountById(accountId);
-
-        return feeContext
-                .feeCalculatorFactory()
-                .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(body), sigValueObj, account));
-    }
-
-    private FeeData usageGiven(
-            final com.hederahashgraph.api.proto.java.TransactionBody txn,
-            final SigValueObj svo,
-            final Account account) {
-        if (account == null) {
-            return CONSTANT_FEE_DATA;
-        } else {
-            final var sigUsage =
-                    new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
-            final var estimate = new TokenAssociateUsage(txn, new TxnUsageEstimator(sigUsage, txn, ESTIMATOR_UTILS));
-            return estimate.givenCurrentExpiry(account.expirationSecond()).get();
-        }
+        return TokenAssociateToAccountFeeCalculator.calculate(body, feeContext);
     }
 }

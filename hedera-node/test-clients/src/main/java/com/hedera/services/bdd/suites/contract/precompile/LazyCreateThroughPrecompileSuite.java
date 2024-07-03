@@ -86,9 +86,9 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -217,7 +217,7 @@ public class LazyCreateThroughPrecompileSuite {
                                                                         .toString())
                                                                 .toArray()))
                                                 .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID)))
-                                        .toArray(HapiSpecOperation[]::new))));
+                                        .toArray(SpecOperation[]::new))));
     }
 
     @HapiTest

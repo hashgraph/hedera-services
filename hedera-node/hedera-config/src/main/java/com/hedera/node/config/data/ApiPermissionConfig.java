@@ -51,7 +51,6 @@ import static com.hedera.hapi.node.base.HederaFunctionality.GET_VERSION_INFO;
 import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_DELETE;
-import static com.hedera.hapi.node.base.HederaFunctionality.NODE_GET_INFO;
 import static com.hedera.hapi.node.base.HederaFunctionality.NODE_UPDATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_DELETE;
@@ -185,7 +184,6 @@ import java.util.function.Function;
  * @param createNode                   the permission for {@link HederaFunctionality#NODE_CREATE} functionality
  * @param updateNode                   the permission for {@link HederaFunctionality#NODE_UPDATE} functionality
  * @param deleteNode                   the permission for {@link HederaFunctionality#NODE_DELETE} functionality
- * @param getNodeInfo                  the permission for {@link HederaFunctionality#NODE_GET_INFO} functionality
  */
 @ConfigData
 public record ApiPermissionConfig(
@@ -254,12 +252,11 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenReject,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenAirdrop,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenCancelAirdrop,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange createNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getNodeInfo,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenAirdrops,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenCancelAirdrop) {
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getNodeInfo) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);
@@ -336,7 +333,6 @@ public record ApiPermissionConfig(
         permissionKeys.put(NODE_CREATE, c -> c.createNode);
         permissionKeys.put(NODE_UPDATE, c -> c.updateNode);
         permissionKeys.put(NODE_DELETE, c -> c.deleteNode);
-        permissionKeys.put(NODE_GET_INFO, c -> c.getNodeInfo);
     }
 
     /**

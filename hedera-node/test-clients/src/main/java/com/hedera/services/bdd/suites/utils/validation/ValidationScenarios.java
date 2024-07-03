@@ -1100,7 +1100,7 @@ public class ValidationScenarios extends HapiSuite {
                 allRunFor(spec, create);
                 var createdNo = create.numOfCreatedAccount();
                 var newLoc = pemLoc.replace("account-1", String.format("account%d", createdNo));
-                spec.keys().exportSimpleKey(newLoc, name);
+                spec.keys().exportEd25519Key(newLoc, name);
                 update.accept(createdNo);
             }
         });
@@ -1255,7 +1255,7 @@ public class ValidationScenarios extends HapiSuite {
                 allRunFor(spec, create);
                 var createdNo = create.numOfCreatedFile();
                 var newLoc = pemLoc.replace("file-1", String.format("file%d", createdNo));
-                spec.keys().exportSimpleWacl(newLoc, name);
+                spec.keys().exportFirstEd25519FromKeyList(newLoc, name);
                 numUpdate.accept(createdNo);
             }
         });
@@ -1450,7 +1450,7 @@ public class ValidationScenarios extends HapiSuite {
 
                 var createdNo = create.numOfCreatedContract();
                 var newLoc = pemLoc.replace("contract-1", String.format("contract%d", createdNo));
-                spec.keys().exportSimpleKey(newLoc, name);
+                spec.keys().exportEd25519Key(newLoc, name);
                 numUpdate.accept(createdNo);
 
                 if (luckyNo == null) {
@@ -1634,7 +1634,7 @@ public class ValidationScenarios extends HapiSuite {
                 allRunFor(spec, create);
                 var createdNo = create.numOfCreatedTopic();
                 var newLoc = pemLoc.replace("topic-1", String.format("topic%d", createdNo));
-                spec.keys().exportSimpleKey(newLoc, name);
+                spec.keys().exportEd25519Key(newLoc, name);
                 update.accept(createdNo);
                 expectedSeqNo.set(1);
             }

@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./HederaResponseCodes.sol";
 import "./IHederaAccountService.sol";
 
-abstract contract HederaAccountService is HederaResponseCodes {
+abstract contract HederaAccountService {
     address constant precompileAddress = address(0x16a);
 
     /// Returns the amount of hbar that the spender has been authorized to spend on behalf of the owner.

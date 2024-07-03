@@ -31,7 +31,6 @@ import com.hedera.node.app.service.file.impl.ReadableUpgradeFileStoreImpl;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.state.FilteredReadableStates;
 import com.hedera.node.app.spi.state.FilteredWritableStates;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -148,9 +147,6 @@ public class FileTestBase {
 
     @Mock(strictness = LENIENT)
     protected StoreFactory storeFactory;
-
-    @Mock(strictness = LENIENT)
-    protected SignatureVerification signatureVerification;
 
     @Mock
     private StoreMetricsService storeMetricsService;

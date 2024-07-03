@@ -69,7 +69,7 @@ import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenAirdropsRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
@@ -138,7 +138,7 @@ public class SingleTransactionRecordBuilderImpl
                 TokenAccountWipeRecordBuilder,
                 CryptoUpdateRecordBuilder,
                 NodeCreateRecordBuilder,
-                TokenAirdropsRecordBuilder {
+                TokenAirdropRecordBuilder {
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
@@ -590,20 +590,6 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     @Override
-    public TokenAirdropsRecordBuilder pendingAirdropList(@NonNull List<PendingAirdropRecord> pendingAirdropRecords) {
-        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
-        this.pendingAirdropRecords = pendingAirdropRecords;
-        return this;
-    }
-
-    @Override
-    public TokenAirdropsRecordBuilder pendingAirdropList(@NonNull PendingAirdropRecord pendingAirdropRecord) {
-        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
-        this.pendingAirdropRecords.add(pendingAirdropRecord);
-        return this;
-    }
-
-    @Override
     public List<TokenTransferList> tokenTransferLists() {
         return tokenTransferLists;
     }
@@ -618,6 +604,32 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl addTokenTransferList(@NonNull final TokenTransferList tokenTransferList) {
         requireNonNull(tokenTransferList, "tokenTransferList must not be null");
         tokenTransferLists.add(tokenTransferList);
+        return this;
+    }
+
+    /**
+     * Sets the pending airdrop record list
+     *
+     * @param pendingAirdropRecords the pending airdrop record list
+     * @return the builder
+     */
+    @Override
+    public TokenAirdropRecordBuilder pendingAirdrops(@NonNull List<PendingAirdropRecord> pendingAirdropRecords) {
+        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
+        this.pendingAirdropRecords = pendingAirdropRecords;
+        return this;
+    }
+
+    /**
+     * Adds to the pending airdrop record list
+     *
+     * @param pendingAirdropRecord pending airdrop record
+     * @return the builder
+     */
+    @Override
+    public TokenAirdropRecordBuilder addPendingAirdrop(@NonNull PendingAirdropRecord pendingAirdropRecord) {
+        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
+        this.pendingAirdropRecords.add(pendingAirdropRecord);
         return this;
     }
 

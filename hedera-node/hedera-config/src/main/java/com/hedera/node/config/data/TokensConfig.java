@@ -32,6 +32,7 @@ public record TokensConfig(
         @ConfigProperty(defaultValue = "10") @NetworkProperty int maxCustomFeesAllowed,
         @ConfigProperty(defaultValue = "2") @NetworkProperty int maxCustomFeeDepth,
         @ConfigProperty(defaultValue = "1000") @NetworkProperty long maxRelsPerInfoQuery,
+        @ConfigProperty(value = "reject.enabled", defaultValue = "false") @NetworkProperty boolean tokenRejectEnabled,
         @ConfigProperty(value = "nfts.areEnabled", defaultValue = "true") @NetworkProperty boolean nftsAreEnabled,
         @ConfigProperty(value = "nfts.maxMetadataBytes", defaultValue = "100") @NetworkProperty
                 int nftsMaxMetadataBytes,
@@ -48,7 +49,7 @@ public record TokensConfig(
         @ConfigProperty(value = "nfts.useVirtualMerkle", defaultValue = "true") @NetworkProperty
                 boolean nftsUseVirtualMerkle,
         @ConfigProperty(value = "maxAllowedAirdrops", defaultValue = "1000000") @NetworkProperty
-                long maxAllowedAirdorps,
+                long maxAllowedAirdrops,
         @ConfigProperty(value = "autoCreations.isEnabled", defaultValue = "true") @NetworkProperty
                 boolean autoCreationsIsEnabled,
         @ConfigProperty(value = "maxMetadataBytes", defaultValue = "100") @NetworkProperty int tokensMaxMetadataBytes,

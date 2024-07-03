@@ -25,7 +25,11 @@ import com.google.protobuf.UInt32Value;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.PendingAirdropId;
+import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
+import com.hederahashgraph.api.proto.java.PendingAirdropValue;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import java.util.AbstractMap;
@@ -234,6 +238,59 @@ public class TokenMovement {
         }
 
         return scopedTransfers.build();
+    }
+
+    public List<PendingAirdropRecord> specializedForPendingAirdrop(HapiSpec spec) {
+        List<PendingAirdropRecord> records = new ArrayList<>();
+        var tokenXfer = specializedFor(spec);
+        var aaSender = tokenXfer.getTransfersList().stream()
+                .filter(item -> item.getAmount() < 0)
+                .findFirst();
+        tokenXfer.getTransfersList().stream()
+                .filter(item -> item.getAmount() >= 0)
+                .forEach(transfer -> {
+                    var tokenId = tokenXfer.getToken();
+                    var pendingAirdropId = PendingAirdropId.newBuilder()
+                            .setSenderId(aaSender.orElseThrow().getAccountID())
+                            .setReceiverId(transfer.getAccountID())
+                            .setFungibleTokenType(tokenId)
+                            .build();
+                    var pendingAirdropValue = PendingAirdropValue.newBuilder()
+                            .setAmount(transfer.getAmount())
+                            .build();
+                    var pendingAirdropRecord = PendingAirdropRecord.newBuilder()
+                            .setPendingAirdropId(pendingAirdropId)
+                            .setPendingAirdropValue(pendingAirdropValue)
+                            .build();
+                    records.add(pendingAirdropRecord);
+                });
+
+        return records;
+    }
+
+    public List<PendingAirdropRecord> specializedForNftPendingAirdop(HapiSpec spec) {
+        List<PendingAirdropRecord> records = new ArrayList<>();
+        var tokenXfer = specializedForNft(spec);
+        var tokenId = tokenXfer.getToken();
+        tokenXfer.getNftTransfersList().stream().forEach(transfer -> {
+            var aaSender = transfer.getSenderAccountID();
+            var aaReceiver = transfer.getReceiverAccountID();
+            var pendingAirdropId = PendingAirdropId.newBuilder()
+                    .setSenderId(aaSender)
+                    .setReceiverId(aaReceiver)
+                    .setNonFungibleToken(NftID.newBuilder()
+                            .setTokenID(tokenId)
+                            .setSerialNumber(tokenXfer.getNftTransfers(0).getSerialNumber()))
+                    .build();
+            var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
+            var pendingAirdropRecord = PendingAirdropRecord.newBuilder()
+                    .setPendingAirdropId(pendingAirdropId)
+                    .setPendingAirdropValue(pendingAirdropValue)
+                    .build();
+
+            records.add(pendingAirdropRecord);
+        });
+        return records;
     }
 
     private AccountAmount adjustment(String name, long value, HapiSpec spec) {
