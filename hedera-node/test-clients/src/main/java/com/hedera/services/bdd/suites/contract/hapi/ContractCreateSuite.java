@@ -66,7 +66,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyF
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -93,7 +93,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
@@ -163,8 +162,6 @@ public class ContractCreateSuite {
     private static final String EXPECTED_DEPLOYER_ADDRESS = "4e59b44847b379578588920ca78fbf26c0b4956c";
     private static final String DEPLOYER = "DeployerContract";
     public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS = "contracts.allowAutoAssociations";
-    public static final String ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED =
-            "entities.unlimitedAutoAssociationsEnabled";
     public static final String LEDGER_MAX_AUTO_ASSOCIATIONS = "ledger.maxAutoAssociations";
 
     private static final String FUNGIBLE_TOKEN = "fungible";
@@ -341,15 +338,10 @@ public class ContractCreateSuite {
         final var multiPurpose = "Multipurpose";
         final var createContract = "CreateTrivial";
         return propertyPreservingHapiSpec("contractCreationsHaveValidAssociations")
-                .preserving(
-                        CONTRACTS_ALLOW_AUTO_ASSOCIATIONS,
-                        ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED,
-                        LEDGER_MAX_AUTO_ASSOCIATIONS)
+                .preserving(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, LEDGER_MAX_AUTO_ASSOCIATIONS)
                 .given(
-                        overridingThree(
-                                CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, TRUE_VALUE,
-                                ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE,
-                                LEDGER_MAX_AUTO_ASSOCIATIONS, "5000"),
+                        overridingTwo(
+                                CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, TRUE_VALUE, LEDGER_MAX_AUTO_ASSOCIATIONS, "5000"),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
@@ -764,9 +756,8 @@ public class ContractCreateSuite {
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> tryContractCreateWithMaxAutoAssoc() {
         final var contract = "CreateTrivial";
-        return propertyPreservingHapiSpec("tryContractCreateWithMaxAutoAssoc")
-                .preserving(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
-                .given(overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, TRUE_VALUE), uploadInitCode(contract))
+        return defaultHapiSpec("tryContractCreateWithMaxAutoAssoc")
+                .given(uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)
