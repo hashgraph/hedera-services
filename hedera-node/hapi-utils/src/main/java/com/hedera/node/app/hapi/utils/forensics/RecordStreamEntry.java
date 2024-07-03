@@ -16,12 +16,17 @@
 
 package com.hedera.node.app.hapi.utils.forensics;
 
+import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
+
+import static com.hedera.node.app.hapi.utils.CommonUtils.timestampToInstant;
 
 /**
  * Represents a single {@code (Transaction, TransactionRecord)} entry from a record stream,
@@ -31,7 +36,25 @@ import java.time.Instant;
  * @param txnRecord     the resolved record the transaction
  * @param consensusTime the consensus time
  */
-public record RecordStreamEntry(TransactionParts parts, TransactionRecord txnRecord, Instant consensusTime) {
+public record RecordStreamEntry(TransactionParts parts, TransactionRecord txnRecord, Instant consensusTime) implements Comparable<RecordStreamEntry> {
+    @Override
+    public int compareTo(@NonNull RecordStreamEntry that) {
+        return this.consensusTime.compareTo(that.consensusTime);
+    }
+
+    /**
+     * Constructs a {@link RecordStreamEntry} from a {@link RecordStreamItem}.
+     *
+     * @param item the item to convert
+     * @return the constructed entry
+     */
+    public static RecordStreamEntry from(@NonNull final RecordStreamItem item) {
+        final var itemRecord = item.getRecord();
+        return new RecordStreamEntry(
+                TransactionParts.from(item.getTransaction()),
+                itemRecord,
+                timestampToInstant(itemRecord.getConsensusTimestamp()));
+    }
 
     public Transaction submittedTransaction() {
         return parts.wrapper();

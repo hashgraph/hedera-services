@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.crypto;
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -33,6 +34,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountDetails;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -42,22 +44,31 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.given;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.visibleItems;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
+import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
@@ -68,6 +79,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKIN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toMap;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
@@ -77,13 +90,20 @@ import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabels;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
+
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -354,6 +374,35 @@ public class CryptoUpdateSuite {
     }
 
     @HapiTest
+    final Stream<DynamicTest> updatePriceScalesWithLifetime() {
+        final var accountsToUpdate = 8;
+        final var updateTxns = IntStream.range(0, accountsToUpdate).mapToObj(i -> "update" + i).toArray(String[]::new);
+        final var lifetimesToCompare = Stream.iterate(3 * THREE_MONTHS_IN_SECONDS, l -> l * 2)
+                .limit(accountsToUpdate)
+                .toArray(Long[]::new);
+        final AtomicReference<VisibleItemsAssertion> assertion = new AtomicReference<>();
+        final AtomicLong startPoint = new AtomicLong();
+        return hapiTest(
+                given(() -> startPoint.set(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)),
+                streamMustIncludeNoFailuresFrom(visibleItems(assertion, updateTxns)),
+                inParallel(nOps(accountsToUpdate, i -> cryptoCreate("account" + i).balance(ONE_MILLION_HBARS))),
+                blockingOrder(nOps(accountsToUpdate, i -> sourcing(() -> cryptoUpdate("account" + i)
+                        .expiring(startPoint.get() + lifetimesToCompare[i])
+                        .payingWith("account" + i)
+                        .via(updateTxns[i])))),
+                withOpContext((spec, opLog) -> {
+                    triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
+                    final var pricesCharged = assertion.get().entriesWithin(Duration.ofSeconds(2)).join().stream()
+                            .map(entry -> spec.ratesProvider().toUsdWithActiveRates(entry.transactionRecord().getTransactionFee()))
+                            .toList();
+                    opLog.info("Charged prices (in USD): \n  {}", IntStream.range(0, accountsToUpdate)
+                            .mapToObj(i -> String.format("%-12s", Duration.ofSeconds(lifetimesToCompare[i]).toDays() + " days")
+                                    + " :: "
+                                    + sdec(pricesCharged.get(i), 8)).collect(joining("\n  ")));
+                }));
+    }
+
+    @HapiTest
     final Stream<DynamicTest> sysAccountKeyUpdateBySpecialWontNeedNewKeyTxnSign() {
         String sysAccount = "0.0.99";
         String randomAccount = "randomAccount";
@@ -445,9 +494,9 @@ public class CryptoUpdateSuite {
         AtomicLong id = new AtomicLong();
         final var CONTRACT = "Multipurpose";
         return defaultHapiSpec(
-                        "UpdateFailsWithContractKey",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        EXPECT_STREAMLINED_INGEST_RECORDS)
+                "UpdateFailsWithContractKey",
+                NONDETERMINISTIC_TRANSACTION_FEES,
+                EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         cryptoCreate(TARGET_ACCOUNT),
                         uploadInitCode(CONTRACT),

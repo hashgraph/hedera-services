@@ -159,6 +159,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStr
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
 import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.TargetNetworkType;
@@ -216,10 +217,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.ObjIntConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Logger;
@@ -827,6 +830,18 @@ public class UtilVerbs {
         return EventualRecordStreamAssertion.eventuallyAssertingNoFailures(assertion);
     }
 
+    public static RunnableOp verify(@NonNull final Runnable runnable) {
+        return new RunnableOp(runnable);
+    }
+
+    public static RunnableOp given(@NonNull final Runnable runnable) {
+        return new RunnableOp(runnable);
+    }
+
+    public static HapiSpecOperation[] nOps(final int n, @NonNull final IntFunction<HapiSpecOperation> source) {
+        return IntStream.range(0, n).mapToObj(source).toArray(HapiSpecOperation[]::new);
+    }
+
     /**
      * "Hello world" example of a custom record stream assertion that validates a named
      * account has a creation record in the record stream.
@@ -846,6 +861,18 @@ public class UtilVerbs {
 
     public static Function<HapiSpec, RecordStreamAssertion> sidecarIdValidator() {
         return spec -> new ValidContractIdsAssertion();
+    }
+
+    public static Function<HapiSpec, RecordStreamAssertion> visibleItems(
+            @NonNull final AtomicReference<VisibleItemsAssertion> ref,
+            @NonNull final String... specTxnIds) {
+        requireNonNull(ref);
+        requireNonNull(specTxnIds);
+        return spec -> {
+            final var assertion = new VisibleItemsAssertion(spec, specTxnIds);
+            ref.set(assertion);
+            return assertion;
+        };
     }
 
     public static Function<HapiSpec, RecordStreamAssertion> recordedChildBodyWithId(
