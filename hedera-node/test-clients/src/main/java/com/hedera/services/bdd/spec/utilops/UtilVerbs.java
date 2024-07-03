@@ -864,8 +864,7 @@ public class UtilVerbs {
     }
 
     public static Function<HapiSpec, RecordStreamAssertion> visibleItems(
-            @NonNull final AtomicReference<VisibleItemsAssertion> ref,
-            @NonNull final String... specTxnIds) {
+            @NonNull final AtomicReference<VisibleItemsAssertion> ref, @NonNull final String... specTxnIds) {
         requireNonNull(ref);
         requireNonNull(specTxnIds);
         return spec -> {

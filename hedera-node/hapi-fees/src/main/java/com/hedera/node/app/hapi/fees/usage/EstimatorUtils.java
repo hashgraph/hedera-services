@@ -49,7 +49,7 @@ public interface EstimatorUtils {
         newLifetimeSecs = Math.min(MAX_ENTITY_LIFETIME, newLifetimeSecs);
 
         newLifetimeSecs = Math.max(oldLifetimeSecs, newLifetimeSecs);
-        long oldBs = Math.multiplyExact(oldB,  oldLifetimeSecs);
+        long oldBs = Math.multiplyExact(oldB, oldLifetimeSecs);
         long newBs = Math.multiplyExact(newB, newLifetimeSecs);
         return Math.max(0, newBs - oldBs);
     }

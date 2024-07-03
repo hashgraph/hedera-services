@@ -158,7 +158,8 @@ public class CryptoOpsUsage {
                 ESTIMATOR_UTILS.relativeLifetime(cryptoUpdateMeta.getEffectiveNow(), ctx.currentExpiry());
         final long rbsDelta = ESTIMATOR_UTILS.changeInBsUsage(
                 cryptoAutoRenewRb(ctx), oldLifetime, sharedFixedBytes + newVariableBytes, newLifetime);
-        System.out.println("rbsDelta for " + (sharedFixedBytes + newVariableBytes) + " bytes for " + newLifetime + " seconds -> " + rbsDelta);
+        System.out.println("rbsDelta for " + (sharedFixedBytes + newVariableBytes) + " bytes for " + newLifetime
+                + " seconds -> " + rbsDelta);
         if (rbsDelta > 0) {
             accumulator.addRbs(rbsDelta);
         }

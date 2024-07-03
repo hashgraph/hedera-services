@@ -80,7 +80,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_B
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toMap;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
@@ -94,16 +93,13 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAsser
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -376,7 +372,8 @@ public class CryptoUpdateSuite {
     @HapiTest
     final Stream<DynamicTest> updatePriceScalesWithLifetime() {
         final var accountsToUpdate = 8;
-        final var updateTxns = IntStream.range(0, accountsToUpdate).mapToObj(i -> "update" + i).toArray(String[]::new);
+        final var updateTxns =
+                IntStream.range(0, accountsToUpdate).mapToObj(i -> "update" + i).toArray(String[]::new);
         final var lifetimesToCompare = Stream.iterate(3 * THREE_MONTHS_IN_SECONDS, l -> l * 2)
                 .limit(accountsToUpdate)
                 .toArray(Long[]::new);
@@ -385,20 +382,35 @@ public class CryptoUpdateSuite {
         return hapiTest(
                 given(() -> startPoint.set(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS)),
                 streamMustIncludeNoFailuresFrom(visibleItems(assertion, updateTxns)),
-                inParallel(nOps(accountsToUpdate, i -> cryptoCreate("account" + i).balance(ONE_MILLION_HBARS))),
-                blockingOrder(nOps(accountsToUpdate, i -> sourcing(() -> cryptoUpdate("account" + i)
-                        .expiring(startPoint.get() + lifetimesToCompare[i])
-                        .payingWith("account" + i)
-                        .via(updateTxns[i])))),
+                inParallel(
+                        nOps(accountsToUpdate, i -> cryptoCreate("account" + i).balance(ONE_MILLION_HBARS))),
+                blockingOrder(nOps(
+                        accountsToUpdate,
+                        i -> sourcing(() -> cryptoUpdate("account" + i)
+                                .expiring(startPoint.get() + lifetimesToCompare[i])
+                                .payingWith("account" + i)
+                                .via(updateTxns[i])))),
                 withOpContext((spec, opLog) -> {
                     triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
-                    final var pricesCharged = assertion.get().entriesWithin(Duration.ofSeconds(2)).join().stream()
-                            .map(entry -> spec.ratesProvider().toUsdWithActiveRates(entry.transactionRecord().getTransactionFee()))
-                            .toList();
-                    opLog.info("Charged prices (in USD): \n  {}", IntStream.range(0, accountsToUpdate)
-                            .mapToObj(i -> String.format("%-12s", Duration.ofSeconds(lifetimesToCompare[i]).toDays() + " days")
-                                    + " :: "
-                                    + sdec(pricesCharged.get(i), 8)).collect(joining("\n  ")));
+                    final var pricesCharged =
+                            assertion.get().entriesWithin(Duration.ofSeconds(2)).join();
+                    opLog.info(
+                            "Charged prices (in USD): \n  {}",
+                            IntStream.range(0, accountsToUpdate)
+                                    .mapToObj(i -> String.format(
+                                                    "%-12s",
+                                                    Duration.ofSeconds(lifetimesToCompare[i])
+                                                                    .toDays() + " days")
+                                            + " :: "
+                                            + sdec(
+                                                    spec.ratesProvider()
+                                                            .toUsdWithActiveRates(pricesCharged
+                                                                    .get(updateTxns[i])
+                                                                    .getFirst()
+                                                                    .transactionRecord()
+                                                                    .getTransactionFee()),
+                                                    8))
+                                    .collect(joining("\n  ")));
                 }));
     }
 
@@ -494,9 +506,9 @@ public class CryptoUpdateSuite {
         AtomicLong id = new AtomicLong();
         final var CONTRACT = "Multipurpose";
         return defaultHapiSpec(
-                "UpdateFailsWithContractKey",
-                NONDETERMINISTIC_TRANSACTION_FEES,
-                EXPECT_STREAMLINED_INGEST_RECORDS)
+                        "UpdateFailsWithContractKey",
+                        NONDETERMINISTIC_TRANSACTION_FEES,
+                        EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(
                         cryptoCreate(TARGET_ACCOUNT),
                         uploadInitCode(CONTRACT),

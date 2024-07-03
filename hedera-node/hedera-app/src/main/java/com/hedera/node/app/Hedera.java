@@ -186,6 +186,12 @@ public final class Hedera implements SwirldMain {
     private final ContractServiceImpl contractServiceImpl;
 
     /**
+     * The file service singleton, kept as a field here to avoid constructing twice
+     * (once in constructor to register schemas, again inside Dagger component).
+     */
+    private final FileServiceImpl fileServiceImpl;
+
+    /**
      * The Hashgraph Platform. This is set during state initialization.
      */
     private Platform platform;
@@ -252,13 +258,14 @@ public final class Hedera implements SwirldMain {
                 "Creating Hedera Consensus Node {} with HAPI {}",
                 () -> HapiUtils.toString(version.getServicesVersion()),
                 () -> HapiUtils.toString(version.getHapiVersion()));
+        fileServiceImpl = new FileServiceImpl();
         contractServiceImpl = new ContractServiceImpl(instantSource);
         // Register all service schema RuntimeConstructable factories before platform init
         Set.of(
                         new EntityIdService(),
                         new ConsensusServiceImpl(),
                         contractServiceImpl,
-                        new FileServiceImpl(),
+                        fileServiceImpl,
                         new FreezeServiceImpl(),
                         new ScheduleServiceImpl(),
                         new TokenServiceImpl(),

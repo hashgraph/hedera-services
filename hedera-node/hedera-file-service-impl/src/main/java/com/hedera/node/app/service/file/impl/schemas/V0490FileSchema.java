@@ -36,12 +36,17 @@ import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.hapi.node.base.Setting;
 import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.base.TransactionFeeSchedule;
+import com.hedera.hapi.node.file.FileCreateTransactionBody;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
+import com.hedera.node.app.spi.workflows.GenesisContext;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
@@ -53,7 +58,6 @@ import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
-import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.StringReader;
@@ -134,13 +138,6 @@ public class V0490FileSchema extends Schema {
             final var filesConfig = ctx.configuration().getConfigData(FilesConfig.class);
             final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
             final WritableKVState<FileID, File> files = ctx.newStates().get(BLOBS_KEY);
-            createGenesisAddressBookAndNodeDetails(
-                    bootstrapConfig, hederaConfig, filesConfig, files, ctx.networkInfo());
-            createGenesisFeeSchedule(bootstrapConfig, hederaConfig, filesConfig, files);
-            createGenesisExchangeRate(bootstrapConfig, hederaConfig, filesConfig, files);
-            createGenesisNetworkProperties(bootstrapConfig, hederaConfig, filesConfig, files, ctx.configuration());
-            createGenesisHapiPermissions(bootstrapConfig, hederaConfig, filesConfig, files);
-            createGenesisThrottleDefinitions(bootstrapConfig, hederaConfig, filesConfig, files);
             createGenesisSoftwareUpdateFiles(bootstrapConfig, hederaConfig, filesConfig, files);
         }
     }
@@ -148,16 +145,12 @@ public class V0490FileSchema extends Schema {
     // ================================================================================================================
     // Creates and loads the Address Book into state
 
-    private void createGenesisAddressBookAndNodeDetails(
-            @NonNull final BootstrapConfig bootstrapConfig,
-            @NonNull final HederaConfig hederaConfig,
-            @NonNull final FilesConfig filesConfig,
-            @NonNull final WritableKVState<FileID, File> files,
-            @NonNull final NetworkInfo networkInfo) {
+    public void createGenesisAddressBookAndNodeDetails(@NonNull final GenesisContext genesisContext) {
+        requireNonNull(genesisContext);
+        final var networkInfo = genesisContext.networkInfo();
+        final var filesConfig = genesisContext.configuration().getConfigData(FilesConfig.class);
+        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
 
-        logger.debug("Creating genesis address book and node details files");
-
-        logger.trace("Converting NetworkInfo to NodeAddressBook");
         final var nodeAddresses = new ArrayList<NodeAddress>();
         for (final var nodeInfo : networkInfo.addressBook()) {
             nodeAddresses.add(NodeAddress.newBuilder()
@@ -188,21 +181,16 @@ public class V0490FileSchema extends Schema {
 
         // Create the address book file
         final var addressBookFileNum = filesConfig.addressBook();
-        final var addressBookFileId = FileID.newBuilder()
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .fileNum(addressBookFileNum)
-                .build();
-
-        logger.trace("Add address book into {}", addressBookFileNum);
-        files.put(
-                addressBookFileId,
-                File.newBuilder()
-                        .contents(nodeAddressBookProto)
-                        .fileId(addressBookFileId)
-                        .keys(masterKey)
-                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
-                        .build());
+        genesisContext.dispatchCreation(
+                TransactionBody.newBuilder()
+                        .fileCreate(FileCreateTransactionBody.newBuilder()
+                                .contents(nodeAddressBookProto)
+                                .keys(masterKey)
+                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .build())
+                        .build(),
+                addressBookFileNum,
+                CreateFileRecordBuilder.class);
 
         // Create the node details for file 102,  their fields are different from 101, addressBook
         final var nodeDetail = new ArrayList<NodeAddress>();
@@ -225,52 +213,45 @@ public class V0490FileSchema extends Schema {
                 NodeAddressBook.newBuilder().nodeAddress(nodeAddresses).build();
         final var nodeDetailsProto = NodeAddressBook.PROTOBUF.toBytes(nodeDetails);
         final var nodeInfoFileNum = filesConfig.nodeDetails();
-        final var nodeInfoFileId = FileID.newBuilder()
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .fileNum(nodeInfoFileNum)
-                .build();
-
-        logger.trace("Add node info into {}", nodeInfoFileNum);
-        files.put(
-                nodeInfoFileId,
-                File.newBuilder()
-                        .contents(nodeDetailsProto)
-                        .fileId(nodeInfoFileId)
-                        .keys(masterKey)
-                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
-                        .build());
+        genesisContext.dispatchCreation(
+                TransactionBody.newBuilder()
+                        .fileCreate(FileCreateTransactionBody.newBuilder()
+                                .contents(nodeDetailsProto)
+                                .keys(masterKey)
+                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .build())
+                        .build(),
+                nodeInfoFileNum,
+                CreateFileRecordBuilder.class);
     }
 
     // ================================================================================================================
     // Creates and loads the initial Fee Schedule into state
 
-    private void createGenesisFeeSchedule(
-            @NonNull final BootstrapConfig bootstrapConfig,
-            @NonNull final HederaConfig hederaConfig,
-            @NonNull final FilesConfig filesConfig,
-            @NonNull final WritableKVState<FileID, File> files) {
+    public void createGenesisFeeSchedule(@NonNull final GenesisContext genesisContext) {
+        requireNonNull(genesisContext);
+        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
         logger.debug("Creating genesis fee schedule file");
         final var resourceName = bootstrapConfig.feeSchedulesJsonResource();
         try (final var in = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName)) {
             final var feeScheduleJsonBytes = requireNonNull(in).readAllBytes();
             final var feeSchedule = parseFeeSchedules(feeScheduleJsonBytes);
-            final var fileNum = filesConfig.feeSchedules();
-            final var fileId = FileID.newBuilder()
-                    .shardNum(hederaConfig.shard())
-                    .realmNum(hederaConfig.realm())
-                    .fileNum(fileNum)
-                    .build();
             final var masterKey =
                     Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-            files.put(
-                    fileId,
-                    File.newBuilder()
-                            .contents(CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedule))
-                            .fileId(fileId)
-                            .keys(KeyList.newBuilder().keys(masterKey))
-                            .expirationSecond(bootstrapConfig.systemEntityExpiry())
-                            .build());
+            genesisContext.dispatchCreation(
+                    TransactionBody.newBuilder()
+                            .fileCreate(FileCreateTransactionBody.newBuilder()
+                                    .contents(CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedule))
+                                    .keys(KeyList.newBuilder().keys(masterKey))
+                                    .expirationTime(
+                                            Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                    .build())
+                            .build(),
+                    genesisContext
+                            .configuration()
+                            .getConfigData(FilesConfig.class)
+                            .feeSchedules(),
+                    CreateFileRecordBuilder.class);
         } catch (IOException | NullPointerException e) {
             throw new IllegalArgumentException(
                     "Fee schedule (" + resourceName + ") " + "could not be found in the class path", e);
@@ -357,11 +338,8 @@ public class V0490FileSchema extends Schema {
     // ================================================================================================================
     // Creates and loads the initial Exchange Rate into state
 
-    private void createGenesisExchangeRate(
-            @NonNull final BootstrapConfig bootstrapConfig,
-            @NonNull final HederaConfig hederaConfig,
-            @NonNull final FilesConfig filesConfig,
-            @NonNull final WritableKVState<FileID, File> files) {
+    public void createGenesisExchangeRate(@NonNull final GenesisContext genesisContext) {
+        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
         logger.debug("Creating genesis exchange rate file");
         // See HfsSystemFilesManager#defaultRates. This does the same thing.
         final var exchangeRateSet = ExchangeRateSet.newBuilder()
@@ -376,74 +354,48 @@ public class V0490FileSchema extends Schema {
                         .expirationTime(TimestampSeconds.newBuilder().seconds(bootstrapConfig.ratesNextExpiry()))
                         .build())
                 .build();
-
-        final var fileNum = filesConfig.exchangeRates();
-        final var fileId = FileID.newBuilder()
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .fileNum(fileNum)
-                .build();
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-        files.put(
-                fileId,
-                File.newBuilder()
-                        .contents(ExchangeRateSet.PROTOBUF.toBytes(exchangeRateSet))
-                        .fileId(fileId)
-                        .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
-                        .build());
+        genesisContext.dispatchCreation(
+                TransactionBody.newBuilder()
+                        .fileCreate(FileCreateTransactionBody.newBuilder()
+                                .contents(ExchangeRateSet.PROTOBUF.toBytes(exchangeRateSet))
+                                .keys(KeyList.newBuilder().keys(masterKey))
+                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .build())
+                        .build(),
+                genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates(),
+                CreateFileRecordBuilder.class);
     }
 
     // ================================================================================================================
     // Creates and loads the network properties into state
 
-    private void createGenesisNetworkProperties(
-            @NonNull final BootstrapConfig bootstrapConfig,
-            @NonNull final HederaConfig hederaConfig,
-            @NonNull final FilesConfig filesConfig,
-            @NonNull final WritableKVState<FileID, File> files,
-            @NonNull final Configuration configuration) {
-        logger.debug("Creating genesis network properties file");
-
-        // Get the set of network properties from configuration, and generate the file content to store in state.
-        List<Setting> settings = new ArrayList<>();
-        // FUTURE: We would like to preload all network properties. If we actually do that, then we would do that here.
-        //         using some kind of reflection on the configuration system.
-
+    public void createGenesisNetworkProperties(@NonNull final GenesisContext genesisContext) {
+        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
+        // The overrides file is initially empty
         final var servicesConfigList =
-                ServicesConfigurationList.newBuilder().nameValue(settings).build();
-        final var fileNum = filesConfig.networkProperties();
-        final var fileId = FileID.newBuilder()
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .fileNum(fileNum)
-                .build();
+                ServicesConfigurationList.newBuilder().nameValue(List.of()).build();
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-        files.put(
-                fileId,
-                File.newBuilder()
-                        .contents(ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigList))
-                        .fileId(fileId)
-                        .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
-                        .build());
+        genesisContext.dispatchCreation(
+                TransactionBody.newBuilder()
+                        .fileCreate(FileCreateTransactionBody.newBuilder()
+                                .contents(ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigList))
+                                .keys(KeyList.newBuilder().keys(masterKey))
+                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .build())
+                        .build(),
+                genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates(),
+                CreateFileRecordBuilder.class);
     }
 
     // ================================================================================================================
     // Creates and loads the HAPI Permissions into state
-
-    private void createGenesisHapiPermissions(
-            @NonNull final BootstrapConfig bootstrapConfig,
-            @NonNull final HederaConfig hederaConfig,
-            @NonNull final FilesConfig filesConfig,
-            @NonNull final WritableKVState<FileID, File> files) {
-        logger.debug("Creating genesis HAPI permissions file");
-
+    public void createGenesisHapiPermissions(@NonNull final GenesisContext genesisContext) {
+        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
         // Get the path to the HAPI permissions file
         final var pathToApiPermissions = Path.of(bootstrapConfig.hapiPermissionsPath());
-
         // If the file exists, load from there
         String apiPermissionsContent = null;
         if (Files.exists(pathToApiPermissions)) {
@@ -451,7 +403,7 @@ public class V0490FileSchema extends Schema {
                 apiPermissionsContent = Files.readString(pathToApiPermissions);
                 logger.info("API Permissions loaded from {}", pathToApiPermissions);
             } catch (IOException e) {
-                logger.error(
+                logger.warn(
                         "API Permissions could not be loaded from {}, looking for fallback on classpath",
                         pathToApiPermissions);
             }
@@ -483,57 +435,39 @@ public class V0490FileSchema extends Schema {
             logger.fatal("API Permissions could not be parsed");
             throw new IllegalArgumentException("API Permissions could not be parsed", e);
         }
-
-        // Store the configuration in state
-        final var fileNum = filesConfig.hapiPermissions();
-        final var fileId = FileID.newBuilder()
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .fileNum(fileNum)
-                .build();
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-        files.put(
-                fileId,
-                File.newBuilder()
-                        .contents(ServicesConfigurationList.PROTOBUF.toBytes(ServicesConfigurationList.newBuilder()
-                                .nameValue(settings)
-                                .build()))
-                        .fileId(fileId)
-                        .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
-                        .build());
+        final var permissionsConfig =
+                ServicesConfigurationList.newBuilder().nameValue(settings).build();
+        genesisContext.dispatchCreation(
+                TransactionBody.newBuilder()
+                        .fileCreate(FileCreateTransactionBody.newBuilder()
+                                .contents(ServicesConfigurationList.PROTOBUF.toBytes(permissionsConfig))
+                                .keys(KeyList.newBuilder().keys(masterKey))
+                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .build())
+                        .build(),
+                genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates(),
+                CreateFileRecordBuilder.class);
     }
 
     // ================================================================================================================
     // Creates and loads the Throttle definitions into state
-
-    private void createGenesisThrottleDefinitions(
-            @NonNull final BootstrapConfig bootstrapConfig,
-            @NonNull final HederaConfig hederaConfig,
-            @NonNull final FilesConfig filesConfig,
-            @NonNull final WritableKVState<FileID, File> files) {
-        logger.debug("Creating genesis throttle definitions file");
-
-        byte[] throttleDefinitionsProtoBytes = loadBootstrapThrottleDefinitions(bootstrapConfig);
-
-        // Store the configuration in state
-        final var fileNum = filesConfig.throttleDefinitions();
-        final var fileId = FileID.newBuilder()
-                .shardNum(hederaConfig.shard())
-                .realmNum(hederaConfig.realm())
-                .fileNum(fileNum)
-                .build();
+    public void createGenesisThrottleDefinitions(@NonNull final GenesisContext genesisContext) {
+        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
+        final var throttleDefinitionsProtoBytes = loadBootstrapThrottleDefinitions(bootstrapConfig);
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-        files.put(
-                fileId,
-                File.newBuilder()
-                        .contents(Bytes.wrap(throttleDefinitionsProtoBytes))
-                        .fileId(fileId)
-                        .keys(KeyList.newBuilder().keys(masterKey))
-                        .expirationSecond(bootstrapConfig.systemEntityExpiry())
-                        .build());
+        genesisContext.dispatchCreation(
+                TransactionBody.newBuilder()
+                        .fileCreate(FileCreateTransactionBody.newBuilder()
+                                .contents(Bytes.wrap(throttleDefinitionsProtoBytes))
+                                .keys(KeyList.newBuilder().keys(masterKey))
+                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .build())
+                        .build(),
+                genesisContext.configuration().getConfigData(FilesConfig.class).throttleDefinitions(),
+                CreateFileRecordBuilder.class);
     }
 
     /**

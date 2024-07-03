@@ -19,6 +19,7 @@ package com.hedera.node.app.service.file.impl;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.spi.RpcService;
+import com.hedera.node.app.spi.workflows.GenesisContext;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -27,6 +28,8 @@ import javax.inject.Inject;
 public final class FileServiceImpl implements FileService {
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     public static final String DEFAULT_MEMO = "";
+
+    private final V0490FileSchema genesisSchema = new V0490FileSchema();
 
     /**
      * Constructs a {@link FileServiceImpl}.
@@ -41,6 +44,19 @@ public final class FileServiceImpl implements FileService {
      */
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(new V0490FileSchema());
+        registry.register(genesisSchema);
+    }
+
+    /**
+     * Creates the system files in the given genesis context.
+     *
+     * @param context the genesis context
+     */
+    public void createSystemEntities(@NonNull final GenesisContext context) {
+        genesisSchema.createGenesisAddressBookAndNodeDetails(context);
+        genesisSchema.createGenesisExchangeRate(context);
+        genesisSchema.createGenesisFeeSchedule(context);
+        genesisSchema.createGenesisNetworkProperties(context);
+        genesisSchema.createGenesisHapiPermissions(context);
     }
 }

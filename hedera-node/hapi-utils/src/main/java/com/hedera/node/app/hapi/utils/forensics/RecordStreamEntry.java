@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.hapi.utils.forensics;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.timestampToInstant;
+
 import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -23,10 +25,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
-
-import static com.hedera.node.app.hapi.utils.CommonUtils.timestampToInstant;
 
 /**
  * Represents a single {@code (Transaction, TransactionRecord)} entry from a record stream,
@@ -36,7 +35,8 @@ import static com.hedera.node.app.hapi.utils.CommonUtils.timestampToInstant;
  * @param txnRecord     the resolved record the transaction
  * @param consensusTime the consensus time
  */
-public record RecordStreamEntry(TransactionParts parts, TransactionRecord txnRecord, Instant consensusTime) implements Comparable<RecordStreamEntry> {
+public record RecordStreamEntry(TransactionParts parts, TransactionRecord txnRecord, Instant consensusTime)
+        implements Comparable<RecordStreamEntry> {
     @Override
     public int compareTo(@NonNull RecordStreamEntry that) {
         return this.consensusTime.compareTo(that.consensusTime);

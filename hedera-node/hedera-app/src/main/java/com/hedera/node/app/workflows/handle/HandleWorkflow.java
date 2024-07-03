@@ -300,13 +300,16 @@ public class HandleWorkflow {
                 skip(userTxn);
             } else {
                 if (userTxn.isGenesisTxn()) {
-                    genesisSetup.setupIn(userTxn.tokenContextImpl());
+                    genesisSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
                 }
                 updateNodeStakes(userTxn);
                 blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);
+                if (userTxn.isGenesisTxn()) {
+                    genesisSetup.createSystemEntities(dispatch);
+                }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
