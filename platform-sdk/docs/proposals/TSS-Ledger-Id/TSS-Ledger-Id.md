@@ -7,12 +7,12 @@
 This proposal is for the integration of a threshold signature scheme into the consensus nodes to allow them to create a
 private/public key pair for the ledger that can be used to sign blocks and construct block proofs. The private key must
 be a secret that no one knows. The public key is known by all and functions as the ledger id. The consensus nodes must
-be able to aggregate their individual signatures on a message into a valid ledger signature for the message that is
-verifiable by the ledger id. Through signing a block with the ledger private key, we can use Merkle Proofs to
-extend the signature to cover the contents of the block and the state changes processed in that round. This forms
-the basis of Block Proofs and provides a way for external parties to verify that certain facts are true on the ledger
-at a particular point in time. Part of our goal is that users could write EVM smart contracts that can verify the
-Block Proofs and make decisions based on their claims.
+be able to aggregate their individual signatures on a message into a valid ledger signature that is verifiable by
+the ledger id. Through signing a block with the ledger private key, we can use Merkle Proofs to extend the signature
+to cover the contents of the block and the state changes processed in that round. This forms the basis of Block
+Proofs and provides a way for external parties to verify that certain facts are true on the ledger at a particular
+point in time. Part of our goal is that users could write EVM smart contracts that can verify the Block Proofs and
+make decisions based on their claims.
 
 | Metadata           | Entities                                   | 
 |--------------------|--------------------------------------------|
@@ -30,69 +30,87 @@ time. Our chosen method for providing these types of proofs is to assign a perma
 ledger for use in signing blocks and constructing block proofs. The ledger private key must be a secret that no one
 knows. The ledger public key is known by all and functions as the ledger id. While the ledger private key is unknown to
 anyone, the consensus nodes must be able to aggregate their individual signatures on a message into a valid ledger
-signature for the message that is verifiable by the public key.
+signature for the message that is verifiable by the ledger id.
 
-The TSS effort has been broken down into four separate proposals: TSS-Library, TSS-Roster, TSS-Ledger-Id, and
+The TSS effort has been broken down into four separate proposals: TSS-Library, TSS-Roster, TSS-Ledger-ID, and
 TSS-Block-Signing.
 
 1. The `TSS-Library` proposal contains the cryptographic primitives and algorithms needed to implement TSS.
 2. The `TSS-Roster` proposal introduces the data structure of a consensus `Roster` to replace the platform's concept of
    an `AddressBook` and modifies the life-cycle for when the platform receives new consensus rosters.
-3. This proposal (`TSS-Ledger-Id`) depends on the first two proposals and is for the integration of a threshold
+3. This proposal (`TSS-Ledger-ID`) depends on the first two proposals and is for the integration of a threshold
    signature scheme into the consensus node, delivering the ability for the ledger to sign a message with the
    ledger private key.
 4. The `TSS-Block-Signing` proposal is everything needed to support the signing of blocks and generation of block
    proofs.
 
-This  `TSS-Ledger-Id` proposal covers changes to the following elements:
+This  `TSS-Ledger-ID` proposal covers changes to the following elements:
 
 * The process of generating the ledger key pair for new networks and existing networks.
 * The process for signing a message with the ledger private key.
-* The process to transfer the ability of the ledger to sign a message from one set of consensus nodes to another.
+* The process of transferring the ability of the ledger to sign a message from one set of consensus nodes to another.
 * The new state data structures needed to store TSS Key material and the ledger id.
 * The new components needed in the framework to support creating and transferring the ledger key.
 * The modified startup process to initialize the signing capability.
+
+### Goals
+
+The following capabilities are the goals of this proposal:
+
+1. `Ledger Signing API` - The app gives a message to the platform to sign. The platform signs the message with its
+   shares, gossips the signatures, and aggregates share signatures into a ledger signature. The ledger signature is
+   returned to the app through the `PlatformPublisher`.
+2. `TSS Bootstrap on Existing Network` - Able to setup an existing network with a ledger public/private key pair.
+3. `TSS Bootstrap for New Network` - Able to setup a new network with a ledger public/private key pair.
+4. `Keying The Next Roster` - Able to transfer the ability to sign a message with the ledger private key from one set of
+   consensus nodes to another.
+
+### Non-Goals
+
+The following are not goals of this proposal:
+
+1. Achieving a fully dynamic address book life-cycle.
+2. Block Proofs or the signing of blocks.
+3. Verification of signed messages beyond the consensus node.
+    * It is not within the scope of this proposal and effort to develop, test, and deploy a smart contract that can
+      verify a block proof. It is expected that mathematics works and that our use of the ALT-BN128 curve will
+      dovetail with the
+      [precompiles that are available in the EVM](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1829.md).
 
 ### Dependencies, Interactions, and Implications
 
 Dependencies on the TSS-Library
 
-* The top-level API in the proposal is defined and can be mocked for initial development.
-* The complete implementation of the TSS-Library is required for the TSS-Ledger-Id proposal to be fully implemented.
+* At minimum, the top-level API in the TSS-Proposal is defined and can be mocked for initial development.
+* The complete implementation of the TSS-Library is required for the TSS-Ledger-ID proposal to be fully implemented.
+* Consensus nodes must have their long-term EC keys generated and stored in the address book in a release prior to the
+  TSS-Ledger-ID proposal being delivered.
 
 Dependencies on the TSS-Roster
 
-* The `Roster` API is defined with an AddressBook wrapper for initial development and testing.
-* A lot can be done in parallel, but final integration will require that the TSS-Roster proposal be fully implemented.
-    * Transferring the ledger key will require the new roster life-cycle be complete and working.
+* At minimum, the `Roster` API is defined with an AddressBook wrapper for initial development and testing.
+* Delivery of TSS-Ledger-ID will require that the TSS-Roster proposal is delivered in a prior release.
 
-Impacts to Services Team
+Impacts of TSS-Ledger-ID to Services Team
 
-* TSS-Roster Proposal
-    * Services will adopt the new address book / roster life-cycle
-    * If the persistent EC Key for nodes is integrated at this stage,
-        * The HAPI transactions for add/update of consensus node in the address book must support a required EC public
-          key.
-* TSS-Ledger-Id Proposal
-    * The timing of submitting the candidate roster may need to be adjusted to allow enough time for the candidate
-      roster to have enough key material generated.
-    * Services will need to know / detect when the candidate roster fails to be adopted due to not having enough key
-      material generated.
-* TSS-Block-Signing Proposal
-    * Services will need to invoke the new ledger signing API to sign a block.
-        * This API is asynchronous and will return a future that returns the ledger signature when it is ready.
+* The timing of submitting the candidate roster may need to be adjusted to allow enough time for the candidate
+  roster to have key material generated.
+* Services will need to know or detect when the candidate roster fails to be adopted due to not having enough key
+  material generated.
+* The node's long term EC public key will need to be added to the address book.
+    * This requires modification of the HAPI transactions that manage the address book.
 
 Impacts to DevOps Team
 
-* Each consensus node will need a new private long term EC key in addition to the existing RSA key.
+* Each consensus node will need a new long term EC key in addition to the existing RSA key.
     * EC Key generation will have to happen before a node can join the network.
 * A new node added to an existing network will need to be given a state from an existing node after the network has
-  adopted the consensus roster containing the new node.
+  adopted the address book containing the new node.
 
 Implications Of Completion
 
 * The consensus nodes will be able to create ledger signatures for use in block proofs.
-* TSS-Block-Signing becomes unblocked for development.
+* TSS-Block-Signing proposal becomes unblocked for development.
 
 ### Requirements
 
@@ -123,33 +141,35 @@ Block Signing Requirements
 
 #### New Address Book Life-Cycle
 
-This design proposal will deliver after Dynamic Address Book (DAB) Phase 2 and before DAB Phase 3. In Phase 2 the
-address book is updated on software upgrades. In Phase 3 the address book is updated dynamically without restarting
-the node. Since the TSS effort requires keying a roster with enough `TssMessages` to generate ledger signatures, a
-modified life-cycle is needed. Some of the dynamic work in Phase 3 will be needed. This work is being encapsulated
-in the TSS-Roster proposal, which will need to be completed before the TSS-Ledger-Id proposal can be fully implemented.
+The TSS-Roster design proposal will deliver after Dynamic Address Book (DAB) Phase 2 and must be delivered at least
+1 release prior to the TSS-Ledger-ID proposal. This proposal modifies the address book and roster lifecycle
+presented in TSS-Roster. To explain the modification, we present the TSS-Roster life-cycle here:
 
-The relevant Address Book life-cycle changes are the following:
+1. The application address book has 3 states: `Active` (AAB), `Candidate` (CAB), and `Future` (FAB).
+    * The FAB is updated by every HAPI transaction that is already received in Dynamic Address Book Phase 2.
+    * The CAB is a snapshot of the FAB when the app is ready to initiate an address book rotation.
+2. The platform receives a `Roster`, which is a subset of the Address Book. There are 3 roster states: `active`,
+   `candidate`, and `previous`.
+    * The `previous roster` is needed for validation in replay of the pre-consensus event stream.
+    * The `active roster` is the roster currently used in consensus.
+    * The `candidate roster` is the roster that will be adopted upon the next software upgrade.
+3. When the app is ready to initiate an address book rotation, it sets a `candidate roster` in the state just before the
+   freeze and restart during a software upgrade.
+4. If set, the `candidate roster` is always adopted as the new `active roster` after restart in the software upgrade.
+5. The CAB becomes the AAB when the app learns that the `candidate roster` has become the `active roster`.
 
-1. The platform only receives a Roster, a subset of the Address Book.
-2. The application address book has 3 states: `Active` (AAB), `Candidate` (CAB), and `Future` (FAB).
-3. The FAB is updated by every HAPI transaction that is already received in Dynamic Address Book Phase 2.
-4. The CAB is a snapshot of the FAB when the app is ready to initiate an address book rotation.
-5. The AAB is replaced by the CAB on a software upgrade if the consensus roster derived from the CAB has enough key
-   material to generate ledger signatures.
-6. The CAB is not adopted and the previous AAB remains the existing AAB after a software upgrade if the CAB does not
-   have enough key material to generate ledger signatures.
-    * NOTE: These last two condition only applied to `TSS-Ledger-Id`. The `TSS-Roster` proposal will always adopt the
-      roster that is set when a software upgrade occurs.
+The TSS-Ledger-ID modifications to the life-cycle are as follows:
 
-Prior to restart for upgrade, the `candidate` consensus roster will be set in the platform state by the app in such
-a way as to mark it clearly as the next consensus roster. This methodology replaces the previous methodology in DAB
-Phase 2, which was to write a new `config.txt` to disk. After the `TSS-Roster` proposal has been implemented, the only
-need for a file on disk is the genesis address book at the start of a new network.
-
-The core of the life-cycle change for setting candidate rosters in the state iis captured in the `TSS-Roster`
-proposal. This Proposal augments the life-cycle with generating the key material for the new roster and the logic for
-deciding to adopt the new roster on software upgrade.
+1. The `Roster` format does not change.
+2. The app must set the `candidate roster` early enough to allow the nodes to generate the key material for the new
+   roster before the software upgrade.
+3. If the `candidate roster` does not have enough key material after a software upgrade, it will not replace the
+   `active roster` and remain the candidate roster. The platform will continue to attempt to key the candidate
+   roster after software upgrade.
+4. The app must detect whether or not the `candidate roster` became the `active roster`.
+    * If the `candidate roster` becomes the `active roster`, the app rotates the CAB to the AAB.
+    * If the `candidate roster` does not become the `active roster`, the CAB remains the CAB and the old AAB remains
+      the AAB after the software upgrade.
 
 ![TSS FAB, CAB, AAB Lifecycle](./TSS-FAB-CAB-AAB-Lifecycle.drawio.svg)
 
@@ -163,10 +183,8 @@ consensus nodes. See the TSS-Library proposal for more details on the Groth21.
 The Groth21 algorithm uses [Shamir Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_secret_sharing) to hide the
 private key of the ledger and distribute shares of it so that a threshold number of node signatures on a message can
 generate the ledger signature on the same message. The threshold should be high enough to ensure at least 1 honest
-node is required to participate in the signing since a threshold number of nodes can also collude to recover the
-ledger private key, if they so choose. For example if the network is designed to tolerate up to 1/3 of the nodes
-being dishonest, then the threshold should never be less than 1/3 + 1 of the nodes to ensure that no 1/3 will
-collude to recover the ledger private key.
+share is required to participate in the signing since a threshold number of shares can also collude to recover the
+ledger private key, if they so choose.
 
 The Groth21 algorithm requires specific Elliptic Curve (EC)s with the ability to produce bilinear pairings. Each
 node will need its own long-term EC key pair on the curve for use in the groth21 TSS algorithm. Each node receives
@@ -235,13 +253,13 @@ threshold for recovery of ledger signatures and the ledger id must be strictly g
 1. `floor(TS/3)` where `TS` is the total number of shares.
 2. `M` where `M` is the max number of shares assigned to any node.
 
-The integer threshold we will use is `ceiling(TS /2)` where `TS` is the total number of shares.
+The integer threshold we will use is `ceiling(TS /2)`.
 
 ##### TSS Algorithm - Alternatives Considered
 
-The list of options considered here were based off of prototypes developed by Rohit Sinha, the Swirlds Labs
-cryptography expert. The Groth21 algorithm was chosen because it was efficient for use in smart contract
-verification, and we could assign a multiplicity of shares to nodes to get close enough in modeling the
+The list of options considered here were based off of prototypes developed by [Rohit Sinha](https://github.com/rsinha),
+the Swirlds Labs cryptography expert. The Groth21 algorithm was chosen because it was efficient for use in smart
+contract verification, and we could assign a multiplicity of shares to nodes to get close enough in modeling the
 distribution of weight between nodes.
 
 | Requirement | hinTS | Groth21 |
@@ -264,15 +282,15 @@ across nodes. The complicating factor with hinTS is that during an address book 
 to be constructed to prove that the new roster is a descendent of the original genesis roster. Validation of this
 recursive proof proved too expensive for EVM smart contracts.
 
-#### TSS Genesis Process
+#### TSS Bootstrap Process
 
-The TSS Genesis process is the process of generating the ledger public/private key pair for a new network or an existing
-network. There are several options to consider in the TSS genesis process:
+The TSS bootstrap process is the process of generating the ledger public/private key pair for a new network or an
+existing network. There are several options to consider in the TSS bootstrap process:
 
 1. Do we allow block number and round number to be out of sync?
 2. Do we need the initial block produced to be signed by the ledger id?
 3. For new networks, Do we need to produce a signed block 0?
-4. For existing networks, does the TSS genesis roster sign blocks prior to its existence?
+4. For existing networks, does the TSS bootstrap roster sign blocks prior to its existence?
 
 ##### For New Networks
 
@@ -280,33 +298,34 @@ There will be a pre-genesis phase where the genesis roster is keyed and a random
 happen through running the platform without application transactions. After the platform keys the roster, the
 platform restarts itself with a copy of the genesis state and adding to it the TSS key material and ledger
 id. After platform restart, application transactions are accepted and the platform starts building the new hashgraph
-from round 0.
+from round 0. This process ensures that block 0 containing application transactions is signed by the ledger and
+verifiable with the ledger id.
 
 While this solution does not have the history of setting up the ledger id in the hashgraph after platform restart,
-the node can cryptographically verify that the setup process took place correctly through using the TSS key material to
-re-derive the ledger id.
-
-This process ensures that block 0 containing application transactions is signed by the ledger and verifiable with
-the ledger id.
+the nodes can cryptographically verify that the setup process took place correctly through using the TSS key material to
+re-derive the ledger id. Each node can validate the TssMessages have come from a sufficient variety of nodes. With
+the assumption that no greater than 1/3 of the nodes are malicious, the threshold of 1/2 ensures that the malicious
+nodes will not be able to recover the ledger id if they collude together.
 
 The process of the platform restarting itself after performing a pre-genesis keying phase is new startup logic.  
-This should not involve an interruption or restart to the containing process or application.
+This should not involve an interruption of the containing process. While we are in the pre-genesis phase the
+platform will not accept application transactions. Once the platform has restarted itself with a keyed roster, it
+will accept application transactions when it becomes active.
 
 ##### For Existing Networks
 
 Given the requirement of TSSBS-001, the setup of the TSS Key Material must happen before the software upgrade that
 enables block streams. In order to reduce risk and density of complex software changes, giving the nodes
 their long term EC keys and changing the roster life-cycle through the TSS-Roster effort should be completed and
-delivered in a software release prior to the code that will key the first candidate roster.
+delivered in a software release prior to the delivery.
 
-For example, if Block Streams ships in release 0.7, then TSS-Ledger-Id should ship in release 0.6, and TSS-Roster
-along with setting the EC keys on nodes should ship in release 0.5.
+The schedule of delivery of capability is explored in a later section in this proposal.
 
-The setup of the first key material will be observable in the record stream prior to the Block Streams going live,
-but this observability is not consequential because what matters is the cryptographic verification that the TSS
+The setup of the bootstrap key material will be observable in the record stream prior to the Block Streams going live,
+but this observability is not consequential. What matters is the cryptographic verification that the TSS
 material can generate the ledger key.
 
-##### TSS Genesis Process - Alternatives Considered
+##### TSS Bootstrap Process - Alternatives Considered
 
 | N | Option                                                                                                        | 1-1 round to block                   | round # == block #                                   | Ledger signs initial block           | Ledger signs block 0                 | TSS keying in hashgraph history      | TSS keying in block history          | Minimal DevOps Impact                | Implementation Complexity                 | Notes                                                                              |
 |---|---------------------------------------------------------------------------------------------------------------|--------------------------------------|------------------------------------------------------|--------------------------------------|--------------------------------------|--------------------------------------|--------------------------------------|--------------------------------------|-------------------------------------------|------------------------------------------------------------------------------------|
@@ -319,49 +338,60 @@ material can generate the ledger key.
 | 7 | Pre-Genesis: Separate app with genesis roster creates key material in state before network officially starts. | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            |
 | 8 | Instead of separate app, detect genesis, key the state, network restart from round 0 with keyed state.        | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            | 
 
-### Goals
-
-The following capabilities are the goals of this proposal:
-
-1. `Ledger Signing API` - Given a message, the consensus nodes sign the message with shares and aggregate the signatures
-   into a ledger signature after they come to consensus.
-2. `TSS Genesis on Existing Network` - Able to setup an existing network with a ledger public/private key pair.
-3. `TSS Genesis for New Network` - Able to setup a new network with a ledger public/private key pair.
-4. `Keying The Next Roster` - Able to transfer the ability to sign a message with the ledger private key from one set of
-   consensus nodes to another.
-
-### Non-Goals
-
-The following are not goals of this proposal:
-
-1. Achieving a fully dynamic address book life-cycle.
-2. Block Proofs or the signing of blocks.
-3. Verification of signed messages beyond the consensus node.
-    * It is not within the scope of this proposal and effort to develop, test, and deploy a smart contract that can
-      verify a block proof. It is expected that mathematics works and that our use of the ALT-BN128 curve will
-      dovetail with the
-      [precompiles that are available in the EVM](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1829.md).
+Option 2 was chosen for existing networks and Option 8 was selected for new networks. This decision was made to
+ensure that the first block in the block stream is signed by the ledger and that new networks always have block 0
+signed.
 
 ---
 
 ## Changes
 
-Integrating a Threshold Signature Scheme into the consensus node requires significant changes to the startup
-process for a node and the process of changing the consensus roster. These changes are outline in more detail in
-the following sections, but a brief summary is presented here.
+The changes are presented in the following order:
 
-New Network TSS Genesis Process
+1. Public API
+2. Core Behaviors
+3. Component Architecture
+4. Configuration
+5. Metrics
+6. Performance
 
-* The platform will accept a genesis roster and check the state for the TSS key material.
-* If the TSS key material is not present, the platform will generate the key material and ledger id.
-* The platform will restart itself from round 0 with the new key material and ledger id in the state.
-  Existing Network Genesis
-*
+### Public API
 
-### Architecture and/or Components
+The public API changes consist of the following:
 
-The architecture is presented first through the data structures that are stored in the state and then through the
-components that interact with the data structures.
+* The Ledger Signature API
+* System Transactions
+* State Data Structures
+
+#### Ledger Signature API
+
+The Ledger Signature API is the interface between the application and the platform by which the application submits
+a message to be signed by the ledger, the nodes sign the message with their shares, and the platform aggregates the
+signatures into a ledger signature. The ledger signature is then asynchronously returned to the application.
+
+To request a ledger signature, the application invokes a new method on the `State`:
+
+* `State::sign(byte[] message) throws NotReadyException`
+
+To receive a ledger signature, the application registers a callback with the platform builder:
+
+* `PlatformBuilder::withLedgerSignatureCallback(Consumer<PairingSignature> ledgerSignatureConsumer)`
+
+#### System Transactions
+
+The following are new system transactions needed to key rosters and generate ledger signatures.
+
+##### TssMessage System Transaction
+
+TODO: Protobuf of data
+
+##### TssVote System Transaction
+
+TODO: Protobuf of data
+
+##### TssShareSignature System Transaction
+
+TODO: Protobuf of data
 
 #### State Datastructures
 
@@ -372,24 +402,21 @@ signatures.
 
 The `ledgerId` is the public ledger key able to verify ledger signatures. It is used by both the application and the
 platform. This value should not change during address book changes and its value does not change unless the network
-goes through a another TSS Genesis process. Since its value is not expected to change, storing it in a singleton
+goes through a another TSS bootstrap process. Since its value is not expected to change, storing it in a singleton
 Merkle Leaf by itself is appropriate.
+
+TODO: Protobuf of data
 
 ##### Consensus Rosters
 
-It is expected that the TSS-Roster proposal has introduced a 3rd roster in the state called the `Candidate Roster`
-in addition to the `Active Roster` and the `Previous Roster`. These rosters are stored in the state in a singleton.
+This proposal extends the roster data format where each `RosterEntry` has a new long term public EC key called a
+`tssEcKey` that is used in the Groth21 algorithm.
 
-This proposal extends the roster data format in two ways:
-
-1. Each `RosterEntry` has a new long term public EC key called a `tssEcKey` that is needed in the Groth21 algorithm to
-   key rosters.
-
-The number of shares assigned to each node is calculated from the weight as indicated in a previous section.
+TODO: Protobuf of data
 
 ##### Key Material (TSS Data Map)
 
-The TSS Data Map is a singleton Merkle Leaf that is a combined map of all the key material for all rosters that are
+The TSS Data Map is a Map Merkle Leaf that is a combined map of all the key material for all rosters that are
 tracked and the votes by nodes that have validated the key material.
 
 Keys in the TSS Data Map have the following structure: (KeyType, RosterHash, SequenceNumber).
@@ -406,19 +433,22 @@ The value associated with a TSS_MESSAGE key is the pair (ShareId, TssMessage)
 The value associated with a TSS_VOTE key is a bit vector with the following interpretation
 
 * The order of bits from the least significant bit to the most significant bit corresponds to the numeric order of
-  share ids
-  from least to greatest.
+  share ids from least to greatest.
 * If a bit is set to 1, then the TssMessage for the corresponding ShareId was valid and contributed to a successful
   reconstruction of the ledger id.
 * If a bit is set to 0, then the TssMessage for the corresponding ShareId was either invalid, was not received, or
   was not used in the reconstruction of the ledger id.
+* If the sum of the bits is greater than the threshold, then the vote is a yes vote in favor of adopting the
+  candidate roster.
 
 Lifecycle Invariants
 
 1. Inserts should only be made for candidate rosters that are going through the keying process.
 2. When a roster is no longer stored in the state, the corresponding key material should be removed.
-3. Every roster that has become active after the TSS Genesis process must have sufficient key material to be
+3. Every roster that has become active after the TSS bootstrap process must have sufficient key material to be
    able to recover the ledger id.
+
+TODO: Protobuf of data
 
 ##### Partial Ledger Signatures
 
@@ -428,26 +458,88 @@ the round counter resets. Once the ledger id is produced, it is stored with the 
 signatures are added to the collection. Once a configured number of rounds have passed after the last signature
 added to a collection for a message, the signatures are removed from the state.
 
-#### New or Updated Components
+The partial ledger signatures are stored in a Map Merkle Leaf where the keys are the message hash and the values are
+a tuple (List<ShareSignature>, LedgerSignature, lastRoundUpdated).
 
-The following are new components in the system:
+TODO: Protobuf of data
 
-1. TSS State Manager (Not Wired)
-2. TSS Message Creator (Wired)
-3. TSS Message Validator (Wired)
-4. TSS Signing Manager (Wired)
+### Core Behaviors
+
+The new behavior is related to the bootstrap process of creating the ledger id, transferring the ability to sign
+messages from one roster to the next roster, and creating ledger signatures.
+
+#### TSS Bootstrap for New Networks
+
+At the start of a new network there will be a new pre-genesis phase to generate the key material for the genesis
+roster and then restart the network from round 0 with the new key material and ledger id.
+
+The following startup sequence is modified from existing practices.
+
+1. Inversion of Control - The app hands a genesis state, genesis roster, and private keys to the platform.
+2. The platform copies the genesis state and starts gossiping with peers without accepting user transactions.
+3. The platform automatically begins to key the genesis roster with a ledger id.
+4. Once the ledger id is created and a threshold number of nodes have voted to being ready to restart, the platform
+   updates the state with the key material and ledger id and restarts from round 0.
+5. Any nodes which failed to produce the key material for themselves will need to receive the key material through a
+   reconnect.
+
+#### TSS Bootstrap for Existing Networks
+
+Prior to the release that enables the TSS bootstrap process for existing networks the following must have been  
+delivered in a prior releases:
+
+1. Each node must have their long term EC keys.
+2. The TSS-Roster proposal must have been delivered to introduce the new candidate roster lifecycle.
+
+On software upgrade with the first release that contains the code to perform the TSS bootstrap process:
+
+1. Business as usual until the candidate roster is set.
+2. Once set, the candidate roster has TSS key material generated for it from random shares that are generated for
+   the existing roster, 1 share per node. This creates a random ledger id.
+3. On the next software upgrade the candidate roster will be adopted and the ability to sign messages with the ledger
+   private key will become active.
+
+If the TSS-Ledger-ID is delivered in release N, then the TSS-Roster proposal and long term EC keys should be
+delivered in release N-1. The ability to sign messages with the ledger private key will be active in release N+1.
+
+#### Keying The Next Roster
+
+Once a candidate roster is set, the platform goes through a process of keying the next roster and votes when it is
+ready to restart and adopt the new roster.
+
+#### Ledger Signing API
+
+After the network has been upgraded with the TSS-Ledger-ID proposal, on the next software upgrade the platform will
+be able to sign messages with the ledger private key. Ledger signatures take multiple rounds of consensus to
+produce and are generated asynchronously through the `PlatformPublisher`. The App must register a consumer with
+the platform to receive the ledger signatures when they are produced.
+
+### Component Architecture
+
+The following are new components or entities in the system:
+
+1. RosterInitializer (Not Wired)
+2. TSS State Manager (Not Wired)
+3. TSS Message Creator (Wired)
+4. TSS Message Validator (Wired)
+5. TSS Signing Manager (Wired)
 
 ![TSS Platform Wiring](./TSS-Wiring-Diagram.drawio.png)
 
-The following components are removed from or replaced in the system:
+#### RosterInitializer
 
-1. AddressBookInitializer
+On software upgrade, the `RosterInitializer` is responsible for checking that there is enough key material for a
+candidate roster to be adopted as the active roster. If there is not enough key material, the candidate roster is
+not adopted and the active roster remains the active roster. If there is enough key material, the candidate roster
+is adopted as the active roster and the active roster becomes the previous roster.
 
-##### TSS State Manager
+A roster rotation must be recorded in the state before the rest of the platform uses the state.
+
+#### TSS State Manager
 
 The TSS state manager is executed on the transaction handling thread and is capable of reading and writing the state
-during round handling. The logic will be encapsulated in a class with a well-defined API, but this will not be a fully
-fledged wiring component outside the consensus round handler.
+during round handling. The logic will be encapsulated in a class with a well-defined API, but this will not be a
+full-fledged wiring component outside the consensus round handler.
 
 Responsibilities:
 
@@ -468,8 +560,7 @@ Responsibilities:
         - if the “no” votes win, then the candidate roster will never be adopted
         - if the “yes” votes win, the candidate roster is now officially confirmed, and will be adopted at the next
           upgrade boundary
-3. Detect when a new candidate roster is set.
-    - update the pending roster hash in the platform state
+3. When a new candidate roster is set.
     - inform the TSS message creator that there is a new candidate roster
     - inform the TSS message validator that there is a new candidate roster
 4. Update Metrics
@@ -485,7 +576,7 @@ Responsibilities:
     - if this node’s vote is not recorded in the TSS data map, inform the TSS message validator that we still need to do
       validation.
 
-##### TSS Message Creator
+#### TSS Message Creator
 
 The TSS message creator is responsible for generating a node’s TSSMessages. This runs as its own asynchronous thread
 since this may be a computationally expensive operation.
@@ -531,7 +622,7 @@ Input Invariants:
 
 1. Stop the TSS Message Manager.
 
-###### TSS Message Manager
+##### TSS Message Manager
 
 1. Keep a list of Self TSS Messages that have been received.
 2. `On Start`:
@@ -544,7 +635,7 @@ Input Invariants:
     1. verify the signature on the self TSS Message, log an error if the signature is invalid.
     2. stop resending the TSS Message that matches the one we received and added to the internal list.
 
-##### TSS Message Validator
+#### TSS Message Validator
 
 The TSS message validator is responsible for validating TSS messages and for submitting votes as to the validity of the
 candidate roster. The TSS message validator gets its input from the TSS state manager in the form of a candidate roster
@@ -593,7 +684,7 @@ Input Invariants
 2. Add the vote to the total and check if the threshold is met.
 3. If the threshold is met, send the voting closed notification to the TSS Message Creator.
 
-###### Validate TSS Message List
+##### Validate TSS Message List
 
 1. For the votes already cast in the vote vector
     1. sum all the yes votes into a total count.
@@ -605,7 +696,7 @@ Input Invariants
     4. If the count of yes votes is greater than or equal to the threshold in the candidate roster, then send the
        vote vector as a system transaction and exit the validation process.
 
-##### TSS Signing Manager
+#### TSS Signing Manager
 
 The TSS Signing Manager is responsible for computing a node's private shares from the TSS Messages and for
 generating ledger signatures by submitting a node's share signature to be gossiped to the rest of the network and
@@ -659,91 +750,6 @@ Input Invariants:
 1. Update the current round.
 2. cleanup the message signatures for any collections that are older than the configured number of rounds.
 
-##### Roster Initializer
-
-The Roster Initializer replaces the AddressBookInitializer and is responsible for the rotation of the consensus rosters
-on software upgrade. If the candidate roster has enough key material to recover the ledger id, then the candidate
-roster is adopted as the active roster and the active roster becomes the previous roster. If the candidate roster
-does not have enough key material to recover the ledger id, then the active roster remains the active roster.
-
-A roster rotation must be recorded in the state before the rest of the platform uses the state.
-
-### Core Behaviors
-
-The TSS-Roster alters the address book life-cycle.
-
-This proposal adds the ability to sign messages with the ledger private key and does not modify any existing
-behavior after the TSS-Roster proposal.
-
-The new behavior is related to the genesis process of creating the ledger id and transferring the ability to sign
-messages from one roster to the next roster.
-
-#### TSS Genesis for New Networks
-
-At the start of a new network there will be a new pre-genesis phase to generate the key material for the genesis
-roster and then restart the network from round 0 with the new key material and ledger id.
-
-The following startup sequence is modified from existing practices.
-
-1. Inversion of Control - The app hands a genesis state, genesis roster, and private keys to the platform.
-2. The platform copies the genesis state and starts gossiping with peers without accepting user transactions.
-3. The platform automatically begins to key the genesis roster with a ledger id.
-4. Once the ledger id is created and a threshold number of nodes have voted to being ready to restart, the platform
-   updates the state with the key material and ledger id and restarts from round 0.
-5. Any nodes which failed to produce the key material for themselves will need to receive the key material through a
-   reconnect.
-
-#### TSS Genesis for Existing Networks
-
-Prior to the release that enables the TSS Genesis process for existing networks the following must have been  
-delivered in a prior releases:
-
-1. Each node must have their long term EC keys.
-2. The TSS-Roster proposal must have been delivered to introduce the new candidate roster lifecycle.
-
-On software upgrade with the first release that contains the code to perform the TSS Genesis process:
-
-1. Business as usual until the candidate roster is set.
-2. Once set, the candidate roster has TSS key material generated for it from random shares that are generated for
-   the existing roster, 1 share per node. This creates a random ledger id.
-3. On the next software upgrade the candidate roster will be adopted and the ability to sign messages with the ledger
-   private key will become active.
-
-If the TSS-Ledger-Id is delivered in release N, then the TSS-Roster proposal and long term EC keys should be
-delivered in release N-1. The ability to sign messages with the ledger private key will be active in release N+1.
-
-#### Keying The Next Roster
-
-Once a candidate roster is set, the platform goes through a process of keying the next roster and votes when it is
-ready to restart and adopt the new roster.
-
-#### Ledger Signing API
-
-After the network has been upgraded with the TSS-Ledger-Id proposal, on the next software upgrade the platform will
-be able to sign messages with the ledger private key. Ledger signatures take multiple rounds of consensus to
-produce and are generated asynchronously through the `PlatformPublisher`. The App must register a consumer with
-the platform to receive the ledger signatures when they are produced.
-
-### Public API
-
-#### Ledger Signing API
-
-#### Ledger Signature Protobuf
-
-#### State Data Structures
-
-Describe any public API changes or additions. Include stakeholders of the API.
-
-Examples of public API include:
-
-* Anything defined in protobuf
-* Any functional API that is available for use outside the module that provides it.
-* Anything written or read from disk
-
-Code can be included in the proposal directory, but not committed to the code base.
-
-Remove this section if not applicable.
-
 ### Configuration
 
 The following are new configuration:
@@ -784,8 +790,8 @@ Apart from the obvious unit testing of methods and classes, the following scenar
     * Bad TssShareSignatures
 * Turtle Tests
     * Reconnect
-    * Down Nodes during Genesis and Re keying
-    * Multi-Release Migration
+    * Down nodes during bootstrap and re-keying
+    * Multi-release migration
     * Signing API, constructing signatures across software upgrade.
 
 ### Integration Tests
@@ -794,8 +800,8 @@ If Turtle is not available, then the turtle tests will become integration tests.
 
 Additional Integration Tests:
 
-* TSS Genesis for New Networks
-* TSS Genesis for Existing Networks
+* TSS bootstrap for New Networks
+* TSS bootstrap for Existing Networks
     * multiple software upgrades.
 
 ### Performance Tests
@@ -813,10 +819,8 @@ The following need performance profiles:
 How should the proposal be implemented? Is there a necessary order to implementation? What are the stages or phases
 needed for the delivery of capabilities? What configuration flags will be used to manage deployment of capability?
 
-
-
 ---
 
 ## Open Questions
 
-1. De we need to complete signature collection and construction before freeze and restart?
+1. De we need to complete ledger signature collection before freeze and restart?
