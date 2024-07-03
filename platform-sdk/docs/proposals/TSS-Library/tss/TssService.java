@@ -77,7 +77,8 @@ public interface TssService {
      *
      * @param pendingParticipantDirectory the pending participant directory that we should generate the private share for
      * @param validTssMessages       the TSS messages to extract the private shares from. They must be previously validated.
-     * @return the list of private share the current participant owns, or null if there aren't enough shares to meet the threshold
+     * @return the list of private share the current participant owns, or null if there aren't enough shares to meet the threshold.
+     *   the list is sorted by the sharedId
      */
     @Nullable
     List<TssPrivateShare> decryptPrivateShares(
@@ -143,7 +144,7 @@ public interface TssService {
      * @param privateShare the private share to sign the message with
      * @return true if the signature is valid, false otherwise.
      */
-    boolean verify(@NonNull final ParticipantDirectory participantDirectory,
+    boolean verifySignature(@NonNull final ParticipantDirectory participantDirectory,
             @NonNull final List<TssPublicShare> publicShares, final @NonNull TssShareSignature signature) ;
 
     /**

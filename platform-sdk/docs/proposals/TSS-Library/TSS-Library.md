@@ -618,13 +618,13 @@ This library accepts Integer.MAX_VALUE -1 participants.
    
    //One can then query the directory
    int n = participantDirectory.getTotalNumberOfShares();
-   List<TssShareId> privateShares = directory.getOwnedSharesIds();
-   List<TssShareId> shareIds = directory.getShareIds();
+   List<TssShareId> privateShares = participantDirectory.getOwnedSharesIds();
+   List<TssShareId> shareIds = participantDirectory.getShareIds();
 ```
 ###### 1. Create TssMessage
 ```java
    //Creates a TssMessage out of a randomly generated share 
-   TssMessage message = service.generateTssMessage(directory);
+   TssMessage message = service.generateTssMessage(participantDirectory);
 ```
 
 ###### 2. Validation of TssMessage
@@ -638,7 +638,7 @@ static {
 ```
 ###### 3. Processing of TssMessage
 ```java
-    Set<TssMessage> agreedValidMessages = /*Some previously agreed upon same set of valid messages for all participants*/
+    Set<TssMessage> agreedValidMessages = /*Some previously agreed upon same set of valid messages for all participants*/;
     //Get Private Shares    
     List<TssPrivateShare> privateShares = service.decryptPrivateShares(participantDirectory, agreedValidMessages);
     //Get Public Shares
@@ -661,13 +661,13 @@ static {
     //Validation of individual signatures
     List<TssShareSignature> validSignatures = new ArrayList<>(signatures.size());
     for (TssShareSignature signature : signatures) {
-        if (service.verify(participantDirectory, publicShares, signature)) {
+        if (service.verifySignature(participantDirectory, publicShares, signature)) {
             validSignatures.add(signature);
         }
     }
 
     //Producing an aggregate signature
-    PairingSignature aggregateSignature = service.aggregate(participantDirectory, validSignatures);
+    PairingSignature aggregateSignature = service.aggregateSignatures(validSignatures);
 }
 ```
 
@@ -828,15 +828,16 @@ but Milagro project is reported to have little coverage, not audited. Milagro po
 * Define a security plan.
 * Implementation of native-support library.
 * Implementation of Pairings API using JNI, arkworks, and alt-bn128.
+* Implementation of Pairings Signatures library.
+* Implementation of TSS library public interface (TBD: include mock implementation).
 * Execute Test Plan and validation.
 * Execute Security Audits.
 * Implementation of EC-key utility.
 
 **Stage 2**
 * Preconditions:
-  * CI/CD pipelines to reference built artifacts in hedera-cryptography from hedera-services.
-  * Implementation of the public interface for the TSS library.
-* Enable a mock implementation for the TSS library on the platform side?
+    * CI/CD pipelines to reference built artifacts in hedera-cryptography from hedera-services.
+    * Implementation of the public interface for the TSS library.
 * Implementation of TSS library.
 * Execute Test Plan and validation.
 * Execute Security Audits.
