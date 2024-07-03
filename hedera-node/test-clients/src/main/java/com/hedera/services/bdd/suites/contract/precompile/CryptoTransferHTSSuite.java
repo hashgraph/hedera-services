@@ -260,6 +260,7 @@ public class CryptoTransferHTSSuite {
                         childRecordsCheck(
                                 successfulTransferFromTxn,
                                 SUCCESS,
+                                recordWith().status(SUCCESS),
                                 recordWith()
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
@@ -804,6 +805,7 @@ public class CryptoTransferHTSSuite {
                         childRecordsCheck(
                                 successfulTransferFromTxn,
                                 SUCCESS,
+                                recordWith().status(SUCCESS),
                                 recordWith()
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
