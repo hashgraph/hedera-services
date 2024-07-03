@@ -119,7 +119,7 @@ public class IsAuthorizedSuite {
 
     @HapiTest
     final Stream<DynamicTest> isAuthorizedRawECDSAInsufficientGas() {
-        return propertyPreservingHapiSpec("isAuthorizedEcdsaRawInsufficientGas")
+        return propertyPreservingHapiSpec("isAuthorizedRawECDSAInsufficientGas")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -218,7 +218,7 @@ public class IsAuthorizedSuite {
 
     @HapiTest
     final Stream<DynamicTest> isAuthorizedRawECDSAInvalidSignatureLength() {
-        return propertyPreservingHapiSpec("isAuthorizedEcdsaRawInvalidSignatureLength")
+        return propertyPreservingHapiSpec("isAuthorizedRawECDSAInvalidSignatureLength")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -290,7 +290,7 @@ public class IsAuthorizedSuite {
     final Stream<DynamicTest> isAuthorizedRawEDDifferentHash() {
         final AtomicReference<Address> accountNum = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("isAuthorizedRawEDDifferentHash")
+        return propertyPreservingHapiSpec("isAuthorizedRawEDInsufficientGas")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -362,10 +362,10 @@ public class IsAuthorizedSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> isAuthorizedRawEDInvalidSignatureLength() {
+    final Stream<DynamicTest> isAuthorizedRawEDInvalidSignatureAddressPairsFails() {
         final AtomicReference<Address> accountNum = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("isAuthorizedEdRawDifferentHash")
+        return propertyPreservingHapiSpec("isAuthorizedRawEDInvalidMissMatchSignatureLength")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -378,28 +378,35 @@ public class IsAuthorizedSuite {
                         contractCreate(HRC632_CONTRACT))
                 .when(withOpContext((spec, opLog) -> {
                     final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
-                    final byte[] invalidSignature = new byte[65];
 
-                    var call = contractCall(
-                                    HRC632_CONTRACT,
-                                    "isAuthorizedRawCall",
-                                    accountNum.get(),
-                                    messageHash,
-                                    invalidSignature)
-                            .via("authorizeCall")
+                    var callECSigWithLongZero = contractCall(
+                                    HRC632_CONTRACT, "isAuthorizedRawCall", accountNum.get(), messageHash, new byte[65])
+                            .via("authorizeCallECWithLongZero")
                             .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                             .gas(2_000_000L);
-                    allRunFor(spec, call);
+                    var callECWithInvalidSignature = contractCall(
+                                    HRC632_CONTRACT, "isAuthorizedRawCall", accountNum.get(), messageHash, new byte[63])
+                            .via("authorizeCallECWithInvalidSignature")
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .gas(2_000_000L);
+                    allRunFor(spec, callECSigWithLongZero, callECWithInvalidSignature);
                 }))
-                .then(childRecordsCheck(
-                        "authorizeCall", CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_ACCOUNT_ID)));
+                .then(
+                        childRecordsCheck(
+                                "authorizeCallECWithLongZero",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_ACCOUNT_ID)),
+                        childRecordsCheck(
+                                "authorizeCallECWithInvalidSignature",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(FAIL_INVALID)));
     }
 
     @HapiTest
     final Stream<DynamicTest> isAuthorizedRawAliasWithECFails() {
         final AtomicReference<Address> accountNum = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("isAuthorizedRawEDInsufficientGas")
+        return propertyPreservingHapiSpec("isAuthorizedRawAliasWithECFails")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -430,7 +437,7 @@ public class IsAuthorizedSuite {
     final Stream<DynamicTest> isAuthorizedRawEDWithComplexKeysFails() {
         final AtomicReference<Address> accountNum = new AtomicReference<>();
         final AtomicReference<Address> accountAnotherNum = new AtomicReference<>();
-        return propertyPreservingHapiSpec("isAuthorizedRawEDInsufficientGas")
+        return propertyPreservingHapiSpec("isAuthorizedRawEDWithComplexKeysFails")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
