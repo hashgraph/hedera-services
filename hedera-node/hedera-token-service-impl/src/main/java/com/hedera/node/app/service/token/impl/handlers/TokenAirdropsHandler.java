@@ -117,9 +117,6 @@ public class TokenAirdropsHandler implements TransactionHandler {
         requireNonNull(context);
         pureChecks(context.body());
 
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        validateTruePreCheck(tokensConfig.airdropsEnabled(), NOT_SUPPORTED);
-
         final var op = context.body().tokenAirdropOrThrow();
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
@@ -143,8 +140,6 @@ public class TokenAirdropsHandler implements TransactionHandler {
     @Override
     public void handle(@NonNull final HandleContext context) throws HandleException {
         requireNonNull(context);
-        final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        validateTrue(tokensConfig.airdropsEnabled(), NOT_SUPPORTED);
         final var txn = context.body();
         final var op = txn.tokenAirdropOrThrow();
         final var pendingStore = context.storeFactory().writableStore(WritableAirdropStore.class);
