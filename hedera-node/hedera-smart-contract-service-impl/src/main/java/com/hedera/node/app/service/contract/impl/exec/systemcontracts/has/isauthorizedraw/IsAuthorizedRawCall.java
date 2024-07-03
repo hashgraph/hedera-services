@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE_TYPE_MISMATCHING_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.successResult;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
@@ -65,7 +65,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
     private static final long HARDCODED_GAS_REQUIREMENT_GAS = 1_500_000L;
 
     public enum SignatureType {
-        Invalid,
+        INVALID,
         EC,
         ED
     }
@@ -101,17 +101,17 @@ public class IsAuthorizedRawCall extends AbstractCall {
                 switch (signature.length) {
                     case 65 -> SignatureType.EC;
                     case 64 -> SignatureType.ED;
-                    default -> SignatureType.Invalid;
+                    default -> SignatureType.INVALID;
                 };
-        if (signatureType == SignatureType.Invalid)
-            return bail.apply(FAIL_INVALID /* should be: "invalid argument to precompile" */);
+        if (signatureType == SignatureType.INVALID)
+            return bail.apply(INVALID_TRANSACTION_BODY /* should be: "invalid argument to precompile" */);
 
         // Validate parameters according to signature type
         if (!switch (signatureType) {
             case EC -> messageHash.length == 32;
             case ED -> true;
             default -> throw new IllegalStateException("Unexpected value: " + signatureType);
-        }) return bail.apply(FAIL_INVALID /* should be: "invalid argument to precompile */);
+        }) return bail.apply(INVALID_TRANSACTION_BODY /* should be: "invalid argument to precompile */);
 
         // Gotta have an account that the given address is an alias for
         final var accountNum = accountNumberForEvmReference(address, nativeOperations());
@@ -122,14 +122,14 @@ public class IsAuthorizedRawCall extends AbstractCall {
         final Optional<Key> key;
         if (signatureType == SignatureType.ED) {
             key = Optional.ofNullable(account.key());
-            if (key.isEmpty()) return bail.apply(FAIL_INVALID /* should be: "account must have key" */);
+            if (key.isEmpty()) return bail.apply(INVALID_TRANSACTION_BODY /* should be: "account must have key" */);
         } else key = Optional.empty();
 
         // Key must be simple (for isAuthorizedRaw)
         if (key.isPresent()) {
             final Key ky = key.get();
             final boolean keyIsSimple = !ky.hasKeyList() && !ky.hasThresholdKey();
-            if (!keyIsSimple) return bail.apply(FAIL_INVALID /* should be: "account key must be simple" */);
+            if (!keyIsSimple) return bail.apply(INVALID_TRANSACTION_BODY /* should be: "account key must be simple" */);
         }
 
         // Key must match signature type
@@ -228,8 +228,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
 
     /** Make sure v ∈ {27, 28} - but after EIP-155 it might come in with a chain id ... */
     @NonNull
-    public Optional<Byte> reverseV(@NonNull final byte v) {
-        requireNonNull(v, "v");
+    public Optional<Byte> reverseV(final byte v) {
 
         // We're getting the recovery value from a signature where it is only given a byte.  So
         // this isn't the EIP-155 recovery value where the chain id is encoded in it (it's too

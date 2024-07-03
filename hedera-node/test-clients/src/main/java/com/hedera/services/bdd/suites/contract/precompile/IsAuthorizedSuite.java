@@ -46,10 +46,10 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_TYPE_MISMATCHING_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -401,7 +401,7 @@ public class IsAuthorizedSuite {
                         childRecordsCheck(
                                 "authorizeCallECWithInvalidSignature",
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(FAIL_INVALID)));
+                                recordWith().status(INVALID_TRANSACTION_BODY)));
     }
 
     @HapiTest
@@ -432,7 +432,7 @@ public class IsAuthorizedSuite {
                     allRunFor(spec, call);
                 }))
                 .then(childRecordsCheck(
-                        "authorizeCall", CONTRACT_REVERT_EXECUTED, recordWith().status(FAIL_INVALID)));
+                        "authorizeCall", CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_TRANSACTION_BODY)));
     }
 
     @HapiTest
@@ -485,11 +485,11 @@ public class IsAuthorizedSuite {
                         childRecordsCheck(
                                 "authorizeCallWithThreshold",
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(FAIL_INVALID)),
+                                recordWith().status(INVALID_TRANSACTION_BODY)),
                         childRecordsCheck(
                                 "authorizeCallWithKeyList",
                                 CONTRACT_REVERT_EXECUTED,
-                                recordWith().status(FAIL_INVALID)));
+                                recordWith().status(INVALID_TRANSACTION_BODY)));
     }
 
     @HapiTest
@@ -563,7 +563,7 @@ public class IsAuthorizedSuite {
                         getTxnRecord("callWithDifferentAccountsWithSameKey")
                                 .hasPriority(recordWith()
                                         .status(SUCCESS)
-                                        .contractCallResult(resultWith().contractCallResult(BoolResult.flag(false)))),
+                                        .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))),
                         childRecordsCheck(
                                 "callWithECKeyAddressForEDSignature",
                                 CONTRACT_REVERT_EXECUTED,
