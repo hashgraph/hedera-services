@@ -4,7 +4,7 @@
 
 ## Summary
 
-This proposal outlines the design specification rosters to support Threshold Signature Scheme (TSS) block signing.
+This proposal outlines the design specification of rosters to support Threshold Signature Scheme (TSS) block signing.
 It details the roster's lifecycle, data storage, API, and necessary changes to associated components within the
 platform.
 
@@ -17,12 +17,13 @@ platform.
 
 ## Purpose and Context
 
-The introduction of the Threshold Signature Scheme (TSS) necessitates a new mechanism for managing node participation in
+The introduction of the Threshold Signature Scheme (TSS) requires a new mechanism for managing node participation in
 consensus and block signing.
 Roster, an immutable subset of the address book, will provide this mechanism, ensuring efficient and secure key
 management for TSS operations.
 This proposal attempts to provide a specification for the behavior of rosters starting from their creation from the
 Candidate Address Book (CAB) to their terminal state within the TSS specification.
+A roster reaches a terminal state when it is either adopted by the platform or replaced by a new roster.
 
 The Future Address Book (FAB) is a dynamic list maintained within the App that reflects the desired future state of the
 network's nodes. It will be continuously updated by HAPI transactions, such as those that create, update, or delete
@@ -49,15 +50,41 @@ The mechanism for doing so is detailed below.
 ###### Roster API
 
 The Hedera app is already responsible for managing the address book.
-We propose that it continues to do so, and at adoption time, creates a candidate Roster object from the CAB and set it
-in the state.
+We propose that it continues to do so, and at adoption time, create a candidate Roster object from the CAB and set it in
+the state.
 The State will contain one map of rosters, keyed by roster’s hash - ```Map<Hash<Roster>, Roster>```.
+A Roster has a data structure as follows:
+
+```
+class Roster {
+    List~RosterEntry~ entries
+}
+
+class RosterEntry {
+    NodeId nodeId
+    long weight
+    X509Certificate signingCert
+    PairingPublicKey tssEcKey
+    List~ServiceEndpoint~ gossipEndpoints
+}
+
+class ServiceEndpoint {
+    bytes ipAddressV4
+    int32 port
+    string domain_name
+}
+
+Roster "1" *-- "many" RosterEntry
+RosterEntry "1" *-- "many" ServiceEndpoint
+
+```
 It is noteworthy that the roster must be immutable to guarantee the integrity of the computed hash.
 This map of rosters will typically contain the current Active Roster, an optional previously Active Roster, the optional
 previous Candidate Roster (a roster created from a candidate address book), and an optional current Candidate Roster.
 There will be new fields in PlatformState - `candidateRosterHash` and `activeRosterHash` - such that at adoption time,
 the way to trigger the adoption of a roster will be by the client code inserting a roster in the roster map, alongside
-setting the `candidateRosterHash` field in the PlatformState.
+setting the `candidateRosterHash` field in the PlatformState. If a `candidateRosterHash` hash entry already exist in the
+map of Rosters, it will be discarded.
 The `activeRosterHash` will be private to the platform and will not be settable or modifiable from outside the platform.
 
 This indirection avoids moving data around in the merkle state which requires data to be copied into the block stream,
@@ -70,8 +97,8 @@ Some edge cases worth considering include:
 1. multiple concurrent roster submission - has a potential for introducing race conditions. We will prevent this by
    guaranteeing immutability on rosters.
 2. Size control on the map of rosters - we certainly don’t want this map to grow infinitely so insertion of rosters will
-   be controlled, with clear rules for removal of unused rosters (e.g. the acceptance of a new Candidate Roster
-   invalidates and removes existing one).
+   be controlled, with clear rules for removal of unused rosters - the acceptance of a new Candidate Roster
+   will invalidate and remove the current candidate roster.
 
 ###### Roster API - Implementation
 
@@ -80,15 +107,15 @@ See [link](https://www.notion.so/TSS-Platform-Architecture-04b15df371ba4b1d84836
 
 It is **important** to note that before the TSS protocol is implemented and launched, the Platform will adopt a
 Candidate Roster during any software upgrade if the Candidate Roster is present in the state. Only after the TSS
-protocol is launched will we be able to add an extra condition to verify that the Candidate Roster is complete, meaning
-that it has enough TSS key material and votes accumulated.
+protocol is launched will we be able to add an extra condition to verify that the Candidate Roster is ready to be
+adopted.
 
 ### Core Behaviors, in summary
 
 - Roster Creation: App will create a Candidate Roster from the Candidate Address Book (CAB) and set it in the state.
 - Roster Submission: App will trigger roster adoption by setting the `candidateRosterHash` field in the PlatformState.
-- Roster Adoption: The platform will adopt the last submitted Candidate Roster when it is ready, based on the TSS key
-  material and vote accumulation.
+- Roster Adoption: The platform will adopt the last submitted Candidate Roster when it is ready, based on specifications
+  outlined in the TSS Ledger ID Proposal (referenced under related Proposals).
 - Roster Replacement: If a new CAB is submitted before the previous one is adopted, the corresponding new Candidate
   Roster will replace the old one.
 
@@ -99,7 +126,7 @@ A new method will be added to the platform API to allow the App submit a Candida
 ```java
 //in State
 
-void submitCandidateRoster(@NonNull final Roster candidateRoster);
+void setCandidateRoster(@NonNull final Roster candidateRoster);
 ```
 
 ### Configuration
@@ -109,8 +136,7 @@ the genesis of new networks.
 
 ### Data storage
 
-All the data related to Active and Candidate Roster, including the key material being accumulated via TSS messages, will
-always be stored in the State.
+All the data related to Active and Candidate Roster will be stored in the State.
 There will not be any other separate artifacts stored elsewhere (e.g., directly on disk.).
 The only artifact that will continue to be stored on disk separately from the State is the `config.txt`, which, as
 explained in *Bootstrapping Genesis for a brand-new network* section below, will only ever be used once during a genesis
@@ -132,9 +158,8 @@ roster =
 
 loadFromConfigTxt();
 
-// Intall the roster as both Active Roster and Candidate Roster in the new state:
+// Install the roster as both Active Roster and Candidate Roster in the new state:
 createEmptyState(roster);
-// Note that this Active Roster is missing TSS key material.
 // So the node will only be able to sign using its RSA key, w/o any TSS.
 isGenesis =true;
         }
@@ -144,7 +169,7 @@ the Statehas
 Candidate Roster){
         // Check if this is a software upgrade, and if the TSS protocol
         // has been launched already, then also check
-        // if Candidate Roster has enough TSS key material/signatures.
+        // if Candidate Roster has enough signatures.
         // Note that we switch to Candidate Roster during a software upgrade unconditionally
         // until the TSS protocol is actually launched.
         if(isSoftwareUpgrade /* && Candidate Roster is complete */){
@@ -155,19 +180,15 @@ Candidate Roster){
 // Modify the state and put Candidate Roster into Active Roster, effectively clearing the Candidate Roster.
 makeCRtheAR();
 // May make a record of the previous Active Roster if necessary (e.g. for PCES replay)
-// Note that the previous Active Roster may lack TSS key material
-// if this is genesis, or if this is a TSS upgrade of an existing network.
     }
 
 	/*
 	// This block will be uncommented once the TSS protocol is implemented
 	if (Candidate Roster is not complete) {
-		// Need to populate the Candidate Roster with TSS key material and signatures.
 		// Call the "TSS State Observer" to make it initiate the TSS protocol.
 		// See the Detecting a new Candidate Roster (aka the new “Platform API”) section below.
 		callTSSStateObserverToStartTSSProtocol();
-		// NOTE: processing of TSS messages will accumulate TSS key material
-		// in Candidate Roster and will emit a percentage metric indicating the readiness
+		// NOTE: processing of TSS messages will emit a percentage metric indicating the readiness
 		// of the Candidate Roster for adoption. Once the metric is at 100%, this shows
 		// that the network can be restarted in order to adopt the Candidate Roster.
 	}
@@ -275,9 +296,8 @@ Some of the obvious test cases to be covered in the plan include validating one 
 
 ### Metrics
 
-We propose that some metrics be added to track the progress of the TSS key material and votes accumulation in the
-Candidate Roster.
-Others may include create timestamp of a Candidate Roster, and how long voting took.
+We propose that some metrics be added such as `createTimestamp` of a Candidate Roster, and the time the roster was
+either adopted or discarded.
 
 ### Implementation and Delivery Plan
 
