@@ -100,7 +100,7 @@ import javax.inject.Singleton;
  * HederaFunctionality#TOKEN_AIRDROP}.
  */
 @Singleton
-public class TokenAirdropsHandler implements TransactionHandler {
+public class TokenAirdropHandler implements TransactionHandler {
 
     private final CryptoTransferValidator validator;
 
@@ -108,7 +108,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
      * Default constructor for injection.
      */
     @Inject
-    public TokenAirdropsHandler(@NonNull final CryptoTransferValidator validator) {
+    public TokenAirdropHandler(@NonNull final CryptoTransferValidator validator) {
         this.validator = validator;
     }
 
