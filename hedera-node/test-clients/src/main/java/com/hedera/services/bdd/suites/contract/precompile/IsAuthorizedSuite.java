@@ -74,9 +74,11 @@ public class IsAuthorizedSuite {
     public static final String ANOTHER_ACCOUNT = "anotherAccount";
 
     private static final String ECDSA_KEY = "ecdsaKey";
+    private static final String ECDSA_KEY_ANOTHER = "ecdsaKeyAnother";
     private static final String ED25519_KEY = "ed25519Key";
     private static final String THRESHOLD_KEY = "ThreshKey";
     private static final String KEY_LIST = "ListKeys";
+
     private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, SIMPLE);
     private static final KeyShape KEY_LIST_SHAPE = KeyShape.listOf(ED25519, SIMPLE);
 
@@ -101,7 +103,7 @@ public class IsAuthorizedSuite {
                     final var addressBytes = recoverAddressFromPrivateKey(privateKey);
                     final var signedBytes = EthTxSigs.signMessage(messageHash, privateKey);
 
-                    var call = contractCall(
+                    final var call = contractCall(
                                     HRC632_CONTRACT,
                                     "isAuthorizedRawCall",
                                     asHeadlongAddress(addressBytes),
@@ -134,7 +136,7 @@ public class IsAuthorizedSuite {
                     final var addressBytes = recoverAddressFromPrivateKey(privateKey);
                     final var signedBytes = EthTxSigs.signMessage(messageHash, privateKey);
 
-                    var call = contractCall(
+                    final var call = contractCall(
                                     HRC632_CONTRACT,
                                     "isAuthorizedRawCall",
                                     asHeadlongAddress(addressBytes),
@@ -166,7 +168,7 @@ public class IsAuthorizedSuite {
                     final var addressBytes = recoverAddressFromPrivateKey(privateKey);
                     final var signedBytes = EthTxSigs.signMessage(messageHash, privateKey);
 
-                    var call = contractCall(
+                    final var call = contractCall(
                                     HRC632_CONTRACT,
                                     "isAuthorizedRawCall",
                                     asHeadlongAddress(addressBytes),
@@ -183,8 +185,8 @@ public class IsAuthorizedSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> isAuthorizedRawECDSAInvalidHash() {
-        return propertyPreservingHapiSpec("isAuthorizedRawECDSAInvalidHash")
+    final Stream<DynamicTest> isAuthorizedRawECDSAInvalidVValue() {
+        return propertyPreservingHapiSpec("isAuthorizedRawECDSAInvalidVValue")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -197,10 +199,10 @@ public class IsAuthorizedSuite {
 
                     final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
                     final var addressBytes = recoverAddressFromPrivateKey(privateKey);
-                    var signature = EthTxSigs.signMessage(messageHash, privateKey);
+                    final var signature = EthTxSigs.signMessage(messageHash, privateKey);
                     signature[signature.length - 1] = (byte) 2;
 
-                    var call = contractCall(
+                    final var call = contractCall(
                                     HRC632_CONTRACT,
                                     "isAuthorizedRawCall",
                                     asHeadlongAddress(addressBytes),
@@ -233,7 +235,7 @@ public class IsAuthorizedSuite {
                     final var addressBytes = recoverAddressFromPrivateKey(privateKey);
                     final byte[] invalidSignature = new byte[64];
 
-                    var call = contractCall(
+                    final var call = contractCall(
                                     HRC632_CONTRACT,
                                     "isAuthorizedRawCall",
                                     asHeadlongAddress(addressBytes),
@@ -274,7 +276,7 @@ public class IsAuthorizedSuite {
                                     .substring(4));
                     final var signedBytes = SignatureGenerator.signBytes(messageHash, privateKey);
 
-                    var call = contractCall(
+                    final var call = contractCall(
                                     HRC632_CONTRACT, "isAuthorizedRawCall", accountNum.get(), messageHash, signedBytes)
                             .via("authorizeCall")
                             .gas(2_000_000L);
@@ -290,7 +292,7 @@ public class IsAuthorizedSuite {
     final Stream<DynamicTest> isAuthorizedRawEDDifferentHash() {
         final AtomicReference<Address> accountNum = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("isAuthorizedRawEDInsufficientGas")
+        return propertyPreservingHapiSpec("isAuthorizedRawEDDifferentHash")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -311,7 +313,7 @@ public class IsAuthorizedSuite {
                                     .substring(4));
                     final var signedBytes = SignatureGenerator.signBytes(messageHash, privateKey);
 
-                    var call = contractCall(
+                    final var call = contractCall(
                                     HRC632_CONTRACT,
                                     "isAuthorizedRawCall",
                                     accountNum.get(),
@@ -351,7 +353,7 @@ public class IsAuthorizedSuite {
                                     .substring(4));
                     final var signedBytes = SignatureGenerator.signBytes(messageHash, privateKey);
 
-                    var call = contractCall(
+                    final var call = contractCall(
                                     HRC632_CONTRACT, "isAuthorizedRawCall", accountNum.get(), messageHash, signedBytes)
                             .via("authorizeCall")
                             .hasPrecheck(INSUFFICIENT_GAS)
@@ -365,7 +367,7 @@ public class IsAuthorizedSuite {
     final Stream<DynamicTest> isAuthorizedRawEDInvalidSignatureAddressPairsFails() {
         final AtomicReference<Address> accountNum = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("isAuthorizedRawEDInvalidMissMatchSignatureLength")
+        return propertyPreservingHapiSpec("isAuthorizedRawEDInvalidSignatureAddressPairsFails")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -379,12 +381,12 @@ public class IsAuthorizedSuite {
                 .when(withOpContext((spec, opLog) -> {
                     final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
 
-                    var callECSigWithLongZero = contractCall(
+                    final var callECSigWithLongZero = contractCall(
                                     HRC632_CONTRACT, "isAuthorizedRawCall", accountNum.get(), messageHash, new byte[65])
                             .via("authorizeCallECWithLongZero")
                             .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                             .gas(2_000_000L);
-                    var callECWithInvalidSignature = contractCall(
+                    final var callECWithInvalidSignature = contractCall(
                                     HRC632_CONTRACT, "isAuthorizedRawCall", accountNum.get(), messageHash, new byte[63])
                             .via("authorizeCallECWithInvalidSignature")
                             .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
@@ -422,7 +424,7 @@ public class IsAuthorizedSuite {
                     final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
                     final var signedBytes = EthTxSigs.signMessage(messageHash, privateKey);
 
-                    var call = contractCall(
+                    final var call = contractCall(
                                     HRC632_CONTRACT, "isAuthorizedRawCall", accountNum.get(), messageHash, signedBytes)
                             .via("authorizeCall")
                             .gas(2_000_000L)
@@ -488,5 +490,83 @@ public class IsAuthorizedSuite {
                                 "authorizeCallWithKeyList",
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(FAIL_INVALID)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> isAuthorizedRawAccountAndSignatureKeysCombinations() {
+        final AtomicReference<Address> accountNum = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("isAuthorizedRawAccountAndSignatureKeysCombinations")
+                .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
+                .given(
+                        overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
+                        newKeyNamed(ED25519_KEY).shape(ED25519).generator(new RepeatableKeyGenerator()),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
+                        newKeyNamed(ECDSA_KEY_ANOTHER).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY_ANOTHER, ONE_HUNDRED_HBARS)),
+                        cryptoCreate(ACCOUNT).balance(ONE_MILLION_HBARS).key(ED25519_KEY),
+                        cryptoCreate(ANOTHER_ACCOUNT)
+                                .balance(ONE_MILLION_HBARS)
+                                .key(ED25519_KEY)
+                                .exposingCreatedIdTo(id -> accountNum.set(idAsHeadlongAddress(id))),
+                        uploadInitCode(HRC632_CONTRACT),
+                        contractCreate(HRC632_CONTRACT))
+                .when(withOpContext((spec, opLog) -> {
+                    final var messageHash = new Digest().digest("submit".getBytes());
+                    final var messageHash32Bytes = new Keccak.Digest256().digest("submit".getBytes());
+
+                    // Sign message with ED25519
+                    final var edKey = spec.registry().getKey(ED25519_KEY);
+                    final var privateKey = spec.keys()
+                            .getEd25519PrivateKey(com.swirlds.common.utility.CommonUtils.hex(edKey.toByteArray())
+                                    .substring(4));
+                    final var signedBytes = SignatureGenerator.signBytes(messageHash, privateKey);
+
+                    // Sign message with ECDSA
+                    final var privateKeyECDSA = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
+                    final var privateKeyECDSAAnother = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY_ANOTHER);
+                    final var addressBytes = recoverAddressFromPrivateKey(privateKeyECDSAAnother);
+                    final var signedBytesECDSA = EthTxSigs.signMessage(messageHash32Bytes, privateKeyECDSA);
+
+                    // Perform test calls
+                    final var callECDSADifferent = contractCall(
+                                    HRC632_CONTRACT,
+                                    "isAuthorizedRawCall",
+                                    asHeadlongAddress(addressBytes),
+                                    messageHash32Bytes,
+                                    signedBytesECDSA)
+                            .via("callSignatureWithDifferentAddressECDSAKey")
+                            .gas(2_000_000L);
+
+                    final var callWithDifferentAccountsWithSameKey = contractCall(
+                                    HRC632_CONTRACT, "isAuthorizedRawCall", accountNum.get(), messageHash, signedBytes)
+                            .via("callWithDifferentAccountsWithSameKey")
+                            .gas(2_000_000L);
+
+                    final var callECKeyEDSignature = contractCall(
+                                    HRC632_CONTRACT,
+                                    "isAuthorizedRawCall",
+                                    asHeadlongAddress(addressBytes),
+                                    messageHash,
+                                    signedBytes)
+                            .via("callWithECKeyAddressForEDSignature")
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                            .gas(2_000_000L);
+                    allRunFor(spec, callECDSADifferent, callWithDifferentAccountsWithSameKey, callECKeyEDSignature);
+                }))
+                .then(
+                        getTxnRecord("callSignatureWithDifferentAddressECDSAKey")
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith().contractCallResult(BoolResult.flag(false)))),
+                        getTxnRecord("callWithDifferentAccountsWithSameKey")
+                                .hasPriority(recordWith()
+                                        .status(SUCCESS)
+                                        .contractCallResult(resultWith().contractCallResult(BoolResult.flag(false)))),
+                        childRecordsCheck(
+                                "callWithECKeyAddressForEDSignature",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_SIGNATURE_TYPE_MISMATCHING_KEY)));
     }
 }
