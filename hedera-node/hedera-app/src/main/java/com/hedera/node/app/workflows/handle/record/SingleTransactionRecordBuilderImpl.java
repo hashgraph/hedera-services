@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Collections.emptySet;
@@ -74,6 +75,7 @@ import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -190,32 +192,12 @@ public class SingleTransactionRecordBuilderImpl
     // its record stream item is built; lets the contract service externalize certain dispatched
     // CryptoCreate transactions as ContractCreate synthetic transactions
     private final ExternalizedRecordCustomizer customizer;
-    private HandleContext.TransactionCategory txnCategory;
+
+    // Category of the transaction
+    private TransactionCategory txnCategory;
 
     private TokenID tokenID;
     private TokenType tokenType;
-
-    /**
-     * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
-     * and it is asked to be reverted
-     */
-    public enum ReversingBehavior {
-        /**
-         * Changes are not committed. The record is kept in the record stream,
-         * but the status is set to {@link ResponseCodeEnum#REVERTED_SUCCESS}
-         */
-        REVERSIBLE,
-
-        /**
-         * Changes are not committed and the record is removed from the record stream.
-         */
-        REMOVABLE,
-
-        /**
-         * Changes are committed independent of the user and parent transactions.
-         */
-        IRREVERSIBLE
-    }
 
     /**
      * Creates new transaction record builder where reversion will leave its record in the stream
@@ -224,7 +206,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param consensusNow the consensus timestamp for the transaction
      */
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
-        this(consensusNow, ReversingBehavior.REVERSIBLE);
+        this(consensusNow, ReversingBehavior.REVERSIBLE, USER);
     }
 
     /**
@@ -234,8 +216,10 @@ public class SingleTransactionRecordBuilderImpl
      * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
      */
     public SingleTransactionRecordBuilderImpl(
-            @NonNull final Instant consensusNow, final ReversingBehavior reversingBehavior) {
-        this(consensusNow, reversingBehavior, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+            @NonNull final Instant consensusNow,
+            @NonNull final ReversingBehavior reversingBehavior,
+            @NonNull final TransactionCategory category) {
+        this(consensusNow, reversingBehavior, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, category);
     }
 
     /**
@@ -244,14 +228,18 @@ public class SingleTransactionRecordBuilderImpl
      *
      * @param consensusNow the consensus timestamp for the transaction
      * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
+     * @param customizer the customizer for the externalized record
+     * @param category the category of the transaction
      */
     public SingleTransactionRecordBuilderImpl(
             @NonNull final Instant consensusNow,
             @NonNull final ReversingBehavior reversingBehavior,
-            @NonNull final ExternalizedRecordCustomizer customizer) {
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final HandleContext.TransactionCategory category) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
         this.reversingBehavior = requireNonNull(reversingBehavior, "reversingBehavior must not be null");
         this.customizer = requireNonNull(customizer, "customizer must not be null");
+        this.txnCategory = requireNonNull(category, "category must not be null");
     }
 
     /**
@@ -357,10 +345,6 @@ public class SingleTransactionRecordBuilderImpl
         transactionRecordBuilder.alias(Bytes.EMPTY);
         transactionRecordBuilder.ethereumHash(Bytes.EMPTY);
         transactionRecordBuilder.evmAddress(Bytes.EMPTY);
-    }
-
-    public ReversingBehavior reversingBehavior() {
-        return reversingBehavior;
     }
 
     // ------------------------------------------------------------------------------------------------------------------------
@@ -1220,7 +1204,13 @@ public class SingleTransactionRecordBuilderImpl
         return paidStakingRewards;
     }
 
-    public ReversingBehavior getReversingBehavior() {
+    @Override
+    public ReversingBehavior reversingBehavior() {
         return reversingBehavior;
+    }
+
+    @Override
+    public TransactionCategory category() {
+        return txnCategory;
     }
 }

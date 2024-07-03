@@ -120,6 +120,16 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             }
 
             @Override
+            public HandleContext.TransactionCategory category() {
+                return HandleContext.TransactionCategory.USER;
+            }
+
+            @Override
+            public ReversingBehavior reversingBehavior() {
+                return ReversingBehavior.IRREVERSIBLE;
+            }
+
+            @Override
             public long getNewTotalSupply() {
                 return newTotalSupply;
             }

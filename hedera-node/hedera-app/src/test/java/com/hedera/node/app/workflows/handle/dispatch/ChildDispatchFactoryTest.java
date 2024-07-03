@@ -53,6 +53,7 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -178,7 +179,7 @@ class ChildDispatchFactoryTest {
     private final HandleContext.TransactionCategory category = HandleContext.TransactionCategory.CHILD;
     private final ExternalizedRecordCustomizer customizer = recordBuilder -> recordBuilder;
     private final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior =
-            SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE;
+            SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
 
     @BeforeEach
     public void setUp() {

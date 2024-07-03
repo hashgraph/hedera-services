@@ -60,6 +60,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -387,7 +388,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.IRREVERSIBLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE,
                 true);
     }
 
@@ -405,7 +406,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayer,
                 ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
                 false);
     }
 
@@ -429,7 +430,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
                 childCategory,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE,
                 false);
     }
 
@@ -453,7 +454,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 customizer,
                 TransactionCategory.CHILD,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
                 false);
     }
 

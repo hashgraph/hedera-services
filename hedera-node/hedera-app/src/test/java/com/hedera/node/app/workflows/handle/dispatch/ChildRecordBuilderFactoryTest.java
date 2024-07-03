@@ -38,9 +38,9 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -91,7 +91,7 @@ public class ChildRecordBuilderFactoryTest {
                 recordListBuilder,
                 configuration,
                 PRECEDING,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
                 customizer);
 
         assertNotNull(recordBuilder);
@@ -105,7 +105,7 @@ public class ChildRecordBuilderFactoryTest {
                 recordListBuilder,
                 configuration,
                 PRECEDING,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE,
                 null);
 
         assertNotNull(recordBuilder);
@@ -119,7 +119,7 @@ public class ChildRecordBuilderFactoryTest {
                 recordListBuilder,
                 configuration,
                 CHILD,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
                 customizer);
 
         assertNotNull(recordBuilder);
@@ -133,7 +133,7 @@ public class ChildRecordBuilderFactoryTest {
                 recordListBuilder,
                 configuration,
                 CHILD,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE,
                 customizer);
 
         assertNotNull(recordBuilder);
@@ -149,7 +149,7 @@ public class ChildRecordBuilderFactoryTest {
                         recordListBuilder,
                         configuration,
                         CHILD,
-                        SingleTransactionRecordBuilderImpl.ReversingBehavior.IRREVERSIBLE,
+                        SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE,
                         customizer));
     }
 
@@ -160,7 +160,7 @@ public class ChildRecordBuilderFactoryTest {
                 recordListBuilder,
                 configuration,
                 SCHEDULED,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE,
                 customizer);
 
         assertNotNull(recordBuilder);
@@ -176,7 +176,7 @@ public class ChildRecordBuilderFactoryTest {
                         recordListBuilder,
                         configuration,
                         USER,
-                        SingleTransactionRecordBuilderImpl.ReversingBehavior.IRREVERSIBLE,
+                        SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE,
                         customizer));
     }
 
@@ -187,7 +187,7 @@ public class ChildRecordBuilderFactoryTest {
                 recordListBuilder,
                 configuration,
                 CHILD,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
                 customizer);
 
         assertNotNull(recordBuilder);

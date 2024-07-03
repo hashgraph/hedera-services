@@ -29,8 +29,9 @@ import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl.ReversingBehavior;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -154,17 +155,20 @@ public final class RecordListBuilder {
             @NonNull final Configuration configuration,
             final HandleContext.PrecedingTransactionCategory precedingTxnCategory) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddPreceding(configuration, ReversingBehavior.IRREVERSIBLE, precedingTxnCategory);
+        return doAddPreceding(
+                configuration, SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE, precedingTxnCategory);
     }
 
     public SingleTransactionRecordBuilderImpl addReversiblePreceding(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddPreceding(configuration, ReversingBehavior.REVERSIBLE, LIMITED_CHILD_RECORDS);
+        return doAddPreceding(
+                configuration, SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE, LIMITED_CHILD_RECORDS);
     }
 
     public SingleTransactionRecordBuilderImpl addRemovablePreceding(@NonNull final Configuration configuration) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
-        return doAddPreceding(configuration, ReversingBehavior.REMOVABLE, LIMITED_CHILD_RECORDS);
+        return doAddPreceding(
+                configuration, SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE, LIMITED_CHILD_RECORDS);
     }
 
     public SingleTransactionRecordBuilderImpl doAddPreceding(
@@ -195,7 +199,8 @@ public final class RecordListBuilder {
         // user transaction. The second item is T-2, and so on.
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
         final var consensusNow = parentConsensusTimestamp.minusNanos(precedingCount + 1L);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, TransactionCategory.PRECEDING);
         precedingTxnRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
@@ -216,7 +221,10 @@ public final class RecordListBuilder {
             @NonNull final HandleContext.TransactionCategory childCategory) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
         return doAddFollowingChild(
-                configuration, ReversingBehavior.REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, childCategory);
+                configuration,
+                SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE,
+                NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
+                childCategory);
     }
 
     /**
@@ -235,7 +243,7 @@ public final class RecordListBuilder {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
         return doAddFollowingChild(
                 configuration,
-                ReversingBehavior.REMOVABLE,
+                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
                 NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
                 HandleContext.TransactionCategory.CHILD);
     }
@@ -258,7 +266,10 @@ public final class RecordListBuilder {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
         requireNonNull(customizer, "customizer must not be null");
         return doAddFollowingChild(
-                configuration, ReversingBehavior.REMOVABLE, customizer, HandleContext.TransactionCategory.CHILD);
+                configuration,
+                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
+                customizer,
+                HandleContext.TransactionCategory.CHILD);
     }
 
     private SingleTransactionRecordBuilderImpl doAddFollowingChild(
@@ -293,7 +304,8 @@ public final class RecordListBuilder {
                 childCategory == TransactionCategory.SCHEDULED ? consensusConfig.handleMaxPrecedingRecords() + 1 : 1L;
         final Instant consensusNow = prevConsensusNow.plusNanos(nextRecordOffset);
         // Note we do not repeat exchange rates for child transactions
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer, childCategory);
         // Only set parent consensus timestamp for child records if one is not provided
         if (!childCategory.equals(HandleContext.TransactionCategory.SCHEDULED)) {
             recordBuilder.parentConsensus(parentConsensusTimestamp);
@@ -345,10 +357,11 @@ public final class RecordListBuilder {
             if (!precedingTxnRecordBuilders.isEmpty()) {
                 for (int i = 0; i < precedingTxnRecordBuilders.size(); i++) {
                     final var preceding = precedingTxnRecordBuilders.get(i);
-                    if (preceding.reversingBehavior() == ReversingBehavior.REVERSIBLE
+                    if (preceding.reversingBehavior() == SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE
                             && SUCCESSES.contains(preceding.status())) {
                         preceding.status(ResponseCodeEnum.REVERTED_SUCCESS);
-                    } else if (preceding.reversingBehavior() == ReversingBehavior.REMOVABLE) {
+                    } else if (preceding.reversingBehavior()
+                            == SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE) {
                         precedingTxnRecordBuilders.set(i, null);
                     }
                 }
@@ -375,13 +388,13 @@ public final class RecordListBuilder {
         int into = index; // The position in the array into which we should put the next remaining child
         for (int i = index; i < count; i++) {
             final var child = childRecordBuilders.get(i);
-            if (child.reversingBehavior() == ReversingBehavior.REMOVABLE) {
+            if (child.reversingBehavior() == SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE) {
                 // Remove it from the list by setting its location to null. Then, any subsequent children that are
                 // kept will be moved into this position.
                 childRecordBuilders.set(i, null);
                 followingChildRemoved = true;
             } else {
-                if (child.reversingBehavior() == ReversingBehavior.REVERSIBLE) {
+                if (child.reversingBehavior() == SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE) {
                     child.nullOutSideEffectFields();
                     if (SUCCESSES.contains(child.status())) {
                         child.status(ResponseCodeEnum.REVERTED_SUCCESS);
@@ -429,10 +442,11 @@ public final class RecordListBuilder {
             }
             for (int i = indexOf; i < precedingTxnRecordBuilders.size(); i++) {
                 final var preceding = precedingTxnRecordBuilders.get(i);
-                if (preceding.reversingBehavior() == ReversingBehavior.REVERSIBLE
+                if (preceding.reversingBehavior() == SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE
                         && SUCCESSES.contains(preceding.status())) {
                     preceding.status(ResponseCodeEnum.REVERTED_SUCCESS);
-                } else if (preceding.reversingBehavior() == ReversingBehavior.REMOVABLE) {
+                } else if (preceding.reversingBehavior()
+                        == SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE) {
                     precedingTxnRecordBuilders.set(i, null);
                 }
             }

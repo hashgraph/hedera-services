@@ -31,6 +31,7 @@ import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -58,6 +59,16 @@ class ContractOperationRecordBuilderTest {
             @Override
             public long transactionFee() {
                 return totalFee;
+            }
+
+            @Override
+            public HandleContext.TransactionCategory category() {
+                return HandleContext.TransactionCategory.USER;
+            }
+
+            @Override
+            public ReversingBehavior reversingBehavior() {
+                return ReversingBehavior.IRREVERSIBLE;
             }
 
             @NonNull

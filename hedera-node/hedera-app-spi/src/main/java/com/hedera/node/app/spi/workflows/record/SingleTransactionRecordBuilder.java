@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -50,6 +51,10 @@ public interface SingleTransactionRecordBuilder {
      */
     long transactionFee();
 
+    HandleContext.TransactionCategory category();
+
+    ReversingBehavior reversingBehavior();
+
     /**
      * Sets the receipt status.
      *
@@ -72,5 +77,27 @@ public interface SingleTransactionRecordBuilder {
         return Transaction.newBuilder()
                 .signedTransactionBytes(signedTransactionBytes)
                 .build();
+    }
+
+    /**
+     * Possible behavior of a {@link SingleTransactionRecordBuilder} when a parent transaction fails,
+     * and it is asked to be reverted
+     */
+    enum ReversingBehavior {
+        /**
+         * Changes are not committed. The record is kept in the record stream,
+         * but the status is set to {@link ResponseCodeEnum#REVERTED_SUCCESS}
+         */
+        REVERSIBLE,
+
+        /**
+         * Changes are not committed and the record is removed from the record stream.
+         */
+        REMOVABLE,
+
+        /**
+         * Changes are committed independent of the user and parent transactions.
+         */
+        IRREVERSIBLE
     }
 }
