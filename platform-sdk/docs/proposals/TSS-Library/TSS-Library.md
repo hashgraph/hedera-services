@@ -243,7 +243,7 @@ Return the proof composed of `F`, `A`, `Y`, `z_r`, and `z_a`
 ##### Outside of scope
 Using an established channel, each participant will broadcast a single message to be received by all participants
 while waiting to receive other participants' messages. This functionality is critical for the protocol to work but needs to be handled outside the library.
-Each participant will validate the received message against the commitment and the NIZKs proof. Invalid messages needs to be discarded.
+Each participant will validate the received message against the commitment and the NIZKs proof. Invalid messages need to be discarded.
 
 ##### Validation of TssMessage
 The validation is produced over the content of the message and does not include the sender's identity, which is assumed to be provided by the external channel.
