@@ -24,7 +24,7 @@ import java.util.List;
  * A {@code RecordBuilder} specialization for tracking the effects of a {@code TokenAirdrops}
  * transaction.
  */
-public interface TokenAirdropsRecordBuilder extends CryptoTransferRecordBuilder {
+public interface TokenAirdropRecordBuilder extends CryptoTransferRecordBuilder {
 
     /**
      * Sets the pending airdrop record list
@@ -32,7 +32,7 @@ public interface TokenAirdropsRecordBuilder extends CryptoTransferRecordBuilder 
      * @param pendingAirdropRecords the pending airdrop record list
      * @return the builder
      */
-    TokenAirdropsRecordBuilder pendingAirdrops(@NonNull List<PendingAirdropRecord> pendingAirdropRecords);
+    TokenAirdropRecordBuilder pendingAirdrops(@NonNull List<PendingAirdropRecord> pendingAirdropRecords);
 
     /**
      * Adds to the pending airdrop record list
@@ -40,5 +40,5 @@ public interface TokenAirdropsRecordBuilder extends CryptoTransferRecordBuilder 
      * @param pendingAirdropRecord pending airdrop record
      * @return the builder
      */
-    TokenAirdropsRecordBuilder addPendingAirdrop(@NonNull PendingAirdropRecord pendingAirdropRecord);
+    TokenAirdropRecordBuilder addPendingAirdrop(@NonNull PendingAirdropRecord pendingAirdropRecord);
 }
