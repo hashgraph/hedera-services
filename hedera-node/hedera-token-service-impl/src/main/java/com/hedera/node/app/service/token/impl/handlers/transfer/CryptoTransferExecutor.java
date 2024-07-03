@@ -16,17 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -37,8 +32,20 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Utility class that provides static method for execution of Crypto transfer transaction.
+ */
 public class CryptoTransferExecutor {
 
+    /**
+     * Execute crypto transfer transaction
+     *
+     * @param txn transaction body
+     * @param transferContext transfer context
+     * @param context handle context
+     * @param validator crypto transfer validator
+     * @param recordBuilder crypto transfer record builder
+     */
     public static void executeTransfer(
             TransactionBody txn,
             TransferContextImpl transferContext,
@@ -74,6 +81,7 @@ public class CryptoTransferExecutor {
      * @param txn the given transaction body
      * @param transferContext the given transfer context
      * @param context the given handle context
+     * @param validator crypto transfer validator
      * @return the replaced transaction body with all aliases replaced with its account ids
      * @throws HandleException if any error occurs during the process
      */
@@ -96,8 +104,7 @@ public class CryptoTransferExecutor {
         final var replacedOp = new ReplaceAliasesWithIDsInOp().replaceAliasesWithIds(op, transferContext);
         // re-run pure checks on this op to see if there are no duplicates
         try {
-            final var txnBody = txn.copyBuilder().cryptoTransfer(replacedOp).build();
-            transferPureChecks(validator, txnBody);
+            validator.cryptoTransferPureChecks(replacedOp);
         } catch (PreCheckException e) {
             throw new HandleException(e.responseCode());
         }
@@ -167,27 +174,20 @@ public class CryptoTransferExecutor {
         return steps;
     }
 
-    public static void transferPureChecks(
-            @NonNull CryptoTransferValidator validator, @NonNull final TransactionBody txn) throws PreCheckException {
-        requireNonNull(validator);
-        requireNonNull(txn);
-        final var op = txn.cryptoTransfer();
-        validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
-        validator.cryptoTransferPureChecks(op);
-    }
-
-    public static void doPreHandle(
-            CryptoTransferTransactionBody op, ReadableTokenStore tokenStore, ReadableAccountStore accountStore) {
-        // todo sync with Ivan to check if we need pre handle extracted from CryptoTransferHandler...
-
-        //        for (final var transfers : op.tokenTransfers()) {
-        //            final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
-        //            if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        //            checkFungibleTokenTransfers(transfers.transfers(), context, accountStore, false);
-        //            checkNftTransfers(transfers.nftTransfers(), context, tokenMeta, op, accountStore);
-        //        }
-        //
-        //        final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT).accountAmounts();
-        //        checkFungibleTokenTransfers(hbarTransfers, context, accountStore, true);
-    }
+    //    /**
+    //     * Run pure checks on
+    //     *
+    //     * @param validator crypto transfer validator
+    //     * @param txn transaction body
+    //     * @throws PreCheckException
+    //     */
+    //    public static void transferPureChecks(
+    //            @NonNull CryptoTransferValidator validator, @NonNull final TransactionBody txn) throws
+    // PreCheckException {
+    //        requireNonNull(validator);
+    //        requireNonNull(txn);
+    //        final var op = txn.cryptoTransfer();
+    //        validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
+    //        validator.cryptoTransferPureChecks(op);
+    //    }
 }

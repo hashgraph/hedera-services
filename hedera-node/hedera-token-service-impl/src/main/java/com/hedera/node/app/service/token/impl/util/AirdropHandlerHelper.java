@@ -37,6 +37,9 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Utility class that provides static methods
+ */
 public class AirdropHandlerHelper {
     public record FungibleAirdropLists(
             @NonNull List<AccountAmount> transferFungibleAmounts,
@@ -45,6 +48,21 @@ public class AirdropHandlerHelper {
     public record NftAirdropLists(
             @NonNull List<NftTransfer> transferNftList, @NonNull List<NftTransfer> pendingNftList) {}
 
+    private AirdropHandlerHelper() {
+        throw new UnsupportedOperationException("Utility class only");
+    }
+
+    /**
+     * Checks every {@link AccountAmount} from given transfer list and separate it in to two lists.
+     * One containing transfers that should be added to pending airdrop state and the other list - transfers that should
+     * be executed. The check is done by account's available auto associations slots and the existence of account-token
+     * relation {@link #shouldAddAirdropToPendingState(Account, TokenRelation)}
+     *
+     * @param context {@link HandleContext} used to obtain state stores
+     * @param tokenId token id
+     * @param transfers list of {@link AccountAmount}
+     * @return {@link FungibleAirdropLists} a record containing two lists - transfers to be added in pending state and transfers to be executed
+     */
     public static FungibleAirdropLists separateFungibleTransfers(
             HandleContext context, TokenID tokenId, List<AccountAmount> transfers) {
         List<AccountAmount> transferFungibleAmounts = new ArrayList<>();
@@ -74,6 +92,17 @@ public class AirdropHandlerHelper {
         return new FungibleAirdropLists(transferFungibleAmounts, pendingFungibleAmounts);
     }
 
+    /**
+     * Checks every {@link NftTransfer} from given transfer list and separate it in to two lists.
+     * One containing transfers that should be added to pending airdrop state and the other list - transfers that should
+     * be executed. The check is done by account's available auto associations slots and the existence of account-token
+     * relation {@link #shouldAddAirdropToPendingState(Account, TokenRelation)}
+     *
+     * @param context context
+     * @param tokenId token id
+     * @param transfers list of nft transfers
+     * @return {@link NftAirdropLists} a record containing two lists - transfers to be added in pending state and transfers to be executed
+     */
     public static NftAirdropLists separateNftTransfers(
             HandleContext context, TokenID tokenId, List<NftTransfer> transfers) {
         List<NftTransfer> transferNftList = new ArrayList<>();
@@ -103,6 +132,16 @@ public class AirdropHandlerHelper {
         return new NftAirdropLists(transferNftList, pendingNftList);
     }
 
+    /**
+     * Check if given airdrop should be pending or transfer will be executed.
+     * The check is done by account's available auto associations slots and the existence of account-token relation.
+     * If receiver's account is not existing, we should proceed with the transfer, this way {@link com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler}
+     * will handle auto creation and auto association of the new receiver.
+     *
+     * @param receiver receivers account
+     * @param tokenRelation token relation
+     * @return if airdrop of given token to given receiver should be added to the airdrop pending state
+     */
     private static boolean shouldAddAirdropToPendingState(
             @Nullable Account receiver, @Nullable TokenRelation tokenRelation) {
         if (receiver == null) {
@@ -114,6 +153,14 @@ public class AirdropHandlerHelper {
                 && receiver.maxAutoAssociations() != -1;
     }
 
+    /**
+     * Creates a {@link PendingAirdropId} for a fungible token.
+     *
+     * @param tokenId the ID of the token
+     * @param senderId the ID of sender's account
+     * @param receiverId the ID of receiver's account
+     * @return {@link PendingAirdropId} for storing in the state
+     */
     public static PendingAirdropId createFungibleTokenPendingAirdropId(
             TokenID tokenId, AccountID senderId, AccountID receiverId) {
         return PendingAirdropId.newBuilder()
@@ -123,6 +170,15 @@ public class AirdropHandlerHelper {
                 .build();
     }
 
+    /**
+     * Creates a {@link PendingAirdropId} for a non-fungible token.
+     *
+     * @param tokenId the ID of the token
+     * @param serialNumber the serial number of the token
+     * @param senderId the ID of the sender's account
+     * @param receiverId the ID of the receiver's account
+     * @return {@link PendingAirdropId} for storing in the state
+     */
     public static PendingAirdropId createNftPendingAirdropId(
             TokenID tokenId, long serialNumber, AccountID senderId, AccountID receiverId) {
         var nftId =
@@ -134,10 +190,23 @@ public class AirdropHandlerHelper {
                 .build();
     }
 
+    /**
+     * Creates a {@link PendingAirdropValue} for a fungible token.
+     *
+     * @param amount the amount of fungible token
+     * @return {@link PendingAirdropValue} for storing in the state
+     */
     public static PendingAirdropValue createPendingAirdropValue(long amount) {
         return PendingAirdropValue.newBuilder().amount(amount).build();
     }
 
+    /**
+     * Creates a {@link PendingAirdropRecord} for externalizing pending airdrop records.
+     *
+     * @param pendingAirdropId the ID of the pending airdrop
+     * @param pendingAirdropValue the value of the pending airdrop
+     * @return {@link PendingAirdropRecord}
+     */
     public static PendingAirdropRecord createPendingAirdropRecord(
             PendingAirdropId pendingAirdropId, PendingAirdropValue pendingAirdropValue) {
         return PendingAirdropRecord.newBuilder()

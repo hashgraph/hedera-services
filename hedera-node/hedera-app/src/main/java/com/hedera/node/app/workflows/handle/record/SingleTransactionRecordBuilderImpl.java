@@ -590,20 +590,6 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     @Override
-    public TokenAirdropsRecordBuilder pendingAirdropList(@NonNull List<PendingAirdropRecord> pendingAirdropRecords) {
-        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
-        this.pendingAirdropRecords = pendingAirdropRecords;
-        return this;
-    }
-
-    @Override
-    public TokenAirdropsRecordBuilder pendingAirdropList(@NonNull PendingAirdropRecord pendingAirdropRecord) {
-        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
-        this.pendingAirdropRecords.add(pendingAirdropRecord);
-        return this;
-    }
-
-    @Override
     public List<TokenTransferList> tokenTransferLists() {
         return tokenTransferLists;
     }
@@ -618,6 +604,32 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl addTokenTransferList(@NonNull final TokenTransferList tokenTransferList) {
         requireNonNull(tokenTransferList, "tokenTransferList must not be null");
         tokenTransferLists.add(tokenTransferList);
+        return this;
+    }
+
+    /**
+     * Sets the pending airdrop record list
+     *
+     * @param pendingAirdropRecords the pending airdrop record list
+     * @return the builder
+     */
+    @Override
+    public TokenAirdropsRecordBuilder pendingAirdrops(@NonNull List<PendingAirdropRecord> pendingAirdropRecords) {
+        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
+        this.pendingAirdropRecords = pendingAirdropRecords;
+        return this;
+    }
+
+    /**
+     * Adds to the pending airdrop record list
+     *
+     * @param pendingAirdropRecord pending airdrop record
+     * @return the builder
+     */
+    @Override
+    public TokenAirdropsRecordBuilder addPendingAirdrop(@NonNull PendingAirdropRecord pendingAirdropRecord) {
+        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
+        this.pendingAirdropRecords.add(pendingAirdropRecord);
         return this;
     }
 

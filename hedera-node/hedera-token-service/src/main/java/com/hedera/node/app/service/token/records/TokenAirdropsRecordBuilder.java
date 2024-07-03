@@ -26,7 +26,19 @@ import java.util.List;
  */
 public interface TokenAirdropsRecordBuilder extends CryptoTransferRecordBuilder {
 
-    TokenAirdropsRecordBuilder pendingAirdropList(@NonNull List<PendingAirdropRecord> pendingAirdropRecords);
+    /**
+     * Sets the pending airdrop record list
+     *
+     * @param pendingAirdropRecords the pending airdrop record list
+     * @return the builder
+     */
+    TokenAirdropsRecordBuilder pendingAirdrops(@NonNull List<PendingAirdropRecord> pendingAirdropRecords);
 
-    TokenAirdropsRecordBuilder pendingAirdropList(@NonNull PendingAirdropRecord pendingAirdropRecord);
+    /**
+     * Adds to the pending airdrop record list
+     *
+     * @param pendingAirdropRecord pending airdrop record
+     * @return the builder
+     */
+    TokenAirdropsRecordBuilder addPendingAirdrop(@NonNull PendingAirdropRecord pendingAirdropRecord);
 }

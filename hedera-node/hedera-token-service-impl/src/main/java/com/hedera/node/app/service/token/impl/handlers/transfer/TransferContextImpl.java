@@ -91,7 +91,10 @@ public class TransferContextImpl implements TransferContext {
 
     /**
      * Create a new {@link TransferContextImpl} instance.
+     * Allow initializing transfer context from another handler, by providing synthetic tnx body.
+     *
      * @param context The context to use.
+     * @param syntheticBody The body of a crypto transfer transaction
      * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments Whether to enforce mono service restrictions
      *                                                                      on auto creation custom fee payments.
      */
