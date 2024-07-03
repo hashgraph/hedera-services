@@ -120,6 +120,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
             @NonNull final PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver) {
         requireNonNull(status);
         final var retryCount = new AtomicInteger();
+        final var bindExceptionSeen = new AtomicReference<>(BindExceptionSeen.NA);
         return conditionFuture(
                 () -> {
                     final var nominalSoFar = retryCount.get() <= MAX_PROMETHEUS_RETRIES;
@@ -132,7 +133,6 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
                         grpcStatus = grpcPinger.isLive(metadata.grpcPort()) ? UP : DOWN;
                         statusReached = grpcStatus == UP;
                     }
-                    var bindExceptionSeen = BindExceptionSeen.NA;
                     // This extra logic just barely justifies its existence by giving up
                     // immediately when a bind exception is seen in the logs, since in
                     // practice these are never transient; it also lets us try reassigning
@@ -141,13 +141,15 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
                             && status == ACTIVE
                             && !nominalSoFar
                             && retryCount.get() % BINDING_CHECK_INTERVAL == 0) {
-                        bindExceptionSeen = swirldsLogContains("java.net.BindException")
-                                ? BindExceptionSeen.YES
-                                : BindExceptionSeen.NO;
+                        if (swirldsLogContains("java.net.BindException")) {
+                            bindExceptionSeen.set(BindExceptionSeen.YES);
+                        } else {
+                            bindExceptionSeen.set(BindExceptionSeen.NO);
+                        }
                     }
                     if (nodeStatusObserver != null) {
                         nodeStatusObserver.accept(new NodeStatus(
-                                lookupAttempt, grpcStatus, bindExceptionSeen, retryCount.getAndIncrement()));
+                                lookupAttempt, grpcStatus, bindExceptionSeen.get(), retryCount.getAndIncrement()));
                     }
                     return statusReached;
                 },
