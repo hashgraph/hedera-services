@@ -27,12 +27,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AdjustFungibleTokenChangesStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
@@ -40,6 +42,8 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesSte
 import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWithIDsInOp;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,6 +63,17 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         transferContext = new TransferContextImpl(handleContext);
         writableTokenStore.put(givenValidFungibleToken(ownerId, false, false, false, false, false));
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
+                .will((invocation) -> {
+                    final var relation =
+                            new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
+                    final var relation1 =
+                            new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
+                    writableTokenRelStore.put(relation);
+                    writableTokenRelStore.put(relation1);
+                    return new SingleTransactionRecordBuilderImpl(consensusInstant);
+                });
     }
 
     @Test
@@ -82,7 +97,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         assertThat(senderAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(senderRelBefore.balance()).isEqualTo(1000L);
-        assertThat(receiverRelBefore.balance()).isZero();
+        assertThat(receiverRelBefore.balance()).isEqualTo(1);
 
         adjustFungibleTokenChangesStep.doIn(transferContext);
 
@@ -92,11 +107,13 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         final var senderRelAfter = writableTokenRelStore.get(ownerId, fungibleTokenId);
         final var receiverRelAfter = writableTokenRelStore.get(receiver, fungibleTokenId);
 
-        // numPositiveBalancesChanged since all 1000 token Rel balance is transferred
+        // numPositiveBalancesChanged since all 1000 token Rel balance is transferred and new balance is 0
         assertThat(senderAccountAfter.numberPositiveBalances())
                 .isEqualTo(senderAccountBefore.numberPositiveBalances() - 1);
+        // It is not changed since the original balance before the method is called is > 0.
+        // So no need to increment the positive balances
         assertThat(receiverAccountAfter.numberPositiveBalances())
-                .isEqualTo(receiverAccountBefore.numberPositiveBalances() + 1);
+                .isEqualTo(receiverAccountBefore.numberPositiveBalances());
         assertThat(senderRelAfter.balance()).isEqualTo(senderRelBefore.balance() - 1000);
         assertThat(receiverRelAfter.balance()).isEqualTo(receiverRelBefore.balance() + 1000);
     }
@@ -128,7 +145,8 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         assertThat(senderAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(senderRelBefore.balance()).isEqualTo(1000L);
-        assertThat(receiverRelBefore.balance()).isZero();
+        // There is an association happening during the transfer for auto creation
+        assertThat(receiverRelBefore.balance()).isEqualTo(1);
 
         assertThat(senderAccountBefore.tokenAllowances()).hasSize(1);
 
@@ -140,11 +158,13 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         final var senderRelAfter = writableTokenRelStore.get(ownerId, fungibleTokenId);
         final var receiverRelAfter = writableTokenRelStore.get(receiver, fungibleTokenId);
 
-        // numPositiveBalancesChanged since all 1000 token Rel balance is transferred
+        // numPositiveBalancesChanged since all 1000 token Rel balance is transferred and new balance is 0
         assertThat(senderAccountAfter.numberPositiveBalances())
                 .isEqualTo(senderAccountBefore.numberPositiveBalances() - 1);
+        // It is not changed since the original balance before the method is called is > 0.
+        // So no need to increment the positive balances
         assertThat(receiverAccountAfter.numberPositiveBalances())
-                .isEqualTo(receiverAccountBefore.numberPositiveBalances() + 1);
+                .isEqualTo(receiverAccountBefore.numberPositiveBalances());
         assertThat(senderRelAfter.balance()).isEqualTo(senderRelBefore.balance() - 1000);
         assertThat(receiverRelAfter.balance()).isEqualTo(receiverRelBefore.balance() + 1000);
 
