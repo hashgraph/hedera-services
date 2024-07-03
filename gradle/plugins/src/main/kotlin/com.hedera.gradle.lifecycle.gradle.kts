@@ -38,9 +38,17 @@ tasks.register("qualityGate") {
 
 tasks.register("releaseMavenCentral")
 
-// Register these tasks: https://github.com/hashgraph/hedera-services/blob/63641ffdab4ec13759b901a58682f95b64bd4651/gradle/plugins/src/main/kotlin/com.hedera.gradle.platform-publish.gradle.kts#L70-L86
-tasks.register("releaseAdhocCommit")
-tasks.register("releaseDevelopCommit")
-tasks.register("releaseDevelopDailySnapshot")
-tasks.register("releaseDevelopSnapshot")
-tasks.register("releasePrereleaseChannel")
+// Register these tasks if they are not registered yet
+// https://github.com/hashgraph/hedera-services/blob/63641ffdab4ec13759b901a58682f95b64bd4651/gradle/plugins/src/main/kotlin/com.hedera.gradle.platform-publish.gradle.kts#L70-L86
+val taskNames = listOf(
+    "releaseAdhocCommit",
+    "releaseDevelopCommit",
+    "releaseDevelopDailySnapshot",
+    "releaseDevelopSnapshot",
+    "releasePrereleaseChannel",
+)
+taskNames.forEach { taskName ->
+    if (!tasks.names.contains(taskName)) {
+        tasks.register(taskName)
+    }
+}
