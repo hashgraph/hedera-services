@@ -54,8 +54,8 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
         super(states);
         airdropState = states.get(AIRDROPS_KEY);
 
-        final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxAllowedAirdorps();
-        final var storeMetrics = storeMetricsService.get(StoreMetricsService.StoreType.AIRDROPS, maxCapacity);
+        final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxAllowedAirdrops();
+        final var storeMetrics = storeMetricsService.get(StoreMetricsService.StoreType.AIRDROP, maxCapacity);
         airdropState.setMetrics(storeMetrics);
     }
 

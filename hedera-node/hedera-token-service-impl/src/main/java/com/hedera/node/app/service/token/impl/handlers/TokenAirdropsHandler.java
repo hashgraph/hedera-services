@@ -76,7 +76,7 @@ import com.hedera.node.app.service.token.impl.util.CryptoTransferFeeCalculator;
 import com.hedera.node.app.service.token.impl.util.TokenAssociateToAccountFeeCalculator;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.service.token.records.TokenAirdropsRecordBuilder;
+import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -143,7 +143,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
         final var txn = context.body();
         final var op = txn.tokenAirdropOrThrow();
         final var pendingStore = context.storeFactory().writableStore(WritableAirdropStore.class);
-        var recordBuilder = context.recordBuilders().getOrCreate(TokenAirdropsRecordBuilder.class);
+        var recordBuilder = context.recordBuilders().getOrCreate(TokenAirdropRecordBuilder.class);
         List<TokenTransferList> tokenTransferListList = new ArrayList<>();
 
         for (final var xfers : op.tokenTransfers()) {
