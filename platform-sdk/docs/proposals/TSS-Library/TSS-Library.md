@@ -642,7 +642,7 @@ static {
     //Get Private Shares    
     List<TssPrivateShare> privateShares = service.decryptPrivateShares(participantDirectory, agreedValidMessages);
     //Get Public Shares
-    List<TssPrivateShare> publicShares = service.computePublicShare(participantDirectory, agreedValidMessages);
+    List<TssPublicShare> publicShares = service.computePublicShare(participantDirectory, agreedValidMessages);
 
 ```
 ######  Sign
