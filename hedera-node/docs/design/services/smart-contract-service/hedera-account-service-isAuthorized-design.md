@@ -15,6 +15,7 @@ may be several/many per Hedera account, there is in fact only _one_: the _alias_
 
 * This mainly affects the method `getVirtualAddresses` which will return an array, but
 it will have _at most one_ EVM address in it.
+* An issue is present to edit HIP-632 to clarify that it is dealing with aliases, not virtual addresses.  
   
 ## Phased implementation
 
@@ -34,8 +35,6 @@ Following the existing pattern for HAS each method will be given a package under
   that does the work.
   
 ## Design for `isAuthorizedRaw`
-
-[TBD shortly as I fix up some problems with understanding HAS]
 
 `isAuthorizedRaw` has two flows: Either the argument address is a Hedera account, or it is
 an EVM address.
@@ -63,6 +62,17 @@ fee now.
 
 A feature flag will control enabling `isAuthorizedRaw`.
 
+## Future considerations
+
+`isAuthorizedRaw` uses the Platform's `Cryptography` crypto-engine, available through a
+deprecated-for-removal API (via `CryptographyHolder`).  Additionally, `isAuthorized` (unlike
+`isAuthorizedRaw`) needs to grok non-simple keys (i.e., threshold keys, key lists).  This
+functionality is present in Service's app-spi module but not exported to other modules (directly
+or indirectly from the `HandleContext`).  It needs to be exposed in that way.
+* Currently what is exported w.r.t. signatures is only that the signatures on the top-level 
+transaction have been verified.  Not the ability to verify an arbitrary signature given hash and
+  signature and an account (with keys).
+
 ## Testing
 
 E2E testing necessary:
@@ -71,18 +81,30 @@ E2E testing necessary:
 
 (All with sufficient gas:)
 
-1. EVM address, valid hash+signature -> SUCCESS
-1. EVM address, _invalid_ hash+signature -> FAILED
-1. EVM address, valid hash+signature but recovered address does not match given address -> FAILED
-1. Hedera account w/ single ED key, valid hash+signature -> SUCCESS
-1. Hedera account w/ single ED key, _invalid_ hash+signature -> FAILED
+All positive tests return a status SUCCESS, and then verification of the signature is in the
+boolean output argument.
+
+1. EVM address, valid hash+signature -> SUCCESS + true
+1. EVM address, _invalid_ hash+signature -> SUCCESS + false
+1. EVM address, some hash (correct size) but signature's `v` value is `>1` and `<27` -> SUCCESS + false
+1. EVM address, valid hash+signature but recovered address does not match given address -> SUCCESS + false
+   * But I don't know of any such example, so **low priority** 
+1. EVM alias of Hedera account w/ single ED key, valid hash+signature -> SUCCESS + true
+1. EVM alias Hedera account w/ single ED key, _invalid_ hash+signature -> SUCCESS + false
 
 ### Negative
 
+All negative tests return some failure status.
+
 1. EVM address, insufficient gas -> FAILED
-1. Hedera account, insufficient gas -> FAILED
-1. Hedera account w/ 1 key which is EC -> FAILED
-1. Hedera account w/ >1 key -> FAILED
+1. EVM alias of Hedera account, insufficient gas -> FAILED
+1. EVM address, signature length `!= 65` bytes -> FAILED
+1. EVM alias of Hedera account, signature length `!= 64` bytes -> FAILED 
+1. EVM address, message hash length `!= 32` bytes -> FAILED
+1. EVM address but is a long zero -> FAILED
+1. EVM alias of Hedera account w/ 1 key which is EC -> FAILED
+1. EVM alias of Hedera account w/ (any) threshold key -> FAILED
+1. EVM alias of Hedera account w/ (any) "key list" type key -> FAILED
 
 __
 
@@ -107,7 +129,8 @@ charge hard-coded fees.
 * Need to have a way to get to signature verification via the `HandleContext` (instead of using
   platform classes directly).
 
-
+* Don't have sufficiently specific status codes (`HederaResponseEnum`) - and the way to get them is
+to put them in a HIP. So this is pending edits on HIP-632, tracked elsewhere.
 
 
 
