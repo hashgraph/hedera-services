@@ -95,4 +95,8 @@ public interface FeatureFlags {
     default boolean isHederaAccountServiceEnabled(@NonNull Configuration config) {
         return false;
     }
+
+    default boolean isAuthorizedRawMethodEnabled(@NonNull Configuration config) {
+        return false;
+    }
 }
