@@ -21,21 +21,61 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
+import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.fees.FeeContextImpl;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.impl.util.CryptoTransferFeeCalculator;
+import com.hedera.node.app.service.token.impl.util.TokenAssociateToAccountFeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.config.data.TokensConfig;
+import com.swirlds.config.api.Configuration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
     private static final int MAX_TOKEN_TRANSFERS = 10;
+
+    @Mock
+    private Configuration config;
+
+    @Mock
+    private TokensConfig tokensConfig;
+
+    @Mock
+    private FeeContextImpl feeContext;
+
+    @Mock
+    private TransactionBody transactionBody;
+
+    @Mock
+    private FeeCalculatorFactory feeCalculatorFactory;
+
+    @Mock
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private ReadableTokenRelationStore readableTokenRelationStore;
 
     @SuppressWarnings("DataFlowIssue")
     @Test
@@ -261,6 +301,69 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                         .build()));
 
         Assertions.assertThatCode(() -> tokenAirdropsHandler.pureChecks(txn)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void calculateFeesWithNoAirdropBody() {
+        when(feeContext.body()).thenReturn(TransactionBody.DEFAULT);
+        assertThrows(NullPointerException.class, () -> tokenAirdropsHandler.calculateFees(feeContext));
+    }
+
+    @Test
+    void calculateFeesNotSupportedOperation() {
+        setupAirdropMocks(TokenAirdropTransactionBody.DEFAULT, false);
+
+        final var exception = assertThrows(HandleException.class, () -> tokenAirdropsHandler.calculateFees(feeContext));
+        assertEquals(ResponseCodeEnum.NOT_SUPPORTED, exception.getStatus());
+    }
+
+    @Test
+    void calculateFeesShouldSumAllRequiredFees() {
+        final var fungibleTransferList = TokenTransferList.newBuilder()
+                .token(TOKEN_2468)
+                .transfers(ACCT_4444_MINUS_5)
+                .build();
+        final var nonFungibleTransferList = TokenTransferList.newBuilder()
+                .token(asToken(2469))
+                .nftTransfers(SERIAL_1_FROM_3333_TO_4444)
+                .build();
+        final var airdropBody = TokenAirdropTransactionBody.newBuilder()
+                .tokenTransfers(fungibleTransferList, nonFungibleTransferList)
+                .build();
+        setupAirdropMocks(airdropBody, true);
+
+        final var defaultAirdropFees = new Fees(10, 10, 10);
+        when(feeContext.feeCalculatorFactory()).thenReturn(feeCalculatorFactory);
+        when(feeCalculatorFactory.feeCalculator(SubType.DEFAULT)).thenReturn(feeCalculator);
+        when(feeCalculator.calculate()).thenReturn(defaultAirdropFees);
+
+        when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelationStore);
+        when(readableTokenRelationStore.get(any(), any())).thenReturn(null);
+
+        try (var cryptoTransferFeeCalculator = mockStatic(CryptoTransferFeeCalculator.class);
+                var tokenAssociateToAccountFeeCalculator = mockStatic(TokenAssociateToAccountFeeCalculator.class); ) {
+
+            cryptoTransferFeeCalculator
+                    .when(() -> CryptoTransferFeeCalculator.calculate(any(), any(), any()))
+                    .thenReturn(new Fees(20, 20, 20));
+            tokenAssociateToAccountFeeCalculator
+                    .when(() -> TokenAssociateToAccountFeeCalculator.calculate(any(), any()))
+                    .thenReturn(new Fees(30, 30, 30));
+
+            final var fees = tokenAirdropsHandler.calculateFees(feeContext);
+            assertEquals(60, fees.networkFee());
+            assertEquals(60, fees.nodeFee());
+            assertEquals(60, fees.serviceFee());
+        }
+    }
+
+    private void setupAirdropMocks(TokenAirdropTransactionBody body, boolean enableAirdrop) {
+        when(feeContext.body()).thenReturn(transactionBody);
+        when(transactionBody.tokenAirdropOrThrow()).thenReturn(body);
+
+        when(feeContext.configuration()).thenReturn(config);
+        when(config.getConfigData(TokensConfig.class)).thenReturn(tokensConfig);
+        when(tokensConfig.airdropsEnabled()).thenReturn(enableAirdrop);
     }
 
     private List<TokenTransferList> transactionBodyAboveMaxTransferLimit() {
