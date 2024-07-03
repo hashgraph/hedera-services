@@ -41,6 +41,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -98,6 +99,37 @@ public class IsAuthorizedSuite {
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> isAuthorizedEcdsaRawInsufficientGas() {
+        return propertyPreservingHapiSpec("isAuthorizedEcdsaRawInsufficientGas")
+                .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
+                .given(
+                        overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, ECDSA_KEY, ONE_HUNDRED_HBARS)),
+                        uploadInitCode(HRC632_CONTRACT),
+                        contractCreate(HRC632_CONTRACT))
+                .when(withOpContext((spec, opLog) -> {
+                    final var messageHash = new Keccak.Digest256().digest("submit".getBytes());
+
+                    final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
+                    final var addressBytes = recoverAddressFromPrivateKey(privateKey);
+                    final var signedBytes = EthTxSigs.signMessage(messageHash, privateKey);
+
+                    var call = contractCall(
+                                    HRC632_CONTRACT,
+                                    "isAuthorizedRawCall",
+                                    asHeadlongAddress(addressBytes),
+                                    messageHash,
+                                    signedBytes)
+                            .via("authorizeCall")
+                            .hasPrecheck(INSUFFICIENT_GAS)
+                            .gas(1L);
+                    allRunFor(spec, call);
+                }))
+                .then();
     }
 
     @HapiTest
@@ -243,5 +275,39 @@ public class IsAuthorizedSuite {
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(resultWith().contractCallResult(BoolResult.flag(false)))));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> isAuthorizedEdRawInsufficientGas() {
+        final AtomicReference<Address> accountNum = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("isAuthorizedEdRawInsufficientGas")
+                .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
+                .given(
+                        overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
+                        newKeyNamed(ED25519_KEY).shape(ED25519).generator(new RepeatableKeyGenerator()),
+                        cryptoCreate(ACCOUNT)
+                                .balance(ONE_MILLION_HBARS)
+                                .key(ED25519_KEY)
+                                .exposingCreatedIdTo(id -> accountNum.set(idAsHeadlongAddress(id))),
+                        uploadInitCode(HRC632_CONTRACT),
+                        contractCreate(HRC632_CONTRACT))
+                .when(withOpContext((spec, opLog) -> {
+                    final var messageHash = new Digest().digest("submit".getBytes());
+
+                    final var edKey = spec.registry().getKey(ED25519_KEY);
+                    final var privateKey = spec.keys()
+                            .getEd25519PrivateKey(com.swirlds.common.utility.CommonUtils.hex(edKey.toByteArray())
+                                    .substring(4));
+                    final var signedBytes = SignatureGenerator.signBytes(messageHash, privateKey);
+
+                    var call = contractCall(
+                                    HRC632_CONTRACT, "isAuthorizedRawCall", accountNum.get(), messageHash, signedBytes)
+                            .via("authorizeCall")
+                            .hasPrecheck(INSUFFICIENT_GAS)
+                            .gas(1L);
+                    allRunFor(spec, call);
+                }))
+                .then();
     }
 }
