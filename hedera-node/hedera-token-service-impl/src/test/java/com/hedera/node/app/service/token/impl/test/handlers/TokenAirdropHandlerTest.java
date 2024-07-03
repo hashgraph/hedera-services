@@ -33,7 +33,7 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class TokenAirdropHandlerPureChecksTest extends CryptoTransferHandlerTestBase {
+class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
     private static final int MAX_TOKEN_TRANSFERS = 10;
 
