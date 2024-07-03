@@ -23,6 +23,10 @@ import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
+import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
+import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
+import static com.hedera.services.bdd.spec.keys.SigControl.ANY;
+import static com.hedera.services.bdd.spec.keys.SigControl.ED25519_ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -41,8 +45,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE_TYPE_MISMATCHING_KEY;
@@ -52,29 +56,37 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.hapi.utils.SignatureGenerator;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import com.hedera.services.bdd.suites.utils.contracts.BoolResult;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jcajce.provider.digest.SHA384.Digest;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
+@SuppressWarnings("java:S1192") // "String literals should not be duplicated" - would impair readability here
 public class IsAuthorizedSuite {
-    private static final Logger log = LogManager.getLogger(IsAuthorizedSuite.class);
+
+    public static final String ACCOUNT = "account";
+    public static final String ANOTHER_ACCOUNT = "anotherAccount";
+
     private static final String ECDSA_KEY = "ecdsaKey";
     private static final String ED25519_KEY = "ed25519Key";
+    private static final String THRESHOLD_KEY = "ThreshKey";
+    private static final String KEY_LIST = "ListKeys";
+    private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, SIMPLE);
+    private static final KeyShape KEY_LIST_SHAPE = KeyShape.listOf(ED25519, SIMPLE);
+
     private static final String HRC632_CONTRACT = "HRC632Contract";
     private static final String CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED =
             "contracts.systemContract.accountService.isAuthorizedRawEnabled";
 
     @HapiTest
-    final Stream<DynamicTest> isAuthorizedEcdsaRawHappyPath() {
-        return propertyPreservingHapiSpec("isAuthorizedEcdsaRawHappyPath")
+    final Stream<DynamicTest> isAuthorizedRawECDSAHappyPath() {
+        return propertyPreservingHapiSpec("isAuthorizedRawECDSAHappyPath")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -106,7 +118,7 @@ public class IsAuthorizedSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> isAuthorizedEcdsaRawInsufficientGas() {
+    final Stream<DynamicTest> isAuthorizedRawECDSAInsufficientGas() {
         return propertyPreservingHapiSpec("isAuthorizedEcdsaRawInsufficientGas")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
@@ -137,8 +149,8 @@ public class IsAuthorizedSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> isAuthorizedEcdsaRawDifferentHash() {
-        return propertyPreservingHapiSpec("isAuthorizedEcdsaRawDifferentHash")
+    final Stream<DynamicTest> isAuthorizedRawECDSADifferentHash() {
+        return propertyPreservingHapiSpec("isAuthorizedRawECDSADifferentHash")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -171,8 +183,8 @@ public class IsAuthorizedSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> isAuthorizedEcdsaRawInvalidVValue() {
-        return propertyPreservingHapiSpec("isAuthorizedEcdsaRawInvalidVValue")
+    final Stream<DynamicTest> isAuthorizedRawECDSAInvalidHash() {
+        return propertyPreservingHapiSpec("isAuthorizedRawECDSAInvalidHash")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -205,7 +217,7 @@ public class IsAuthorizedSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> isAuthorizedEcdsaRawInvalidSignatureLength() {
+    final Stream<DynamicTest> isAuthorizedRawECDSAInvalidSignatureLength() {
         return propertyPreservingHapiSpec("isAuthorizedEcdsaRawInvalidSignatureLength")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
@@ -239,10 +251,10 @@ public class IsAuthorizedSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> isAuthorizedEdRawHappyPath() {
+    final Stream<DynamicTest> isAuthorizedRawEDHappyPath() {
         final AtomicReference<Address> accountNum = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("isAuthorizedEdRawHappyPath")
+        return propertyPreservingHapiSpec("isAuthorizedRawEDHappyPath")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -275,10 +287,10 @@ public class IsAuthorizedSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> isAuthorizedEdRawDifferentHash() {
+    final Stream<DynamicTest> isAuthorizedRawEDDifferentHash() {
         final AtomicReference<Address> accountNum = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("isAuthorizedEdRawDifferentHash")
+        return propertyPreservingHapiSpec("isAuthorizedRawEDDifferentHash")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -316,10 +328,10 @@ public class IsAuthorizedSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> isAuthorizedEdRawInsufficientGas() {
+    final Stream<DynamicTest> isAuthorizedRawEDInsufficientGas() {
         final AtomicReference<Address> accountNum = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("isAuthorizedEdRawInsufficientGas")
+        return propertyPreservingHapiSpec("isAuthorizedRawEDInsufficientGas")
                 .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
                 .given(
                         overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
@@ -350,7 +362,7 @@ public class IsAuthorizedSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> isAuthorizedEdRawInvalidSignatureLength() {
+    final Stream<DynamicTest> isAuthorizedRawEDInvalidSignatureLength() {
         final AtomicReference<Address> accountNum = new AtomicReference<>();
 
         return propertyPreservingHapiSpec("isAuthorizedEdRawDifferentHash")
@@ -381,5 +393,93 @@ public class IsAuthorizedSuite {
                 }))
                 .then(childRecordsCheck(
                         "authorizeCall", CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_ACCOUNT_ID)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> isAuthorizedRawAliasWithECFails() {
+        final AtomicReference<Address> accountNum = new AtomicReference<>();
+
+        return propertyPreservingHapiSpec("isAuthorizedRawEDInsufficientGas")
+                .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
+                .given(
+                        overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
+                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE).generator(new RepeatableKeyGenerator()),
+                        cryptoCreate(ACCOUNT)
+                                .balance(ONE_MILLION_HBARS)
+                                .key(ECDSA_KEY)
+                                .exposingCreatedIdTo(id -> accountNum.set(idAsHeadlongAddress(id))),
+                        uploadInitCode(HRC632_CONTRACT),
+                        contractCreate(HRC632_CONTRACT))
+                .when(withOpContext((spec, opLog) -> {
+                    final var messageHash = new Digest().digest("submit".getBytes());
+                    final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
+                    final var signedBytes = EthTxSigs.signMessage(messageHash, privateKey);
+
+                    var call = contractCall(
+                                    HRC632_CONTRACT, "isAuthorizedRawCall", accountNum.get(), messageHash, signedBytes)
+                            .via("authorizeCall")
+                            .gas(2_000_000L)
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+                    allRunFor(spec, call);
+                }))
+                .then(childRecordsCheck(
+                        "authorizeCall", CONTRACT_REVERT_EXECUTED, recordWith().status(FAIL_INVALID)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> isAuthorizedRawEDWithComplexKeysFails() {
+        final AtomicReference<Address> accountNum = new AtomicReference<>();
+        final AtomicReference<Address> accountAnotherNum = new AtomicReference<>();
+        return propertyPreservingHapiSpec("isAuthorizedRawEDInsufficientGas")
+                .preserving(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED)
+                .given(
+                        overriding(CONTRACTS_SYSTEM_CONTRACT_ACCOUNT_SERVICE_IS_AUTHORIZED_ENABLED, "true"),
+                        newKeyNamed(THRESHOLD_KEY).shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ED25519_ON, ANY))),
+                        newKeyNamed(KEY_LIST).shape(KEY_LIST_SHAPE.signedWith(sigs(ED25519_ON, ANY))),
+                        newKeyNamed(ED25519_KEY).shape(ED25519).generator(new RepeatableKeyGenerator()),
+                        cryptoCreate(ACCOUNT)
+                                .balance(ONE_MILLION_HBARS)
+                                .key(THRESHOLD_KEY)
+                                .exposingCreatedIdTo(id -> accountNum.set(idAsHeadlongAddress(id))),
+                        cryptoCreate(ANOTHER_ACCOUNT)
+                                .balance(ONE_MILLION_HBARS)
+                                .key(KEY_LIST)
+                                .exposingCreatedIdTo(id -> accountAnotherNum.set(idAsHeadlongAddress(id))),
+                        uploadInitCode(HRC632_CONTRACT),
+                        contractCreate(HRC632_CONTRACT))
+                .when(withOpContext((spec, opLog) -> {
+                    final var messageHash = new Digest().digest("submit".getBytes());
+                    final var edKey = spec.registry().getKey(ED25519_KEY);
+                    final var privateKey = spec.keys()
+                            .getEd25519PrivateKey(com.swirlds.common.utility.CommonUtils.hex(edKey.toByteArray())
+                                    .substring(4));
+                    final var signedBytes = SignatureGenerator.signBytes(messageHash, privateKey);
+
+                    final var callWithThreshold = contractCall(
+                                    HRC632_CONTRACT, "isAuthorizedRawCall", accountNum.get(), messageHash, signedBytes)
+                            .via("authorizeCallWithThreshold")
+                            .gas(2_000_000L)
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+
+                    final var callWithKeyList = contractCall(
+                                    HRC632_CONTRACT,
+                                    "isAuthorizedRawCall",
+                                    accountAnotherNum.get(),
+                                    messageHash,
+                                    signedBytes)
+                            .via("authorizeCallWithKeyList")
+                            .gas(2_000_000L)
+                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED);
+                    allRunFor(spec, callWithThreshold, callWithKeyList);
+                }))
+                .then(
+                        childRecordsCheck(
+                                "authorizeCallWithThreshold",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(FAIL_INVALID)),
+                        childRecordsCheck(
+                                "authorizeCallWithKeyList",
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(FAIL_INVALID)));
     }
 }
