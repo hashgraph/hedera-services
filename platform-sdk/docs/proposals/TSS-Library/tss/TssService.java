@@ -75,7 +75,7 @@ public interface TssService {
     /**
      * Compute all private shares that belongs to this participant.
      *
-     * @param pendingParticipantDirectory the pending participant directory that we should generate the message for
+     * @param pendingParticipantDirectory the pending participant directory that we should generate the private share for
      * @param validTssMessages       the TSS messages to extract the private shares from. They must be previously validated.
      * @return the list of private share the current participant owns, or null if there aren't enough shares to meet the threshold
      */
