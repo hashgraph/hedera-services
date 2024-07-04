@@ -38,8 +38,6 @@ import org.junit.jupiter.api.Tag;
  */
 @Tag(ND_RECONNECT)
 public class MixedOpsNodeDeathReconnectTest implements LifecycleTest {
-    private static final long PORT_UNBINDING_TIMEOUT_MS = 180_000L;
-
     @HapiTest
     final Stream<DynamicTest> reconnectMixedOps() {
         return defaultHapiSpec("RestartMixedOps")
@@ -51,7 +49,7 @@ public class MixedOpsNodeDeathReconnectTest implements LifecycleTest {
                         // Stop node 2
                         shutdownWithin("Carol", SHUTDOWN_TIMEOUT),
                         logIt("Node 2 is supposedly down"),
-                        sleepFor(PORT_UNBINDING_TIMEOUT_MS))
+                        sleepFor(PORT_UNBINDING_WAIT_PERIOD.toMillis()))
                 .when(
                         // Submit operations when node 2 is down
                         burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),

@@ -213,7 +213,11 @@ public class ReadableFreezeUpgradeActions {
             @Nullable final Timestamp now,
             @Nullable List<ActiveNode> nodes) {
         try {
-            FileUtils.cleanDirectory(artifactsLoc.toFile());
+            final var artifactsDir = artifactsLoc.toFile();
+            if (!FileUtils.isDirectory(artifactsDir)) {
+                FileUtils.forceMkdir(artifactsDir);
+            }
+            FileUtils.cleanDirectory(artifactsDir);
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
             if (desc.equals(PREPARE_UPGRADE_DESC)) {
@@ -278,7 +282,6 @@ public class ReadableFreezeUpgradeActions {
         final var node = activeNode.node();
         final var alias = nameToAlias(node.description());
         final var pemFile = pathToWrite.resolve("s-public-" + alias + ".pem");
-        System.out.println("Writing " + pemFile);
         final int INT = 0;
         final int EXT = 1;
 

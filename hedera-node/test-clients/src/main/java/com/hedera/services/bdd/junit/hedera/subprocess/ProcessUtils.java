@@ -93,6 +93,16 @@ public class ProcessUtils {
     }
 
     /**
+     * Returns true if the given error is a bind exception that is correlated with a node starting.
+     *
+     * @param error the error to check
+     * @return true if the error is a correlated bind exception
+     */
+    public static boolean hadCorrelatedBindException(@NonNull final AssertionError error) {
+        return error.getMessage().contains("bindExceptionSeen=YES");
+    }
+
+    /**
      * Destroys any process that appears to be a node started from the given metadata, based on the
      * process command being {@code java} and having a last argument matching the node ID.
      *

@@ -19,9 +19,11 @@ package com.hedera.services.bdd.junit.hedera.subprocess;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.hadCorrelatedBindException;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.rm;
 import static com.hedera.services.bdd.suites.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
@@ -152,9 +154,14 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 var bindException = false;
                 do {
                     if (bindException) {
-                        nodes.forEach(HederaNode::terminate);
+                        // Completely rebuild the network and try again
+                        nodes.forEach(hederaNode -> {
+                            hederaNode.terminate();
+                            rm(hederaNode.metadata().workingDirOrThrow());
+                        });
                         assignNewPorts();
-                        nodes.forEach(HederaNode::start);
+                        clients = null;
+                        start();
                     }
                     final var deadline = Instant.now().plus(timeout);
                     try {
@@ -162,7 +169,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                         this.clients = HapiClients.clientsFor(this);
                     } catch (AssertionError e) {
                         error = e;
-                        bindException = error.getMessage().contains("bindExceptionSeen=YES");
+                        bindException = hadCorrelatedBindException(error);
                     }
                 } while (clients == null && bindException && retries-- > 0);
                 if (clients == null) {
@@ -198,6 +205,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                             nextPrometheusPort + nodeId);
         });
         refreshNodeConfigTxt();
+        HapiClients.tearDown();
         this.clients = HapiClients.clientsFor(this);
     }
 
