@@ -33,7 +33,7 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoGetStakersHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenAirdropsHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
@@ -94,7 +94,7 @@ public class TokenHandlersTest {
     private TokenGetNftInfosHandler tokenGetNftInfosHandler;
     private TokenUpdateNftsHandler tokenUpdateNftsHandler;
     private TokenRejectHandler tokenRejectHandler;
-    private TokenAirdropsHandler tokenAirdropsHandler;
+    private TokenAirdropHandler tokenAirdropHandler;
 
     private TokenHandlers tokenHandlers;
 
@@ -134,7 +134,7 @@ public class TokenHandlersTest {
         tokenGetNftInfosHandler = mock(TokenGetNftInfosHandler.class);
         tokenUpdateNftsHandler = mock(TokenUpdateNftsHandler.class);
         tokenRejectHandler = mock(TokenRejectHandler.class);
-        tokenAirdropsHandler = mock(TokenAirdropsHandler.class);
+        tokenAirdropHandler = mock(TokenAirdropHandler.class);
 
         tokenHandlers = new TokenHandlers(
                 cryptoCreateHandler,
@@ -171,7 +171,7 @@ public class TokenHandlersTest {
                 tokenGetNftInfosHandler,
                 tokenRejectHandler,
                 tokenUpdateNftsHandler,
-                tokenAirdropsHandler);
+                tokenAirdropHandler);
     }
 
     @Test
@@ -346,6 +346,6 @@ public class TokenHandlersTest {
 
     @Test
     public void tokenAirdropsHandlerReturnsCorrectInstance() {
-        assertEquals(tokenAirdropsHandler, tokenHandlers.tokenAirdropsHandler());
+        assertEquals(tokenAirdropHandler, tokenHandlers.tokenAirdropsHandler());
     }
 }

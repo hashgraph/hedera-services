@@ -30,7 +30,7 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
-import com.hedera.node.app.service.token.impl.handlers.TokenAirdropsHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import java.util.Arrays;
@@ -65,7 +65,7 @@ class CryptoTransferHandlerTestBase extends StepsBase {
             .build();
 
     protected CryptoTransferHandler subject;
-    protected TokenAirdropsHandler tokenAirdropsHandler;
+    protected TokenAirdropHandler tokenAirdropHandler;
     protected CryptoTransferValidator validator;
 
     @BeforeEach
@@ -73,7 +73,7 @@ class CryptoTransferHandlerTestBase extends StepsBase {
         super.setUp();
         validator = new CryptoTransferValidator();
         subject = new CryptoTransferHandler(validator);
-        tokenAirdropsHandler = new TokenAirdropsHandler(validator);
+        tokenAirdropHandler = new TokenAirdropHandler(validator);
     }
 
     protected TransactionBody newCryptoTransfer(final AccountAmount... acctAmounts) {
