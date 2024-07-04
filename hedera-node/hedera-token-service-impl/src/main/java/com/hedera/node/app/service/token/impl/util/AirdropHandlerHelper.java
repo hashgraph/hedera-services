@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountAirdrop;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -191,27 +192,43 @@ public class AirdropHandlerHelper {
     }
 
     /**
-     * Creates a {@link PendingAirdropValue} for a fungible token.
+     * Creates a {@link AccountAirdrop} for a fungible token.
      *
-     * @param amount the amount of fungible token
-     * @return {@link PendingAirdropValue} for storing in the state
+     * @param pendingAirdropValue the amount of fungible token
+     * @return {@link AccountAirdrop} for storing in the state
      */
-    public static PendingAirdropValue createPendingAirdropValue(long amount) {
-        return PendingAirdropValue.newBuilder().amount(amount).build();
+    public static AccountAirdrop createAccountAirdrop(
+            PendingAirdropId pendingAirdropId, PendingAirdropValue pendingAirdropValue) {
+        return createAccountAirdrop(pendingAirdropId, pendingAirdropValue, null);
+    }
+
+    /**
+     * Creates a {@link AccountAirdrop} for a fungible token.
+     *
+     * @param pendingAirdropValue the amount of fungible token
+     * @return {@link AccountAirdrop} for storing in the state
+     */
+    public static AccountAirdrop createAccountAirdrop(
+            PendingAirdropId pendingAirdropId, PendingAirdropValue pendingAirdropValue, PendingAirdropId next) {
+        return AccountAirdrop.newBuilder()
+                .pendingAirdropId(pendingAirdropId)
+                .pendingAirdropValue(pendingAirdropValue)
+                .nextAirdrop(next)
+                .build();
     }
 
     /**
      * Creates a {@link PendingAirdropRecord} for externalizing pending airdrop records.
      *
      * @param pendingAirdropId the ID of the pending airdrop
-     * @param pendingAirdropValue the value of the pending airdrop
+     * @param accountAirdrop the account airdrop relation of the pending airdrop
      * @return {@link PendingAirdropRecord}
      */
     public static PendingAirdropRecord createPendingAirdropRecord(
-            PendingAirdropId pendingAirdropId, PendingAirdropValue pendingAirdropValue) {
+            PendingAirdropId pendingAirdropId, AccountAirdrop accountAirdrop) {
         return PendingAirdropRecord.newBuilder()
                 .pendingAirdropId(pendingAirdropId)
-                .pendingAirdropValue(pendingAirdropValue)
+                .accountAirdrop(accountAirdrop)
                 .build();
     }
 }

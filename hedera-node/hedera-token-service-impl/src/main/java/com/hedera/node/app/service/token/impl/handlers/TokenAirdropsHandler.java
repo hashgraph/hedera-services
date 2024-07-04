@@ -33,10 +33,10 @@ import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor.executeTransfer;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
+import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createAccountAirdrop;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createFungibleTokenPendingAirdropId;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createNftPendingAirdropId;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createPendingAirdropRecord;
-import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createPendingAirdropValue;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateFungibleTransfers;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateNftTransfers;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createAccountAmount;
@@ -54,12 +54,14 @@ import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftTransfer;
+import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountAirdrop;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
@@ -70,6 +72,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.util.CryptoTransferFeeCalculator;
@@ -143,6 +146,7 @@ public class TokenAirdropsHandler implements TransactionHandler {
         final var txn = context.body();
         final var op = txn.tokenAirdropOrThrow();
         final var pendingStore = context.storeFactory().writableStore(WritableAirdropStore.class);
+        final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         var recordBuilder = context.recordBuilders().getOrCreate(TokenAirdropRecordBuilder.class);
         List<TokenTransferList> tokenTransferListList = new ArrayList<>();
 
@@ -157,17 +161,24 @@ public class TokenAirdropsHandler implements TransactionHandler {
                 // 1. separate transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 var fungibleLists = separateFungibleTransfers(context, tokenId, xfers.transfers());
-                var senderAccount = xfers.transfers().stream()
+                var senderOptionalAmount = xfers.transfers().stream()
                         .filter(item -> item.amount() < 0)
                         .findFirst();
+                var senderAccount = accountStore.getForModify(
+                        senderOptionalAmount.orElseThrow().accountIDOrThrow());
+                validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
 
                 // 2. create and save pending airdrops in to state
                 fungibleLists.pendingFungibleAmounts().forEach(accountAmount -> {
                     var pendingId = createFungibleTokenPendingAirdropId(
-                            tokenId, senderAccount.orElseThrow().accountID(), accountAmount.accountID());
-                    var pendingValue = createPendingAirdropValue(accountAmount.amount());
-                    var record = createPendingAirdropRecord(pendingId, pendingValue);
-                    pendingStore.put(pendingId, pendingValue);
+                            tokenId, senderOptionalAmount.orElseThrow().accountID(), accountAmount.accountID());
+                    var pendingValue = PendingAirdropValue.newBuilder()
+                            .amount(accountAmount.amount())
+                            .build();
+                    AccountAirdrop newAccountAirdrop = getNewAccountAirdropAndUpdateStores(
+                            senderAccount, pendingId, pendingValue, accountStore, pendingStore);
+                    var record = createPendingAirdropRecord(pendingId, newAccountAirdrop);
+                    pendingStore.put(pendingId, newAccountAirdrop);
                     recordBuilder.addPendingAirdrop(record);
                 });
 
@@ -182,9 +193,9 @@ public class TokenAirdropsHandler implements TransactionHandler {
                             .mapToLong(AccountAmount::amount)
                             .sum();
                     var senderAccountAmount = createAccountAmount(
-                            senderAccount.orElseThrow().accountIDOrThrow(),
+                            senderOptionalAmount.orElseThrow().accountIDOrThrow(),
                             -senderAmount,
-                            senderAccount.get().isApproval());
+                            senderOptionalAmount.get().isApproval());
                     amounts.add(senderAccountAmount);
                     amounts.addAll(receiversAmountList);
 
@@ -197,13 +208,19 @@ public class TokenAirdropsHandler implements TransactionHandler {
                 // 1. separate NFT transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 var nftLists = separateNftTransfers(context, tokenId, xfers.nftTransfers());
+                var optionalAccountId = nftLists.pendingNftList().stream().findFirst();
+                var senderAccount =
+                        accountStore.get(optionalAccountId.orElseThrow().senderAccountIDOrThrow());
+                validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
 
                 // 2. create and save NFT pending airdrops in to state
                 nftLists.pendingNftList().forEach(item -> {
                     var pendingId = createNftPendingAirdropId(
                             tokenId, item.serialNumber(), item.senderAccountID(), item.receiverAccountID());
-                    pendingStore.put(pendingId, PendingAirdropValue.DEFAULT);
-                    var record = createPendingAirdropRecord(pendingId, PendingAirdropValue.DEFAULT);
+                    AccountAirdrop newAccountAirdrop = getNewAccountAirdropAndUpdateStores(
+                            senderAccount, pendingId, null, accountStore, pendingStore);
+                    pendingStore.put(pendingId, newAccountAirdrop);
+                    var record = createPendingAirdropRecord(pendingId, newAccountAirdrop);
                     recordBuilder.addPendingAirdrop(record);
                 });
 
@@ -240,6 +257,39 @@ public class TokenAirdropsHandler implements TransactionHandler {
         final var transferContext = new TransferContextImpl(context, cryptoTransferBody, true);
 
         executeTransfer(syntheticCryptoTransferTxn, transferContext, context, validator, recordBuilder);
+    }
+
+    /**
+     *  Create new {@link AccountAirdrop} and if the sender has already existing pending airdrops
+     *  link them together and update the account store and the pending airdrop store with the new values
+     */
+    private AccountAirdrop getNewAccountAirdropAndUpdateStores(
+            Account senderAccount,
+            PendingAirdropId pendingId,
+            PendingAirdropValue pendingValue,
+            WritableAccountStore accountStore,
+            WritableAirdropStore pendingStore) {
+
+        AccountAirdrop newAccountAirdrop;
+        if (senderAccount.hasHeadPendingAirdropId()) {
+            // Get the previous head pending airdrop and update the previous airdrop ID
+            var headAirdropId = senderAccount.headPendingAirdropIdOrThrow();
+            var headAccountAirdrop = pendingStore.getForModify(headAirdropId);
+            validateTrue(headAccountAirdrop != null, INVALID_TOKEN_ID);
+            var updatedAirdrop =
+                    headAccountAirdrop.copyBuilder().previousAirdrop(pendingId).build();
+            pendingStore.put(headAirdropId, updatedAirdrop);
+
+            // Create new account airdrop with next airdrop ID the previous head airdrop
+            newAccountAirdrop = createAccountAirdrop(pendingId, pendingValue, headAirdropId);
+        } else {
+            newAccountAirdrop = createAccountAirdrop(pendingId, pendingValue);
+        }
+        // Update the sender account with new head pending airdrop
+        var updatedSenderAccount =
+                senderAccount.copyBuilder().headPendingAirdropId(pendingId).build();
+        accountStore.put(updatedSenderAccount);
+        return newAccountAirdrop;
     }
 
     /**
@@ -320,8 +370,6 @@ public class TokenAirdropsHandler implements TransactionHandler {
      *
      * @param tokenID      The ID of the token we are transferring
      * @param transfers    The transfers to check
-     * @param ctx          The context we gather signing keys into
-     * @param accountStore The account store to use to look up accounts
      * @throws PreCheckException If the transaction is invalid
      */
     private void checkFungibleTokenTransfers(
