@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.config;
+package com.hedera.services.bdd.junit.hedera.embedded;
 
 /**
- * Whether the node is "embedded" in a test runner, hence does not need gRPC servers.
+ * Enumerates the possible categories of software version we may request for the version of the event used to
+ * submit a transaction to an embedded network.
  */
-public enum IsEmbeddedTest {
-    YES,
-    NO
+public enum SyntheticVersion {
+    PAST,
+    PRESENT,
+    FUTURE
 }

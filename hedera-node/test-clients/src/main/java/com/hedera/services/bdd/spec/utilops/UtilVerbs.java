@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.ex
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -49,6 +50,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
+import static com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp.Containment.CONTAINS;
+import static com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp.Containment.DOES_NOT_CONTAIN;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
@@ -90,7 +93,8 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
-import com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt;
+import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
+import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -138,8 +142,6 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ConfigTxtValidationOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.PurgeUpgradeArtifactsOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutdownWithinOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.TryToStartNodesOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForMarkerFileOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForStatusOp;
 import com.hedera.services.bdd.spec.utilops.mod.QueryModification;
@@ -151,6 +153,7 @@ import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
+import com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp;
 import com.hedera.services.bdd.spec.utilops.streams.LogValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.StreamValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.AssertingBiConsumer;
@@ -160,9 +163,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStr
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
-import com.hedera.services.bdd.spec.utilops.upgrade.AddNodeOp;
 import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
-import com.hedera.services.bdd.spec.utilops.upgrade.RemoveNodeOp;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
@@ -319,6 +320,34 @@ public class UtilVerbs {
     }
 
     /**
+     * Returns an operation that delays for the given time and then validates that the selected nodes'
+     * application logs contain the given pattern.
+     *
+     * @param selector the selector for the node whose log to validate
+     * @param pattern the pattern that must be present
+     * @param delay the delay before validation
+     * @return the operation that validates the logs of the target network
+     */
+    public static LogContainmentOp assertHgcaaLogContains(
+            @NonNull final NodeSelector selector, @NonNull final String pattern, @NonNull final Duration delay) {
+        return new LogContainmentOp(selector, APPLICATION_LOG, CONTAINS, pattern, delay);
+    }
+
+    /**
+     * Returns an operation that delays for the given time and then validates that the selected nodes'
+     * application logs do not contain the given pattern.
+     *
+     * @param selector the selector for the node whose log to validate
+     * @param pattern the pattern that must be present
+     * @param delay the delay before validation
+     * @return the operation that validates the logs of the target network
+     */
+    public static LogContainmentOp assertHgcaaLogDoesNotContain(
+            @NonNull final NodeSelector selector, @NonNull final String pattern, @NonNull final Duration delay) {
+        return new LogContainmentOp(selector, APPLICATION_LOG, DOES_NOT_CONTAIN, pattern, delay);
+    }
+
+    /**
      * Returns an operation that delays for the given time and then validates
      * all of the target network node application logs.
      *
@@ -446,66 +475,20 @@ public class UtilVerbs {
         return new WaitForStatusOp(NodeSelector.allNodes(), ACTIVE, timeout);
     }
 
-    public static TryToStartNodesOp restartNode(String name) {
-        return restartNode(NodeSelector.byName(name));
-    }
-
-    public static TryToStartNodesOp restartNode(@NonNull final NodeSelector selector) {
-        return new TryToStartNodesOp(selector);
-    }
-
-    public static TryToStartNodesOp restartNetwork() {
-        return new TryToStartNodesOp(NodeSelector.allNodes(), 0, TryToStartNodesOp.ReassignPorts.YES);
-    }
-
     /**
-     * Returns an operation that removes a subprocess node from the network and refreshes the
-     * address books on all remaining nodes using the given <i>config.txt</i> source.
+     * Returns a submission strategy that requires an embedded network and given one submits a transaction with
+     * the given synthetic version.
      *
-     * @param selector the selector for the node to remove
-     * @param upgradeConfigTxt the source of the new <i>config.txt</i> file
-     * @return the operation that removes the node
+     * @param syntheticVersion the synthetic version to use
+     * @return the submission strategy
      */
-    public static RemoveNodeOp removeNodeAndRefreshConfigTxt(
-            @NonNull final NodeSelector selector, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
-        return new RemoveNodeOp(selector, upgradeConfigTxt);
-    }
-
-    /**
-     * Returns an operation that removes a subprocess node from the network and refreshes the
-     * address books on all remaining nodes using the given <i>config.txt</i> source.
-     *
-     * @param nodeId id of the node to add
-     * @param upgradeConfigTxt the source of the new <i>config.txt</i> file
-     * @return the operation that removes the node
-     */
-    public static AddNodeOp addNodeAndRefreshConfigTxt(
-            @NonNull final long nodeId, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
-        return new AddNodeOp(nodeId, upgradeConfigTxt);
-    }
-
-    public static TryToStartNodesOp restartNetworkWithConfigVersion(final int configVersion) {
-        return new TryToStartNodesOp(NodeSelector.allNodes(), configVersion, TryToStartNodesOp.ReassignPorts.YES);
-    }
-
-    public static TryToStartNodesOp restartWithConfigVersion(
-            @NonNull final NodeSelector selector, final int configVersion) {
-        return new TryToStartNodesOp(selector, configVersion);
-    }
-
-    public static ShutdownWithinOp shutdownWithin(@NonNull final String name, @NonNull final Duration timeout) {
-        return shutdownWithin(NodeSelector.byName(name), timeout);
-    }
-
-    public static ShutdownWithinOp shutdownWithin(
-            @NonNull final NodeSelector selector, @NonNull final Duration timeout) {
-        requireNonNull(selector);
-        requireNonNull(timeout);
-        return new ShutdownWithinOp(selector, timeout);
-    }
-
-    public static ShutdownWithinOp shutdownNetworkWithin(@NonNull final Duration timeout) {
-        return new ShutdownWithinOp(NodeSelector.allNodes(), timeout);
+    public static HapiTxnOp.SubmissionStrategy usingVersion(@NonNull final SyntheticVersion syntheticVersion) {
+        return (network, transaction, functionality, target, nodeAccountId) -> {
+            if (!(network instanceof EmbeddedNetwork embeddedNetwork)) {
+                throw new IllegalArgumentException("Expected an EmbeddedNetwork");
+            }
+            return embeddedNetwork.embeddedHederaOrThrow().submit(transaction, nodeAccountId, syntheticVersion);
+        };
     }
 
     public static WaitForStatusOp waitForFrozenNetwork(@NonNull final Duration timeout) {

@@ -20,13 +20,12 @@ import static com.hedera.services.bdd.junit.TestTags.ND_RECONNECT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restartNode;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutdownWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActive;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.burstOfTps;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.utilops.FakeNmt;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -47,14 +46,14 @@ public class MixedOpsNodeDeathReconnectTest implements LifecycleTest {
                         // Run some mixed transactions
                         burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
                         // Stop node 2
-                        shutdownWithin("Carol", SHUTDOWN_TIMEOUT),
+                        FakeNmt.shutdownWithin("Carol", SHUTDOWN_TIMEOUT),
                         logIt("Node 2 is supposedly down"),
                         sleepFor(PORT_UNBINDING_WAIT_PERIOD.toMillis()))
                 .when(
                         // Submit operations when node 2 is down
                         burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
                         // Restart node2
-                        restartNode("Carol"),
+                        FakeNmt.restartNode("Carol"),
                         logIt("Node 2 is supposedly restarted"),
                         // Wait for node2 ACTIVE (BUSY and RECONNECT_COMPLETE are too transient to reliably poll for)
                         waitForActive("Carol", LifecycleTest.RESTART_TO_ACTIVE_TIMEOUT))

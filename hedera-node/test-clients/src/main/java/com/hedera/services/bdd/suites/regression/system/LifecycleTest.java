@@ -24,10 +24,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.purgeUpgradeArtifacts;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restartNetworkWithConfigVersion;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restartWithConfigVersion;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutdownNetworkWithin;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutdownWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActive;
@@ -47,6 +43,7 @@ import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hedera.services.bdd.spec.utilops.FakeNmt;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
@@ -89,9 +86,9 @@ public interface LifecycleTest {
      */
     default HapiSpecOperation reconnectNode(@NonNull final NodeSelector selector, final int configVersion) {
         return blockingOrder(
-                shutdownWithin(selector, SHUTDOWN_TIMEOUT),
+                FakeNmt.shutdownWithin(selector, SHUTDOWN_TIMEOUT),
                 burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
-                restartWithConfigVersion(selector, configVersion),
+                FakeNmt.restartWithConfigVersion(selector, configVersion),
                 waitForActive(selector, RESTART_TO_ACTIVE_TIMEOUT));
     }
 
@@ -146,7 +143,7 @@ public interface LifecycleTest {
                         .havingHash(upgradeFileHashAt(FAKE_UPGRADE_ZIP_LOC))),
                 confirmFreezeAndShutdown(),
                 preRestartOp,
-                restartNetworkWithConfigVersion(version),
+                FakeNmt.restartNetworkWithConfigVersion(version),
                 waitForActiveNetwork(RESTART_TIMEOUT));
     }
 
@@ -158,7 +155,7 @@ public interface LifecycleTest {
         return blockingOrder(
                 waitForFrozenNetwork(FREEZE_TIMEOUT),
                 // Shut down all nodes, since the platform doesn't automatically go back to ACTIVE status
-                shutdownNetworkWithin(SHUTDOWN_TIMEOUT));
+                FakeNmt.shutdownNetworkWithin(SHUTDOWN_TIMEOUT));
     }
 
     /**
@@ -171,7 +168,7 @@ public interface LifecycleTest {
     static SemanticVersion fromBaseAndConfig(@NonNull SemanticVersion version, int configVersion) {
         return (configVersion == 0)
                 ? version
-                : version.toBuilder().setBuild("c" + configVersion).build();
+                : version.toBuilder().setBuild("" + configVersion).build();
     }
 
     /**

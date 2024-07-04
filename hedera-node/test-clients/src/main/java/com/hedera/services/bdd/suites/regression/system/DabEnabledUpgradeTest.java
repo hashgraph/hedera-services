@@ -28,9 +28,7 @@ import static com.hedera.services.bdd.spec.dsl.operations.transactions.TouchBala
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.addNodeAndRefreshConfigTxt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureStakingActivated;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.removeNodeAndRefreshConfigTxt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateUpgradeAddressBooks;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
@@ -48,6 +46,7 @@ import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.dsl.annotations.AccountSpec;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
+import com.hedera.services.bdd.spec.utilops.FakeNmt;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -144,7 +143,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(
                             addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 3L)),
-                    upgradeToConfigVersion(2, removeNodeAndRefreshConfigTxt(byNodeId(1), DAB_GENERATED)),
+                    upgradeToConfigVersion(2, FakeNmt.removeNodeAndRefreshConfigTxt(byNodeId(1), DAB_GENERATED)),
                     waitUntilStartOfNextStakingPeriod(1),
                     touchBalanceOf(NODE0_STAKER, NODE2_STAKER, NODE3_STAKER).andAssertStakingRewardCount(3),
                     touchBalanceOf(NODE1_STAKER).andAssertStakingRewardCount(0));
@@ -186,7 +185,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     // node4 was not active before this the upgrade, so it could not have written a config.txt
                     validateUpgradeAddressBooks(exceptNodeId(4L), addressBook -> assertThat(nodeIdsFrom(addressBook))
                             .contains(4L)),
-                    upgradeToConfigVersion(3, addNodeAndRefreshConfigTxt(4L, DAB_GENERATED)));
+                    upgradeToConfigVersion(3, FakeNmt.addNodeAndRefreshConfigTxt(4L, DAB_GENERATED)));
         }
     }
 

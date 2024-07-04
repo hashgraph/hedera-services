@@ -174,18 +174,21 @@ public class HandleWorkflow {
         cacheWarmer.warm(state, round);
         for (final var event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
-            if (creator == null && !isSoOrdered(event.getSoftwareVersion(), version)) {
-                // We were given an event for a node that *does not exist in the address book* and was not from a
-                // strictly earlier software upgrade. This will be logged as a warning, as this should never happen,
-                // and we will skip the event. The platform should guarantee that we never receive an event that
-                // isn't associated with the address book, and every node in the address book must have an account
-                // ID, since you cannot delete an account belonging to a node, and you cannot change the address book
-                // non-deterministically.
-                logger.warn(
-                        "Received event (version {} vs current {}) from node {} which is not in the address book",
-                        com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
-                        com.hedera.hapi.util.HapiUtils.toString(version),
-                        event.getCreatorId());
+            if (creator == null) {
+                if (!isSoOrdered(event.getSoftwareVersion(), version)) {
+                    // We were given an event for a node that *does not exist in the address book* and was not from a
+                    // strictly earlier software upgrade. This will be logged as a warning, as this should never happen,
+                    // and we will skip the event. The platform should guarantee that we never receive an event that
+                    // isn't associated with the address book, and every node in the address book must have an account
+                    // ID, since you cannot delete an account belonging to a node, and you cannot change the address
+                    // book
+                    // non-deterministically.
+                    logger.warn(
+                            "Received event (version {} vs current {}) from node {} which is not in the address book",
+                            com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
+                            com.hedera.hapi.util.HapiUtils.toString(version),
+                            event.getCreatorId());
+                }
                 return;
             }
             // log start of event to transaction state log
