@@ -36,6 +36,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -132,14 +133,13 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
     }
 
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
-        var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
-    }
+    public void handle(@NonNull final HandleContext context) throws HandleException {}
 
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        return Fees.FREE;
+        var tokensConfig = feeContext.configuration().getConfigData(TokensConfig.class);
+        validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
+        return feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT).calculate();
     }
 }

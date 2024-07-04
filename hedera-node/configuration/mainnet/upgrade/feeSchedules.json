@@ -1906,6 +1906,52 @@
       },
       {
         "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenCancelAirdrop",
+          "fees": [
+            {
+              "subType": "DEFAULT",
+              "nodedata": {
+                "constant": 4574479485,
+                "bpt": 7313222,
+                "vpt": 18283054670,
+                "rbh": 4875,
+                "sbh": 366,
+                "gas": 48755,
+                "bpr": 7313222,
+                "sbpr": 182831,
+                "min": 0,
+                "max": 1000000000000000
+              },
+              "networkdata": {
+                "constant": 73191671761,
+                "bpt": 117011550,
+                "vpt": 292528874720,
+                "rbh": 78008,
+                "sbh": 5851,
+                "gas": 780077,
+                "bpr": 117011550,
+                "sbpr": 2925289,
+                "min": 0,
+                "max": 1000000000000000
+              },
+              "servicedata": {
+                "constant": 73191671761,
+                "bpt": 117011550,
+                "vpt": 292528874720,
+                "rbh": 78008,
+                "sbh": 5851,
+                "gas": 780077,
+                "bpr": 117011550,
+                "sbpr": 2925289,
+                "min": 0,
+                "max": 1000000000000000
+              }
+            }
+          ]
+        }
+      },
+      {
+        "transactionFeeSchedule": {
           "hederaFunctionality": "TokenDissociateFromAccount",
           "fees": [
             {
@@ -5505,6 +5551,52 @@
                 "gas": 0,
                 "bpr": 0,
                 "sbpr": 0,
+                "min": 0,
+                "max": 1000000000000000
+              }
+            }
+          ]
+        }
+      },
+      {
+        "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenCancelAirdrop",
+          "fees": [
+            {
+              "subType": "DEFAULT",
+              "nodedata": {
+                "constant": 4574479485,
+                "bpt": 7313222,
+                "vpt": 18283054670,
+                "rbh": 4875,
+                "sbh": 366,
+                "gas": 48755,
+                "bpr": 7313222,
+                "sbpr": 182831,
+                "min": 0,
+                "max": 1000000000000000
+              },
+              "networkdata": {
+                "constant": 73191671761,
+                "bpt": 117011550,
+                "vpt": 292528874720,
+                "rbh": 78008,
+                "sbh": 5851,
+                "gas": 780077,
+                "bpr": 117011550,
+                "sbpr": 2925289,
+                "min": 0,
+                "max": 1000000000000000
+              },
+              "servicedata": {
+                "constant": 73191671761,
+                "bpt": 117011550,
+                "vpt": 292528874720,
+                "rbh": 78008,
+                "sbh": 5851,
+                "gas": 780077,
+                "bpr": 117011550,
+                "sbpr": 2925289,
                 "min": 0,
                 "max": 1000000000000000
               }
