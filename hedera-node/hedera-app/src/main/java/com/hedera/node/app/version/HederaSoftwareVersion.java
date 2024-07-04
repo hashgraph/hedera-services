@@ -161,13 +161,6 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         }
     }
 
-    public boolean isAfter(@Nullable final SoftwareVersion deserializedVersion) {
-        if (deserializedVersion == null) {
-            return true;
-        }
-        return compareTo(deserializedVersion) > 0;
-    }
-
     public boolean isBefore(@Nullable final SoftwareVersion deserializedVersion) {
         if (deserializedVersion == null) {
             return false;
@@ -184,12 +177,12 @@ public class HederaSoftwareVersion implements SoftwareVersion {
     }
 
     /**
-     * Returns a readable form of the services version with the config version if non-zero.
+     * Returns a readable form of the services version with the config version as the semver build part if non-zero.
      *
      * @return a readable form of the services version
      */
     public String readableServicesVersion() {
-        return HapiUtils.toString(servicesVersion) + (configVersion == 0 ? "" : "-c" + configVersion);
+        return HapiUtils.toString(toUpgradeComparableSemVer(configVersion, servicesVersion));
     }
 
     /**

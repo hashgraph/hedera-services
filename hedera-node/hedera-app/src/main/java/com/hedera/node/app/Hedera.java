@@ -409,9 +409,9 @@ public final class Hedera implements SwirldMain {
         final var currentVersion = version.getPbjSemanticVersion();
         final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
         logger.info(
-                "{} from Services version {} @ {} with trigger {}",
+                "{} from Services version {} @ current {} with trigger {}",
                 () -> isUpgrade ? "Upgrading" : (previousVersion == null ? "Starting" : "Restarting"),
-                () -> previousVersion == null ? "<N/A>" : version.readableServicesVersion(),
+                () -> HapiUtils.toString(previousVersion),
                 version::readableServicesVersion,
                 () -> trigger);
         final var selfNodeInfo = extractSelfNodeInfo(platform, version);

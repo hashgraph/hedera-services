@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.REACHED;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.UNREACHABLE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ERROR_REDIRECT_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
@@ -44,6 +46,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -169,20 +172,37 @@ public class ProcessUtils {
     }
 
     /**
-     * Returns a future that resolves when the given condition is true, backing off checking
-     * the condition by the number of milliseconds returned by the given supplier.
+     * Returns a future that resolves when the given condition is true, backing off checking the condition by the
+     * number of milliseconds returned by the given supplier.
+     *
+     * @param condition the condition to wait for
+     * @param checkBackoffMs the supplier of the number of milliseconds to back off between checks
+     * @return
+     */
+    public static CompletableFuture<Void> conditionFuture(
+            @NonNull final BooleanSupplier condition, @NonNull final LongSupplier checkBackoffMs) {
+        return conditionFuture(() -> condition.getAsBoolean() ? REACHED : ConditionStatus.PENDING, checkBackoffMs);
+    }
+
+    /**
+     * Returns a future that resolves when the given condition is reached, or fails when it becomes unreachable,
+     * backing off checking the condition by the number of milliseconds returned by the given supplier.
      *
      * @param condition the condition to wait for
      * @param checkBackoffMs the supplier of the number of milliseconds to back off between checks
      * @return a future that resolves when the condition is true or the timeout is reached
      */
     public static CompletableFuture<Void> conditionFuture(
-            @NonNull final BooleanSupplier condition, @NonNull final LongSupplier checkBackoffMs) {
+            @NonNull final Supplier<ConditionStatus> condition, @NonNull final LongSupplier checkBackoffMs) {
         requireNonNull(condition);
         requireNonNull(checkBackoffMs);
         return CompletableFuture.runAsync(
                 () -> {
-                    while (!condition.getAsBoolean()) {
+                    ConditionStatus status;
+                    while ((status = condition.get()) != REACHED) {
+                        if (status == UNREACHABLE) {
+                            throw new IllegalStateException("Condition is unreachable");
+                        }
                         try {
                             MILLISECONDS.sleep(checkBackoffMs.getAsLong());
                         } catch (InterruptedException e) {

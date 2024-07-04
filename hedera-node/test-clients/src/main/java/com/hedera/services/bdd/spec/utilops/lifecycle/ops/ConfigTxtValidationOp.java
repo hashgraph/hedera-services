@@ -51,6 +51,7 @@ public class ConfigTxtValidationOp extends AbstractLifecycleOp {
     protected void run(@NonNull final HederaNode node) {
         final var configTxtPath = node.getExternalPath(UPGRADE_ARTIFACTS_DIR).resolve(CONFIG_TXT);
         final AtomicReference<String> lastFailure = new AtomicReference<>();
+        log.info("Validating address book at {}", configTxtPath);
         try {
             conditionFuture(() -> containsLoadableAddressBook(configTxtPath, lastFailure::set))
                     .get(CONFIG_TXT_TIMEOUT.toMillis(), MILLISECONDS);
@@ -68,8 +69,8 @@ public class ConfigTxtValidationOp extends AbstractLifecycleOp {
             loadAddressBook(configTxtPath);
             return true;
         } catch (Exception e) {
-            lastError.accept(e.getMessage());
-            log.warn("Unable to load address book from {}!", configTxtPath, e);
+            lastError.accept(e.getClass().getSimpleName() + " - '" + e.getMessage() + "'");
+            log.warn("Unable to load address book from {}", configTxtPath, e);
             return false;
         }
     }

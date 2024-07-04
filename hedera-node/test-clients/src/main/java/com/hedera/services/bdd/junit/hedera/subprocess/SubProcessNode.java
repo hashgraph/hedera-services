@@ -18,6 +18,11 @@ package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.PENDING;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.REACHED;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.UNREACHABLE;
+import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen.NO;
+import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen.YES;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.DOWN;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.NA;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.UP;
@@ -120,7 +125,6 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
             @NonNull final PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver) {
         requireNonNull(status);
         final var retryCount = new AtomicInteger();
-        final var bindExceptionSeen = new AtomicReference<>(BindExceptionSeen.NA);
         return conditionFuture(
                 () -> {
                     final var nominalSoFar = retryCount.get() <= MAX_PROMETHEUS_RETRIES;
@@ -133,6 +137,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
                         grpcStatus = grpcPinger.isLive(metadata.grpcPort()) ? UP : DOWN;
                         statusReached = grpcStatus == UP;
                     }
+                    var bindExceptionSeen = BindExceptionSeen.NA;
                     // This extra logic just barely justifies its existence by giving up
                     // immediately when a bind exception is seen in the logs, since in
                     // practice these are never transient; it also lets us try reassigning
@@ -142,16 +147,20 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
                             && !nominalSoFar
                             && retryCount.get() % BINDING_CHECK_INTERVAL == 0) {
                         if (swirldsLogContains("java.net.BindException")) {
-                            bindExceptionSeen.set(BindExceptionSeen.YES);
+                            bindExceptionSeen = YES;
                         } else {
-                            bindExceptionSeen.set(BindExceptionSeen.NO);
+                            bindExceptionSeen = NO;
                         }
                     }
                     if (nodeStatusObserver != null) {
                         nodeStatusObserver.accept(new NodeStatus(
-                                lookupAttempt, grpcStatus, bindExceptionSeen.get(), retryCount.getAndIncrement()));
+                                lookupAttempt, grpcStatus, bindExceptionSeen, retryCount.getAndIncrement()));
                     }
-                    return statusReached;
+                    if (statusReached) {
+                        return REACHED;
+                    } else {
+                        return bindExceptionSeen == YES ? UNREACHABLE : PENDING;
+                    }
                 },
                 () -> retryCount.get() > MAX_PROMETHEUS_RETRIES ? LOG_SCAN_BACKOFF_MS : PROMETHEUS_BACKOFF_MS);
     }

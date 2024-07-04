@@ -72,7 +72,7 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
 
     @Override
     protected void run(@NonNull final HederaNode node) {
-        log.info("Starting node '{}'", node.getName());
+        log.info("Starting node '{}' - {}", node.getName(), node.metadata());
         try {
             if (!(node instanceof SubProcessNode subProcessNode)) {
                 throw new IllegalStateException("Node is not a SubProcessNode");

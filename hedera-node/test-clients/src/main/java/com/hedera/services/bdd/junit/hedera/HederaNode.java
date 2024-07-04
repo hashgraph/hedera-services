@@ -148,4 +148,10 @@ public interface HederaNode {
     default String hapiSpecInfo() {
         return getHost() + ":" + getGrpcPort() + ":0.0." + getAccountId().accountNumOrThrow();
     }
+
+    /**
+     * Returns the metadata for this node.
+     * @return the metadata for this node
+     */
+    NodeMetadata metadata();
 }
