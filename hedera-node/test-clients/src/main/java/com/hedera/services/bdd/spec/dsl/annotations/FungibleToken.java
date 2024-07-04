@@ -16,7 +16,11 @@
 
 package com.hedera.services.bdd.spec.dsl.annotations;
 
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
+
 import com.hedera.services.bdd.junit.extensions.SpecEntityExtension;
+import com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -24,30 +28,30 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Describes a {@link com.hedera.services.bdd.spec.dsl.entities.SpecContract}.
+ * Describes a {@link com.hedera.services.bdd.spec.dsl.entities.SpecToken}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.PARAMETER})
 @ExtendWith(SpecEntityExtension.class)
-public @interface ContractSpec {
+public @interface FungibleToken {
     /**
-     * If set, a different {@link com.hedera.services.bdd.spec.HapiSpec} name to use for the contract.
+     * If set, a {@link com.hedera.services.bdd.spec.HapiSpec} name to use for the token.
      *
      * @return the spec name of the contract
      */
     String name() default "";
 
     /**
-     * The name of the contract; must refer to a contract in the classpath resources.
+     * The types of keys to associate with the token.
      *
-     * @return the name of the contract
+     * @return the types of keys to associate with the token
      */
-    String contract();
+    SpecTokenKey[] keys() default {ADMIN_KEY, SUPPLY_KEY};
 
     /**
-     * The amount of gas to use when creating the contract.
+     * Whether to use an auto-renew account for the token.
      *
-     * @return the amount of gas to use
+     * @return whether to use an auto-renew account for the token
      */
-    long creationGas() default 100_000L;
+    boolean useAutoRenewAccount() default false;
 }

@@ -24,16 +24,30 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Describes a {@link com.hedera.services.bdd.spec.dsl.entities.SpecAccount}.
+ * Describes a {@link com.hedera.services.bdd.spec.dsl.entities.SpecContract}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.PARAMETER})
 @ExtendWith(SpecEntityExtension.class)
-public @interface AccountSpec {
+public @interface Contract {
     /**
-     * If set, a different {@link com.hedera.services.bdd.spec.HapiSpec} name to use for the account.
+     * If set, a different {@link com.hedera.services.bdd.spec.HapiSpec} name to use for the contract.
      *
-     * @return the spec name of the account
+     * @return the spec name of the contract
      */
     String name() default "";
+
+    /**
+     * The name of the contract; must refer to a contract in the classpath resources.
+     *
+     * @return the name of the contract
+     */
+    String contract();
+
+    /**
+     * The amount of gas to use when creating the contract.
+     *
+     * @return the amount of gas to use
+     */
+    long creationGas() default 100_000L;
 }

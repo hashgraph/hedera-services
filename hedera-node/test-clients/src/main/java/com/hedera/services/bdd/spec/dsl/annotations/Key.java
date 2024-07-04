@@ -16,42 +16,29 @@
 
 package com.hedera.services.bdd.spec.dsl.annotations;
 
-import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
-import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
-
 import com.hedera.services.bdd.junit.extensions.SpecEntityExtension;
-import com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey;
+import com.hedera.services.bdd.spec.dsl.entities.SpecKey;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-/**
- * Describes a {@link com.hedera.services.bdd.spec.dsl.entities.SpecToken}.
- */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.PARAMETER})
 @ExtendWith(SpecEntityExtension.class)
-public @interface FungibleTokenSpec {
+public @interface Key {
     /**
-     * If set, a {@link com.hedera.services.bdd.spec.HapiSpec} name to use for the token.
+     * If set, a {@link com.hedera.services.bdd.spec.HapiSpec} name to use for the key.
      *
-     * @return the spec name of the contract
+     * @return the spec name of the key
      */
     String name() default "";
 
     /**
-     * The types of keys to associate with the token.
+     * The type of key to create.
      *
-     * @return the types of keys to associate with the token
+     * @return the type of key to create
      */
-    SpecTokenKey[] keys() default {ADMIN_KEY, SUPPLY_KEY};
-
-    /**
-     * Whether to use an auto-renew account for the token.
-     *
-     * @return whether to use an auto-renew account for the token
-     */
-    boolean useAutoRenewAccount() default false;
+    SpecKey.Type type() default SpecKey.Type.ED25519;
 }

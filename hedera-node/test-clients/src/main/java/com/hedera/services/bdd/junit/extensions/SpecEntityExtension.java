@@ -20,11 +20,11 @@ import static java.lang.reflect.Modifier.isStatic;
 import static org.junit.platform.commons.support.AnnotationSupport.findAnnotatedFields;
 
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
-import com.hedera.services.bdd.spec.dsl.annotations.AccountSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.FungibleTokenSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.KeySpec;
-import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleTokenSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
+import com.hedera.services.bdd.spec.dsl.annotations.Key;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
@@ -60,28 +60,26 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
         final var entityType = parameterContext.getParameter().getType();
         if (entityType == SpecAccount.class) {
             return accountFrom(
-                    parameter.isAnnotationPresent(AccountSpec.class)
-                            ? parameter.getAnnotation(AccountSpec.class)
-                            : null,
+                    parameter.isAnnotationPresent(Account.class) ? parameter.getAnnotation(Account.class) : null,
                     parameter.getName());
         } else if (entityType == SpecContract.class) {
-            if (!parameter.isAnnotationPresent(ContractSpec.class)) {
+            if (!parameter.isAnnotationPresent(Contract.class)) {
                 throw new IllegalArgumentException("Missing @ContractSpec annotation");
             }
-            return contractFrom(parameter.getAnnotation(ContractSpec.class));
+            return contractFrom(parameter.getAnnotation(Contract.class));
         } else if (entityType == SpecFungibleToken.class) {
-            if (!parameter.isAnnotationPresent(FungibleTokenSpec.class)) {
+            if (!parameter.isAnnotationPresent(FungibleToken.class)) {
                 throw new IllegalArgumentException("Missing @FungibleTokenSpec annotation");
             }
-            return fungibleTokenFrom(parameter.getAnnotation(FungibleTokenSpec.class), parameter.getName());
+            return fungibleTokenFrom(parameter.getAnnotation(FungibleToken.class), parameter.getName());
         } else if (entityType == SpecNonFungibleToken.class) {
-            if (!parameter.isAnnotationPresent(NonFungibleTokenSpec.class)) {
+            if (!parameter.isAnnotationPresent(NonFungibleToken.class)) {
                 throw new IllegalArgumentException("Missing @NonFungibleTokenSpec annotation");
             }
-            return nonFungibleTokenFrom(parameter.getAnnotation(NonFungibleTokenSpec.class), parameter.getName());
+            return nonFungibleTokenFrom(parameter.getAnnotation(NonFungibleToken.class), parameter.getName());
         } else if (entityType == SpecKey.class) {
             return keyFrom(
-                    parameter.isAnnotationPresent(KeySpec.class) ? parameter.getAnnotation(KeySpec.class) : null,
+                    parameter.isAnnotationPresent(Key.class) ? parameter.getAnnotation(Key.class) : null,
                     parameter.getName());
         } else {
             throw new ParameterResolutionException("Unsupported entity type " + entityType);
@@ -92,51 +90,49 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
     public void beforeAll(@NonNull final ExtensionContext context) throws Exception {
         // Inject spec contracts into static fields annotated with @ContractSpec
         for (final var field : findAnnotatedFields(
-                context.getRequiredTestClass(), ContractSpec.class, staticFieldSelector(SpecContract.class))) {
-            final var contract = contractFrom(field.getAnnotation(ContractSpec.class));
+                context.getRequiredTestClass(), Contract.class, staticFieldSelector(SpecContract.class))) {
+            final var contract = contractFrom(field.getAnnotation(Contract.class));
             injectValueIntoField(field, contract);
         }
 
         // Inject spec fungible tokens into static fields annotated with @FungibleTokenSpec
         for (final var field : findAnnotatedFields(
-                context.getRequiredTestClass(),
-                FungibleTokenSpec.class,
-                staticFieldSelector(SpecFungibleToken.class))) {
-            final var token = fungibleTokenFrom(field.getAnnotation(FungibleTokenSpec.class), field.getName());
+                context.getRequiredTestClass(), FungibleToken.class, staticFieldSelector(SpecFungibleToken.class))) {
+            final var token = fungibleTokenFrom(field.getAnnotation(FungibleToken.class), field.getName());
             injectValueIntoField(field, token);
         }
 
         // Inject spec non-fungible tokens into static fields annotated with @NonFungibleTokenSpec
         for (final var field : findAnnotatedFields(
                 context.getRequiredTestClass(),
-                NonFungibleTokenSpec.class,
+                NonFungibleToken.class,
                 staticFieldSelector(SpecNonFungibleToken.class))) {
-            final var token = nonFungibleTokenFrom(field.getAnnotation(NonFungibleTokenSpec.class), field.getName());
+            final var token = nonFungibleTokenFrom(field.getAnnotation(NonFungibleToken.class), field.getName());
             injectValueIntoField(field, token);
         }
 
         // Inject spec accounts into static fields annotated with @AccountSpec
         for (final var field : findAnnotatedFields(
-                context.getRequiredTestClass(), AccountSpec.class, staticFieldSelector(SpecAccount.class))) {
-            final var account = accountFrom(field.getAnnotation(AccountSpec.class), field.getName());
+                context.getRequiredTestClass(), Account.class, staticFieldSelector(SpecAccount.class))) {
+            final var account = accountFrom(field.getAnnotation(Account.class), field.getName());
             injectValueIntoField(field, account);
         }
 
         // Inject spec keys into static fields annotated with @KeySpec
-        for (final var field : findAnnotatedFields(
-                context.getRequiredTestClass(), KeySpec.class, staticFieldSelector(SpecKey.class))) {
-            final var key = keyFrom(field.getAnnotation(KeySpec.class), field.getName());
+        for (final var field :
+                findAnnotatedFields(context.getRequiredTestClass(), Key.class, staticFieldSelector(SpecKey.class))) {
+            final var key = keyFrom(field.getAnnotation(Key.class), field.getName());
             injectValueIntoField(field, key);
         }
     }
 
-    private SpecContract contractFrom(@NonNull final ContractSpec annotation) {
+    private SpecContract contractFrom(@NonNull final Contract annotation) {
         final var name = annotation.name().isBlank() ? annotation.contract() : annotation.name();
         return new SpecContract(name, annotation.contract(), annotation.creationGas());
     }
 
     private SpecNonFungibleToken nonFungibleTokenFrom(
-            @NonNull final NonFungibleTokenSpec annotation, @NonNull final String defaultName) {
+            @NonNull final NonFungibleToken annotation, @NonNull final String defaultName) {
         final var token = new SpecNonFungibleToken(annotation.name().isBlank() ? defaultName : annotation.name());
         customizeToken(token, annotation.keys(), annotation.useAutoRenewAccount());
         token.setNumPreMints(annotation.numPreMints());
@@ -144,26 +140,26 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
     }
 
     private SpecFungibleToken fungibleTokenFrom(
-            @NonNull final FungibleTokenSpec annotation, @NonNull final String defaultName) {
+            @NonNull final FungibleToken annotation, @NonNull final String defaultName) {
         final var token = new SpecFungibleToken(annotation.name().isBlank() ? defaultName : annotation.name());
         customizeToken(token, annotation.keys(), annotation.useAutoRenewAccount());
         return token;
     }
 
-    private SpecAccount accountFrom(@Nullable final AccountSpec annotation, @NonNull final String defaultName) {
+    private SpecAccount accountFrom(@Nullable final Account annotation, @NonNull final String defaultName) {
         final var name = Optional.ofNullable(annotation)
-                .map(AccountSpec::name)
+                .map(Account::name)
                 .filter(n -> !n.isBlank())
                 .orElse(defaultName);
         return new SpecAccount(name);
     }
 
-    private SpecKey keyFrom(@Nullable final KeySpec annotation, @NonNull final String defaultName) {
+    private SpecKey keyFrom(@Nullable final Key annotation, @NonNull final String defaultName) {
         final var name = Optional.ofNullable(annotation)
-                .map(KeySpec::name)
+                .map(Key::name)
                 .filter(n -> !n.isBlank())
                 .orElse(defaultName);
-        final var type = Optional.ofNullable(annotation).map(KeySpec::type).orElse(SpecKey.Type.ED25519);
+        final var type = Optional.ofNullable(annotation).map(Key::type).orElse(SpecKey.Type.ED25519);
         return new SpecKey(name, type);
     }
 

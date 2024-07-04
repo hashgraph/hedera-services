@@ -145,7 +145,6 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CAL
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CALL_TX_REC;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CONTRACT_FROM;
-import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.DEFAULT_MAX_AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.DEPOSIT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
@@ -1550,14 +1549,19 @@ public class LeakyContractTestsSuite {
         final AtomicLong longLivedPayerGasUsed = new AtomicLong();
         final AtomicReference<String> toyMakerMirror = new AtomicReference<>();
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "ContractCreationStoragePriceMatchesFinalExpiry",
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
+                .preserving(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, "entities.maxLifetime")
                 .given(
-                        overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, "" + longLifetime),
+                        overridingTwo(
+                                LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION,
+                                "" + longLifetime,
+                                "entities.maxLifetime",
+                                "3153600000"),
                         cryptoCreate(normalPayer),
                         cryptoCreate(longLivedPayer).autoRenewSecs(longLifetime),
                         uploadInitCode(toyMaker, createIndirectly),
@@ -1582,7 +1586,7 @@ public class LeakyContractTestsSuite {
                         sourcing(() -> contractCall(
                                         createIndirectly, "makeOpaquely", asHeadlongAddress(toyMakerMirror.get()))
                                 .payingWith(longLivedPayer)))
-                .then(overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, DEFAULT_MAX_AUTO_RENEW_PERIOD));
+                .then();
     }
 
     @HapiTest
