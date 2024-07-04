@@ -22,6 +22,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.EXPIRATION_REDUCTION_NO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
@@ -332,6 +333,56 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(context.body()).thenReturn(txn);
 
         assertFailsWith(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT, () -> subject.handle(context));
+    }
+
+    @Test
+    void maxAutomaticTokenAssociationsNegativeWithDisabledFlag() {
+        when(configuration.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
+        when(configuration.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
+        when(entitiesConfig.unlimitedAutoAssociationsEnabled()).thenReturn(false);
+        when(context.configuration()).thenReturn(configuration);
+
+        when(accountStore.getContractById(targetContract)).thenReturn(contract);
+
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        final var txn = TransactionBody.newBuilder()
+                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .contractID(targetContract)
+                        .adminKey(adminKey)
+                        .memo("memo")
+                        .maxAutomaticTokenAssociations(-1))
+                .transactionID(transactionID)
+                .build();
+
+        when(context.body()).thenReturn(txn);
+
+        assertFailsWith(INVALID_MAX_AUTO_ASSOCIATIONS, () -> subject.handle(context));
+    }
+
+    @Test
+    void maxAutomaticTokenAssociationsNegativeWithEnabledFlag() {
+        when(configuration.getConfigData(LedgerConfig.class)).thenReturn(ledgerConfig);
+        when(configuration.getConfigData(EntitiesConfig.class)).thenReturn(entitiesConfig);
+        when(entitiesConfig.unlimitedAutoAssociationsEnabled()).thenReturn(true);
+        when(context.configuration()).thenReturn(configuration);
+
+        when(accountStore.getContractById(targetContract)).thenReturn(contract);
+
+        given(context.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        final var txn = TransactionBody.newBuilder()
+                .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
+                        .contractID(targetContract)
+                        .adminKey(adminKey)
+                        .memo("memo")
+                        .maxAutomaticTokenAssociations(-5))
+                .transactionID(transactionID)
+                .build();
+
+        when(context.body()).thenReturn(txn);
+
+        assertFailsWith(INVALID_MAX_AUTO_ASSOCIATIONS, () -> subject.handle(context));
     }
 
     @Test
