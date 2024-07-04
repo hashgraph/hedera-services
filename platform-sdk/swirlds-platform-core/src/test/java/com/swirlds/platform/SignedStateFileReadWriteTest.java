@@ -141,7 +141,7 @@ class SignedStateFileReadWriteTest {
         final Path addressBookFile = directory.resolve(CURRENT_ADDRESS_BOOK_FILE_NAME);
 
         throwIfFileExists(stateFile, hashInfoFile, settingsUsedFile, directory);
-        final Configuration configuration = changeConfigAndConfigHolder("data/saved");
+        final Configuration configuration = changeConfigAndConfigHolder(testDirectory.resolve("data/saved").toString());
 
         final PlatformContext platformContext = TestPlatformContextBuilder.create()
                 .withConfiguration(configuration)
