@@ -70,7 +70,8 @@ public class AddressBookUtils {
             sb.append("address, ")
                     .append(node.getNodeId())
                     .append(", ")
-                    .append(node.getName().charAt(0))
+                    // For now only use the node id as its nickname
+                    .append(node.getNodeId())
                     .append(", ")
                     .append(node.getName())
                     .append(", 1, 127.0.0.1, ")

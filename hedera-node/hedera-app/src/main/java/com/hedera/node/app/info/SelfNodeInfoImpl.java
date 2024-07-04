@@ -41,7 +41,8 @@ public record SelfNodeInfoImpl(
         @NonNull String hexEncodedPublicKey,
         @NonNull String memo,
         @Nullable Bytes sigCertBytes,
-        @NonNull HederaSoftwareVersion version)
+        @NonNull HederaSoftwareVersion version,
+        @NonNull String selfName)
         implements SelfNodeInfo {
 
     public SelfNodeInfoImpl {
@@ -73,7 +74,8 @@ public record SelfNodeInfoImpl(
                 CommonUtils.hex(requireNonNull(address.getSigPublicKey()).getEncoded()),
                 address.getMemo(),
                 sigCertBytes,
-                version);
+                version,
+                address.getSelfName());
     }
 
     @NonNull

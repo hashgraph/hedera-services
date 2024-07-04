@@ -69,6 +69,7 @@ public class ConfigTxtValidationOp extends AbstractLifecycleOp {
             return true;
         } catch (Exception e) {
             lastError.accept(e.getMessage());
+            log.warn("Unable to load address book from {}!", configTxtPath, e);
             return false;
         }
     }

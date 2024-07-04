@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.junit.TestTags.UPGRADE;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.exceptNodeId;
 import static com.hedera.services.bdd.junit.hedera.subprocess.UpgradeConfigTxt.DAB_GENERATED;
+import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.CLASSIC_NODE_NAMES;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.nodeIdsFrom;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.operations.transactions.TouchBalancesOperation.touchBalanceOf;
@@ -49,6 +50,7 @@ import com.hedera.services.bdd.spec.dsl.annotations.AccountSpec;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -118,8 +120,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
             return hapiTest(
                     getVersionInfo().exposingServicesVersionTo(startVersion::set),
                     prepareFakeUpgrade(),
-                    validateUpgradeAddressBooks(
-                            addressBook -> assertEquals(CLASSIC_HAPI_TEST_NETWORK_SIZE, addressBook.getSize())),
+                    validateUpgradeAddressBooks(DabEnabledUpgradeTest::hasClassicAddressMetadata),
                     upgradeToConfigVersion(1),
                     assertVersion(startVersion::get, 1));
         }
@@ -170,7 +171,10 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
 
         @BeforeAll
         static void beforeAll(@NonNull final SpecManager manager) throws Throwable {
-            manager.setup(nodeCreate("node4").accountId(NEW_ACCOUNT_ID).withAvailableSubProcessPorts());
+            manager.setup(nodeCreate("node4")
+                    .accountId(NEW_ACCOUNT_ID)
+                    .description(CLASSIC_NODE_NAMES[4])
+                    .withAvailableSubProcessPorts());
         }
 
         @HapiTest
@@ -184,5 +188,14 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                             .contains(4L)),
                     upgradeToConfigVersion(3, addNodeAndRefreshConfigTxt(4L, DAB_GENERATED)));
         }
+    }
+
+    private static void hasClassicAddressMetadata(@NonNull AddressBook addressBook) {
+        assertEquals(CLASSIC_HAPI_TEST_NETWORK_SIZE, addressBook.getSize(), "Wrong size");
+        addressBook.forEach(address -> {
+            final var i = (int) address.getNodeId().id();
+            assertEquals("" + i, address.getNickname(), "Wrong nickname");
+            assertEquals(CLASSIC_NODE_NAMES[i], address.getSelfName(), "Wrong self-name");
+        });
     }
 }

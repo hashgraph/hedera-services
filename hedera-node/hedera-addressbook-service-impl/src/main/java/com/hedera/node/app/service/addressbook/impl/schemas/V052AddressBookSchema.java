@@ -72,7 +72,7 @@ public class V052AddressBookSchema extends Schema {
             final var node = Node.newBuilder()
                     .nodeId(nodeInfo.nodeId())
                     .accountId(nodeInfo.accountId())
-                    .description(nodeInfo.memo())
+                    .description(nodeInfo.selfName())
                     .gossipEndpoint(List.of(
                             endpointFor(nodeInfo.internalHostName(), nodeInfo.internalPort()),
                             endpointFor(nodeInfo.externalHostName(), nodeInfo.externalPort())))
