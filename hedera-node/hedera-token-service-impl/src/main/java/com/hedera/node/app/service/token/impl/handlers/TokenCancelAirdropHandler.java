@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -50,14 +51,13 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {}
 
     @Override
-    public void handle(@NonNull final HandleContext context) throws HandleException {
-        var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-        validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
-    }
+    public void handle(@NonNull final HandleContext context) throws HandleException {}
 
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        return Fees.FREE;
+        var tokensConfig = feeContext.configuration().getConfigData(TokensConfig.class);
+        validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
+        return feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT).calculate();
     }
 }
