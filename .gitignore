@@ -1047,10 +1047,6 @@ platform-sdk/sdk/metricsDoc.tsv
 **/swirlds-tmp
 swirlds-platform-core/data/**
 
-# Test Files (Poorly Behaved Tests)
-*.json.gz
-saved.txt
-
 # Preconsensus event stream files
 *.pces
 *.pcesD

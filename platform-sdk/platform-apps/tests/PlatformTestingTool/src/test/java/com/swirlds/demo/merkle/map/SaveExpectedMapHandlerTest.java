@@ -31,12 +31,14 @@ import com.swirlds.merkle.test.fixtures.map.lifecycle.TransactionState;
 import com.swirlds.merkle.test.fixtures.map.pta.MapKey;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Test class to serialize and deserialize the ExpectedMap to/from JSON in the class SaveExpectedMapHandler
@@ -50,25 +52,15 @@ public class SaveExpectedMapHandlerTest {
     private static final String expectedMapName = "ExpectedMap.json";
     private static final String expectedMapZip = "ExpectedMap.json.gz";
 
+    @TempDir
+    private Path tmpDir;
+
     @BeforeEach
     public void init() {
         expectedMap = new HashMap<>();
         deserializedMap = new HashMap<>();
         handler = new SaveExpectedMapHandler();
         addToMap();
-        cleanDirectory();
-    }
-
-    // clean existing directory
-    private void cleanDirectory() {
-        File jsonMap = new File(expectedMapName);
-        File jsonZip = new File(expectedMapZip);
-        try {
-            if (jsonMap.exists()) jsonMap.delete();
-            if (jsonZip.exists()) jsonZip.delete();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     // Add Keys to ExpectedMap
@@ -106,12 +98,12 @@ public class SaveExpectedMapHandlerTest {
     // Serializes and deserializes the expected map with all valid keys
     @Test
     public void serializeAndDeserializePositiveTest() throws IOException {
-        String jsonValue = serializeThrowing(expectedMap, new File("."), expectedMapName, true);
+        String jsonValue = serializeThrowing(expectedMap, new File(tmpDir.toString()), expectedMapName, true);
         for (int i = 0; i < 20; i++) {
             assertTrue(jsonValue.contains("[0,0," + i + "]"));
         }
 
-        deserializedMap = deserialize(new File(".", expectedMapZip));
+        deserializedMap = deserialize(new File(tmpDir.toString(), expectedMapZip));
 
         assertEquals(
                 expectedMap.size(),
@@ -130,13 +122,13 @@ public class SaveExpectedMapHandlerTest {
     @Test
     public void DeserializeNullEntityTypeTest() throws IOException {
         addInvalidKeysToMap();
-        String jsonValue = serializeThrowing(expectedMap, new File("."), expectedMapName, true);
+        String jsonValue = serializeThrowing(expectedMap, new File(tmpDir.toString()), expectedMapName, true);
 
         for (int i = 20; i < 25; i++) {
             assertTrue(jsonValue.contains("MapKey[0,0," + i + "]"));
         }
 
-        deserializedMap = deserialize(new File(".", expectedMapZip));
+        deserializedMap = deserialize(new File(tmpDir.toString(), expectedMapZip));
         assertEquals(null, deserializedMap.get(new MapKey(0, 0, 24)).getEntityType());
     }
 }
