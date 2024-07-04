@@ -26,7 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -101,9 +102,6 @@ class TokenServiceApiImplTest {
     private WritableAccountStore accountStore;
 
     @Mock
-    private StakingValidator stakingValidator;
-
-    @Mock
     private NetworkInfo networkInfo;
 
     @Mock
@@ -118,7 +116,7 @@ class TokenServiceApiImplTest {
     void setUp() {
         accountStore = new WritableAccountStore(writableStates, DEFAULT_CONFIG, storeMetricsService);
         subject = new TokenServiceApiImpl(
-                DEFAULT_CONFIG, storeMetricsService, stakingValidator, writableStates, customFeeTest);
+                DEFAULT_CONFIG, storeMetricsService, writableStates, customFeeTest);
     }
 
     @Test
@@ -129,11 +127,13 @@ class TokenServiceApiImplTest {
 
     @Test
     void delegatesStakingValidationAsExpected() {
-        subject.assertValidStakingElectionForCreation(
-                true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
-
-        verify(stakingValidator)
-                .validateStakedIdForCreation(true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
+        try (var mockedValidator = mockStatic(StakingValidator.class)) {
+            subject.assertValidStakingElectionForCreation(
+                    true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo);
+            mockedValidator.verify(() -> StakingValidator.validateStakedIdForCreation(
+                    true, false, "STAKED_NODE_ID", null, 123L, accountStore, networkInfo),
+                    times(1));
+        }
     }
 
     @Test
@@ -476,7 +476,7 @@ class TokenServiceApiImplTest {
                     configBuilder.withValue("staking.isEnabled", true).getOrCreateConfig();
 
             subject = new TokenServiceApiImpl(
-                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
+                    config, storeMetricsService, writableStates, customFeeTest);
 
             // When we charge network+service fees of 10 tinybars and a node fee of 2 tinybars
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
@@ -507,7 +507,7 @@ class TokenServiceApiImplTest {
                     configBuilder.withValue("staking.isEnabled", false).getOrCreateConfig();
 
             subject = new TokenServiceApiImpl(
-                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
+                    config, storeMetricsService, writableStates, customFeeTest);
 
             // When we charge fees of 10 tinybars
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);
@@ -548,7 +548,7 @@ class TokenServiceApiImplTest {
                     .getOrCreateConfig();
 
             subject = new TokenServiceApiImpl(
-                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
+                    config, storeMetricsService, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
@@ -566,7 +566,7 @@ class TokenServiceApiImplTest {
                     .getOrCreateConfig();
 
             subject = new TokenServiceApiImpl(
-                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
+                    config, storeMetricsService, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
@@ -584,7 +584,7 @@ class TokenServiceApiImplTest {
                     .getOrCreateConfig();
 
             subject = new TokenServiceApiImpl(
-                    config, storeMetricsService, stakingValidator, writableStates, customFeeTest);
+                    config, storeMetricsService, writableStates, customFeeTest);
 
             // When we try to charge a payer account that DOES exist, then we get an IllegalStateException
             assertThatThrownBy(() -> subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb))
@@ -600,7 +600,6 @@ class TokenServiceApiImplTest {
             subject = new TokenServiceApiImpl(
                     configBuilder.getOrCreateConfig(),
                     storeMetricsService,
-                    stakingValidator,
                     writableStates,
                     customFeeTest);
             subject.chargeFees(EOA_ACCOUNT_ID, NODE_ACCOUNT_ID, fees, rb);

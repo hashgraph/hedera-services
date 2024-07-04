@@ -423,7 +423,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         given(handleContext.body()).willReturn(txn);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         final var impl = new TokenServiceApiImpl(
-                configuration, storeMetricsService, stakingValidator, writableStates, op -> false);
+                configuration, storeMetricsService, writableStates, op -> false);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(impl);
     }
 }
