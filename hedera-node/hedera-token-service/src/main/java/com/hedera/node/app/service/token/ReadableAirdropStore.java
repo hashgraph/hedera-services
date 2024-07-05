@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token;
 
 import com.hedera.hapi.node.base.PendingAirdropId;
-import com.hedera.hapi.node.base.PendingAirdropValue;
+import com.hedera.hapi.node.state.token.AccountAirdrop;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -26,13 +26,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface ReadableAirdropStore {
     /**
-     * Fetches an {@link PendingAirdropValue} object from state for given {@link PendingAirdropId}. If the airdrop contains only NFT return {@code null}.
+     * Fetches an {@link AccountAirdrop} object from state for given {@link PendingAirdropId}. If the airdrop contains only NFT return {@code null}.
      * If the airdrop  could not be fetched because the given airdrop doesn't exist, returns {@code null}.
      *
      * @param airdropId given airdrop id
-     * @return {@link PendingAirdropValue} object if successfully fetched or {@code null} if the airdrop doesn't exist
+     * @return {@link AccountAirdrop} object if successfully fetched or {@code null} if the airdrop doesn't exist
      */
-    PendingAirdropValue get(@NonNull final PendingAirdropId airdropId);
+    AccountAirdrop get(@NonNull final PendingAirdropId airdropId);
 
     /**
      * Returns whether a given PendingAirdropId exists in state.

@@ -23,7 +23,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUN
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor.executeTransfer;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkReceiver;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkSender;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
@@ -47,6 +46,7 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.ReadableTokenStore.TokenMetadata;
+import com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.util.CryptoTransferFeeCalculator;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
@@ -215,7 +215,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
         final var recordBuilder = context.recordBuilders().getOrCreate(CryptoTransferRecordBuilder.class);
 
-        executeTransfer(txn, transferContext, context, validator, recordBuilder);
+        CryptoTransferExecutor.executeCryptoTransfer(txn, transferContext, context, validator, recordBuilder);
     }
 
     /**

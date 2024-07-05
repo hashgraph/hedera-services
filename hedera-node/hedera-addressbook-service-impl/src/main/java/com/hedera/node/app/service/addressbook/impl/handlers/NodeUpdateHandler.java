@@ -64,10 +64,10 @@ public class NodeUpdateHandler implements TransactionHandler {
         validateFalsePreCheck(op.nodeId() < 0, INVALID_NODE_ID);
         if (op.hasGossipCaCertificate()) {
             validateFalsePreCheck(op.gossipCaCertificate().equals(Bytes.EMPTY), INVALID_GOSSIP_CA_CERTIFICATE);
-            if (op.hasAdminKey()) {
-                final var adminKey = op.adminKey();
-                addressBookValidator.validateAdminKey(adminKey);
-            }
+        }
+        if (op.hasAdminKey()) {
+            final var adminKey = op.adminKey();
+            addressBookValidator.validateAdminKey(adminKey);
         }
     }
 
