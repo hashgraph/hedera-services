@@ -60,7 +60,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ThrottleServiceManagerTest {
-    private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     private static final Bytes MOCK_ENCODED_THROTTLE_DEFS = Bytes.wrap("NOPE");
     private static final ThrottleDefinitions MOCK_THROTTLE_DEFS = ThrottleDefinitions.DEFAULT;
     private static final ThrottleUsageSnapshots MOCK_THROTTLE_USAGE_SNAPSHOTS = new ThrottleUsageSnapshots(
@@ -128,7 +127,6 @@ class ThrottleServiceManagerTest {
 
     @Test
     void initsAsExpected() {
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1L));
         givenMockThrottleDefs();
         givenReadableThrottleState();
         givenThrottleMocks();
@@ -141,7 +139,7 @@ class ThrottleServiceManagerTest {
                 cryptoTransferThrottle,
                 gasThrottle);
 
-        subject.initFrom(hederaState);
+        subject.init(hederaState, MOCK_ENCODED_THROTTLE_DEFS);
 
         inOrder.verify(ingestThrottle).applyGasConfig();
         inOrder.verify(backendThrottle).applyGasConfig();
@@ -216,12 +214,6 @@ class ThrottleServiceManagerTest {
     }
 
     private void givenMockThrottleDefs() {
-        given(hederaState.getReadableStates(FileService.NAME)).willReturn(fileReadableStates);
-        given(fileReadableStates.<FileID, File>get(BLOBS_KEY)).willReturn(blobs);
-        given(blobs.get(FileUtilities.createFileID(
-                        DEFAULT_CONFIG.getConfigData(FilesConfig.class).throttleDefinitions(), DEFAULT_CONFIG)))
-                .willReturn(
-                        File.newBuilder().contents(MOCK_ENCODED_THROTTLE_DEFS).build());
         given(throttleParser.parse(MOCK_ENCODED_THROTTLE_DEFS))
                 .willReturn(new ThrottleParser.ValidatedThrottles(MOCK_THROTTLE_DEFS, SUCCESS));
     }

@@ -300,6 +300,7 @@ public class HandleWorkflow {
                 skip(userTxn);
             } else {
                 if (userTxn.isGenesisTxn()) {
+                    // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     genesisSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
                 }
                 updateNodeStakes(userTxn);

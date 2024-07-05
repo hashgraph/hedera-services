@@ -186,7 +186,7 @@ public interface HapiPropertySource {
                 .map(s -> (s instanceof HapiPropertySource)
                         ? s
                         : ((s instanceof Map) ? new MapPropertySource((Map) s) : new JutilPropertySource((String) s)))
-                .toArray(n -> new HapiPropertySource[n]);
+                .toArray(HapiPropertySource[]::new);
     }
 
     static TokenID asToken(String v) {

@@ -266,7 +266,7 @@ public class HapiSpec implements Runnable, Executable {
      *
      * @param props A map of new properties
      */
-    public void addOverrideProperties(final Map<String, Object> props) {
+    public void addOverrideProperties(@NonNull final Map<String, String> props) {
         hapiSetup.addOverrides(props);
     }
 
@@ -1212,7 +1212,7 @@ public class HapiSpec implements Runnable, Executable {
         spec.addOverrideProperties(Map.of("nodes", specNodes));
 
         if (targetNetwork instanceof EmbeddedNetwork embeddedNetwork) {
-            final Map<String, Object> overrides;
+            final Map<String, String> overrides;
             if (repeatableModeRequested()) {
                 // Statuses are immediately available in repeatable mode because ingest is synchronous;
                 // ECDSA signatures are inherently random, so use only ED25519 in repeatable mode

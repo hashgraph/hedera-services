@@ -37,6 +37,7 @@ import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.workflows.GenesisContext;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
@@ -102,19 +103,18 @@ public class GenesisSetup {
                 .getWritableStates(EntityIdService.NAME)
                 .<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY);
         final var genesisContext = new GenesisContext() {
-            @NonNull
             @Override
-            public <T> T dispatchCreation(
-                    @NonNull final TransactionBody txBody,
-                    final long entityNum,
-                    @NonNull final Class<T> recordBuilderClass) {
+            public void dispatchCreation(@NonNull final TransactionBody txBody, final long entityNum) {
                 requireNonNull(txBody);
                 if (entityNum >= firstUserNum) {
                     throw new IllegalArgumentException("Cannot create user entity at genesis");
                 }
                 controlledNum.put(new EntityNumber(entityNum - 1));
                 ((WritableSingletonStateBase<EntityNumber>) controlledNum).commit();
-                return dispatch.handleContext().dispatchPrecedingTransaction(txBody, recordBuilderClass, key -> true);
+                final var recordBuilder = dispatch.handleContext().dispatchPrecedingTransaction(txBody, SingleTransactionRecordBuilder.class, key -> true);
+                if (recordBuilder.status() != SUCCESS) {
+                    log.error("Failed to dispatch genesis transaction {} for entity {} - {}", txBody, entityNum, recordBuilder.status());
+                }
             }
 
             @NonNull

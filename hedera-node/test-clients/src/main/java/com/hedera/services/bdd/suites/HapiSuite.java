@@ -182,7 +182,7 @@ public abstract class HapiSuite {
     private boolean tearDownClientsAfter = true;
     private List<HapiSpec> finalSpecs = Collections.emptyList();
 
-    private Map<String, Object> overrides = Collections.emptyMap();
+    private Map<String, String> overrides = Collections.emptyMap();
 
     public String name() {
         String simpleName = this.getClass().getSimpleName();

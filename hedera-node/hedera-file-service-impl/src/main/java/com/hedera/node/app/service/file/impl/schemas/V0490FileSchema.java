@@ -45,7 +45,6 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.spi.workflows.GenesisContext;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
@@ -57,7 +56,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
-import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.StringReader;
@@ -98,7 +96,6 @@ public class V0490FileSchema extends Schema {
 
     /**
      * Constructs a new {@link V0490FileSchema} instance with the given {@link ConfigProvider}.
-     *
      */
     public V0490FileSchema() {
         super(VERSION);
@@ -132,14 +129,7 @@ public class V0490FileSchema extends Schema {
 
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
-        final var isGenesis = ctx.previousVersion() == null;
-        if (isGenesis) {
-            final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
-            final var filesConfig = ctx.configuration().getConfigData(FilesConfig.class);
-            final var hederaConfig = ctx.configuration().getConfigData(HederaConfig.class);
-            final WritableKVState<FileID, File> files = ctx.newStates().get(BLOBS_KEY);
-            createGenesisSoftwareUpdateFiles(bootstrapConfig, hederaConfig, filesConfig, files);
-        }
+        // No-op, genesis system files are created via dispatch during the genesis transaction
     }
 
     // ================================================================================================================
@@ -189,8 +179,7 @@ public class V0490FileSchema extends Schema {
                                 .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
                                 .build())
                         .build(),
-                addressBookFileNum,
-                CreateFileRecordBuilder.class);
+                addressBookFileNum);
 
         // Create the node details for file 102,  their fields are different from 101, addressBook
         final var nodeDetail = new ArrayList<NodeAddress>();
@@ -221,8 +210,7 @@ public class V0490FileSchema extends Schema {
                                 .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
                                 .build())
                         .build(),
-                nodeInfoFileNum,
-                CreateFileRecordBuilder.class);
+                nodeInfoFileNum);
     }
 
     // ================================================================================================================
@@ -230,28 +218,33 @@ public class V0490FileSchema extends Schema {
 
     public void createGenesisFeeSchedule(@NonNull final GenesisContext genesisContext) {
         requireNonNull(genesisContext);
-        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
-        logger.debug("Creating genesis fee schedule file");
-        final var resourceName = bootstrapConfig.feeSchedulesJsonResource();
+        final var config = genesisContext.configuration();
+        final var bootstrapConfig = config.getConfigData(BootstrapConfig.class);
+        final var masterKey =
+                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        genesisContext.dispatchCreation(
+                TransactionBody.newBuilder()
+                        .fileCreate(FileCreateTransactionBody.newBuilder()
+                                .contents(genesisFeeSchedules(config))
+                                .keys(KeyList.newBuilder().keys(masterKey))
+                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .build())
+                        .build(),
+                config.getConfigData(FilesConfig.class).feeSchedules());
+    }
+
+    /**
+     * Returns the genesis fee schedules for the given configuration.
+     *
+     * @param config the configuration
+     * @return the genesis fee schedules
+     */
+    public Bytes genesisFeeSchedules(@NonNull final Configuration config) {
+        final var resourceName = config.getConfigData(BootstrapConfig.class).feeSchedulesJsonResource();
         try (final var in = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName)) {
             final var feeScheduleJsonBytes = requireNonNull(in).readAllBytes();
             final var feeSchedule = parseFeeSchedules(feeScheduleJsonBytes);
-            final var masterKey =
-                    Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-            genesisContext.dispatchCreation(
-                    TransactionBody.newBuilder()
-                            .fileCreate(FileCreateTransactionBody.newBuilder()
-                                    .contents(CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedule))
-                                    .keys(KeyList.newBuilder().keys(masterKey))
-                                    .expirationTime(
-                                            Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
-                                    .build())
-                            .build(),
-                    genesisContext
-                            .configuration()
-                            .getConfigData(FilesConfig.class)
-                            .feeSchedules(),
-                    CreateFileRecordBuilder.class);
+            return CurrentAndNextFeeSchedule.PROTOBUF.toBytes(feeSchedule);
         } catch (IOException | NullPointerException e) {
             throw new IllegalArgumentException(
                     "Fee schedule (" + resourceName + ") " + "could not be found in the class path", e);
@@ -340,7 +333,28 @@ public class V0490FileSchema extends Schema {
 
     public void createGenesisExchangeRate(@NonNull final GenesisContext genesisContext) {
         final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
-        logger.debug("Creating genesis exchange rate file");
+        // See HfsSystemFilesManager#defaultRates. This does the same thing.
+        final var masterKey =
+                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        genesisContext.dispatchCreation(
+                TransactionBody.newBuilder()
+                        .fileCreate(FileCreateTransactionBody.newBuilder()
+                                .contents(genesisExchangeRates(genesisContext.configuration()))
+                                .keys(KeyList.newBuilder().keys(masterKey))
+                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .build())
+                        .build(),
+                genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates());
+    }
+
+    /**
+     * Returns the genesis exchange rates for the given configuration.
+     *
+     * @param config the configuration
+     * @return the genesis exchange rates
+     */
+    public Bytes genesisExchangeRates(@NonNull final Configuration config) {
+        final var bootstrapConfig = config.getConfigData(BootstrapConfig.class);
         // See HfsSystemFilesManager#defaultRates. This does the same thing.
         final var exchangeRateSet = ExchangeRateSet.newBuilder()
                 .currentRate(ExchangeRate.newBuilder()
@@ -354,18 +368,7 @@ public class V0490FileSchema extends Schema {
                         .expirationTime(TimestampSeconds.newBuilder().seconds(bootstrapConfig.ratesNextExpiry()))
                         .build())
                 .build();
-        final var masterKey =
-                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-        genesisContext.dispatchCreation(
-                TransactionBody.newBuilder()
-                        .fileCreate(FileCreateTransactionBody.newBuilder()
-                                .contents(ExchangeRateSet.PROTOBUF.toBytes(exchangeRateSet))
-                                .keys(KeyList.newBuilder().keys(masterKey))
-                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
-                                .build())
-                        .build(),
-                genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates(),
-                CreateFileRecordBuilder.class);
+        return ExchangeRateSet.PROTOBUF.toBytes(exchangeRateSet);
     }
 
     // ================================================================================================================
@@ -386,8 +389,7 @@ public class V0490FileSchema extends Schema {
                                 .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
                                 .build())
                         .build(),
-                genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates(),
-                CreateFileRecordBuilder.class);
+                genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates());
     }
 
     // ================================================================================================================
@@ -447,27 +449,37 @@ public class V0490FileSchema extends Schema {
                                 .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
                                 .build())
                         .build(),
-                genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates(),
-                CreateFileRecordBuilder.class);
+                genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates());
     }
 
     // ================================================================================================================
     // Creates and loads the Throttle definitions into state
     public void createGenesisThrottleDefinitions(@NonNull final GenesisContext genesisContext) {
-        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
-        final var throttleDefinitionsProtoBytes = loadBootstrapThrottleDefinitions(bootstrapConfig);
+        final var config = genesisContext.configuration();
+        final var bootstrapConfig = config.getConfigData(BootstrapConfig.class);
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
         genesisContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
-                                .contents(Bytes.wrap(throttleDefinitionsProtoBytes))
+                                .contents(genesisThrottleDefinitions(config))
                                 .keys(KeyList.newBuilder().keys(masterKey))
                                 .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
                                 .build())
                         .build(),
-                genesisContext.configuration().getConfigData(FilesConfig.class).throttleDefinitions(),
-                CreateFileRecordBuilder.class);
+                genesisContext.configuration().getConfigData(FilesConfig.class).throttleDefinitions());
+    }
+
+    /**
+     * Returns the genesis throttle definitions for the given configuration.
+     *
+     * @param config the configuration
+     * @return the genesis throttle definitions
+     */
+    public Bytes genesisThrottleDefinitions(@NonNull final Configuration config) {
+        final var bootstrapConfig = config.getConfigData(BootstrapConfig.class);
+        final var throttleDefinitionsProtoBytes = loadBootstrapThrottleDefinitions(bootstrapConfig);
+        return Bytes.wrap(throttleDefinitionsProtoBytes);
     }
 
     /**
@@ -476,7 +488,7 @@ public class V0490FileSchema extends Schema {
      * @param bootstrapConfig the bootstrap configuration
      * @return the throttle definitions proto as a byte array
      */
-    public static byte[] loadBootstrapThrottleDefinitions(@NonNull BootstrapConfig bootstrapConfig) {
+    private static byte[] loadBootstrapThrottleDefinitions(@NonNull BootstrapConfig bootstrapConfig) {
         // Get the path to the throttles permissions file
         final var throttleDefinitionsResource = bootstrapConfig.throttleDefsJsonResource();
         final var pathToThrottleDefinitions = Path.of(throttleDefinitionsResource);
@@ -524,36 +536,26 @@ public class V0490FileSchema extends Schema {
     // ================================================================================================================
     // Creates and loads the software update file into state
 
-    private void createGenesisSoftwareUpdateFiles(
-            @NonNull final BootstrapConfig bootstrapConfig,
-            @NonNull final HederaConfig hederaConfig,
-            @NonNull final FilesConfig filesConfig,
-            @NonNull final WritableKVState<FileID, File> files) {
-
+    public void createGenesisSoftwareUpdateFiles(@NonNull final GenesisContext genesisContext) {
+        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
         // These files all start off as an empty byte array for all upgrade files from 150-159.
         // But only file 150 is actually used, the others are not, but may be used in the future.
-        logger.debug("Creating genesis software update files");
-        final var fileNums = filesConfig.softwareUpdateRange();
-        final var firstUpdateNum = fileNums.left();
-        final var lastUpdateNum = fileNums.right();
+        final var updateFilesRange =
+                genesisContext.configuration().getConfigData(FilesConfig.class).softwareUpdateRange();
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
         // initializing the files 150 -159
-        for (var updateNum = firstUpdateNum; updateNum <= lastUpdateNum; updateNum++) {
-            final var fileId = FileID.newBuilder()
-                    .shardNum(hederaConfig.shard())
-                    .realmNum(hederaConfig.realm())
-                    .fileNum(updateNum)
-                    .build();
-            logger.debug("Putting update file {} into state", updateNum);
-            files.put(
-                    fileId,
-                    File.newBuilder()
-                            .contents(Bytes.EMPTY)
-                            .fileId(fileId)
-                            .keys(KeyList.newBuilder().keys(masterKey))
-                            .expirationSecond(bootstrapConfig.systemEntityExpiry())
-                            .build());
+        for (var updateNum = updateFilesRange.left(); updateNum <= updateFilesRange.right(); updateNum++) {
+            genesisContext.dispatchCreation(
+                    TransactionBody.newBuilder()
+                            .fileCreate(FileCreateTransactionBody.newBuilder()
+                                    .contents(Bytes.EMPTY)
+                                    .keys(KeyList.newBuilder().keys(masterKey))
+                                    .expirationTime(
+                                            Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                    .build())
+                            .build(),
+                    updateNum);
         }
     }
 }

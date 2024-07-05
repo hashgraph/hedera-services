@@ -18,10 +18,14 @@ package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.config.IsEmbeddedTest.NO;
+import static com.hedera.node.app.records.BlockRecordService.EPOCH;
+import static com.hedera.node.app.records.schemas.V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
 import static com.hedera.node.app.statedumpers.StateDumper.dumpModChildrenFrom;
+import static com.hedera.node.app.util.FileUtilities.createFileID;
+import static com.hedera.node.app.util.FileUtilities.getFileContent;
 import static com.hedera.node.app.util.FileUtilities.observePropertiesAndPermissions;
 import static com.hedera.node.app.util.HederaAsciiArt.HEDERA;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
@@ -44,7 +48,6 @@ import com.hedera.node.app.info.CurrentPlatformStatusImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.info.UnavailableLedgerIdNetworkInfo;
 import com.hedera.node.app.records.BlockRecordService;
-import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
@@ -72,6 +75,7 @@ import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -105,6 +109,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -192,6 +197,11 @@ public final class Hedera implements SwirldMain {
     private final FileServiceImpl fileServiceImpl;
 
     /**
+     * The bootstrap configuration for the network.
+     */
+    private final Configuration bootstrapConfig;
+
+    /**
      * The Hashgraph Platform. This is set during state initialization.
      */
     private Platform platform;
@@ -251,7 +261,7 @@ public final class Hedera implements SwirldMain {
 
                         """,
                 HEDERA);
-        final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
+        bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
         version = getNodeStartupVersion(bootstrapConfig);
         servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
         logger.info(
@@ -670,19 +680,30 @@ public final class Hedera implements SwirldMain {
         }
         // Until all service schemas are migrated, MerkleHederaState will not be able to implement
         // the States API, even if it already has all its children in the Merkle tree, as it will lack
-        // state definitions for those children. (Note also that services may require migrations for
+        // state definitions for those children. (And note services may even require migrations for
         // those children to be usable with the current version of the software.)
         onMigrate(state, deserializedVersion, trigger, metrics);
         // With the States API grounded in the working state, we can create the object graph from it
         initializeDagger(state, trigger, platformState);
-        // (FUTURE) If there were services dedicated to the functions below, they would likely do this
-        // initialization work in their restart() hooks, which gets called after the States API is fully
-        // initialized on the working state
-        initializeExchangeRateManager(state);
-        initializeFeeManager(state);
-        observePropertiesAndPermissions(state, configProvider.getConfiguration(), configProvider::update);
+
+        // Only initialize facilities from state system files if genesis setup is already done
+        if (trigger != GENESIS && hasHandledGenesisTxn(state)) {
+            initializeExchangeRateManager(state);
+            initializeFeeManager(state);
+            // (IMPORTANT) When restarting from a saved state, this order is critical; unlike the fees and
+            // exchange rate facilities, the throttle facility can be influenced by properties overridden in
+            // state; so we must update config to the latest before initializing throttles
+            observePropertiesAndPermissions(state, configProvider.getConfiguration(), configProvider::update);
+            daggerApp.throttleServiceManager().init(state, throttleDefinitionsFrom(state));
+        } else {
+            // Otherwise initialize facilities from the pending genesis file contents
+            final var schema = fileServiceImpl.genesisSchema();
+            daggerApp.exchangeRateManager().init(state, schema.genesisExchangeRates(bootstrapConfig));
+            daggerApp.feeManager().update(schema.genesisFeeSchedules(bootstrapConfig));
+            daggerApp.throttleServiceManager().init(state, schema.genesisThrottleDefinitions(bootstrapConfig));
+        }
+
         logConfiguration();
-        daggerApp.throttleServiceManager().initFrom(state);
     }
 
     /*==================================================================================================================
@@ -712,6 +733,7 @@ public final class Hedera implements SwirldMain {
                 .currentPlatformStatus(new CurrentPlatformStatusImpl(platform))
                 .servicesRegistry(servicesRegistry)
                 .instantSource(instantSource)
+                .fileServiceImpl(fileServiceImpl)
                 .contractServiceImpl(contractServiceImpl)
                 .metrics(metrics)
                 .build();
@@ -752,6 +774,13 @@ public final class Hedera implements SwirldMain {
         }
     }
 
+    private Bytes throttleDefinitionsFrom(@NonNull final HederaState state) {
+        final var config = configProvider.getConfiguration();
+        final var filesConfig = config.getConfigData(FilesConfig.class);
+        final var throttleDefinitionsId = createFileID(filesConfig.throttleDefinitions(), config);
+        return getFileContent(state, throttleDefinitionsId);
+    }
+
     private void initializeExchangeRateManager(@NonNull final HederaState state) {
         final var filesConfig = configProvider.getConfiguration().getConfigData(FilesConfig.class);
         final var fileNum = filesConfig.exchangeRates();
@@ -773,8 +802,7 @@ public final class Hedera implements SwirldMain {
 
     private void unmarkMigrationRecordsStreamed(HederaState state) {
         final var blockServiceState = state.getWritableStates(BlockRecordService.NAME);
-        final var blockInfoState =
-                blockServiceState.<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY);
+        final var blockInfoState = blockServiceState.<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY);
         final var currentBlockInfo = requireNonNull(blockInfoState.get());
         final var nextBlockInfo =
                 currentBlockInfo.copyBuilder().migrationRecordsStreamed(false).build();
@@ -816,5 +844,16 @@ public final class Hedera implements SwirldMain {
         final var selfId = platform.getSelfId();
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
         return SelfNodeInfoImpl.of(nodeAddress, version);
+    }
+
+    /**
+     * Returns true if the block information in the given state has handled a transaction since the epoch.
+     *
+     * @param state the state to check
+     * @return true if the given state includes effects of handled the genesis transaction
+     */
+    private boolean hasHandledGenesisTxn(@NonNull final HederaState state) {
+        final var blockInfo = state.getReadableStates(BlockRecordService.NAME).<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY).get();
+        return !EPOCH.equals(Optional.ofNullable(blockInfo).map(BlockInfo::consTimeOfLastHandledTxn).orElse(EPOCH));
     }
 }

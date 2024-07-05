@@ -33,13 +33,9 @@ public interface GenesisContext {
      *
      * @param txBody the transaction body
      * @param entityNum the entity number
-     * @param recordBuilderClass the class of the record builder
-     * @return the record builder
-     * @param <T> the type of the record builder
      * @throws IllegalArgumentException if the entity number is not less than the first user entity number
      */
-    @NonNull
-    <T> T dispatchCreation(@NonNull TransactionBody txBody, long entityNum, @NonNull Class<T> recordBuilderClass);
+    void dispatchCreation(@NonNull TransactionBody txBody, long entityNum);
 
     /**
      * The {@link Configuration} at genesis.

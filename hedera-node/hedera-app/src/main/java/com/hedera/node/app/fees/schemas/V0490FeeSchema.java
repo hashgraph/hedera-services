@@ -31,7 +31,6 @@ import org.apache.logging.log4j.Logger;
 
 public class V0490FeeSchema extends Schema {
     public static final String MIDNIGHT_RATES_STATE_KEY = "MIDNIGHT_RATES";
-    private static final Logger log = LogManager.getLogger(V0490FeeSchema.class);
 
     /**
      * The version of the schema.

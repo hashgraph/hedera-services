@@ -25,6 +25,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
+import com.hedera.node.app.config.ConfigProviderImpl;
+import com.hedera.node.app.config.ServicesConfigExtension;
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
@@ -33,7 +35,12 @@ import com.hedera.services.bdd.spec.props.MapPropertySource;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.*;
+import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigProperty;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.lang.reflect.RecordComponent;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,10 +51,22 @@ import org.apache.commons.lang3.StringUtils;
 public class HapiSpecSetup {
     private final SplittableRandom r = new SplittableRandom(1_234_567L);
 
+    private static final Configuration defaultConfig;
     private static final HapiPropertySource defaultNodeProps;
 
     static {
-        defaultNodeProps = new JutilPropertySource("bootstrap.properties");
+        final var provider = new ConfigProviderImpl(true, null);
+        defaultConfig = provider.getConfiguration();
+        defaultNodeProps = inPriorityOrder(new HapiPropertySource() {
+            @Override
+            public String get(@NonNull final String property) {
+                return defaultConfig.getValue(property);
+            }
+            @Override
+            public boolean has(@NonNull final String property) {
+                return defaultConfig.exists(property);
+            }
+        }, new MapPropertySource(allDefaultsFrom(new ServicesConfigExtension().getConfigDataTypes())));
     }
 
     public static HapiPropertySource getDefaultNodeProps() {
@@ -56,7 +75,7 @@ public class HapiSpecSetup {
 
     public static String getDefaultProp(@NonNull final String property) {
         requireNonNull(property);
-        return defaultNodeProps.get(property);
+        return defaultConfig.getValue(property);
     }
 
     private Set<ResponseCodeEnum> streamlinedIngestChecks = null;
@@ -138,7 +157,7 @@ public class HapiSpecSetup {
      *
      * @param props A map of new properties
      */
-    public void addOverrides(final Map<String, Object> props) {
+    public void addOverrides(@NonNull final Map<String, String> props) {
         this.props = HapiPropertySource.inPriorityOrder(new MapPropertySource(props), this.props);
     }
 
@@ -658,5 +677,49 @@ public class HapiSpecSetup {
                                     .collect(Collectors.toSet()));
         }
         return streamlinedIngestChecks;
+    }
+
+    private static Map<String, String> allDefaultsFrom(@NonNull final Set<Class<? extends Record>> configTypes) {
+        return Map.ofEntries(configTypes.stream()
+                .flatMap(HapiSpecSetup::defaultsFrom)
+                .<Map.Entry<String, String>>toArray(Map.Entry[]::new));
+    }
+
+    private static Stream<Map.Entry<String, String>> defaultsFrom(@NonNull final Class<? extends Record> configType) {
+        final var prefix = getNamePrefix(configType);
+        return Arrays.stream(configType.getRecordComponents())
+                .map(component -> Map.entry(fullName(prefix, component), requiredDefaultValue(component)));
+    }
+
+    private static String requiredDefaultValue(@NonNull final RecordComponent component) {
+        return Optional.ofNullable(component.getAnnotation(ConfigProperty.class))
+                .map(ConfigProperty::defaultValue)
+                .orElseThrow();
+    }
+
+    private static String fullName(@NonNull final String prefix, @NonNull final RecordComponent component) {
+        return Optional.ofNullable(component.getAnnotation(ConfigProperty.class))
+                .map(annotation -> {
+                    if (!annotation.value().isBlank()) {
+                        return fullName(prefix, annotation.value());
+                    } else {
+                        return fullName(prefix, component.getName());
+                    }
+                })
+                .orElseGet(() -> fullName(prefix, component.getName()));
+    }
+
+    private static String fullName(@NonNull final String prefix, @NonNull final String name) {
+        if (prefix.isBlank()) {
+            return name;
+        }
+        return prefix + "." + name;
+    }
+
+    @NonNull
+    private static <T extends Record> String getNamePrefix(@NonNull final Class<T> type) {
+        return Optional.ofNullable(type.getAnnotation(ConfigData.class))
+                .map(ConfigData::value)
+                .orElse("");
     }
 }
