@@ -42,6 +42,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -148,10 +149,46 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var pendingAirdropIds = op.pendingAirdrops();
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var nftStore = context.storeFactory().readableStore(ReadableNftStore.class);
-        final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
+        final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         final var pendingStore = context.storeFactory().writableStore(WritableAirdropStore.class);
         final var payer = context.payer();
 
+        // delete the account airdrops from the linked list
+        final var payerAccount = getIfUsable(
+            payer,
+            accountStore,
+            context.expiryValidator(),
+            INVALID_ACCOUNT_ID);
+        validateTrue(payerAccount.hasHeadPendingAirdropId(), INVALID_TRANSACTION_BODY);
+
+        for (var pendingAirdropsToCancel : pendingAirdropIds) {
+            final var accountAirdropToCancel = pendingStore.getForModify(pendingAirdropsToCancel);
+            validateTrue(accountAirdropToCancel != null, INVALID_TRANSACTION_BODY);
+
+            // Update the account to point to the new head if the current one is being cancelled
+            if (pendingAirdropsToCancel.equals(payerAccount.headPendingAirdropId())) {
+                final var updatedPayer = payerAccount.copyBuilder()
+                    .headPendingAirdropId(accountAirdropToCancel.nextAirdrop()).build();
+                accountStore.put(updatedPayer);
+            }
+
+            final var prevAirdropId = accountAirdropToCancel.previousAirdrop();
+            final var nextAirdropId = accountAirdropToCancel.nextAirdrop();
+            if (prevAirdropId != null) {
+                final var prevAccountAirdrop = pendingStore.getForModify(prevAirdropId);
+                validateTrue(prevAccountAirdrop != null, INVALID_TRANSACTION_BODY);
+                final var prevAirdropToUpdate = prevAccountAirdrop.copyBuilder().nextAirdrop(nextAirdropId).build();
+                pendingStore.putOverride(prevAirdropId, prevAirdropToUpdate);
+            }
+            if (nextAirdropId != null) {
+                final var nextAccountAirdrop = pendingStore.getForModify(nextAirdropId);
+                validateTrue(nextAccountAirdrop != null, INVALID_TRANSACTION_BODY);
+                final var nextAirdropToUpdate = nextAccountAirdrop.copyBuilder().previousAirdrop(prevAirdropId).build();
+                pendingStore.putOverride(nextAirdropId, nextAirdropToUpdate);
+            }
+        }
+
+        // delete the pending airdrops from the airdrop store
         pendingAirdropIds.stream()
                 .peek(pendingAirdropId -> {
                     validateTrue(payer.equals(pendingAirdropId.senderIdOrThrow()), INVALID_ACCOUNT_ID);
