@@ -129,6 +129,11 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 return this;
             }
 
+            @Override
+            public HandleContext.TransactionCategory category() {
+                return HandleContext.TransactionCategory.USER;
+            }
+
             @NonNull
             @Override
             public TokenAccountWipeRecordBuilder newTotalSupply(final long supply) {
