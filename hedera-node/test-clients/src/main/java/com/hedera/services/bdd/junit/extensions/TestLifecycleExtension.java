@@ -60,12 +60,12 @@ public class TestLifecycleExtension
     public void beforeEach(@NonNull final ExtensionContext extensionContext) {
         hapiTestMethodOf(extensionContext)
                 .ifPresent(ignore ->
-                        HapiSpec.SPEC_MANAGER.set(getStore(extensionContext).get(SPEC_MANAGER, TestLifecycle.class)));
+                        HapiSpec.TEST_LIFECYCLE.set(getStore(extensionContext).get(SPEC_MANAGER, TestLifecycle.class)));
     }
 
     @Override
     public void afterEach(@NonNull final ExtensionContext extensionContext) {
-        HapiSpec.SPEC_MANAGER.remove();
+        HapiSpec.TEST_LIFECYCLE.remove();
     }
 
     @Override

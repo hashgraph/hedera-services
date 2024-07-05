@@ -149,7 +149,7 @@ public class HapiSpec implements Runnable, Executable {
     private static final String AS_WRITTEN_DISPLAY_NAME = "as written";
 
     public static final ThreadLocal<HederaNetwork> TARGET_NETWORK = new ThreadLocal<>();
-    public static final ThreadLocal<TestLifecycle> SPEC_MANAGER = new ThreadLocal<>();
+    public static final ThreadLocal<TestLifecycle> TEST_LIFECYCLE = new ThreadLocal<>();
     public static final ThreadLocal<String> SPEC_NAME = new ThreadLocal<>();
 
     private static final AtomicLong NEXT_AUTO_SCHEDULE_NUM = new AtomicLong(1);
@@ -1188,7 +1188,7 @@ public class HapiSpec implements Runnable, Executable {
             log.info("Targeting network '{}' for spec '{}'", targetNetwork.name(), spec.name);
             doTargetSpec(spec, targetNetwork);
         }
-        Optional.ofNullable(SPEC_MANAGER.get())
+        Optional.ofNullable(TEST_LIFECYCLE.get())
                 .map(TestLifecycle::getSharedStates)
                 .ifPresent(spec::setSharedStates);
         return spec;
