@@ -21,8 +21,7 @@ extensions to embed a single `Hedera` instance in the test process, invoking its
 In embedded mode, there is no hashgraph consensus because the `Platform` is replaced with a simple mock,
 and the `HederaState` implementation uses in-memory data structures instead of a Merkle tree.
 
-**Table of contents**
-
+## Table of contents
 - [Structure of a `HapiSpec`](#structure-of-a-hapispec)
 - [`HederaNetwork` implementations](#hederanetwork-implementations)
   * [`RemoteNetwork`](#remotenetwork)
@@ -190,6 +189,7 @@ To help consistently meet these criteria, we use the following minimum checklist
 - [x] If the test leaks property overrides, there is no other `@LeakyHapiTest` **in the entire module** that
   leaks the exact same property overrides; if so, all such tests are grouped in a single test class that uses
   `@BeforeAll` and `@AfterAll` to manage the shared overrides and replaces the leaky annotations with `@HapiTest`.
+- [x] Each test class and utility method must have javadoc that briefly sums up the reason for the test or method.
 
 ## JUnit Jupiter integrations
 
