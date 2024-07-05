@@ -269,7 +269,6 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                         any(ExternalizedRecordCustomizer.class)))
                 .willReturn(tokenAirdropRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1L, 2L, 3L));
-        //        transferContext = new TransferContextImpl(handleContext);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
     }
 }

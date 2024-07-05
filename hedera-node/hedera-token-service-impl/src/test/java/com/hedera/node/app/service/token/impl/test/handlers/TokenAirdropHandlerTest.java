@@ -34,7 +34,6 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -46,7 +45,8 @@ import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
-import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
 import com.hedera.node.app.service.token.impl.util.CryptoTransferFeeCalculator;
 import com.hedera.node.app.service.token.impl.util.TokenAssociateToAccountFeeCalculator;
@@ -62,7 +62,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -320,17 +319,14 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Test
     void airdropMultipleTokensCreatesList() {
+        givenStoresAndConfig(handleContext);
         tokenAirdropHandler = new TokenAirdropHandler(validator);
         given(recordBuilders.getOrCreate(TokenAirdropRecordBuilder.class)).willReturn(tokenAirdropRecordBuilder);
-        refreshWritableStores();
-        writableTokenStore.put(nonFungibleToken.copyBuilder().kycKey((Key) null).build());
-        writableTokenStore.put(fungibleToken.copyBuilder().kycKey((Key) null).build());
-        writableTokenRelStore.put(fungibleTokenRelation
-                .copyBuilder()
-                .kycGranted(true)
-                .accountId(tokenReceiverNoAssociationId)
-                .build());
-        givenStoresAndConfig(handleContext);
+        var tokenWithNoCustomFees =
+                fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
+        writableTokenStore.put(tokenWithNoCustomFees);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
         givenAirdropTxn();
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
@@ -345,7 +341,6 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
                     return tokenAirdropRecordBuilder.addPendingAirdrop(pendingAirdropRecord);
                 });
-        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
@@ -363,7 +358,6 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         assertThat(Objects.requireNonNull(nextAirdrop).hasNextAirdrop()).isFalse();
         assertThat(nextAirdrop.hasPreviousAirdrop()).isTrue();
         assertThat(nextAirdrop.previousAirdrop()).isEqualTo(headPendingAirdropId);
-
     }
 
     @Test
