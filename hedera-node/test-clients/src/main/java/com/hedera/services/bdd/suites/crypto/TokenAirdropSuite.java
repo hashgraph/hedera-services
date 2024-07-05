@@ -34,7 +34,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFeeInheritingRoyaltyCollector;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fractionalFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.royaltyFeeWithFallback;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -48,6 +50,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_COLLECTOR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
@@ -62,6 +65,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.SpecManager;
@@ -267,6 +271,108 @@ public class TokenAirdropSuite {
                         getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasTokenBalance(NON_FUNGIBLE_TOKEN, 0),
                         getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)
                                 .hasTokenBalance(NON_FUNGIBLE_TOKEN, 0));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> transferFungibleWithFixedHbarCustomFee() {
+        final long hbarFee = 1_000L;
+        final long tokenTotal = 1_000L;
+        final String hbarCollector = "hbarCollector";
+        final String tokenOwner = "tokenOwner";
+        final String tokenReceiver = "tokenReceiver";
+        final String tokenTreasury = "tokenTreasury";
+        final String fungibleToken = "fungibleToken";
+        return defaultHapiSpec("transferFungibleWithFixedHbarCustomFee")
+                .given(
+                        cryptoCreate(hbarCollector).balance(0L),
+                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenReceiver),
+                        cryptoCreate(tokenTreasury),
+                        tokenCreate(fungibleToken)
+                                .treasury(tokenTreasury)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(tokenTotal)
+                                .withCustom(fixedHbarFee(hbarFee, hbarCollector)),
+                        tokenAssociate(tokenReceiver, fungibleToken),
+                        tokenAssociate(tokenOwner, fungibleToken),
+                        cryptoTransfer(moving(1000, fungibleToken).between(tokenTreasury, tokenOwner)))
+                .when(tokenAirdrop(moving(1, fungibleToken).between(tokenOwner, tokenReceiver))
+                        .fee(ONE_HUNDRED_HBARS)
+                        .via("transferTx")
+                        .payingWith(tokenOwner))
+                .then(withOpContext((spec, log) -> {
+                    final var record = getTxnRecord("transferTx");
+                    allRunFor(spec, record);
+                    final var txFee = record.getResponseRecord().getTransactionFee();
+
+                    final var ownerBalance = getAccountBalance(tokenOwner)
+                            .hasTinyBars(ONE_MILLION_HBARS - (txFee + hbarFee))
+                            .hasTokenBalance(fungibleToken, 999);
+                    final var receiverBalance = getAccountBalance(tokenReceiver).hasTokenBalance(fungibleToken, 1);
+                    final var collectorBalance =
+                            getAccountBalance(hbarCollector).hasTinyBars(hbarFee);
+
+                    allRunFor(spec, ownerBalance, receiverBalance, collectorBalance);
+                }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> transferNonFungibleWithFixedHtsCustomFees2Layers() {
+        final String fungibleToken = "fungibleWithCustomFees";
+        final String nonFungibleToken = "nonFungibleWithCustomFees";
+        final String feeDenom = "denom";
+        final String htsCollector = "denomFee";
+        final String htsCollector2 = "denomFee2";
+        final String tokenReceiver = "receiver";
+        final String tokenTreasury = "tokenTreasury";
+        final String NFT_KEY = "nftKey";
+        final String tokenOwner = "tokenOwner";
+        final long htsFee = 100L;
+
+        final long tokenTotal = 1_000L;
+
+        return defaultHapiSpec("transferNonFungibleWithFixedHtsCustomFees2Layers")
+                .given(
+                        newKeyNamed(NFT_KEY),
+                        cryptoCreate(htsCollector),
+                        cryptoCreate(htsCollector2),
+                        cryptoCreate(tokenOwner).balance(ONE_MILLION_HBARS),
+                        cryptoCreate(tokenReceiver),
+                        cryptoCreate(tokenTreasury),
+                        tokenCreate(feeDenom).treasury(tokenOwner).initialSupply(tokenTotal),
+                        tokenAssociate(htsCollector, feeDenom),
+                        tokenCreate(fungibleToken)
+                                .treasury(tokenTreasury)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(tokenTotal)
+                                .withCustom(fixedHtsFee(htsFee, feeDenom, htsCollector)),
+                        tokenAssociate(htsCollector2, fungibleToken),
+                        tokenCreate(nonFungibleToken)
+                                .treasury(tokenTreasury)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .supplyKey(NFT_KEY)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(0)
+                                .withCustom(fixedHtsFee(htsFee, fungibleToken, htsCollector2)),
+                        mintToken(nonFungibleToken, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes()))),
+                        tokenAssociate(tokenReceiver, fungibleToken),
+                        tokenAssociate(tokenOwner, fungibleToken),
+                        tokenAssociate(tokenReceiver, nonFungibleToken),
+                        tokenAssociate(tokenOwner, nonFungibleToken),
+                        cryptoTransfer(
+                                movingUnique(nonFungibleToken, 1L).between(tokenTreasury, tokenOwner),
+                                moving(tokenTotal, fungibleToken).between(tokenTreasury, tokenOwner)))
+                .when(tokenAirdrop(movingUnique(nonFungibleToken, 1L).between(tokenOwner, tokenReceiver))
+                        .fee(ONE_HUNDRED_HBARS)
+                        .payingWith(tokenOwner))
+                .then(
+                        getAccountBalance(tokenOwner)
+                                .hasTokenBalance(nonFungibleToken, 0)
+                                .hasTokenBalance(fungibleToken, tokenTotal - htsFee)
+                                .hasTokenBalance(feeDenom, tokenTotal - htsFee),
+                        getAccountBalance(tokenReceiver).hasTokenBalance(nonFungibleToken, 1),
+                        getAccountBalance(htsCollector).hasTokenBalance(feeDenom, htsFee),
+                        getAccountBalance(htsCollector2).hasTokenBalance(fungibleToken, htsFee));
     }
 
     @HapiTest

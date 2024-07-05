@@ -113,9 +113,6 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     @Nullable
     public AccountAirdrop getForModify(@NonNull final PendingAirdropId airdropId) {
         requireNonNull(airdropId);
-        if (airdropId.hasNonFungibleToken()) {
-            return null;
-        }
         return airdropState.getForModify(airdropId);
     }
 }

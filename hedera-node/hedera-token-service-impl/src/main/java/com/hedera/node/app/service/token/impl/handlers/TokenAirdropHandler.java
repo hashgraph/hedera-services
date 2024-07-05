@@ -31,7 +31,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_A
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
-import static com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor.executeTransfer;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createAccountAirdrop;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createFungibleTokenPendingAirdropId;
@@ -74,6 +73,7 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
+import com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.util.CryptoTransferFeeCalculator;
 import com.hedera.node.app.service.token.impl.util.TokenAssociateToAccountFeeCalculator;
@@ -150,6 +150,12 @@ public class TokenAirdropHandler implements TransactionHandler {
         var recordBuilder = context.recordBuilders().getOrCreate(TokenAirdropRecordBuilder.class);
         List<TokenTransferList> tokenTransferListList = new ArrayList<>();
 
+        // charge custom fees in advance
+        var convertedOp = CryptoTransferTransactionBody.newBuilder()
+                .tokenTransfers(op.tokenTransfers())
+                .build();
+        assessCustomFee(context, convertedOp);
+
         for (final var xfers : op.tokenTransfers()) {
             final var tokenId = xfers.tokenOrThrow();
 
@@ -208,13 +214,13 @@ public class TokenAirdropHandler implements TransactionHandler {
                 // 1. separate NFT transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 var nftLists = separateNftTransfers(context, tokenId, xfers.nftTransfers());
-                var optionalAccountId = nftLists.pendingNftList().stream().findFirst();
-                var senderAccount =
-                        accountStore.get(optionalAccountId.orElseThrow().senderAccountIDOrThrow());
-                validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
 
                 // 2. create and save NFT pending airdrops in to state
                 nftLists.pendingNftList().forEach(item -> {
+                    var optionalAccountId = nftLists.pendingNftList().stream().findFirst();
+                    var senderAccount =
+                            accountStore.get(optionalAccountId.orElseThrow().senderAccountIDOrThrow());
+                    validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
                     var pendingId = createNftPendingAirdropId(
                             tokenId, item.serialNumber(), item.senderAccountID(), item.receiverAccountID());
                     AccountAirdrop newAccountAirdrop = getNewAccountAirdropAndUpdateStores(
@@ -256,7 +262,17 @@ public class TokenAirdropHandler implements TransactionHandler {
 
         final var transferContext = new TransferContextImpl(context, cryptoTransferBody, true);
 
-        executeTransfer(syntheticCryptoTransferTxn, transferContext, context, validator, recordBuilder);
+        // We should skip custom fee steps here, because they must be already prepaid
+        CryptoTransferExecutor.executeCryptoTransferWithoutCustomFee(
+                syntheticCryptoTransferTxn, transferContext, context, validator, recordBuilder);
+    }
+
+    private void assessCustomFee(@NonNull final HandleContext context, CryptoTransferTransactionBody body) {
+
+        final var syntheticCryptoTransferTxn =
+                TransactionBody.newBuilder().cryptoTransfer(body).build();
+        final var transferContext = new TransferContextImpl(context, body, true);
+        CryptoTransferExecutor.chargeCustomFee(syntheticCryptoTransferTxn, transferContext);
     }
 
     /**
