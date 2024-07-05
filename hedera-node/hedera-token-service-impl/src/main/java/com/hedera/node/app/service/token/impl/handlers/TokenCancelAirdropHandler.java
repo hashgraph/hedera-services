@@ -26,9 +26,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
+import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
