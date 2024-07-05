@@ -16,15 +16,28 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
+import static com.hedera.node.app.spi.key.KeyUtils.isValid;
+import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.PendingAirdropId;
+import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
@@ -39,24 +52,89 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.HashSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
  * This class contains all workflow-related functionality regarding {@link HederaFunctionality#TOKEN_CANCEL_AIRDROP}.
- * This transaction type is used to reject tokens from an account and send them back to the treasury.
+ * This transaction type is used to cancel an airdrop which is in pending state.
  */
 @Singleton
 public class TokenCancelAirdropHandler extends BaseTokenHandler implements TransactionHandler {
 
+    private final int MAX_ALLOWED_PENDING_AIRDROPS_TO_CANCEL = 10;
+
     @Inject
-    public TokenCancelAirdropHandler() {}
+    public TokenCancelAirdropHandler() {
+        // Exists for injection
+    }
 
     @Override
-    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {}
+    public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
+        requireNonNull(context);
+        final var txn = context.body();
+        final var op = txn.tokenCancelAirdropOrThrow();
+        final var allPendingAirdrops = op.pendingAirdrops();
+        final var accountStore = context.createStore(ReadableAccountStore.class);
+
+        for (final var airdrop : allPendingAirdrops) {
+            validateTrue(airdrop.hasSenderId(), INVALID_ACCOUNT_ID);
+            verifyAndRequireKeyForSender(airdrop.senderIdOrThrow(), context, accountStore);
+        }
+    }
+
+    /**
+     * Verifies that the sender account exists and ensures the account's key is valid and required for the transaction.
+     *
+     * @param senderId The AccountID of the specified sender whose key needs to be validated.
+     * @param context The PreHandleContext providing transaction context.
+     * @param accountStore The store to access readable account information.
+     * @throws PreCheckException If the sender's account is immutable or the sender's account ID is invalid.
+     */
+    private void verifyAndRequireKeyForSender(
+            @NonNull final AccountID senderId,
+            @NonNull final PreHandleContext context,
+            @NonNull final ReadableAccountStore accountStore)
+            throws PreCheckException {
+        final var senderAccount = accountStore.getAliasedAccountById(senderId);
+        validateTruePreCheck(senderAccount != null, INVALID_ACCOUNT_ID);
+
+        // If the sender account is immutable, then we throw an exception.
+        final var key = senderAccount.key();
+        if (key == null || !isValid(key)) {
+            throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
+        }
+        context.requireKey(key);
+    }
 
     @Override
-    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {}
+    public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        requireNonNull(txn, "Transaction body cannot be null");
+        final var op = txn.tokenCancelAirdropOrThrow();
+
+        validateFalsePreCheck(op.pendingAirdrops().isEmpty(), EMPTY_PENDING_AIRDROP_ID_LIST);
+        validateFalsePreCheck(
+                op.pendingAirdrops().size() > MAX_ALLOWED_PENDING_AIRDROPS_TO_CANCEL, MAX_PENDING_AIRDROP_ID_EXCEEDED);
+        final var uniquePendingAirdrops = new HashSet<PendingAirdropId>();
+        for (final var airdrop : op.pendingAirdrops()) {
+            if (!uniquePendingAirdrops.add(airdrop)) {
+                throw new PreCheckException(PENDING_AIRDROP_ID_REPEATED);
+            }
+            validateAccountID(airdrop.receiverId(), null);
+            validateAccountID(airdrop.senderId(), null);
+
+            if (airdrop.hasFungibleTokenType()) {
+                final var tokenID = airdrop.fungibleTokenType();
+                validateTruePreCheck(tokenID != null && !tokenID.equals(TokenID.DEFAULT), INVALID_TOKEN_ID);
+            }
+            if (airdrop.hasNonFungibleToken()) {
+                final var nftID = airdrop.nonFungibleTokenOrThrow();
+                validateTruePreCheck(nftID.tokenId() != null, INVALID_NFT_ID);
+                validateTruePreCheck(nftID.serialNumber() > 0, INVALID_TOKEN_NFT_SERIAL_NUMBER);
+            }
+        }
+    }
 
     @SuppressWarnings("java:S3864")
     @Override
