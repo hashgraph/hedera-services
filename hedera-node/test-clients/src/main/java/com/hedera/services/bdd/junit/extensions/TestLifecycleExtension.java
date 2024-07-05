@@ -18,7 +18,7 @@ package com.hedera.services.bdd.junit.extensions;
 
 import static com.hedera.services.bdd.junit.extensions.ExtensionUtils.hapiTestMethodOf;
 
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiSpec;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.jupiter.api.AfterAll;
@@ -31,7 +31,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
 
-public class SpecManagerExtension
+public class TestLifecycleExtension
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver {
     private static final String SPEC_MANAGER = "specManager";
 
@@ -39,12 +39,18 @@ public class SpecManagerExtension
     public void beforeAll(@NonNull final ExtensionContext extensionContext) {
         if (isRootTestClass(extensionContext)) {
             getStore(extensionContext)
-                    .put(SPEC_MANAGER, new SpecManager(NetworkTargetingExtension.SHARED_NETWORK.get()));
+                    .put(SPEC_MANAGER, new TestLifecycle(NetworkTargetingExtension.SHARED_NETWORK.get()));
         }
+        getStore(extensionContext)
+                .get(SPEC_MANAGER, TestLifecycle.class)
+                .setCurrentTestClass(extensionContext.getRequiredTestClass());
     }
 
     @Override
     public void afterAll(@NonNull final ExtensionContext extensionContext) {
+        getStore(extensionContext)
+                .get(SPEC_MANAGER, TestLifecycle.class)
+                .restoreAnyOverriddenProperties(extensionContext.getRequiredTestClass());
         if (isRootTestClass(extensionContext)) {
             getStore(extensionContext).remove(SPEC_MANAGER);
         }
@@ -54,7 +60,7 @@ public class SpecManagerExtension
     public void beforeEach(@NonNull final ExtensionContext extensionContext) {
         hapiTestMethodOf(extensionContext)
                 .ifPresent(ignore ->
-                        HapiSpec.SPEC_MANAGER.set(getStore(extensionContext).get(SPEC_MANAGER, SpecManager.class)));
+                        HapiSpec.SPEC_MANAGER.set(getStore(extensionContext).get(SPEC_MANAGER, TestLifecycle.class)));
     }
 
     @Override
@@ -65,7 +71,7 @@ public class SpecManagerExtension
     @Override
     public boolean supportsParameter(
             @NonNull final ParameterContext parameterContext, @NonNull final ExtensionContext extensionContext) {
-        return parameterContext.getParameter().getType() == SpecManager.class
+        return parameterContext.getParameter().getType() == TestLifecycle.class
                 && (parameterContext.getDeclaringExecutable().isAnnotationPresent(BeforeAll.class)
                         || parameterContext.getDeclaringExecutable().isAnnotationPresent(AfterAll.class));
     }
@@ -73,7 +79,7 @@ public class SpecManagerExtension
     @Override
     public Object resolveParameter(
             @NonNull final ParameterContext parameterContext, @NonNull final ExtensionContext extensionContext) {
-        return getStore(extensionContext).get(SPEC_MANAGER, SpecManager.class);
+        return getStore(extensionContext).get(SPEC_MANAGER, TestLifecycle.class);
     }
 
     private ExtensionContext.Store getStore(@NonNull final ExtensionContext extensionContext) {

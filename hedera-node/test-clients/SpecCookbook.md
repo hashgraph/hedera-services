@@ -18,6 +18,7 @@ The cookbook contains mostly concrete examples; but it is good to keep the princ
   * [DO create template objects to enumerate families of related tests](#do-create-template-objects-to-enumerate-families-of-related-tests)
   * [DO fully validate a transaction's record before submitting the next one](#do-fully-validate-a-transactions-record-before-submitting-the-next-one)
   * [DO prefer the object-oriented DSL when working with contract-managed entities](#do-prefer-the-object-oriented-dsl-when-working-with-contract-managed-entities)
+  * [DO opt for `@BeforeAll` property overrides whenever possible](#do-opt-for-beforeall-property-overrides-whenever-possible)
   * [DO strictly adhere to the `@HapiTest` checklist](#do-strictly-adhere-to-the-hapitest-checklist)
   * [DO identify natural groupings of test classes and collect them in packages](#do-identify-natural-groupings-of-test-classes-and-collect-them-in-packages)
 - [Anti-patterns](#anti-patterns)
@@ -111,6 +112,22 @@ While with the object-oriented DSL this becomes something like,
         ...
 ```
 
+### DO opt for `@BeforeAll` property overrides whenever possible
+
+Any time we use a `@LeakyHapiTest` we lose all concurrency we would otherwise have in that test class. This lost time
+adds up when running against a `SubProcessNetwork`. So prefer instead to group all tests that need a particular set of
+property overrides, and put them in a test class annotated with `@HapiTestLifecycle`.
+
+Then add a `@BeforeAll` with an injected `TestLifecycle` instance and set the overrides there.
+```java
+        @BeforeAll
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+                testLifecycle.overrideInClass(Map.of("contracts.evm.version", "v0.46"));
+        }
+```
+The overridden properties will automatically be restored to their previous values on the target network after the test
+class completes.
+
 ### DO strictly adhere to the `@HapiTest` checklist
 
 It has been said that quantity has a quality all its own. This is a good description of the main challenge in quickly
@@ -168,19 +185,18 @@ But if we aimlessly copy or add modifiers, this could easily expand to,
                                 .adminKey("aKey")
                                 .freezeKey("aKey")
 ```
-And already the reader's eyes may glaze over.
+And already we are spending our reader's attention span rather liberally.
 
 ### DON'T start by copying a test that uses `withOpContext()`
 
-Calling the `SpecOperation` type hierarchy a "DSL" is a bit of an over-statement. It is more a collection of
-suggestively named factories that, when arranged thoughtfully, can assert an expected behavior of the Hedera network
-with clear intent.
+Saying the `SpecOperation` family makes up a DSL is a bit of an overstatement. They are more a collection of types with
+suggestively named factories and fluent modifiers. But when arranged thoughtfully, they can assert expected behaviors
+of the Hedera network with clear intent.
 
-But given a `HapiSpec` initialized for a target network, it is also possible to just use these operations in arbitrary
-Java code as an SDK for that network by calling `SpecOperation#execFor(HapiSpec)` wherever it is convenient---inside a
-`for` loop, asynchronously in a scheduled `Runnable`, and so on.
+Given a `HapiSpec` initialized for a target network, you can also use these operations in arbitrary Java code as an SDK
+for that network by calling `SpecOperation#execFor(HapiSpec)` wherever you want---inside a `for` loop, asynchronously
+in a scheduled `Runnable`, and so on.
 
-Sometimes that will be the right thing to do, but the complete flexibility of this style makes it much harder to
-review and search the resulting tests. So never begin by copying a test that uses `withOpContext()`. Instead, only use
-this device when it is truly necessary, and even then stay within the limits prescribed by the
-[`@HapiTest` checklist](README.md#the-hapitest-checklist)
+Though this approach offers flexibility, it makes the resulting tests significantly harder to review and search.
+Therefore, avoid starting by copying a test that uses `withOpContext()`. Only use this device when truly necessary, and
+even then, adhere to the limits prescribed by the [`@HapiTest checklist`](README.md#the-hapitest-checklist).

@@ -72,7 +72,7 @@ import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
@@ -149,7 +149,7 @@ public class HapiSpec implements Runnable, Executable {
     private static final String AS_WRITTEN_DISPLAY_NAME = "as written";
 
     public static final ThreadLocal<HederaNetwork> TARGET_NETWORK = new ThreadLocal<>();
-    public static final ThreadLocal<SpecManager> SPEC_MANAGER = new ThreadLocal<>();
+    public static final ThreadLocal<TestLifecycle> SPEC_MANAGER = new ThreadLocal<>();
     public static final ThreadLocal<String> SPEC_NAME = new ThreadLocal<>();
 
     private static final AtomicLong NEXT_AUTO_SCHEDULE_NUM = new AtomicLong(1);
@@ -1189,7 +1189,7 @@ public class HapiSpec implements Runnable, Executable {
             doTargetSpec(spec, targetNetwork);
         }
         Optional.ofNullable(SPEC_MANAGER.get())
-                .map(SpecManager::getSharedStates)
+                .map(TestLifecycle::getSharedStates)
                 .ifPresent(spec::setSharedStates);
         return spec;
     }
