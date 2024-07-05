@@ -38,5 +38,4 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 @TestFactory
 @ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
 @ResourceLock(value = "NETWORK", mode = READ)
-@SuppressWarnings("java:S1192")
 public @interface HapiTest {}
