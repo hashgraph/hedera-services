@@ -354,7 +354,7 @@ public class FileUpdateSuite {
                 .given(fileCreate("test"))
                 .when()
                 .then(fileUpdate("test")
-                        .lifetime(DEFAULT_MAX_LIFETIME + 12_345L)
+                        .lifetime(100 * THREE_MONTHS_IN_SECONDS)
                         .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
     }
 

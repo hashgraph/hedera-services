@@ -62,6 +62,7 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
         System.setProperty(
                 "hedera.recordStream.logDir",
                 getExternalPath(STREAMS_DIR).getParent().toString());
+        System.setProperty("hedera.profiles.active", "DEV");
         return this;
     }
 
