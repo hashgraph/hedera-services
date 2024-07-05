@@ -51,22 +51,22 @@ import org.apache.commons.lang3.StringUtils;
 public class HapiSpecSetup {
     private final SplittableRandom r = new SplittableRandom(1_234_567L);
 
-    private static final Configuration defaultConfig;
     private static final HapiPropertySource defaultNodeProps;
+    public static final Configuration DEFAULT_CONFIG;
 
     static {
         final var provider = new ConfigProviderImpl(true, null);
-        defaultConfig = provider.getConfiguration();
+        DEFAULT_CONFIG = provider.getConfiguration();
         defaultNodeProps = inPriorityOrder(
                 new HapiPropertySource() {
                     @Override
                     public String get(@NonNull final String property) {
-                        return defaultConfig.getValue(property);
+                        return DEFAULT_CONFIG.getValue(property);
                     }
 
                     @Override
                     public boolean has(@NonNull final String property) {
-                        return defaultConfig.exists(property);
+                        return DEFAULT_CONFIG.exists(property);
                     }
                 },
                 new MapPropertySource(allDefaultsFrom(new ServicesConfigExtension().getConfigDataTypes()), Quiet.YES));
@@ -78,7 +78,7 @@ public class HapiSpecSetup {
 
     public static String getDefaultProp(@NonNull final String property) {
         requireNonNull(property);
-        return defaultConfig.getValue(property);
+        return DEFAULT_CONFIG.getValue(property);
     }
 
     private Set<ResponseCodeEnum> streamlinedIngestChecks = null;

@@ -393,7 +393,7 @@ public class V0490FileSchema extends Schema {
                                 .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
                                 .build())
                         .build(),
-                genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates());
+                genesisContext.configuration().getConfigData(FilesConfig.class).networkProperties());
     }
 
     // ================================================================================================================
@@ -453,7 +453,7 @@ public class V0490FileSchema extends Schema {
                                 .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
                                 .build())
                         .build(),
-                genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates());
+                genesisContext.configuration().getConfigData(FilesConfig.class).hapiPermissions());
     }
 
     // ================================================================================================================
@@ -539,7 +539,6 @@ public class V0490FileSchema extends Schema {
 
     // ================================================================================================================
     // Creates and loads the software update file into state
-
     public void createGenesisSoftwareUpdateFiles(@NonNull final GenesisContext genesisContext) {
         final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
         // These files all start off as an empty byte array for all upgrade files from 150-159.

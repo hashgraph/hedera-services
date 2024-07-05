@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.timeUntilNextPeriod;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -88,6 +89,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -214,6 +216,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
@@ -828,6 +831,27 @@ public class UtilVerbs {
     public static EventualAssertion streamMustIncludeNoFailuresFrom(
             final Function<HapiSpec, RecordStreamAssertion> assertion) {
         return EventualRecordStreamAssertion.eventuallyAssertingNoFailures(assertion);
+    }
+
+    /**
+     * Returns an operation that validates the visible items captured by the given assertion with
+     * the given validator.
+     *
+     * @param assertion the assertion that captures the visible items
+     * @param validator the validator to use
+     * @return the operation that validates the visible items
+     */
+    public static SpecOperation validateVisibleItems(
+            @NonNull final AtomicReference<VisibleItemsAssertion> assertion,
+            @NonNull final BiConsumer<HapiSpec, Map<String, List<RecordStreamEntry>>> validator) {
+        requireNonNull(assertion);
+        requireNonNull(validator);
+        return withOpContext((spec, opLog) -> {
+            triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
+            final var entries =
+                    assertion.get().entriesWithin(Duration.ofSeconds(2)).join();
+            validator.accept(spec, entries);
+        });
     }
 
     public static RunnableOp verify(@NonNull final Runnable runnable) {

@@ -45,6 +45,7 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
     private final Set<String> unseenIds;
     private final CountDownLatch latch;
     private final Map<String, List<RecordStreamEntry>> entries = new HashMap<>();
+    private final boolean withLogging = false;
 
     @Nullable
     private String lastSeenId = null;
@@ -83,7 +84,10 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
                 .findFirst()
                 .ifPresentOrElse(
                         seenId -> {
-                            log.info("Saw {} as {}", seenId, item.getRecord().getTransactionID());
+                            if (withLogging) {
+                                log.info(
+                                        "Saw {} as {}", seenId, item.getRecord().getTransactionID());
+                            }
                             entries.computeIfAbsent(seenId, ignore -> new ArrayList<>())
                                     .add(RecordStreamEntry.from(item));
                             if (!seenId.equals(lastSeenId)) {

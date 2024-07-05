@@ -51,7 +51,7 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
             isEmbedded = embeddedModeRequested() || repeatableModeRequested();
             final HederaNetwork targetNetwork;
             if (isEmbedded) {
-                targetNetwork = EmbeddedNetwork.newEmbeddedNetwork();
+                targetNetwork = EmbeddedNetwork.newSharedNetwork();
             } else {
                 targetNetwork = SubProcessNetwork.newSharedNetwork(CLASSIC_HAPI_TEST_NETWORK_SIZE);
             }

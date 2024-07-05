@@ -59,6 +59,7 @@ public final class FileServiceImpl implements FileService {
         genesisSchema.createGenesisNetworkProperties(context);
         genesisSchema.createGenesisHapiPermissions(context);
         genesisSchema.createGenesisThrottleDefinitions(context);
+        genesisSchema.createGenesisSoftwareUpdateFiles(context);
     }
 
     /**

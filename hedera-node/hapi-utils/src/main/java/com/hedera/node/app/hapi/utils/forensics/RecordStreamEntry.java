@@ -19,6 +19,7 @@ package com.hedera.node.app.hapi.utils.forensics;
 import static com.hedera.node.app.hapi.utils.CommonUtils.timestampToInstant;
 
 import com.hedera.services.stream.proto.RecordStreamItem;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -66,6 +67,15 @@ public record RecordStreamEntry(TransactionParts parts, TransactionRecord txnRec
 
     public ResponseCodeEnum finalStatus() {
         return txnRecord.getReceipt().getStatus();
+    }
+
+    /**
+     * Returns the file ID created by the transaction, if any.
+     *
+     * @return the created file ID
+     */
+    public FileID createdFileId() {
+        return txnRecord.getReceipt().getFileID();
     }
 
     public HederaFunctionality function() {

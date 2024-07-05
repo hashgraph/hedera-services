@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImp
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
+import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.ERROR;
@@ -639,6 +640,10 @@ public class HapiSpec implements Runnable, Executable {
         }
         if (sidecarWatcher != null) {
             sidecarWatcher.ensureUnsubscribed();
+        }
+        // Also terminate any embedded network not being shared by multiple specs
+        if (targetNetwork instanceof EmbeddedNetwork embeddedNetwork && embeddedNetwork != SHARED_NETWORK.get()) {
+            embeddedNetwork.terminate();
         }
     }
 

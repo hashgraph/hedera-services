@@ -18,6 +18,7 @@ package com.hedera.services.bdd.junit.extensions;
 
 import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 
+import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -31,6 +32,8 @@ public class ExtensionUtils {
     }
 
     private static boolean isHapiTest(@NonNull final Method method) {
-        return isAnnotated(method, HapiTest.class) || isAnnotated(method, LeakyHapiTest.class);
+        return isAnnotated(method, HapiTest.class)
+                || isAnnotated(method, LeakyHapiTest.class)
+                || isAnnotated(method, GenesisHapiTest.class);
     }
 }
