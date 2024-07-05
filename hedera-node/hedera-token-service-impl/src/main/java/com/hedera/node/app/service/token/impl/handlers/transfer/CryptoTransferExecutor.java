@@ -33,9 +33,74 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Utility class that provides static method for execution of Crypto transfer transaction.
+ * Service class that provides static methods for execution of Crypto transfer transaction.
+ * The main purpose of this class is reusing the crypto transfer steps logic in to {@link com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler}
+ * It also adds the possibility to separate custom fee assessment steps from other steps (to prepay fees in case of pending airdrops)
  */
 public class CryptoTransferExecutor {
+
+    /**
+     * Executes all crypto transfer steps.
+     *
+     * @param txn transaction body
+     * @param transferContext transfer context
+     * @param context handle context
+     * @param validator crypto transfer validator
+     * @param recordBuilder record builder
+     */
+    public static void executeCryptoTransfer(
+            TransactionBody txn,
+            TransferContextImpl transferContext,
+            HandleContext context,
+            CryptoTransferValidator validator,
+            CryptoTransferRecordBuilder recordBuilder) {
+        executeCryptoTransfer(txn, transferContext, context, validator, recordBuilder, false);
+    }
+
+    /**
+     * Charges only the custom fees if any.
+     * Used when custom fees should be prepaid in {@link com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler}
+     *
+     * @param txn transaction body
+     * @param transferContext transfer context
+     */
+    public static void chargeCustomFee(TransactionBody txn, TransferContextImpl transferContext) {
+        final var customFeeStep = new CustomFeeAssessmentStep(txn.cryptoTransferOrThrow());
+        var transferBodies = customFeeStep.assessCustomFees(transferContext);
+        var topLevelPayer = transferContext.getHandleContext().payer();
+        for (var customFeeTransactionBody : transferBodies) {
+            if (customFeeTransactionBody
+                    .tokenTransfers()
+                    .equals(txn.cryptoTransferOrThrow().tokenTransfers())) {
+                continue;
+            }
+            // adjust balances
+            var adjustHbarChangesStep = new AdjustHbarChangesStep(customFeeTransactionBody, topLevelPayer);
+            adjustHbarChangesStep.doIn(transferContext);
+            var adjustFungibleChangesStep =
+                    new AdjustFungibleTokenChangesStep(customFeeTransactionBody.tokenTransfers(), topLevelPayer);
+            adjustFungibleChangesStep.doIn(transferContext);
+        }
+    }
+
+    /**
+     * Executes crypto transfer, but skip custom fee steps.
+     * Used when custom fees should be prepaid in {@link com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler}
+     *
+     * @param txn transaction body
+     * @param transferContext transfer context
+     * @param context handle context
+     * @param validator crypto transfer validator
+     * @param recordBuilder record builder
+     */
+    public static void executeCryptoTransferWithoutCustomFee(
+            TransactionBody txn,
+            TransferContextImpl transferContext,
+            HandleContext context,
+            CryptoTransferValidator validator,
+            CryptoTransferRecordBuilder recordBuilder) {
+        executeCryptoTransfer(txn, transferContext, context, validator, recordBuilder, true);
+    }
 
     /**
      * Execute crypto transfer transaction
@@ -45,13 +110,15 @@ public class CryptoTransferExecutor {
      * @param context handle context
      * @param validator crypto transfer validator
      * @param recordBuilder crypto transfer record builder
+     * @param skipCustomFee should execute custom fee steps
      */
-    public static void executeTransfer(
+    private static void executeCryptoTransfer(
             TransactionBody txn,
             TransferContextImpl transferContext,
             HandleContext context,
             CryptoTransferValidator validator,
-            CryptoTransferRecordBuilder recordBuilder) {
+            CryptoTransferRecordBuilder recordBuilder,
+            boolean skipCustomFee) {
         final var topLevelPayer = context.payer();
         // Use the op with replaced aliases in further steps
         transferContext.validateHbarAllowances();
@@ -59,7 +126,7 @@ public class CryptoTransferExecutor {
         // Replace all aliases in the transaction body with its account ids
         final var replacedOp = ensureAndReplaceAliasesInOp(txn, transferContext, context, validator);
         // Use the op with replaced aliases in further steps
-        final var steps = decomposeIntoSteps(replacedOp, topLevelPayer, transferContext);
+        final var steps = decomposeIntoSteps(replacedOp, topLevelPayer, transferContext, skipCustomFee);
         for (final var step : steps) {
             // Apply all changes to the handleContext's States
             step.doIn(transferContext);
@@ -142,18 +209,23 @@ public class CryptoTransferExecutor {
     private static List<TransferStep> decomposeIntoSteps(
             final CryptoTransferTransactionBody op,
             final AccountID topLevelPayer,
-            final TransferContextImpl transferContext) {
+            final TransferContextImpl transferContext,
+            boolean skipCustomFees) {
         final List<TransferStep> steps = new ArrayList<>();
         // Step 1: associate any token recipients that are not already associated and have
         // auto association slots open
         steps.add(new AssociateTokenRecipientsStep(op));
         // Step 2: Charge custom fees for token transfers
         final var customFeeStep = new CustomFeeAssessmentStep(op);
+
+        List<CryptoTransferTransactionBody> txns = List.of(op);
+        if (!skipCustomFees) {
+            txns = customFeeStep.assessCustomFees(transferContext);
+        }
+
         // The below steps should be doe for both custom fee assessed transaction in addition to
         // original transaction
-        final var customFeeAssessedOps = customFeeStep.assessCustomFees(transferContext);
-
-        for (final var txn : customFeeAssessedOps) {
+        for (final var txn : txns) {
             steps.add(new AssociateTokenRecipientsStep(txn));
             // Step 3: Charge hbar transfers and also ones with isApproval. Modify the allowances map on account
             final var assessHbarTransfers = new AdjustHbarChangesStep(txn, topLevelPayer);
@@ -173,21 +245,4 @@ public class CryptoTransferExecutor {
 
         return steps;
     }
-
-    //    /**
-    //     * Run pure checks on
-    //     *
-    //     * @param validator crypto transfer validator
-    //     * @param txn transaction body
-    //     * @throws PreCheckException
-    //     */
-    //    public static void transferPureChecks(
-    //            @NonNull CryptoTransferValidator validator, @NonNull final TransactionBody txn) throws
-    // PreCheckException {
-    //        requireNonNull(validator);
-    //        requireNonNull(txn);
-    //        final var op = txn.cryptoTransfer();
-    //        validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
-    //        validator.cryptoTransferPureChecks(op);
-    //    }
 }
