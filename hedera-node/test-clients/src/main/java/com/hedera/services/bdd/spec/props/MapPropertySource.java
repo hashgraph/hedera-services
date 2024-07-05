@@ -19,12 +19,11 @@ package com.hedera.services.bdd.spec.props;
 import static java.util.stream.Collectors.toMap;
 
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,7 +44,8 @@ public class MapPropertySource implements HapiPropertySource {
      * Whether to log the properties being initialized in a property source.
      */
     public enum Quiet {
-        YES, NO
+        YES,
+        NO
     }
 
     public MapPropertySource(@NonNull final Map<String, String> props) {

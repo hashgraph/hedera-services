@@ -39,13 +39,14 @@ import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.workflows.GenesisContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.Dispatch;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -94,14 +95,18 @@ public class GenesisSetup {
     /**
      * Creates the system entities within the given dispatch.
      *
+     * @param state the working state
      * @param dispatch the genesis dispatch
      */
-    public void createSystemEntities(@NonNull final Dispatch dispatch) {
-        final var firstUserNum =
-                dispatch.config().getConfigData(HederaConfig.class).firstUserEntity();
-        final var controlledNum = dispatch.stack()
-                .getWritableStates(EntityIdService.NAME)
-                .<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY);
+    public void createSystemEntities(@NonNull final HederaState state, @NonNull final Dispatch dispatch) {
+        final var config = dispatch.config();
+        final var hederaConfig = config.getConfigData(HederaConfig.class);
+        final var firstUserNum = config.getConfigData(HederaConfig.class).firstUserEntity();
+        final var systemAdminId = AccountID.newBuilder()
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .accountNum(config.getConfigData(AccountsConfig.class).systemAdmin())
+                .build();
         final var genesisContext = new GenesisContext() {
             @Override
             public void dispatchCreation(@NonNull final TransactionBody txBody, final long entityNum) {
@@ -109,11 +114,19 @@ public class GenesisSetup {
                 if (entityNum >= firstUserNum) {
                     throw new IllegalArgumentException("Cannot create user entity at genesis");
                 }
+                final var controlledNum = dispatch.stack()
+                        .getWritableStates(EntityIdService.NAME)
+                        .<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY);
                 controlledNum.put(new EntityNumber(entityNum - 1));
-                ((WritableSingletonStateBase<EntityNumber>) controlledNum).commit();
-                final var recordBuilder = dispatch.handleContext().dispatchPrecedingTransaction(txBody, SingleTransactionRecordBuilder.class, key -> true);
+                final var recordBuilder = dispatch.handleContext()
+                        .dispatchPrecedingTransaction(
+                                txBody, SingleTransactionRecordBuilder.class, key -> true, systemAdminId);
                 if (recordBuilder.status() != SUCCESS) {
-                    log.error("Failed to dispatch genesis transaction {} for entity {} - {}", txBody, entityNum, recordBuilder.status());
+                    log.error(
+                            "Failed to dispatch genesis transaction {} for entity {} - {}",
+                            txBody,
+                            entityNum,
+                            recordBuilder.status());
                 }
             }
 
@@ -131,8 +144,11 @@ public class GenesisSetup {
         };
         fileService.createSystemEntities(genesisContext);
         // Before returning, reset the next entity number to be the first user entity
+        final var controlledNum = dispatch.stack()
+                .getWritableStates(EntityIdService.NAME)
+                .<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY);
         controlledNum.put(new EntityNumber(firstUserNum - 1));
-        ((WritableSingletonStateBase<EntityNumber>) controlledNum).commit();
+        dispatch.stack().commitFullStack();
     }
 
     /**

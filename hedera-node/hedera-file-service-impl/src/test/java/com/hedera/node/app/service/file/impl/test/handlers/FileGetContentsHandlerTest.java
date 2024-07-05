@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
@@ -43,8 +44,10 @@ import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.handlers.FileGetContentsHandler;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +56,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class FileGetContentsTest extends FileTestBase {
+class FileGetContentsHandlerTest extends FileTestBase {
 
     @Mock
     private QueryContext context;
@@ -61,11 +64,14 @@ class FileGetContentsTest extends FileTestBase {
     @Mock
     private FileFeeBuilder usageEstimator;
 
+    @Mock
+    private V0490FileSchema genesisSchema;
+
     private FileGetContentsHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FileGetContentsHandler(usageEstimator);
+        subject = new FileGetContentsHandler(usageEstimator, genesisSchema);
     }
 
     @Test
@@ -105,7 +111,7 @@ class FileGetContentsTest extends FileTestBase {
     }
 
     @Test
-    void validatesQueryWhenValidFile() throws Throwable {
+    void validatesQueryWhenValidFile() {
         givenValidFile();
 
         final var query = createGetFileContentQuery(fileId.fileNum());
@@ -115,7 +121,7 @@ class FileGetContentsTest extends FileTestBase {
     }
 
     @Test
-    void validatesQueryIfInvalidFile() throws Throwable {
+    void validatesQueryIfInvalidFile() {
         final var query = createGetFileContentQuery();
         when(context.query()).thenReturn(query);
 
@@ -123,7 +129,39 @@ class FileGetContentsTest extends FileTestBase {
     }
 
     @Test
-    void validatesQueryEvenWhenFileDeletedInState() throws Throwable {
+    void returnsGenesisExchangeRatesIfMissing() {
+        given(context.configuration()).willReturn(DEFAULT_CONFIG);
+        given(genesisSchema.genesisExchangeRates(DEFAULT_CONFIG)).willReturn(contentsBytes);
+
+        final var query = createGetFileContentQuery(
+                DEFAULT_CONFIG.getConfigData(FilesConfig.class).exchangeRates());
+        given(context.query()).willReturn(query);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
+
+        final var response = subject.findResponse(context, ResponseHeader.DEFAULT);
+        assertSame(
+                contentsBytes,
+                response.fileGetContentsOrThrow().fileContentsOrThrow().contents());
+    }
+
+    @Test
+    void returnsGenesisFeeSchedulesIfMissing() {
+        given(context.configuration()).willReturn(DEFAULT_CONFIG);
+        given(genesisSchema.genesisFeeSchedules(DEFAULT_CONFIG)).willReturn(contentsBytes);
+
+        final var query = createGetFileContentQuery(
+                DEFAULT_CONFIG.getConfigData(FilesConfig.class).feeSchedules());
+        given(context.query()).willReturn(query);
+        when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
+
+        final var response = subject.findResponse(context, ResponseHeader.DEFAULT);
+        assertSame(
+                contentsBytes,
+                response.fileGetContentsOrThrow().fileContentsOrThrow().contents());
+    }
+
+    @Test
+    void validatesQueryEvenWhenFileDeletedInState() {
         givenValidFile(true);
         readableFileState = readableFileState();
         given(readableStates.<FileID, File>get(FILES)).willReturn(readableFileState);
@@ -178,6 +216,7 @@ class FileGetContentsTest extends FileTestBase {
 
         final var query = createGetFileContentQuery(fileIdNotExist.fileNum());
         when(context.query()).thenReturn(query);
+        when(context.configuration()).thenReturn(DEFAULT_CONFIG);
         when(context.createStore(ReadableFileStore.class)).thenReturn(readableStore);
 
         final var response = subject.findResponse(context, responseHeader);

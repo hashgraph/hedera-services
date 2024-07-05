@@ -34,11 +34,14 @@ import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.base.FileQueryBase;
+import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.FilesConfig;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.ResponseType;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -50,14 +53,17 @@ import javax.inject.Singleton;
 @Singleton
 public class FileGetContentsHandler extends FileQueryBase {
     private final FileFeeBuilder usageEstimator;
+    private final V0490FileSchema genesisSchema;
 
     /**
      * Constructs a {@link FileGetContentsHandler} with the given {@link FileFeeBuilder}.
      * @param usageEstimator the file fee builder to be used for fee calculation
      */
     @Inject
-    public FileGetContentsHandler(final FileFeeBuilder usageEstimator) {
-        this.usageEstimator = usageEstimator;
+    public FileGetContentsHandler(
+            @NonNull final FileFeeBuilder usageEstimator, @NonNull final V0490FileSchema genesisSchema) {
+        this.usageEstimator = requireNonNull(usageEstimator);
+        this.genesisSchema = requireNonNull(genesisSchema);
     }
 
     @Override
@@ -89,7 +95,7 @@ public class FileGetContentsHandler extends FileQueryBase {
         final var op = query.fileGetContentsOrThrow();
         final var fileId = op.fileIDOrElse(FileID.DEFAULT);
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
-        final FileContents fileContents = contentFile(fileId, fileStore);
+        final FileContents fileContents = contentFile(fileId, fileStore, queryContext.configuration());
         return queryContext
                 .feeCalculator()
                 .legacyCalculate(sigValueObj ->
@@ -103,13 +109,12 @@ public class FileGetContentsHandler extends FileQueryBase {
         final var fileStore = context.createStore(ReadableFileStore.class);
         final var op = query.fileGetContentsOrThrow();
         final var responseBuilder = FileGetContentsResponse.newBuilder();
-        final var file = op.fileIDOrThrow();
+        final var fileId = op.fileIDOrThrow();
 
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            final var content = contentFile(file, fileStore);
-
+            final var content = contentFile(fileId, fileStore, context.configuration());
             if (content == null) {
                 responseBuilder.header(header.copyBuilder()
                         .nodeTransactionPrecheckCode(INVALID_FILE_ID)
@@ -124,15 +129,33 @@ public class FileGetContentsHandler extends FileQueryBase {
 
     /**
      * Provides file content about a file.
+     *
      * @param fileID the file to get information about
      * @param fileStore the file store
+     * @param config the configuration
      * @return the content about the file
      */
     private @Nullable FileContents contentFile(
-            @NonNull final FileID fileID, @NonNull final ReadableFileStore fileStore) {
+            @NonNull final FileID fileID,
+            @NonNull final ReadableFileStore fileStore,
+            @NonNull final Configuration config) {
         final var meta = fileStore.getFileMetadata(fileID);
         if (meta == null) {
-            return null;
+            final var filesConfig = config.getConfigData(FilesConfig.class);
+            // Simplify life for clients and return fees and exchange rates even before doing genesis setup
+            if (fileID.fileNum() == filesConfig.feeSchedules()) {
+                return FileContents.newBuilder()
+                        .fileID(fileID)
+                        .contents(genesisSchema.genesisFeeSchedules(config))
+                        .build();
+            } else if (fileID.fileNum() == filesConfig.exchangeRates()) {
+                return FileContents.newBuilder()
+                        .fileID(fileID)
+                        .contents(genesisSchema.genesisExchangeRates(config))
+                        .build();
+            } else {
+                return null;
+            }
         } else {
             final var info = FileContents.newBuilder();
             info.fileID(fileID);

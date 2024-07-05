@@ -32,6 +32,7 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.keys.deterministic.Bip0032;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
+import com.hedera.services.bdd.spec.props.MapPropertySource.Quiet;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.*;
@@ -39,7 +40,6 @@ import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.lang.reflect.RecordComponent;
 import java.util.*;
 import java.util.function.Function;
@@ -57,16 +57,19 @@ public class HapiSpecSetup {
     static {
         final var provider = new ConfigProviderImpl(true, null);
         defaultConfig = provider.getConfiguration();
-        defaultNodeProps = inPriorityOrder(new HapiPropertySource() {
-            @Override
-            public String get(@NonNull final String property) {
-                return defaultConfig.getValue(property);
-            }
-            @Override
-            public boolean has(@NonNull final String property) {
-                return defaultConfig.exists(property);
-            }
-        }, new MapPropertySource(allDefaultsFrom(new ServicesConfigExtension().getConfigDataTypes())));
+        defaultNodeProps = inPriorityOrder(
+                new HapiPropertySource() {
+                    @Override
+                    public String get(@NonNull final String property) {
+                        return defaultConfig.getValue(property);
+                    }
+
+                    @Override
+                    public boolean has(@NonNull final String property) {
+                        return defaultConfig.exists(property);
+                    }
+                },
+                new MapPropertySource(allDefaultsFrom(new ServicesConfigExtension().getConfigDataTypes()), Quiet.YES));
     }
 
     public static HapiPropertySource getDefaultNodeProps() {
@@ -87,7 +90,7 @@ public class HapiSpecSetup {
         if (DEFAULT_PROPERTY_SOURCE == null) {
             String globals = System.getProperty("global.property.overrides");
             globals = (globals == null) ? "" : globals;
-            String[] sources = globals.length() > 0 ? globals.split(",") : new String[0];
+            String[] sources = !globals.isEmpty() ? globals.split(",") : new String[0];
             DEFAULT_PROPERTY_SOURCE =
                     inPriorityOrder(asSources(Stream.of(Stream.of(sources), Stream.of(BASE_DEFAULT_PROPERTY_SOURCE))
                             .flatMap(Function.identity())
@@ -333,14 +336,6 @@ public class HapiSpecSetup {
         return props.get("default.payer.name");
     }
 
-    public AccountID defaultProxy() {
-        return props.getAccount("default.proxy");
-    }
-
-    public long defaultQueueSaturationMs() {
-        return props.getLong("default.queueSaturation.ms");
-    }
-
     public RealmID defaultRealm() {
         return props.getRealm("default.realm");
     }
@@ -378,14 +373,6 @@ public class HapiSpecSetup {
 
     public int defaultThresholdN() {
         return props.getInteger("default.thresholdKey.N");
-    }
-
-    public String defaultTokenSymbol() {
-        return props.get("default.token.symbol");
-    }
-
-    public String defaultTokenName() {
-        return props.get("default.token.name");
     }
 
     public long defaultTokenInitialSupply() {

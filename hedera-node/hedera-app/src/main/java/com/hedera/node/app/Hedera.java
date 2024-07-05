@@ -853,7 +853,11 @@ public final class Hedera implements SwirldMain {
      * @return true if the given state includes effects of handled the genesis transaction
      */
     private boolean hasHandledGenesisTxn(@NonNull final HederaState state) {
-        final var blockInfo = state.getReadableStates(BlockRecordService.NAME).<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY).get();
-        return !EPOCH.equals(Optional.ofNullable(blockInfo).map(BlockInfo::consTimeOfLastHandledTxn).orElse(EPOCH));
+        final var blockInfo = state.getReadableStates(BlockRecordService.NAME)
+                .<BlockInfo>getSingleton(BLOCK_INFO_STATE_KEY)
+                .get();
+        return !EPOCH.equals(Optional.ofNullable(blockInfo)
+                .map(BlockInfo::consTimeOfLastHandledTxn)
+                .orElse(EPOCH));
     }
 }

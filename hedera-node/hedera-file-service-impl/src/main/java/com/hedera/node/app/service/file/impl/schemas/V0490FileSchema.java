@@ -67,6 +67,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -76,6 +78,7 @@ import org.apache.logging.log4j.Logger;
  * {@code Release47FileGenesisSchema} as it will no longer be appropriate to assume
  * this schema is always correct for the current version of the software.
  */
+@Singleton
 public class V0490FileSchema extends Schema {
     private static final Logger logger = LogManager.getLogger(V0490FileSchema.class);
 
@@ -97,6 +100,7 @@ public class V0490FileSchema extends Schema {
     /**
      * Constructs a new {@link V0490FileSchema} instance with the given {@link ConfigProvider}.
      */
+    @Inject
     public V0490FileSchema() {
         super(VERSION);
     }
