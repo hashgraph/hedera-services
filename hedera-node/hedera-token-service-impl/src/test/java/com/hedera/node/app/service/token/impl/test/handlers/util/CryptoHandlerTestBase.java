@@ -341,6 +341,7 @@ public class CryptoHandlerTestBase {
                 Collections.emptyList(),
                 2,
                 false,
+                null,
                 null);
     }
 
@@ -377,6 +378,7 @@ public class CryptoHandlerTestBase {
                 Collections.emptyList(),
                 2,
                 false,
+                null,
                 null);
     }
 

@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
+import com.hedera.hapi.node.state.token.AccountAirdrop;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
@@ -40,7 +41,7 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     /**
      * The underlying data storage class that holds the Pending Airdrops data.
      */
-    private final WritableKVState<PendingAirdropId, PendingAirdropValue> airdropState;
+    private final WritableKVState<PendingAirdropId, AccountAirdrop> airdropState;
 
     /**
      * Create a new {@link WritableAirdropStore} instance.
@@ -60,29 +61,35 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     }
 
     /**
-     * Persists a new {@link PendingAirdropId} with given {@link PendingAirdropValue} into the state,
+     * Persists a new {@link PendingAirdropId} with given {@link AccountAirdrop} into the state,
      * as well as exporting its ID to the transaction receipt. If there is existing
      * airdrop with the same id we add the value to the existing drop.
      *
      * @param airdropId    - the airdropId to be persisted.
-     * @param airdropValue - the value for the given airdropId to be persisted.
+     * @param accountAirdrop - the value for the given airdropId to be persisted.
      */
-    public void put(@NonNull final PendingAirdropId airdropId, @NonNull final PendingAirdropValue airdropValue) {
+    public void put(@NonNull final PendingAirdropId airdropId, @NonNull final AccountAirdrop accountAirdrop) {
         requireNonNull(airdropId);
-        requireNonNull(airdropValue);
+        requireNonNull(accountAirdrop);
 
         if (!airdropState.contains(airdropId)) {
-            airdropState.put(airdropId, airdropValue);
+            airdropState.put(airdropId, accountAirdrop);
             return;
         }
 
         if (airdropId.hasFungibleTokenType()) {
+            var existingAccountAirdrop = requireNonNull(airdropState.get(airdropId));
             var existingAirdropValue =
-                    requireNonNull(airdropState.get(airdropId)).amount();
-            var newValue = airdropValue.amount() + existingAirdropValue;
-            var newAirdropValue =
-                    PendingAirdropValue.newBuilder().amount(newValue).build();
-            airdropState.put(airdropId, newAirdropValue);
+                    requireNonNull(airdropState.get(airdropId)).pendingAirdropValue();
+            requireNonNull(existingAirdropValue);
+            requireNonNull(accountAirdrop.pendingAirdropValue());
+            var newValue = accountAirdrop.pendingAirdropValue().amount() + existingAirdropValue.amount();
+            var newAccountAirdrop = existingAccountAirdrop
+                    .copyBuilder()
+                    .pendingAirdropValue(
+                            PendingAirdropValue.newBuilder().amount(newValue).build())
+                    .build();
+            airdropState.put(airdropId, newAccountAirdrop);
         }
     }
 
@@ -96,7 +103,7 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     }
 
     /**
-     * Returns the {@link PendingAirdropValue} with the given airdrop id. If the airdrop contains only NFT return {@code null}.
+     * Returns the {@link AccountAirdrop} with the given airdrop id. If the airdrop contains only NFT return {@code null}.
      * If no such airdrop exists, returns {@code null}
      *
      * @param airdropId - the id of the airdrop, which value should be retrieved
@@ -104,11 +111,8 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
      * airdrop exists
      */
     @Nullable
-    public PendingAirdropValue getForModify(@NonNull final PendingAirdropId airdropId) {
+    public AccountAirdrop getForModify(@NonNull final PendingAirdropId airdropId) {
         requireNonNull(airdropId);
-        if (airdropId.hasNonFungibleToken()) {
-            return null;
-        }
         return airdropState.getForModify(airdropId);
     }
 }
