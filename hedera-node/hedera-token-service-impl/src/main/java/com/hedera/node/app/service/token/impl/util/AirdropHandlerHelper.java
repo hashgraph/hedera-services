@@ -221,14 +221,14 @@ public class AirdropHandlerHelper {
      * Creates a {@link PendingAirdropRecord} for externalizing pending airdrop records.
      *
      * @param pendingAirdropId the ID of the pending airdrop
-     * @param accountAirdrop the account airdrop relation of the pending airdrop
+     * @param pendingAirdropValue the value of the pending airdrop
      * @return {@link PendingAirdropRecord}
      */
     public static PendingAirdropRecord createPendingAirdropRecord(
-            PendingAirdropId pendingAirdropId, AccountAirdrop accountAirdrop) {
+            PendingAirdropId pendingAirdropId, PendingAirdropValue pendingAirdropValue) {
         return PendingAirdropRecord.newBuilder()
                 .pendingAirdropId(pendingAirdropId)
-                .accountAirdrop(accountAirdrop)
+                .pendingAirdropValue(pendingAirdropValue)
                 .build();
     }
 }

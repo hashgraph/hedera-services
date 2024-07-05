@@ -177,7 +177,7 @@ public class TokenAirdropHandler implements TransactionHandler {
                             .build();
                     AccountAirdrop newAccountAirdrop = getNewAccountAirdropAndUpdateStores(
                             senderAccount, pendingId, pendingValue, accountStore, pendingStore);
-                    var record = createPendingAirdropRecord(pendingId, newAccountAirdrop);
+                    var record = createPendingAirdropRecord(pendingId, newAccountAirdrop.pendingAirdropValue());
                     pendingStore.put(pendingId, newAccountAirdrop);
                     recordBuilder.addPendingAirdrop(record);
                 });
@@ -220,7 +220,7 @@ public class TokenAirdropHandler implements TransactionHandler {
                     AccountAirdrop newAccountAirdrop = getNewAccountAirdropAndUpdateStores(
                             senderAccount, pendingId, null, accountStore, pendingStore);
                     pendingStore.put(pendingId, newAccountAirdrop);
-                    var record = createPendingAirdropRecord(pendingId, newAccountAirdrop);
+                    var record = createPendingAirdropRecord(pendingId, newAccountAirdrop.pendingAirdropValue());
                     recordBuilder.addPendingAirdrop(record);
                 });
 
@@ -370,6 +370,8 @@ public class TokenAirdropHandler implements TransactionHandler {
      *
      * @param tokenID      The ID of the token we are transferring
      * @param transfers    The transfers to check
+     * @param ctx          The context we gather signing keys into
+     * @param accountStore The account store to use to look up accounts
      * @throws PreCheckException If the transaction is invalid
      */
     private void checkFungibleTokenTransfers(

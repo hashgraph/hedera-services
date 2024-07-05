@@ -24,7 +24,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.UInt32Value;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hederahashgraph.api.proto.java.AccountAirdrop;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -259,13 +258,9 @@ public class TokenMovement {
                     var pendingAirdropValue = PendingAirdropValue.newBuilder()
                             .setAmount(transfer.getAmount())
                             .build();
-                    var accountAirdrop = AccountAirdrop.newBuilder()
-                            .setPendingAirdropId(pendingAirdropId)
-                            .setPendingAirdropValue(pendingAirdropValue)
-                            .build();
                     var pendingAirdropRecord = PendingAirdropRecord.newBuilder()
                             .setPendingAirdropId(pendingAirdropId)
-                            .setAccountAirdrop(accountAirdrop)
+                            .setPendingAirdropValue(pendingAirdropValue)
                             .build();
                     records.add(pendingAirdropRecord);
                 });
@@ -288,13 +283,9 @@ public class TokenMovement {
                             .setSerialNumber(tokenXfer.getNftTransfers(0).getSerialNumber()))
                     .build();
             var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
-            var accountAirdrop = AccountAirdrop.newBuilder()
-                    .setPendingAirdropId(pendingAirdropId)
-                    .setPendingAirdropValue(pendingAirdropValue)
-                    .build();
             var pendingAirdropRecord = PendingAirdropRecord.newBuilder()
                     .setPendingAirdropId(pendingAirdropId)
-                    .setAccountAirdrop(accountAirdrop)
+                    .setPendingAirdropValue(pendingAirdropValue)
                     .build();
 
             records.add(pendingAirdropRecord);
