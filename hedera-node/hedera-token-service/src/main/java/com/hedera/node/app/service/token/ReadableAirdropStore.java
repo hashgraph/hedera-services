@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface ReadableAirdropStore {
     /**
-     * Fetches an {@link AccountAirdrop} object from state for given {@link PendingAirdropId}. If the airdrop contains only NFT return {@code null}.
+     * Fetches an {@link AccountAirdrop} object from state for given {@link PendingAirdropId}.
      * If the airdrop  could not be fetched because the given airdrop doesn't exist, returns {@code null}.
      *
      * @param airdropId given airdrop id
