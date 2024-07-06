@@ -300,7 +300,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
         final var recordBuilders = mock(RecordBuilders.class);
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        lenient().when(recordBuilders.getOrCreate(TokenMintRecordBuilder.class)).thenReturn(recordBuilder);
+        lenient().when(recordBuilders.getCurrent(TokenMintRecordBuilder.class)).thenReturn(recordBuilder);
 
         return txnBody;
     }

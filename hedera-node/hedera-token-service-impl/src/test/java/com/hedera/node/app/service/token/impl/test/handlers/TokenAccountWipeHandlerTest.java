@@ -922,7 +922,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
             lenient().when(context.recordBuilders()).thenReturn(recordBuilders);
             lenient()
-                    .when(recordBuilders.getOrCreate(TokenAccountWipeRecordBuilder.class))
+                    .when(recordBuilders.getCurrent(TokenAccountWipeRecordBuilder.class))
                     .thenReturn(recordBuilder);
 
             return context;

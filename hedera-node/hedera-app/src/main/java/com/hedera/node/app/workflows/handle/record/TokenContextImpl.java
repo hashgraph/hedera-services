@@ -44,15 +44,16 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final WritableStoreFactory writableStoreFactory;
     private final RecordListBuilder recordListBuilder;
     private final BlockRecordManager blockRecordManager;
+    private final Instant consensusTime;
 
-    @Inject
     public TokenContextImpl(
             @NonNull final Configuration configuration,
             @NonNull final HederaState state,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final SavepointStackImpl stack,
             @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final BlockRecordManager blockRecordManager) {
+            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final Instant consensusTime) {
         this.state = requireNonNull(state, "state must not be null");
         requireNonNull(stack, "stack must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
@@ -62,12 +63,13 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
         this.readableStoreFactory = new ReadableStoreFactory(stack);
         this.writableStoreFactory =
                 new WritableStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService);
+        this.consensusTime = requireNonNull(consensusTime, "consensusTime must not be null");
     }
 
     @NonNull
     @Override
     public Instant consensusTime() {
-        return recordListBuilder.userTransactionRecordBuilder().consensusNow();
+        return consensusTime;
     }
 
     @NonNull

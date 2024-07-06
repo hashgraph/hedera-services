@@ -28,6 +28,7 @@ import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,8 @@ class RecordBuildersImplTest {
 
     @Mock
     private RecordListBuilder recordListBuilder;
+    @Mock
+    private SavepointStackImpl stack;
 
     private RecordBuildersImpl subject;
 
@@ -51,14 +54,14 @@ class RecordBuildersImplTest {
     void setup() {
         final var configuration = HederaTestConfigBuilder.createConfig();
 
-        subject = new RecordBuildersImpl(recordBuilder, recordListBuilder, configuration);
+        subject = new RecordBuildersImpl(recordBuilder, recordListBuilder, configuration, stack);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Test
     void testMethodsWithInvalidParameters() {
-        assertThatThrownBy(() -> subject.getOrCreate(null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> subject.getOrCreate(List.class)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> subject.getCurrent(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.getCurrent(List.class)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> subject.addChildRecordBuilder(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> subject.addChildRecordBuilder(List.class))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -69,7 +72,7 @@ class RecordBuildersImplTest {
 
     @Test
     void testGetRecordBuilder() {
-        final var actual = subject.getOrCreate(CryptoCreateRecordBuilder.class);
+        final var actual = subject.getCurrent(CryptoCreateRecordBuilder.class);
         assertThat(actual).isEqualTo(recordBuilder);
     }
 

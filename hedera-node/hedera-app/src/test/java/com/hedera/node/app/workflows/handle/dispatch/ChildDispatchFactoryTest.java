@@ -53,6 +53,7 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -61,7 +62,7 @@ import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.app.workflows.handle.stack.SavePoint;
+import com.hedera.node.app.workflows.handle.stack.FirstSavePoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -69,7 +70,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-import java.util.ArrayList;
+
+import java.time.Instant;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -178,7 +180,7 @@ class ChildDispatchFactoryTest {
     private final HandleContext.TransactionCategory category = HandleContext.TransactionCategory.CHILD;
     private final ExternalizedRecordCustomizer customizer = recordBuilder -> recordBuilder;
     private final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior =
-            SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE;
+            SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
 
     @BeforeEach
     public void setUp() {
@@ -266,7 +268,7 @@ class ChildDispatchFactoryTest {
                         creatorInfo,
                         platformState,
                         CONTRACT_CALL,
-                        throttleAdviser));
+                        throttleAdviser, Instant.ofEpochSecond(12345L)));
         assertTrue(exception.getCause() instanceof UnknownHederaFunctionality);
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }
@@ -280,7 +282,6 @@ class ChildDispatchFactoryTest {
                 .willReturn(Account.newBuilder().key(Key.DEFAULT).build());
         given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
         given(parentDispatch.stack()).willReturn(savepointStack);
-        given(savepointStack.peek())
-                .willReturn(new SavePoint(new WrappedHederaState(savepointStack), new ArrayList<>()));
+        given(savepointStack.peek()).willReturn(new FirstSavePoint(new WrappedHederaState(savepointStack), 3));
     }
 }

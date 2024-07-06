@@ -217,7 +217,7 @@ class FileCreateTest extends FileTestBase {
                 .willReturn(new ExpiryMeta(expirationTime, NA, null));
         given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilders.getCurrent(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
 
@@ -251,7 +251,7 @@ class FileCreateTest extends FileTestBase {
                 .willReturn(new ExpiryMeta(1_234_567L, NA, null));
         given(entityNumGenerator.newEntityNum()).willReturn(1_234L);
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
+        given(recordBuilders.getCurrent(CreateFileRecordBuilder.class)).willReturn(recordBuilder);
 
         subject.handle(handleContext);
 

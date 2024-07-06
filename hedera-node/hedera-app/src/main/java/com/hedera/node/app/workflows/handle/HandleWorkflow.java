@@ -18,11 +18,16 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static com.hedera.node.app.workflows.handle.stack.AbstractSavePoint.SIMULATE_MONO;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
@@ -39,6 +44,9 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -71,6 +79,8 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -341,8 +351,8 @@ public class HandleWorkflow {
      */
     private void skip(@NonNull final UserTxn userTxn) {
         final TransactionInfo txnInfo = userTxn.txnInfo();
-        userTxn.recordListBuilder()
-                .userTransactionRecordBuilder()
+        final var userRecord = userTxn.stack().peek().addRecord(REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        userRecord
                 .transaction(txnInfo.transaction())
                 .transactionBytes(txnInfo.signedBytes())
                 .transactionID(txnInfo.txBody().transactionIDOrElse(TransactionID.DEFAULT))
@@ -382,7 +392,7 @@ public class HandleWorkflow {
      * @return the stream of records
      */
     private Stream<SingleTransactionRecord> finalRecordStream(@NonNull final UserTxn userTxn) {
-        return recordStream(userTxn, userTxn.recordListBuilder());
+        return recordStream(userTxn, userTxn.stack().peek().recordBuilders());
     }
 
     /**
@@ -390,15 +400,22 @@ public class HandleWorkflow {
      * the explicitly provided records.
      *
      * @param userTxn the user transaction
-     * @param recordListBuilder the explicit records
+     * @param builders the explicit record builders
      * @return the stream of records
      */
     private Stream<SingleTransactionRecord> recordStream(
-            @NonNull final UserTxn userTxn, @NonNull final RecordListBuilder recordListBuilder) {
-        final var result = recordListBuilder.build();
+            @NonNull final UserTxn userTxn, @NonNull final List<SingleTransactionRecordBuilderImpl> builders) {
+        final List<SingleTransactionRecord> records = new ArrayList<>();
+        for (final var builder : builders) {
+            if(SIMULATE_MONO && builder.isPreceding()) {
+               records.add(0, builder.build());
+            } else {
+                records.add(builder.build());
+            }
+        }
         recordCache.add(
-                userTxn.creatorInfo().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), result.records());
-        return result.records().stream();
+                userTxn.creatorInfo().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), records);
+        return records.stream();
     }
 
     /**
@@ -432,7 +449,8 @@ public class HandleWorkflow {
      * @param userTxn the user transaction whose record should be initialized
      */
     private SingleTransactionRecordBuilderImpl initializeUserRecord(@NonNull final UserTxn userTxn) {
-        return initializeUserRecord(userTxn.recordListBuilder().userTransactionRecordBuilder(), userTxn.txnInfo());
+        final var userRecord = userTxn.stack().peek().addRecord(REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        return initializeUserRecord(userRecord, userTxn.txnInfo());
     }
 
     /**

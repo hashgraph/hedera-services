@@ -24,6 +24,7 @@ import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -36,20 +37,23 @@ public class RecordBuildersImpl implements RecordBuilders {
     private final SingleTransactionRecordBuilderImpl recordBuilder;
     private final RecordListBuilder recordListBuilder;
     private final Configuration configuration;
+    private final SavepointStackImpl stack;
 
     @Inject
     public RecordBuildersImpl(
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final Configuration configuration) {
+            @NonNull final Configuration configuration,
+            final SavepointStackImpl stack) {
         this.recordBuilder = requireNonNull(recordBuilder);
         this.recordListBuilder = requireNonNull(recordListBuilder);
         this.configuration = requireNonNull(configuration);
+        this.stack = stack;
     }
 
     @NonNull
     @Override
-    public <T> T getOrCreate(@NonNull Class<T> recordBuilderClass) {
+    public <T> T getCurrent(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         return castRecordBuilder(recordBuilder, recordBuilderClass);
     }

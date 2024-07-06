@@ -17,6 +17,7 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.workflows.handle.stack.AbstractSavePoint.SIMULATE_MONO;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -53,9 +54,11 @@ import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
+import com.hedera.node.app.workflows.handle.stack.AbstractSavePoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
@@ -100,14 +103,23 @@ public record UserTxn(
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final HandleWorkflow handleWorkflow) {
         final var config = configProvider.getConfiguration();
-        final var stack = new SavepointStackImpl(state);
+        final SavepointStackImpl stack;
+        final var isGenesis = lastHandledConsensusTime.equals(Instant.EPOCH);
+        if(SIMULATE_MONO){
+            final var consensusConfig = config.getConfigData(ConsensusConfig.class);
+            stack = new SavepointStackImpl(state, isGenesis ? Integer.MAX_VALUE : (int) consensusConfig.handleMaxPrecedingRecords());
+            AbstractSavePoint.maxRecords = (int) consensusConfig.handleMaxFollowingRecords();
+        } else {
+           throw new AssertionError("Not implemented");
+        }
+
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var preHandleResult =
                 handleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
         final var recordListBuilder = new RecordListBuilder(consensusNow);
         return new UserTxn(
-                lastHandledConsensusTime.equals(Instant.EPOCH),
+                isGenesis,
                 txnInfo.functionality(),
                 consensusNow,
                 state,
@@ -116,7 +128,7 @@ public record UserTxn(
                 platformTxn,
                 recordListBuilder,
                 txnInfo,
-                new TokenContextImpl(config, state, storeMetricsService, stack, recordListBuilder, blockRecordManager),
+                new TokenContextImpl(config, state, storeMetricsService, stack, recordListBuilder, blockRecordManager, consensusNow),
                 stack,
                 preHandleResult,
                 readableStoreFactory,
@@ -173,7 +185,7 @@ public record UserTxn(
                 dispatcher,
                 recordCache,
                 networkInfo,
-                new RecordBuildersImpl(recordBuilder, recordListBuilder, config),
+                new RecordBuildersImpl(recordBuilder, recordListBuilder, config, stack),
                 childDispatchFactory,
                 dispatchProcessor,
                 recordListBuilder,

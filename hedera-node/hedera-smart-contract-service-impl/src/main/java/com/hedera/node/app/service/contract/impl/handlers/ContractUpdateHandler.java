@@ -144,7 +144,7 @@ public class ContractUpdateHandler implements TransactionHandler {
         final var changed = update(requireNonNull(toBeUpdated), context, op);
         context.storeFactory().serviceApi(TokenServiceApi.class).updateContract(changed);
         context.recordBuilders()
-                .getOrCreate(ContractUpdateRecordBuilder.class)
+                .getCurrent(ContractUpdateRecordBuilder.class)
                 .contractID(ContractID.newBuilder()
                         .contractNum(toBeUpdated.accountIdOrThrow().accountNumOrThrow())
                         .build());

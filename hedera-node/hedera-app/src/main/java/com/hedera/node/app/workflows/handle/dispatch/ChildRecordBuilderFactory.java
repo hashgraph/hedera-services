@@ -16,19 +16,19 @@
 
 package com.hedera.node.app.workflows.handle.dispatch;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.swirlds.config.api.Configuration;
+import com.hedera.node.app.workflows.handle.stack.AbstractSavePoint;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 
 /**
  * Provider of the child record builder based on the dispatched child transaction category
@@ -47,8 +47,6 @@ public class ChildRecordBuilderFactory {
      * Provides the record builder for the child transaction category and initializes it.
      * The record builder is created based on the child category and the reversing behavior.
      * @param txnInfo the transaction info
-     * @param recordListBuilder the record list builder
-     * @param configuration the configuration
      * @param category the child category
      * @param reversingBehavior the reversing behavior
      * @param customizer the externalized record customizer
@@ -56,25 +54,21 @@ public class ChildRecordBuilderFactory {
      */
     public SingleTransactionRecordBuilderImpl recordBuilderFor(
             @NonNull final TransactionInfo txnInfo,
-            @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final Configuration configuration,
             @NonNull final HandleContext.TransactionCategory category,
             @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
-            @Nullable final ExternalizedRecordCustomizer customizer) {
+            @Nullable ExternalizedRecordCustomizer customizer,
+            @NonNull final AbstractSavePoint savePoint) {
+        customizer = customizer == null ? NOOP_EXTERNALIZED_RECORD_CUSTOMIZER : customizer;
         final var recordBuilder =
                 switch (category) {
                     case PRECEDING -> switch (reversingBehavior) {
-                        case REMOVABLE -> recordListBuilder.addRemovablePreceding(configuration);
-                        case REVERSIBLE -> recordListBuilder.addReversiblePreceding(configuration);
-                        case IRREVERSIBLE -> recordListBuilder.addPreceding(configuration, LIMITED_CHILD_RECORDS);
+                        case REMOVABLE, REVERSIBLE, IRREVERSIBLE -> savePoint.addRecord(reversingBehavior, category, customizer);
                     };
                     case CHILD -> switch (reversingBehavior) {
-                        case REMOVABLE -> recordListBuilder.addRemovableChildWithExternalizationCustomizer(
-                                configuration, requireNonNull(customizer));
-                        case REVERSIBLE -> recordListBuilder.addChild(configuration, category);
+                        case REMOVABLE, REVERSIBLE -> savePoint.addRecord(reversingBehavior, category, customizer);
                         case IRREVERSIBLE -> throw new IllegalArgumentException("CHILD cannot be IRREVERSIBLE");
                     };
-                    case SCHEDULED -> recordListBuilder.addChild(configuration, category);
+                    case SCHEDULED -> savePoint.addRecord(REVERSIBLE, category, customizer);
                     case USER -> throw new IllegalArgumentException("USER not a valid child category");
                 };
         return initializedForChild(recordBuilder, txnInfo);

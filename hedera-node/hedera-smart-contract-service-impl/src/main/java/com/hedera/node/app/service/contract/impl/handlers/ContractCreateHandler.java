@@ -75,7 +75,7 @@ public class ContractCreateHandler implements TransactionHandler {
 
         // Assemble the appropriate top-level record for the result
         outcome.addCreateDetailsTo(
-                context.recordBuilders().getOrCreate(ContractCreateRecordBuilder.class), ExternalizeAbortResult.NO);
+                context.recordBuilders().getCurrent(ContractCreateRecordBuilder.class), ExternalizeAbortResult.NO);
 
         throwIfUnsuccessful(outcome.status());
     }

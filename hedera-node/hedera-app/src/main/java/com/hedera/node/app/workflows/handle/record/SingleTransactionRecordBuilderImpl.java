@@ -199,28 +199,6 @@ public class SingleTransactionRecordBuilderImpl
     private TokenType tokenType;
 
     /**
-     * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
-     * and it is asked to be reverted
-     */
-    public enum ReversingBehavior {
-        /**
-         * Changes are not committed. The record is kept in the record stream,
-         * but the status is set to {@link ResponseCodeEnum#REVERTED_SUCCESS}
-         */
-        REVERSIBLE,
-
-        /**
-         * Changes are not committed and the record is removed from the record stream.
-         */
-        REMOVABLE,
-
-        /**
-         * Changes are committed independent of the user and parent transactions.
-         */
-        IRREVERSIBLE
-    }
-
-    /**
      * Creates new transaction record builder where reversion will leave its record in the stream
      * with either a failure status or {@link ResponseCodeEnum#REVERTED_SUCCESS}.
      *
@@ -256,6 +234,16 @@ public class SingleTransactionRecordBuilderImpl
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final TransactionCategory category) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
+        this.reversingBehavior = requireNonNull(reversingBehavior, "reversingBehavior must not be null");
+        this.customizer = requireNonNull(customizer, "customizer must not be null");
+        this.category = requireNonNull(category, "category must not be null");
+    }
+
+    public SingleTransactionRecordBuilderImpl(
+            @NonNull final ReversingBehavior reversingBehavior,
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final TransactionCategory category) {
+        this.consensusNow = Instant.EPOCH;
         this.reversingBehavior = requireNonNull(reversingBehavior, "reversingBehavior must not be null");
         this.customizer = requireNonNull(customizer, "customizer must not be null");
         this.category = requireNonNull(category, "category must not be null");
@@ -338,6 +326,7 @@ public class SingleTransactionRecordBuilderImpl
                 transaction, transactionRecord, transactionSidecarRecords, new TransactionOutputs(tokenType));
     }
 
+    @Override
     public void nullOutSideEffectFields() {
         serialNumbers.clear();
         tokenTransferLists.clear();
@@ -365,7 +354,7 @@ public class SingleTransactionRecordBuilderImpl
         transactionRecordBuilder.ethereumHash(Bytes.EMPTY);
         transactionRecordBuilder.evmAddress(Bytes.EMPTY);
     }
-
+    @Override
     public ReversingBehavior reversingBehavior() {
         return reversingBehavior;
     }

@@ -138,19 +138,20 @@ public class ChildDispatchFactory {
      * Creates a child dispatch. This method computes the transaction info and initializes record builder for the child
      * transaction.
      *
-     * @param txBody the transaction body
-     * @param callback the key verifier for child dispatch
-     * @param syntheticPayerId the synthetic payer id
-     * @param category the transaction category
-     * @param customizer the externalized record customizer
-     * @param reversingBehavior the reversing behavior
-     * @param recordListBuilder the record list builder
-     * @param config the configuration
-     * @param stack the savepoint stack
+     * @param txBody               the transaction body
+     * @param callback             the key verifier for child dispatch
+     * @param syntheticPayerId     the synthetic payer id
+     * @param category             the transaction category
+     * @param customizer           the externalized record customizer
+     * @param reversingBehavior    the reversing behavior
+     * @param recordListBuilder    the record list builder
+     * @param config               the configuration
+     * @param stack                the savepoint stack
      * @param readableStoreFactory the readable store factory
-     * @param creatorInfo the node info of the creator
-     * @param platformState the platform state
-     * @param topLevelFunction the top level functionality
+     * @param creatorInfo          the node info of the creator
+     * @param platformState        the platform state
+     * @param topLevelFunction     the top level functionality
+     * @param consensusNow
      * @return the child dispatch
      */
     public Dispatch createChildDispatch(
@@ -167,13 +168,18 @@ public class ChildDispatchFactory {
             @NonNull final NodeInfo creatorInfo,
             @NonNull final PlatformState platformState,
             @NonNull final HederaFunctionality topLevelFunction,
-            @NonNull final ThrottleAdviser throttleAdviser) {
+            @NonNull final ThrottleAdviser throttleAdviser,
+            final Instant consensusNow) {
         final var preHandleResult =
                 dispatchPreHandleForChildTxn(txBody, syntheticPayerId, config, readableStoreFactory);
         final var childTxnInfo = getTxnInfoFrom(txBody);
+        final var childStack = new SavepointStackImpl(stack);
         final var recordBuilder = recordBuilderFactory.recordBuilderFor(
-                childTxnInfo, recordListBuilder, config, category, reversingBehavior, customizer);
-        final var childStack = new SavepointStackImpl(stack.peek().state());
+                childTxnInfo,
+                category,
+                reversingBehavior,
+                customizer,
+                childStack.peek());
         return newChildDispatch(
                 recordBuilder,
                 childTxnInfo,
@@ -182,7 +188,7 @@ public class ChildDispatchFactory {
                 childStack,
                 preHandleResult,
                 getKeyVerifier(callback),
-                recordBuilder.consensusNow(),
+                consensusNow,
                 creatorInfo,
                 config,
                 platformState,
@@ -207,7 +213,7 @@ public class ChildDispatchFactory {
             @NonNull final TransactionInfo txnInfo,
             @NonNull final AccountID payerId,
             @NonNull final HandleContext.TransactionCategory category,
-            @NonNull final SavepointStackImpl stack,
+            @NonNull final SavepointStackImpl childStack,
             @NonNull final PreHandleResult preHandleResult,
             @NonNull final AppKeyVerifier keyVerifier,
             @NonNull final Instant consensusNow,
@@ -229,10 +235,10 @@ public class ChildDispatchFactory {
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionDispatcher dispatcher) {
-        final var readableStoreFactory = new ReadableStoreFactory(stack);
+        final var readableStoreFactory = new ReadableStoreFactory(childStack);
         final var writableStoreFactory = new WritableStoreFactory(
-                stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
-        final var serviceApiFactory = new ServiceApiFactory(stack, config, storeMetricsService);
+                childStack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
+        final var serviceApiFactory = new ServiceApiFactory(childStack, config, storeMetricsService);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,
@@ -249,14 +255,14 @@ public class ChildDispatchFactory {
                 topLevelFunction,
                 Key.DEFAULT,
                 exchangeRateManager,
-                stack,
+                childStack,
                 new EntityNumGeneratorImpl(
-                        new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
+                        new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
                                 .getStore(WritableEntityIdStore.class)),
                 dispatcher,
                 recordCache,
                 networkInfo,
-                new RecordBuildersImpl(recordBuilder, recordListBuilder, config),
+                new RecordBuildersImpl(recordBuilder, recordListBuilder, config, childStack),
                 this,
                 dispatchProcessor,
                 recordListBuilder,
@@ -275,11 +281,11 @@ public class ChildDispatchFactory {
                 preHandleResult.getRequiredKeys(),
                 preHandleResult.getHollowAccounts(),
                 dispatchHandleContext,
-                stack,
+                childStack,
                 category,
                 new TriggeredFinalizeContext(
                         readableStoreFactory,
-                        new WritableStoreFactory(stack, TokenService.NAME, config, storeMetricsService),
+                        new WritableStoreFactory(childStack, TokenService.NAME, config, storeMetricsService),
                         recordBuilder,
                         consensusNow,
                         config),

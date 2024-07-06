@@ -396,7 +396,7 @@ public class HandleHederaOperations implements HederaOperations {
         // initcode in the bytecode sidecar if it's not already externalized via a body
         final var pendingCreationMetadata = new PendingCreationMetadata(
                 isTopLevelCreation
-                        ? context.recordBuilders().getOrCreate(ContractOperationRecordBuilder.class)
+                        ? context.recordBuilders().getCurrent(ContractOperationRecordBuilder.class)
                         : recordBuilder,
                 externalizeInitcodeOnSuccess == ExternalizeInitcodeOnSuccess.YES);
         final var contractId = ContractID.newBuilder().contractNum(number).build();

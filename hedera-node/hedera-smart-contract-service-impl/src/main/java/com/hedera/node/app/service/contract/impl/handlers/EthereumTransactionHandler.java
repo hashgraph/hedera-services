@@ -146,14 +146,14 @@ public class EthereumTransactionHandler implements TransactionHandler {
         final var ethTxData =
                 requireNonNull(requireNonNull(component.hydratedEthTxData()).ethTxData());
         context.recordBuilders()
-                .getOrCreate(EthereumTransactionRecordBuilder.class)
+                .getCurrent(EthereumTransactionRecordBuilder.class)
                 .ethereumHash(Bytes.wrap(ethTxData.getEthereumHash()));
         if (ethTxData.hasToAddress()) {
             outcome.addCallDetailsTo(
-                    context.recordBuilders().getOrCreate(ContractCallRecordBuilder.class), ExternalizeAbortResult.YES);
+                    context.recordBuilders().getCurrent(ContractCallRecordBuilder.class), ExternalizeAbortResult.YES);
         } else {
             outcome.addCreateDetailsTo(
-                    context.recordBuilders().getOrCreate(ContractCreateRecordBuilder.class),
+                    context.recordBuilders().getCurrent(ContractCreateRecordBuilder.class),
                     ExternalizeAbortResult.YES);
         }
 

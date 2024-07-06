@@ -119,7 +119,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(context.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
+        given(recordBuilders.getCurrent(any())).willReturn(recordBuilder);
     }
 
     @Test

@@ -38,16 +38,21 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.stack.AbstractSavePoint;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class ChildRecordBuilderFactoryTest {
     static final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
 
@@ -75,6 +80,8 @@ public class ChildRecordBuilderFactoryTest {
             SignatureMap.DEFAULT,
             Bytes.EMPTY,
             HederaFunctionality.CRYPTO_TRANSFER);
+    @Mock
+    private AbstractSavePoint parent;
 
     @BeforeEach
     void setUp() {
@@ -88,11 +95,11 @@ public class ChildRecordBuilderFactoryTest {
     void testRecordBuilderForPrecedingRemovable() {
         var recordBuilder = factory.recordBuilderFor(
                 txnInfo,
-                recordListBuilder,
-                configuration,
                 PRECEDING,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
-                customizer);
+                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
+                customizer,
+                parent
+                );
 
         assertNotNull(recordBuilder);
         assertTrue(recordListBuilder.precedingRecordBuilders().contains(recordBuilder));
@@ -102,11 +109,10 @@ public class ChildRecordBuilderFactoryTest {
     void testRecordBuilderForPrecedingReversible() {
         var recordBuilder = factory.recordBuilderFor(
                 txnInfo,
-                recordListBuilder,
-                configuration,
                 PRECEDING,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
-                null);
+                SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE,
+                null,
+                parent);
 
         assertNotNull(recordBuilder);
         assertTrue(recordListBuilder.precedingRecordBuilders().contains(recordBuilder));
@@ -116,11 +122,10 @@ public class ChildRecordBuilderFactoryTest {
     void testRecordBuilderForChildRemovable() {
         var recordBuilder = factory.recordBuilderFor(
                 txnInfo,
-                recordListBuilder,
-                configuration,
                 CHILD,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
-                customizer);
+                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
+                customizer,
+                parent);
 
         assertNotNull(recordBuilder);
         assertTrue(recordListBuilder.childRecordBuilders().contains(recordBuilder));
@@ -130,11 +135,10 @@ public class ChildRecordBuilderFactoryTest {
     void testRecordBuilderForChildReversible() {
         var recordBuilder = factory.recordBuilderFor(
                 txnInfo,
-                recordListBuilder,
-                configuration,
                 CHILD,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
-                customizer);
+                SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE,
+                customizer,
+                parent);
 
         assertNotNull(recordBuilder);
         assertTrue(recordListBuilder.childRecordBuilders().contains(recordBuilder));
@@ -146,22 +150,20 @@ public class ChildRecordBuilderFactoryTest {
                 IllegalArgumentException.class,
                 () -> factory.recordBuilderFor(
                         txnInfo,
-                        recordListBuilder,
-                        configuration,
                         CHILD,
-                        SingleTransactionRecordBuilderImpl.ReversingBehavior.IRREVERSIBLE,
-                        customizer));
+                        SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE,
+                        customizer,
+                        parent));
     }
 
     @Test
     void testRecordBuilderForScheduled() {
         var recordBuilder = factory.recordBuilderFor(
                 txnInfo,
-                recordListBuilder,
-                configuration,
                 SCHEDULED,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REVERSIBLE,
-                customizer);
+                SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE,
+                customizer,
+                parent);
 
         assertNotNull(recordBuilder);
         assertTrue(recordListBuilder.childRecordBuilders().contains(recordBuilder));
@@ -173,22 +175,20 @@ public class ChildRecordBuilderFactoryTest {
                 IllegalArgumentException.class,
                 () -> factory.recordBuilderFor(
                         txnInfo,
-                        recordListBuilder,
-                        configuration,
                         USER,
-                        SingleTransactionRecordBuilderImpl.ReversingBehavior.IRREVERSIBLE,
-                        customizer));
+                        SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE,
+                        customizer,
+                        parent));
     }
 
     @Test
     void testInitializeUserRecord() {
         var recordBuilder = factory.recordBuilderFor(
                 txnInfo,
-                recordListBuilder,
-                configuration,
                 CHILD,
-                SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE,
-                customizer);
+                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
+                customizer,
+                parent);
 
         assertNotNull(recordBuilder);
         assertEquals(txnInfo.transaction(), recordBuilder.transaction());

@@ -790,7 +790,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         lenient()
                 .when(childDispatchFactory.createChildDispatch(
                         any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                        any()))
+                        any(), any()))
                 .thenReturn(childDispatch);
         lenient().when(childDispatch.recordListBuilder()).thenReturn(recordListBuilder);
         lenient().when(childDispatch.recordBuilder()).thenReturn(childRecordBuilder);

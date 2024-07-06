@@ -454,7 +454,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
         when(context.recordBuilders()).thenReturn(recordBuilders);
-        when(recordBuilders.getOrCreate(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
+        when(recordBuilders.getCurrent(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
 
         subject.handle(context);
 
@@ -667,7 +667,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
         when(context.recordBuilders()).thenReturn(recordBuilders);
-        when(recordBuilders.getOrCreate(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
+        when(recordBuilders.getCurrent(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
 
         subject.handle(context);
 

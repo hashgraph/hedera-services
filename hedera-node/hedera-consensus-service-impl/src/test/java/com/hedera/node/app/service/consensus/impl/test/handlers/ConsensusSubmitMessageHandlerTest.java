@@ -107,7 +107,7 @@ class ConsensusSubmitMessageHandlerTest extends ConsensusTestBase {
 
         given(handleContext.configuration()).willReturn(config);
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(ConsensusSubmitMessageRecordBuilder.class))
+        given(recordBuilders.getCurrent(ConsensusSubmitMessageRecordBuilder.class))
                 .willReturn(recordBuilder);
     }
 

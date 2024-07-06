@@ -27,7 +27,6 @@ import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -43,10 +42,10 @@ import javax.inject.Inject;
  * Currently, records are not used in the codebase. It will be used in future PRs.
  */
 public class SavepointStackImpl implements SavepointStack, HederaState {
-
     private final HederaState root;
-    private final Deque<SavePoint> stack = new ArrayDeque<>();
+    private final Deque<AbstractSavePoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
+    private final int maxPreceding;
 
     /**
      * Constructs a new {@link SavepointStackImpl} with the given root state.
@@ -54,21 +53,20 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @param root the root state
      * @throws NullPointerException if {@code root} is {@code null}
      */
-    @Inject
-    public SavepointStackImpl(@NonNull final HederaState root) {
+    public SavepointStackImpl(@NonNull final HederaState root,
+                              final int maxPreceding) {
         this.root = requireNonNull(root, "root must not be null");
-        setupSavepoint(root, new ArrayList<>());
+        this.maxPreceding = maxPreceding;
+        pushBaseSavepoint();
     }
 
-    private void setupSavepoint(@NonNull final HederaState state, List<SingleTransactionRecordBuilder> records) {
-        final var newSavePoint = new SavePoint(new WrappedHederaState(state), records);
-        stack.push(newSavePoint);
+    public SavepointStackImpl(@NonNull final HederaState root) {
+        this(root, 0);
     }
 
     @Override
     public void createSavepoint() {
-        // FUTURE: Add record builders to the savepoint. Need to check how smart-contract service is using this.
-        setupSavepoint(stack.isEmpty() ? root : peek().state(), new ArrayList<>());
+        stack.push(peek().createFollowingSavePoint());
     }
 
     @Override
@@ -76,9 +74,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         if (stack.size() <= 1) {
             throw new IllegalStateException("The savepoint stack is empty");
         }
-        final var poppedStack = stack.pop();
-        poppedStack.state().commit();
-        pushRecordsToParentStack(poppedStack.recordBuilders());
+        stack.pop().commit();
     }
 
     @Override
@@ -86,28 +82,27 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         if (stack.size() <= 1) {
             throw new IllegalStateException("The savepoint stack is empty");
         }
-        stack.pop();
+        stack.pop().rollback();
     }
 
     /**
      * Commits all state changes captured in this stack.
      */
     public void commitFullStack() {
-        final var currentRecords = new ArrayList<SingleTransactionRecordBuilder>();
         while (!stack.isEmpty()) {
-            final var poppedStack = stack.pop();
-            poppedStack.state().commit();
-            currentRecords.addAll(poppedStack.recordBuilders());
+            stack.pop().commit();
         }
-        setupSavepoint(root, currentRecords);
+        pushBaseSavepoint();
     }
 
     /**
      * Rolls back all state changes captured in this stack.
      */
     public void rollbackFullStack() {
-        stack.clear();
-        setupSavepoint(root, new ArrayList<>());
+        while (!stack.isEmpty()) {
+            stack.pop().rollback();
+        }
+        pushBaseSavepoint();
     }
 
     @Override
@@ -122,7 +117,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @throws IllegalStateException if the stack has been committed already
      */
     @NonNull
-    public SavePoint peek() {
+    public AbstractSavePoint peek() {
         if (stack.isEmpty()) {
             throw new IllegalStateException("The stack has already been committed");
         }
@@ -171,17 +166,11 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         return writableStatesMap.computeIfAbsent(serviceName, s -> new WritableStatesStack(this, s));
     }
 
-    /**
-     * When the savepoint is committed, the records are pushed to the parent stack.
-     * At the end of the transaction, when we commit full stack, we need to push the records to the root stack,
-     * and we will assign consensus timestamps at the end.
-     * @param recordBuilders the list of record builders to push to the parent stack
-     */
-    private void pushRecordsToParentStack(final List<SingleTransactionRecordBuilder> recordBuilders) {
-        if (stack.peek() != null) {
-            stack.peek().recordBuilders().addAll(recordBuilders);
+    private void pushBaseSavepoint() {
+        if(root instanceof SavepointStackImpl parentStack){
+            stack.push(new FollowingSavePoint(new WrappedHederaState(root), parentStack.peek()));
         } else {
-            throw new IllegalStateException("There is no parent stack to push the records to");
+            stack.push(new FirstSavePoint(new WrappedHederaState(root), maxPreceding));
         }
     }
 }
