@@ -131,6 +131,10 @@ public class TxnUtils {
             .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000"))
             .build();
 
+    public static Key netOf(@NonNull final HapiSpec spec, @NonNull final Optional<String> keyName) {
+        return netOf(spec, keyName, Optional.empty(), Optional.empty());
+    }
+
     public static Key netOf(
             @NonNull final HapiSpec spec,
             @NonNull final Optional<String> keyName,

@@ -81,6 +81,7 @@ module com.hedera.node.test.clients {
     requires java.net.http;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j.core;
+    requires org.assertj.core;
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.datatypes;
     requires org.hyperledger.besu.internal.crypto;

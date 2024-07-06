@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
 import static java.lang.System.arraycopy;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -244,7 +245,7 @@ public interface HapiPropertySource {
     static ServiceEndpoint asServiceEndpoint(String v) {
         String[] parts = v.split(":");
         return ServiceEndpoint.newBuilder()
-                .setIpAddressV4(ByteString.copyFromUtf8(parts[0]))
+                .setIpAddressV4(asOctets(parts[0]))
                 .setPort(Integer.parseInt(parts[1]))
                 .build();
     }
