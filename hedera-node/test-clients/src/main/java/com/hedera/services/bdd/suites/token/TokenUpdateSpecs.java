@@ -409,7 +409,7 @@ public class TokenUpdateSpecs {
                 .when(
                         tokenCreate("tbu").adminKey("adminKey").treasury(TOKEN_TREASURY),
                         tokenUpdate("tbu")
-                                .autoRenewPeriod(1_000_000_000)
+                                .autoRenewPeriod(THREE_MONTHS_IN_SECONDS + 1)
                                 .autoRenewAccount(account)
                                 .signedByPayerAnd("adminKey", account))
                 .then(getTokenInfo("tbu").hasAutoRenewAccount(account));

@@ -20,6 +20,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 
 /**
  * Lets a service do genesis entity creations that must be legible in the block stream as specific HAPI
@@ -52,4 +53,12 @@ public interface GenesisContext {
      */
     @NonNull
     NetworkInfo networkInfo();
+
+    /**
+     * The consensus {@link Instant} of the genesis transaction.
+     *
+     * @return The genesis instant.
+     */
+    @NonNull
+    Instant now();
 }

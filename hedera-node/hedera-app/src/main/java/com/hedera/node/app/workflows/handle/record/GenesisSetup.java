@@ -49,6 +49,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.SortedSet;
@@ -138,6 +139,12 @@ public class GenesisSetup {
             @Override
             public NetworkInfo networkInfo() {
                 return dispatch.handleContext().networkInfo();
+            }
+
+            @NonNull
+            @Override
+            public Instant now() {
+                return dispatch.consensusNow();
             }
         };
         fileService.createSystemEntities(genesisContext);

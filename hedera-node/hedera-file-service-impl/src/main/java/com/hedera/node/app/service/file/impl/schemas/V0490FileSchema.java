@@ -48,6 +48,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.GenesisContext;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
+import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.types.LongPair;
@@ -180,7 +181,7 @@ public class V0490FileSchema extends Schema {
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(nodeAddressBookProto)
                                 .keys(masterKey)
-                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .expirationTime(maxLifetimeExpiry(genesisContext))
                                 .build())
                         .build(),
                 addressBookFileNum);
@@ -211,7 +212,7 @@ public class V0490FileSchema extends Schema {
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(nodeDetailsProto)
                                 .keys(masterKey)
-                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .expirationTime(maxLifetimeExpiry(genesisContext))
                                 .build())
                         .build(),
                 nodeInfoFileNum);
@@ -231,7 +232,7 @@ public class V0490FileSchema extends Schema {
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(genesisFeeSchedules(config))
                                 .keys(KeyList.newBuilder().keys(masterKey))
-                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .expirationTime(maxLifetimeExpiry(genesisContext))
                                 .build())
                         .build(),
                 config.getConfigData(FilesConfig.class).feeSchedules());
@@ -336,16 +337,16 @@ public class V0490FileSchema extends Schema {
     // Creates and loads the initial Exchange Rate into state
 
     public void createGenesisExchangeRate(@NonNull final GenesisContext genesisContext) {
-        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
-        // See HfsSystemFilesManager#defaultRates. This does the same thing.
-        final var masterKey =
-                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        final var config = genesisContext.configuration();
+        final var masterKey = Key.newBuilder()
+                .ed25519(config.getConfigData(BootstrapConfig.class).genesisPublicKey())
+                .build();
         genesisContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
-                                .contents(genesisExchangeRates(genesisContext.configuration()))
+                                .contents(genesisExchangeRates(config))
                                 .keys(KeyList.newBuilder().keys(masterKey))
-                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .expirationTime(maxLifetimeExpiry(genesisContext))
                                 .build())
                         .build(),
                 genesisContext.configuration().getConfigData(FilesConfig.class).exchangeRates());
@@ -391,7 +392,7 @@ public class V0490FileSchema extends Schema {
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(genesisNetworkProperties(config))
                                 .keys(KeyList.newBuilder().keys(masterKey))
-                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .expirationTime(maxLifetimeExpiry(genesisContext))
                                 .build())
                         .build(),
                 genesisContext.configuration().getConfigData(FilesConfig.class).networkProperties());
@@ -463,7 +464,7 @@ public class V0490FileSchema extends Schema {
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(ServicesConfigurationList.PROTOBUF.toBytes(permissionsConfig))
                                 .keys(KeyList.newBuilder().keys(masterKey))
-                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .expirationTime(maxLifetimeExpiry(genesisContext))
                                 .build())
                         .build(),
                 genesisContext.configuration().getConfigData(FilesConfig.class).hapiPermissions());
@@ -481,7 +482,7 @@ public class V0490FileSchema extends Schema {
                         .fileCreate(FileCreateTransactionBody.newBuilder()
                                 .contents(genesisThrottleDefinitions(config))
                                 .keys(KeyList.newBuilder().keys(masterKey))
-                                .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                .expirationTime(maxLifetimeExpiry(genesisContext))
                                 .build())
                         .build(),
                 genesisContext.configuration().getConfigData(FilesConfig.class).throttleDefinitions());
@@ -567,11 +568,20 @@ public class V0490FileSchema extends Schema {
                             .fileCreate(FileCreateTransactionBody.newBuilder()
                                     .contents(Bytes.EMPTY)
                                     .keys(KeyList.newBuilder().keys(masterKey))
-                                    .expirationTime(
-                                            Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
+                                    .expirationTime(maxLifetimeExpiry(genesisContext))
                                     .build())
                             .build(),
                     updateNum);
         }
+    }
+
+    private static Timestamp maxLifetimeExpiry(@NonNull final GenesisContext genesisContext) {
+        return Timestamp.newBuilder()
+                .seconds(genesisContext.now().getEpochSecond()
+                        + genesisContext
+                                .configuration()
+                                .getConfigData(EntitiesConfig.class)
+                                .maxLifetime())
+                .build();
     }
 }

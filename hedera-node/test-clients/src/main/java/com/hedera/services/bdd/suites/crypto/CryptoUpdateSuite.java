@@ -43,7 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
@@ -231,13 +231,10 @@ public class CryptoUpdateSuite {
                                         .isDeclinedReward(true)));
     }
 
-    @HapiTest
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> usdFeeAsExpectedCryptoUpdate() {
-        double autoAssocSlotPrice = 0.0018;
         double baseFee = 0.000214;
         double baseFeeWithExpiry = 0.00022;
-        double plusOneSlotFee = baseFee + autoAssocSlotPrice;
-        double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
 
         final var baseTxn = "baseTxn";
         final var plusOneTxn = "plusOneTxn";
@@ -250,9 +247,11 @@ public class CryptoUpdateSuite {
 
         AtomicLong expiration = new AtomicLong();
         return propertyPreservingHapiSpec("usdFeeAsExpectedCryptoUpdate", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("ledger.maxAutoAssociations")
+                .preserving("entities.maxLifetime", "ledger.maxAutoAssociations")
                 .given(
-                        overriding("ledger.maxAutoAssociations", "5000"),
+                        overridingTwo(
+                                "ledger.maxAutoAssociations", "5000",
+                                "entities.maxLifetime", "3153600000"),
                         newKeyNamed("key").shape(SIMPLE),
                         cryptoCreate("payer").key("key").balance(1_000 * ONE_HBAR),
                         cryptoCreate("canonicalAccount")

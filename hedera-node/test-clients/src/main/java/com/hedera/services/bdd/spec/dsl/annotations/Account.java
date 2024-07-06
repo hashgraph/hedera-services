@@ -29,7 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.PARAMETER})
 @ExtendWith(SpecEntityExtension.class)
-public @interface AccountSpec {
+public @interface Account {
     /**
      * If set, a different {@link com.hedera.services.bdd.spec.HapiSpec} name to use for the account.
      *

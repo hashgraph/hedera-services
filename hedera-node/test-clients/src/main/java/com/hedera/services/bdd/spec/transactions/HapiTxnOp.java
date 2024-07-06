@@ -58,6 +58,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetReceiptResponse;
@@ -416,6 +417,19 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         if (deferStatusResolution) {
             resolveStatus(spec);
             updateStateOf(spec);
+        }
+    }
+
+    /**
+     * Returns the valid start time of the submitted transaction.
+     *
+     * @return the valid start time
+     */
+    public Timestamp validStartOfSubmittedTxn() {
+        try {
+            return extractTxnId(txnSubmitted).getTransactionValidStart();
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
         }
     }
 

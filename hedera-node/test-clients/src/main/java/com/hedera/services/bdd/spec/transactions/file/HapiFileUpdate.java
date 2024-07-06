@@ -124,11 +124,6 @@ public class HapiFileUpdate extends HapiTxnOp<HapiFileUpdate> {
         return HederaFunctionality.FileUpdate;
     }
 
-    public HapiFileUpdate droppingUnmentioned() {
-        dropUnmentionedProperties = true;
-        return this;
-    }
-
     public HapiFileUpdate lifetime(long secs) {
         lifetimeSecs = Optional.of(secs);
         return this;

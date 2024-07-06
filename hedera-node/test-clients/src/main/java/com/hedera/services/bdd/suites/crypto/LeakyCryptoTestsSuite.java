@@ -141,7 +141,6 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_K
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
-import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.TRANSFER_TXN;
 import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.UNIQUE;
@@ -232,21 +231,17 @@ public class LeakyCryptoTestsSuite {
     @HapiTest
     @Order(16)
     final Stream<DynamicTest> autoAssociationPropertiesWorkAsExpected() {
-        final var minAutoRenewPeriodPropertyName = "ledger.autoRenewPeriod.minDuration";
-        final var maxAssociationsPropertyName = "ledger.maxAutoAssociations";
         final var shortLivedAutoAssocUser = "shortLivedAutoAssocUser";
         final var longLivedAutoAssocUser = "longLivedAutoAssocUser";
         final var payerBalance = 100 * ONE_HUNDRED_HBARS;
         final var updateWithExpiredAccount = "updateWithExpiredAccount";
-        final var autoAssocSlotPrice = 0.0018;
         final var baseFee = 0.000214;
-        double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
         return propertyPreservingHapiSpec("AutoAssociationPropertiesWorkAsExpected")
-                .preserving(maxAssociationsPropertyName, minAutoRenewPeriodPropertyName)
+                .preserving("ledger.maxAutoAssociations", "ledger.autoRenewPeriod.minDuration")
                 .given(
                         overridingTwo(
-                                maxAssociationsPropertyName, "100",
-                                minAutoRenewPeriodPropertyName, "1"),
+                                "ledger.maxAutoAssociations", "100",
+                                "ledger.autoRenewPeriod.minDuration", "1"),
                         cryptoCreate(longLivedAutoAssocUser)
                                 .balance(payerBalance)
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS),
@@ -472,9 +467,9 @@ public class LeakyCryptoTestsSuite {
         Arrays.setAll(dissocOrder, i -> tokenNameFn.apply(numTokens - 1 - i));
 
         return propertyPreservingHapiSpec("CanDissociateFromMultipleExpiredTokens")
-                .preserving(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION)
+                .preserving("ledger.autoRenewPeriod.minDuration")
                 .given(
-                        overriding(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION, "1"),
+                        overriding("ledger.autoRenewPeriod.minDuration", "1"),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(civilian).balance(0L),
                         blockingOrder(IntStream.range(0, numTokens)

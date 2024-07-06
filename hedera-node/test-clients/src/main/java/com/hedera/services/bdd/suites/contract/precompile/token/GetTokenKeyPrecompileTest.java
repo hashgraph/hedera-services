@@ -33,8 +33,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_NOT_PROVID
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleTokenSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import java.math.BigInteger;
@@ -50,10 +50,10 @@ import org.junit.jupiter.api.Tag;
 public class GetTokenKeyPrecompileTest {
     private static final Address ZERO_ADDRESS = asHeadlongAddress(new byte[20]);
 
-    @ContractSpec(contract = "UpdateTokenInfoContract", creationGas = 4_000_000L)
+    @Contract(contract = "UpdateTokenInfoContract", creationGas = 4_000_000L)
     static SpecContract getTokenKeyContract;
 
-    @NonFungibleTokenSpec(numPreMints = 1)
+    @NonFungibleToken(numPreMints = 1)
     static SpecNonFungibleToken nonFungibleToken;
 
     @HapiTest

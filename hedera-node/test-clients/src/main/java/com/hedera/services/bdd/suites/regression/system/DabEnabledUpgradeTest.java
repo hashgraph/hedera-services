@@ -44,7 +44,7 @@ import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.support.SpecManager;
-import com.hedera.services.bdd.spec.dsl.annotations.AccountSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.utilops.FakeNmt;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -88,16 +88,16 @@ import org.junit.jupiter.api.TestMethodOrder;
 @HapiTestLifecycle
 @OrderedInIsolation
 public class DabEnabledUpgradeTest implements LifecycleTest {
-    @AccountSpec(balance = ONE_BILLION_HBARS, stakedNodeId = 0)
+    @Account(balance = ONE_BILLION_HBARS, stakedNodeId = 0)
     static SpecAccount NODE0_STAKER;
 
-    @AccountSpec(balance = ONE_BILLION_HBARS, stakedNodeId = 1)
+    @Account(balance = ONE_BILLION_HBARS, stakedNodeId = 1)
     static SpecAccount NODE1_STAKER;
 
-    @AccountSpec(balance = ONE_BILLION_HBARS, stakedNodeId = 2)
+    @Account(balance = ONE_BILLION_HBARS, stakedNodeId = 2)
     static SpecAccount NODE2_STAKER;
 
-    @AccountSpec(balance = ONE_MILLION_HBARS, stakedNodeId = 3)
+    @Account(balance = ONE_MILLION_HBARS, stakedNodeId = 3)
     static SpecAccount NODE3_STAKER;
 
     @BeforeAll
