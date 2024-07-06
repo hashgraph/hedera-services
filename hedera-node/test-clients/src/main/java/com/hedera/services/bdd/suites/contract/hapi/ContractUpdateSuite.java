@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -72,7 +73,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
@@ -89,8 +89,6 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 public class ContractUpdateSuite {
-    private static final long DEFAULT_MAX_LIFETIME =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
     private static final long ONE_DAY = 60L * 60L * 24L;
     private static final long ONE_MONTH = 30 * ONE_DAY;
     public static final String ADMIN_KEY = "adminKey";
@@ -270,13 +268,12 @@ public class ContractUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> rejectsExpiryTooFarInTheFuture() {
-        final var smallBuffer = 12_345L;
-        final var excessiveExpiry = DEFAULT_MAX_LIFETIME + Instant.now().getEpochSecond() + smallBuffer;
-
         return defaultHapiSpec("RejectsExpiryTooFarInTheFuture", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
-                .then(contractUpdate(CONTRACT).newExpirySecs(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME));
+                .then(doWithStartupConfigNow("entities.maxLifetime", (value, now) -> contractUpdate(CONTRACT)
+                        .newExpirySecs(now.getEpochSecond() + Long.parseLong(value) + 12345L)
+                        .hasKnownStatus(INVALID_EXPIRATION_TIME)));
     }
 
     @HapiTest

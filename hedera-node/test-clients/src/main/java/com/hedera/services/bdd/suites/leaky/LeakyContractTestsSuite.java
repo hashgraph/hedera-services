@@ -113,7 +113,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
-import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
 import static com.hedera.services.bdd.suites.HapiSuite.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
@@ -145,9 +144,7 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CAL
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CALL_TX_REC;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CONTRACT_FROM;
-import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.DEFAULT_MAX_AUTO_RENEW_PERIOD;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.DEPOSIT;
-import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.PAY_RECEIVABLE_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.RECEIVER_2;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.SIMPLE_UPDATE_CONTRACT;
@@ -1549,14 +1546,15 @@ public class LeakyContractTestsSuite {
         final AtomicLong longLivedPayerGasUsed = new AtomicLong();
         final AtomicReference<String> toyMakerMirror = new AtomicReference<>();
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "ContractCreationStoragePriceMatchesFinalExpiry",
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
+                .preserving("ledger.autoRenewPeriod.maxDuration")
                 .given(
-                        overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, "" + longLifetime),
+                        overriding("ledger.autoRenewPeriod.maxDuration", "" + longLifetime),
                         cryptoCreate(normalPayer),
                         cryptoCreate(longLivedPayer).autoRenewSecs(longLifetime),
                         uploadInitCode(toyMaker, createIndirectly),
@@ -1581,7 +1579,7 @@ public class LeakyContractTestsSuite {
                         sourcing(() -> contractCall(
                                         createIndirectly, "makeOpaquely", asHeadlongAddress(toyMakerMirror.get()))
                                 .payingWith(longLivedPayer)))
-                .then(overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, DEFAULT_MAX_AUTO_RENEW_PERIOD));
+                .then();
     }
 
     @HapiTest
@@ -2850,9 +2848,9 @@ public class LeakyContractTestsSuite {
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_ETHEREUM_DATA,
                         NONDETERMINISTIC_NONCE)
-                .preserving(EVM_VERSION_PROPERTY, CHAIN_ID_PROP)
+                .preserving(EVM_VERSION_PROPERTY, "contracts.chainId")
                 .given(
-                        overridingTwo(EVM_VERSION_PROPERTY, EVM_VERSION_038, CHAIN_ID_PROP, "298"),
+                        overridingTwo(EVM_VERSION_PROPERTY, EVM_VERSION_038, "contracts.chainId", "298"),
                         uploadDefaultFeeSchedules(GENESIS),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),

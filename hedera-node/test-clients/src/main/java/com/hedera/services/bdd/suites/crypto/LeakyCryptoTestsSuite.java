@@ -94,7 +94,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
-import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
 import static com.hedera.services.bdd.suites.HapiSuite.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.EMPTY_KEY;
@@ -867,9 +866,9 @@ public class LeakyCryptoTestsSuite {
         final String CONTRACT = "Fuse";
         return propertyPreservingHapiSpec(
                         "HollowAccountCompletionWithEthereumTransaction", NONDETERMINISTIC_ETHEREUM_DATA)
-                .preserving(LAZY_CREATION_ENABLED, CHAIN_ID_PROP)
+                .preserving(LAZY_CREATION_ENABLED, "contracts.chainId")
                 .given(
-                        overridingTwo(LAZY_CREATION_ENABLED, TRUE, CHAIN_ID_PROP, "298"),
+                        overridingTwo(LAZY_CREATION_ENABLED, TRUE, "contracts.chainId", "298"),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoCreate(LAZY_CREATE_SPONSOR).balance(INITIAL_BALANCE * ONE_HBAR),
@@ -923,10 +922,10 @@ public class LeakyCryptoTestsSuite {
                         "contractDeployAfterEthereumTransferLazyCreate",
                         NONDETERMINISTIC_ETHEREUM_DATA,
                         NONDETERMINISTIC_NONCE)
-                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
+                .preserving("contracts.chainId", LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
                         overridingThree(
-                                CHAIN_ID_PROP,
+                                "contracts.chainId",
                                 "298",
                                 LAZY_CREATE_PROPERTY_NAME,
                                 "true",
@@ -979,10 +978,10 @@ public class LeakyCryptoTestsSuite {
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_NONCE)
-                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
+                .preserving("contracts.chainId", LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
                         overridingThree(
-                                CHAIN_ID_PROP,
+                                "contracts.chainId",
                                 "298",
                                 LAZY_CREATE_PROPERTY_NAME,
                                 "true",
@@ -1035,11 +1034,11 @@ public class LeakyCryptoTestsSuite {
                         ALLOW_SKIPPED_ENTITY_IDS,
                         NONDETERMINISTIC_ETHEREUM_DATA,
                         NONDETERMINISTIC_NONCE)
-                .preserving(CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
+                .preserving("contracts.chainId", LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP)
                 .given(
                         sidecarValidation(),
                         overridingThree(
-                                CHAIN_ID_PROP,
+                                "contracts.chainId",
                                 "298",
                                 LAZY_CREATE_PROPERTY_NAME,
                                 "true",

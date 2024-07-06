@@ -38,6 +38,8 @@ import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
@@ -287,6 +289,11 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     public ServiceEndpoint grpcEndpointForNextNodeId() {
         final var nextNodeId = maxNodeId + 1;
         return endpointFor(nextGrpcPort + (int) nextNodeId * 2);
+    }
+
+    @Override
+    protected HapiPropertySource networkOverrides() {
+        return WorkingDirUtils.hapiTestStartupProperties();
     }
 
     /**

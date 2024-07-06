@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.keys.deterministic.Bip0032.mnemonicToEd25519Key;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -51,7 +50,7 @@ import org.apache.commons.lang3.StringUtils;
 public class HapiSpecSetup {
     private final SplittableRandom r = new SplittableRandom(1_234_567L);
 
-    private static final HapiPropertySource defaultNodeProps;
+    public static final HapiPropertySource defaultNodeProps;
     public static final Configuration DEFAULT_CONFIG;
 
     static {
@@ -76,17 +75,12 @@ public class HapiSpecSetup {
         return defaultNodeProps;
     }
 
-    public static String getDefaultProp(@NonNull final String property) {
-        requireNonNull(property);
-        return DEFAULT_CONFIG.getValue(property);
-    }
-
     private Set<ResponseCodeEnum> streamlinedIngestChecks = null;
     private HapiPropertySource ciPropertiesMap = null;
     private static HapiPropertySource DEFAULT_PROPERTY_SOURCE = null;
     private static final HapiPropertySource BASE_DEFAULT_PROPERTY_SOURCE = JutilPropertySource.getDefaultInstance();
 
-    public static final HapiPropertySource getDefaultPropertySource() {
+    public static HapiPropertySource getDefaultPropertySource() {
         if (DEFAULT_PROPERTY_SOURCE == null) {
             String globals = System.getProperty("global.property.overrides");
             globals = (globals == null) ? "" : globals;

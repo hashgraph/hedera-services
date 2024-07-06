@@ -28,6 +28,8 @@ import com.hedera.services.bdd.junit.hedera.AbstractNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -145,5 +147,10 @@ public class EmbeddedNetwork extends AbstractNetwork {
 
     public @NonNull EmbeddedHedera embeddedHederaOrThrow() {
         return requireNonNull(embeddedHedera);
+    }
+
+    @Override
+    protected HapiPropertySource networkOverrides() {
+        return WorkingDirUtils.hapiTestStartupProperties();
     }
 }

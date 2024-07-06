@@ -43,6 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -72,9 +73,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -116,8 +117,6 @@ public class ContractDeleteSuite {
 
     @HapiTest
     final Stream<DynamicTest> cannotUseMoreThanChildContractLimit() {
-        final var illegalNumChildren =
-                HapiSpecSetup.getDefaultNodeProps().getInteger("consensus.handle.maxFollowingRecords") + 1;
         final var fungible = "fungible";
         final var contract = "ManyChildren";
         final var precompileViolation = "precompileViolation";
@@ -138,19 +137,23 @@ public class ContractDeleteSuite {
                 .when(
                         uploadInitCode(contract),
                         contractCreate(contract),
-                        sourcing(() -> contractCall(
-                                        contract,
-                                        "checkBalanceRepeatedly",
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(treasuryMirrorAddr.get()),
-                                        BigInteger.valueOf(illegalNumChildren))
-                                .via(precompileViolation)
-                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)),
-                        sourcing(() -> contractCall(
-                                        contract, "createThingsRepeatedly", BigInteger.valueOf(illegalNumChildren))
-                                .via(internalCreateViolation)
-                                .gas(15_000_000)
-                                .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)))
+                        doSeveralWithStartupConfig("consensus.handle.maxFollowingRecords", value -> {
+                            final var illegalNumChildren = Integer.parseInt(value) + 1;
+                            return new SpecOperation[] {
+                                contractCall(
+                                                contract,
+                                                "checkBalanceRepeatedly",
+                                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                                asHeadlongAddress(treasuryMirrorAddr.get()),
+                                                BigInteger.valueOf(illegalNumChildren))
+                                        .via(precompileViolation)
+                                        .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
+                                contractCall(contract, "createThingsRepeatedly", BigInteger.valueOf(illegalNumChildren))
+                                        .via(internalCreateViolation)
+                                        .gas(15_000_000)
+                                        .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)
+                            };
+                        }))
                 .then(
                         getTxnRecord(precompileViolation)
                                 .andAllChildRecords()

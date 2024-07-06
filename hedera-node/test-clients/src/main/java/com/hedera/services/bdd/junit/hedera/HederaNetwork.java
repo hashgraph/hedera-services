@@ -18,6 +18,9 @@ package com.hedera.services.bdd.junit.hedera;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -33,6 +36,19 @@ import java.util.List;
  * A network of Hedera nodes.
  */
 public interface HederaNetwork {
+    /**
+     * Returns the best known representation of the properties in use when the network was started; which is
+     * an important detail when trying to temporarily override configuration for a test.
+     * <p>
+     * <b>NOTE:</b> The current {@link RemoteNetwork} implementation does not try to guarantee an accurate
+     * response here, and just uses the node software defaults. This doesn't matter for any of the few known
+     * use cases of a {@link HapiSpec} against remote network.
+     *
+     * @return a best-effort picture of the properties in use when the network was started
+     */
+    @NonNull
+    HapiPropertySource startupProperties();
+
     /**
      * Sends the given query to the network node with the given account id as if it
      * was the given functionality. Blocks until the response is available.

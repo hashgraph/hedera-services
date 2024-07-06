@@ -179,7 +179,6 @@ public class TraceabilitySuite {
     private static final String SET_SECOND_SLOT = "setSlot2";
     private static final String DELEGATE_CALL_ADDRESS_GET_SLOT_2 = "delegateCallAddressGetSlot2";
     private static final String AUTO_ACCOUNT_TXN = "autoAccount";
-    private static final String CHAIN_ID_PROPERTY = "contracts.chainId";
     private static final String LAZY_CREATE_PROPERTY = "lazyCreation.enabled";
     public static final String SIDECARS_PROP = "contracts.sidecars";
 
@@ -4872,10 +4871,10 @@ public class TraceabilitySuite {
                         NONDETERMINISTIC_NONCE,
                         ALLOW_SKIPPED_ENTITY_IDS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
-                .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
+                .preserving("contracts.chainId", LAZY_CREATE_PROPERTY, "contracts.evm.version")
                 .given(
                         overridingAllOf(Map.of(
-                                CHAIN_ID_PROPERTY,
+                                "contracts.chainId",
                                 "298",
                                 LAZY_CREATE_PROPERTY,
                                 "true",

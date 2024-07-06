@@ -26,14 +26,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PROPS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
 
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import java.math.BigInteger;
 import java.util.Set;
@@ -122,11 +123,13 @@ public class GlobalPropertiesSuite {
 
     @HapiTest
     final Stream<DynamicTest> gasLimitWorks() {
-        final var gasLimit = Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("contracts.maxGasPerSec"));
         return defaultHapiSpec("gasLimitWorks")
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractCall(CONTRACT, GET_GAS_LIMIT).via("gasLimit").gas(gasLimit))
-                .then(
+                .when()
+                .then(doSeveralWithStartupConfig("contracts.maxGasPerSec", value -> {
+                    final var gasLimit = Long.parseLong(value);
+                    return new SpecOperation[] {
+                        contractCall(CONTRACT, GET_GAS_LIMIT).via("gasLimit").gas(gasLimit),
                         getTxnRecord("gasLimit")
                                 .logged()
                                 .hasPriority(recordWith()
@@ -141,6 +144,8 @@ public class GlobalPropertiesSuite {
                                         .resultThruAbi(
                                                 getABIFor(FUNCTION, GET_GAS_LIMIT, CONTRACT),
                                                 ContractFnResultAsserts.isLiteralResult(
-                                                        new Object[] {BigInteger.valueOf(gasLimit)}))));
+                                                        new Object[] {BigInteger.valueOf(gasLimit)})))
+                    };
+                }));
     }
 }

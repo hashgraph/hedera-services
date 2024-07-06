@@ -100,7 +100,6 @@ import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -220,6 +219,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
@@ -291,6 +291,69 @@ public class UtilVerbs {
                         "staking.startThreshold", "" + 0,
                         "staking.rewardBalanceThreshold", "" + 0),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)));
+    }
+
+    /**
+     * Returns an operation that, when executed, will compute a delegate operation by calling the given factory
+     * with the startup value of the given property on the target network; and execute its delegate.
+     *
+     * @param property the property whose startup value is needed for the delegate operation
+     * @param factory the factory for the delegate operation
+     * @return the operation that will execute the delegate created from the target network's startup value
+     */
+    public static SpecOperation doWithStartupConfig(
+            @NonNull final String property, @NonNull final Function<String, SpecOperation> factory) {
+        return doSeveralWithStartupConfig(property, startupValue -> new SpecOperation[] {factory.apply(startupValue)});
+    }
+
+    /**
+     * Returns an operation that, when executed, will compute a delegate operation by calling the given factory
+     * with the startup value of the given property on the target network and its current consensus time; and
+     * execute its delegate.
+     *
+     * @param property the property whose startup value is needed for the delegate operation
+     * @param factory the factory for the delegate operation
+     * @return the operation that will execute the delegate created from the target network's startup value
+     */
+    public static SpecOperation doWithStartupConfigNow(
+            @NonNull final String property, @NonNull final BiFunction<String, Instant, SpecOperation> factory) {
+        return doSeveralWithStartupConfigNow(property, (startupValue, consensusTime) ->
+                new SpecOperation[] {factory.apply(startupValue, consensusTime)});
+    }
+
+    /**
+     * Returns an operation that, when executed, will compute a sequence of delegate operation by calling the
+     * given factory with the startup value of the given property on the target network and its current consensus time;
+     * and execute the delegates in order.
+     *
+     * @param property the property whose startup value is needed for the delegate operation
+     * @param factory the factory for the delegate operations
+     * @return the operation that will execute the delegate created from the target network's startup value
+     */
+    public static SpecOperation doSeveralWithStartupConfigNow(
+            @NonNull final String property, @NonNull final BiFunction<String, Instant, SpecOperation[]> factory) {
+        return withOpContext((spec, opLog) -> {
+            final var startupValue =
+                    spec.targetNetworkOrThrow().startupProperties().get(property);
+            allRunFor(spec, factory.apply(startupValue, spec.consensusTime()));
+        });
+    }
+
+    /**
+     * Returns an operation that, when executed, will compute a delegate operation by calling the given factory
+     * with the startup value of the given property on the target network; and execute its delegate.
+     *
+     * @param property the property whose startup value is needed for the delegate operation
+     * @param factory the factory for the delegate operation
+     * @return the operation that will execute the delegate created from the target network's startup value
+     */
+    public static SpecOperation doSeveralWithStartupConfig(
+            @NonNull final String property, @NonNull final Function<String, SpecOperation[]> factory) {
+        return withOpContext((spec, opLog) -> {
+            final var startupValue =
+                    spec.targetNetworkOrThrow().startupProperties().get(property);
+            allRunFor(spec, factory.apply(startupValue));
+        });
     }
 
     public static HapiFreeze freezeOnly() {
@@ -797,16 +860,6 @@ public class UtilVerbs {
         return overridingAllOf(Map.of(property, value));
     }
 
-    public static HapiSpecOperation resetToDefault(String... properties) {
-        var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
-        final Map<String, String> defaultValues = new HashMap<>();
-        for (final var prop : properties) {
-            final var defaultValue = defaultNodeProps.get(prop);
-            defaultValues.put(prop, defaultValue);
-        }
-        return overridingAllOf(defaultValues);
-    }
-
     /**
      * Returns an operation that computes and executes a list of {@link HapiSpecOperation}s
      * returned by a function whose input is a map from the names of requested registry entities
@@ -878,7 +931,6 @@ public class UtilVerbs {
     }
 
     public static HapiSpecOperation remembering(final Map<String, String> props, final List<String> ofInterest) {
-        final var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
         final Predicate<String> filter = new HashSet<>(ofInterest)::contains;
         return blockingOrder(
                 getFileContents(APP_PROPERTIES)
@@ -886,9 +938,10 @@ public class UtilVerbs {
                         .nodePayment(ONE_HBAR)
                         .fee(ONE_HBAR)
                         .addingFilteredConfigListTo(props, filter),
-                sourcing(() -> {
-                    ofInterest.forEach(prop -> props.computeIfAbsent(prop, defaultNodeProps::get));
-                    return logIt("Remembered props: " + props);
+                withOpContext((spec, opLog) -> {
+                    final var defaultProperties = spec.targetNetworkOrThrow().startupProperties();
+                    ofInterest.forEach(prop -> props.computeIfAbsent(prop, defaultProperties::get));
+                    allRunFor(spec, logIt("Remembered props: " + props));
                 }));
     }
 
