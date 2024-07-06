@@ -130,7 +130,6 @@ import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
-import com.hedera.services.bdd.spec.utilops.inventory.RecordSystemProperty;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromEcdsaFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
@@ -319,11 +318,6 @@ public class UtilVerbs {
     /* Some fairly simple utility ops */
     public static InBlockingOrder blockingOrder(SpecOperation... ops) {
         return new InBlockingOrder(ops);
-    }
-
-    public static <T> RecordSystemProperty<T> recordSystemProperty(
-            String property, Function<String, T> converter, Consumer<T> historian) {
-        return new RecordSystemProperty<>(property, converter, historian);
     }
 
     public static NetworkTypeFilterOp ifHapiTest(@NonNull final HapiSpecOperation... ops) {

@@ -45,7 +45,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 /**
- * Tests
+ * Tests that the synthetic file creations in the record stream match the file contents returned by the gRPC
+ * API after the network has handled the genesis transaction.
  */
 public class GenesisSetupTest {
     @GenesisHapiTest
