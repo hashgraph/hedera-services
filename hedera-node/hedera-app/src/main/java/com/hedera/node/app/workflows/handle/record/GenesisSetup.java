@@ -46,7 +46,6 @@ import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -95,10 +94,9 @@ public class GenesisSetup {
     /**
      * Creates the system entities within the given dispatch.
      *
-     * @param state the working state
      * @param dispatch the genesis dispatch
      */
-    public void createSystemEntities(@NonNull final HederaState state, @NonNull final Dispatch dispatch) {
+    public void createSystemEntities(@NonNull final Dispatch dispatch) {
         final var config = dispatch.config();
         final var hederaConfig = config.getConfigData(HederaConfig.class);
         final var firstUserNum = config.getConfigData(HederaConfig.class).firstUserEntity();

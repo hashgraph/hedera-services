@@ -39,11 +39,15 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.HederaConfig;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Map;
+import java.util.function.Function;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -141,18 +145,14 @@ public class FileGetContentsHandler extends FileQueryBase {
             @NonNull final Configuration config) {
         final var meta = fileStore.getFileMetadata(fileID);
         if (meta == null) {
-            final var filesConfig = config.getConfigData(FilesConfig.class);
-            // Simplify life for clients and return fees and exchange rates even before doing genesis setup
-            if (fileID.fileNum() == filesConfig.feeSchedules()) {
-                return FileContents.newBuilder()
-                        .fileID(fileID)
-                        .contents(genesisSchema.genesisFeeSchedules(config))
-                        .build();
-            } else if (fileID.fileNum() == filesConfig.exchangeRates()) {
-                return FileContents.newBuilder()
-                        .fileID(fileID)
-                        .contents(genesisSchema.genesisExchangeRates(config))
-                        .build();
+            if (fileID.fileNum() < config.getConfigData(HederaConfig.class).firstUserEntity()) {
+                final var genesisContent = genesisContentProviders(config).get(fileID);
+                return genesisContent != null
+                        ? FileContents.newBuilder()
+                                .fileID(fileID)
+                                .contents(genesisContent.apply(config))
+                                .build()
+                        : null;
             } else {
                 return null;
             }
@@ -162,6 +162,17 @@ public class FileGetContentsHandler extends FileQueryBase {
             info.contents(meta.contents());
             return info.build();
         }
+    }
+
+    private Map<FileID, Function<Configuration, Bytes>> genesisContentProviders(@NonNull final Configuration config) {
+        final var filesConfig = config.getConfigData(FilesConfig.class);
+        final var hederaConfig = config.getConfigData(HederaConfig.class);
+        final var shard = hederaConfig.shard();
+        final var realm = hederaConfig.realm();
+        return Map.of(
+                new FileID(shard, realm, filesConfig.feeSchedules()), genesisSchema::genesisFeeSchedules,
+                new FileID(shard, realm, filesConfig.exchangeRates()), genesisSchema::genesisExchangeRates,
+                new FileID(shard, realm, filesConfig.networkProperties()), genesisSchema::genesisNetworkProperties);
     }
 
     private FeeData usageGivenType(final FileContents fileContents, final ResponseType type) {

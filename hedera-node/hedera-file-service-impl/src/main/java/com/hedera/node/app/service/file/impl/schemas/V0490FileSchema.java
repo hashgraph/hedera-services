@@ -379,7 +379,8 @@ public class V0490FileSchema extends Schema {
     // Creates and loads the network properties into state
 
     public void createGenesisNetworkProperties(@NonNull final GenesisContext genesisContext) {
-        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
+        final var config = genesisContext.configuration();
+        final var bootstrapConfig = config.getConfigData(BootstrapConfig.class);
         // The overrides file is initially empty
         final var servicesConfigList =
                 ServicesConfigurationList.newBuilder().nameValue(List.of()).build();
@@ -388,12 +389,24 @@ public class V0490FileSchema extends Schema {
         genesisContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
-                                .contents(ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigList))
+                                .contents(genesisNetworkProperties(config))
                                 .keys(KeyList.newBuilder().keys(masterKey))
                                 .expirationTime(Timestamp.newBuilder().seconds(bootstrapConfig.systemEntityExpiry()))
                                 .build())
                         .build(),
                 genesisContext.configuration().getConfigData(FilesConfig.class).networkProperties());
+    }
+
+    /**
+     * Returns the genesis network properties for the given configuration.
+     *
+     * @param config the configuration
+     * @return the genesis network properties
+     */
+    public Bytes genesisNetworkProperties(@NonNull final Configuration config) {
+        final var servicesConfigList =
+                ServicesConfigurationList.newBuilder().nameValue(List.of()).build();
+        return ServicesConfigurationList.PROTOBUF.toBytes(servicesConfigList);
     }
 
     // ================================================================================================================

@@ -318,7 +318,7 @@ public class HandleWorkflow {
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);
                 if (userTxn.isGenesisTxn()) {
-                    genesisSetup.createSystemEntities(userTxn.state(), dispatch);
+                    genesisSetup.createSystemEntities(dispatch);
                 }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
                 dispatchProcessor.processDispatch(dispatch);

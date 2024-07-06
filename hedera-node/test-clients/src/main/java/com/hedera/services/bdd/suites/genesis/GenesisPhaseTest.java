@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiSpecSetup.DEFAULT_CONFIG;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureStakingActivated;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateVisibleItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.visibleItems;
@@ -48,14 +49,19 @@ import org.junit.jupiter.api.DynamicTest;
  * Tests that the synthetic file creations in the record stream match the file contents returned by the gRPC
  * API after the network has handled the genesis transaction.
  */
-public class GenesisSetupTest {
+public class GenesisPhaseTest {
+    @GenesisHapiTest
+    final Stream<DynamicTest> firstTransactionCanOverrideProperties() {
+        return hapiTest(ensureStakingActivated());
+    }
+
     @GenesisHapiTest
     final Stream<DynamicTest> syntheticFileCreationsMatchQueries() {
         final AtomicReference<VisibleItemsAssertion> assertion = new AtomicReference<>();
         return hapiTest(
                 streamMustIncludeNoFailuresFrom(visibleItems(assertion, "genesisTxn")),
                 cryptoCreate("firstUser").via("genesisTxn"),
-                validateVisibleItems(assertion, GenesisSetupTest::validateSystemFileExports),
+                validateVisibleItems(assertion, GenesisPhaseTest::validateSystemFileExports),
                 // Assert the first created entity is 0.0.1001
                 withOpContext((spec, opLog) -> assertEquals(
                         DEFAULT_CONFIG.getConfigData(HederaConfig.class).firstUserEntity(),

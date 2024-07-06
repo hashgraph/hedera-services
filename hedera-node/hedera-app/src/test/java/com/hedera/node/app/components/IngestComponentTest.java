@@ -28,6 +28,7 @@ import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
@@ -96,6 +97,7 @@ class IngestComponentTest {
                 .instantSource(InstantSource.system())
                 .softwareVersion(mock(SemanticVersion.class))
                 .contractServiceImpl(new ContractServiceImpl(InstantSource.system()))
+                .fileServiceImpl(new FileServiceImpl())
                 .metrics(metrics)
                 .build();
 
