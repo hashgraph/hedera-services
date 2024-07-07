@@ -60,7 +60,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKIN
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -94,8 +94,8 @@ public class StakingSuite {
     private static final long STAKING_PERIOD_MINS = 1L;
 
     @BeforeAll
-    static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
-        specManager.setup(
+    static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws Throwable {
+        testLifecycle.doAdhoc(
                 overridingThree(
                         STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR,
                         PER_HBAR_REWARD_RATE, "" + SUITE_PER_HBAR_REWARD_RATE,

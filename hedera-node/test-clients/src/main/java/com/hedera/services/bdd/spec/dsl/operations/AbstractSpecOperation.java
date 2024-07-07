@@ -18,8 +18,8 @@ package com.hedera.services.bdd.spec.dsl.operations;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;

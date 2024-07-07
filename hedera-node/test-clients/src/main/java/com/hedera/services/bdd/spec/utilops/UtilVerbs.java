@@ -24,6 +24,7 @@ import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -61,7 +62,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
-import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
@@ -91,7 +91,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
@@ -99,6 +98,7 @@ import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -977,6 +977,10 @@ public class UtilVerbs {
     }
 
     public static RunnableOp given(@NonNull final Runnable runnable) {
+        return new RunnableOp(runnable);
+    }
+
+    public static RunnableOp doAdhoc(@NonNull final Runnable runnable) {
         return new RunnableOp(runnable);
     }
 
@@ -1954,11 +1958,6 @@ public class UtilVerbs {
             return this;
         }
 
-        public TokenTransferListBuilder forTokenAddress(final Address token) {
-            this.token = token;
-            return this;
-        }
-
         public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
             this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[] {});
             return this;
@@ -1991,10 +1990,6 @@ public class UtilVerbs {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount);
     }
 
-    public static Tuple addressedAccountAmount(final Address address, final Long amount) {
-        return Tuple.of(address, amount);
-    }
-
     public static Tuple accountAmount(final AccountID account, final Long amount, final boolean isApproval) {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount, isApproval);
     }
@@ -2013,22 +2008,6 @@ public class UtilVerbs {
                 HapiParserUtil.asHeadlongAddress(asAddress(sender)),
                 HapiParserUtil.asHeadlongAddress(asAddress(receiver)),
                 serialNumber);
-    }
-
-    public static Tuple nftTransferToAlias(final AccountID sender, final byte[] alias, final Long serialNumber) {
-        return Tuple.of(
-                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
-                HapiParserUtil.asHeadlongAddress(alias),
-                serialNumber);
-    }
-
-    public static Tuple nftTransferToAlias(
-            final AccountID sender, final byte[] alias, final Long serialNumber, final boolean isApproval) {
-        return Tuple.of(
-                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
-                HapiParserUtil.asHeadlongAddress(alias),
-                serialNumber,
-                isApproval);
     }
 
     public static Tuple nftTransfer(

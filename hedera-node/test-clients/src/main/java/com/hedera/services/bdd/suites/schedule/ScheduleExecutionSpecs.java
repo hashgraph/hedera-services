@@ -150,8 +150,8 @@ import static java.lang.Integer.parseInt;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.config.data.ConsensusConfig;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -162,8 +162,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer;
@@ -172,8 +170,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ScheduleExecutionSpecs {
-    private static final Logger log = LogManager.getLogger(ScheduleExecutionSpecs.class);
-
     /**
      * This is matched to ConsensusTimeTracker.MAX_PRECEDING_RECORDS_REMAINING_TXN + 1.
      * It is not guaranteed to remain thus. If the configuration changes or there are any
@@ -187,11 +183,9 @@ public class ScheduleExecutionSpecs {
     private final Random r = new Random(882654L);
 
     @HapiTest
-    @Order(18)
     final Stream<DynamicTest> scheduledBurnFailsWithInvalidTxBody() {
         return defaultHapiSpec("ScheduledBurnFailsWithInvalidTxBody")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
                         cryptoCreate(TREASURY),
                         cryptoCreate(SCHEDULE_PAYER),
                         newKeyNamed(SUPPLY_KEY),
@@ -456,16 +450,6 @@ public class ScheduleExecutionSpecs {
                                 .designatingPayer(SCHEDULE_PAYER)
                                 .hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
-    }
-
-    private ByteString metadataOfLength(int length) {
-        return ByteString.copyFrom(genRandomBytes(length));
-    }
-
-    private byte[] genRandomBytes(int numBytes) {
-        byte[] contents = new byte[numBytes];
-        r.nextBytes(contents);
-        return contents;
     }
 
     @HapiTest
@@ -1040,9 +1024,7 @@ public class ScheduleExecutionSpecs {
         String xTreasury = "xt";
         String xCivilian = "xc";
         String successTx = "good";
-        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
-        AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
         return defaultHapiSpec("ScheduledXferFailingWithRepeatedTokenIdPaysServiceFeeButNoImpact")
                 .given(
@@ -1085,9 +1067,7 @@ public class ScheduleExecutionSpecs {
         String xTreasury = "xt";
         String yTreasury = "yt";
         String successTx = "good";
-        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
-        AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
         return defaultHapiSpec("ScheduledXferFailingWithRepeatedTokenIdPaysServiceFeeButNoImpact")
                 .given(
@@ -1139,9 +1119,7 @@ public class ScheduleExecutionSpecs {
         String yTreasury = "yt";
         String xyCivilian = "xyt";
         String successTx = "good";
-        String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
-        AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
 
         return defaultHapiSpec("ScheduledXferFailingWithEmptyTokenTransferAccountAmountsPaysServiceFeeButNoImpact")
                 .given(
@@ -2251,5 +2229,15 @@ public class ScheduleExecutionSpecs {
     private <T extends Record> T getTestConfig(Class<T> configClass) {
         final TestConfigBuilder builder = new TestConfigBuilder(configClass);
         return builder.getOrCreateConfig().getConfigData(configClass);
+    }
+
+    private ByteString metadataOfLength(int length) {
+        return ByteString.copyFrom(genRandomBytes(length));
+    }
+
+    private byte[] genRandomBytes(int numBytes) {
+        byte[] contents = new byte[numBytes];
+        r.nextBytes(contents);
+        return contents;
     }
 }

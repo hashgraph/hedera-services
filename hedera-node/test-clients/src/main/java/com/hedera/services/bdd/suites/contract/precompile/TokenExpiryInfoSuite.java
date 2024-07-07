@@ -61,7 +61,7 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
@@ -142,8 +142,8 @@ public class TokenExpiryInfoSuite {
     @DisplayName("when authorized")
     class WhenAuthorized {
         @BeforeAll
-        static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
-            specManager.setup(
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+            testLifecycle.doAdhoc(
                     newAutoRenewAccount.authorizeContract(tokenExpiryContract),
                     mutableToken.authorizeContracts(tokenExpiryContract));
         }

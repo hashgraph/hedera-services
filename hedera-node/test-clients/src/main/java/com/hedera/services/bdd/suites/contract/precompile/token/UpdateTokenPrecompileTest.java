@@ -46,7 +46,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_T
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
@@ -157,9 +157,9 @@ public class UpdateTokenPrecompileTest {
         static SpecNonFungibleToken sharedMutableToken;
 
         @BeforeAll
-        static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws Throwable {
             sharedMutableToken.setTreasury(sharedTreasury);
-            specManager.setup(
+            testLifecycle.doAdhoc(
                     sharedTreasury.authorizeContract(updateTokenContract),
                     sharedMutableToken.authorizeContracts(updateTokenContract, updateTokenPropertyContract));
         }

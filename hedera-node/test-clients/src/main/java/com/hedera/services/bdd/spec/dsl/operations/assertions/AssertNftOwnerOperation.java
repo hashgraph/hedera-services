@@ -18,8 +18,8 @@ package com.hedera.services.bdd.spec.dsl.operations.assertions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNft;
 import com.hedera.services.bdd.spec.dsl.operations.AbstractSpecOperation;
