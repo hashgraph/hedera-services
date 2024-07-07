@@ -135,7 +135,7 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         final TokenUpdateValidator validator = new TokenUpdateValidator(new TokenAttributesValidator());
         subject = new TokenUpdateHandler(validator);
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getCurrent(any())).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
         givenStoresAndConfig(handleContext);
         setUpTxnContext();
     }

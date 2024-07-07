@@ -93,7 +93,7 @@ public class CryptoDeleteHandler implements TransactionHandler {
                         op.deleteAccountIDOrThrow(),
                         op.transferAccountIDOrThrow(),
                         context.expiryValidator(),
-                        context.recordBuilders().getCurrent(CryptoDeleteRecordBuilder.class),
+                        context.recordBuilders().getOrCreate(CryptoDeleteRecordBuilder.class),
                         accountsConfig.releaseAliasAfterDeletion() ? FreeAliasOnDeletion.YES : FreeAliasOnDeletion.NO);
     }
 

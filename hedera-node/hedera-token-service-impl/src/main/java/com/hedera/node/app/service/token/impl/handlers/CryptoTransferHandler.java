@@ -252,7 +252,7 @@ public class CryptoTransferHandler implements TransactionHandler {
             step.doIn(transferContext);
         }
 
-        final var recordBuilder = context.recordBuilders().getCurrent(CryptoTransferRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(CryptoTransferRecordBuilder.class);
         if (!transferContext.getAutomaticAssociations().isEmpty()) {
             transferContext.getAutomaticAssociations().forEach(recordBuilder::addAutomaticTokenAssociation);
         }

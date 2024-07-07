@@ -168,7 +168,7 @@ class TokenDeleteHandlerTest extends ParityTestBase {
             given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
             given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
             given(context.recordBuilders()).willReturn(recordBuilders);
-            given(recordBuilders.getCurrent(any())).willReturn(mock(TokenBaseRecordBuilder.class));
+            given(recordBuilders.getOrCreate(any())).willReturn(mock(TokenBaseRecordBuilder.class));
 
             return context;
         }

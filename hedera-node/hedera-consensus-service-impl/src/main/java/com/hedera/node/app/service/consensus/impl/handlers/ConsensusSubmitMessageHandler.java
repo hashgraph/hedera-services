@@ -130,7 +130,7 @@ public class ConsensusSubmitMessageHandler implements TransactionHandler {
             topicStore.put(updatedTopic);
 
             final var recordBuilder =
-                    handleContext.recordBuilders().getCurrent(ConsensusSubmitMessageRecordBuilder.class);
+                    handleContext.recordBuilders().getOrCreate(ConsensusSubmitMessageRecordBuilder.class);
             recordBuilder
                     .topicRunningHash(updatedTopic.runningHash())
                     .topicSequenceNumber(updatedTopic.sequenceNumber())

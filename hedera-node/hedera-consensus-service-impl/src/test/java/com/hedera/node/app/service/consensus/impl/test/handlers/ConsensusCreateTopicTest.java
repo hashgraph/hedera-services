@@ -125,7 +125,7 @@ class ConsensusCreateTopicTest extends ConsensusTestBase {
         given(handleContext.configuration()).willReturn(config);
         given(storeFactory.writableStore(WritableTopicStore.class)).willReturn(topicStore);
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getCurrent(ConsensusCreateTopicRecordBuilder.class))
+        given(recordBuilders.getOrCreate(ConsensusCreateTopicRecordBuilder.class))
                 .willReturn(recordBuilder);
         lenient().when(handleContext.entityNumGenerator()).thenReturn(entityNumGenerator);
     }

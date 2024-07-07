@@ -158,7 +158,7 @@ public class FileCreateHandler implements TransactionHandler {
 
             handleContext
                     .recordBuilders()
-                    .getCurrent(CreateFileRecordBuilder.class)
+                    .getOrCreate(CreateFileRecordBuilder.class)
                     .fileID(fileId);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {

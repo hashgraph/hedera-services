@@ -125,7 +125,7 @@ public record UserTxn(
                 event,
                 platformTxn,
                 txnInfo,
-                new TokenContextImpl(config, state, storeMetricsService, stack, blockRecordManager, consensusNow),
+                new TokenContextImpl(config, state, storeMetricsService, stack, recordListBuilder, blockRecordManager, consensusNow),
                 stack,
                 preHandleResult,
                 readableStoreFactory,

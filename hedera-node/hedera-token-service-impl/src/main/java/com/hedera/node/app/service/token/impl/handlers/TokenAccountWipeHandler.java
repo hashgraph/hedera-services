@@ -213,7 +213,7 @@ public final class TokenAccountWipeHandler implements TransactionHandler {
                 .build());
         // Note: record(s) for this operation will be built in a token finalization method so that we keep track of all
         // changes for records
-        final var record = context.recordBuilders().getCurrent(TokenAccountWipeRecordBuilder.class);
+        final var record = context.recordBuilders().getOrCreate(TokenAccountWipeRecordBuilder.class);
         // Set newTotalSupply in record
         record.newTotalSupply(newTotalSupply);
         record.tokenType(token.tokenType());

@@ -102,7 +102,7 @@ class TokenPauseHandlerTest extends TokenHandlerTestBase {
         given(handleContext.storeFactory()).willReturn(storeFactory);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getCurrent(any())).willReturn(recordBuilder);
+        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
     }
 
     @Test

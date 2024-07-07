@@ -86,7 +86,7 @@ public class TokenUnpauseHandler implements TransactionHandler {
         final var copyBuilder = token.copyBuilder();
         copyBuilder.paused(false);
         tokenStore.put(copyBuilder.build());
-        final var recordBuilder = context.recordBuilders().getCurrent(TokenBaseRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(TokenBaseRecordBuilder.class);
         recordBuilder.tokenType(token.tokenType());
     }
 
