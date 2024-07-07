@@ -17,7 +17,6 @@
 package com.hedera.node.app.spi.records;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface RecordBuilders {
@@ -60,18 +59,4 @@ public interface RecordBuilders {
      */
     @NonNull
     <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
-     * Revert the childRecords from the checkpoint.
-     */
-    void revertRecordsFrom(@NonNull RecordListCheckPoint recordListCheckPoint);
-
-    /**
-     * Create a checkpoint for the current childRecords.
-     *
-     * @return the checkpoint for the current childRecords, containing the first preceding record and the last following
-     * record.
-     */
-    @NonNull
-    RecordListCheckPoint createRecordListCheckPoint();
 }

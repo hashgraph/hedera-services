@@ -19,6 +19,8 @@ package com.hedera.node.app.workflows.handle.steps;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
+import static com.hedera.node.app.workflows.handle.stack.AbstractSavePoint.SIMULATE_MONO;
+import static com.hedera.node.app.workflows.handle.stack.AbstractSavePoint.totalPrecedingRecords;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -93,7 +95,7 @@ public class HollowAccountCompletions {
                 hollowAccounts,
                 dispatch.keyVerifier(),
                 maybeEthTxVerification,
-                userTxn.recordListBuilder());
+                userTxn);
     }
 
     /**
@@ -144,13 +146,20 @@ public class HollowAccountCompletions {
             @NonNull final Set<Account> accounts,
             @NonNull final AppKeyVerifier verifier,
             @Nullable SignatureVerification ethTxVerification,
-            @NonNull final RecordListBuilder recordListBuilder) {
+            @NonNull final UserTxn userTxn) {
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
-        final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
+        final var maxPrecedingRecords = consensusConfig.handleMaxPrecedingRecords();
         for (final var hollowAccount : accounts) {
-            if (recordListBuilder.precedingRecordBuilders().size() == maxRecords) {
-                break;
+            if(SIMULATE_MONO){
+                if (totalPrecedingRecords == maxPrecedingRecords) {
+                    break;
+                }
+            } else {
+                if(!userTxn.stack().hasMoreSystemRecords() ){
+                    break;
+                }
             }
+
             if (hollowAccount.accountIdOrElse(AccountID.DEFAULT).equals(AccountID.DEFAULT)) {
                 // The CryptoCreateHandler uses a "hack" to validate that a CryptoCreate with
                 // an EVM address has signed with that alias's ECDSA key; that is, it adds a

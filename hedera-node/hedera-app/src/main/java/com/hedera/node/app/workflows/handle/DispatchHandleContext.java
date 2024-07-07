@@ -111,7 +111,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final RecordBuilders recordBuilders;
     private final ChildDispatchFactory childDispatchFactory;
     private final DispatchProcessor dispatchProcessor;
-    private final RecordListBuilder recordListBuilder;
     private final ThrottleAdviser throttleAdviser;
     private Map<AccountID, Long> dispatchPaidRewards;
 
@@ -139,7 +138,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final RecordBuilders recordBuilders,
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final DispatchProcessor dispatchProcessor,
-            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final ThrottleAdviser throttleAdviser) {
         this.consensusNow = requireNonNull(consensusNow);
         this.creatorInfo = requireNonNull(creatorInfo);
@@ -160,7 +158,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.entityNumGenerator = requireNonNull(entityNumGenerator);
         this.childDispatchFactory = requireNonNull(childDispatchLogic);
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
-        this.recordListBuilder = requireNonNull(recordListBuilder);
         this.throttleAdviser = requireNonNull(throttleAdviser);
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);
@@ -492,7 +489,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 category,
                 customizer,
                 reversingBehavior,
-                recordListBuilder,
                 config,
                 stack,
                 storeFactory.asReadOnly(),

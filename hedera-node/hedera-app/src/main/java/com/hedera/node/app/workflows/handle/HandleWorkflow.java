@@ -28,6 +28,7 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartU
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
 import static com.hedera.node.app.workflows.handle.stack.AbstractSavePoint.SIMULATE_MONO;
+import static com.hedera.node.app.workflows.handle.stack.AbstractSavePoint.totalPrecedingRecords;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
@@ -59,8 +60,8 @@ import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisSetup;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.stack.AbstractSavePoint;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
 import com.hedera.node.app.workflows.handle.steps.UserTxn;
@@ -239,6 +240,7 @@ public class HandleWorkflow {
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn) {
         final var handleStart = System.nanoTime();
+        AbstractSavePoint.totalPrecedingRecords = 0;
 
         final var consensusNow = txn.getConsensusTimestamp().minusNanos(1000 - 3L);
         final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
@@ -335,12 +337,11 @@ public class HandleWorkflow {
      * @return the failure record
      */
     private Stream<SingleTransactionRecord> failInvalidRecordStream(@NonNull final UserTxn userTxn) {
-        final var failInvalidRecordListBuilder = new RecordListBuilder(userTxn.consensusNow());
-        final var recordBuilder = failInvalidRecordListBuilder.userTransactionRecordBuilder();
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, USER);
         initializeUserRecord(recordBuilder, userTxn.txnInfo());
         recordBuilder.status(FAIL_INVALID);
         userTxn.stack().rollbackFullStack();
-        return recordStream(userTxn, failInvalidRecordListBuilder);
+        return recordStream(userTxn, List.of(recordBuilder));
     }
 
     /**
@@ -392,7 +393,7 @@ public class HandleWorkflow {
      * @return the stream of records
      */
     private Stream<SingleTransactionRecord> finalRecordStream(@NonNull final UserTxn userTxn) {
-        return recordStream(userTxn, userTxn.stack().peek().recordBuilders());
+        return recordStream(userTxn, userTxn.stack().recordBuilders());
     }
 
     /**
@@ -404,13 +405,66 @@ public class HandleWorkflow {
      * @return the stream of records
      */
     private Stream<SingleTransactionRecord> recordStream(
-            @NonNull final UserTxn userTxn, @NonNull final List<SingleTransactionRecordBuilderImpl> builders) {
+            @NonNull final UserTxn userTxn, @NonNull final List<SingleTransactionRecordBuilder> builders) {
         final List<SingleTransactionRecord> records = new ArrayList<>();
-        for (final var builder : builders) {
-            if(SIMULATE_MONO && builder.isPreceding()) {
-               records.add(0, builder.build());
+        TransactionID.Builder idBuilder = null;
+        int indexOfUserRecord = 0;
+        if(SIMULATE_MONO){
+            for(int i = 0; i < builders.size(); i++) {
+                if(builders.get(i).category() == USER) {
+                    indexOfUserRecord = i;
+                    idBuilder = builders.get(i).transactionID().copyBuilder();
+                } else if(builders.get(i).isPreceding() && i > indexOfUserRecord) {
+                    indexOfUserRecord++;
+                }
+            }
+        } else {
+            for(int i = 0; i < builders.size(); i++) {
+                if(builders.get(i).category() == USER) {
+                    indexOfUserRecord = i;
+                    idBuilder = builders.get(i).transactionID().copyBuilder();
+                    break;
+                }
+            }
+        }
+        int numPrecedingSeen = 0;
+        int numFollowingSeen = 0;
+        for (int i = 0; i < builders.size(); i++) {
+            final var builder = builders.get(i);
+            if (SIMULATE_MONO) {
+                if(builder.isPreceding()){
+                    final var nonce = totalPrecedingRecords - numPrecedingSeen;
+                    builder
+                            .transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+                            .syncBodyIdFromRecordId()
+                            .consensusTimestamp(userTxn.consensusNow().minusNanos(nonce));
+                    records.add(0, ((SingleTransactionRecordBuilderImpl)builder).build());
+                    numPrecedingSeen++;
+                } else if(builder.category() == USER){
+                    builder.consensusTimestamp(userTxn.consensusNow());
+                    records.add(((SingleTransactionRecordBuilderImpl)builder).build());
+                } else {
+                    final var nonce = totalPrecedingRecords + numFollowingSeen++ + 1;
+                    builder.consensusTimestamp(userTxn.consensusNow().plusNanos(numFollowingSeen));
+                    if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
+                        builder
+                                .transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+                                .syncBodyIdFromRecordId();
+                    }
+                    records.add(((SingleTransactionRecordBuilderImpl)builder).build());
+                }
             } else {
-                records.add(builder.build());
+                final int nonce = switch (builder.category()) {
+                    case USER, SCHEDULED -> 0;
+                    case PRECEDING, CHILD ->  i < indexOfUserRecord ? indexOfUserRecord - i : i;
+                };
+                if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
+                    builder
+                            .transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+                            .syncBodyIdFromRecordId();
+                }
+                builder.consensusTimestamp(userTxn.consensusNow().plusNanos((long) i - indexOfUserRecord));
+                records.add(((SingleTransactionRecordBuilderImpl)builder).build());
             }
         }
         recordCache.add(

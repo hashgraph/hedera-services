@@ -78,7 +78,6 @@ public record UserTxn(
         @NonNull PlatformState platformState,
         @NonNull ConsensusEvent event,
         @NonNull ConsensusTransaction platformTxn,
-        @NonNull RecordListBuilder recordListBuilder,
         @NonNull TransactionInfo txnInfo,
         @NonNull TokenContextImpl tokenContextImpl,
         @NonNull SavepointStackImpl stack,
@@ -117,7 +116,6 @@ public record UserTxn(
         final var preHandleResult =
                 handleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
-        final var recordListBuilder = new RecordListBuilder(consensusNow);
         return new UserTxn(
                 isGenesis,
                 txnInfo.functionality(),
@@ -126,9 +124,8 @@ public record UserTxn(
                 platformState,
                 event,
                 platformTxn,
-                recordListBuilder,
                 txnInfo,
-                new TokenContextImpl(config, state, storeMetricsService, stack, recordListBuilder, blockRecordManager, consensusNow),
+                new TokenContextImpl(config, state, storeMetricsService, stack, blockRecordManager, consensusNow),
                 stack,
                 preHandleResult,
                 readableStoreFactory,
@@ -185,11 +182,10 @@ public record UserTxn(
                 dispatcher,
                 recordCache,
                 networkInfo,
-                new RecordBuildersImpl(recordBuilder, recordListBuilder, config, stack),
+                new RecordBuildersImpl(recordBuilder, stack),
                 childDispatchFactory,
                 dispatchProcessor,
-                recordListBuilder,
-                new AppThrottleAdviser(networkUtilizationManager, consensusNow, recordListBuilder, stack));
+                new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack));
         return new RecordDispatch(
                 recordBuilder,
                 config,
@@ -207,7 +203,6 @@ public record UserTxn(
                 stack,
                 USER,
                 tokenContextImpl,
-                recordListBuilder,
                 platformState,
                 preHandleResult);
     }

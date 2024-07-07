@@ -28,7 +28,7 @@ import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.res
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactoryTest.asTxn;
+import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -782,7 +782,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 recordBuilders,
                 childDispatchFactory,
                 dispatchProcessor,
-                recordListBuilder,
                 throttleAdviser);
     }
 
@@ -790,9 +789,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         lenient()
                 .when(childDispatchFactory.createChildDispatch(
                         any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                        any(), any()))
+                        any()))
                 .thenReturn(childDispatch);
-        lenient().when(childDispatch.recordListBuilder()).thenReturn(recordListBuilder);
         lenient().when(childDispatch.recordBuilder()).thenReturn(childRecordBuilder);
         lenient()
                 .when(stack.getWritableStates(TokenService.NAME))

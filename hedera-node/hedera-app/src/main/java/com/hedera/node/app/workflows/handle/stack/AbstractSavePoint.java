@@ -67,12 +67,13 @@ public abstract class AbstractSavePoint {
         return new FollowingSavePoint(new WrappedHederaState(state), this);
     }
 
-    public void commit() {
+    public AbstractSavePoint commit() {
         state.commit();
         pushRecordsToParentStack();
+        return this;
     }
 
-    public void rollback() {
+    public AbstractSavePoint rollback() {
         boolean followingChildRemoved = false;
        for(int i =0; i < recordBuilders.size(); i++){
            final var recordBuilder = recordBuilders.get(i);
@@ -91,7 +92,8 @@ public abstract class AbstractSavePoint {
        if(followingChildRemoved){
            recordBuilders.removeIf(Objects::isNull);
        }
-        pushRecordsToParentStack();
+       pushRecordsToParentStack();
+       return this;
     }
 
     private void pushRecordsToParentStack(){

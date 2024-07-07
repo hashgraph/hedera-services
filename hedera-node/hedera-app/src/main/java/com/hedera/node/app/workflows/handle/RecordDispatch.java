@@ -54,7 +54,6 @@ public record RecordDispatch(
         @NonNull SavepointStackImpl stack,
         @NonNull HandleContext.TransactionCategory txnCategory,
         @NonNull FinalizeContext finalizeContext,
-        @NonNull RecordListBuilder recordListBuilder,
         @NonNull PlatformState platformState,
         @NonNull PreHandleResult preHandleResult)
         implements Dispatch {}

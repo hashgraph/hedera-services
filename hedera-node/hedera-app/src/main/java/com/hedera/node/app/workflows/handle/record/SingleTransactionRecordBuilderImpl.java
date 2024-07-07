@@ -366,7 +366,7 @@ public class SingleTransactionRecordBuilderImpl
         this.parentConsensus = requireNonNull(parentConsensus, "parentConsensus must not be null");
         return this;
     }
-
+    @Override
     public SingleTransactionRecordBuilderImpl consensusTimestamp(@NonNull final Instant now) {
         this.consensusNow = requireNonNull(now, "consensus time must not be null");
         return this;
@@ -424,6 +424,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
+    @Override
     public SingleTransactionRecordBuilderImpl syncBodyIdFromRecordId() {
         final var newTransactionID = transactionID;
         final var body =

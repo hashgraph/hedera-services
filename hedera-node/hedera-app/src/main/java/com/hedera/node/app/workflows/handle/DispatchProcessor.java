@@ -41,7 +41,6 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
 import com.hedera.node.app.workflows.handle.dispatch.ValidationResult;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
@@ -149,7 +148,6 @@ public class DispatchProcessor {
                     e.shouldRollbackStack(),
                     e.getStatus(),
                     dispatch.stack(),
-                    dispatch.recordListBuilder(),
                     dispatch.recordBuilder());
             if (e.shouldRollbackStack()) {
                 chargePayer(dispatch, validationResult);
@@ -158,10 +156,10 @@ public class DispatchProcessor {
             // and current throttling is very rough-grained, we just return USER_TRANSACTION here
             return USER_TRANSACTION;
         } catch (final ThrottleException e) {
-            return nonHandleWorkDone(dispatch, validationResult, dispatch.recordListBuilder(), e.getStatus());
+            return nonHandleWorkDone(dispatch, validationResult, e.getStatus());
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling dispatch", ALERT_MESSAGE, e);
-            return nonHandleWorkDone(dispatch, validationResult, dispatch.recordListBuilder(), FAIL_INVALID);
+            return nonHandleWorkDone(dispatch, validationResult, FAIL_INVALID);
         }
     }
 
@@ -192,7 +190,6 @@ public class DispatchProcessor {
      *
      * @param dispatch the dispatch to be processed
      * @param validationResult the due diligence report for the dispatch
-     * @param recordListBuilder the record list builder
      * @param status the status to set
      * @return the work done in handling the exception
      */
@@ -200,9 +197,8 @@ public class DispatchProcessor {
     private DispatchUsageManager.WorkDone nonHandleWorkDone(
             @NonNull final Dispatch dispatch,
             @NonNull final ValidationResult validationResult,
-            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final ResponseCodeEnum status) {
-        rollback(true, status, dispatch.stack(), recordListBuilder, dispatch.recordBuilder());
+        rollback(true, status, dispatch.stack(), dispatch.recordBuilder());
         chargePayer(dispatch, validationResult.withoutServiceFee());
         return FEES_ONLY;
     }
@@ -259,19 +255,16 @@ public class DispatchProcessor {
      * {@link HandleException} that is due to a contract call revert.
      * @param status the status to set
      * @param stack the save point stack to rollback
-     * @param recordListBuilder the record list builder to revert
      */
     private void rollback(
             final boolean rollbackStack,
             @NonNull final ResponseCodeEnum status,
             @NonNull final SavepointStackImpl stack,
-            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         if (rollbackStack) {
             stack.rollbackFullStack();
         }
         recordBuilder.status(status);
-        recordListBuilder.revertChildrenOf(recordBuilder);
     }
 
     /**

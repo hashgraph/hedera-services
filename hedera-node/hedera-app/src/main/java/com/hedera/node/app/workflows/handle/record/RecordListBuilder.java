@@ -28,7 +28,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior;
@@ -403,42 +402,6 @@ public final class RecordListBuilder {
         //noinspection ListRemoveInLoop
         for (int i = count - 1; i >= into; i--) {
             childRecordBuilders.remove(i);
-        }
-    }
-
-    /**
-     * Reverts or removes all child transactions after the given checkpoint.
-     * If there are no following records in the checkpoint, it means that the revert was executed on the user transaction.
-     */
-    public void revertChildrenFrom(@NonNull final RecordListCheckPoint checkPoint) {
-        requireNonNull(checkPoint, "the record checkpoint must not be null");
-        // The revert was executed on the user transaction
-        if (checkPoint.lastFollowingRecord() == null) {
-            revertChildrenOf(userTxnRecordBuilder);
-            return;
-        }
-
-        // We get to here when the revert was executed on a child transaction
-        // We need to revert all children that were added after the child transaction that was reverted
-        revertChildrenOf((SingleTransactionRecordBuilderImpl) checkPoint.lastFollowingRecord());
-
-        // We also need to revert all preceding transactions that were added after the first preceding transaction
-        var firstPrecedingRecord = (SingleTransactionRecordBuilderImpl) checkPoint.firstPrecedingRecord();
-        if (firstPrecedingRecord != null) {
-            final var indexOf = precedingTxnRecordBuilders.indexOf(firstPrecedingRecord) + 1;
-            if (indexOf == 0) {
-                // This should never happen since the firstPrecedingRecord is not null
-                throw new IllegalArgumentException("Preceding recordBuilder not found");
-            }
-            for (int i = indexOf; i < precedingTxnRecordBuilders.size(); i++) {
-                final var preceding = precedingTxnRecordBuilders.get(i);
-                if (preceding.reversingBehavior() == SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE
-                        && SUCCESSES.contains(preceding.status())) {
-                    preceding.status(ResponseCodeEnum.REVERTED_SUCCESS);
-                } else if (preceding.reversingBehavior() == SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE) {
-                    precedingTxnRecordBuilders.set(i, null);
-                }
-            }
         }
     }
 

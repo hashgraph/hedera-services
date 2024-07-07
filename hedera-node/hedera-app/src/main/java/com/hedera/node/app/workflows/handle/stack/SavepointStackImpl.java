@@ -16,17 +16,22 @@
 
 package com.hedera.node.app.workflows.handle.stack;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +51,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     private final Deque<AbstractSavePoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
     private final int maxPreceding;
+    private List<SingleTransactionRecordBuilder> recordBuilders;
 
     /**
      * Constructs a new {@link SavepointStackImpl} with the given root state.
@@ -89,9 +95,11 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * Commits all state changes captured in this stack.
      */
     public void commitFullStack() {
+        final var lastPopped = stack.peekLast();
         while (!stack.isEmpty()) {
             stack.pop().commit();
         }
+        setRecordBuilders(lastPopped);
         pushBaseSavepoint();
     }
 
@@ -99,9 +107,11 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * Rolls back all state changes captured in this stack.
      */
     public void rollbackFullStack() {
+        final var lastPopped = stack.peekLast();
         while (!stack.isEmpty()) {
             stack.pop().rollback();
         }
+        setRecordBuilders(lastPopped);
         pushBaseSavepoint();
     }
 
@@ -172,5 +182,33 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         } else {
             stack.push(new FirstSavePoint(new WrappedHederaState(root), maxPreceding));
         }
+    }
+
+    private void setRecordBuilders(final AbstractSavePoint lastPopped) {
+        if(recordBuilders == null){
+            recordBuilders = requireNonNull(lastPopped).recordBuilders();
+        } else {
+            recordBuilders.addAll(requireNonNull(lastPopped).recordBuilders());
+        }
+    }
+
+    public List<SingleTransactionRecordBuilder> recordBuilders() {
+        return requireNonNull(recordBuilders);
+    }
+
+    public boolean hasMoreSystemRecords(){
+        return recordBuilders == null || recordBuilders.size() < maxPreceding;
+    }
+
+    public List<SingleTransactionRecordBuilderImpl> getChildRecords(){
+        final var childRecords = new ArrayList<SingleTransactionRecordBuilderImpl>();
+        for(var savePoint : stack){
+            for(var recordBuilder : savePoint.recordBuilders()){
+                if(recordBuilder.category() == CHILD){
+                    childRecords.add((SingleTransactionRecordBuilderImpl) recordBuilder);
+                }
+            }
+        }
+        return childRecords;
     }
 }

@@ -193,13 +193,6 @@ public interface Dispatch {
     FinalizeContext finalizeContext();
 
     /**
-     * The record list builder for the dispatch.
-     *
-     * @return the record list builder
-     */
-    RecordListBuilder recordListBuilder();
-
-    /**
      * The platform state for the dispatch.
      *
      * @return the platform state

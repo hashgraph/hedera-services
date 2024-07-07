@@ -16,14 +16,6 @@
 
 package com.hedera.node.app.workflows.handle.dispatch;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.util.HapiUtils.functionOf;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -69,7 +61,6 @@ import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.RecordDispatch;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.record.TriggeredFinalizeContext;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
@@ -82,11 +73,20 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.function.Predicate;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A factory for constructing child dispatches.This also gets the pre-handle result for the child transaction,
@@ -144,7 +144,6 @@ public class ChildDispatchFactory {
      * @param category             the transaction category
      * @param customizer           the externalized record customizer
      * @param reversingBehavior    the reversing behavior
-     * @param recordListBuilder    the record list builder
      * @param config               the configuration
      * @param stack                the savepoint stack
      * @param readableStoreFactory the readable store factory
@@ -161,7 +160,6 @@ public class ChildDispatchFactory {
             @NonNull final HandleContext.TransactionCategory category,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
-            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final Configuration config,
             @NonNull final SavepointStackImpl stack,
             @NonNull final ReadableStoreFactory readableStoreFactory,
@@ -192,7 +190,6 @@ public class ChildDispatchFactory {
                 creatorInfo,
                 config,
                 platformState,
-                recordListBuilder,
                 topLevelFunction,
                 throttleAdviser,
                 authorizer,
@@ -221,7 +218,6 @@ public class ChildDispatchFactory {
             @NonNull final NodeInfo creatorInfo,
             @NonNull final Configuration config,
             @NonNull final PlatformState platformState,
-            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final ThrottleAdviser throttleAdviser,
             // @Singleton
@@ -262,10 +258,9 @@ public class ChildDispatchFactory {
                 dispatcher,
                 recordCache,
                 networkInfo,
-                new RecordBuildersImpl(recordBuilder, recordListBuilder, config, childStack),
+                new RecordBuildersImpl(recordBuilder, childStack),
                 this,
                 dispatchProcessor,
-                recordListBuilder,
                 throttleAdviser);
         return new RecordDispatch(
                 recordBuilder,
@@ -289,7 +284,6 @@ public class ChildDispatchFactory {
                         recordBuilder,
                         consensusNow,
                         config),
-                recordListBuilder,
                 platformState,
                 preHandleResult);
     }

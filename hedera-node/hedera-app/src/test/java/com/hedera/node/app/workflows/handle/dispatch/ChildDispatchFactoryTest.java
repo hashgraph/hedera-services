@@ -17,8 +17,8 @@
 package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactoryTest.asTxn;
-import static com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactoryTest.consensusTime;
+import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
+import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.consensusTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -261,7 +261,6 @@ class ChildDispatchFactoryTest {
                         HandleContext.TransactionCategory.SCHEDULED,
                         customizer,
                         reversingBehavior,
-                        recordListBuilder,
                         configuration,
                         savepointStack,
                         readableStoreFactory,
@@ -280,7 +279,6 @@ class ChildDispatchFactoryTest {
         given(readableStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(payerId))
                 .willReturn(Account.newBuilder().key(Key.DEFAULT).build());
-        given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
         given(parentDispatch.stack()).willReturn(savepointStack);
         given(savepointStack.peek()).willReturn(new FirstSavePoint(new WrappedHederaState(savepointStack), 3));
     }

@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.handle.steps;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactoryTest.asTxn;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -33,6 +32,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.Transaction;
@@ -68,7 +68,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HollowAccountCompletionsTest {
+public class HollowAccountCompletionsTest {
     @Mock(strictness = LENIENT)
     private Dispatch dispatch;
 
@@ -96,7 +96,7 @@ class HollowAccountCompletionsTest {
     @Mock
     private UserTxn userTxn;
 
-    private static final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
+    public static final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
     private static final AccountID payerId =
             AccountID.newBuilder().accountNum(1_234L).build();
     private static final CryptoTransferTransactionBody transferBody = CryptoTransferTransactionBody.newBuilder()
@@ -125,7 +125,6 @@ class HollowAccountCompletionsTest {
         when(dispatch.handleContext()).thenReturn(handleContext);
         when(dispatch.keyVerifier()).thenReturn(keyVerifier);
         when(handleContext.payer()).thenReturn(payerId);
-        when(userTxn.recordListBuilder()).thenReturn(recordListBuilder);
         when(userTxn.readableStoreFactory()).thenReturn(readableStoreFactory);
         when(userTxn.readableStoreFactory().getStore(ReadableAccountStore.class))
                 .thenReturn(accountStore);
@@ -234,7 +233,6 @@ class HollowAccountCompletionsTest {
         when(userTxn.readableStoreFactory().getStore(ReadableAccountStore.class))
                 .thenReturn(accountStore);
         when(userTxn.config()).thenReturn(DEFAULT_CONFIG);
-        when(userTxn.recordListBuilder()).thenReturn(recordListBuilder);
         when(userTxn.txnInfo()).thenReturn(txnInfo);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
@@ -265,5 +263,19 @@ class HollowAccountCompletionsTest {
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
 
         verify(handleContext, never()).dispatchPrecedingTransaction(any(), any(), any(), any());
+    }
+
+    public static TransactionBody asTxn(
+            final CryptoTransferTransactionBody body, final AccountID payerId, Instant consensusTimestamp) {
+        return TransactionBody.newBuilder()
+                .transactionID(TransactionID.newBuilder()
+                        .accountID(payerId)
+                        .transactionValidStart(Timestamp.newBuilder()
+                                .seconds(consensusTimestamp.getEpochSecond())
+                                .build())
+                        .build())
+                .memo("test memo")
+                .cryptoTransfer(body)
+                .build();
     }
 }

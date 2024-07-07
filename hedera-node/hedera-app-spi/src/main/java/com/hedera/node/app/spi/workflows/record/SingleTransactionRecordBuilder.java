@@ -20,10 +20,13 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
+import java.time.Instant;
 
 /**
  * This interface contains methods to read general properties a transaction record builder.
@@ -74,6 +77,10 @@ public interface SingleTransactionRecordBuilder {
     default boolean isInternalDispatch() {
         return !category().equals(USER);
     }
+    SingleTransactionRecordBuilder syncBodyIdFromRecordId();
+    SingleTransactionRecordBuilder consensusTimestamp(@NonNull final Instant now);
+    TransactionID transactionID();
+    SingleTransactionRecordBuilder transactionID(@NonNull final TransactionID transactionID);
 
     /**
      * Convenience method to package as {@link TransactionBody} as a {@link Transaction} .

@@ -44,18 +44,14 @@ public class AppThrottleAdviser implements ThrottleAdviser {
 
     private final NetworkUtilizationManager networkUtilizationManager;
     private final Instant consensusNow;
-    private final RecordListBuilder recordListBuilder;
     private final SavepointStackImpl stack;
 
-    @Inject
     public AppThrottleAdviser(
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final Instant consensusNow,
-            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final SavepointStackImpl stack) {
         this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
         this.consensusNow = requireNonNull(consensusNow);
-        this.recordListBuilder = requireNonNull(recordListBuilder);
         this.stack = requireNonNull(stack);
     }
 
@@ -68,7 +64,7 @@ public class AppThrottleAdviser implements ThrottleAdviser {
     @Override
     public boolean hasThrottleCapacityForChildTransactions() {
         var isAllowed = true;
-        final var childRecords = recordListBuilder.childRecordBuilders();
+        final var childRecords = stack.getChildRecords();
         @Nullable List<ThrottleUsageSnapshot> snapshotsIfNeeded = null;
 
         for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {
