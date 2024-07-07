@@ -35,7 +35,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Set;
 import java.util.function.Consumer;
-import javax.inject.Inject;
 
 public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final Configuration configuration;
@@ -45,6 +44,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final RecordListBuilder recordListBuilder;
     private final BlockRecordManager blockRecordManager;
     private final Instant consensusTime;
+    private final SavepointStackImpl stack;
 
     public TokenContextImpl(
             @NonNull final Configuration configuration,
@@ -55,6 +55,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final Instant consensusTime) {
         this.state = requireNonNull(state, "state must not be null");
+        this.stack = stack;
         requireNonNull(stack, "stack must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
         this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
@@ -101,8 +102,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
 
     @Override
     public boolean hasChildOrPrecedingRecords() {
-        return !recordListBuilder.childRecordBuilders().isEmpty()
-                || !recordListBuilder.precedingRecordBuilders().isEmpty();
+        return stack.peek().recordBuilders()
     }
 
     @Override

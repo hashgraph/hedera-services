@@ -51,7 +51,6 @@ import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.RecordDispatch;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.AbstractSavePoint;
@@ -125,7 +124,7 @@ public record UserTxn(
                 event,
                 platformTxn,
                 txnInfo,
-                new TokenContextImpl(config, state, storeMetricsService, stack, recordListBuilder, blockRecordManager, consensusNow),
+                new TokenContextImpl(config, state, storeMetricsService, stack, recordListBuilder, blockRecordManager, consensusNow, stack1),
                 stack,
                 preHandleResult,
                 readableStoreFactory,

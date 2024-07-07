@@ -104,5 +104,5 @@ public abstract class AbstractSavePoint {
 
     abstract boolean canAddRecord(SingleTransactionRecordBuilder recordBuilder);
 
-    abstract int numChildrenUsedSoFar();
+    public abstract int numChildrenUsedSoFar();
 }
