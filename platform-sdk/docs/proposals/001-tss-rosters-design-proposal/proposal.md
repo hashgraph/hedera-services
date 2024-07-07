@@ -47,6 +47,10 @@ The mechanism for doing so is detailed below.
 
 ### Architecture and/or Components
 
+###### Roster Lifecycle
+
+![](TSS%20Roster%20Lifecycle.drawio.svg)
+
 ###### Roster API
 
 The Hedera app is already responsible for managing the address book.
@@ -89,7 +93,7 @@ The `activeRosterHash` will be private to the platform and will not be settable 
 
 This indirection avoids moving data around in the merkle state which requires data to be copied into the block stream,
 which is computationally expensive.
-Another benefit of this approach is that adoption trigger becomes very simple (app sets the roster) with delineated
+Another benefit of this approach is that adoption trigger becomes simple (app sets the roster) with delineated
 responsibilities between the app and the platform.
 
 Some edge cases worth considering include:
@@ -134,9 +138,38 @@ void setCandidateRoster(@NonNull final Roster candidateRoster);
 The `config.txt` file will no longer be used for storing the address book in existing networks. It will only be used for
 the genesis of new networks.
 
+### Dependencies
+
+There are a few existing technical debts that the team has agreed to tackle as dependencies for this proposal.
+
+1. Source of Node identity: Nodes infer their node id from the internal hostname matching the address entry in the
+   address book. Two nodes on different corporate networks may have the same internal ip address, ex: 10.10.10.1. While
+   highly improbable, we’re lucky there hasn’t been a collision so far. The result would be that the software would try
+   to start both nodes on the same machine.
+   The resolution is that nodes should get their identity (Node Id) specified explicitly through the node.properties
+   file.
+
+
+2. Off-by-1 problem: Node IDs are 1 less than the node name. For example, the name of the node with node id 0
+   is `node1`. This is confusing. The node name is used as the alias in the cryptography and used to name the pem files
+   on disk. Node id 0 gets its cryptography through “node1” alias.
+   The resolution is to get rid of Node IDs and use Node names only.
+
+
+3. Decommissioning `config.txt`: This file does not have all the information that the Hedera Address Book needs (proxy
+   endpoints, and in the future Block Nodes). It has verbose information for the platform. Its format could be better,
+   and it stores the account number in the memo field. Upon the creation and adoption of rosters in the
+   state, `config.txt` is no longer useful.
+   The resolution is to offload this duty off the platform and allow Services to use whatever file format that suits
+   them.
+
 ### Data storage
 
-All the data related to Active and Candidate Roster will be stored in the State.
+Most of the data related to Active and Candidate Roster will be stored in the State.
+There will continue to be components used in creating the Roster - such as the private EC (elliptic curve) key, the RSA
+private key and the signing X509Certificate certificate - that will be stored on disk.
+However, it is up to Services to manage the lifecycle of these files, and not the platform.
+
 There will not be any other separate artifacts stored elsewhere (e.g., directly on disk.).
 The only artifact that will continue to be stored on disk separately from the State is the `config.txt`, which, as
 explained in *Bootstrapping Genesis for a brand-new network* section below, will only ever be used once during a genesis
@@ -153,6 +186,7 @@ exists on
 disk){
 
 loadStateFromDisk();
+
 }else{
 roster =
 
