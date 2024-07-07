@@ -172,7 +172,8 @@ public class FileGetContentsHandler extends FileQueryBase {
         return Map.of(
                 new FileID(shard, realm, filesConfig.feeSchedules()), genesisSchema::genesisFeeSchedules,
                 new FileID(shard, realm, filesConfig.exchangeRates()), genesisSchema::genesisExchangeRates,
-                new FileID(shard, realm, filesConfig.networkProperties()), genesisSchema::genesisNetworkProperties);
+                new FileID(shard, realm, filesConfig.networkProperties()), genesisSchema::genesisNetworkProperties,
+                new FileID(shard, realm, filesConfig.throttleDefinitions()), genesisSchema::genesisThrottleDefinitions);
     }
 
     private FeeData usageGivenType(final FileContents fileContents, final ResponseType type) {

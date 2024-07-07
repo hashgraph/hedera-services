@@ -56,9 +56,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BASIC_XFER;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFAULT_TX_EXPIRY;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.DEFERRED_XFER;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.NEW_SENDER_KEY;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RANDOM_KEY;
@@ -70,7 +68,6 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SOMEBODY;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TOKEN_A;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TWO_SIG_XFER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULED_TXN;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_DEFAULT;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_MINIMUM;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SCHEDULE_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_NEW_VALID_SIGNATURES;
@@ -109,19 +106,6 @@ public class ScheduleSignSpecs {
                 .when()
                 .then(submitModified(withSuccessivelyVariedBodyIds(), () -> scheduleSign(VALID_SCHEDULED_TXN)
                         .alsoSigningWith(SENDER)));
-    }
-
-    @HapiTest
-    @Order(24)
-    final Stream<DynamicTest> suiteCleanup() {
-        return defaultHapiSpec("suiteCleanup")
-                .given()
-                .when()
-                .then(fileUpdate(APP_PROPERTIES)
-                        .payingWith(ADDRESS_BOOK_CONTROL)
-                        .overridingProps(Map.of(
-                                LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, DEFAULT_TX_EXPIRY,
-                                SCHEDULING_WHITELIST, WHITELIST_DEFAULT)));
     }
 
     @HapiTest
@@ -762,9 +746,8 @@ public class ScheduleSignSpecs {
     @HapiTest
     @Order(18)
     final Stream<DynamicTest> signFailsDueToDeletedExpiration() {
-        final int FAST_EXPIRATION = 0;
         return propertyPreservingHapiSpec("SignFailsDueToDeletedExpiration")
-                .preserving(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, SCHEDULING_WHITELIST)
+                .preserving("ledger.schedule.txExpiryTimeSecs", SCHEDULING_WHITELIST)
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
                         sleepFor(SCHEDULE_EXPIRY_TIME_MS), // await any other scheduled expiring
@@ -772,7 +755,7 @@ public class ScheduleSignSpecs {
                         cryptoCreate(SENDER).balance(1L),
                         cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
                 .when(
-                        overriding(LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS, "" + FAST_EXPIRATION),
+                        overriding("ledger.schedule.txExpiryTimeSecs", "0"),
                         scheduleCreate(TWO_SIG_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
                                 .alsoSigningWith(SENDER),
                         getAccountBalance(RECEIVER).hasTinyBars(0L))

@@ -62,7 +62,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
-import static com.hedera.services.bdd.suites.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
@@ -166,7 +165,6 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsA
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
 import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
@@ -251,9 +249,6 @@ public class UtilVerbs {
                                             .build()))
                     .toList())
             .build();
-
-    private static final EnumSet<TargetNetworkType> HAPI_TEST_NETWORK_TYPES =
-            EnumSet.of(SUBPROCESS_NETWORK, EMBEDDED_NETWORK);
 
     public static final int DEFAULT_COLLISION_AVOIDANCE_FACTOR = 2;
 
@@ -428,14 +423,6 @@ public class UtilVerbs {
     /* Some fairly simple utility ops */
     public static InBlockingOrder blockingOrder(SpecOperation... ops) {
         return new InBlockingOrder(ops);
-    }
-
-    public static NetworkTypeFilterOp ifHapiTest(@NonNull final HapiSpecOperation... ops) {
-        return new NetworkTypeFilterOp(HAPI_TEST_NETWORK_TYPES, ops);
-    }
-
-    public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final SpecOperation... ops) {
-        return new NetworkTypeFilterOp(EnumSet.complementOf(HAPI_TEST_NETWORK_TYPES), ops);
     }
 
     public static NetworkTypeFilterOp ifNotEmbeddedTest(@NonNull final HapiSpecOperation... ops) {
@@ -858,6 +845,15 @@ public class UtilVerbs {
 
     public static HapiSpecOperation overriding(String property, String value) {
         return overridingAllOf(Map.of(property, value));
+    }
+
+    /**
+     * Returns an operation that restores the given property to its startup value on the target network.
+     * @param property the property to restore
+     * @return the operation that restores the property
+     */
+    public static SpecOperation restoreDefault(@NonNull final String property) {
+        return doWithStartupConfig(property, value -> overriding(property, value));
     }
 
     /**

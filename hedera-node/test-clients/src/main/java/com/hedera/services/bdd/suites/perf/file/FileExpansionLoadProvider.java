@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.suites.perf.file;
 
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
-import static com.hedera.services.bdd.spec.HapiSpecSetup.getDefaultNodeProps;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
 import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
@@ -76,8 +75,6 @@ import org.junit.jupiter.api.Tag;
 public class FileExpansionLoadProvider extends HapiSuite {
     private static final Logger log = LogManager.getLogger(FileExpansionLoadProvider.class);
 
-    private static final String MAX_FILE_SIZE_KB_PROP = "files.maxSizeKb";
-    private static final String DEFAULT_MAX_FILE_SIZE_KB = getDefaultNodeProps().get(MAX_FILE_SIZE_KB_PROP);
     /* Useful for manipulating the # of FileCreates vs # of FileAppends */
     private static final String OVERRIDE_MAX_FILE_SIZE_KB = "512";
 
@@ -101,15 +98,16 @@ public class FileExpansionLoadProvider extends HapiSuite {
     }
 
     final Stream<DynamicTest> runFileExpansions() {
-        return HapiSpec.defaultHapiSpec("RunFileExpansions")
+        return HapiSpec.propertyPreservingHapiSpec("RunFileExpansions")
+                .preserving("files.maxSizeKb")
                 .given(
-                        overriding(MAX_FILE_SIZE_KB_PROP, OVERRIDE_MAX_FILE_SIZE_KB),
+                        overriding("files.maxSizeKb", OVERRIDE_MAX_FILE_SIZE_KB),
                         stdMgmtOf(duration, unit, maxOpsPerSec),
                         mgmtOfIntProp(numActiveTargets, "numActiveTargets"))
                 .when(runWithProvider(fileExpansionsFactory())
                         .lasting(duration::get, unit::get)
                         .maxOpsPerSec(maxOpsPerSec::get))
-                .then(overriding(MAX_FILE_SIZE_KB_PROP, DEFAULT_MAX_FILE_SIZE_KB));
+                .then();
     }
 
     private Function<HapiSpec, OpProvider> fileExpansionsFactory() {

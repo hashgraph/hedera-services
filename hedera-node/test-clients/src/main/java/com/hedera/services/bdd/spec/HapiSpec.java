@@ -414,6 +414,14 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     /**
+     * Returns the best-effort representation of the properties in effect on startup of the target network.
+     * @return the startup properties
+     */
+    public @NonNull HapiPropertySource startupProperties() {
+        return targetNetworkOrThrow().startupProperties();
+    }
+
+    /**
      * Returns the approximate consensus time of the network targeted by this spec.
      *
      * @return the approximate consensus time

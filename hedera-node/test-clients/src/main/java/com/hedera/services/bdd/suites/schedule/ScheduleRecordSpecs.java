@@ -37,7 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restoreDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
@@ -60,8 +60,6 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SIMPLE_UPDATE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SIMPLE_XFER_SCHEDULE;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.STAKING_FEES_NODE_REWARD_PERCENTAGE;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.STAKING_FEES_STAKING_REWARD_PERCENTAGE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TRIGGER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TWO_SIG_XFER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.UNWILLING_PAYER;
@@ -73,13 +71,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID_FIELD_NOT_ALLOWED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -132,9 +128,7 @@ public class ScheduleRecordSpecs {
                                 .via("canonicalContractCall")
                                 .adminKey(OTHER_PAYER))
                 .then(
-                        overriding(
-                                SCHEDULING_WHITELIST,
-                                HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST)),
+                        restoreDefault("scheduling.whitelist"),
                         validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
                         validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
                         validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0),
@@ -188,9 +182,6 @@ public class ScheduleRecordSpecs {
         // validation here is checking fees and staking, not message creation on the topic...
         return defaultHapiSpec("CanScheduleChunkedMessages")
                 .given(
-                        overridingAllOf(Map.of(
-                                STAKING_FEES_NODE_REWARD_PERCENTAGE, "10",
-                                STAKING_FEES_STAKING_REWARD_PERCENTAGE, "10")),
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
                         cryptoCreate(PAYING_SENDER).balance(ONE_HUNDRED_HBARS),
                         createTopic(ofGeneralInterest))
@@ -245,12 +236,7 @@ public class ScheduleRecordSpecs {
                                                 spec.setup().nodeRewardAccount(),
                                                 spec.registry().getAccountID(PAYING_SENDER)))))
                                 .logged(),
-                        getTopicInfo(ofGeneralInterest).logged().hasSeqNo(2L),
-                        overridingAllOf(Map.of(
-                                STAKING_FEES_NODE_REWARD_PERCENTAGE,
-                                HapiSpecSetup.getDefaultNodeProps().get(STAKING_FEES_NODE_REWARD_PERCENTAGE),
-                                STAKING_FEES_STAKING_REWARD_PERCENTAGE,
-                                HapiSpecSetup.getDefaultNodeProps().get(STAKING_FEES_STAKING_REWARD_PERCENTAGE))));
+                        getTopicInfo(ofGeneralInterest).logged().hasSeqNo(2L));
     }
 
     @HapiTest

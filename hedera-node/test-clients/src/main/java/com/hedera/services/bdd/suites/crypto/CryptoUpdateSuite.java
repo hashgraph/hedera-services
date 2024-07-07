@@ -42,6 +42,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -69,7 +70,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyLabels;
@@ -78,7 +78,6 @@ import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -88,9 +87,6 @@ import org.junit.jupiter.api.Tag;
 @Tag(CRYPTO)
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 public class CryptoUpdateSuite {
-    private static final long DEFAULT_MAX_LIFETIME =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
-
     private static final String TEST_ACCOUNT = "testAccount";
     private static final String TARGET_ACCOUNT = "complexKeyAccount";
     private static final String ACCOUNT_ALICE = "alice";
@@ -335,12 +331,12 @@ public class CryptoUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateFailsWithOverlyLongLifetime() {
-        final var smallBuffer = 12_345L;
-        final var excessiveExpiry = DEFAULT_MAX_LIFETIME + Instant.now().getEpochSecond() + smallBuffer;
         return defaultHapiSpec("UpdateFailsWithOverlyLongLifetime")
                 .given(cryptoCreate(TARGET_ACCOUNT))
                 .when()
-                .then(cryptoUpdate(TARGET_ACCOUNT).expiring(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME));
+                .then(doWithStartupConfigNow("entities.maxLifetime", (value, now) -> cryptoUpdate(TARGET_ACCOUNT)
+                        .expiring(now.getEpochSecond() + Long.parseLong(value) + 12345L)
+                        .hasKnownStatus(INVALID_EXPIRATION_TIME)));
     }
 
     @HapiTest

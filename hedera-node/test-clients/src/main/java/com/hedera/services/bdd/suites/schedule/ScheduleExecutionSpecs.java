@@ -28,8 +28,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.randomUppercase;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.burnToken;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
@@ -51,43 +49,29 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithInvalidAmounts;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeAbort;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordFeeAmount;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restoreDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.FREEZE_ADMIN;
-import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
-import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SOFTWARE_UPDATE_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_DELETE_ADMIN;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
-import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.poeticUpgradeLoc;
 import static com.hedera.services.bdd.suites.freeze.UpgradeSuite.standardUpdateFile;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ACCOUNT;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.A_SCHEDULE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.A_TOKEN;
@@ -128,11 +112,8 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WRONG_RECORD
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WRONG_SCHEDULE_ID;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WRONG_TRANSACTION_VALID_START;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WRONG_TRANSFER_LIST;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.addAllToWhitelist;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.getPoeticUpgradeHash;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.scheduledVersionOf;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.transferListCheck;
-import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
@@ -165,25 +146,21 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
+import static java.lang.Integer.parseInt;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.config.data.ConsensusConfig;
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -210,13 +187,6 @@ public class ScheduleExecutionSpecs {
     private final Random r = new Random(882654L);
 
     @HapiTest
-    @Order(1)
-    final Stream<DynamicTest> suiteSetup() {
-        // Managing whitelist for these is error-prone, so just whitelist everything by default.
-        return defaultHapiSpec("suiteSetup").given().when().then(addAllToWhitelist());
-    }
-
-    @HapiTest
     @Order(18)
     final Stream<DynamicTest> scheduledBurnFailsWithInvalidTxBody() {
         return defaultHapiSpec("ScheduledBurnFailsWithInvalidTxBody")
@@ -230,19 +200,10 @@ public class ScheduleExecutionSpecs {
                                 .treasury(TREASURY)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0))
-                .when(ifHapiTest(scheduleCreate(A_SCHEDULE, invalidBurnToken(A_TOKEN, List.of(1L, 2L), 123))
+                .when(scheduleCreate(A_SCHEDULE, invalidBurnToken(A_TOKEN, List.of(1L, 2L), 123))
                         .designatingPayer(SCHEDULE_PAYER)
-                        .hasKnownStatus(INVALID_TRANSACTION_BODY)))
-                .then(ifNotHapiTest(
-                        scheduleCreate(A_SCHEDULE, invalidBurnToken(A_TOKEN, List.of(1L, 2L), 123))
-                                .designatingPayer(SCHEDULE_PAYER)
-                                .via(FAILING_TXN),
-                        scheduleSign(A_SCHEDULE)
-                                .alsoSigningWith(SUPPLY_KEY, SCHEDULE_PAYER, TREASURY)
-                                .hasKnownStatus(SUCCESS),
-                        getTxnRecord(FAILING_TXN)
-                                .scheduled()
-                                .hasPriority(recordWith().status(INVALID_TRANSACTION_BODY))));
+                        .hasKnownStatus(INVALID_TRANSACTION_BODY))
+                .then();
     }
 
     @HapiTest
@@ -259,24 +220,13 @@ public class ScheduleExecutionSpecs {
                                 .treasury(TREASURY)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0))
-                .when(ifNotHapiTest(
+                .when()
+                .then(
                         scheduleCreate(
                                         A_SCHEDULE,
                                         invalidMintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("m1")), 123))
-                                .designatingPayer(SCHEDULE_PAYER)
-                                .via(FAILING_TXN),
-                        scheduleSign(A_SCHEDULE)
-                                .alsoSigningWith(SUPPLY_KEY, SCHEDULE_PAYER, TREASURY)
-                                .hasKnownStatus(SUCCESS),
-                        getTxnRecord(FAILING_TXN)
-                                .scheduled()
-                                .hasPriority(recordWith().status(INVALID_TRANSACTION_BODY))))
-                .then(
-                        ifHapiTest(scheduleCreate(
-                                        A_SCHEDULE,
-                                        invalidMintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("m1")), 123))
                                 .hasKnownStatus(INVALID_TRANSACTION_BODY)
-                                .designatingPayer(SCHEDULE_PAYER)),
+                                .designatingPayer(SCHEDULE_PAYER),
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
@@ -500,20 +450,11 @@ public class ScheduleExecutionSpecs {
                                 .treasury(TREASURY)
                                 .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                                 .initialSupply(0))
-                .when(ifNotHapiTest(
+                .when()
+                .then(
                         scheduleCreate(A_SCHEDULE, burnToken(A_TOKEN, -123L))
                                 .designatingPayer(SCHEDULE_PAYER)
-                                .via(FAILING_TXN),
-                        scheduleSign(A_SCHEDULE)
-                                .alsoSigningWith(SUPPLY_KEY, SCHEDULE_PAYER, TREASURY)
-                                .hasKnownStatus(SUCCESS),
-                        getTxnRecord(FAILING_TXN)
-                                .scheduled()
-                                .hasPriority(recordWith().status(INVALID_TOKEN_BURN_AMOUNT))))
-                .then(
-                        ifHapiTest(scheduleCreate(A_SCHEDULE, burnToken(A_TOKEN, -123L))
-                                .designatingPayer(SCHEDULE_PAYER)
-                                .hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT)),
+                                .hasKnownStatus(INVALID_TOKEN_BURN_AMOUNT),
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
@@ -583,20 +524,11 @@ public class ScheduleExecutionSpecs {
                         scheduleCreate(A_SCHEDULE, mintToken(A_TOKEN, 0))
                                 .designatingPayer(SCHEDULE_PAYER)
                                 .via(zeroAmountTxn))
-                .when(ifNotHapiTest(
+                .when()
+                .then(
                         scheduleCreate(A_SCHEDULE, mintToken(A_TOKEN, -1))
                                 .designatingPayer(SCHEDULE_PAYER)
-                                .via(FAILING_TXN),
-                        scheduleSign(A_SCHEDULE)
-                                .alsoSigningWith(SUPPLY_KEY, SCHEDULE_PAYER, TREASURY)
-                                .hasKnownStatus(SUCCESS),
-                        getTxnRecord(FAILING_TXN)
-                                .scheduled()
-                                .hasPriority(recordWith().status(INVALID_TOKEN_MINT_AMOUNT))))
-                .then(
-                        ifHapiTest(scheduleCreate(A_SCHEDULE, mintToken(A_TOKEN, -1))
-                                .designatingPayer(SCHEDULE_PAYER)
-                                .hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT)),
+                                .hasKnownStatus(INVALID_TOKEN_MINT_AMOUNT),
                         getTokenInfo(A_TOKEN).hasTotalSupply(101));
     }
 
@@ -1129,29 +1061,15 @@ public class ScheduleExecutionSpecs {
                                 .designatingPayer(schedulePayer),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set),
-                        ifNotHapiTest(
-                                scheduleCreate(
-                                                invalidSchedule,
-                                                cryptoTransfer(moving(1, xToken).between(xTreasury, xCivilian))
-                                                        .breakingNetZeroInvariant())
-                                        .via(failedTx)
-                                        .alsoSigningWith(xTreasury, schedulePayer)
-                                        .designatingPayer(schedulePayer),
-                                getTxnRecord(failedTx)
-                                        .scheduled()
-                                        .hasPriority(recordWith().status(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN))
-                                        .revealingDebitsTo(failureFeesObs::set),
-                                assertionsHold((spec, opLog) ->
-                                        assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0))))
+                        getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set))
                 .then(
-                        ifHapiTest(scheduleCreate(
+                        scheduleCreate(
                                         invalidSchedule,
                                         cryptoTransfer(moving(1, xToken).between(xTreasury, xCivilian))
                                                 .breakingNetZeroInvariant())
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer)
-                                .hasKnownStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN)),
+                                .hasKnownStatus(TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xCivilian).hasTokenBalance(xToken, 1));
     }
@@ -1194,29 +1112,15 @@ public class ScheduleExecutionSpecs {
                         getAccountBalance(xTreasury).hasTokenBalance(yToken, 1),
                         getAccountBalance(yTreasury).hasTokenBalance(yToken, 100),
                         getAccountBalance(yTreasury).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set),
-                        ifNotHapiTest(
-                                scheduleCreate(
-                                                invalidSchedule,
-                                                cryptoTransfer(moving(1, xToken).between(xTreasury, yTreasury))
-                                                        .appendingTokenFromTo(xToken, xTreasury, yTreasury, 1))
-                                        .via(failedTx)
-                                        .alsoSigningWith(xTreasury, schedulePayer)
-                                        .designatingPayer(schedulePayer),
-                                getTxnRecord(failedTx)
-                                        .scheduled()
-                                        .hasPriority(recordWith().status(TOKEN_ID_REPEATED_IN_TOKEN_LIST))
-                                        .revealingDebitsTo(failureFeesObs::set),
-                                assertionsHold((spec, opLog) ->
-                                        assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0))))
+                        getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set))
                 .then(
-                        ifHapiTest(scheduleCreate(
+                        scheduleCreate(
                                         invalidSchedule,
                                         cryptoTransfer(moving(1, xToken).between(xTreasury, yTreasury))
                                                 .appendingTokenFromTo(xToken, xTreasury, yTreasury, 1))
                                 .alsoSigningWith(xTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer)
-                                .hasKnownStatus(TOKEN_ID_REPEATED_IN_TOKEN_LIST)),
+                                .hasKnownStatus(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xTreasury).hasTokenBalance(yToken, 1),
                         getAccountBalance(yTreasury).hasTokenBalance(yToken, 100),
@@ -1263,30 +1167,15 @@ public class ScheduleExecutionSpecs {
                         getAccountBalance(xTreasury).hasTokenBalance(yToken, 1),
                         getAccountBalance(yTreasury).hasTokenBalance(yToken, 100),
                         getAccountBalance(yTreasury).hasTokenBalance(xToken, 1),
-                        getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set),
-                        ifNotHapiTest(
-                                scheduleCreate(
-                                                invalidSchedule,
-                                                cryptoTransfer(moving(2, xToken)
-                                                                .distributing(xTreasury, yTreasury, xyCivilian))
-                                                        .withEmptyTokenTransfers(yToken))
-                                        .via(failedTx)
-                                        .alsoSigningWith(xTreasury, yTreasury, schedulePayer)
-                                        .designatingPayer(schedulePayer),
-                                getTxnRecord(failedTx)
-                                        .scheduled()
-                                        .hasPriority(recordWith().status(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS))
-                                        .revealingDebitsTo(failureFeesObs::set),
-                                assertionsHold((spec, opLog) ->
-                                        assertBasicallyIdentical(successFeesObs.get(), failureFeesObs.get(), 1.0))))
+                        getTxnRecord(successTx).scheduled().logged().revealingDebitsTo(successFeesObs::set))
                 .then(
-                        ifHapiTest(scheduleCreate(
+                        scheduleCreate(
                                         invalidSchedule,
                                         cryptoTransfer(moving(2, xToken).distributing(xTreasury, yTreasury, xyCivilian))
                                                 .withEmptyTokenTransfers(yToken))
                                 .alsoSigningWith(xTreasury, yTreasury, schedulePayer)
                                 .designatingPayer(schedulePayer)
-                                .hasKnownStatus(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS)),
+                                .hasKnownStatus(EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS),
                         getAccountBalance(xTreasury).hasTokenBalance(xToken, 100),
                         getAccountBalance(xTreasury).hasTokenBalance(yToken, 1),
                         getAccountBalance(yTreasury).hasTokenBalance(yToken, 100),
@@ -1304,14 +1193,15 @@ public class ScheduleExecutionSpecs {
         String failedTx = "bad";
         AtomicReference<Map<AccountID, Long>> successFeesObs = new AtomicReference<>();
         AtomicReference<Map<AccountID, Long>> failureFeesObs = new AtomicReference<>();
-        var maxValidLen = HapiSpecSetup.getDefaultNodeProps().getInteger("consensus.message.maxBytesAllowed");
 
         return defaultHapiSpec("ScheduledSubmitFailedWithMsgSizeTooLargeStillPaysServiceFeeButHasNoImpact")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
                         createTopic(immutableTopic),
                         cryptoCreate(schedulePayer))
-                .when(
+                .when(doSeveralWithStartupConfig("consensus.message.maxBytesAllowed", value -> {
+                    final var maxValidLen = parseInt(value);
+                    return new SpecOperation[] {
                         scheduleCreate(
                                         validSchedule,
                                         submitMessageTo(immutableTopic).message(randomUppercase(maxValidLen)))
@@ -1325,7 +1215,9 @@ public class ScheduleExecutionSpecs {
                                         submitMessageTo(immutableTopic).message(randomUppercase(maxValidLen + 1)))
                                 .designatingPayer(schedulePayer)
                                 .via(failedTx)
-                                .signedBy(DEFAULT_PAYER, schedulePayer))
+                                .signedBy(DEFAULT_PAYER, schedulePayer)
+                    };
+                }))
                 .then(
                         getTopicInfo(immutableTopic).hasSeqNo(1L),
                         getTxnRecord(failedTx)
@@ -1939,34 +1831,14 @@ public class ScheduleExecutionSpecs {
                         cryptoCreate(PAYING_ACCOUNT).balance(payingAccountBalance),
                         cryptoCreate(SENDER).balance(senderBalance),
                         cryptoCreate(RECEIVER).balance(noBalance))
-                .when(ifNotHapiTest(
+                .when()
+                .then(
                         scheduleCreate(
                                         FAILED_XFER,
                                         cryptoTransfer(
                                                 tinyBarsFromToWithInvalidAmounts(SENDER, RECEIVER, transferAmount)))
                                 .designatingPayer(PAYING_ACCOUNT)
-                                .via(CREATE_TXN),
-                        scheduleSign(FAILED_XFER)
-                                .alsoSigningWith(SENDER, PAYING_ACCOUNT)
-                                .via(SIGN_TXN)
-                                .hasKnownStatus(SUCCESS),
-                        withOpContext((spec, opLog) -> {
-                            var triggeredTx = getTxnRecord(CREATE_TXN).scheduled();
-
-                            allRunFor(spec, triggeredTx);
-
-                            Assertions.assertEquals(
-                                    INVALID_ACCOUNT_AMOUNTS,
-                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_MUST_NOT_SUCCEED);
-                        })))
-                .then(
-                        ifHapiTest(scheduleCreate(
-                                        FAILED_XFER,
-                                        cryptoTransfer(
-                                                tinyBarsFromToWithInvalidAmounts(SENDER, RECEIVER, transferAmount)))
-                                .designatingPayer(PAYING_ACCOUNT)
-                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS)),
+                                .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS),
                         getAccountBalance(SENDER).hasTinyBars(senderBalance),
                         getAccountBalance(RECEIVER).hasTinyBars(noBalance));
     }
@@ -2175,119 +2047,6 @@ public class ScheduleExecutionSpecs {
                 }));
     }
 
-    // (FUTURE) Consider this as a test against a standalone network?
-    final Stream<DynamicTest> scheduledFreezeWorksAsExpected() {
-        final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
-
-        return defaultHapiSpec("ScheduledFreezeWorksAsExpected")
-                .given(
-                        overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
-                        cryptoCreate(PAYING_ACCOUNT),
-                        overriding(SCHEDULING_WHITELIST, "Freeze"),
-                        fileUpdate(standardUpdateFile)
-                                .signedBy(FREEZE_ADMIN)
-                                .path(poeticUpgradeLoc)
-                                .payingWith(FREEZE_ADMIN),
-                        scheduleCreate(
-                                        A_SCHEDULE,
-                                        prepareUpgrade()
-                                                .withUpdateFile(standardUpdateFile)
-                                                .havingHash(poeticUpgradeHash))
-                                .withEntityMemo(randomUppercase(100))
-                                .designatingPayer(GENESIS)
-                                .payingWith(PAYING_ACCOUNT)
-                                .via(SUCCESS_TXN))
-                .when(scheduleSign(A_SCHEDULE)
-                        .alsoSigningWith(GENESIS)
-                        .payingWith(PAYING_ACCOUNT)
-                        .via(SIGN_TX)
-                        .hasKnownStatus(SUCCESS))
-                .then(
-                        freezeAbort().payingWith(GENESIS),
-                        overriding(SCHEDULING_WHITELIST, WHITELIST_DEFAULT),
-                        getScheduleInfo(A_SCHEDULE).isExecuted(),
-                        withOpContext((spec, opLog) -> {
-                            var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
-                            allRunFor(spec, triggeredTx);
-
-                            Assertions.assertEquals(
-                                    SUCCESS,
-                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_MUST_SUCCEED);
-                        }));
-    }
-
-    // (FUTURE) Consider this as a test against a standalone network?
-    final Stream<DynamicTest> scheduledFreezeWithUnauthorizedPayerFails(boolean isLongTermEnabled) {
-        final byte[] poeticUpgradeHash = getPoeticUpgradeHash();
-
-        if (isLongTermEnabled) {
-            return defaultHapiSpec("ScheduledFreezeWithUnauthorizedPayerFails")
-                    .given(
-                            overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
-                            cryptoCreate(PAYING_ACCOUNT),
-                            cryptoCreate(PAYING_ACCOUNT_2),
-                            overriding(SCHEDULING_WHITELIST, "Freeze"),
-                            fileUpdate(standardUpdateFile)
-                                    .signedBy(FREEZE_ADMIN)
-                                    .path(poeticUpgradeLoc)
-                                    .payingWith(FREEZE_ADMIN))
-                    .when()
-                    .then(
-                            scheduleCreate(
-                                            A_SCHEDULE,
-                                            prepareUpgrade()
-                                                    .withUpdateFile(standardUpdateFile)
-                                                    .havingHash(poeticUpgradeHash))
-                                    .withEntityMemo(randomUppercase(100))
-                                    .designatingPayer(PAYING_ACCOUNT_2)
-                                    .payingWith(PAYING_ACCOUNT)
-                                    // we are always busy with long term enabled in this case
-                                    // because
-                                    // there are no throttles for freeze and we deeply check with
-                                    // long term enabled
-                                    .hasPrecheck(BUSY),
-                            overriding(SCHEDULING_WHITELIST, WHITELIST_DEFAULT));
-        }
-        return defaultHapiSpec("ScheduledFreezeWithUnauthorizedPayerFails")
-                .given(
-                        overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
-                        cryptoCreate(PAYING_ACCOUNT),
-                        cryptoCreate(PAYING_ACCOUNT_2),
-                        overriding(SCHEDULING_WHITELIST, "Freeze"),
-                        fileUpdate(standardUpdateFile)
-                                .signedBy(FREEZE_ADMIN)
-                                .path(poeticUpgradeLoc)
-                                .payingWith(FREEZE_ADMIN),
-                        scheduleCreate(
-                                        A_SCHEDULE,
-                                        prepareUpgrade()
-                                                .withUpdateFile(standardUpdateFile)
-                                                .havingHash(poeticUpgradeHash))
-                                .withEntityMemo(randomUppercase(100))
-                                .designatingPayer(PAYING_ACCOUNT_2)
-                                .payingWith(PAYING_ACCOUNT)
-                                .via(SUCCESS_TXN))
-                .when(scheduleSign(A_SCHEDULE)
-                        .payingWith(PAYING_ACCOUNT)
-                        .alsoSigningWith(PAYING_ACCOUNT_2)
-                        .via(SIGN_TX)
-                        .hasKnownStatus(SUCCESS))
-                .then(
-                        freezeAbort().payingWith(GENESIS),
-                        overriding(SCHEDULING_WHITELIST, WHITELIST_DEFAULT),
-                        getScheduleInfo(A_SCHEDULE).isExecuted(),
-                        withOpContext((spec, opLog) -> {
-                            var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
-                            allRunFor(spec, triggeredTx);
-
-                            Assertions.assertEquals(
-                                    NOT_SUPPORTED,
-                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    "Scheduled transaction be NOT_SUPPORTED!");
-                        }));
-    }
-
     @HapiTest
     @Order(26)
     final Stream<DynamicTest> scheduledPermissionedFileUpdateWorksAsExpected() {
@@ -2308,7 +2067,7 @@ public class ScheduleExecutionSpecs {
                         .via(SIGN_TX)
                         .hasKnownStatus(SUCCESS))
                 .then(
-                        overriding(SCHEDULING_WHITELIST, WHITELIST_DEFAULT),
+                        restoreDefault("scheduling.whitelist"),
                         getScheduleInfo(A_SCHEDULE).isExecuted(),
                         withOpContext((spec, opLog) -> {
                             var triggeredTx = getTxnRecord(SUCCESS_TXN).scheduled();
@@ -2324,7 +2083,6 @@ public class ScheduleExecutionSpecs {
     @HapiTest
     @Order(25)
     final Stream<DynamicTest> scheduledPermissionedFileUpdateUnauthorizedPayerFails() {
-
         return defaultHapiSpec("ScheduledPermissionedFileUpdateUnauthorizedPayerFails")
                 .given(
                         overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
@@ -2476,110 +2234,6 @@ public class ScheduleExecutionSpecs {
                                     NOT_SUPPORTED,
                                     triggeredTx.getResponseRecord().getReceipt().getStatus(),
                                     "Scheduled transaction be NOT_SUPPORTED!");
-                        }));
-    }
-
-    // @todo('FUTURE') Work out why we get `PLATFORM_TRANSACTION_NOT_CREATED` instead of `OK`
-    //      for UncheckedSubmit...  This appears to come from `blockingOrder` call in `when` clause
-    final Stream<DynamicTest> congestionPricingAffectsImmediateScheduleExecution() {
-        var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
-        var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
-        var contract = "Multipurpose";
-        final var minCongestionPeriod = "fees.minCongestionPeriod";
-        final var percentCongestionMultiplier = "fees.percentCongestionMultipliers";
-
-        AtomicLong normalPrice = new AtomicLong();
-        final var largeFee = ONE_HUNDRED_HBARS;
-
-        return defaultHapiSpec("CongestionPricingAffectsImmediateScheduleExecution")
-                .given(
-                        overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
-                        cryptoCreate(ACCOUNT).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
-                        uploadInitCode(contract),
-                        contractCreate(contract),
-                        scheduleCreate(
-                                        "cheapSchedule",
-                                        contractCall(contract).fee(largeFee).sending(ONE_HBAR))
-                                .withEntityMemo(randomUppercase(100))
-                                .designatingPayer(ACCOUNT)
-                                .payingWith(GENESIS)
-                                .via("cheapCall"),
-                        scheduleSign("cheapSchedule")
-                                .alsoSigningWith(ACCOUNT)
-                                .fee(largeFee)
-                                .payingWith(GENESIS)
-                                .hasKnownStatus(SUCCESS),
-                        getTxnRecord("cheapCall").scheduled().providingFeeTo(normalFee -> {
-                            log.info("Normal fee is {}", normalFee);
-                            normalPrice.set(normalFee);
-                        }),
-                        scheduleCreate(
-                                        A_SCHEDULE,
-                                        contractCall(contract).fee(largeFee).sending(ONE_HBAR))
-                                .withEntityMemo(randomUppercase(100))
-                                .designatingPayer(ACCOUNT)
-                                .payingWith(GENESIS)
-                                .via("pricyCall"),
-                        fileUpdate(APP_PROPERTIES)
-                                .fee(largeFee)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(Map.of(percentCongestionMultiplier, "1,7x", minCongestionPeriod, "1")),
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(artificialLimits.toByteArray()))
-                .when(
-                        blockingOrder(IntStream.range(0, 10)
-                                .mapToObj(i -> new HapiSpecOperation[] {
-                                    usableTxnIdNamed("uncheckedTxn" + i).payerId(ACCOUNT),
-                                    uncheckedSubmit(contractCall(contract)
-                                                    .signedBy(ACCOUNT)
-                                                    .fee(largeFee)
-                                                    .sending(ONE_HBAR)
-                                                    .txnId("uncheckedTxn" + i))
-                                            .payingWith(GENESIS),
-                                    sleepFor(125)
-                                })
-                                .flatMap(Arrays::stream)
-                                .toArray(HapiSpecOperation[]::new)),
-                        scheduleSign(A_SCHEDULE)
-                                .alsoSigningWith(ACCOUNT)
-                                .fee(largeFee)
-                                .payingWith(GENESIS)
-                                .hasKnownStatus(SUCCESS))
-                .then(
-                        fileUpdate(THROTTLE_DEFS)
-                                .fee(largeFee)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(defaultThrottles.toByteArray()),
-                        fileUpdate(APP_PROPERTIES)
-                                .fee(largeFee)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(Map.of(
-                                        percentCongestionMultiplier,
-                                        HapiSpecSetup.getDefaultNodeProps().get(percentCongestionMultiplier),
-                                        minCongestionPeriod,
-                                        HapiSpecSetup.getDefaultNodeProps().get(minCongestionPeriod),
-                                        SCHEDULING_WHITELIST,
-                                        WHITELIST_DEFAULT)),
-                        cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(GENESIS, FUNDING, 1))
-                                .payingWith(GENESIS),
-                        getScheduleInfo(A_SCHEDULE).isExecuted(),
-                        withOpContext((spec, opLog) -> {
-                            var triggeredTx = getTxnRecord("pricyCall").scheduled();
-                            allRunFor(spec, triggeredTx);
-
-                            Assertions.assertEquals(
-                                    SUCCESS,
-                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    SCHEDULED_TRANSACTION_MUST_SUCCEED);
-
-                            var sevenXPrice = triggeredTx.getResponseRecord().getTransactionFee();
-
-                            Assertions.assertEquals(
-                                    7.0,
-                                    (1.0 * sevenXPrice) / normalPrice.get(),
-                                    0.1,
-                                    "~7x multiplier should be in affect!");
                         }));
     }
 

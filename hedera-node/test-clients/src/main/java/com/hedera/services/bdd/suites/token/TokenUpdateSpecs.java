@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -43,6 +44,8 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fix
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfigNow;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
@@ -77,10 +80,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static java.lang.Long.parseLong;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -102,13 +106,9 @@ public class TokenUpdateSpecs {
     private static final String INVALID_TREASURY = "invalidTreasury";
 
     private static String TOKEN_TREASURY = "treasury";
-    private static final long defaultMaxLifetime =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
     @HapiTest
     final Stream<DynamicTest> canUpdateExpiryOnlyOpWithoutAdminKey() {
-        final var smallBuffer = 12_345L;
-        final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
         String originalMemo = "First things first";
         String saltedName = salted("primary");
         final var civilian = "civilian";
@@ -141,20 +141,21 @@ public class TokenUpdateSpecs {
                                 .pauseKey("pauseKey")
                                 .payingWith(civilian))
                 .when()
-                .then(tokenUpdate("primary").expiry(okExpiry).signedBy(GENESIS));
+                .then(doWithStartupConfigNow("entities.maxLifetime", (value, now) -> tokenUpdate("primary")
+                        .expiry(parseLong(value) + now.getEpochSecond() - 12345)));
     }
 
     @HapiTest
     final Stream<DynamicTest> validatesNewExpiry() {
-        final var smallBuffer = 12_345L;
-        final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
-        final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
-        return defaultHapiSpec("ValidatesNewExpiry")
-                .given(tokenCreate("tbu"))
-                .when()
-                .then(
-                        tokenUpdate("tbu").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
-                        tokenUpdate("tbu").expiry(okExpiry));
+        return hapiTest(tokenCreate("tbu"), doSeveralWithStartupConfigNow("entities.maxLifetime", (value, now) -> {
+            final var maxLifetime = Long.parseLong(value);
+            final var okExpiry = now.getEpochSecond() + maxLifetime - 12_345L;
+            final var excessiveExpiry = now.getEpochSecond() + maxLifetime + 12_345L;
+            return new SpecOperation[] {
+                tokenUpdate("tbu").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
+                tokenUpdate("tbu").expiry(okExpiry)
+            };
+        }));
     }
 
     @HapiTest

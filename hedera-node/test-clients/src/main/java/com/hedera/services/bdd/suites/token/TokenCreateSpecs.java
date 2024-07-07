@@ -52,6 +52,7 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fra
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -103,6 +104,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.hedera.node.config.data.TokensConfig;
+import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -111,7 +113,6 @@ import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.time.Instant;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.stream.Collectors;
@@ -146,9 +147,6 @@ public class TokenCreateSpecs {
     private static final String B_TOKEN = "TokenB";
     private static final String FIRST_USER = "Client1";
     private static final String SENTINEL_VALUE = "0.0.0";
-
-    private static final long defaultMaxLifetime =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
     @HapiTest
     final Stream<DynamicTest> getInfoIdVariantsTreatedAsExpected() {
@@ -321,15 +319,15 @@ public class TokenCreateSpecs {
 
     @HapiTest
     final Stream<DynamicTest> cannotCreateWithExcessiveLifetime() {
-        final var smallBuffer = 12_345L;
-        final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
-        final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
-        return defaultHapiSpec("CannotCreateWithExcessiveLifetime", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given()
-                .when()
-                .then(
-                        tokenCreate("neverToBe").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
-                        tokenCreate("neverToBe").expiry(okExpiry));
+        return hapiTest(doSeveralWithStartupConfigNow("entities.maxLifetime", (value, now) -> {
+            final var defaultMaxLifetime = Long.parseLong(value);
+            final var okExpiry = defaultMaxLifetime + now.getEpochSecond() - 12345L;
+            final var excessiveExpiry = defaultMaxLifetime + now.getEpochSecond() + 12345L;
+            return new SpecOperation[] {
+                tokenCreate("neverToBe").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
+                tokenCreate("neverToBe").expiry(okExpiry)
+            };
+        }));
     }
 
     @HapiTest
@@ -1107,6 +1105,7 @@ public class TokenCreateSpecs {
                         .initialSupply(initialSupply))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTinyBars(1L).hasTokenBalance(token, initialSupply));
     }
+
     // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
     // with a just tokenNum, in mono-service the tokenTransferLists will be empty
     @HapiTest
