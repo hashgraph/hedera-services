@@ -41,6 +41,7 @@ module com.hedera.node.test.clients {
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.test.fixtures;
     requires transitive com.hedera.node.app;
+    requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.platform.core;
@@ -48,7 +49,6 @@ module com.hedera.node.test.clients {
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
-    requires transitive com.hedera.node.config;
     requires transitive headlong;
     requires transitive io.grpc;
     requires transitive net.i2p.crypto.eddsa;
