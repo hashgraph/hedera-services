@@ -1110,16 +1110,18 @@ public class LeakyContractTestsSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
-                .preserving("ledger.autoRenewPeriod.maxDuration")
+                .preserving("ledger.autoRenewPeriod.maxDuration", "entities.maxLifetime")
                 .given(
-                        overriding("ledger.autoRenewPeriod.maxDuration", "" + longLifetime),
+                        overridingTwo(
+                                "ledger.autoRenewPeriod.maxDuration", "" + longLifetime,
+                                "entities.maxLifetime", "" + longLifetime),
                         cryptoCreate(normalPayer),
-                        cryptoCreate(longLivedPayer).autoRenewSecs(longLifetime),
+                        cryptoCreate(longLivedPayer).autoRenewSecs(longLifetime - 12345),
                         uploadInitCode(toyMaker, createIndirectly),
                         contractCreate(toyMaker)
                                 .exposingNumTo(num -> toyMakerMirror.set(asHexedSolidityAddress(0, 0, num))),
                         sourcing(() -> contractCreate(createIndirectly)
-                                .autoRenewSecs(longLifetime)
+                                .autoRenewSecs(longLifetime - 12345)
                                 .payingWith(GENESIS)))
                 .when(
                         contractCall(toyMaker, "make")
