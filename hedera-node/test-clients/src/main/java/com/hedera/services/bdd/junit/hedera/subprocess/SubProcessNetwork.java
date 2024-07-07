@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -141,7 +142,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      */
     @Override
     public void terminate() {
-        nodes.forEach(HederaNode::terminate);
+        nodes.forEach(HederaNode::stopFuture);
     }
 
     /**
@@ -157,9 +158,11 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 do {
                     if (bindException) {
                         // Completely rebuild the network and try again
-                        nodes.forEach(hederaNode -> {
-                            hederaNode.terminate();
-                            rm(hederaNode.metadata().workingDirOrThrow());
+                        nodes.forEach(node -> {
+                            node.stopFuture()
+                                    .orTimeout(ProcessUtils.STOP_TIMEOUT.getSeconds(), TimeUnit.SECONDS)
+                                    .join();
+                            rm(node.metadata().workingDirOrThrow());
                         });
                         assignNewPorts();
                         clients = null;
@@ -222,7 +225,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         requireNonNull(selector);
         requireNonNull(upgradeConfigTxt);
         final var node = getRequiredNode(selector);
-        node.terminate();
+        node.stopFuture();
         nodes.remove(node);
         configTxt = switch (upgradeConfigTxt) {
             case IMPLIED_BY_NETWORK_NODES -> configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);

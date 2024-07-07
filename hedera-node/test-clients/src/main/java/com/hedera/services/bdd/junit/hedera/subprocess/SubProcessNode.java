@@ -52,11 +52,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A node running in its own OS process as a subprocess of the JUnit test runner.
  */
 public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements HederaNode {
+    private static final Logger log = LogManager.getLogger(SubProcessNode.class);
+
     /**
      * How many milliseconds to wait between retries when scanning the application log for
      * the node status.
@@ -111,16 +115,6 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
     }
 
     @Override
-    public boolean stop() {
-        return stopWith(ProcessHandle::destroy);
-    }
-
-    @Override
-    public boolean terminate() {
-        return stopWith(ProcessHandle::destroyForcibly);
-    }
-
-    @Override
     public CompletableFuture<Void> statusFuture(
             @NonNull final PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver) {
         requireNonNull(status);
@@ -167,7 +161,16 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
 
     @Override
     public CompletableFuture<Void> stopFuture() {
-        return conditionFuture(() -> processHandle == null);
+        if (processHandle == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        if (!processHandle.destroyForcibly()) {
+            log.warn("May have failed to stop node '{}' with PID '{}'", metadata.nodeId(), processHandle.pid());
+        }
+        return processHandle.onExit().thenAccept(handle -> {
+            log.info("Destroyed PID {}", handle.pid());
+            this.processHandle = null;
+        });
     }
 
     @Override

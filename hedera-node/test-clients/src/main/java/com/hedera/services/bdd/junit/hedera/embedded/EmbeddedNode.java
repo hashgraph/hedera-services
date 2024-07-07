@@ -79,16 +79,6 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
     }
 
     @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Cannot stop a single node in an embedded network");
-    }
-
-    @Override
-    public boolean terminate() {
-        throw new UnsupportedOperationException("Cannot terminate a single node in an embedded network");
-    }
-
-    @Override
     public CompletableFuture<Void> statusFuture(
             @NonNull final PlatformStatus status, @Nullable final Consumer<NodeStatus> nodeStatusObserver) {
         throw new UnsupportedOperationException("Prefer awaiting status of the embedded network");
