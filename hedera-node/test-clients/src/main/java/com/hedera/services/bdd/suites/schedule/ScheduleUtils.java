@@ -16,11 +16,6 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -28,11 +23,8 @@ import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.util.LinkedList;
-import java.util.List;
 
 public final class ScheduleUtils {
-    static final String ACCOUNT = "civilian";
     static final String ADMIN = "admin";
     static final String A_SCHEDULE = "validSchedule";
     static final String A_TOKEN = "token";
@@ -49,7 +41,6 @@ public final class ScheduleUtils {
     static final String FAILING_TXN = "failingTxn";
     static final String FIRST_PAYER = "firstPayer";
     static final String INSOLVENT_PAYER = "insolventPayer";
-    static final String LEDGER_SCHEDULE_TX_EXPIRY_TIME_SECS = "ledger.schedule.txExpiryTimeSecs";
     static final String LUCKY_RECEIVER = "luckyReceiver";
     static final String NEVER_TO_BE = "neverToBe";
     static final String NEW_SENDER_KEY = "newSKey";
@@ -87,12 +78,8 @@ public final class ScheduleUtils {
     static final String SIMPLE_UPDATE = "SimpleUpdate";
     static final String SIMPLE_XFER_SCHEDULE = "simpleXferSchedule";
     static final String SOMEBODY = "somebody";
-    static final String STAKING_FEES_NODE_REWARD_PERCENTAGE = "staking.fees.nodeRewardPercentage";
-    static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE = "staking.fees.stakingRewardPercentage";
     static final String SUCCESS_TXN = "successTxn";
     static final String SUPPLY_KEY = "supplyKey";
-    static final String TOKENS_NFTS_ARE_ENABLED = "tokens.nfts.areEnabled";
-    static final String TOKENS_NFTS_MAX_BATCH_SIZE_MINT = "tokens.nfts.maxBatchSizeMint";
     static final String TOKEN_A = "tokenA";
     static final String TRANSACTION_NOT_SCHEDULED = "Transaction not scheduled!";
     static final String TREASURY = "treasury";
@@ -109,17 +96,6 @@ public final class ScheduleUtils {
     static final String WRONG_TRANSFER_LIST = "Wrong transfer list!";
 
     static final byte[] ORIG_FILE = "SOMETHING".getBytes();
-
-    /**
-     * A very small whitelist containing just the transactions needed for SecheduleExecutionSpecs because
-     * that suite has to override the whitelist on every single spec due to some sort of ordering issue.
-     */
-    static final String WHITELIST_MINIMUM =
-            "ConsensusSubmitMessage,ContractCall,CryptoCreate,CryptoTransfer,FileUpdate,SystemDelete,TokenBurn,TokenMint,Freeze";
-
-    static final String WHITELIST_DEFAULT = HapiSpecSetup.getDefaultNodeProps().get(SCHEDULING_WHITELIST);
-    static final String DEFAULT_MAX_BATCH_SIZE_MINT =
-            HapiSpecSetup.getDefaultNodeProps().get(TOKENS_NFTS_MAX_BATCH_SIZE_MINT);
 
     private ScheduleUtils() {}
 
@@ -197,15 +173,6 @@ public final class ScheduleUtils {
             scheduleBuilder.setCryptoApproveAllowance(txn.getCryptoApproveAllowance());
         }
         return scheduleBuilder.build();
-    }
-
-    static HapiSpecOperation addAllToWhitelist() {
-        final List<String> whitelistNames = new LinkedList<>();
-        for (final HederaFunctionality enumValue : HederaFunctionality.values()) {
-            whitelistNames.add(enumValue.protoName());
-        }
-        final String fullWhitelist = String.join(",", whitelistNames);
-        return overriding(SCHEDULING_WHITELIST, fullWhitelist);
     }
 
     static boolean transferListCheck(

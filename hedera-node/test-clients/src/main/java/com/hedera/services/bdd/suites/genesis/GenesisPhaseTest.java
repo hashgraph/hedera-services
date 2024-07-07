@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.genesis;
 
 import static com.hedera.node.app.hapi.utils.forensics.OrderedComparison.statusHistograms;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.HapiSpecSetup.DEFAULT_CONFIG;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -33,8 +32,6 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
-import com.hedera.node.config.data.FilesConfig;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
@@ -62,27 +59,27 @@ public class GenesisPhaseTest {
                 streamMustIncludeNoFailuresFrom(visibleItems(assertion, "genesisTxn")),
                 cryptoCreate("firstUser").via("genesisTxn"),
                 validateVisibleItems(assertion, GenesisPhaseTest::validateSystemFileExports),
-                // Assert the first created entity is 0.0.1001
+                // Assert the first created entity still has the expected number
                 withOpContext((spec, opLog) -> assertEquals(
-                        DEFAULT_CONFIG.getConfigData(HederaConfig.class).firstUserEntity(),
+                        spec.startupProperties().getLong("hedera.firstUserEntity"),
                         spec.registry().getAccountID("firstUser").getAccountNum(),
                         "First user entity num doesn't match config")));
     }
 
     private static void validateSystemFileExports(
             @NonNull final HapiSpec spec, @NonNull final Map<String, List<RecordStreamEntry>> genesisRecords) {
-        final var filesConfig = DEFAULT_CONFIG.getConfigData(FilesConfig.class);
         final var items = requireNonNull(genesisRecords.get("genesisTxn"));
         final var histogram = statusHistograms(items);
         assertEquals(Map.of(SUCCESS, 17), histogram.get(FileCreate));
-        validateSystemFile(filesConfig.addressBook(), spec, items);
-        validateSystemFile(filesConfig.nodeDetails(), spec, items);
-        validateSystemFile(filesConfig.feeSchedules(), spec, items);
-        validateSystemFile(filesConfig.exchangeRates(), spec, items);
-        validateSystemFile(filesConfig.networkProperties(), spec, items);
-        validateSystemFile(filesConfig.hapiPermissions(), spec, items);
-        validateSystemFile(filesConfig.throttleDefinitions(), spec, items);
-        final var updateFilesRange = filesConfig.softwareUpdateRange();
+        final var startupProperties = spec.startupProperties();
+        validateSystemFile(startupProperties.getLong("files.addressBook"), spec, items);
+        validateSystemFile(startupProperties.getLong("files.nodeDetails"), spec, items);
+        validateSystemFile(startupProperties.getLong("files.feeSchedules"), spec, items);
+        validateSystemFile(startupProperties.getLong("files.exchangeRates"), spec, items);
+        validateSystemFile(startupProperties.getLong("files.networkProperties"), spec, items);
+        validateSystemFile(startupProperties.getLong("files.hapiPermissions"), spec, items);
+        validateSystemFile(startupProperties.getLong("files.throttleDefinitions"), spec, items);
+        final var updateFilesRange = startupProperties.getLongPair("files.softwareUpdateRange");
         for (long i = updateFilesRange.left(); i <= updateFilesRange.right(); i++) {
             validateSystemFile(i, spec, items);
         }

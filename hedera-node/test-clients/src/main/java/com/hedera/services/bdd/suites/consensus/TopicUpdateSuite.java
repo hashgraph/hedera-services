@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
@@ -46,7 +47,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -251,11 +251,10 @@ public class TopicUpdateSuite {
                     final var maxLifetime = Long.parseLong(value);
                     final var newExpiry = now.getEpochSecond() + maxLifetime - 12_345L;
                     final var excessiveExpiry = now.getEpochSecond() + maxLifetime + 12_345L;
-                    return new SpecOperation[] {
-                        updateTopic("testTopic").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
-                        updateTopic("testTopic").expiry(newExpiry),
-                        getTopicInfo("testTopic").hasExpiry(newExpiry)
-                    };
+                    return specOps(
+                            updateTopic("testTopic").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
+                            updateTopic("testTopic").expiry(newExpiry),
+                            getTopicInfo("testTopic").hasExpiry(newExpiry));
                 }));
     }
 

@@ -46,6 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
@@ -75,7 +76,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -139,20 +139,22 @@ public class ContractDeleteSuite {
                         contractCreate(contract),
                         doSeveralWithStartupConfig("consensus.handle.maxFollowingRecords", value -> {
                             final var illegalNumChildren = Integer.parseInt(value) + 1;
-                            return new SpecOperation[] {
-                                contractCall(
-                                                contract,
-                                                "checkBalanceRepeatedly",
-                                                asHeadlongAddress(tokenMirrorAddr.get()),
-                                                asHeadlongAddress(treasuryMirrorAddr.get()),
-                                                BigInteger.valueOf(illegalNumChildren))
-                                        .via(precompileViolation)
-                                        .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
-                                contractCall(contract, "createThingsRepeatedly", BigInteger.valueOf(illegalNumChildren))
-                                        .via(internalCreateViolation)
-                                        .gas(15_000_000)
-                                        .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED)
-                            };
+                            return specOps(
+                                    contractCall(
+                                                    contract,
+                                                    "checkBalanceRepeatedly",
+                                                    asHeadlongAddress(tokenMirrorAddr.get()),
+                                                    asHeadlongAddress(treasuryMirrorAddr.get()),
+                                                    BigInteger.valueOf(illegalNumChildren))
+                                            .via(precompileViolation)
+                                            .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED),
+                                    contractCall(
+                                                    contract,
+                                                    "createThingsRepeatedly",
+                                                    BigInteger.valueOf(illegalNumChildren))
+                                            .via(internalCreateViolation)
+                                            .gas(15_000_000)
+                                            .hasKnownStatus(MAX_CHILD_RECORDS_EXCEEDED));
                         }))
                 .then(
                         getTxnRecord(precompileViolation)

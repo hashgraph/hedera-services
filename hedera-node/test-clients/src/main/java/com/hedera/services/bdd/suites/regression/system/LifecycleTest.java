@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
@@ -121,8 +122,20 @@ public interface LifecycleTest {
      * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP.
      * @return the operation
      */
-    default HapiSpecOperation upgradeToNextConfigVersion() {
-        return upgradeToConfigVersion(CURRENT_CONFIG_VERSION.get() + 1, noOp());
+    default SpecOperation upgradeToNextConfigVersion() {
+        return sourcing(() -> upgradeToConfigVersion(CURRENT_CONFIG_VERSION.get() + 1, noOp()));
+    }
+
+    /**
+     * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP.
+     * @return the operation
+     */
+    default SpecOperation restartAtNextConfigVersion() {
+        return blockingOrder(
+                freezeOnly().startingIn(5).seconds().payingWith(GENESIS),
+                confirmFreezeAndShutdown(),
+                sourcing(() -> FakeNmt.restartNetwork(CURRENT_CONFIG_VERSION.incrementAndGet())),
+                waitForActiveNetwork(RESTART_TIMEOUT));
     }
 
     /**
@@ -141,8 +154,8 @@ public interface LifecycleTest {
      * @param preRestartOp an operation to run before the network is restarted
      * @return the operation
      */
-    default HapiSpecOperation upgradeToNextConfigVersion(@NonNull final SpecOperation preRestartOp) {
-        return upgradeToConfigVersion(CURRENT_CONFIG_VERSION.get() + 1, preRestartOp);
+    default SpecOperation upgradeToNextConfigVersion(@NonNull final SpecOperation preRestartOp) {
+        return sourcing(() -> upgradeToConfigVersion(CURRENT_CONFIG_VERSION.get() + 1, preRestartOp));
     }
 
     /**

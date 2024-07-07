@@ -18,13 +18,9 @@ package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.junit.TestTags.RESTART;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActiveNetwork;
-import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.burstOfTps;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.utilops.FakeNmt;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -42,14 +38,7 @@ public class MixedOpsRestartTest implements LifecycleTest {
     final Stream<DynamicTest> restartMixedOps() {
         return hapiTest(
                 burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
-                // Freeze the network
-                freezeOnly().startingIn(10).seconds().payingWith(GENESIS),
-                confirmFreezeAndShutdown(),
-                // (Re)start all nodes
-                FakeNmt.restartNetwork(),
-                // Wait for all nodes to be ACTIVE
-                waitForActiveNetwork(RESTART_TIMEOUT),
-                // Once nodes come back ACTIVE, submit some operations again
+                restartAtNextConfigVersion(),
                 burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION));
     }
 }

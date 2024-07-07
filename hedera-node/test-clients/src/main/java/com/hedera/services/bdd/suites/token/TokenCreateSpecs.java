@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocatio
 import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.SIGNED_TRANSACTION;
 import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.TRANSACTION;
 import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.TRANSACTION_BODY;
-import static com.hedera.services.bdd.spec.HapiSpecSetup.DEFAULT_CONFIG;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairs;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
@@ -52,9 +51,11 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fra
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -102,11 +103,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static java.lang.Integer.parseInt;
 
-import com.hedera.node.config.data.TokensConfig;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
 import com.hederahashgraph.api.proto.java.TokenKycStatus;
@@ -323,10 +323,9 @@ public class TokenCreateSpecs {
             final var defaultMaxLifetime = Long.parseLong(value);
             final var okExpiry = defaultMaxLifetime + now.getEpochSecond() - 12345L;
             final var excessiveExpiry = defaultMaxLifetime + now.getEpochSecond() + 12345L;
-            return new SpecOperation[] {
-                tokenCreate("neverToBe").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
-                tokenCreate("neverToBe").expiry(okExpiry)
-            };
+            return specOps(
+                    tokenCreate("neverToBe").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
+                    tokenCreate("neverToBe").expiry(okExpiry));
         }));
     }
 
@@ -1001,28 +1000,38 @@ public class TokenCreateSpecs {
 
     @HapiTest
     final Stream<DynamicTest> creationValidatesName() {
-        final var maxLen = DEFAULT_CONFIG.getConfigData(TokensConfig.class).maxTokenNameUtf8Bytes();
         return hapiTest(
                 cryptoCreate(TOKEN_TREASURY).balance(0L),
                 tokenCreate(PRIMARY).name("").logged().hasPrecheck(MISSING_TOKEN_NAME),
                 tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                tokenCreate("tooLong").name(TxnUtils.nAscii(maxLen + 1)).hasPrecheck(TOKEN_NAME_TOO_LONG),
-                tokenCreate("tooLongAgain")
-                        .name(nCurrencySymbols(maxLen / 3 + 1))
-                        .hasPrecheck(TOKEN_NAME_TOO_LONG));
+                doSeveralWithStartupConfig("tokens.maxTokenNameUtf8Bytes", value -> {
+                    final var maxLen = parseInt(value);
+                    return specOps(
+                            tokenCreate("tooLong")
+                                    .name(TxnUtils.nAscii(maxLen + 1))
+                                    .hasPrecheck(TOKEN_NAME_TOO_LONG),
+                            tokenCreate("tooLongAgain")
+                                    .name(nCurrencySymbols(maxLen / 3 + 1))
+                                    .hasPrecheck(TOKEN_NAME_TOO_LONG));
+                }));
     }
 
     @HapiTest
     final Stream<DynamicTest> creationValidatesSymbol() {
-        final var maxLen = DEFAULT_CONFIG.getConfigData(TokensConfig.class).maxSymbolUtf8Bytes();
         return hapiTest(
                 cryptoCreate(TOKEN_TREASURY).balance(0L),
                 tokenCreate("missingSymbol").symbol("").hasPrecheck(MISSING_TOKEN_SYMBOL),
                 tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                tokenCreate("tooLong").symbol(TxnUtils.nAscii(maxLen + 1)).hasPrecheck(TOKEN_SYMBOL_TOO_LONG),
-                tokenCreate("tooLongAgain")
-                        .symbol(nCurrencySymbols(maxLen / 3 + 1))
-                        .hasPrecheck(TOKEN_SYMBOL_TOO_LONG));
+                doSeveralWithStartupConfig("tokens.maxSymbolUtf8Bytes", value -> {
+                    final var maxLen = parseInt(value);
+                    return specOps(
+                            tokenCreate("tooLong")
+                                    .symbol(TxnUtils.nAscii(maxLen + 1))
+                                    .hasPrecheck(TOKEN_SYMBOL_TOO_LONG),
+                            tokenCreate("tooLongAgain")
+                                    .symbol(nCurrencySymbols(maxLen / 3 + 1))
+                                    .hasPrecheck(TOKEN_SYMBOL_TOO_LONG));
+                }));
     }
 
     private String nCurrencySymbols(int n) {

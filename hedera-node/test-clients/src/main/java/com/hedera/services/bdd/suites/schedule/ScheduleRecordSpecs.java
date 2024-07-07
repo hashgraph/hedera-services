@@ -23,8 +23,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -32,16 +30,11 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restoreDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
@@ -52,18 +45,14 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ADMIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.BEGIN;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.CREATION;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.INSOLVENT_PAYER;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.OTHER_PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYING_SENDER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULE;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SIMPLE_UPDATE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SIMPLE_XFER_SCHEDULE;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TRIGGER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.TWO_SIG_XFER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.UNWILLING_PAYER;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.WHITELIST_MINIMUM;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.scheduledVersionOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -72,7 +61,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_ID
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
@@ -81,60 +69,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 public class ScheduleRecordSpecs {
-    @HapiTest
-    final Stream<DynamicTest> canonicalScheduleOpsHaveExpectedUsdFees() {
-        return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")
-                .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
-                        uploadDefaultFeeSchedules(GENESIS),
-                        uploadInitCode(SIMPLE_UPDATE),
-                        cryptoCreate(OTHER_PAYER),
-                        cryptoCreate(PAYING_SENDER),
-                        cryptoCreate(RECEIVER).receiverSigRequired(true),
-                        contractCreate(SIMPLE_UPDATE).gas(300_000L))
-                .when(
-                        scheduleCreate(
-                                        "canonical",
-                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                                .memo("")
-                                                .fee(ONE_HBAR))
-                                .payingWith(OTHER_PAYER)
-                                .via("canonicalCreation")
-                                .alsoSigningWith(PAYING_SENDER)
-                                .adminKey(OTHER_PAYER),
-                        scheduleSign("canonical")
-                                .via("canonicalSigning")
-                                .payingWith(PAYING_SENDER)
-                                .alsoSigningWith(RECEIVER),
-                        scheduleCreate(
-                                        "tbd",
-                                        cryptoTransfer(tinyBarsFromTo(PAYING_SENDER, RECEIVER, 1L))
-                                                .memo("")
-                                                .fee(ONE_HBAR))
-                                .payingWith(PAYING_SENDER)
-                                .adminKey(PAYING_SENDER),
-                        scheduleDelete("tbd").via("canonicalDeletion").payingWith(PAYING_SENDER),
-                        scheduleCreate(
-                                        "contractCall",
-                                        contractCall(
-                                                        SIMPLE_UPDATE,
-                                                        "set",
-                                                        BigInteger.valueOf(5),
-                                                        BigInteger.valueOf(42))
-                                                .gas(24_000)
-                                                .memo("")
-                                                .fee(ONE_HBAR))
-                                .payingWith(OTHER_PAYER)
-                                .via("canonicalContractCall")
-                                .adminKey(OTHER_PAYER))
-                .then(
-                        restoreDefault("scheduling.whitelist"),
-                        validateChargedUsdWithin("canonicalCreation", 0.01, 3.0),
-                        validateChargedUsdWithin("canonicalSigning", 0.001, 3.0),
-                        validateChargedUsdWithin("canonicalDeletion", 0.001, 3.0),
-                        validateChargedUsdWithin("canonicalContractCall", 0.1, 3.0));
-    }
-
     @HapiTest
     final Stream<DynamicTest> noFeesChargedIfTriggeredPayerIsUnwilling() {
         return defaultHapiSpec("NoFeesChargedIfTriggeredPayerIsUnwilling")
@@ -181,10 +115,7 @@ public class ScheduleRecordSpecs {
 
         // validation here is checking fees and staking, not message creation on the topic...
         return defaultHapiSpec("CanScheduleChunkedMessages")
-                .given(
-                        overriding(SCHEDULING_WHITELIST, WHITELIST_MINIMUM),
-                        cryptoCreate(PAYING_SENDER).balance(ONE_HUNDRED_HBARS),
-                        createTopic(ofGeneralInterest))
+                .given(cryptoCreate(PAYING_SENDER).balance(ONE_HUNDRED_HBARS), createTopic(ofGeneralInterest))
                 .when(
                         withOpContext((spec, opLog) -> {
                             var subOp = usableTxnIdNamed(BEGIN).payerId(PAYING_SENDER);
@@ -251,7 +182,6 @@ public class ScheduleRecordSpecs {
     final Stream<DynamicTest> executionTimeIsAvailable() {
         return defaultHapiSpec("ExecutionTimeIsAvailable")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
                         cryptoCreate(PAYER),
                         cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L))
                 .when(
@@ -270,7 +200,6 @@ public class ScheduleRecordSpecs {
     final Stream<DynamicTest> deletionTimeIsAvailable() {
         return defaultHapiSpec("DeletionTimeIsAvailable")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
                         newKeyNamed(ADMIN),
                         cryptoCreate(PAYER),
                         cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L))
@@ -290,7 +219,6 @@ public class ScheduleRecordSpecs {
     final Stream<DynamicTest> allRecordsAreQueryable() {
         return defaultHapiSpec("AllRecordsAreQueryable")
                 .given(
-                        overriding(SCHEDULING_WHITELIST, "CryptoTransfer,ContractCall"),
                         cryptoCreate(PAYER),
                         cryptoCreate(RECEIVER).receiverSigRequired(true).balance(0L))
                 .when(

@@ -47,6 +47,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
@@ -84,7 +85,6 @@ import static java.lang.Long.parseLong;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.queries.crypto.ExpectedTokenRel;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.TokenFreezeStatus;
@@ -151,10 +151,9 @@ public class TokenUpdateSpecs {
             final var maxLifetime = Long.parseLong(value);
             final var okExpiry = now.getEpochSecond() + maxLifetime - 12_345L;
             final var excessiveExpiry = now.getEpochSecond() + maxLifetime + 12_345L;
-            return new SpecOperation[] {
-                tokenUpdate("tbu").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
-                tokenUpdate("tbu").expiry(okExpiry)
-            };
+            return specOps(
+                    tokenUpdate("tbu").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
+                    tokenUpdate("tbu").expiry(okExpiry));
         }));
     }
 

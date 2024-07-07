@@ -989,6 +989,15 @@ public class UtilVerbs {
     }
 
     /**
+     * Returns the given varags as a {@link SpecOperation} array.
+     * @param ops the varargs to return as an array
+     * @return the array of varargs
+     */
+    public static SpecOperation[] specOps(@NonNull final SpecOperation... ops) {
+        return requireNonNull(ops);
+    }
+
+    /**
      * "Hello world" example of a custom record stream assertion that validates a named
      * account has a creation record in the record stream.
      *

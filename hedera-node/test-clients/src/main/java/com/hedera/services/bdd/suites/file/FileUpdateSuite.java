@@ -62,6 +62,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
@@ -110,7 +111,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
@@ -508,15 +508,15 @@ public class FileUpdateSuite {
                         contractCall(chainIdUser, CHAIN_ID_GET_ABI).via(firstCallTxn),
                         doSeveralWithStartupConfig("contracts.chainId", chainId -> {
                             final var expectedChainId = bigIntResult(parseLong(chainId));
-                            return new SpecOperation[] {
-                                contractCallLocal(chainIdUser, CHAIN_ID_GET_ABI)
-                                        .has(resultWith().contractCallResult(expectedChainId)),
-                                getTxnRecord(firstCallTxn)
-                                        .hasPriority(recordWith()
-                                                .contractCallResult(resultWith().contractCallResult(expectedChainId))),
-                                contractCallLocal(chainIdUser, "getSavedChainID")
-                                        .has(resultWith().contractCallResult(expectedChainId))
-                            };
+                            return specOps(
+                                    contractCallLocal(chainIdUser, CHAIN_ID_GET_ABI)
+                                            .has(resultWith().contractCallResult(expectedChainId)),
+                                    getTxnRecord(firstCallTxn)
+                                            .hasPriority(recordWith()
+                                                    .contractCallResult(
+                                                            resultWith().contractCallResult(expectedChainId))),
+                                    contractCallLocal(chainIdUser, "getSavedChainID")
+                                            .has(resultWith().contractCallResult(expectedChainId)));
                         }))
                 .when(
                         overriding("contracts.chainId", "" + otherChainId),
