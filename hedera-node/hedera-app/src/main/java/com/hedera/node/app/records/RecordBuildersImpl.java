@@ -23,24 +23,17 @@ import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBu
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.records.RecordBuilders;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
 
 /**
  * Default implementation of {@link RecordBuilders}
  */
 public class RecordBuildersImpl implements RecordBuilders {
-
-    private final SingleTransactionRecordBuilderImpl recordBuilder;
     private final SavepointStackImpl stack;
-    public RecordBuildersImpl(
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
-            final SavepointStackImpl stack) {
-        this.recordBuilder = requireNonNull(recordBuilder);
+
+    public RecordBuildersImpl(final SavepointStackImpl stack) {
         this.stack = stack;
     }
 
@@ -48,7 +41,7 @@ public class RecordBuildersImpl implements RecordBuilders {
     @Override
     public <T> T getOrCreate(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castRecordBuilder(recordBuilder, recordBuilderClass);
+        return castRecordBuilder(stack.baseRecordBuilder(), recordBuilderClass);
     }
 
     @NonNull

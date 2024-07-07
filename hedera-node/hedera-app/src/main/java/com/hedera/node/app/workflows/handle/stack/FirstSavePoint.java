@@ -32,18 +32,19 @@ public class FirstSavePoint extends AbstractSavePoint {
     private int currentPrecedingChildren;
 
     public FirstSavePoint(@NonNull WrappedHederaState state, int maxPreceding) {
-       super(state, null, 0);
+        super(state, null, 0);
         this.maxPreceding = maxPreceding;
     }
 
     @Override
-    public SingleTransactionRecordBuilderImpl addRecord(@NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
-                                                        @NonNull final HandleContext.TransactionCategory txnCategory,
-                                                        @NonNull ExternalizedRecordCustomizer customizer) {
+    public SingleTransactionRecordBuilderImpl addRecord(
+            @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
+            @NonNull final HandleContext.TransactionCategory txnCategory,
+            @NonNull ExternalizedRecordCustomizer customizer) {
         final var record = super.addRecord(reversingBehavior, txnCategory, customizer);
         if (recordBuilders.getLast().isPreceding()) {
             this.currentPrecedingChildren++;
-            if(SIMULATE_MONO){
+            if (SIMULATE_MONO) {
                 totalPrecedingRecords++;
             }
         }
@@ -52,20 +53,21 @@ public class FirstSavePoint extends AbstractSavePoint {
 
     @Override
     boolean canAddRecord(final SingleTransactionRecordBuilder recordBuilder) {
-        if(SIMULATE_MONO){
-            if(recordBuilder.isPreceding()){
+        if (SIMULATE_MONO) {
+            if (recordBuilder.isPreceding()) {
                 return totalPrecedingRecords < maxPreceding;
             } else {
                 return numChildrenUsedSoFar() < maxRecords;
             }
-        } else{
-            if(recordBuilder.isPreceding()){
+        } else {
+            if (recordBuilder.isPreceding()) {
                 return currentPrecedingChildren < maxPreceding;
-            } else{
+            } else {
                 return numChildrenUsedSoFar() < maxRecords;
             }
         }
     }
+
     @Override
     public int numChildrenUsedSoFar() {
         return recordBuilders.size() - currentPrecedingChildren;

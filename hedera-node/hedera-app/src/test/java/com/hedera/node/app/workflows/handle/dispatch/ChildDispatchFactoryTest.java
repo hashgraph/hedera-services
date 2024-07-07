@@ -70,7 +70,6 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
-
 import java.time.Instant;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
@@ -174,8 +173,6 @@ class ChildDispatchFactoryTest {
     private static final TransactionBody txBody = asTxn(transferBody, payerId, consensusTime);
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
 
-    private final ChildRecordBuilderFactory childRecordBuilderFactory = new ChildRecordBuilderFactory();
-
     private final Predicate<Key> callback = key -> true;
     private final HandleContext.TransactionCategory category = HandleContext.TransactionCategory.CHILD;
     private final ExternalizedRecordCustomizer customizer = recordBuilder -> recordBuilder;
@@ -186,7 +183,6 @@ class ChildDispatchFactoryTest {
     public void setUp() {
         subject = new ChildDispatchFactory(
                 dispatcher,
-                childRecordBuilderFactory,
                 authorizer,
                 networkInfo,
                 feeManager,
@@ -267,7 +263,8 @@ class ChildDispatchFactoryTest {
                         creatorInfo,
                         platformState,
                         CONTRACT_CALL,
-                        throttleAdviser, Instant.ofEpochSecond(12345L)));
+                        throttleAdviser,
+                        Instant.ofEpochSecond(12345L)));
         assertTrue(exception.getCause() instanceof UnknownHederaFunctionality);
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }

@@ -103,12 +103,13 @@ public record UserTxn(
         final var config = configProvider.getConfiguration();
         final SavepointStackImpl stack;
         final var isGenesis = lastHandledConsensusTime.equals(Instant.EPOCH);
-        if(SIMULATE_MONO){
+        if (SIMULATE_MONO) {
             final var consensusConfig = config.getConfigData(ConsensusConfig.class);
-            stack = new SavepointStackImpl(state, isGenesis ? Integer.MAX_VALUE : (int) consensusConfig.handleMaxPrecedingRecords());
+            stack = new SavepointStackImpl(
+                    state, isGenesis ? Integer.MAX_VALUE : (int) consensusConfig.handleMaxPrecedingRecords());
             AbstractSavePoint.maxRecords = (int) consensusConfig.handleMaxFollowingRecords();
         } else {
-           throw new AssertionError("Not implemented");
+            throw new AssertionError("Not implemented");
         }
 
         final var readableStoreFactory = new ReadableStoreFactory(stack);
@@ -124,7 +125,7 @@ public record UserTxn(
                 event,
                 platformTxn,
                 txnInfo,
-                new TokenContextImpl(config, state, storeMetricsService, stack, recordListBuilder, blockRecordManager, consensusNow, stack1),
+                new TokenContextImpl(config, storeMetricsService, stack, blockRecordManager, consensusNow),
                 stack,
                 preHandleResult,
                 readableStoreFactory,
@@ -181,7 +182,7 @@ public record UserTxn(
                 dispatcher,
                 recordCache,
                 networkInfo,
-                new RecordBuildersImpl(recordBuilder, stack),
+                new RecordBuildersImpl(stack),
                 childDispatchFactory,
                 dispatchProcessor,
                 new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack));

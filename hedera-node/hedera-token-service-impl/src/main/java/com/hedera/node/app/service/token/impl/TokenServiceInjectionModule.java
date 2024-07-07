@@ -30,8 +30,6 @@ import com.hedera.node.app.service.token.impl.handlers.CryptoGetLiveHashHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetStakersHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.handlers.CryptoUpdateHandler;
-import com.hedera.node.app.service.token.impl.handlers.FinalizeChildRecordHandler;
-import com.hedera.node.app.service.token.impl.handlers.FinalizeParentRecordHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
@@ -57,8 +55,6 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalcul
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandler;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHandlerImpl;
-import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
-import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import dagger.Binds;
 import dagger.Module;
 
@@ -89,20 +85,6 @@ public interface TokenServiceInjectionModule {
      */
     @Binds
     StakeRewardCalculator stakeRewardCalculator(StakeRewardCalculatorImpl rewardCalculator);
-    /**
-     * Binds the {@link ParentRecordFinalizer} to the {@link FinalizeParentRecordHandler}
-     * @param parentRecordFinalizer the implementation of the {@link ParentRecordFinalizer}
-     * @return the bound implementation
-     */
-    @Binds
-    ParentRecordFinalizer parentRecordFinalizer(FinalizeParentRecordHandler parentRecordFinalizer);
-    /**
-     * Binds the {@link ChildRecordFinalizer} to the {@link FinalizeChildRecordHandler}
-     * @param childRecordHandler the implementation of the {@link ChildRecordFinalizer}
-     * @return the bound implementation
-     */
-    @Binds
-    ChildRecordFinalizer childRecordFinalizer(FinalizeChildRecordHandler childRecordHandler);
     /**
      * Returns the {@link CryptoAddLiveHashHandler}
      * @return the handler

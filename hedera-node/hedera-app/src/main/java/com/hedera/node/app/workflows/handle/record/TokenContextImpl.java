@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
-import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.records.BlockRecordManager;
@@ -30,7 +32,6 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Set;
@@ -38,27 +39,21 @@ import java.util.function.Consumer;
 
 public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final Configuration configuration;
-    private final HederaState state;
     private final ReadableStoreFactory readableStoreFactory;
     private final WritableStoreFactory writableStoreFactory;
-    private final RecordListBuilder recordListBuilder;
     private final BlockRecordManager blockRecordManager;
     private final Instant consensusTime;
     private final SavepointStackImpl stack;
 
     public TokenContextImpl(
             @NonNull final Configuration configuration,
-            @NonNull final HederaState state,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final SavepointStackImpl stack,
-            @NonNull final RecordListBuilder recordListBuilder,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final Instant consensusTime) {
-        this.state = requireNonNull(state, "state must not be null");
         this.stack = stack;
         requireNonNull(stack, "stack must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
-        this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
         this.blockRecordManager = requireNonNull(blockRecordManager, "blockRecordManager must not be null");
 
         this.readableStoreFactory = new ReadableStoreFactory(stack);
@@ -97,35 +92,24 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @Override
     public <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castRecordBuilder(recordListBuilder.userTransactionRecordBuilder(), recordBuilderClass);
+        return castRecordBuilder(stack.baseRecordBuilder(), recordBuilderClass);
     }
 
     @Override
     public boolean hasChildOrPrecedingRecords() {
-        return stack.peek().recordBuilders()
+        return stack.hasChildOrPrecedingRecords();
     }
 
     @Override
     public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
         requireNonNull(consumer, "consumer must not be null");
-        final var childRecordBuilders = recordListBuilder.childRecordBuilders();
-        final var precedingRecordBuilders = recordListBuilder.precedingRecordBuilders();
-
-        childRecordBuilders.forEach(child -> consumer.accept(castRecordBuilder(child, recordBuilderClass)));
-        precedingRecordBuilders.forEach(child -> consumer.accept(castRecordBuilder(child, recordBuilderClass)));
+        stack.forEachChildRecord(recordBuilderClass, consumer);
     }
 
     @NonNull
     @Override
     public <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration(), LIMITED_CHILD_RECORDS);
-        return castRecordBuilder(result, recordBuilderClass);
-    }
-
-    @NonNull
-    @Override
-    public <T> T addUncheckedPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = recordListBuilder.addPreceding(configuration(), UNLIMITED_CHILD_RECORDS);
+        final var result = stack.peek().addRecord(IRREVERSIBLE, PRECEDING, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
         return castRecordBuilder(result, recordBuilderClass);
     }
 
@@ -140,7 +124,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
 
     @Override
     public boolean isScheduleDispatch() {
-        return false;
+        return stack.txnCategory() == SCHEDULED;
     }
 
     @Override
@@ -150,8 +134,6 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
 
     @Override
     public Set<Long> knownNodeIds() {
-        return new ReadableStoreFactory(state)
-                .getStore(ReadableStakingInfoStore.class)
-                .getAll();
+        return readableStoreFactory.getStore(ReadableStakingInfoStore.class).getAll();
     }
 }

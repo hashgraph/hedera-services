@@ -648,7 +648,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             assertThatNoException()
                     .isThrownBy(() -> context.dispatchPrecedingTransaction(
                             txBody, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT));
-            verify(recordListBuilder, never()).addRemovablePreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
             verify(stack).commitFullStack();
         }

@@ -157,8 +157,7 @@ public class GenesisSetup {
         for (final Account account : accts) {
             // we create preceding records on genesis for each system account created.
             // This is an exception and should not fail with MAX_CHILD_RECORDS_EXCEEDED
-            final var recordBuilder =
-                    context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
+            final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
             recordBuilder.accountID(account.accountId());
             if (recordMemo != null) {
                 recordBuilder.memo(recordMemo);

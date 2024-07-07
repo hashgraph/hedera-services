@@ -16,6 +16,14 @@
 
 package com.hedera.node.app.workflows.handle.dispatch;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
+import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
@@ -34,7 +42,6 @@ import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.RecordBuildersImpl;
-import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
@@ -62,7 +69,7 @@ import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.RecordDispatch;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.app.workflows.handle.record.TriggeredFinalizeContext;
+import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -73,20 +80,11 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.function.Predicate;
-
-import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_UPDATE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.util.HapiUtils.functionOf;
-import static com.hedera.node.app.workflows.handle.throttle.DispatchUsageManager.CONTRACT_OPERATIONS;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
-import static java.util.Objects.requireNonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * A factory for constructing child dispatches.This also gets the pre-handle result for the child transaction,
@@ -97,7 +95,6 @@ public class ChildDispatchFactory {
     private static final NoOpKeyVerifier NO_OP_KEY_VERIFIER = new NoOpKeyVerifier();
 
     private final TransactionDispatcher dispatcher;
-    private final ChildRecordBuilderFactory recordBuilderFactory;
     private final Authorizer authorizer;
     private final NetworkInfo networkInfo;
     private final FeeManager feeManager;
@@ -111,7 +108,6 @@ public class ChildDispatchFactory {
     @Inject
     public ChildDispatchFactory(
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final ChildRecordBuilderFactory recordBuilderFactory,
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final FeeManager feeManager,
@@ -122,7 +118,6 @@ public class ChildDispatchFactory {
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager) {
         this.dispatcher = requireNonNull(dispatcher);
-        this.recordBuilderFactory = requireNonNull(recordBuilderFactory);
         this.authorizer = requireNonNull(authorizer);
         this.networkInfo = requireNonNull(networkInfo);
         this.feeManager = requireNonNull(feeManager);
@@ -171,13 +166,8 @@ public class ChildDispatchFactory {
         final var preHandleResult =
                 dispatchPreHandleForChildTxn(txBody, syntheticPayerId, config, readableStoreFactory);
         final var childTxnInfo = getTxnInfoFrom(txBody);
-        final var childStack = new SavepointStackImpl(stack);
-        final var recordBuilder = recordBuilderFactory.recordBuilderFor(
-                childTxnInfo,
-                category,
-                reversingBehavior,
-                customizer,
-                childStack.peek());
+        final var childStack = new SavepointStackImpl(stack, 0, reversingBehavior, category, customizer);
+        final var recordBuilder = initializedForChild(childStack.baseRecordBuilder(), childTxnInfo);
         return newChildDispatch(
                 recordBuilder,
                 childTxnInfo,
@@ -258,7 +248,7 @@ public class ChildDispatchFactory {
                 dispatcher,
                 recordCache,
                 networkInfo,
-                new RecordBuildersImpl(recordBuilder, childStack),
+                new RecordBuildersImpl(childStack),
                 this,
                 dispatchProcessor,
                 throttleAdviser);
@@ -278,12 +268,7 @@ public class ChildDispatchFactory {
                 dispatchHandleContext,
                 childStack,
                 category,
-                new TriggeredFinalizeContext(
-                        readableStoreFactory,
-                        new WritableStoreFactory(childStack, TokenService.NAME, config, storeMetricsService),
-                        recordBuilder,
-                        consensusNow,
-                        config),
+                new TokenContextImpl(config, storeMetricsService, childStack, blockRecordManager, consensusNow),
                 platformState,
                 preHandleResult);
     }
@@ -470,5 +455,23 @@ public class ChildDispatchFactory {
         } catch (final UnknownHederaFunctionality e) {
             throw new IllegalArgumentException("Unknown Hedera Functionality", e);
         }
+    }
+
+    /**
+     * Initializes the user record with the transaction information.
+     * @param recordBuilder the record builder
+     * @param txnInfo the transaction info
+     */
+    private SingleTransactionRecordBuilderImpl initializedForChild(
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder, @NonNull final TransactionInfo txnInfo) {
+        recordBuilder
+                .transaction(txnInfo.transaction())
+                .transactionBytes(txnInfo.signedBytes())
+                .memo(txnInfo.txBody().memo());
+        final var transactionID = txnInfo.txBody().transactionID();
+        if (transactionID != null) {
+            recordBuilder.transactionID(transactionID);
+        }
+        return recordBuilder;
     }
 }

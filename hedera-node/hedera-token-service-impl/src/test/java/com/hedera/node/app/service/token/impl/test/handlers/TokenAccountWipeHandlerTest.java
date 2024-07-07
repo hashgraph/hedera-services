@@ -79,7 +79,9 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -132,6 +134,49 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             @Override
             public HandleContext.TransactionCategory category() {
                 return HandleContext.TransactionCategory.USER;
+            }
+
+            @Override
+            public ReversingBehavior reversingBehavior() {
+                return null;
+            }
+
+            @Override
+            public void nullOutSideEffectFields() {}
+
+            @Override
+            public SingleTransactionRecordBuilder syncBodyIdFromRecordId() {
+                return null;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder consensusTimestamp(@NotNull final Instant now) {
+                return null;
+            }
+
+            @Override
+            public TransactionID transactionID() {
+                return null;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder transactionID(@NotNull final TransactionID transactionID) {
+                return null;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder parentConsensus(@NotNull final Instant parentConsensus) {
+                return null;
+            }
+
+            @Override
+            public boolean isBaseRecordBuilder() {
+                return false;
+            }
+
+            @Override
+            public Instant consensusNow() {
+                return null;
             }
 
             @NonNull

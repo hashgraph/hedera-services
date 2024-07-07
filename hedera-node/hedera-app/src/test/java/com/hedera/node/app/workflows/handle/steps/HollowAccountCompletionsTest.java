@@ -53,7 +53,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -114,8 +113,6 @@ public class HollowAccountCompletionsTest {
             .bodyBytes(TransactionBody.PROTOBUF.toBytes(txBody))
             .build();
     private static final Bytes transactionBytes = SignedTransaction.PROTOBUF.toBytes(transaction);
-
-    private final RecordListBuilder recordListBuilder = new RecordListBuilder(consensusTime);
 
     @InjectMocks
     private HollowAccountCompletions hollowAccountCompletions;

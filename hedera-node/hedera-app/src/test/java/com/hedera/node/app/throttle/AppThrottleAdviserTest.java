@@ -34,12 +34,10 @@ import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,9 +70,6 @@ class AppThrottleAdviserTest {
     private NetworkUtilizationManager networkUtilizationManager;
 
     @Mock
-    private RecordListBuilder recordListBuilder;
-
-    @Mock
     private SavepointStackImpl stack;
 
     @Mock
@@ -100,7 +95,6 @@ class AppThrottleAdviserTest {
 
     @Test
     void allowsThrottleCapacityForChildrenIfNoneShouldThrottle() {
-        given(recordListBuilder.childRecordBuilders()).willReturn(List.of(oneChildBuilder, twoChildBuilder));
         given(oneChildBuilder.status()).willReturn(SUCCESS);
         given(oneChildBuilder.transaction()).willReturn(CRYPTO_TRANSFER_TXN_INFO.transaction());
         given(oneChildBuilder.transactionBody()).willReturn(CRYPTO_TRANSFER_TXN_INFO.txBody());
@@ -111,7 +105,6 @@ class AppThrottleAdviserTest {
 
     @Test
     void doesntAllowThrottleCapacityForChildrenIfOneShouldThrottle() {
-        given(recordListBuilder.childRecordBuilders()).willReturn(List.of(oneChildBuilder, twoChildBuilder));
         given(oneChildBuilder.status()).willReturn(SUCCESS);
         given(oneChildBuilder.transaction()).willReturn(CONTRACT_CALL_TXN_INFO.transaction());
         given(oneChildBuilder.transactionBody()).willReturn(CONTRACT_CALL_TXN_INFO.txBody());

@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
@@ -45,8 +46,6 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -337,7 +336,8 @@ public class HandleWorkflow {
      * @return the failure record
      */
     private Stream<SingleTransactionRecord> failInvalidRecordStream(@NonNull final UserTxn userTxn) {
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, USER);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, USER);
         initializeUserRecord(recordBuilder, userTxn.txnInfo());
         recordBuilder.status(FAIL_INVALID);
         userTxn.stack().rollbackFullStack();
@@ -409,18 +409,18 @@ public class HandleWorkflow {
         final List<SingleTransactionRecord> records = new ArrayList<>();
         TransactionID.Builder idBuilder = null;
         int indexOfUserRecord = 0;
-        if(SIMULATE_MONO){
-            for(int i = 0; i < builders.size(); i++) {
-                if(builders.get(i).category() == USER) {
+        if (SIMULATE_MONO) {
+            for (int i = 0; i < builders.size(); i++) {
+                if (builders.get(i).category() == USER) {
                     indexOfUserRecord = i;
                     idBuilder = builders.get(i).transactionID().copyBuilder();
-                } else if(builders.get(i).isPreceding() && i > indexOfUserRecord) {
+                } else if (builders.get(i).isPreceding() && i > indexOfUserRecord) {
                     indexOfUserRecord++;
                 }
             }
         } else {
-            for(int i = 0; i < builders.size(); i++) {
-                if(builders.get(i).category() == USER) {
+            for (int i = 0; i < builders.size(); i++) {
+                if (builders.get(i).category() == USER) {
                     indexOfUserRecord = i;
                     idBuilder = builders.get(i).transactionID().copyBuilder();
                     break;
@@ -429,42 +429,51 @@ public class HandleWorkflow {
         }
         int numPrecedingSeen = 0;
         int numFollowingSeen = 0;
+        Instant parentConsensus = null;
         for (int i = 0; i < builders.size(); i++) {
             final var builder = builders.get(i);
             if (SIMULATE_MONO) {
-                if(builder.isPreceding()){
+                if (builder.isPreceding()) {
                     final var nonce = totalPrecedingRecords - numPrecedingSeen;
-                    builder
-                            .transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+                    builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
                             .syncBodyIdFromRecordId()
                             .consensusTimestamp(userTxn.consensusNow().minusNanos(nonce));
-                    records.add(0, ((SingleTransactionRecordBuilderImpl)builder).build());
+                    records.add(0, ((SingleTransactionRecordBuilderImpl) builder).build());
                     numPrecedingSeen++;
-                } else if(builder.category() == USER){
+                } else if (builder.category() == USER) {
                     builder.consensusTimestamp(userTxn.consensusNow());
-                    records.add(((SingleTransactionRecordBuilderImpl)builder).build());
+                    records.add(((SingleTransactionRecordBuilderImpl) builder).build());
                 } else {
                     final var nonce = totalPrecedingRecords + numFollowingSeen++ + 1;
                     builder.consensusTimestamp(userTxn.consensusNow().plusNanos(numFollowingSeen));
                     if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
-                        builder
-                                .transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+                        builder.transactionID(
+                                        requireNonNull(idBuilder).nonce(nonce).build())
                                 .syncBodyIdFromRecordId();
                     }
-                    records.add(((SingleTransactionRecordBuilderImpl)builder).build());
+                    if (builder.category() == CHILD) {
+                        builder.parentConsensus(userTxn.consensusNow());
+                    }
+                    records.add(((SingleTransactionRecordBuilderImpl) builder).build());
                 }
             } else {
-                final int nonce = switch (builder.category()) {
-                    case USER, SCHEDULED -> 0;
-                    case PRECEDING, CHILD ->  i < indexOfUserRecord ? indexOfUserRecord - i : i;
-                };
+                if (builder.isBaseRecordBuilder()) {
+                    parentConsensus = builder.consensusNow();
+                }
+                final int nonce =
+                        switch (builder.category()) {
+                            case USER, SCHEDULED -> 0;
+                            case PRECEDING, CHILD -> i < indexOfUserRecord ? indexOfUserRecord - i : i;
+                        };
                 if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
-                    builder
-                            .transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+                    builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
                             .syncBodyIdFromRecordId();
                 }
                 builder.consensusTimestamp(userTxn.consensusNow().plusNanos((long) i - indexOfUserRecord));
-                records.add(((SingleTransactionRecordBuilderImpl)builder).build());
+                if (builder.category() == CHILD) {
+                    builder.parentConsensus(requireNonNull(parentConsensus));
+                }
+                records.add(((SingleTransactionRecordBuilderImpl) builder).build());
             }
         }
         recordCache.add(
@@ -503,7 +512,7 @@ public class HandleWorkflow {
      * @param userTxn the user transaction whose record should be initialized
      */
     private SingleTransactionRecordBuilderImpl initializeUserRecord(@NonNull final UserTxn userTxn) {
-        final var userRecord = userTxn.stack().peek().addRecord(REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        final var userRecord = userTxn.stack().baseRecordBuilder();
         return initializeUserRecord(userRecord, userTxn.txnInfo());
     }
 

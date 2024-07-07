@@ -18,16 +18,11 @@ package com.hedera.node.app.records;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,17 +37,13 @@ class RecordBuildersImplTest {
     private SingleTransactionRecordBuilderImpl recordBuilder;
 
     @Mock
-    private RecordListBuilder recordListBuilder;
-    @Mock
     private SavepointStackImpl stack;
 
     private RecordBuildersImpl subject;
 
     @BeforeEach
     void setup() {
-        final var configuration = HederaTestConfigBuilder.createConfig();
-
-        subject = new RecordBuildersImpl(recordBuilder, stack);
+        subject = new RecordBuildersImpl(stack);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -77,7 +68,6 @@ class RecordBuildersImplTest {
     @Test
     void testAddChildRecordBuilder() {
         final var childRecordBuilder = mock(SingleTransactionRecordBuilderImpl.class);
-        when(recordListBuilder.addChild(any(), any())).thenReturn(childRecordBuilder);
 
         final var actual = subject.addChildRecordBuilder(CryptoCreateRecordBuilder.class);
 
@@ -87,7 +77,6 @@ class RecordBuildersImplTest {
     @Test
     void testAddRemovableChildRecordBuilder() {
         final var childRecordBuilder = mock(SingleTransactionRecordBuilderImpl.class);
-        when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
 
         final var actual = subject.addRemovableChildRecordBuilder(CryptoCreateRecordBuilder.class);
 

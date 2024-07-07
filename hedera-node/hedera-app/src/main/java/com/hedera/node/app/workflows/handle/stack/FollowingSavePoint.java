@@ -22,36 +22,34 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A save point that contains the current state and the record builders created in the current savepoint.
  * Currently, recordBuilders is not used in the codebase. It will be used in future PRs
  */
 public class FollowingSavePoint extends AbstractSavePoint {
-    public FollowingSavePoint(@NonNull WrappedHederaState state,
-                              @NonNull AbstractSavePoint parent) {
+    public FollowingSavePoint(@NonNull WrappedHederaState state, @NonNull AbstractSavePoint parent) {
         super(state, parent, parent.numChildrenUsedSoFar());
     }
 
     @Override
     boolean canAddRecord(final SingleTransactionRecordBuilder recordBuilder) {
-        if(SIMULATE_MONO){
-            if(recordBuilder.isPreceding()){
+        if (SIMULATE_MONO) {
+            if (recordBuilder.isPreceding()) {
                 return totalPrecedingRecords < legacyMaxPrecedingRecords;
             } else {
                 return numChildrenUsedSoFar() < maxRecords;
             }
-        } else{
+        } else {
             return numChildrenUsedSoFar() < maxRecords;
         }
-
     }
 
     @Override
-    public SingleTransactionRecordBuilderImpl addRecord(@NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
-                                                        @NonNull final HandleContext.TransactionCategory txnCategory,
-                                                        @NonNull ExternalizedRecordCustomizer customizer) {
+    public SingleTransactionRecordBuilderImpl addRecord(
+            @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
+            @NonNull final HandleContext.TransactionCategory txnCategory,
+            @NonNull ExternalizedRecordCustomizer customizer) {
         final var record = super.addRecord(reversingBehavior, txnCategory, customizer);
         if (recordBuilders.getLast().isPreceding() && SIMULATE_MONO) {
             totalPrecedingRecords++;
@@ -60,10 +58,10 @@ public class FollowingSavePoint extends AbstractSavePoint {
     }
 
     @Override
-    int numChildrenUsedSoFar() {
-        if(SIMULATE_MONO){
+    public int numChildrenUsedSoFar() {
+        if (SIMULATE_MONO) {
             return numPreviouslyUsedRecords + recordBuilders().size() - totalPrecedingRecords;
-        }else{
+        } else {
             return numPreviouslyUsedRecords + recordBuilders().size();
         }
     }

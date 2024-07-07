@@ -144,11 +144,7 @@ public class DispatchProcessor {
             return USER_TRANSACTION;
         } catch (HandleException e) {
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
-            rollback(
-                    e.shouldRollbackStack(),
-                    e.getStatus(),
-                    dispatch.stack(),
-                    dispatch.recordBuilder());
+            rollback(e.shouldRollbackStack(), e.getStatus(), dispatch.stack(), dispatch.recordBuilder());
             if (e.shouldRollbackStack()) {
                 chargePayer(dispatch, validationResult);
             }

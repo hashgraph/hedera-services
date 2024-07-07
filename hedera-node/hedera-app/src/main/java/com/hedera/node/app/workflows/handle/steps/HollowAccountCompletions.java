@@ -37,7 +37,6 @@ import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -150,12 +149,12 @@ public class HollowAccountCompletions {
         final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
         final var maxPrecedingRecords = consensusConfig.handleMaxPrecedingRecords();
         for (final var hollowAccount : accounts) {
-            if(SIMULATE_MONO){
+            if (SIMULATE_MONO) {
                 if (totalPrecedingRecords == maxPrecedingRecords) {
                     break;
                 }
             } else {
-                if(!userTxn.stack().hasMoreSystemRecords() ){
+                if (!userTxn.stack().hasMoreSystemRecords()) {
                     break;
                 }
             }

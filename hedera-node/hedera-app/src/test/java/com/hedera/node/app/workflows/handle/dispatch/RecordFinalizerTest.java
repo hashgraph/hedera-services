@@ -20,17 +20,10 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MES
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactoryTest.asTxn;
+import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -40,9 +33,8 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
+import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
 import com.hedera.node.app.service.token.records.FinalizeContext;
-import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
@@ -50,7 +42,6 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,10 +54,7 @@ public class RecordFinalizerTest {
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
 
     @Mock
-    private ParentRecordFinalizer parentRecordFinalizer;
-
-    @Mock
-    private ChildRecordFinalizer childRecordFinalizer;
+    private FinalizeRecordHandler finalizeRecordHandler;
 
     @Mock
     private Dispatch dispatch;
@@ -106,34 +94,12 @@ public class RecordFinalizerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new RecordFinalizer(parentRecordFinalizer, childRecordFinalizer);
+        subject = new RecordFinalizer(finalizeRecordHandler);
 
         lenient().when(dispatch.txnInfo()).thenReturn(TXN_INFO);
         lenient().when(dispatch.recordBuilder()).thenReturn(recordBuilder);
         lenient().when(dispatch.finalizeContext()).thenReturn(finalizeContext);
         lenient().when(dispatch.handleContext()).thenReturn(handleContext);
-    }
-
-    @Test
-    public void testFinalizeRecordUserTransaction() {
-        when(dispatch.txnCategory()).thenReturn(USER);
-
-        when(dispatch.handleContext().dispatchPaidRewards()).thenReturn(Map.of());
-
-        subject.finalizeRecord(dispatch);
-
-        verify(parentRecordFinalizer).finalizeParentRecord(any(), any(), any(), any());
-        verify(childRecordFinalizer, never()).finalizeChildRecord(any(), any());
-    }
-
-    @Test
-    public void testFinalizeRecordChildTransaction() {
-        when(dispatch.txnCategory()).thenReturn(CHILD);
-
-        subject.finalizeRecord(dispatch);
-
-        verify(childRecordFinalizer, times(1)).finalizeChildRecord(any(), any());
-        verify(parentRecordFinalizer, never()).finalizeParentRecord(any(), any(), any(), any());
     }
 
     @Test

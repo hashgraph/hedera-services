@@ -25,7 +25,6 @@ import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.time.Instant;
 
 /**
@@ -65,22 +64,32 @@ public interface SingleTransactionRecordBuilder {
     SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status);
 
     HandleContext.TransactionCategory category();
+
     ReversingBehavior reversingBehavior();
 
     void nullOutSideEffectFields();
 
-
-    default boolean isPreceding(){
+    default boolean isPreceding() {
         return category().equals(HandleContext.TransactionCategory.PRECEDING);
     }
 
     default boolean isInternalDispatch() {
         return !category().equals(USER);
     }
+
     SingleTransactionRecordBuilder syncBodyIdFromRecordId();
+
     SingleTransactionRecordBuilder consensusTimestamp(@NonNull final Instant now);
+
     TransactionID transactionID();
+
     SingleTransactionRecordBuilder transactionID(@NonNull final TransactionID transactionID);
+
+    SingleTransactionRecordBuilder parentConsensus(@NonNull final Instant parentConsensus);
+
+    boolean isBaseRecordBuilder();
+
+    Instant consensusNow();
 
     /**
      * Convenience method to package as {@link TransactionBody} as a {@link Transaction} .
