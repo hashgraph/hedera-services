@@ -369,7 +369,7 @@ To implement the functionality detailed in the previous section, the following c
 ![img_6.png](img_6.svg)
 1. **hedera-cryptography**: This is a separate repository for hosting cryptography-related libraries.
    It is necessary to facilitate our build process, which includes Rust libraries. It also provides independent release cycles between consensus node code and other library users.
-2. **swirlds-native-support**: Gradle module that enables loading into memory compiled native libraries so they can be used with JNI.
+2. **swirlds-nativesupport**: Gradle module that enables loading into memory compiled native libraries so they can be used with JNI.
 3. **swirlds-crypto-tss**: Gradle module for the TSS Library.
    This library's only client is the consensus node, so it will be in the hedera-services repository, under the `platform-sdk` folder.
 4. **swirlds-crypto-signatures**: Gradle module for the Bilinear Pairings Signature Library.
@@ -393,7 +393,7 @@ While developing and on a developer’s machine, Rust code will be built for the
 Once the code is merged to develop, the CI/CD pipeline compiles the Rust code into a binary library for each of the multiple supported platforms, packages it into a jar, and publishes it to Maven.
 The dependency from the Maven repo will contain the Java code and the binary library cross-compiled for all supported architectures.
 
-We will provide a library `swirlds-native-support` that will help load and use native code through JNI.
+We will provide a library `swirlds-nativesupport` that will help load and use native code through JNI.
 The low-level details of the build logic for this to work are outside the scope of this proposal.
 A high overview is mentioned for the benefit of readers and will be provided by the DevOps Team alongside the RE Team.
 
@@ -674,7 +674,6 @@ static {
 #### Swirlds Native Support
 ##### Overview
 This library provides classes that assist other modules to load native libraries packaged in dependency jars.
-This library provides a pattern to describe libraries for different architectures and operating systems.
 
 ##### Constraints
 This module will not depend on hedera-services artifacts, so it cannot include logging, metrics, configuration, or any other helper module from that repo.
@@ -795,7 +794,7 @@ The proposal is to move forward with the implementation while creating a work gr
 
 ### Unit Tests
 One of the components that can be unit-tested is native support. SPI loading and failing. JNI wrapping.
-Limitations: native-support-library tests must be executed in different environments to provide comprehensive code validation.
+Limitations: nativesupport-library tests must be executed in different environments to provide comprehensive code validation.
 
 ### Performance Testing
 JMH benchmarks should be provided for signature generation and aggregation.
@@ -826,7 +825,7 @@ but Milagro project is reported to have little coverage, not audited. Milagro po
   * CI/CD pipelines for building artifacts in hedera-cryptography.
 * Define the Test plan.
 * Define a security plan.
-* Implementation of native-support library.
+* Implementation of nativesupport library.
 * Implementation of Pairings API using JNI, arkworks, and alt-bn128.
 * Implementation of Pairings Signatures library.
 * Implementation of TSS library public interface (TBD: include mock implementation).
