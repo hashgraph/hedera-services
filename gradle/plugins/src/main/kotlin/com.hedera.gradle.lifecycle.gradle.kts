@@ -37,15 +37,3 @@ tasks.register("qualityGate") {
 }
 
 tasks.register("releaseMavenCentral")
-
-// Register these empty tasks:
-// https://github.com/hashgraph/hedera-services/blob/63641ffdab4ec13759b901a58682f95b64bd4651/gradle/plugins/src/main/kotlin/com.hedera.gradle.platform-publish.gradle.kts#L70-L86
-tasks.register("releaseAdhocCommit")
-
-tasks.register("releaseDevelopCommit")
-
-tasks.register("releaseDevelopDailySnapshot")
-
-tasks.register("releaseDevelopSnapshot")
-
-tasks.register("releasePrereleaseChannel")
