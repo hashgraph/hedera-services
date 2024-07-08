@@ -48,17 +48,11 @@ public class AssociateTokensOperation extends AbstractSpecTransaction<AssociateT
         this.tokens = tokens;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected AssociateTokensOperation self() {
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {

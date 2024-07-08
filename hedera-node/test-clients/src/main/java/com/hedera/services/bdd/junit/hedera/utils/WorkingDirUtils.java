@@ -40,7 +40,6 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
-    public static final String JAR_FILE = "HederaNode.jar";
     private static final Path BASE_WORKING_LOC = Path.of("./build");
     private static final String DEFAULT_SCOPE = "hapi";
     private static final String KEYS_FOLDER = "keys";
@@ -263,7 +262,14 @@ public class WorkingDirUtils {
         }
     }
 
-    private static void copyUnchecked(@NonNull final Path source, @NonNull final Path target) {
+    /**
+     * Copy a file from the source path to the target path, throwing an unchecked exception if an
+     * {@link IOException} occurs.
+     *
+     * @param source the source path
+     * @param target the target path
+     */
+    public static void copyUnchecked(@NonNull final Path source, @NonNull final Path target) {
         try {
             Files.copy(source, target);
         } catch (IOException e) {
