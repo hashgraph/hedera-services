@@ -23,15 +23,12 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccountUpdate;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoUpdate;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
 public class RandomAccountUpdateHollowAccount extends RandomAccountUpdate {
     private final String[] signers;
 
-    public RandomAccountUpdateHollowAccount(
-            EntityNameProvider<Key> keys, EntityNameProvider<AccountID> accounts, String... signers) {
+    public RandomAccountUpdateHollowAccount(EntityNameProvider keys, EntityNameProvider accounts, String... signers) {
         super(keys, accounts);
         this.signers = signers;
     }

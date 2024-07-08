@@ -121,11 +121,10 @@ public class Evm46ValidationSuite {
     private static final String BENEFICIARY = "beneficiary";
     private static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
     private static final String BALANCE_OF = "balanceOf";
-    public static final List<Long> nonExistingSystemAccounts =
-            List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L);
-    public static final List<Long> existingSystemAccounts = List.of(999L, 1000L);
+    public static final List<Long> nonExistingSystemAccounts = List.of(351L, 352L, 353L, 354L, 355L, 356L, 357L, 358L);
+    public static final List<Long> existingSystemAccounts = List.of(800L, 999L, 1000L);
     public static final List<Long> systemAccounts =
-            List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 999L, 1000L);
+            List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 799L, 800L, 999L, 1000L);
     public static final List<Long> callOperationsSuccessSystemAccounts = List.of(0L, 1L, 358L, 750L, 751L, 999L, 1000L);
 
     @HapiTest
@@ -1428,20 +1427,47 @@ public class Evm46ValidationSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> testBalanceOfForSystemAccounts() {
+    final Stream<DynamicTest> testBalanceOfForExistingSystemAccounts() {
         final var contract = "BalanceChecker46Version";
         final var balance = 10L;
-        final var systemAccountBalance = 0;
-        final var opsArray = new HapiSpecOperation[systemAccounts.size() * 2];
+        final var systemAccountBalance = 0L;
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[existingSystemAccounts.size() * 2];
 
-        for (int i = 0; i < systemAccounts.size(); i++) {
+        for (int i = 0; i < existingSystemAccounts.size(); i++) {
             // add contract call for all accounts in the list
-            opsArray[i] = contractCall(contract, BALANCE_OF, mirrorAddrWith(systemAccounts.get(i)))
+            opsArray[i] = contractCall(contract, BALANCE_OF, mirrorAddrWith(existingSystemAccounts.get(i)))
                     .hasKnownStatus(SUCCESS);
 
             // add contract call local for all accounts in the list
-            opsArray[systemAccounts.size() + i] = contractCallLocal(
-                            contract, BALANCE_OF, mirrorAddrWith(systemAccounts.get(i)))
+            opsArray[existingSystemAccounts.size() + i] = contractCallLocal(
+                            contract, BALANCE_OF, mirrorAddrWith(existingSystemAccounts.get(i)))
+                    .has(ContractFnResultAsserts.resultWith()
+                            .resultThruAbi(
+                                    getABIFor(FUNCTION, BALANCE_OF, contract),
+                                    ContractFnResultAsserts.isEqualOrGreaterThan(
+                                            BigInteger.valueOf(systemAccountBalance))));
+        }
+        return defaultHapiSpec("verifiesSystemAccountBalanceOf")
+                .given(cryptoCreate("testAccount").balance(balance), uploadInitCode(contract), contractCreate(contract))
+                .when()
+                .then(opsArray);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> testBalanceOfForNonExistingSystemAccounts() {
+        final var contract = "BalanceChecker46Version";
+        final var balance = 10L;
+        final var systemAccountBalance = 0;
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[nonExistingSystemAccounts.size() * 2];
+
+        for (int i = 0; i < nonExistingSystemAccounts.size(); i++) {
+            // add contract call for all accounts in the list
+            opsArray[i] = contractCall(contract, BALANCE_OF, mirrorAddrWith(nonExistingSystemAccounts.get(i)))
+                    .hasKnownStatus(SUCCESS);
+
+            // add contract call local for all accounts in the list
+            opsArray[nonExistingSystemAccounts.size() + i] = contractCallLocal(
+                            contract, BALANCE_OF, mirrorAddrWith(nonExistingSystemAccounts.get(i)))
                     .has(ContractFnResultAsserts.resultWith()
                             .resultThruAbi(
                                     getABIFor(FUNCTION, BALANCE_OF, contract),

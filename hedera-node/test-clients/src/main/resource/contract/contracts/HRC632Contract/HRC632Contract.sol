@@ -19,4 +19,15 @@ contract HRC632Contract is HederaAccountService {
         responseCode = HederaAccountService.hbarApprove(owner, spender, amount);
         require(responseCode == HederaResponseCodes.SUCCESS, "Hbar approve failed");
     }
+
+    function hbarApproveDelegateCall(address owner, address spender, int256 amount) external {
+        (bool success, bytes memory result) = precompileAddress.delegatecall(abi.encodeWithSignature("hbarApproveCall(address,address,int256)", owner, spender, amount));
+        if (!success) {
+            revert ("hbarApprove() Failed As Expected");
+        }
+    }
+
+    function isAuthorizedRawCall(address account, bytes memory messageHash, bytes memory signature) external returns (bool result) {
+        result = HederaAccountService.isAuthorizedRaw(account, messageHash, signature);
+    }
 }

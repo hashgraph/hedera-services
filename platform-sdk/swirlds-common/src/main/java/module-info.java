@@ -141,6 +141,7 @@ module com.swirlds.common {
     exports com.swirlds.common.threading.atomic;
     exports com.swirlds.common.wiring.model.diagram;
     exports com.swirlds.common.concurrent;
+    exports com.swirlds.common.merkle.synchronization.stats;
 
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.config.api;

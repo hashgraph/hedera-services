@@ -23,7 +23,10 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.Key.Builder;
+import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ServiceEndpoint;
+import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -31,16 +34,17 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.schemas.V052AddressBookSchema;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -48,6 +52,45 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class AddressBookTestBase {
+    private static final String A_NAME = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private static final String B_NAME = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
+    private static final Function<String, Builder> KEY_BUILDER =
+            value -> Key.newBuilder().ed25519(Bytes.wrap(value.getBytes()));
+    private static final Key A_THRESHOLD_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    KEY_BUILDER.apply(C_NAME).build())
+                            .build()))
+            .build();
+    private static final Key A_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_THRESHOLD_KEY)))
+            .build();
+    private static final Key B_COMPLEX_KEY = Key.newBuilder()
+            .thresholdKey(ThresholdKey.newBuilder()
+                    .threshold(2)
+                    .keys(KeyList.newBuilder()
+                            .keys(
+                                    KEY_BUILDER.apply(A_NAME).build(),
+                                    KEY_BUILDER.apply(B_NAME).build(),
+                                    A_COMPLEX_KEY)))
+            .build();
+    protected final Key key = A_COMPLEX_KEY;
+    protected final Key anotherKey = B_COMPLEX_KEY;
+
+    final Key invalidKey = Key.newBuilder()
+            .ecdsaSecp256k1((Bytes.fromHex("0000000000000000000000000000000000000000")))
+            .build();
     protected final AccountID accountId = AccountID.newBuilder().accountNum(3).build();
 
     protected final AccountID payerId = AccountID.newBuilder().accountNum(2).build();
@@ -66,15 +109,17 @@ public class AddressBookTestBase {
     protected static final ProtoBytes edKeyAlias = new ProtoBytes(Bytes.wrap(asBytes(Key.PROTOBUF, aPrimitiveKey)));
     protected final AccountID alias =
             AccountID.newBuilder().alias(edKeyAlias.value()).build();
-    protected final byte[] evmAddress = CommonUtils.unhex("6aea3773ea468a814d954e6dec795bfee7d76e26");
 
-    protected final ServiceEndpoint endpoint1 = new ServiceEndpoint(Bytes.wrap("127.0.0.1"), 1234, null);
+    protected final ServiceEndpoint endpoint1 = V052AddressBookSchema.endpointFor("127.0.0.1", 1234);
 
-    protected final ServiceEndpoint endpoint2 = new ServiceEndpoint(Bytes.wrap("127.0.0.2"), 2345, null);
+    protected final ServiceEndpoint endpoint2 = V052AddressBookSchema.endpointFor("127.0.0.2", 2345);
 
-    protected final ServiceEndpoint endpoint3 = new ServiceEndpoint(Bytes.EMPTY, 3456, "test.domain.com");
+    protected final ServiceEndpoint endpoint3 = V052AddressBookSchema.endpointFor("test.domain.com", 3456);
 
-    protected final ServiceEndpoint endpoint4 = new ServiceEndpoint(Bytes.wrap("127.0.0.2"), 2345, "test.domain.com");
+    protected final ServiceEndpoint endpoint4 = V052AddressBookSchema.endpointFor("test.domain.com", 2345)
+            .copyBuilder()
+            .ipAddressV4(endpoint1.ipAddressV4())
+            .build();
 
     protected final ServiceEndpoint endpoint5 = new ServiceEndpoint(Bytes.EMPTY, 2345, null);
 
@@ -186,7 +231,22 @@ public class AddressBookTestBase {
                 Bytes.wrap(gossipCaCertificate),
                 Bytes.wrap(grpcCertificateHash),
                 0,
-                deleted);
+                deleted,
+                key);
+    }
+
+    protected void givenValidNodeWithAdminKey(Key adminKey) {
+        node = new Node(
+                nodeId.number(),
+                accountId,
+                "description",
+                null,
+                null,
+                Bytes.wrap(gossipCaCertificate),
+                Bytes.wrap(grpcCertificateHash),
+                0,
+                false,
+                adminKey);
     }
 
     protected Node createNode() {
@@ -199,6 +259,7 @@ public class AddressBookTestBase {
                 .gossipCaCertificate(Bytes.wrap(gossipCaCertificate))
                 .grpcCertificateHash(Bytes.wrap(grpcCertificateHash))
                 .weight(0)
+                .adminKey(key)
                 .build();
     }
 }

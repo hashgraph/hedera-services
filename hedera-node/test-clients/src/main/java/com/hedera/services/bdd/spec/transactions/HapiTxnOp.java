@@ -16,8 +16,6 @@
 
 package com.hedera.services.bdd.spec.transactions;
 
-import static com.hedera.services.bdd.spec.fees.Payment.Reason.TXN_FEE;
-import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.txnReceiptQueryFor;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.txnToString;
@@ -41,6 +39,7 @@ import static java.util.stream.Collectors.toList;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -48,14 +47,13 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiTxnPrecheckStateException;
-import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.infrastructure.DelegatingOpFinisher;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
-import com.hedera.services.bdd.spec.keys.KeyGenerator;
-import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.utilops.mod.BodyMutation;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -86,6 +84,10 @@ import org.apache.tuweni.bytes.Bytes;
 public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperation {
     private static final Logger log = LogManager.getLogger(HapiTxnOp.class);
 
+    private static final SubmissionStrategy DEFAULT_SUBMISSION_STRATEGY =
+            (network, transaction, functionality, target, nodeAccountId) ->
+                    network.submit(transaction, functionality, target, nodeAccountId);
+
     private static final Response UNKNOWN_RESPONSE = Response.newBuilder()
             .setTransactionGetReceipt(TransactionGetReceiptResponse.newBuilder()
                     .setReceipt(TransactionReceipt.newBuilder().setStatus(UNKNOWN)))
@@ -108,11 +110,25 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     protected Optional<ResponseCodeEnum> expectedStatus = Optional.empty();
     protected Optional<ResponseCodeEnum> expectedPrecheck = Optional.empty();
-    protected Optional<KeyGenerator.Nature> keyGen = Optional.empty();
     protected Optional<EnumSet<ResponseCodeEnum>> permissibleStatuses = Optional.empty();
     protected Optional<EnumSet<ResponseCodeEnum>> permissiblePrechecks = Optional.empty();
     /** if response code in the set then allow to resubmit transaction */
     protected Optional<EnumSet<ResponseCodeEnum>> retryPrechecks = Optional.empty();
+
+    /**
+     * A strategy for submitting a transaction of the given function and type to a network node with the given id.
+     */
+    @FunctionalInterface
+    public interface SubmissionStrategy {
+        TransactionResponse submit(
+                @NonNull HederaNetwork network,
+                @NonNull Transaction transaction,
+                @NonNull HederaFunctionality functionality,
+                @NonNull SystemFunctionalityTarget target,
+                @NonNull AccountID nodeAccountId);
+    }
+
+    private SubmissionStrategy submissionStrategy = DEFAULT_SUBMISSION_STRATEGY;
 
     public long getSubmitTime() {
         return submitTime;
@@ -169,8 +185,8 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                 if (fiddler.isPresent()) {
                     txn = fiddler.get().apply(txn);
                 }
-                response = spec.targetNetworkOrThrow()
-                        .submit(txn, type(), systemFunctionalityTarget(), targetNodeFor(spec));
+                response = submissionStrategy.submit(
+                        spec.targetNetworkOrThrow(), txn, type(), systemFunctionalityTarget(), targetNodeFor(spec));
             } catch (StatusRuntimeException e) {
                 if (respondToSRE(e, "submitting transaction")) {
                     continue;
@@ -313,11 +329,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
                         String.format("Wrong status! Expected %s, was %s", getExpectedStatus(), actualStatus));
             }
         }
-        if (!deferStatusResolution) {
-            if (spec.setup().costSnapshotMode() != HapiSpec.CostSnapshotMode.OFF) {
-                publishFeeChargedTo(spec);
-            }
-        }
         if (ensureResolvedStatusIsntFromDuplicate) {
             assertRecordHasExpectedMemo(spec);
         }
@@ -326,7 +337,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     private void rechargePayerFor(HapiSpec spec) {
         long rechargeAmount = spec.registry().getRechargeAmount(payer.get());
         var bank = spec.setup().defaultPayerName();
-        spec.registry().setRechargingTime(payer.get(), Instant.now()); // record timestamp of last recharge event
+        spec.registry().setRechargingTime(payer.get(), spec.consensusTime()); // record timestamp of last recharge event
         allRunFor(spec, cryptoTransfer(tinyBarsFromTo(bank, payer.get(), rechargeAmount)));
     }
 
@@ -337,7 +348,7 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
     private synchronized boolean payerNotRecentlyRecharged(HapiSpec spec) {
         Instant lastInstant = payer.map(spec.registry()::getRechargingTime).orElse(Instant.MIN);
         Integer rechargeWindow = payer.map(spec.registry()::getRechargingWindow).orElse(0);
-        return !lastInstant.plusSeconds(rechargeWindow).isAfter(Instant.now());
+        return !lastInstant.plusSeconds(rechargeWindow).isAfter(spec.consensusTime());
     }
 
     private void addIpbToPermissiblePrechecks() {
@@ -362,14 +373,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         List<ResponseCodeEnum> tolerating = new ArrayList<>(immutableSet);
         tolerating.add(INSUFFICIENT_PAYER_BALANCE);
         return EnumSet.copyOf(tolerating);
-    }
-
-    private void publishFeeChargedTo(HapiSpec spec) throws Throwable {
-        if (recordOfSubmission == null) {
-            lookupSubmissionRecord(spec);
-        }
-        long fee = recordOfSubmission.getTransactionFee();
-        spec.recordPayment(new Payment(fee, self().getClass().getSimpleName(), TXN_FEE));
     }
 
     private void assertRecordHasExpectedMemo(HapiSpec spec) throws Throwable {
@@ -519,12 +522,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         }
     }
 
-    protected KeyGenerator effectiveKeyGen() {
-        return (keyGen.orElse(KeyGenerator.Nature.RANDOMIZED) == KeyGenerator.Nature.WITH_OVERLAPPING_PREFIXES)
-                ? OverlappingKeyGenerator.withDefaultOverlaps()
-                : DEFAULT_KEY_GEN;
-    }
-
     protected byte[] gasLongToBytes(final Long gas) {
         return Bytes.wrap(LONG_TUPLE.encode(Tuple.of(gas)).array()).toArray();
     }
@@ -615,6 +612,15 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
         return self();
     }
 
+    /**
+     * This method is used to set the payer for the operation, without adding the payer's key.
+     */
+    public T payingWithNoSig(@NonNull final String name) {
+        requireNonNull(name);
+        payer = Optional.of(name);
+        return self();
+    }
+
     public T payingWithAliased(String name) {
         payingWithAlias = true;
         payer = Optional.of(name);
@@ -658,11 +664,6 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T numPayerSigs(int hardcoded) {
         this.hardcodedNumPayerKeys = Optional.of(hardcoded);
-        return self();
-    }
-
-    public T ed25519Keys(KeyGenerator.Nature nature) {
-        keyGen = Optional.of(nature);
         return self();
     }
 
@@ -774,6 +775,11 @@ public abstract class HapiTxnOp<T extends HapiTxnOp<T>> extends HapiSpecOperatio
 
     public T withBodyMutation(@Nullable final BodyMutation mutation) {
         this.bodyMutation = mutation;
+        return self();
+    }
+
+    public T withSubmissionStrategy(@NonNull final SubmissionStrategy submissionStrategy) {
+        this.submissionStrategy = submissionStrategy;
         return self();
     }
 

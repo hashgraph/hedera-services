@@ -4,9 +4,11 @@
 The Hedera network reserves the first 1000 entity numbers for its own uses, and any account with a number in this reserved range is referred to as a system account.
 
 The following addresses are reserved for the Hedera system contracts:
-- 0x167 (0.0.359) - HTS;
+- 0x167 (0.0.359) - HTS (Hedera Token Service)
 - 0x168 (0.0.360) - ExchangeRate;
-- 0x169 (0.0.361) - PRNG.
+- 0x169 (0.0.361) - PRNG;
+- 0x16A (0.0.362) - HAS (Hedera Account Service).
+
 Please note that this list can expand in the future.
 
 Some of the system accounts exist today and more can be created in the future. Certain system accounts have predefined roles in the network. These include:

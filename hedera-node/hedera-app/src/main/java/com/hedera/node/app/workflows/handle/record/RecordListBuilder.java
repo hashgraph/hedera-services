@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl.ReversingBehavior;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
@@ -69,7 +68,6 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>As with all classes intended to be used within the handle-workflow, this class is <em>not</em> thread-safe.
  */
-@UserTxnScope
 public final class RecordListBuilder {
     private static final Logger logger = LogManager.getLogger(RecordListBuilder.class);
 
@@ -197,7 +195,8 @@ public final class RecordListBuilder {
         // user transaction. The second item is T-2, and so on.
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
         final var consensusNow = parentConsensusTimestamp.minusNanos(precedingCount + 1L);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, TransactionCategory.PRECEDING);
         precedingTxnRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
@@ -295,7 +294,8 @@ public final class RecordListBuilder {
                 childCategory == TransactionCategory.SCHEDULED ? consensusConfig.handleMaxPrecedingRecords() + 1 : 1L;
         final Instant consensusNow = prevConsensusNow.plusNanos(nextRecordOffset);
         // Note we do not repeat exchange rates for child transactions
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer, childCategory);
         // Only set parent consensus timestamp for child records if one is not provided
         if (!childCategory.equals(HandleContext.TransactionCategory.SCHEDULED)) {
             recordBuilder.parentConsensus(parentConsensusTimestamp);

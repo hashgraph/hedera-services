@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.keys;
 import static com.hedera.services.bdd.spec.keys.SigControl.KeyAlgo.UNSPECIFIED;
 import static com.hedera.services.bdd.spec.keys.SigControl.Nature.*;
 
+import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import java.io.Serializable;
@@ -120,7 +121,7 @@ public class SigControl implements Serializable {
         } else if (nature == DELEGATABLE_CONTRACT_ID) {
             return key.hasDelegatableContractId();
         } else {
-            KeyList composite = KeyFactory.getCompositeList(key);
+            KeyList composite = TxnUtils.getCompositeList(key);
             if (composite.getKeysCount() == childControls.length) {
                 return IntStream.range(0, childControls.length)
                         .allMatch(i -> childControls[i].appliesTo(composite.getKeys(i)));

@@ -17,17 +17,16 @@ appear below.
 5. [Sending funds to an account](#sending-account-funds)
 6. [Creating a new account](#creating-a-new-account)
 7. [Updating system files](#updating-system-files)
-8. [Validating network services](#validating-network-services)
-9. [Preparing for an NMT upgrade](#preparing-an-nmt-software-upgrade)
-10. [Launching an NMT telemetry upgrade](#launching-an-nmt-telemetry-upgrade)
-11. [Scheduling a network freeze](#scheduling-a-network-freeze)
-12. [Re-keying an account](#updating-account-keys)
-13. [Getting deployed version info of a network](#get-version-info)
-14. [Creating a new key](#generate-a-new-ed25519-key)
-15. [Printing key details](#printing-key-details)
-16. [Changing a staking election](#changing-a-staking-election)
-17. [Scheduling a transaction](#scheduling-a-transaction)
-18. [Scheduling public key list update](#scheduling-public-key-list-update)
+8. [Preparing for an NMT upgrade](#preparing-an-nmt-software-upgrade)
+9. [Launching an NMT telemetry upgrade](#launching-an-nmt-telemetry-upgrade)
+10. [Scheduling a network freeze](#scheduling-a-network-freeze)
+11. [Re-keying an account](#updating-account-keys)
+12. [Getting deployed version info of a network](#get-version-info)
+13. [Creating a new key](#generate-a-new-ed25519-key)
+14. [Printing key details](#printing-key-details)
+15. [Changing a staking election](#changing-a-staking-election)
+16. [Scheduling a transaction](#scheduling-a-transaction)
+17. [Scheduling public key list update](#scheduling-public-key-list-update)
 18. [Activating staking after a network reset](#activating-staking)
 
 # Setting up the working directory
@@ -333,20 +332,6 @@ You can also directly check the SHA-384 hash of a special file with the `sysfile
 ```
 $ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.1 -n localhost -p 58 sysfiles hash-check software-zip
 ```
-
-### Recovering from a failed special file upload
-
-
-# Validating network services
-
-:building_construction:&nbsp;**TODO** the _ValidationScenarios.jar_ functionality to be migrated here.
-
-Services will be validated by type; to see all supported options, run,
-
-```
-$ docker run -it -v $(pwd):/launch gcr.io/hedera-registry/yahcli:0.4.1 -n localhost -p 2 validate help
-```
-
 # Preparing an NMT software upgrade
 
 To prepare for an automatic software upgrade, there must exist a system file in the range `0.0.150-159` 

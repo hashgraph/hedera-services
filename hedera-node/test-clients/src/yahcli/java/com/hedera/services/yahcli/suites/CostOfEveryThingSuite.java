@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getTransactionFee;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -58,7 +57,6 @@ public class CostOfEveryThingSuite extends HapiSuite {
     private static final String TEST_TOKEN = "testToken";
     private static final String CANONICAL_ACCOUNT = "canonicalAccount";
 
-    HapiSpec.CostSnapshotMode costSnapshotMode = HapiSpec.CostSnapshotMode.TAKE;
     private final Map<String, String> specConfig;
     private final EnumSet<Utils.ServiceType> ServiceTypes;
     private StringBuilder feeTableBuilder;
@@ -101,7 +99,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
 
     final Stream<DynamicTest> canonicalContractOps() {
         return customHapiSpec("canonicalContractOps")
-                .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
+                .withProperties(specConfig)
                 .given(
                         UtilVerbs.newKeyNamed("key").shape(KeyShape.SIMPLE),
                         TxnVerbs.cryptoCreate(PAYER).key("key").balance(10_000_000_000L),
@@ -162,7 +160,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
         final byte[] next = TxnUtils.randomUtf8Bytes(fileSize);
 
         return customHapiSpec("canonicalFileOps")
-                .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
+                .withProperties(specConfig)
                 .given(
                         UtilVerbs.newKeyNamed("key").shape(KeyShape.SIMPLE),
                         TxnVerbs.cryptoCreate(PAYER).key("key").balance(1_000_000_000L),
@@ -206,7 +204,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
 
     final Stream<DynamicTest> canonicalTopicOps() {
         return customHapiSpec("canonicalTopicOps")
-                .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
+                .withProperties(specConfig)
                 .given(
                         UtilVerbs.newKeyNamed("key").shape(KeyShape.SIMPLE),
                         TxnVerbs.cryptoCreate(PAYER).key("key").balance(100_000_000L))
@@ -242,7 +240,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
 
     final Stream<DynamicTest> canonicalTokenOps() {
         return customHapiSpec("canonicalTokenOps")
-                .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
+                .withProperties(specConfig)
                 .given(
                         UtilVerbs.newKeyNamed("key").shape(KeyShape.SIMPLE),
                         UtilVerbs.newKeyNamed(ADMIN_KEY).shape(KeyShape.listOf(3)),
@@ -355,7 +353,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
     final Stream<DynamicTest> canonicalCryptoOps() {
 
         return customHapiSpec("canonicalCryptoOps")
-                .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
+                .withProperties(specConfig)
                 .given(
                         UtilVerbs.newKeyNamed("key").shape(KeyShape.SIMPLE),
                         TxnVerbs.cryptoCreate(PAYER).key("key").balance(1_000 * HapiSuite.ONE_HBAR))
@@ -401,7 +399,7 @@ public class CostOfEveryThingSuite extends HapiSuite {
 
     final Stream<DynamicTest> canonicalScheduleOps() {
         return customHapiSpec("canonicalScheduleOps")
-                .withProperties(specConfig, Map.of(COST_SNAPSHOT_MODE, costSnapshotMode.toString()))
+                .withProperties(specConfig)
                 .given(
                         TxnVerbs.cryptoCreate(PAYING_SENDER).balance(HapiSuite.ONE_HUNDRED_HBARS),
                         TxnVerbs.cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
