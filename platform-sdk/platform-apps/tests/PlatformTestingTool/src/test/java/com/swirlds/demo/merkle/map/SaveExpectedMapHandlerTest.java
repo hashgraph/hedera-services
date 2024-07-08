@@ -52,6 +52,9 @@ public class SaveExpectedMapHandlerTest {
     private static final String expectedMapName = "ExpectedMap.json";
     private static final String expectedMapZip = "ExpectedMap.json.gz";
 
+    /**
+     * Temporary test directory.
+     */
     @TempDir
     private Path tmpDir;
 
@@ -98,7 +101,7 @@ public class SaveExpectedMapHandlerTest {
     // Serializes and deserializes the expected map with all valid keys
     @Test
     public void serializeAndDeserializePositiveTest() throws IOException {
-        String jsonValue = serializeThrowing(expectedMap, new File(tmpDir.toString()), expectedMapName, true);
+        final var jsonValue = serializeThrowing(expectedMap, new File(tmpDir.toString()), expectedMapName, true);
         for (int i = 0; i < 20; i++) {
             assertTrue(jsonValue.contains("[0,0," + i + "]"));
         }
@@ -122,7 +125,7 @@ public class SaveExpectedMapHandlerTest {
     @Test
     public void DeserializeNullEntityTypeTest() throws IOException {
         addInvalidKeysToMap();
-        String jsonValue = serializeThrowing(expectedMap, new File(tmpDir.toString()), expectedMapName, true);
+        final var jsonValue = serializeThrowing(expectedMap, new File(tmpDir.toString()), expectedMapName, true);
 
         for (int i = 20; i < 25; i++) {
             assertTrue(jsonValue.contains("MapKey[0,0," + i + "]"));

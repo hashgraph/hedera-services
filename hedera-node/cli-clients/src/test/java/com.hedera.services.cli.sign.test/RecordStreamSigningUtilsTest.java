@@ -140,8 +140,10 @@ class RecordStreamSigningUtilsTest {
     @DisplayName("Failed to generate signature file with empty record stream file")
     void failedToSignWithEmptyRecordFile() {
         final var signedFileDestination = Path.of(tmpDir.getPath() + "/2022-09-19T21_09_17.348788413Z.rcd.gz_sig");
-        final Path fileToSign = Path.of(tmpDir.getPath()).resolve("testFile");
-        try (final var fos = new SerializableDataOutputStream(new FileOutputStream(fileToSign.toFile()))) {
+        final var tmpDirPath = tmpDir.toPath();
+        final var fileToSignPath = tmpDirPath.resolve("testFile");
+        final var fileToSign = fileToSignPath.toFile();
+        try (final var fos = new SerializableDataOutputStream(new FileOutputStream(fileToSign))) {
             fos.writeInt(RecordStreamSigningUtils.SUPPORTED_STREAM_FILE_VERSION);
             fos.flush();
         } catch (IOException e) {
@@ -149,7 +151,7 @@ class RecordStreamSigningUtilsTest {
         }
 
         assertFalse(RecordStreamSigningUtils.signRecordStreamFile(
-                signedFileDestination, fileToSign, TestUtils.loadKey(), hapiVersion));
+                signedFileDestination, fileToSignPath, TestUtils.loadKey(), hapiVersion));
     }
 
     @Test
