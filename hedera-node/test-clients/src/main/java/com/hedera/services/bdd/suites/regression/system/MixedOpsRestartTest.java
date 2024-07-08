@@ -19,11 +19,11 @@ package com.hedera.services.bdd.suites.regression.system;
 import static com.hedera.services.bdd.junit.TestTags.RESTART;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restartNetwork;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActiveNetwork;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.utilops.FakeNmt;
 import java.time.Duration;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -50,7 +50,7 @@ public class MixedOpsRestartTest implements LifecycleTest {
                         freezeOnly().startingIn(10).seconds().payingWith(GENESIS),
                         confirmFreezeAndShutdown(),
                         // (Re)start all nodes
-                        restartNetwork(),
+                        FakeNmt.restartNetwork(),
                         // Wait for all nodes to be ACTIVE
                         waitForActiveNetwork(RESTART_TIMEOUT))
                 .then(

@@ -20,13 +20,12 @@ import static com.hedera.services.bdd.junit.TestTags.ND_RECONNECT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restartNode;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.shutdownWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActive;
+import static com.hedera.services.bdd.suites.regression.system.MixedOperations.burstOfTps;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import java.time.Duration;
+import com.hedera.services.bdd.spec.utilops.FakeNmt;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -37,13 +36,7 @@ import org.junit.jupiter.api.Tag;
  * submits the same burst of mixed operations again.
  */
 @Tag(ND_RECONNECT)
-public class MixedOpsNodeDeathReconnectTest {
-    private static final int MIXED_OPS_BURST_TPS = 50;
-    private static final long PORT_UNBINDING_TIMEOUT_MS = 180_000L;
-    private static final Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
-    private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
-    private static final Duration RESTART_TO_ACTIVE_TIMEOUT = Duration.ofSeconds(180);
-
+public class MixedOpsNodeDeathReconnectTest implements LifecycleTest {
     @HapiTest
     final Stream<DynamicTest> reconnectMixedOps() {
         return defaultHapiSpec("RestartMixedOps")
@@ -51,22 +44,22 @@ public class MixedOpsNodeDeathReconnectTest {
                         // Validate we can initially submit transactions to node2
                         cryptoCreate("nobody").setNode("0.0.5"),
                         // Run some mixed transactions
-                        MixedOperations.burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
+                        burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
                         // Stop node 2
-                        shutdownWithin("Carol", SHUTDOWN_TIMEOUT),
+                        FakeNmt.shutdownWithin("Carol", SHUTDOWN_TIMEOUT),
                         logIt("Node 2 is supposedly down"),
-                        sleepFor(PORT_UNBINDING_TIMEOUT_MS))
+                        sleepFor(PORT_UNBINDING_WAIT_PERIOD.toMillis()))
                 .when(
                         // Submit operations when node 2 is down
-                        MixedOperations.burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
+                        burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
                         // Restart node2
-                        restartNode("Carol"),
+                        FakeNmt.restartNode("Carol"),
                         logIt("Node 2 is supposedly restarted"),
                         // Wait for node2 ACTIVE (BUSY and RECONNECT_COMPLETE are too transient to reliably poll for)
-                        waitForActive("Carol", RESTART_TO_ACTIVE_TIMEOUT))
+                        waitForActive("Carol", LifecycleTest.RESTART_TO_ACTIVE_TIMEOUT))
                 .then(
                         // Run some more transactions
-                        MixedOperations.burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
+                        burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
                         // And validate we can still submit transactions to node2
                         cryptoCreate("somebody").setNode("0.0.5"));
     }

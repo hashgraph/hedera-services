@@ -173,7 +173,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             "0123456789012345678901234567890123456789012345678901234567890123",
             "Node7",
             Bytes.wrap("cert7"),
-            softwareVersion);
+            softwareVersion,
+            "Node7");
 
     /**
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
@@ -350,7 +351,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                         "0123456789012345678901234567890123456789012345678901234567890123",
                         "Node7",
                         Bytes.wrap("cert7"),
-                        hederaSoftwareVersion);
+                        hederaSoftwareVersion,
+                        "Node7");
             } else {
                 realSelfNodeInfo = new SelfNodeInfoImpl(
                         selfNodeInfo.nodeId(),
@@ -363,7 +365,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                         selfNodeInfo.hexEncodedPublicKey(),
                         selfNodeInfo.memo(),
                         selfNodeInfo.sigCertBytes(),
-                        hederaSoftwareVersion);
+                        hederaSoftwareVersion,
+                        selfNodeInfo.selfName());
             }
 
             final var workingStateAccessor = new WorkingStateAccessor();
