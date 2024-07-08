@@ -154,11 +154,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var payer = context.payer();
 
         // delete the account airdrops from the linked list
-        final var payerAccount = getIfUsable(
-            payer,
-            accountStore,
-            context.expiryValidator(),
-            INVALID_ACCOUNT_ID);
+        final var payerAccount = getIfUsable(payer, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
         validateTrue(payerAccount.hasHeadPendingAirdropId(), INVALID_TRANSACTION_BODY);
 
         for (var pendingAirdropsToCancel : pendingAirdropIds) {
@@ -167,8 +163,10 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
 
             // Update the account to point to the new head if the current one is being cancelled
             if (pendingAirdropsToCancel.equals(payerAccount.headPendingAirdropId())) {
-                final var updatedPayer = payerAccount.copyBuilder()
-                    .headPendingAirdropId(accountAirdropToCancel.nextAirdrop()).build();
+                final var updatedPayer = payerAccount
+                        .copyBuilder()
+                        .headPendingAirdropId(accountAirdropToCancel.nextAirdrop())
+                        .build();
                 accountStore.put(updatedPayer);
             }
 
@@ -177,13 +175,19 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
             if (prevAirdropId != null) {
                 final var prevAccountAirdrop = pendingStore.getForModify(prevAirdropId);
                 validateTrue(prevAccountAirdrop != null, INVALID_TRANSACTION_BODY);
-                final var prevAirdropToUpdate = prevAccountAirdrop.copyBuilder().nextAirdrop(nextAirdropId).build();
+                final var prevAirdropToUpdate = prevAccountAirdrop
+                        .copyBuilder()
+                        .nextAirdrop(nextAirdropId)
+                        .build();
                 pendingStore.patch(prevAirdropId, prevAirdropToUpdate);
             }
             if (nextAirdropId != null) {
                 final var nextAccountAirdrop = pendingStore.getForModify(nextAirdropId);
                 validateTrue(nextAccountAirdrop != null, INVALID_TRANSACTION_BODY);
-                final var nextAirdropToUpdate = nextAccountAirdrop.copyBuilder().previousAirdrop(prevAirdropId).build();
+                final var nextAirdropToUpdate = nextAccountAirdrop
+                        .copyBuilder()
+                        .previousAirdrop(prevAirdropId)
+                        .build();
                 pendingStore.patch(nextAirdropId, nextAirdropToUpdate);
             }
         }
