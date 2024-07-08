@@ -92,8 +92,14 @@ class CustomSelfDestructOperationTest {
             @NonNull final CustomSelfDestructOperation.UseEIP6780Semantics useEIP6780Semantics) {
         createSubject(useEIP6780Semantics);
         given(frame.popStackItem()).willReturn(BENEFICIARY);
+        given(frame.getRecipientAddress()).willReturn(TBD);
+        given(frame.getRemainingGas()).willReturn(123L);
+        given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(addressChecks.isSystemAccount(BENEFICIARY)).willReturn(true);
+        given(gasCalculator.selfDestructOperationGasCost(null, INHERITANCE)).willReturn(123L);
         given(gasCalculator.selfDestructOperationGasCost(null, Wei.ZERO)).willReturn(123L);
+        given(proxyWorldUpdater.get(TBD)).willReturn(account);
+        given(account.getBalance()).willReturn(INHERITANCE);
         final var expected = new Operation.OperationResult(123L, INVALID_SOLIDITY_ADDRESS);
         assertSameResult(expected, subject.execute(frame, evm));
     }
@@ -105,9 +111,12 @@ class CustomSelfDestructOperationTest {
         createSubject(useEIP6780Semantics);
         given(frame.popStackItem()).willReturn(BENEFICIARY);
         given(frame.getRecipientAddress()).willReturn(TBD);
-        given(addressChecks.isPresent(BENEFICIARY, frame)).willReturn(true);
+        given(frame.getRemainingGas()).willReturn(123L);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
+        given(addressChecks.isPresent(BENEFICIARY, frame)).willReturn(true);
+        given(gasCalculator.selfDestructOperationGasCost(null, null)).willReturn(123L);
         given(gasCalculator.selfDestructOperationGasCost(null, Wei.ZERO)).willReturn(123L);
+        given(proxyWorldUpdater.get(TBD)).willReturn(account);
         given(proxyWorldUpdater.tryTrackingSelfDestructBeneficiary(TBD, BENEFICIARY, frame))
                 .willReturn(Optional.of(CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF));
         final var expected = new Operation.OperationResult(123L, CustomExceptionalHaltReason.SELF_DESTRUCT_TO_SELF);
@@ -147,6 +156,7 @@ class CustomSelfDestructOperationTest {
         createSubject(useEIP6780Semantics);
         givenRunnableSelfDestruct();
         givenWarmBeneficiaryWithSufficientGas();
+        given(addressChecks.isPresent(BENEFICIARY, frame)).willReturn(true);
         given(proxyWorldUpdater.tryTransfer(TBD, BENEFICIARY, INHERITANCE.toLong(), true))
                 .willReturn(Optional.of(CustomExceptionalHaltReason.INVALID_SIGNATURE));
         final var expected = new Operation.OperationResult(123L, CustomExceptionalHaltReason.INVALID_SIGNATURE);
@@ -159,6 +169,7 @@ class CustomSelfDestructOperationTest {
         createSubject(useEIP6780Semantics);
         givenRunnableSelfDestruct();
         givenWarmBeneficiaryWithSufficientGas();
+        given(addressChecks.isPresent(BENEFICIARY, frame)).willReturn(true);
         given(frame.getContractAddress()).willReturn(TBD);
         given(proxyWorldUpdater.tryTransfer(TBD, BENEFICIARY, INHERITANCE.toLong(), false))
                 .willReturn(Optional.empty());
@@ -188,6 +199,8 @@ class CustomSelfDestructOperationTest {
         given(proxyWorldUpdater.tryTransfer(TBD, BENEFICIARY, INHERITANCE.toLong(), false))
                 .willReturn(Optional.empty());
         final var expected = new Operation.OperationResult(123L, null);
+        given(addressChecks.isSystemAccount(BENEFICIARY)).willReturn(false);
+        given(addressChecks.isPresent(BENEFICIARY, frame)).willReturn(true);
         assertSameResult(expected, subject.execute(frame, evm));
         verify(frame).addSelfDestruct(TBD);
         verify(frame).addRefund(BENEFICIARY, INHERITANCE);
@@ -203,7 +216,6 @@ class CustomSelfDestructOperationTest {
     private void givenRunnableSelfDestruct() {
         given(frame.popStackItem()).willReturn(BENEFICIARY);
         given(frame.getRecipientAddress()).willReturn(TBD);
-        given(addressChecks.isPresent(BENEFICIARY, frame)).willReturn(true);
         given(frame.getWorldUpdater()).willReturn(proxyWorldUpdater);
         given(proxyWorldUpdater.get(TBD)).willReturn(account);
         given(account.getBalance()).willReturn(INHERITANCE);

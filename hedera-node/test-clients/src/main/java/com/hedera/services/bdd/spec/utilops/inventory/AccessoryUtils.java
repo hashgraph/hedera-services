@@ -16,7 +16,8 @@
 
 package com.hedera.services.bdd.spec.utilops.inventory;
 
-import com.hedera.services.bdd.spec.persistence.SpecKey;
+import static com.hedera.node.app.hapi.utils.keys.Ed25519Utils.readKeyPairFrom;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedReader;
 import java.io.File;
@@ -93,7 +94,7 @@ public class AccessoryUtils {
 
     static boolean unlocks(File keyFile, String passphrase) {
         try {
-            SpecKey.readFirstKpFromPem(keyFile, passphrase);
+            readKeyPairFrom(keyFile, passphrase);
             return true;
         } catch (Exception ignore) {
             return false;

@@ -31,7 +31,6 @@ import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TopicID;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +48,7 @@ public class RandomMessageSubmit implements OpProvider {
             standardOutcomesAnd(TOPIC_EXPIRED, INVALID_TOPIC_ID, INVALID_CHUNK_NUMBER, INVALID_CHUNK_TRANSACTION_ID);
 
     private final SplittableRandom r = new SplittableRandom();
-    private final EntityNameProvider<TopicID> topics;
+    private final EntityNameProvider topics;
     private int numStableTopics = DEFAULT_NUM_STABLE_TOPICS;
     private static byte[] messageBytes = new byte[1024];
 
@@ -57,7 +56,7 @@ public class RandomMessageSubmit implements OpProvider {
         Arrays.fill(messageBytes, (byte) 0b1);
     }
 
-    public RandomMessageSubmit(EntityNameProvider<TopicID> topics) {
+    public RandomMessageSubmit(EntityNameProvider topics) {
         this.topics = topics;
     }
 

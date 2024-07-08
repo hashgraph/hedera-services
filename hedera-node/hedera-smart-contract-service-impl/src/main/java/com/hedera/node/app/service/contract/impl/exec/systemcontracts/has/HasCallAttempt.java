@@ -77,11 +77,10 @@ public class HasCallAttempt extends AbstractCallAttempt {
                 callTranslators,
                 isStaticCall,
                 REDIRECT_FOR_ACCOUNT);
-
         if (isRedirect()) {
             this.redirectAccount = linkedAccount(redirectAddress);
         } else {
-            redirectAccount = null;
+            this.redirectAccount = null;
         }
     }
 
