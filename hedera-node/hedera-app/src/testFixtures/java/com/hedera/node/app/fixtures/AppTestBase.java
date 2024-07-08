@@ -28,11 +28,15 @@ import com.hedera.node.app.fixtures.state.FakePlatform;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.info.NetworkInfoImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
+import com.hedera.node.app.spi.store.ReadableStoreDefinition;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
@@ -103,6 +107,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     protected MapWritableKVState<AccountID, Account> accountsState;
     protected MapWritableKVState<ProtoBytes, AccountID> aliasesState;
     protected HederaState state;
+    protected StoreRegistry storeRegistry;
 
     protected void setupStandardStates() {
         accountsState = new MapWritableKVState<>(ACCOUNTS_KEY);
@@ -131,6 +136,14 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                 return TokenService.NAME.equals(serviceName) ? writableStates : null;
             }
         };
+        setupStoreRegistry();
+    }
+
+    protected void setupStoreRegistry() {
+        storeRegistry = new StoreRegistry();
+        storeRegistry.registerReadableStores(
+                TokenService.NAME,
+                new ReadableStoreDefinition<>(ReadableAccountStore.class, ReadableAccountStoreImpl::new));
     }
 
     private final HederaSoftwareVersion softwareVersion = new HederaSoftwareVersion(

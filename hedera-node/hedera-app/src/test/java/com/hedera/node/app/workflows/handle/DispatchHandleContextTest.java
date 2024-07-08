@@ -34,7 +34,6 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -71,10 +70,13 @@ import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
+import com.hedera.node.app.spi.api.ServiceApiFactory;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
@@ -88,6 +90,8 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.store.ReadableStoreDefinition;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -97,10 +101,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.WrappedHederaState;
-import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.store.ServiceApiFactory;
-import com.hedera.node.app.store.StoreFactoryImpl;
-import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -215,12 +216,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private EntityNumGenerator entityNumGenerator;
 
     @Mock
-    private SingleTransactionRecordBuilderImpl oneChildBuilder;
-
-    @Mock
-    private SingleTransactionRecordBuilderImpl twoChildBuilder;
-
-    @Mock
     private ChildDispatchFactory childDispatchFactory;
 
     @Mock
@@ -248,7 +243,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private SavepointStackImpl stack;
 
     @Mock
-    private WritableStoreFactory writableStoreFactory;
+    private ServiceApiFactory serviceApiFactory;
 
     @Mock
     private NodeInfo creatorInfo;
@@ -259,9 +254,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Mock
     private RecordBuilders recordBuilders;
 
-    private ServiceApiFactory apiFactory;
-    private ReadableStoreFactory readableStoreFactory;
-    private StoreFactoryImpl storeFactory;
+    private StoreFactory storeFactory;
     private DispatchHandleContext subject;
 
     private static final AccountID payerId = ALICE.accountID();
@@ -290,9 +283,14 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @BeforeEach
     void setup() {
         when(serviceScopeLookup.getServiceName(any())).thenReturn(TokenService.NAME);
-        readableStoreFactory = new ReadableStoreFactory(baseState);
-        apiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
-        storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, apiFactory);
+
+        final var storeRegistry = new StoreRegistry()
+                .registerReadableStore(
+                        TokenService.NAME,
+                        new ReadableStoreDefinition<>(ReadableAccountStore.class, ReadableAccountStoreImpl::new));
+        storeFactory =
+                storeRegistry.createStoreFactory(baseState, TokenService.NAME, configuration, storeMetricsService);
+
         subject = createContext(txBody);
 
         mockNeeded();
@@ -348,7 +346,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                         eq(CONSENSUS_NOW),
                         eq(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES),
                         eq(false),
-                        eq(readableStoreFactory)))
+                        eq(storeFactory.asReadOnly())))
                 .willReturn(feeCalculator);
         final var factory = subject.feeCalculatorFactory();
         assertThat(factory.feeCalculator(TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES))
@@ -378,6 +376,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             resourcePriceCalculator,
             feeManager,
             storeFactory,
+            serviceApiFactory,
             payerId,
             verifier,
             platformState,
@@ -523,13 +522,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             assertInstanceOf(ChildFeeContextImpl.class, feeContext);
             assertSame(fees, result);
         }
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    @Test
-    void failsAsExpectedWithoutAvailableApi() {
-        assertThrows(
-                IllegalArgumentException.class, () -> subject.storeFactory().serviceApi(Object.class));
     }
 
     @Nested
@@ -767,6 +759,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 resourcePriceCalculator,
                 feeManager,
                 storeFactory,
+                serviceApiFactory,
                 payerId,
                 verifier,
                 platformState,

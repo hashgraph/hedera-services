@@ -19,6 +19,7 @@ package com.hedera.node.app.records;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -82,7 +83,7 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * to multiple transactions.
      * @param consensusTime the most recent consensus timestamp that the node has <b>started</b> to handle
      */
-    void advanceConsensusClock(@NonNull Instant consensusTime, @NonNull HederaState state);
+    void advanceConsensusClock(@NonNull Instant consensusTime, @NonNull SavepointStackImpl stack);
 
     /**
      * Add a user transaction's records to the record stream. They must be in exact consensus time order! This must only

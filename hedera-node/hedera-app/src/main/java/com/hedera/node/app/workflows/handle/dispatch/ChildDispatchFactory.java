@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
+import com.hedera.node.app.api.ServiceApiRegistry;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
@@ -55,14 +56,12 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.store.ReadableStoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.store.ServiceApiFactory;
-import com.hedera.node.app.store.StoreFactoryImpl;
-import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
@@ -107,6 +106,8 @@ public class ChildDispatchFactory {
     private final ServiceScopeLookup serviceScopeLookup;
     private final StoreMetricsService storeMetricsService;
     private final ExchangeRateManager exchangeRateManager;
+    private final StoreRegistry storeRegistry;
+    private final ServiceApiRegistry serviceApiRegistry;
 
     @Inject
     public ChildDispatchFactory(
@@ -120,7 +121,9 @@ public class ChildDispatchFactory {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final ExchangeRateManager exchangeRateManager) {
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final StoreRegistry storeRegistry,
+            @NonNull final ServiceApiRegistry serviceApiRegistry) {
         this.dispatcher = requireNonNull(dispatcher);
         this.recordBuilderFactory = requireNonNull(recordBuilderFactory);
         this.authorizer = requireNonNull(authorizer);
@@ -132,6 +135,8 @@ public class ChildDispatchFactory {
         this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.storeRegistry = requireNonNull(storeRegistry);
+        this.serviceApiRegistry = requireNonNull(serviceApiRegistry);
     }
 
     /**
@@ -229,10 +234,10 @@ public class ChildDispatchFactory {
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final TransactionDispatcher dispatcher) {
-        final var readableStoreFactory = new ReadableStoreFactory(stack);
-        final var writableStoreFactory = new WritableStoreFactory(
+        final var storeFactory = storeRegistry.createStoreFactory(
                 stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
-        final var serviceApiFactory = new ServiceApiFactory(stack, config, storeMetricsService);
+        final var readableStoreFactory = storeFactory.asReadOnly();
+        final var serviceApiFactory = serviceApiRegistry.createServiceApiFactory(stack, config, storeMetricsService);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,
@@ -242,7 +247,8 @@ public class ChildDispatchFactory {
                 blockRecordManager,
                 new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory),
                 feeManager,
-                new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory),
+                storeFactory,
+                serviceApiFactory,
                 payerId,
                 keyVerifier,
                 platformState,
@@ -250,9 +256,9 @@ public class ChildDispatchFactory {
                 Key.DEFAULT,
                 exchangeRateManager,
                 stack,
-                new EntityNumGeneratorImpl(
-                        new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
-                                .getStore(WritableEntityIdStore.class)),
+                new EntityNumGeneratorImpl(storeRegistry
+                        .createStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
+                        .writableStore(WritableEntityIdStore.class)),
                 dispatcher,
                 recordCache,
                 networkInfo,
@@ -268,7 +274,7 @@ public class ChildDispatchFactory {
                 txnInfo,
                 payerId,
                 readableStoreFactory,
-                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), recordBuilder),
+                new FeeAccumulator(serviceApiFactory.serviceApi(TokenServiceApi.class), recordBuilder),
                 keyVerifier,
                 creatorInfo,
                 consensusNow,
@@ -278,8 +284,7 @@ public class ChildDispatchFactory {
                 stack,
                 category,
                 new TriggeredFinalizeContext(
-                        readableStoreFactory,
-                        new WritableStoreFactory(stack, TokenService.NAME, config, storeMetricsService),
+                        storeRegistry.createStoreFactory(stack, TokenService.NAME, config, storeMetricsService),
                         recordBuilder,
                         consensusNow,
                         config),

@@ -17,15 +17,30 @@
 package com.hedera.node.app.service.networkadmin.impl;
 
 import com.hedera.node.app.service.networkadmin.FreezeService;
+import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema;
 import com.hedera.node.app.spi.RpcService;
+import com.hedera.node.app.spi.store.ReadableStoreDefinition;
+import com.hedera.node.app.spi.store.WritableStoreDefinition;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /** Standard implementation of the {@link FreezeService} {@link RpcService}. */
 public final class FreezeServiceImpl implements FreezeService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490FreezeSchema());
+    }
+
+    @Override
+    public Set<ReadableStoreDefinition<?>> readableStoreDefinitions() {
+        return Set.of(new ReadableStoreDefinition<>(ReadableFreezeStore.class, ReadableFreezeStoreImpl::new));
+    }
+
+    @Override
+    public Set<WritableStoreDefinition<?>> writableStoreDefinitions() {
+        return Set.of(new WritableStoreDefinition<>(
+                WritableFreezeStore.class, (states, config, metrics) -> new WritableFreezeStore(states)));
     }
 }

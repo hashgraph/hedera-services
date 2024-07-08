@@ -23,6 +23,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.api.ServiceApiFactory;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.Fees;
@@ -207,12 +208,20 @@ public interface HandleContext {
     RecordCache recordCache();
 
     /**
-     * Returns a {@link StoreFactory} that can create readable and writable stores as well as service APIs.
+     * Returns a {@link StoreFactory} that can create readable and writable stores.
      *
      * @return the {@link StoreFactory}
      */
     @NonNull
     StoreFactory storeFactory();
+
+    /**
+     * Returns a {@link ServiceApiFactory} that can create service APIs.
+     *
+     * @return the {@link StoreFactory}
+     */
+    @NonNull
+    ServiceApiFactory serviceApiFactory();
 
     /**
      * Returns the information about the network this transaction is being handled in.

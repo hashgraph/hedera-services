@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
+import com.hedera.node.app.api.ServiceApiRegistry;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
@@ -36,10 +37,8 @@ import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.store.ServiceApiFactory;
-import com.hedera.node.app.store.StoreFactoryImpl;
-import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.spi.store.ReadableStoreFactory;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.throttle.AppThrottleAdviser;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -83,7 +82,9 @@ public record UserTxn(
         @NonNull ReadableStoreFactory readableStoreFactory,
         @NonNull Configuration config,
         @NonNull Instant lastHandledConsensusTime,
-        @NonNull NodeInfo creatorInfo) {
+        @NonNull NodeInfo creatorInfo,
+        @NonNull StoreRegistry storeRegistry,
+        @NonNull ServiceApiRegistry serviceApiRegistry) {
 
     public static UserTxn from(
             // @UserTxnScope
@@ -98,10 +99,12 @@ public record UserTxn(
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final BlockRecordManager blockRecordManager,
-            @NonNull final HandleWorkflow handleWorkflow) {
+            @NonNull final HandleWorkflow handleWorkflow,
+            @NonNull final StoreRegistry storeRegistry,
+            @NonNull final ServiceApiRegistry serviceApiRegistry) {
         final var config = configProvider.getConfiguration();
         final var stack = new SavepointStackImpl(state);
-        final var readableStoreFactory = new ReadableStoreFactory(stack);
+        final var readableStoreFactory = storeRegistry.createReadableStoreFactory(stack);
         final var preHandleResult =
                 handleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
@@ -116,13 +119,16 @@ public record UserTxn(
                 platformTxn,
                 recordListBuilder,
                 txnInfo,
-                new TokenContextImpl(config, state, storeMetricsService, stack, recordListBuilder, blockRecordManager),
+                new TokenContextImpl(
+                        config, storeMetricsService, stack, recordListBuilder, blockRecordManager, storeRegistry),
                 stack,
                 preHandleResult,
                 readableStoreFactory,
                 config,
                 lastHandledConsensusTime,
-                creatorInfo);
+                creatorInfo,
+                storeRegistry,
+                serviceApiRegistry);
     }
 
     public Dispatch dispatch(
@@ -145,10 +151,10 @@ public record UserTxn(
                 config.getConfigData(HederaConfig.class),
                 preHandleResult.getVerificationResults());
 
-        final var readableStoreFactory = new ReadableStoreFactory(stack);
-        final var writableStoreFactory = new WritableStoreFactory(
+        final var storeFactory = storeRegistry.createStoreFactory(
                 stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
-        final var serviceApiFactory = new ServiceApiFactory(stack, config, storeMetricsService);
+        final var readableStoreFactory = storeFactory.asReadOnly();
+        final var serviceApiFactory = serviceApiRegistry.createServiceApiFactory(stack, config, storeMetricsService);
 
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
@@ -159,7 +165,8 @@ public record UserTxn(
                 blockRecordManager,
                 new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory),
                 feeManager,
-                new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory),
+                storeFactory,
+                serviceApiFactory,
                 requireNonNull(txnInfo.payerID()),
                 keyVerifier,
                 platformState,
@@ -167,9 +174,9 @@ public record UserTxn(
                 preHandleResult.payerKey() == null ? Key.DEFAULT : preHandleResult.payerKey(),
                 exchangeRateManager,
                 stack,
-                new EntityNumGeneratorImpl(
-                        new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
-                                .getStore(WritableEntityIdStore.class)),
+                new EntityNumGeneratorImpl(storeRegistry
+                        .createStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
+                        .writableStore(WritableEntityIdStore.class)),
                 dispatcher,
                 recordCache,
                 networkInfo,
@@ -185,7 +192,7 @@ public record UserTxn(
                 txnInfo,
                 requireNonNull(txnInfo.payerID()),
                 readableStoreFactory,
-                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), recordBuilder),
+                new FeeAccumulator(serviceApiFactory.serviceApi(TokenServiceApi.class), recordBuilder),
                 keyVerifier,
                 creatorInfo,
                 consensusNow,

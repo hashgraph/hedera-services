@@ -24,8 +24,10 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.node.app.api.ServiceApiRegistry;
 import com.hedera.node.app.spi.fixtures.TestService;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
+import com.hedera.node.app.store.StoreRegistry;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.state.spi.StateDefinition;
@@ -39,27 +41,25 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class ServicesRegistryImplTest {
 
     @Mock
-    ConstructableRegistry cr;
+    private ConstructableRegistry cr;
+
+    @Mock
+    private StoreRegistry storeRegistry;
+
+    @Mock
+    private ServiceApiRegistry serviceApiRegistry;
 
     @DisplayName("The constructable registry cannot be null")
     @Test
     void nullConstructableRegistryThrows() {
         //noinspection DataFlowIssue
-        assertThatThrownBy(() -> new ServicesRegistryImpl(null, DEFAULT_CONFIG))
-                .isInstanceOf(NullPointerException.class);
-    }
-
-    @DisplayName("The genesis record builder cannot be null")
-    @Test
-    void nullGenesisRecordsThrows() {
-        //noinspection DataFlowIssue
-        assertThatThrownBy(() -> new ServicesRegistryImpl(null, DEFAULT_CONFIG))
+        assertThatThrownBy(() -> new ServicesRegistryImpl(null, DEFAULT_CONFIG, storeRegistry, serviceApiRegistry))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void registerCallsTheConstructableRegistry() throws ConstructableRegistryException {
-        final var registry = new ServicesRegistryImpl(cr, DEFAULT_CONFIG);
+        final var registry = new ServicesRegistryImpl(cr, DEFAULT_CONFIG, storeRegistry, serviceApiRegistry);
         registry.register(TestService.newBuilder()
                 .name("registerCallsTheConstructableRegistryTest")
                 .schema(TestSchema.newBuilder()
@@ -73,7 +73,7 @@ final class ServicesRegistryImplTest {
 
     @Test
     void registrationsAreSortedByName() {
-        final var registry = new ServicesRegistryImpl(cr, DEFAULT_CONFIG);
+        final var registry = new ServicesRegistryImpl(cr, DEFAULT_CONFIG, storeRegistry, serviceApiRegistry);
         registry.register(TestService.newBuilder().name("B").build());
         registry.register(TestService.newBuilder().name("C").build());
         registry.register(TestService.newBuilder().name("A").build());

@@ -17,8 +17,7 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import com.hedera.node.app.service.token.records.FinalizeContext;
-import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -35,12 +34,11 @@ public class TriggeredFinalizeContext extends ChildFinalizeContextImpl implement
     private final Configuration configuration;
 
     public TriggeredFinalizeContext(
-            @NonNull final ReadableStoreFactory readableStoreFactory,
-            @NonNull final WritableStoreFactory writableStoreFactory,
+            @NonNull final StoreFactory storeFactory,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
             @NonNull final Instant consensusNow,
             @NonNull final Configuration configuration) {
-        super(configuration, readableStoreFactory, writableStoreFactory, recordBuilder);
+        super(configuration, storeFactory, recordBuilder);
         this.consensusNow = Objects.requireNonNull(consensusNow);
         this.configuration = Objects.requireNonNull(configuration);
     }

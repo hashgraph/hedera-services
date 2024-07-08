@@ -54,6 +54,7 @@ module com.hedera.node.app {
     requires static java.compiler;
     // javax.annotation.processing.Generated
 
+    exports com.hedera.node.app.api;
     exports com.hedera.node.app to
             com.hedera.node.test.clients;
     exports com.hedera.node.app.state to

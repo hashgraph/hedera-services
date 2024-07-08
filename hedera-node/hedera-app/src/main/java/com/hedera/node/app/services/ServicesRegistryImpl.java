@@ -18,11 +18,13 @@ package com.hedera.node.app.services;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.api.ServiceApiRegistry;
+import com.hedera.node.app.spi.AppService;
 import com.hedera.node.app.state.merkle.MerkleSchemaRegistry;
 import com.hedera.node.app.state.merkle.SchemaApplications;
+import com.hedera.node.app.store.StoreRegistry;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.SortedSet;
@@ -51,14 +53,25 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
      */
     private final Configuration bootstrapConfig;
 
+    /** All stores of a service have to be registered with the {@link StoreRegistry} */
+    private final StoreRegistry storeRegistry;
+
+    /** All service APIs have to be registered with the {@link ServiceApiRegistry} */
+    private final ServiceApiRegistry serviceApiRegistry;
+
     /**
      * Creates a new registry.
      */
     @Inject
     public ServicesRegistryImpl(
-            @NonNull final ConstructableRegistry constructableRegistry, @NonNull final Configuration bootstrapConfig) {
+            @NonNull final ConstructableRegistry constructableRegistry,
+            @NonNull final Configuration bootstrapConfig,
+            @NonNull final StoreRegistry storeRegistry,
+            @NonNull final ServiceApiRegistry serviceApiRegistry) {
         this.constructableRegistry = requireNonNull(constructableRegistry);
         this.bootstrapConfig = requireNonNull(bootstrapConfig);
+        this.storeRegistry = requireNonNull(storeRegistry);
+        this.serviceApiRegistry = requireNonNull(serviceApiRegistry);
         this.entries = new TreeSet<>();
     }
 
@@ -68,13 +81,18 @@ public final class ServicesRegistryImpl implements ServicesRegistry {
      * @param service The service to register
      */
     @Override
-    public void register(@NonNull final Service service) {
+    public void register(@NonNull final AppService service) {
         final var serviceName = service.getServiceName();
 
         logger.debug("Registering schemas for service {}", serviceName);
         final var registry =
                 new MerkleSchemaRegistry(constructableRegistry, serviceName, bootstrapConfig, new SchemaApplications());
         service.registerSchemas(registry);
+
+        logger.debug("Registering stores and serviceAPIs for service {}", serviceName);
+        storeRegistry.registerReadableStores(serviceName, service.readableStoreDefinitions());
+        storeRegistry.registerWritableStores(serviceName, service.writableStoreDefinitions());
+        serviceApiRegistry.registerServiceApis(serviceName, service.serviceApiDefinitions());
 
         entries.add(new Registration(service, registry));
         logger.info("Registered service {} with implementation {}", service.getServiceName(), service.getClass());

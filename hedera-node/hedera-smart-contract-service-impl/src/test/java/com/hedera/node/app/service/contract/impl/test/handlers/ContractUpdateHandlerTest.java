@@ -59,6 +59,7 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.spi.api.ServiceApiFactory;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -89,6 +90,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
 
     @Mock
     private HandleContext context;
+
+    @Mock
+    private ServiceApiFactory serviceApiFactory;
 
     @Mock
     private StoreFactory storeFactory;
@@ -438,8 +442,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .thenReturn(AccountID.newBuilder().accountNum(666).build());
         when(contract.key()).thenReturn(Key.newBuilder().build());
         when(context.expiryValidator()).thenReturn(expiryValidator);
+        given(context.serviceApiFactory()).willReturn(serviceApiFactory);
+        when(serviceApiFactory.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
         given(context.storeFactory()).willReturn(storeFactory);
-        when(storeFactory.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()
@@ -651,8 +656,9 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
                 .thenReturn(AccountID.newBuilder().accountNum(999L).build());
         when(contract.key()).thenReturn(Key.newBuilder().build());
         when(context.expiryValidator()).thenReturn(expiryValidator);
+        given(context.serviceApiFactory()).willReturn(serviceApiFactory);
+        when(serviceApiFactory.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
         given(context.storeFactory()).willReturn(storeFactory);
-        when(storeFactory.serviceApi(TokenServiceApi.class)).thenReturn(tokenServiceApi);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var txn = TransactionBody.newBuilder()
                 .contractUpdateInstance(ContractUpdateTransactionBody.newBuilder()

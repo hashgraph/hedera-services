@@ -21,6 +21,7 @@ import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.BACK
 import static com.hedera.node.app.throttle.ThrottleAccumulator.ThrottleType.FRONTEND_THROTTLE;
 
 import com.hedera.node.app.fees.congestion.ThrottleMultiplier;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.CryptoTransferThrottleMultiplier;
 import com.hedera.node.app.throttle.annotations.GasThrottleMultiplier;
@@ -48,19 +49,24 @@ public interface ThrottleServiceModule {
     @Provides
     @Singleton
     @BackendThrottle
-    static ThrottleAccumulator provideBackendThrottleAccumulator(ConfigProvider configProvider, Metrics metrics) {
+    static ThrottleAccumulator provideBackendThrottleAccumulator(
+            ConfigProvider configProvider, Metrics metrics, StoreRegistry storeRegistry) {
         final var throttleMetrics = new ThrottleMetrics(metrics, BACKEND_THROTTLE);
-        return new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE, throttleMetrics);
+        return new ThrottleAccumulator(SUPPLY_ONE, configProvider, BACKEND_THROTTLE, throttleMetrics, storeRegistry);
     }
 
     @Provides
     @Singleton
     @IngestThrottle
     static ThrottleAccumulator provideIngestThrottleAccumulator(
-            Platform platform, ConfigProvider configProvider, Metrics metrics) {
+            Platform platform, ConfigProvider configProvider, Metrics metrics, StoreRegistry storeRegistry) {
         final var throttleMetrics = new ThrottleMetrics(metrics, FRONTEND_THROTTLE);
         return new ThrottleAccumulator(
-                () -> platform.getAddressBook().getSize(), configProvider, FRONTEND_THROTTLE, throttleMetrics);
+                () -> platform.getAddressBook().getSize(),
+                configProvider,
+                FRONTEND_THROTTLE,
+                throttleMetrics,
+                storeRegistry);
     }
 
     @Provides

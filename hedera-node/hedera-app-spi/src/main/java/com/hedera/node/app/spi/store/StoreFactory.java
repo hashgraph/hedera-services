@@ -16,7 +16,6 @@
 
 package com.hedera.node.app.spi.store;
 
-import com.hedera.hapi.node.transaction.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -51,15 +50,10 @@ public interface StoreFactory {
     <T> T writableStore(@NonNull Class<T> storeInterface);
 
     /**
-     * Return a service API given the API's interface. This permits use of another service
-     * that doesn't have a corresponding HAPI {@link TransactionBody}.
+     * Return a read-only version of this {@code StoreFactory} initialized with the same data.
      *
-     * @param apiInterface The API interface to find and create an implementation of
-     * @param <T> Interface class for an API
-     * @return An implementation of the provided API interface
-     * @throws IllegalArgumentException if the apiInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code apiInterface} is {@code null}
+     * @return A {@link ReadableStoreFactory}
      */
     @NonNull
-    <T> T serviceApi(@NonNull Class<T> apiInterface);
+    ReadableStoreFactory asReadOnly();
 }

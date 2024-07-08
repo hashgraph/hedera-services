@@ -53,7 +53,7 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.state.DeduplicationCache;
-import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.SolvencyPreCheck;
 import com.hedera.node.app.workflows.TransactionChecker;
@@ -97,6 +97,7 @@ public final class IngestChecker {
     private final Authorizer authorizer;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
     private final InstantSource instantSource;
+    private final StoreRegistry storeRegistry;
 
     /**
      * Constructor of the {@code IngestChecker}
@@ -111,6 +112,7 @@ public final class IngestChecker {
      * @param feeManager the {@link FeeManager} that manages {@link com.hedera.node.app.spi.fees.FeeCalculator}s
      * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
      * @param instantSource the {@link InstantSource} that provides the current time
+     * @param storeRegistry the {@link StoreRegistry} that provides access to the stores
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -126,7 +128,8 @@ public final class IngestChecker {
             @NonNull final FeeManager feeManager,
             @NonNull final Authorizer authorizer,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final InstantSource instantSource) {
+            @NonNull final InstantSource instantSource,
+            @NonNull final StoreRegistry storeRegistry) {
         this.nodeAccount = requireNonNull(nodeAccount, "nodeAccount must not be null");
         this.currentPlatformStatus = requireNonNull(currentPlatformStatus, "currentPlatformStatus must not be null");
         this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
@@ -139,6 +142,7 @@ public final class IngestChecker {
         this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
         this.synchronizedThrottleAccumulator = requireNonNull(synchronizedThrottleAccumulator);
         this.instantSource = requireNonNull(instantSource);
+        this.storeRegistry = requireNonNull(storeRegistry);
     }
 
     /**
@@ -200,7 +204,7 @@ public final class IngestChecker {
         dispatcher.dispatchPureChecks(txBody);
 
         // 5. Get payer account
-        final var storeFactory = new ReadableStoreFactory(state);
+        final var storeFactory = storeRegistry.createReadableStoreFactory(state);
         final var payer = solvencyPreCheck.getPayerAccount(storeFactory, txInfo.payerID());
         final var payerKey = payer.key();
         // There should, absolutely, be a key for this account. If there isn't, then something is wrong in

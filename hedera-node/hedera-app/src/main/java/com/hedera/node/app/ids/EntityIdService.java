@@ -17,14 +17,16 @@
 package com.hedera.node.app.ids;
 
 import com.hedera.node.app.ids.schemas.V0490EntityIdSchema;
+import com.hedera.node.app.spi.AppService;
+import com.hedera.node.app.spi.store.WritableStoreDefinition;
 import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * Service for providing incrementing entity id numbers. It stores the most recent entity id in state.
  */
-public class EntityIdService implements Service {
+public class EntityIdService implements AppService {
     public static final String NAME = "EntityIdService";
 
     /** {@inheritDoc} */
@@ -38,5 +40,11 @@ public class EntityIdService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490EntityIdSchema());
+    }
+
+    @Override
+    public Set<WritableStoreDefinition<?>> writableStoreDefinitions() {
+        return Set.of(new WritableStoreDefinition<>(
+                WritableEntityIdStore.class, (states, config, metrics) -> new WritableEntityIdStore(states)));
     }
 }

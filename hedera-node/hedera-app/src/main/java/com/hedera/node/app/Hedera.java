@@ -35,6 +35,7 @@ import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.util.HapiUtils;
+import com.hedera.node.app.api.ServiceApiRegistry;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.config.IsEmbeddedTest;
@@ -62,7 +63,7 @@ import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.statedumpers.MerkleStateChild;
-import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
@@ -207,6 +208,10 @@ public final class Hedera implements SwirldMain {
 
     private Metrics metrics;
 
+    private StoreRegistry storeRegistry;
+
+    private ServiceApiRegistry serviceApiRegistry;
+
     /*==================================================================================================================
     *
     * Hedera Object Construction.
@@ -247,7 +252,10 @@ public final class Hedera implements SwirldMain {
                 HEDERA);
         final var bootstrapConfig = new BootstrapConfigProviderImpl().getConfiguration();
         version = getNodeStartupVersion(bootstrapConfig);
-        servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
+        storeRegistry = new StoreRegistry();
+        serviceApiRegistry = new ServiceApiRegistry();
+        servicesRegistry =
+                registryFactory.create(constructableRegistry, bootstrapConfig, storeRegistry, serviceApiRegistry);
         logger.info(
                 "Creating Hedera Consensus Node {} with HAPI {}",
                 () -> HapiUtils.toString(version.getServicesVersion()),
@@ -563,7 +571,7 @@ public final class Hedera implements SwirldMain {
      * Invoked by the platform to handle pre-consensus events. This only happens after {@link #run()} has been called.
      */
     public void onPreHandle(@NonNull final Event event, @NonNull final HederaState state) {
-        final var readableStoreFactory = new ReadableStoreFactory(state);
+        final var readableStoreFactory = storeRegistry.createReadableStoreFactory(state);
         final var creator =
                 daggerApp.networkInfo().nodeInfo(event.getCreatorId().id());
         if (creator == null) {
@@ -707,6 +715,8 @@ public final class Hedera implements SwirldMain {
                 .instantSource(instantSource)
                 .contractServiceImpl(contractServiceImpl)
                 .metrics(metrics)
+                .storeRegistry(storeRegistry)
+                .serviceApiRegistry(serviceApiRegistry)
                 .build();
         daggerApp.workingStateAccessor().setHederaState(state);
         daggerApp.platformStateAccessor().setPlatformState(platformState);
@@ -754,7 +764,8 @@ public final class Hedera implements SwirldMain {
     }
 
     private @Nullable File getFileFromStorage(@NonNull final HederaState state, final long fileNum) {
-        final var readableFileStore = new ReadableStoreFactory(state).getStore(ReadableFileStore.class);
+        final var readableFileStore =
+                storeRegistry.createReadableStoreFactory(state).getStore(ReadableFileStore.class);
         final var hederaConfig = configProvider.getConfiguration().getConfigData(HederaConfig.class);
         final var fileId = FileID.newBuilder()
                 .fileNum(fileNum)

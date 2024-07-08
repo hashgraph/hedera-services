@@ -49,14 +49,30 @@ import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.consensus.ConsensusService;
+import com.hedera.node.app.service.consensus.ReadableTopicStore;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
+import com.hedera.node.app.service.consensus.impl.ReadableTopicStoreImpl;
 import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.service.contract.impl.state.ReadableContractStateStore;
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.file.impl.ReadableFileStoreImpl;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableNftStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
+import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
-import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.spi.store.ReadableStoreDefinition;
+import com.hedera.node.app.spi.store.ReadableStoreFactory;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
@@ -68,6 +84,7 @@ import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.node.config.types.EntityScaleFactors;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.HederaState;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -165,7 +182,7 @@ class UtilizationScaledThrottleMultiplierTest {
                                         new EntityNumber(4L), Bytecode.DEFAULT,
                                         new EntityNumber(5L), Bytecode.DEFAULT)));
 
-        var storeFactory = new ReadableStoreFactory(state);
+        var storeFactory = createReadableStoreFactory(state);
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
@@ -193,7 +210,7 @@ class UtilizationScaledThrottleMultiplierTest {
                                         new EntityNumber(4L), Bytecode.DEFAULT,
                                         new EntityNumber(5L), Bytecode.DEFAULT)));
 
-        var storeFactory = new ReadableStoreFactory(state);
+        var storeFactory = createReadableStoreFactory(state);
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
@@ -219,7 +236,7 @@ class UtilizationScaledThrottleMultiplierTest {
                                         FileID.newBuilder().fileNum(1L), File.DEFAULT,
                                         FileID.newBuilder().fileNum(2L), File.DEFAULT)));
 
-        var storeFactory = new ReadableStoreFactory(state);
+        var storeFactory = createReadableStoreFactory(state);
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
@@ -259,7 +276,7 @@ class UtilizationScaledThrottleMultiplierTest {
                                                                 .tokenNum(2L)),
                                                 Nft.DEFAULT)));
 
-        var storeFactory = new ReadableStoreFactory(state);
+        var storeFactory = createReadableStoreFactory(state);
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(nftMintTxnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
@@ -282,7 +299,7 @@ class UtilizationScaledThrottleMultiplierTest {
                 TOKEN_MINT);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        var storeFactory = new ReadableStoreFactory(new FakeHederaState());
+        var storeFactory = createReadableStoreFactory(new FakeHederaState());
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(tokenMintTxnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER, multiplier);
@@ -308,7 +325,7 @@ class UtilizationScaledThrottleMultiplierTest {
                                         TokenID.newBuilder().tokenNum(1L), Token.DEFAULT,
                                         TokenID.newBuilder().tokenNum(2L), Token.DEFAULT)));
 
-        var storeFactory = new ReadableStoreFactory(state);
+        var storeFactory = createReadableStoreFactory(state);
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
@@ -340,7 +357,7 @@ class UtilizationScaledThrottleMultiplierTest {
                                                                 .tokenNum(2L)),
                                                 TokenRelation.DEFAULT)));
 
-        var storeFactory = new ReadableStoreFactory(state);
+        var storeFactory = createReadableStoreFactory(state);
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
@@ -366,7 +383,7 @@ class UtilizationScaledThrottleMultiplierTest {
                                         TopicID.newBuilder().topicNum(1L), Topic.DEFAULT,
                                         TopicID.newBuilder().topicNum(2L), Topic.DEFAULT)));
 
-        var storeFactory = new ReadableStoreFactory(state);
+        var storeFactory = createReadableStoreFactory(state);
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER * ENTITY_SCALE_FACTOR, multiplier);
@@ -379,7 +396,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(CRYPTO_TRANSFER);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        var storeFactory = new ReadableStoreFactory(new FakeHederaState());
+        var storeFactory = createReadableStoreFactory(new FakeHederaState());
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER, multiplier);
@@ -416,5 +433,27 @@ class UtilizationScaledThrottleMultiplierTest {
         Instant[] starts = utilizationScaledThrottleMultiplier.congestionLevelStarts();
 
         assertEquals(startTimes, starts);
+    }
+
+    private ReadableStoreFactory createReadableStoreFactory(HederaState state) {
+        final var storeRegistry = new StoreRegistry();
+        storeRegistry
+                .registerReadableStores(
+                        TokenService.NAME,
+                        new ReadableStoreDefinition<>(ReadableAccountStore.class, ReadableAccountStoreImpl::new),
+                        new ReadableStoreDefinition<>(ReadableNftStore.class, ReadableNftStoreImpl::new),
+                        new ReadableStoreDefinition<>(ReadableTokenStore.class, ReadableTokenStoreImpl::new),
+                        new ReadableStoreDefinition<>(
+                                ReadableTokenRelationStore.class, ReadableTokenRelationStoreImpl::new))
+                .registerReadableStores(
+                        ContractService.NAME,
+                        new ReadableStoreDefinition<>(ContractStateStore.class, ReadableContractStateStore::new))
+                .registerReadableStore(
+                        FileService.NAME,
+                        new ReadableStoreDefinition<>(ReadableFileStore.class, ReadableFileStoreImpl::new))
+                .registerReadableStores(
+                        ConsensusService.NAME,
+                        new ReadableStoreDefinition<>(ReadableTopicStore.class, ReadableTopicStoreImpl::new));
+        return storeRegistry.createReadableStoreFactory(state);
     }
 }

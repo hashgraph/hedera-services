@@ -18,6 +18,7 @@ package com.hedera.node.app;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
+import com.hedera.node.app.api.ServiceApiRegistry;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
@@ -40,6 +41,7 @@ import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.HederaStateInjectionModule;
 import com.hedera.node.app.state.PlatformStateAccessor;
 import com.hedera.node.app.state.WorkingStateAccessor;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.throttle.ThrottleServiceModule;
 import com.hedera.node.app.workflows.WorkflowsInjectionModule;
@@ -164,6 +166,12 @@ public interface HederaInjectionComponent {
 
         @BindsInstance
         Builder metrics(Metrics metrics);
+
+        @BindsInstance
+        Builder storeRegistry(StoreRegistry storeRegistry);
+
+        @BindsInstance
+        Builder serviceApiRegistry(ServiceApiRegistry serviceApiRegistry);
 
         HederaInjectionComponent build();
     }

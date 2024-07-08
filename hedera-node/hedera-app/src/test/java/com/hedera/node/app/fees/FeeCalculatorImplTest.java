@@ -23,12 +23,17 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.hapi.node.base.*;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.FeeComponents;
+import com.hedera.hapi.node.base.FeeData;
+import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
+import com.hedera.hapi.node.base.SubType;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
-import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.spi.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.OneOf;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,9 +43,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class FeeCalculatorImplTest {
+class FeeCalculatorImplTest {
     @Mock
     private CongestionMultipliers congestionMultipliers;
+
+    @Mock
+    private ReadableStoreFactory readableStoreFactory;
 
     private FeeData feeData;
 
@@ -68,14 +76,14 @@ public class FeeCalculatorImplTest {
                 ExchangeRate.DEFAULT,
                 false,
                 congestionMultipliers,
-                new ReadableStoreFactory(new FakeHederaState()));
+                readableStoreFactory);
         assertNotNull(calculator);
 
         calculator = new FeeCalculatorImpl(
                 feeData,
                 new ExchangeRate(0, 0, null),
                 congestionMultipliers,
-                new ReadableStoreFactory(new FakeHederaState()),
+                readableStoreFactory,
                 HederaFunctionality.CONTRACT_CALL);
         assertNotNull(calculator);
     }
@@ -96,20 +104,19 @@ public class FeeCalculatorImplTest {
                         ExchangeRate.DEFAULT,
                         false,
                         congestionMultipliers,
-                        new ReadableStoreFactory(new FakeHederaState())));
+                        readableStoreFactory));
     }
 
     @Test
     void willReturnMultiplier() {
-        var storeFactory = new ReadableStoreFactory(new FakeHederaState());
         var calculator = new FeeCalculatorImpl(
                 feeData,
                 new ExchangeRate(0, 0, null),
                 congestionMultipliers,
-                storeFactory,
+                readableStoreFactory,
                 HederaFunctionality.CONTRACT_CALL);
 
         calculator.getCongestionMultiplier();
-        verify(congestionMultipliers).maxCurrentMultiplier(any(TransactionInfo.class), eq(storeFactory));
+        verify(congestionMultipliers).maxCurrentMultiplier(any(TransactionInfo.class), eq(readableStoreFactory));
     }
 }

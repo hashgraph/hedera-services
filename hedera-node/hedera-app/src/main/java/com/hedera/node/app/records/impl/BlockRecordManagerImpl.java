@@ -28,6 +28,7 @@ import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -356,7 +357,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * {@inheritDoc}
      */
     @Override
-    public void advanceConsensusClock(@NonNull final Instant consensusTime, @NonNull final HederaState state) {
+    public void advanceConsensusClock(@NonNull final Instant consensusTime, @NonNull final SavepointStackImpl stack) {
         final var builder = this.lastBlockInfo
                 .copyBuilder()
                 .consTimeOfLastHandledTxn(Timestamp.newBuilder()
@@ -370,11 +371,11 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         final var newBlockInfo = builder.build();
 
         // Update the latest block info in state
-        final var states = state.getWritableStates(BlockRecordService.NAME);
+        final var states = stack.getWritableStates(BlockRecordService.NAME);
         final var blockInfoState = states.<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY);
         blockInfoState.put(newBlockInfo);
         // Commit the changes. We don't ever want to roll back when advancing the consensus clock
-        ((WritableSingletonStateBase<BlockInfo>) blockInfoState).commit();
+        stack.commitFullStack();
 
         // Cache the updated block info
         this.lastBlockInfo = newBlockInfo;

@@ -18,13 +18,25 @@ package com.hedera.node.app.service.token.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
+import com.hedera.node.app.service.token.ReadableNftStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.TokenService;
+import com.hedera.node.app.service.token.api.TokenServiceApi;
+import com.hedera.node.app.service.token.impl.api.TokenServiceApiProvider;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
+import com.hedera.node.app.spi.api.ServiceApiDefinition;
+import com.hedera.node.app.spi.store.ReadableStoreDefinition;
+import com.hedera.node.app.spi.store.WritableStoreDefinition;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.ZoneId;
+import java.util.Set;
 
 /** An implementation of the {@link TokenService} interface. */
 public class TokenServiceImpl implements TokenService {
@@ -37,6 +49,39 @@ public class TokenServiceImpl implements TokenService {
 
     public TokenServiceImpl() {
         // No-op
+    }
+
+    @Override
+    public Set<ServiceApiDefinition<?>> serviceApiDefinitions() {
+        return Set.of(
+                new ServiceApiDefinition<>(TokenServiceApi.class, TokenServiceApiProvider.TOKEN_SERVICE_API_PROVIDER));
+    }
+
+    @Override
+    public Set<ReadableStoreDefinition<?>> readableStoreDefinitions() {
+        return Set.of(
+                new ReadableStoreDefinition<>(ReadableAccountStore.class, ReadableAccountStoreImpl::new),
+                new ReadableStoreDefinition<>(ReadableNftStore.class, ReadableNftStoreImpl::new),
+                new ReadableStoreDefinition<>(ReadableStakingInfoStore.class, ReadableStakingInfoStoreImpl::new),
+                new ReadableStoreDefinition<>(ReadableTokenStore.class, ReadableTokenStoreImpl::new),
+                new ReadableStoreDefinition<>(ReadableTokenRelationStore.class, ReadableTokenRelationStoreImpl::new),
+                new ReadableStoreDefinition<>(
+                        ReadableNetworkStakingRewardsStore.class, ReadableNetworkStakingRewardsStoreImpl::new));
+    }
+
+    @Override
+    public Set<WritableStoreDefinition<?>> writableStoreDefinitions() {
+        return Set.of(
+                new WritableStoreDefinition<>(WritableAccountStore.class, WritableAccountStore::new),
+                new WritableStoreDefinition<>(WritableNftStore.class, WritableNftStore::new),
+                new WritableStoreDefinition<>(
+                        WritableStakingInfoStore.class,
+                        (states, config, metrics) -> new WritableStakingInfoStore(states)),
+                new WritableStoreDefinition<>(WritableTokenStore.class, WritableTokenStore::new),
+                new WritableStoreDefinition<>(WritableTokenRelationStore.class, WritableTokenRelationStore::new),
+                new WritableStoreDefinition<>(
+                        WritableNetworkStakingRewardsStore.class,
+                        (states, config, metrics) -> new WritableNetworkStakingRewardsStore(states)));
     }
 
     @Override

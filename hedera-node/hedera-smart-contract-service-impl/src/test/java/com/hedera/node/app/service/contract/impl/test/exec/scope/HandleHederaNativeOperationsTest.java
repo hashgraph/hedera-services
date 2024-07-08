@@ -64,6 +64,7 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
+import com.hedera.node.app.spi.api.ServiceApiFactory;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -85,6 +86,9 @@ class HandleHederaNativeOperationsTest {
 
     @Mock
     private MessageFrame frame;
+
+    @Mock
+    private ServiceApiFactory serviceApiFactory;
 
     @Mock
     private StoreFactory storeFactory;
@@ -214,8 +218,9 @@ class HandleHederaNativeOperationsTest {
     @Test
     void finalizeHollowAccountAsContractUsesApiAndStore() {
         final var entityNumGenerator = mock(EntityNumGenerator.class);
+        given(context.serviceApiFactory()).willReturn(serviceApiFactory);
+        given(serviceApiFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(context.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(context.entityNumGenerator()).willReturn(entityNumGenerator);
         given(accountStore.getAccountIDByAlias(CANONICAL_ALIAS)).willReturn(A_NEW_ACCOUNT_ID);
@@ -228,8 +233,9 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void transferWithReceiverSigCheckUsesApi() {
+        given(context.serviceApiFactory()).willReturn(serviceApiFactory);
+        given(serviceApiFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(context.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var contractAccountId = AccountID.newBuilder()
                 .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
@@ -273,8 +279,9 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void transferWithReceiverSigCheckSkipsCheckWithoutRequirement() {
+        given(context.serviceApiFactory()).willReturn(serviceApiFactory);
+        given(serviceApiFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(context.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
         final var contractAccountId = AccountID.newBuilder()
                 .accountNum(NON_SYSTEM_CONTRACT_ID.contractNumOrThrow())
@@ -307,8 +314,8 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void settingNonceUsesApi() {
-        given(context.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.serviceApiFactory()).willReturn(serviceApiFactory);
+        given(serviceApiFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
 
         subject.setNonce(123L, 456L);
 
@@ -335,8 +342,8 @@ class HandleHederaNativeOperationsTest {
 
     @Test
     void customFeesCheckUsesApi() {
-        given(context.storeFactory()).willReturn(storeFactory);
-        given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
+        given(context.serviceApiFactory()).willReturn(serviceApiFactory);
+        given(serviceApiFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
         given(tokenServiceApi.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT))
                 .willReturn(true);
         final var result = subject.checkForCustomFees(CryptoTransferTransactionBody.DEFAULT);

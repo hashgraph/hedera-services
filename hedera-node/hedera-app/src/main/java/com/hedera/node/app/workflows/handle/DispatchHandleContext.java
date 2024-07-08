@@ -37,6 +37,7 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.signature.AppKeyVerifier;
+import com.hedera.node.app.spi.api.ServiceApiFactory;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
@@ -60,7 +61,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
@@ -93,7 +93,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final BlockRecordManager blockRecordManager;
     private final ResourcePriceCalculator resourcePriceCalculator;
     private final FeeManager feeManager;
-    private final StoreFactoryImpl storeFactory;
+    private final StoreFactory storeFactory;
+    private final ServiceApiFactory serviceApiFactory;
     private final AccountID syntheticPayer;
     private final AppKeyVerifier verifier;
     private final PlatformState platformState;
@@ -123,7 +124,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final ResourcePriceCalculator resourcePriceCalculator,
             @NonNull final FeeManager feeManager,
-            @NonNull final StoreFactoryImpl storeFactory,
+            @NonNull final StoreFactory storeFactory,
+            @NonNull final ServiceApiFactory serviceApiFactory,
             @NonNull final AccountID syntheticPayer,
             @NonNull final AppKeyVerifier verifier,
             @NonNull final PlatformState platformState,
@@ -149,6 +151,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.resourcePriceCalculator = requireNonNull(resourcePriceCalculator);
         this.feeManager = requireNonNull(feeManager);
         this.storeFactory = requireNonNull(storeFactory);
+        this.serviceApiFactory = requireNonNull(serviceApiFactory);
         this.syntheticPayer = requireNonNull(syntheticPayer);
         this.verifier = requireNonNull(verifier);
         this.platformState = requireNonNull(platformState);
@@ -313,6 +316,12 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public StoreFactory storeFactory() {
         return storeFactory;
+    }
+
+    @NonNull
+    @Override
+    public ServiceApiFactory serviceApiFactory() {
+        return serviceApiFactory;
     }
 
     @NonNull

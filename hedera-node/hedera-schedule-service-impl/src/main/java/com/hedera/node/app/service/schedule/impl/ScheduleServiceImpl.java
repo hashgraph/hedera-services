@@ -16,11 +16,16 @@
 
 package com.hedera.node.app.service.schedule.impl;
 
+import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleService;
+import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.schedule.impl.schemas.V0490ScheduleSchema;
 import com.hedera.node.app.spi.RpcService;
+import com.hedera.node.app.spi.store.ReadableStoreDefinition;
+import com.hedera.node.app.spi.store.WritableStoreDefinition;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * Standard implementation of the {@link ScheduleService} {@link RpcService}.
@@ -29,5 +34,15 @@ public final class ScheduleServiceImpl implements ScheduleService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490ScheduleSchema());
+    }
+
+    @Override
+    public Set<ReadableStoreDefinition<?>> readableStoreDefinitions() {
+        return Set.of(new ReadableStoreDefinition<>(ReadableScheduleStore.class, ReadableScheduleStoreImpl::new));
+    }
+
+    @Override
+    public Set<WritableStoreDefinition<?>> writableStoreDefinitions() {
+        return Set.of(new WritableStoreDefinition<>(WritableScheduleStore.class, WritableScheduleStoreImpl::new));
     }
 }

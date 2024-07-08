@@ -62,7 +62,7 @@ import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.AccountsConfig;
@@ -115,16 +115,19 @@ public class ThrottleAccumulator {
     private final ConfigProvider configProvider;
     private final IntSupplier capacitySplitSource;
     private final ThrottleType throttleType;
+    private final StoreRegistry storeRegistry;
 
     public ThrottleAccumulator(
             @NonNull final IntSupplier capacitySplitSource,
             @NonNull final ConfigProvider configProvider,
             @NonNull final ThrottleType throttleType,
-            @NonNull final ThrottleMetrics throttleMetrics) {
+            @NonNull final ThrottleMetrics throttleMetrics,
+            @NonNull final StoreRegistry storeRegistry) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.capacitySplitSource = requireNonNull(capacitySplitSource, "capacitySplitSource must not be null");
         this.throttleType = requireNonNull(throttleType, "throttleType must not be null");
         this.throttleMetrics = requireNonNull(throttleMetrics, "throttleMetrics must not be null");
+        this.storeRegistry = requireNonNull(storeRegistry, "storeRegistry must not be null");
     }
 
     // For testing purposes, in practice the gas throttle is
@@ -135,11 +138,13 @@ public class ThrottleAccumulator {
             @NonNull final ConfigProvider configProvider,
             @NonNull final ThrottleType throttleType,
             @NonNull final ThrottleMetrics throttleMetrics,
+            @NonNull final StoreRegistry storeRegistry,
             @NonNull final GasLimitDeterministicThrottle gasThrottle) {
         this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
         this.capacitySplitSource = requireNonNull(capacitySplitSource, "capacitySplitSource must not be null");
         this.throttleType = requireNonNull(throttleType, "throttleType must not be null");
         this.gasThrottle = requireNonNull(gasThrottle, "gasThrottle must not be null");
+        this.storeRegistry = requireNonNull(storeRegistry, "storeRegistry must not be null");
 
         this.throttleMetrics = throttleMetrics;
         this.throttleMetrics.setupGasThrottleMetric(gasThrottle, configProvider.getConfiguration());
@@ -380,8 +385,9 @@ public class ThrottleAccumulator {
             }
             case TOKEN_MINT -> shouldThrottleMint(manager, txnInfo.txBody().tokenMint(), now, configuration);
             case CRYPTO_TRANSFER -> {
-                final var accountStore = new ReadableStoreFactory(state).getStore(ReadableAccountStore.class);
-                final var relationStore = new ReadableStoreFactory(state).getStore(ReadableTokenRelationStore.class);
+                final var storeFactory = storeRegistry.createReadableStoreFactory(state);
+                final var accountStore = storeFactory.getStore(ReadableAccountStore.class);
+                final var relationStore = storeFactory.getStore(ReadableTokenRelationStore.class);
                 yield shouldThrottleCryptoTransfer(
                         manager,
                         now,
@@ -390,7 +396,8 @@ public class ThrottleAccumulator {
                         getAutoAssociationsCount(txnInfo.txBody(), relationStore));
             }
             case ETHEREUM_TRANSACTION -> {
-                final var accountStore = new ReadableStoreFactory(state).getStore(ReadableAccountStore.class);
+                final var accountStore =
+                        storeRegistry.createReadableStoreFactory(state).getStore(ReadableAccountStore.class);
                 yield shouldThrottleEthTxn(
                         manager, now, configuration, getImplicitCreationsCount(txnInfo.txBody(), accountStore));
             }
@@ -437,7 +444,8 @@ public class ThrottleAccumulator {
             if ((isAutoCreationEnabled || isLazyCreationEnabled) && scheduledFunction == CRYPTO_TRANSFER) {
                 final var transfer = scheduled.cryptoTransfer();
                 if (usesAliases(transfer)) {
-                    final var accountStore = new ReadableStoreFactory(state).getStore(ReadableAccountStore.class);
+                    final var accountStore =
+                            storeRegistry.createReadableStoreFactory(state).getStore(ReadableAccountStore.class);
                     final var transferTxnBody = TransactionBody.newBuilder()
                             .cryptoTransfer(transfer)
                             .build();
@@ -497,7 +505,8 @@ public class ThrottleAccumulator {
             }
 
             final var scheduledId = txnBody.scheduleSign().scheduleID();
-            final var scheduleStore = new ReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
+            final var scheduleStore =
+                    storeRegistry.createReadableStoreFactory(state).getStore(ReadableScheduleStore.class);
             final var schedule = scheduleStore.get(scheduledId);
             if (schedule == null) {
                 log.error(

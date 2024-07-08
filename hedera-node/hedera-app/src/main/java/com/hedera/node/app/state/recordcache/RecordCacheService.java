@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.state.recordcache;
 
+import com.hedera.node.app.spi.AppService;
 import com.hedera.node.app.state.recordcache.schemas.V0490RecordCacheSchema;
 import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -26,7 +26,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Facilities like Record Cache are "little s" services. They have state and schemas, but are not big ticket services
  * marketed to the world.
  */
-public class RecordCacheService implements Service {
+public class RecordCacheService implements AppService {
     /** The record cache service name */
     public static final String NAME = "RecordCache";
 

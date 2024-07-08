@@ -22,7 +22,7 @@ import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.state.PlatformStateAccessor;
-import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -46,18 +46,21 @@ public class ReconnectListener implements ReconnectCompleteListener {
     private final Executor executor;
     private final ConfigProvider configProvider;
     private final PlatformStateAccessor platformStateAccessor;
+    private final StoreRegistry storeRegistry;
 
     @Inject
     public ReconnectListener(
             @NonNull final Supplier<AutoCloseableWrapper<HederaState>> stateAccessor,
             @NonNull @Named("FreezeService") final Executor executor,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final PlatformStateAccessor platformStateAccessor) {
+            @NonNull final PlatformStateAccessor platformStateAccessor,
+            @NonNull final StoreRegistry storeRegistry) {
 
         this.stateAccessor = stateAccessor;
         this.executor = executor;
         this.configProvider = configProvider;
         this.platformStateAccessor = platformStateAccessor;
+        this.storeRegistry = storeRegistry;
     }
 
     @Override
@@ -69,7 +72,7 @@ public class ReconnectListener implements ReconnectCompleteListener {
                 notification.getRoundNumber(),
                 notification.getSequence());
         try (final var wrappedState = stateAccessor.get()) {
-            final var readableStoreFactory = new ReadableStoreFactory(wrappedState.get());
+            final var readableStoreFactory = storeRegistry.createReadableStoreFactory(wrappedState.get());
             final var networkAdminConfig = configProvider.getConfiguration().getConfigData(NetworkAdminConfig.class);
             final var freezeStore = readableStoreFactory.getStore(ReadableFreezeStore.class);
             final var upgradeFileStore = readableStoreFactory.getStore(ReadableUpgradeFileStore.class);

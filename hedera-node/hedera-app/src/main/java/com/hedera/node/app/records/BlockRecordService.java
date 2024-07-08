@@ -19,9 +19,12 @@ package com.hedera.node.app.records;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
+import com.hedera.node.app.spi.AppService;
+import com.hedera.node.app.spi.store.ReadableStoreDefinition;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 import javax.inject.Singleton;
 
 /**
@@ -29,7 +32,7 @@ import javax.inject.Singleton;
  * {@link BlockRecordManagerImpl}. This service is not exposed outside `hedera-app`.
  */
 @Singleton
-public final class BlockRecordService implements Service {
+public final class BlockRecordService implements AppService {
     /** The name of this service */
     public static final String NAME = "BlockRecordService";
 
@@ -47,5 +50,10 @@ public final class BlockRecordService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490BlockRecordSchema());
+    }
+
+    @Override
+    public Set<ReadableStoreDefinition<?>> readableStoreDefinitions() {
+        return Set.of(new ReadableStoreDefinition<>(ReadableBlockRecordStore.class, ReadableBlockRecordStore::new));
     }
 }

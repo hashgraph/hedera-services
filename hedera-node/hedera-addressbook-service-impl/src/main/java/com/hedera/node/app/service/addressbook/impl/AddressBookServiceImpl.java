@@ -17,10 +17,14 @@
 package com.hedera.node.app.service.addressbook.impl;
 
 import com.hedera.node.app.service.addressbook.AddressBookService;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.schemas.V052AddressBookSchema;
 import com.hedera.node.app.spi.RpcService;
+import com.hedera.node.app.spi.store.ReadableStoreDefinition;
+import com.hedera.node.app.spi.store.WritableStoreDefinition;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 
 /**
  * Standard implementation of the {@link AddressBookService} {@link RpcService}.
@@ -31,5 +35,15 @@ public final class AddressBookServiceImpl implements AddressBookService {
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
         registry.register(new V052AddressBookSchema());
+    }
+
+    @Override
+    public Set<ReadableStoreDefinition<?>> readableStoreDefinitions() {
+        return Set.of(new ReadableStoreDefinition<>(ReadableNodeStore.class, ReadableNodeStoreImpl::new));
+    }
+
+    @Override
+    public Set<WritableStoreDefinition<?>> writableStoreDefinitions() {
+        return Set.of(new WritableStoreDefinition<>(WritableNodeStore.class, WritableNodeStore::new));
     }
 }

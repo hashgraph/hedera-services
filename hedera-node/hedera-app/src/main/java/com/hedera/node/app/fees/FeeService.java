@@ -17,11 +17,11 @@
 package com.hedera.node.app.fees;
 
 import com.hedera.node.app.fees.schemas.V0490FeeSchema;
+import com.hedera.node.app.spi.AppService;
 import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class FeeService implements Service {
+public class FeeService implements AppService {
     public static final String NAME = "FeeService";
 
     @NonNull

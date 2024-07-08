@@ -19,9 +19,11 @@ package grpc;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.node.app.api.ServiceApiRegistry;
 import com.hedera.node.app.grpc.impl.netty.NettyGrpcServerManager;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.spi.fixtures.util.LogCaptor;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,7 +44,8 @@ final class NettyManagerTest extends GrpcTestBase {
         final var config = createConfig(testConfig);
         return new NettyGrpcServerManager(
                 () -> new VersionedConfigImpl(config, 1),
-                new ServicesRegistryImpl(ConstructableRegistry.getInstance(), config),
+                new ServicesRegistryImpl(
+                        ConstructableRegistry.getInstance(), config, new StoreRegistry(), new ServiceApiRegistry()),
                 (req, res) -> {},
                 (req, res) -> {},
                 metrics);

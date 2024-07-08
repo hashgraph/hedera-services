@@ -20,8 +20,7 @@ import static com.hedera.node.app.workflows.handle.record.TokenContextImpl.castR
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.records.ChildFinalizeContext;
-import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -30,18 +29,15 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class ChildFinalizeContextImpl implements ChildFinalizeContext {
     private final Configuration configuration;
-    private final ReadableStoreFactory readableStoreFactory;
-    private final WritableStoreFactory writableStoreFactory;
+    private final StoreFactory storeFactory;
     private final SingleTransactionRecordBuilderImpl recordBuilder;
 
     public ChildFinalizeContextImpl(
             @NonNull final Configuration configuration,
-            @NonNull final ReadableStoreFactory readableStoreFactory,
-            @NonNull final WritableStoreFactory writableStoreFactory,
+            @NonNull final StoreFactory storeFactory,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
         this.configuration = requireNonNull(configuration);
-        this.readableStoreFactory = requireNonNull(readableStoreFactory);
-        this.writableStoreFactory = requireNonNull(writableStoreFactory);
+        this.storeFactory = requireNonNull(storeFactory);
         this.recordBuilder = requireNonNull(recordBuilder);
     }
 
@@ -49,14 +45,14 @@ public class ChildFinalizeContextImpl implements ChildFinalizeContext {
     @Override
     public <T> T readableStore(@NonNull Class<T> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
-        return readableStoreFactory.getStore(storeInterface);
+        return storeFactory.readableStore(storeInterface);
     }
 
     @NonNull
     @Override
     public <T> T writableStore(@NonNull Class<T> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
-        return writableStoreFactory.getStore(storeInterface);
+        return storeFactory.writableStore(storeInterface);
     }
 
     @NonNull

@@ -16,14 +16,14 @@
 
 package com.hedera.node.app.throttle;
 
+import com.hedera.node.app.spi.AppService;
 import com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema;
 import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 
 @Singleton
-public class CongestionThrottleService implements Service {
+public class CongestionThrottleService implements AppService {
     public static final String NAME = "CongestionThrottleService";
 
     @NonNull

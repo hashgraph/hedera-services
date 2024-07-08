@@ -187,7 +187,8 @@ class IngestCheckerTest extends AppTestBase {
                 feeManager,
                 authorizer,
                 synchronizedThrottleAccumulator,
-                instantSource);
+                instantSource,
+                storeRegistry);
     }
 
     @Nested
@@ -237,7 +238,8 @@ class IngestCheckerTest extends AppTestBase {
                 feeManager,
                 authorizer,
                 synchronizedThrottleAccumulator,
-                instantSource);
+                instantSource,
+                storeRegistry);
 
         // Then the checker should throw a PreCheckException
         assertThatThrownBy(() -> subject.runAllChecks(state, tx, configuration))

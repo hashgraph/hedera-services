@@ -30,6 +30,7 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.node.app.api.ServiceApiRegistry;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -39,10 +40,10 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.store.ReadableStoreFactory;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
@@ -109,6 +110,8 @@ public class HandleWorkflow {
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final PreHandleWorkflow preHandleWorkflow;
+    private final StoreRegistry storeRegistry;
+    private final ServiceApiRegistry serviceApiRegistry;
 
     @Inject
     public HandleWorkflow(
@@ -133,7 +136,9 @@ public class HandleWorkflow {
             @NonNull final GenesisSetup genesisSetup,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final PreHandleWorkflow preHandleWorkflow) {
+            @NonNull final PreHandleWorkflow preHandleWorkflow,
+            StoreRegistry storeRegistry,
+            ServiceApiRegistry serviceApiRegistry) {
         this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.authorizer = requireNonNull(authorizer);
@@ -156,6 +161,8 @@ public class HandleWorkflow {
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
+        this.storeRegistry = requireNonNull(storeRegistry);
+        this.serviceApiRegistry = requireNonNull(serviceApiRegistry);
     }
 
     /**
@@ -303,7 +310,7 @@ public class HandleWorkflow {
                     genesisSetup.setupIn(userTxn.tokenContextImpl());
                 }
                 updateNodeStakes(userTxn);
-                blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+                blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.stack());
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);
@@ -499,9 +506,9 @@ public class HandleWorkflow {
         if (userTxn.consensusNow().getEpochSecond() > lastHandledTxnTime.getEpochSecond()) {
             final var firstSecondToExpire = lastHandledTxnTime.getEpochSecond();
             final var lastSecondToExpire = userTxn.consensusNow().getEpochSecond() - 1;
-            final var scheduleStore = new WritableStoreFactory(
-                            userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
-                    .getStore(WritableScheduleStore.class);
+            final var scheduleStore = storeRegistry
+                    .createStoreFactory(userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
+                    .writableStore(WritableScheduleStore.class);
             scheduleStore.purgeExpiredSchedulesBetween(firstSecondToExpire, lastSecondToExpire);
             userTxn.stack().commitFullStack();
         }
@@ -538,6 +545,8 @@ public class HandleWorkflow {
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
-                this);
+                this,
+                storeRegistry,
+                serviceApiRegistry);
     }
 }

@@ -115,7 +115,7 @@ public class ContractDeleteHandler implements TransactionHandler {
         validateFalse(toBeDeleted.accountIdOrThrow().equals(obtainer.accountIdOrThrow()), OBTAINER_SAME_CONTRACT_ID);
         final var recordBuilder = context.recordBuilders().getOrCreate(ContractDeleteRecordBuilder.class);
         final var deletedId = toBeDeleted.accountIdOrThrow();
-        context.storeFactory()
+        context.serviceApiFactory()
                 .serviceApi(TokenServiceApi.class)
                 .deleteAndTransfer(
                         deletedId,

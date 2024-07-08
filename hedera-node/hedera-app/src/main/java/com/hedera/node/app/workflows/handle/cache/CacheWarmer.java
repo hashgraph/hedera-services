@@ -22,10 +22,11 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.store.ReadableStoreFactory;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.spi.workflows.WarmupContext;
-import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -54,15 +55,18 @@ public class CacheWarmer {
 
     private final TransactionChecker checker;
     private final TransactionDispatcher dispatcher;
+    private final StoreRegistry storeRegistry;
     private final Executor executor;
 
     @Inject
     public CacheWarmer(
             @NonNull final TransactionChecker checker,
             @NonNull final TransactionDispatcher dispatcher,
+            @NonNull final StoreRegistry storeRegistry,
             @NonNull final ConfigProvider configProvider) {
         this.checker = checker;
         this.dispatcher = requireNonNull(dispatcher);
+        this.storeRegistry = requireNonNull(storeRegistry);
         final int parallelism = configProvider
                 .getConfiguration()
                 .getConfigData(CacheConfig.class)
@@ -78,7 +82,7 @@ public class CacheWarmer {
      */
     public void warm(@NonNull final HederaState state, @NonNull final Round round) {
         executor.execute(() -> {
-            final ReadableStoreFactory storeFactory = new ReadableStoreFactory(state);
+            final ReadableStoreFactory storeFactory = storeRegistry.createReadableStoreFactory(state);
             final ReadableAccountStore accountStore = storeFactory.getStore(ReadableAccountStore.class);
             for (final ConsensusEvent event : round) {
                 event.forEachTransaction(platformTransaction -> executor.execute(() -> {

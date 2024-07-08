@@ -22,9 +22,15 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.handlers.ContractHandlers;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.contract.impl.schemas.V0500ContractSchema;
+import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
+import com.hedera.node.app.service.contract.impl.state.ReadableContractStateStore;
+import com.hedera.node.app.service.contract.impl.state.WritableContractStateStore;
+import com.hedera.node.app.spi.store.ReadableStoreDefinition;
+import com.hedera.node.app.spi.store.WritableStoreDefinition;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.InstantSource;
+import java.util.Set;
 
 /**
  * Implementation of the {@link ContractService}.
@@ -44,6 +50,16 @@ public class ContractServiceImpl implements ContractService {
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490ContractSchema());
         registry.register(new V0500ContractSchema());
+    }
+
+    @Override
+    public Set<ReadableStoreDefinition<?>> readableStoreDefinitions() {
+        return Set.of(new ReadableStoreDefinition<>(ContractStateStore.class, ReadableContractStateStore::new));
+    }
+
+    @Override
+    public Set<WritableStoreDefinition<?>> writableStoreDefinitions() {
+        return Set.of(new WritableStoreDefinition<>(WritableContractStateStore.class, WritableContractStateStore::new));
     }
 
     public ContractHandlers handlers() {

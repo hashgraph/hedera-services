@@ -46,6 +46,6 @@ public interface TransactionInitialStateModule {
     @InitialState
     @TransactionScope
     static TokenServiceApi provideInitialTokenServiceApi(@NonNull final HandleContext context) {
-        return context.storeFactory().serviceApi(TokenServiceApi.class);
+        return context.serviceApiFactory().serviceApi(TokenServiceApi.class);
     }
 }

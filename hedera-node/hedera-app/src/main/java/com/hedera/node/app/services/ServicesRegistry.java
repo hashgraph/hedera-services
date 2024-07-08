@@ -18,6 +18,9 @@ package com.hedera.node.app.services;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.api.ServiceApiRegistry;
+import com.hedera.node.app.spi.AppService;
+import com.hedera.node.app.store.StoreRegistry;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.SchemaRegistry;
@@ -35,7 +38,10 @@ public interface ServicesRegistry {
      */
     interface Factory {
         ServicesRegistry create(
-                @NonNull ConstructableRegistry constructableRegistry, @NonNull Configuration bootstrapConfig);
+                @NonNull ConstructableRegistry constructableRegistry,
+                @NonNull Configuration bootstrapConfig,
+                @NonNull StoreRegistry storeRegistry,
+                @NonNull ServiceApiRegistry serviceApiRegistry);
     }
 
     /**
@@ -77,5 +83,5 @@ public interface ServicesRegistry {
      * Register a service with the registry.
      * @param service The service to register
      */
-    void register(@NonNull final Service service);
+    void register(@NonNull final AppService service);
 }

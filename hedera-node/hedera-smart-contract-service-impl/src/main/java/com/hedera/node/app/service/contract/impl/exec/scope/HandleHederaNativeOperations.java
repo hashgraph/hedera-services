@@ -96,7 +96,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
      */
     @Override
     public void setNonce(final long contractNumber, final long nonce) {
-        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.serviceApiFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.setNonce(
                 AccountID.newBuilder().accountNum(contractNumber).build(), nonce);
     }
@@ -135,7 +135,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         requireNonNull(evmAddress);
         final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final var hollowAccountId = requireNonNull(accountStore.getAccountIDByAlias(evmAddress));
-        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.serviceApiFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.finalizeHollowAccountAsContract(hollowAccountId);
         // FUTURE: For temporary backward-compatibility with mono-service, consume an entity id
         context.entityNumGenerator().newEntityNum();
@@ -155,7 +155,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
         if (to.receiverSigRequired() && !signatureTest.test(to.keyOrThrow())) {
             return INVALID_SIGNATURE;
         }
-        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.serviceApiFactory().serviceApi(TokenServiceApi.class);
         tokenServiceApi.transferFromTo(fromEntityId, toEntityId, amount);
         return OK;
     }
@@ -172,7 +172,7 @@ public class HandleHederaNativeOperations implements HederaNativeOperations {
 
     @Override
     public boolean checkForCustomFees(@NonNull final CryptoTransferTransactionBody op) {
-        final var tokenServiceApi = context.storeFactory().serviceApi(TokenServiceApi.class);
+        final var tokenServiceApi = context.serviceApiFactory().serviceApi(TokenServiceApi.class);
         return tokenServiceApi.checkForCustomFees(op);
     }
 }

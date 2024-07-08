@@ -17,10 +17,15 @@
 package com.hedera.node.app.service.file.impl;
 
 import com.hedera.node.app.service.file.FileService;
+import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.spi.RpcService;
+import com.hedera.node.app.spi.store.ReadableStoreDefinition;
+import com.hedera.node.app.spi.store.WritableStoreDefinition;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
 import javax.inject.Inject;
 
 /** Standard implementation of the {@link FileService} {@link RpcService}. */
@@ -42,5 +47,21 @@ public final class FileServiceImpl implements FileService {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         registry.register(new V0490FileSchema());
+    }
+
+    @Override
+    public Set<ReadableStoreDefinition<?>> readableStoreDefinitions() {
+        return Set.of(
+                new ReadableStoreDefinition<>(ReadableFileStore.class, ReadableFileStoreImpl::new),
+                new ReadableStoreDefinition<>(ReadableUpgradeFileStore.class, ReadableUpgradeFileStoreImpl::new));
+    }
+
+    @Override
+    public Set<WritableStoreDefinition<?>> writableStoreDefinitions() {
+        return Set.of(
+                new WritableStoreDefinition<>(WritableFileStore.class, WritableFileStore::new),
+                new WritableStoreDefinition<>(
+                        WritableUpgradeFileStore.class,
+                        (states, config, metrics) -> new WritableUpgradeFileStore(states)));
     }
 }

@@ -26,11 +26,10 @@ import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Set;
@@ -39,29 +38,25 @@ import javax.inject.Inject;
 
 public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final Configuration configuration;
-    private final HederaState state;
-    private final ReadableStoreFactory readableStoreFactory;
-    private final WritableStoreFactory writableStoreFactory;
+    private final StoreFactory storeFactory;
     private final RecordListBuilder recordListBuilder;
     private final BlockRecordManager blockRecordManager;
 
     @Inject
     public TokenContextImpl(
             @NonNull final Configuration configuration,
-            @NonNull final HederaState state,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final SavepointStackImpl stack,
             @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final BlockRecordManager blockRecordManager) {
-        this.state = requireNonNull(state, "state must not be null");
+            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final StoreRegistry storeRegistry) {
         requireNonNull(stack, "stack must not be null");
         this.configuration = requireNonNull(configuration, "configuration must not be null");
         this.recordListBuilder = requireNonNull(recordListBuilder, "recordListBuilder must not be null");
         this.blockRecordManager = requireNonNull(blockRecordManager, "blockRecordManager must not be null");
 
-        this.readableStoreFactory = new ReadableStoreFactory(stack);
-        this.writableStoreFactory =
-                new WritableStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService);
+        this.storeFactory =
+                storeRegistry.createStoreFactory(stack, TokenService.NAME, configuration, storeMetricsService);
     }
 
     @NonNull
@@ -80,14 +75,14 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @Override
     public <T> T readableStore(@NonNull Class<T> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
-        return readableStoreFactory.getStore(storeInterface);
+        return storeFactory.readableStore(storeInterface);
     }
 
     @NonNull
     @Override
     public <T> T writableStore(@NonNull Class<T> storeInterface) {
         requireNonNull(storeInterface, "storeInterface must not be null");
-        return writableStoreFactory.getStore(storeInterface);
+        return storeFactory.writableStore(storeInterface);
     }
 
     @NonNull
@@ -148,8 +143,6 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
 
     @Override
     public Set<Long> knownNodeIds() {
-        return new ReadableStoreFactory(state)
-                .getStore(ReadableStakingInfoStore.class)
-                .getAll();
+        return storeFactory.readableStore(ReadableStakingInfoStore.class).getAll();
     }
 }

@@ -51,7 +51,7 @@ import com.hedera.node.app.spi.workflows.InsufficientBalanceException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.spi.workflows.QueryHandler;
-import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.workflows.ingest.IngestChecker;
 import com.hedera.node.app.workflows.ingest.SubmissionManager;
@@ -109,6 +109,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
     private final FeeManager feeManager;
     private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
     private final InstantSource instantSource;
+    private final StoreRegistry storeRegistry;
 
     /**
      * Constructor of {@code QueryWorkflowImpl}
@@ -127,6 +128,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
      * @param feeManager the {@link FeeManager} to calculate the fees
      * @param synchronizedThrottleAccumulator the {@link SynchronizedThrottleAccumulator} that checks transaction should be throttled
      * @param instantSource the {@link InstantSource} to get the current time
+     * @param storeRegistry the {@link StoreRegistry} to get the store factory
      * @throws NullPointerException if one of the arguments is {@code null}
      */
     @Inject
@@ -143,7 +145,8 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final FeeManager feeManager,
             @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final InstantSource instantSource) {
+            @NonNull final InstantSource instantSource,
+            @NonNull StoreRegistry storeRegistry) {
         this.stateAccessor = requireNonNull(stateAccessor, "stateAccessor must not be null");
         this.submissionManager = requireNonNull(submissionManager, "submissionManager must not be null");
         this.ingestChecker = requireNonNull(ingestChecker, "ingestChecker must not be null");
@@ -158,6 +161,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
         this.synchronizedThrottleAccumulator =
                 requireNonNull(synchronizedThrottleAccumulator, "hapiThrottling must not be null");
         this.instantSource = requireNonNull(instantSource);
+        this.storeRegistry = requireNonNull(storeRegistry);
     }
 
     @Override
@@ -191,7 +195,7 @@ public final class QueryWorkflowImpl implements QueryWorkflow {
                 }
 
                 final var state = wrappedState.get();
-                final var storeFactory = new ReadableStoreFactory(state);
+                final var storeFactory = storeRegistry.createReadableStoreFactory(state);
                 final var paymentRequired = handler.requiresNodePayment(responseType);
                 final var feeCalculator = feeManager.createFeeCalculator(function, consensusTime, storeFactory);
                 final QueryContext context;

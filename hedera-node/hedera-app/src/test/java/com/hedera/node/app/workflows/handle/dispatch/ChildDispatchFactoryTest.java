@@ -41,6 +41,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
+import com.hedera.node.app.api.ServiceApiRegistry;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -50,12 +51,12 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.store.ReadableStoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.state.WrappedHederaState;
-import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.throttle.NetworkUtilizationManager;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
@@ -151,7 +152,10 @@ class ChildDispatchFactoryTest {
     private ExchangeRateManager exchangeRateManager;
 
     @Mock
-    private NetworkUtilizationManager networkUtilizationManager;
+    private StoreRegistry storeRegistry;
+
+    @Mock
+    private ServiceApiRegistry serviceApiRegistry;
 
     private ChildDispatchFactory subject;
 
@@ -191,7 +195,9 @@ class ChildDispatchFactoryTest {
                 blockRecordManager,
                 serviceScopeLookup,
                 storeMetricsService,
-                exchangeRateManager);
+                exchangeRateManager,
+                storeRegistry,
+                serviceApiRegistry);
     }
 
     @Test

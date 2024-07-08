@@ -24,9 +24,12 @@ import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.app.api.ServiceApiRegistry;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
+import com.hedera.node.app.spi.AppService;
+import com.hedera.node.app.store.StoreRegistry;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -34,7 +37,6 @@ import com.swirlds.metrics.api.Metrics;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -64,6 +66,12 @@ class DependencyMigrationTest extends MerkleTestBase {
 
     @Mock
     private NetworkInfo networkInfo;
+
+    @Mock
+    private StoreRegistry storeRegistry;
+
+    @Mock
+    private ServiceApiRegistry serviceApiRegistry;
 
     private MerkleHederaState merkleTree;
 
@@ -149,7 +157,8 @@ class DependencyMigrationTest extends MerkleTestBase {
     @DisplayName("Genesis inter-service dependency migration works")
     void genesisWithNullVersion() {
         // Given: register the EntityIdService and the DependentService (order of registration shouldn't matter)
-        final var servicesRegistry = new ServicesRegistryImpl(registry, DEFAULT_CONFIG);
+        final var servicesRegistry =
+                new ServicesRegistryImpl(registry, DEFAULT_CONFIG, storeRegistry, serviceApiRegistry);
         final var entityService = new EntityIdService() {
             @Override
             public void registerSchemas(@NonNull final SchemaRegistry registry) {
@@ -206,7 +215,8 @@ class DependencyMigrationTest extends MerkleTestBase {
 
         // Given: register four services, each with their own schema migration, that will add an object to
         // orderedInvocations during migration. We'll do this to track the order of the service migrations
-        final var servicesRegistry = new ServicesRegistryImpl(registry, DEFAULT_CONFIG);
+        final var servicesRegistry =
+                new ServicesRegistryImpl(registry, DEFAULT_CONFIG, storeRegistry, serviceApiRegistry);
         // Define the Entity ID Service:
         final EntityIdService entityIdService = new EntityIdService() {
             @Override
@@ -224,7 +234,7 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         // Define Service A:
-        final var serviceA = new Service() {
+        final var serviceA = new AppService() {
             @NonNull
             @Override
             public String getServiceName() {
@@ -241,7 +251,7 @@ class DependencyMigrationTest extends MerkleTestBase {
             }
         };
         // Define Service B:
-        final var serviceB = new Service() {
+        final var serviceB = new AppService() {
             @NonNull
             @Override
             public String getServiceName() {
@@ -295,7 +305,7 @@ class DependencyMigrationTest extends MerkleTestBase {
 
     // This class represents a service that depends on EntityIdService. This class will create a simple mapping from an
     // entity ID to a string value.
-    private static class DependentService implements Service {
+    private static class DependentService implements AppService {
         static final String NAME = "DependentService";
         static final String STATE_KEY = "DS_MAPPINGS";
 
