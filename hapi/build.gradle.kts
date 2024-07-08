@@ -32,7 +32,8 @@ tasks.cloneHederaProtobufs {
     // uncomment below to use a specific tag
     //    tag = "v0.51.0"
     // uncomment below to use a specific branch
-    branch = "driley/block-stream-pkg"
+//    branch = "driley/block-stream-pkg"
+    branch = "continue-block-node"
 }
 
 sourceSets {
