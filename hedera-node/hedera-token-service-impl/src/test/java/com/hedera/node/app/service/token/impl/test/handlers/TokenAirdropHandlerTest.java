@@ -19,25 +19,38 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_TOKEN_TRANSFER_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.PendingAirdropId;
+import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
+import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.FeeContextImpl;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
+import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
 import com.hedera.node.app.service.token.impl.util.CryptoTransferFeeCalculator;
 import com.hedera.node.app.service.token.impl.util.TokenAssociateToAccountFeeCalculator;
+import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.Fees;
@@ -48,6 +61,7 @@ import com.swirlds.config.api.Configuration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -273,14 +287,14 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
 
     @Test
     void pureChecksForEmptyHbarTransferAndEmptyTokenTransfers() {
-        // It's actually valid to have no hbar transfers and no token transfers
+        // It's actually valid to have no token transfers
         final var txn = newTokenAirdrop(Collections.emptyList());
         Assertions.assertThatCode(() -> tokenAirdropHandler.pureChecks(txn)).doesNotThrowAnyException();
     }
 
     @Test
     void pureChecksHasValidHbarAndTokenTransfers() {
-        // Tests that valid hbar transfers, fungible transfers, and non-fungible transfers are all valid when given
+        // Tests that valid fungible transfers, and non-fungible transfers are all valid when given
         // together
         final var token9753 = asToken(9753);
         final var token9754 = asToken(9754);
@@ -301,6 +315,49 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
                         .build()));
 
         Assertions.assertThatCode(() -> tokenAirdropHandler.pureChecks(txn)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void airdropMultipleTokensCreatesList() {
+        givenStoresAndConfig(handleContext);
+        tokenAirdropHandler = new TokenAirdropHandler(validator);
+        given(recordBuilders.getOrCreate(TokenAirdropRecordBuilder.class)).willReturn(tokenAirdropRecordBuilder);
+        var tokenWithNoCustomFees =
+                fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
+        writableTokenStore.put(tokenWithNoCustomFees);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+        givenAirdropTxn();
+
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(TokenAirdropRecordBuilder.class), eq(null), eq(payerId)))
+                .will((invocation) -> {
+                    var pendingAirdropId = PendingAirdropId.newBuilder().build();
+                    var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
+                    var pendingAirdropRecord = PendingAirdropRecord.newBuilder()
+                            .pendingAirdropId(pendingAirdropId)
+                            .pendingAirdropValue(pendingAirdropValue)
+                            .build();
+
+                    return tokenAirdropRecordBuilder.addPendingAirdrop(pendingAirdropRecord);
+                });
+
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+
+        tokenAirdropHandler.handle(handleContext);
+
+        assertThat(writableAirdropStore.sizeOfState()).isEqualTo(2);
+        assertThat(writableAccountStore.get(ownerId)).isNotNull();
+        var ownerAccount = Objects.requireNonNull(writableAccounts.get(ownerId));
+        assertThat(ownerAccount.hasHeadPendingAirdropId()).isTrue();
+        var headPendingAirdropId = ownerAccount.headPendingAirdropId();
+        var headAirdrop = writableAirdropStore.get(Objects.requireNonNull(headPendingAirdropId));
+        assertThat(Objects.requireNonNull(headAirdrop).hasNextAirdrop()).isTrue();
+        var nextAirdrop = writableAirdropStore.get(Objects.requireNonNull(headAirdrop.nextAirdrop()));
+        assertThat(Objects.requireNonNull(nextAirdrop).hasNextAirdrop()).isFalse();
+        assertThat(nextAirdrop.hasPreviousAirdrop()).isTrue();
+        assertThat(nextAirdrop.previousAirdrop()).isEqualTo(headPendingAirdropId);
     }
 
     @Test
