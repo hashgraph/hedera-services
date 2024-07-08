@@ -204,7 +204,7 @@ jobs:
 
       - name: Compile
         id: gradle-build
-        run: ${GRADLE_EXEC} assemble --scan
+        run: ${GRADLE_EXEC} assemble :test-clients:yahCliJar --scan
 
       - name: Spotless Check
         if: ${{ inputs.enable-spotless-check && !cancelled() }}

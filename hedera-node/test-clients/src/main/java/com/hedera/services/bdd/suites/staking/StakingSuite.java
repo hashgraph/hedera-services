@@ -86,10 +86,6 @@ public class StakingSuite {
     private static final String ALICE = "alice";
     private static final String BOB = "bob";
     private static final String CAROL = "carol";
-    public static final String STAKING_START_THRESHOLD = "staking.startThreshold";
-    public static final String REWARD_BALANCE_THRESHOLD = "staking.rewardBalanceThreshold";
-    public static final String PER_HBAR_REWARD_RATE = "staking.perHbarRewardRate";
-    public static final String STAKING_REWARD_RATE = "staking.perHbarRewardRate";
     public static final String FIRST_TRANSFER = "firstTransfer";
     private static final long STAKING_PERIOD_MINS = 1L;
 
@@ -97,9 +93,9 @@ public class StakingSuite {
     static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
         specManager.setup(
                 overridingThree(
-                        STAKING_START_THRESHOLD, "" + 10 * ONE_HBAR,
-                        PER_HBAR_REWARD_RATE, "" + SUITE_PER_HBAR_REWARD_RATE,
-                        REWARD_BALANCE_THRESHOLD, "" + 0),
+                        "staking.startThreshold", "" + 10 * ONE_HBAR,
+                        "staking.perHbarRewardRate", "" + SUITE_PER_HBAR_REWARD_RATE,
+                        "staking.rewardBalanceThreshold", "0"),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)));
     }
 
