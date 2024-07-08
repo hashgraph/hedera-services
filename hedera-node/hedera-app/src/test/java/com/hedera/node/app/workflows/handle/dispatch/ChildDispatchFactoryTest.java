@@ -60,7 +60,6 @@ import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.FirstSavePoint;
 import com.hedera.node.app.workflows.handle.stack.RecordSink;
@@ -106,9 +105,6 @@ class ChildDispatchFactoryTest {
 
     @Mock(strictness = LENIENT)
     private Predicate<Key> verifierCallback;
-
-    @Mock(strictness = LENIENT)
-    private RecordListBuilder recordListBuilder;
 
     @Mock(strictness = LENIENT)
     private ReadableStoreFactory readableStoreFactory;

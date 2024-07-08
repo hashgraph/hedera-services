@@ -104,7 +104,6 @@ import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
@@ -228,9 +227,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Mock
     private DispatchProcessor dispatchProcessor;
-
-    @Mock
-    private RecordListBuilder recordListBuilder;
 
     @Mock(strictness = LENIENT)
     private HederaState baseState;
@@ -392,7 +388,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             recordBuilders,
             childDispatchFactory,
             dispatchProcessor,
-            recordListBuilder,
             throttleAdviser
         };
 

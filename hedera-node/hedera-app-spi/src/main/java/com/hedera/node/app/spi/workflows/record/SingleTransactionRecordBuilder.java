@@ -89,8 +89,6 @@ public interface SingleTransactionRecordBuilder {
 
     boolean isBaseRecordBuilder();
 
-    Instant consensusNow();
-
     /**
      * Convenience method to package as {@link TransactionBody} as a {@link Transaction} .
      *

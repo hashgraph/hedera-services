@@ -121,11 +121,6 @@ public class FakeCryptoCreateRecordBuilder {
                 return false;
             }
 
-            @Override
-            public Instant consensusNow() {
-                return null;
-            }
-
             @NonNull
             @Override
             public CryptoCreateRecordBuilder evmAddress(@NonNull final Bytes evmAddress) {

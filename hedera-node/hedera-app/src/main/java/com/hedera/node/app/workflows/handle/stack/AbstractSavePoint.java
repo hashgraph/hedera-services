@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
-import static com.hedera.node.app.workflows.handle.record.RecordListBuilder.SUCCESSES;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -31,6 +30,7 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -49,6 +49,12 @@ public abstract class AbstractSavePoint extends RecordSink {
     public static int totalPrecedingRecords = 0;
     public static int legacyMaxPrecedingRecords = 3;
     public static final boolean SIMULATE_MONO = true;
+
+    public static final EnumSet<ResponseCodeEnum> SUCCESSES = EnumSet.of(
+            ResponseCodeEnum.OK,
+            ResponseCodeEnum.SUCCESS,
+            ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED,
+            ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
 
     protected AbstractSavePoint(@NonNull WrappedHederaState state, @NonNull final RecordSink parentSink) {
         this.state = state;

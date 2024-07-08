@@ -457,9 +457,6 @@ public class HandleWorkflow {
                     records.add(((SingleTransactionRecordBuilderImpl) builder).build());
                 }
             } else {
-                if (builder.isBaseRecordBuilder()) {
-                    parentConsensus = builder.consensusNow();
-                }
                 final int nonce =
                         switch (builder.category()) {
                             case USER, SCHEDULED -> 0;
@@ -469,9 +466,13 @@ public class HandleWorkflow {
                     builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
                             .syncBodyIdFromRecordId();
                 }
-                builder.consensusTimestamp(userTxn.consensusNow().plusNanos((long) i - indexOfUserRecord));
+                final var consensusNow = userTxn.consensusNow().plusNanos((long) i - indexOfUserRecord);
+                builder.consensusTimestamp(consensusNow);
                 if (builder.category() == CHILD) {
                     builder.parentConsensus(requireNonNull(parentConsensus));
+                }
+                if (builder.isBaseRecordBuilder()) {
+                    parentConsensus = consensusNow;
                 }
                 records.add(((SingleTransactionRecordBuilderImpl) builder).build());
             }

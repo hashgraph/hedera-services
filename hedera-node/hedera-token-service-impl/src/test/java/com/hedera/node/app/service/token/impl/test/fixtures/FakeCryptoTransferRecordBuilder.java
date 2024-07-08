@@ -113,11 +113,6 @@ public class FakeCryptoTransferRecordBuilder {
                 return false;
             }
 
-            @Override
-            public Instant consensusNow() {
-                return null;
-            }
-
             private List<AccountAmount> paidStakingRewards;
             private List<TokenAssociation> automaticTokenAssociations;
             private ContractFunctionResult contractCallResult;

@@ -18,10 +18,12 @@ package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -206,39 +208,9 @@ public class SingleTransactionRecordBuilderImpl
      *
      * @param consensusNow the consensus timestamp for the transaction
      */
+    @VisibleForTesting
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
-        this(consensusNow, ReversingBehavior.REVERSIBLE, USER);
-    }
-
-    /**
-     * Creates new transaction record builder.
-     *
-     * @param consensusNow the consensus timestamp for the transaction
-     * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
-     */
-    public SingleTransactionRecordBuilderImpl(
-            @NonNull final Instant consensusNow,
-            final ReversingBehavior reversingBehavior,
-            final TransactionCategory category) {
-        this(consensusNow, reversingBehavior, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, category);
-    }
-
-    /**
-     * Creates new transaction record builder with both explicit reversing behavior and
-     * transaction construction finishing.
-     *
-     * @param consensusNow the consensus timestamp for the transaction
-     * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
-     */
-    public SingleTransactionRecordBuilderImpl(
-            @NonNull final Instant consensusNow,
-            @NonNull final ReversingBehavior reversingBehavior,
-            @NonNull final ExternalizedRecordCustomizer customizer,
-            @NonNull final TransactionCategory category) {
-        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
-        this.reversingBehavior = requireNonNull(reversingBehavior, "reversingBehavior must not be null");
-        this.customizer = requireNonNull(customizer, "customizer must not be null");
-        this.category = requireNonNull(category, "category must not be null");
+        this(REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, USER);
     }
 
     public SingleTransactionRecordBuilderImpl(
@@ -462,16 +434,6 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public Transaction transaction() {
         return transaction;
-    }
-
-    /**
-     * Gets the consensus instant.
-     *
-     * @return the consensus instant
-     */
-    @NonNull
-    public Instant consensusNow() {
-        return consensusNow;
     }
 
     /**

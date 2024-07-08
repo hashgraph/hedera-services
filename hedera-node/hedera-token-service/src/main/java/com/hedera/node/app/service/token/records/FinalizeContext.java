@@ -25,7 +25,7 @@ import java.util.function.Consumer;
  * Represents the context of used for finalizing a user transaction.
  */
 @SuppressWarnings("UnusedReturnValue")
-public interface FinalizeContext extends ChildFinalizeContext {
+public interface FinalizeContext {
     /**
      * Returns the current consensus time.
      *
@@ -69,4 +69,42 @@ public interface FinalizeContext extends ChildFinalizeContext {
      * @return {@code true} if this context represents a scheduled dispatch; otherwise {@code false}
      */
     boolean isScheduleDispatch();
+
+    /**
+     * Get a readable store given the store's interface. This gives read-only access to the store.
+     *
+     * @param storeInterface The store interface to find and create a store for
+     * @param <T> Interface class for a Store
+     * @return An implementation of the provided store interface
+     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
+     * @throws NullPointerException if {@code storeInterface} is {@code null}
+     */
+    @NonNull
+    <T> T readableStore(@NonNull Class<T> storeInterface);
+
+    /**
+     * Return a writable store given the store's interface. This gives write access to the store.
+     *
+     * <p>This method is limited to stores that are part of the transaction's service.
+     *
+     * @param storeInterface The store interface to find and create a store for
+     * @param <T> Interface class for a Store
+     * @return An implementation of the provided store interface
+     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
+     * @throws NullPointerException if {@code storeInterface} is {@code null}
+     */
+    @NonNull
+    <T> T writableStore(@NonNull Class<T> storeInterface);
+
+    /**
+     * Returns a record builder for the given record builder subtype.
+     *
+     * @param recordBuilderClass the record type
+     * @param <T> the record type
+     * @return a builder for the given record type
+     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+     * @throws IllegalArgumentException if the record builder type is unknown to the app
+     */
+    @NonNull
+    <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass);
 }

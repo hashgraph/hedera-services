@@ -115,7 +115,6 @@ public class SingleTransactionRecordBuilderTest {
 
         SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
                 new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME);
-        assertEquals(CONSENSUS_TIME, singleTransactionRecordBuilder.consensusNow());
 
         singleTransactionRecordBuilder
                 .parentConsensus(PARENT_CONSENSUS_TIME)
@@ -253,7 +252,6 @@ public class SingleTransactionRecordBuilderTest {
 
         singleTransactionRecordBuilder.transaction(transaction);
 
-        assertEquals(CONSENSUS_TIME, singleTransactionRecordBuilder.consensusNow());
         assertNull(singleTransactionRecordBuilder.parentConsensusTimestamp());
         assertEquals(ResponseCodeEnum.OK, singleTransactionRecordBuilder.status());
 

@@ -169,11 +169,6 @@ class ContractOperationRecordBuilderTest {
             public boolean isBaseRecordBuilder() {
                 return false;
             }
-
-            @Override
-            public Instant consensusNow() {
-                return null;
-            }
         };
 
         final var outcomeWithoutSidecars = new CallOutcome(

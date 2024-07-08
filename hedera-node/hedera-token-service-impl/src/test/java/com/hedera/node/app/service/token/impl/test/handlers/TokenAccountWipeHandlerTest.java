@@ -174,11 +174,6 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 return false;
             }
 
-            @Override
-            public Instant consensusNow() {
-                return null;
-            }
-
             @NonNull
             @Override
             public TokenAccountWipeRecordBuilder newTotalSupply(final long supply) {
