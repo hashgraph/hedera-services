@@ -27,6 +27,7 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.ImmutableHash;
 import com.swirlds.common.crypto.SerializableHashable;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
 import com.swirlds.common.test.fixtures.fcqueue.FCInt;
 import com.swirlds.fcqueue.internal.FCQHashAlgorithm;
 import com.swirlds.fcqueue.internal.FCQueueNode;
@@ -55,7 +56,7 @@ import java.util.function.Supplier;
  * threads at the same time within that thread group. An iterator for a queue will throw an exception if it is used after
  * a write to that queue, but it is unaffected by writes to other queues in that queue group.
  */
-public class SlowMockFCQueue<E extends FastCopyable & SerializableHashable> extends FCQueue<E> {
+public class SlowMockFCQueue<E extends FastCopyable & SerializableHashable & ProtoSerializable > extends FCQueue<E> {
 
     private static final long CLASS_ID = 0x69c284363f531bccL;
 

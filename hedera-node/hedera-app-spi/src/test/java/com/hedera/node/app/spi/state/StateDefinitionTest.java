@@ -19,6 +19,8 @@ package com.hedera.node.app.spi.state;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.FieldType;
 import com.swirlds.state.spi.StateDefinition;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -16,17 +16,27 @@
 
 package com.swirlds.platform.state.merkle.singleton;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONSTATE_LABEL;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONSTATE_VALUE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_SINGLETONSTATE_LABEL;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_SINGLETONSTATE_VALUE;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logSingletonRead;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logSingletonWrite;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.merkle.MerkleInternal;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.utility.DebugIterationEndpoint;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.platform.state.merkle.StateUtils;
+import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.nio.file.Path;
 
 /**
  * A merkle node with a string (the label) as the left child, and the merkle node value as the right
@@ -37,8 +47,12 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 @DebugIterationEndpoint
 public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Labeled, MerkleInternal {
+
     private static final long CLASS_ID = 0x3832CC837AB77BFL;
     public static final int CLASS_VERSION = 1;
+
+    // Only used for deserialization
+    private Codec<T> codec = null;
 
     /**
      * @deprecated Only exists for constructable registry as it works today. Remove ASAP!
@@ -62,6 +76,15 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
     private SingletonNode(@NonNull final SingletonNode<T> other) {
         this.setLeft(other.getLeft().copy());
         this.setRight(other.getRight().copy());
+    }
+
+    public SingletonNode(
+            @NonNull final ReadableSequentialData in,
+            final Path artifactsDir,
+            @NonNull final Codec<T> codec)
+            throws MerkleSerializationException {
+        this.codec = codec;
+        protoDeserialize(in, artifactsDir);
     }
 
     @Override
@@ -97,5 +120,38 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
         right.setValue(value);
         // Log to transaction state log, what was written
         logSingletonWrite(getLabel(), value);
+    }
+
+    // Protobuf serialization
+
+    @Override
+    protected boolean isChildNodeProtoTag(final int fieldNum) {
+        return (fieldNum == NUM_SINGLETONSTATE_LABEL) ||
+                (fieldNum == NUM_SINGLETONSTATE_VALUE);
+    }
+
+    @Override
+    protected MerkleNode protoDeserializeNextChild(
+            @NonNull final ReadableSequentialData in,
+            final Path artifactsDir)
+            throws MerkleSerializationException {
+        final int childrenSoFar = getNumberOfChildren();
+        if (childrenSoFar == 0) {
+            // FUTURE WORK: check that the label matches the state definition
+            return new StringLeaf(in);
+        } else if (childrenSoFar == 1) {
+            return new ValueLeaf<>(in, codec);
+        } else {
+            throw new MerkleSerializationException("Too many singleton state child nodes");
+        }
+    }
+
+    @Override
+    protected FieldDefinition getChildProtoField(final int childIndex) {
+        return switch (childIndex) {
+            case 0 -> FIELD_SINGLETONSTATE_LABEL;
+            case 1 -> FIELD_SINGLETONSTATE_VALUE;
+            default -> throw new IllegalArgumentException("Unknown singleton state child index: " + childIndex);
+        };
     }
 }

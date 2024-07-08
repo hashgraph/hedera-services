@@ -16,16 +16,37 @@
 
 package com.swirlds.virtualmap.datasource;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VLEAFRECORD_KEY;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VLEAFRECORD_PATH;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VLEAFRECORD_VALUE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VLEAFRECORD_KEY;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VLEAFRECORD_PATH;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VLEAFRECORD_VALUE;
+
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.FieldType;
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.ProtoWriterTools;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.proto.MerkleNodeProtoFields;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 /**
  * An object for leaf data. The leaf record contains the path, key, and value.
@@ -33,7 +54,8 @@ import java.util.Objects;
  * to take leaf records from caches that are not yet flushed to disk and write them to the stream.
  * We never send hashes in the stream.
  */
-public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValue> implements SelfSerializable {
+public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValue>
+        implements ProtoSerializable, SelfSerializable {
 
     private static final long CLASS_ID = 0x410f45f0acd3264L;
 
@@ -76,6 +98,52 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
         this.path = path;
         this.key = key;
         this.value = value;
+    }
+
+    public VirtualLeafRecord(
+            @NonNull final ReadableSequentialData in,
+            @NonNull final CheckedFunction<ReadableSequentialData, K, Exception> keyReader,
+            @NonNull final CheckedFunction<ReadableSequentialData, V, Exception> valueReader)
+            throws MerkleSerializationException {
+        // Defaults
+        path = 0;
+        key = null;
+        value = null;
+
+        while (in.hasRemaining()) {
+            final int tag = in.readVarInt(false);
+            final int fieldNum = tag >> ProtoParserTools.TAG_FIELD_OFFSET;
+            if (fieldNum == NUM_VLEAFRECORD_PATH) {
+                assert (tag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG.ordinal();
+                path = in.readVarLong(false);
+            } else if (fieldNum == NUM_VLEAFRECORD_KEY) {
+                assert (tag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_DELIMITED.ordinal();
+                final int len = in.readVarInt(false);
+                final long oldLimit = in.limit();
+                in.limit(in.position() + len);
+                try {
+                    key = keyReader.apply(in);
+                } catch (final Exception e) {
+                    throw new MerkleSerializationException("Failed to parse a key", e);
+                } finally {
+                    in.limit(oldLimit);
+                }
+            } else if (fieldNum == NUM_VLEAFRECORD_VALUE) {
+                assert (tag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_DELIMITED.ordinal();
+                final int len = in.readVarInt(false);
+                final long oldLimit = in.limit();
+                in.limit(in.position() + len);
+                try {
+                    value = valueReader.apply(in);
+                } catch (final Exception e) {
+                    throw new MerkleSerializationException("Failed to parse a value", e);
+                } finally {
+                    in.limit(oldLimit);
+                }
+            } else {
+                throw new MerkleSerializationException("Unknown leaf record field: " + tag);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -157,6 +225,44 @@ public final class VirtualLeafRecord<K extends VirtualKey, V extends VirtualValu
         this.path = in.readLong();
         this.key = in.readSerializable();
         this.value = in.readSerializable();
+    }
+
+    @Override
+    public int getProtoSizeInBytes() {
+        int size = 0;
+        if (path != 0) {
+            size += ProtoWriterTools.sizeOfTag(FIELD_VLEAFRECORD_PATH);
+            size += ProtoWriterTools.sizeOfVarInt64(path);
+        }
+        size += ProtoWriterTools.sizeOfDelimited(FIELD_VLEAFRECORD_KEY, key.getProtoSizeInBytes());
+        size += ProtoWriterTools.sizeOfDelimited(FIELD_VLEAFRECORD_VALUE, value.getProtoSizeInBytes());
+        return size;
+    }
+
+    @Override
+    public void protoSerialize(final WritableSequentialData out) throws MerkleSerializationException {
+        if (path != 0) {
+            ProtoWriterTools.writeTag(out, FIELD_VLEAFRECORD_PATH);
+            out.writeVarLong(path, false);
+        }
+        final AtomicReference<MerkleSerializationException> ex = new AtomicReference<>();
+        ProtoWriterTools.writeDelimited(out, FIELD_VLEAFRECORD_KEY, key.getProtoSizeInBytes(), o -> {
+            try {
+                key.protoSerialize(o);
+            } catch (MerkleSerializationException e) {
+                ex.set(e);
+            }
+        });
+        ProtoWriterTools.writeDelimited(out, FIELD_VLEAFRECORD_KEY, value.getProtoSizeInBytes(), o -> {
+            try {
+                value.protoSerialize(o);
+            } catch (MerkleSerializationException e) {
+                ex.set(e);
+            }
+        });
+        if (ex.get() != null) {
+            throw ex.get();
+        }
     }
 
     /**

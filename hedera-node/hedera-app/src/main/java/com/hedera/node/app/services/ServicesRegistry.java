@@ -18,12 +18,15 @@ package com.hedera.node.app.services;
 
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.common.constructable.ConstructableRegistry;
-import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
+import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -78,4 +81,29 @@ public interface ServicesRegistry {
      * @param service The service to register
      */
     void register(@NonNull final Service service);
+
+    @SuppressWarnings("rawtypes")
+    default StateDefinition getStateDefinition(final String stateLabel) {
+        final String[] labelComponents = stateLabel.split("\\.");
+        assert labelComponents.length == 2;
+        final String serviceName = labelComponents[0];
+        final String stateKey = labelComponents[1];
+        for (final Registration r : registrations()) {
+            if (!serviceName.equals(r.service().getServiceName())) {
+                continue;
+            }
+            final Iterator<Schema> schemas = r.registry().registeredSchemas();
+            while (schemas.hasNext()) {
+                final Schema schema = schemas.next();
+                // FUTURE WORK: I am not sure about the line below
+                final Set<StateDefinition> stateDefs = schema.statesToCreate();
+                for (final StateDefinition def : stateDefs) {
+                    if (stateKey.equals(def.stateKey())) {
+                        return def;
+                    }
+                }
+            }
+        }
+        return null;
+    }
 }

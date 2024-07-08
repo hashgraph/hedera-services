@@ -19,10 +19,14 @@ package com.swirlds.merkledb;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -31,8 +35,8 @@ import java.util.Objects;
 /**
  * Virtual data source builder that manages {@link MerkleDb} based data sources.
  *
- * One of the key MerkleDb builder config options is database directory. When a builder is
- * requested to create a new data source, or restore an existing data sources from snapshot,
+ * <p></p>One of the key MerkleDb builder config options is database directory. When a builder
+ * is requested to create a new data source, or restore an existing data sources from snapshot,
  * the data source is hosted in the specified database. Full data source path is therefore
  * databaseDir + "/" + dataSource.label. To make sure there are no folder name conflicts
  * between data sources with the same label, e.g. on copy or snapshot, MerkleDb builders
@@ -64,20 +68,38 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
     private MerkleDbTableConfig<K, V> tableConfig;
 
     /**
+     * Key serializer. Used to serialize and deserialize keys in data files.
+     */
+    private KeySerializer<K> keySerializer;
+
+    /**
+     * Value serializer. Used to serialize and deserialize keys in data files.
+     */
+    private ValueSerializer<V> valueSerializer;
+
+    /**
      * Default constructor for deserialization purposes.
      */
     public MerkleDbDataSourceBuilder() {
         // for deserialization
+        // FUTURE WORK: check if this constructor is still needed, after the class is no longer SelfSerializable
     }
 
     /**
      * Creates a new data source builder with the specified table configuration.
      *
+     * @param keySerializer
+     *      Virtual key serializer. May not be {@code null}
+     * @param valueSerializer
+     *      Virtual value serializer. May not be {@code null}
      * @param tableConfig
      *      Table configuration to use to create new data sources
      */
-    public MerkleDbDataSourceBuilder(final MerkleDbTableConfig<K, V> tableConfig) {
-        this(null, tableConfig);
+    public MerkleDbDataSourceBuilder(
+            @NonNull final KeySerializer<K> keySerializer,
+            @NonNull final ValueSerializer<V> valueSerializer,
+            @Nullable final MerkleDbTableConfig<K, V> tableConfig) {
+        this(null, keySerializer, valueSerializer, tableConfig);
     }
 
     /**
@@ -85,11 +107,21 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
      *
      * @param databaseDir
      *      Default database folder. May be {@code null}
+     * @param keySerializer
+     *      Virtual key serializer. May not be {@code null}
+     * @param valueSerializer
+     *      Virtual value serializer. May not be {@code null}
      * @param tableConfig
      *      Table configuration to use to create new data sources
      */
-    public MerkleDbDataSourceBuilder(final Path databaseDir, final MerkleDbTableConfig<K, V> tableConfig) {
+    public MerkleDbDataSourceBuilder(
+            final Path databaseDir,
+            @NonNull final KeySerializer<K> keySerializer,
+            @NonNull final ValueSerializer<V> valueSerializer,
+            @Nullable final MerkleDbTableConfig<K, V> tableConfig) {
         this.databaseDir = databaseDir;
+        this.keySerializer = Objects.requireNonNull(keySerializer, "Null key serializer");
+        this.valueSerializer = Objects.requireNonNull(valueSerializer, "Null value serializer");
         this.tableConfig = tableConfig;
     }
 
@@ -99,7 +131,8 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
     @Override
     public VirtualDataSource<K, V> build(final String label, final boolean withDbCompactionEnabled) {
         if (tableConfig == null) {
-            throw new IllegalArgumentException("Table serialization config is missing");
+            // Table config is needed to create a new data source
+            throw new IllegalArgumentException("Table config is missing");
         }
         // Creates a new data source in this builder's database dir or in the default MerkleDb instance
         final MerkleDb database = MerkleDb.getInstance(databaseDir);
@@ -107,6 +140,8 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
             return database.createDataSource(
                     label, // use VirtualMap name as the table name
                     tableConfig,
+                    keySerializer,
+                    valueSerializer,
                     withDbCompactionEnabled);
         } catch (final IOException ex) {
             throw new UncheckedIOException(ex);
@@ -155,7 +190,11 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
             // Restore to the default database. Assuming the default database hasn't been initialized yet.
             // Note that all database data, shared and per-table for all tables, will be restored.
             final MerkleDb database = MerkleDb.restore(source, databaseDir);
-            return database.getDataSource(label, true);
+            return database.getDataSource(
+                    label,
+                    keySerializer,
+                    valueSerializer,
+                    true);
         } catch (final IOException z) {
             throw new UncheckedIOException(z);
         }
@@ -180,18 +219,21 @@ public class MerkleDbDataSourceBuilder<K extends VirtualKey, V extends VirtualVa
     /**
      * {@inheritDoc}
      */
+    @Deprecated
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        // The order of the first 3 fields matches JasperDbBuilder serialization
-        out.writeSerializable(tableConfig, false);
+        throw new UnsupportedOperationException("This method should no longer be used");
     }
 
     /**
      * {@inheritDoc}
      */
+    @Deprecated
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         tableConfig = in.readSerializable(false, MerkleDbTableConfig::new);
+        keySerializer = Objects.requireNonNull(tableConfig.getKeySerializer());
+        valueSerializer = Objects.requireNonNull(tableConfig.getValueSerializer());
     }
 
     /**

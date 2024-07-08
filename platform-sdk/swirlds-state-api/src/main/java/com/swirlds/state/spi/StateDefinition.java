@@ -17,6 +17,7 @@
 package com.swirlds.state.spi;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.FieldDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -53,21 +54,19 @@ public record StateDefinition<K, V>(
         if (singleton && queue) {
             throw new IllegalArgumentException("A state cannot both be 'singleton' and 'queue'");
         }
-
         if (singleton && onDisk) {
             throw new IllegalArgumentException("A state cannot both be 'singleton' and 'onDisk'");
+        }
+        if (queue && onDisk) {
+            throw new IllegalArgumentException("A state cannot both be 'queue' and 'onDisk'");
         }
 
         if (onDisk && maxKeysHint <= 0) {
             throw new IllegalArgumentException("You must specify the maxKeysHint when onDisk. Please see docs.");
         }
 
-        if (queue && onDisk) {
-            throw new IllegalArgumentException("A state cannot both be 'queue' and 'onDisk'");
-        }
-
-        if (keyCodec == null && !singleton && !queue) {
-            throw new NullPointerException("keyCodec must be specified when using singleton or queue types");
+        if (onDisk && (keyCodec == null)) {
+            throw new NullPointerException("keyCodec must be specified when onDisk. Please see docs.");
         }
     }
 
@@ -82,7 +81,9 @@ public record StateDefinition<K, V>(
      * @param <V> The value type
      */
     public static <K, V> StateDefinition<K, V> inMemory(
-            @NonNull final String stateKey, @NonNull final Codec<K> keyCodec, @NonNull final Codec<V> valueCodec) {
+            @NonNull final String stateKey,
+            @NonNull final Codec<K> keyCodec,
+            @NonNull final Codec<V> valueCodec) {
         return new StateDefinition<>(stateKey, keyCodec, valueCodec, NO_MAX, false, false, false);
     }
 
@@ -117,7 +118,8 @@ public record StateDefinition<K, V>(
      * @param <V> The value type
      */
     public static <K, V> StateDefinition<K, V> singleton(
-            @NonNull final String stateKey, @NonNull final Codec<V> valueCodec) {
+            @NonNull final String stateKey,
+            @NonNull final Codec<V> valueCodec) {
         return new StateDefinition<>(stateKey, null, valueCodec, NO_MAX, false, true, false);
     }
 
@@ -131,7 +133,8 @@ public record StateDefinition<K, V>(
      * @param <V> The value type
      */
     public static <K, V> StateDefinition<K, V> queue(
-            @NonNull final String stateKey, @NonNull final Codec<V> elementCodec) {
+            @NonNull final String stateKey,
+            @NonNull final Codec<V> elementCodec) {
         return new StateDefinition<>(stateKey, null, elementCodec, NO_MAX, false, false, true);
     }
 }

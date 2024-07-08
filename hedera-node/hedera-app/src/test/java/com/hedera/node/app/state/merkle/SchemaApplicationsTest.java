@@ -35,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class SchemaApplicationsTest {
+
     @SuppressWarnings("rawtypes")
     private static final StateDefinition STATE_DEFINITION = StateDefinition.singleton("NUMBER", EntityNumber.PROTOBUF);
 

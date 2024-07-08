@@ -36,6 +36,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
+import com.swirlds.merkledb.config.MerkleDbConfig;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.state.merkle.StateUtils;
 import com.swirlds.platform.state.merkle.disk.OnDiskKey;
@@ -61,6 +62,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -148,6 +150,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         });
 
         return this;
+    }
+
+    @Override
+    public Iterator<Schema> registeredSchemas() {
+        return schemas.iterator();
     }
 
     /**
@@ -297,24 +304,19 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                         });
                     } else {
                         hederaState.putServiceStateIfAbsent(md, () -> {
-                            // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
-                            // PREFER_DISK_BASED_INDICES = false
+                            final var keySerializer = new OnDiskKeySerializer<>(
+                                    md.onDiskKeySerializerClassId(),
+                                    md.onDiskKeyClassId(),
+                                    md.stateDefinition().keyCodec());
+                            final var valueSerializer = new OnDiskValueSerializer<>(
+                                    md.onDiskValueSerializerClassId(),
+                                    md.onDiskValueClassId(),
+                                    md.stateDefinition().valueCodec());
+                            final MerkleDbConfig merkleDbConfig = configuration.getConfigData(MerkleDbConfig.class);
                             final var tableConfig = new MerkleDbTableConfig<>(
-                                            (short) 1,
-                                            DigestType.SHA_384,
-                                            (short) 1,
-                                            new OnDiskKeySerializer<>(
-                                                    md.onDiskKeySerializerClassId(),
-                                                    md.onDiskKeyClassId(),
-                                                    md.stateDefinition().keyCodec()),
-                                            (short) 1,
-                                            new OnDiskValueSerializer<>(
-                                                    md.onDiskValueSerializerClassId(),
-                                                    md.onDiskValueClassId(),
-                                                    md.stateDefinition().valueCodec()))
-                                    .maxNumberOfKeys(def.maxKeysHint());
+                                    DigestType.SHA_384, def.maxKeysHint(), merkleDbConfig.hashesRamToDiskThreshold(), false);
                             final var label = StateUtils.computeLabel(serviceName, stateKey);
-                            final var dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
+                            final var dsBuilder = new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
                             final var virtualMap = new VirtualMap<>(label, dsBuilder);
                             virtualMap.registerMetrics(metrics);
                             return virtualMap;
@@ -396,7 +398,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             constructableRegistry.registerConstructable(new ClassConstructorPair(
                     ValueLeaf.class,
                     () -> new ValueLeaf<>(
-                            md.singletonClassId(), md.stateDefinition().valueCodec())));
+                            md.singletonClassId(),
+                            md.stateDefinition().valueCodec())));
         } catch (ConstructableRegistryException e) {
             // This is a fatal error.
             throw new IllegalStateException(

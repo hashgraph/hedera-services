@@ -75,6 +75,7 @@ import org.apache.logging.log4j.Logger;
  * this schema is always correct for the current version of the software.
  */
 public class V0490FileSchema extends Schema {
+
     private static final Logger logger = LogManager.getLogger(V0490FileSchema.class);
 
     public static final String BLOBS_KEY = "FILES";
@@ -105,7 +106,8 @@ public class V0490FileSchema extends Schema {
     @SuppressWarnings("rawtypes")
     public Set<StateDefinition> statesToCreate(@NonNull final Configuration config) {
         final Set<StateDefinition> definitions = new LinkedHashSet<>();
-        definitions.add(StateDefinition.onDisk(BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, MAX_FILES_HINT));
+        definitions.add(StateDefinition.onDisk(
+                BLOBS_KEY, FileID.PROTOBUF, File.PROTOBUF, MAX_FILES_HINT));
 
         final FilesConfig filesConfig = config.getConfigData(FilesConfig.class);
         final HederaConfig hederaConfig = config.getConfigData(HederaConfig.class);

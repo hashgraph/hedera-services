@@ -63,7 +63,7 @@ class VirtualMerkleLeafHasherTest {
                         .maxNumberOfKeys(50_000_000)
                         .hashesRamToDiskThreshold(0)
                         .preferDiskIndices(false);
-        dataSourceBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
+        dataSourceBuilder = new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
     }
 
     @Test

@@ -32,6 +32,7 @@ import java.util.Set;
  * General schema for the schedule service.
  */
 public final class V0490ScheduleSchema extends Schema {
+
     private static final long MAX_SCHEDULES_BY_ID_KEY = 50_000_000L;
     private static final long MAX_SCHEDULES_BY_EXPIRY_SEC_KEY = 50_000_000L;
     private static final long MAX_SCHEDULES_BY_EQUALITY = 50_000_000L;
@@ -66,7 +67,10 @@ public final class V0490ScheduleSchema extends Schema {
 
     private static StateDefinition<ScheduleID, Schedule> schedulesByIdDef() {
         return StateDefinition.onDisk(
-                SCHEDULES_BY_ID_KEY, ScheduleID.PROTOBUF, Schedule.PROTOBUF, MAX_SCHEDULES_BY_ID_KEY);
+                SCHEDULES_BY_ID_KEY,
+                ScheduleID.PROTOBUF,
+                Schedule.PROTOBUF,
+                MAX_SCHEDULES_BY_ID_KEY);
     }
 
     private static StateDefinition<ProtoLong, ScheduleList> schedulesByExpirySec() {
@@ -79,6 +83,9 @@ public final class V0490ScheduleSchema extends Schema {
 
     private static StateDefinition<ProtoBytes, ScheduleList> schedulesByEquality() {
         return StateDefinition.onDisk(
-                SCHEDULES_BY_EQUALITY_KEY, ProtoBytes.PROTOBUF, ScheduleList.PROTOBUF, MAX_SCHEDULES_BY_EQUALITY);
+                SCHEDULES_BY_EQUALITY_KEY,
+                ProtoBytes.PROTOBUF,
+                ScheduleList.PROTOBUF,
+                MAX_SCHEDULES_BY_EQUALITY);
     }
 }

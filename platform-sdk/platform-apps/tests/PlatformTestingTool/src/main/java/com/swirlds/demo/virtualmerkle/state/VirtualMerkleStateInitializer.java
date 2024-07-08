@@ -111,45 +111,51 @@ public final class VirtualMerkleStateInitializer {
 
     private static VirtualMap<AccountVirtualMapKey, AccountVirtualMapValue> createAccountsVM(final long numOfKeys) {
         final VirtualDataSourceBuilder<AccountVirtualMapKey, AccountVirtualMapValue> dsBuilder;
+        final var keySerializer = new AccountVirtualMapKeySerializer();
+        final var valueSerializer = new AccountVirtualMapValueSerializer();
         final MerkleDbTableConfig<AccountVirtualMapKey, AccountVirtualMapValue> tableConfig = new MerkleDbTableConfig<>(
                 (short) 1,
                 DigestType.SHA_384,
                 (short) 1,
-                new AccountVirtualMapKeySerializer(),
+                keySerializer,
                 (short) 1,
-                new AccountVirtualMapValueSerializer());
+                valueSerializer);
         tableConfig.maxNumberOfKeys(numOfKeys);
-        dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
         return new VirtualMap<>("accounts", dsBuilder);
     }
 
     private static VirtualMap<SmartContractMapKey, SmartContractMapValue> createSmartContractsVM(final long numOfKeys) {
         final VirtualDataSourceBuilder<SmartContractMapKey, SmartContractMapValue> dsBuilder;
+        final var keySerializer = new SmartContractMapKeySerializer();
+        final var valueSerializer = new SmartContractMapValueSerializer();
         final MerkleDbTableConfig<SmartContractMapKey, SmartContractMapValue> tableConfig = new MerkleDbTableConfig<>(
                 (short) 1,
                 DigestType.SHA_384,
                 (short) 1,
-                new SmartContractMapKeySerializer(),
+                keySerializer,
                 (short) 1,
-                new SmartContractMapValueSerializer());
+                valueSerializer);
         tableConfig.maxNumberOfKeys(numOfKeys);
-        dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
         return new VirtualMap<>("smartContracts", dsBuilder);
     }
 
     private static VirtualMap<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> createSmartContractByteCodeVM(
             final long numOfKeys) {
         final VirtualDataSourceBuilder<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> dsBuilder;
+        final var keySerializer = new SmartContractByteCodeMapKeySerializer();
+        final var valueSerializer = new SmartContractByteCodeMapValueSerializer();
         final MerkleDbTableConfig<SmartContractByteCodeMapKey, SmartContractByteCodeMapValue> tableConfig =
                 new MerkleDbTableConfig<>(
                         (short) 1,
                         DigestType.SHA_384,
                         (short) 1,
-                        new SmartContractByteCodeMapKeySerializer(),
+                        keySerializer,
                         (short) 1,
-                        new SmartContractByteCodeMapValueSerializer());
+                        valueSerializer);
         tableConfig.maxNumberOfKeys(numOfKeys);
-        dsBuilder = new MerkleDbDataSourceBuilder<>(tableConfig);
+        dsBuilder = new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
         return new VirtualMap<>("smartContractByteCode", dsBuilder);
     }
 }

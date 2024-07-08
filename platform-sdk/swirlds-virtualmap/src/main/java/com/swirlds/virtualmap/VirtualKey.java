@@ -17,6 +17,7 @@
 package com.swirlds.virtualmap;
 
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
 
 /**
  * A virtual key, specifically for use with the Virtual FCMap {@code VirtualMap}. The indexes
@@ -26,7 +27,7 @@ import com.swirlds.common.io.SelfSerializable;
  *
  * <p>Keys must implement {@link Comparable}.
  */
-public interface VirtualKey extends SelfSerializable {
+public interface VirtualKey extends ProtoSerializable, SelfSerializable {
 
     /**
      * This needs to be a very good quality hash code with even spread, or it will be very inefficient when used in

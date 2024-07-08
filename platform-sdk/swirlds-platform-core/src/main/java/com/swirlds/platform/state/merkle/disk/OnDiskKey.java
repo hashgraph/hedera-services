@@ -21,6 +21,7 @@ import static com.swirlds.platform.state.merkle.StateUtils.writeToStream;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.virtualmap.VirtualKey;
@@ -28,6 +29,7 @@ import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
 /**
@@ -120,6 +122,26 @@ public final class OnDiskKey<K> implements VirtualKey {
             throw new IllegalStateException("Cannot deserialize on-disk key, null metadata / codec");
         }
         key = readFromStream(in, codec);
+    }
+
+    @Override
+    public int getProtoSizeInBytes() {
+        if (codec == null) {
+            throw new IllegalStateException("Null metadata / codec");
+        }
+        return codec.measureRecord(key);
+    }
+
+    @Override
+    public void protoSerialize(final WritableSequentialData out) {
+        if (codec == null) {
+            throw new IllegalStateException("Null metadata / codec");
+        }
+        try {
+            codec.write(key, out);
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override

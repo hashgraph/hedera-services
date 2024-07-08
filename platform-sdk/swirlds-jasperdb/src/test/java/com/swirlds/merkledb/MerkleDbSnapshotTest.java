@@ -75,6 +75,18 @@ class MerkleDbSnapshotTest {
 
     private static final Random RANDOM = new Random(123);
 
+    private static final KeySerializer<ExampleLongKeyFixedSize> KEY_SERIALIZER =
+            new ExampleLongKeyFixedSize.Serializer();
+
+    private static final ValueSerializer<ExampleFixedSizeVirtualValue> VALUE_SERIALIZER =
+            new ExampleFixedSizeVirtualValueSerializer();
+
+    private static final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> TABLE_CONFIG =
+            new MerkleDbTableConfig<>(
+                    (short) 1, DigestType.SHA_384,
+                    (short) 1, KEY_SERIALIZER,
+                    (short) 1, VALUE_SERIALIZER);
+
     @BeforeAll
     static void setup() throws Exception {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.common");
@@ -97,16 +109,6 @@ class MerkleDbSnapshotTest {
                 "Expected no open dbs. Actual number of open dbs: " + MerkleDbDataSource.getCountOfOpenDatabases());
     }
 
-    private static MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> fixedConfig() {
-        final KeySerializer<ExampleLongKeyFixedSize> keySerializer = new ExampleLongKeyFixedSize.Serializer();
-        final ValueSerializer<ExampleFixedSizeVirtualValue> valueSerializer =
-                new ExampleFixedSizeVirtualValueSerializer();
-        return new MerkleDbTableConfig<>(
-                (short) 1, DigestType.SHA_384,
-                (short) keySerializer.getCurrentDataVersion(), keySerializer,
-                (short) valueSerializer.getCurrentDataVersion(), valueSerializer);
-    }
-
     private void verify(final MerkleInternal stateRoot) {
         for (int i = 0; i < MAPS_COUNT; i++) {
             final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm = stateRoot.getChild(i);
@@ -124,9 +126,8 @@ class MerkleDbSnapshotTest {
     @Test
     void snapshotMultipleTablesTestSync() throws Exception {
         final MerkleInternal initialRoot = new TestInternalNode();
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dsBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(KEY_SERIALIZER, VALUE_SERIALIZER, TABLE_CONFIG);
         for (int i = 0; i < MAPS_COUNT; i++) {
             final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm =
                     new VirtualMap<>("vm" + i, dsBuilder);
@@ -180,9 +181,8 @@ class MerkleDbSnapshotTest {
     @Test
     void snapshotMultipleTablesTestAsync() throws Exception {
         final MerkleInternal initialRoot = new TestInternalNode();
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dsBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(KEY_SERIALIZER, VALUE_SERIALIZER, TABLE_CONFIG);
         for (int i = 0; i < MAPS_COUNT; i++) {
             final VirtualMap<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> vm =
                     new VirtualMap<>("vm" + i, dsBuilder);
@@ -261,9 +261,8 @@ class MerkleDbSnapshotTest {
      */
     @Test
     void testSnapshotAfterReconnect() throws Exception {
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig = fixedConfig();
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dsBuilder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(KEY_SERIALIZER, VALUE_SERIALIZER, TABLE_CONFIG);
         final VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> original =
                 dsBuilder.build("vm", false);
         // Simulate reconnect as a learner

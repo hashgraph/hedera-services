@@ -40,6 +40,8 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.merkledb.serialize.KeyIndexType;
+import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.metrics.api.IntegerGauge;
@@ -452,6 +454,8 @@ class MerkleDbDataSourceTest {
             final Path snapshotDbPath =
                     testDirectory.resolve("merkledb-snapshotRestoreIndex-" + testType + "_SNAPSHOT");
             dataSource.getDatabase().snapshot(snapshotDbPath, dataSource);
+            final KeySerializer<VirtualLongKey> keySerializer = dataSource.getKeySerializer();
+            final ValueSerializer<ExampleByteArrayVirtualValue> valueSerializer = dataSource.getValueSerializer();
             // close data source
             dataSource.close();
 
@@ -465,7 +469,7 @@ class MerkleDbDataSourceTest {
             Files.deleteIfExists(snapshotPaths.objectKeyToPathDirectory.resolve(tableName + "_bucket_index.ll"));
 
             final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> snapshotDataSource =
-                    snapshotDb.getDataSource(tableName, false);
+                    snapshotDb.getDataSource(tableName, keySerializer, valueSerializer, false);
             reinitializeDirectMemoryUsage();
             IntStream.range(0, count * 2).forEach(i -> assertHash(snapshotDataSource, i, i + 1));
             IntStream.range(count, count * 2).forEach(i -> assertLeaf(testType, snapshotDataSource, i, i, i + 1, i));

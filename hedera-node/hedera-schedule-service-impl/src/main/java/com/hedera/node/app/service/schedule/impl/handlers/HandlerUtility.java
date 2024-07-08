@@ -170,6 +170,7 @@ public final class HandlerUtility {
             case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
             case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
             case UNSET -> HederaFunctionality.NONE;
+            default -> throw new RuntimeException();
         };
     }
 

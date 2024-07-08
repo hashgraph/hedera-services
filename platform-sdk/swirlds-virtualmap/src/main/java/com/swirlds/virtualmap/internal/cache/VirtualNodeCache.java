@@ -16,17 +16,34 @@
 
 package com.swirlds.virtualmap.internal.cache;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VNODECACHE_COPYVERSION;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VNODECACHE_KEYTOLEAF;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VNODECACHE_PATHTOHASH;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VNODECACHE_PATHTOKEY;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VNODECACHE_COPYVERSION;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VNODECACHE_KEYTOLEAF;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VNODECACHE_PATHTOHASH;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VNODECACHE_PATHTOKEY;
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.ProtoWriterTools;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.base.function.CheckedConsumer;
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.FastCopyable;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.exceptions.PlatformException;
 import com.swirlds.common.io.SelfSerializable;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.common.merkle.proto.ProtoSerializable;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.threading.futures.StandardFuture;
 import com.swirlds.virtualmap.VirtualKey;
@@ -35,6 +52,7 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Map;
@@ -49,6 +67,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -91,7 +110,7 @@ import org.apache.logging.log4j.Logger;
  * which leaves occupied a given path, and for the internal node hashes at a given path.
  * <p>
  * To fulfill these design requirements, each "chain" of caches share three different indexes:
- * {@link #keyToDirtyLeafIndex}, {@link #pathToDirtyLeafIndex}, and {@link #pathToDirtyHashIndex}.
+ * {@link #keyToDirtyLeafIndex}, {@link #pathToDirtyKeyIndex}, and {@link #pathToDirtyHashIndex}.
  * Each of these is a map from either the leaf key or a path (long) to a custom linked list data structure. Each element
  * in the list is a {@link Mutation} with a reference to the data item (either a {@link VirtualHashRecord}
  * or a {@link VirtualLeafRecord}, depending on the list), and a reference to the next {@link Mutation}
@@ -114,7 +133,7 @@ import org.apache.logging.log4j.Logger;
  * 		The type of value used for leaves
  */
 public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue>
-        implements FastCopyable, SelfSerializable {
+        implements FastCopyable, ProtoSerializable, SelfSerializable {
 
     private static final Logger logger = LogManager.getLogger(VirtualNodeCache.class);
 
@@ -216,7 +235,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * <p>
      * <strong>ONE PER CHAIN OF CACHES</strong>.
      */
-    private final Map<Long, Mutation<Long, K>> pathToDirtyLeafIndex;
+    private final Map<Long, Mutation<Long, K>> pathToDirtyKeyIndex;
 
     /**
      * A shared index of paths to internals, via {@link Mutation}s. Works the same as {@link #keyToDirtyLeafIndex}.
@@ -318,7 +337,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      */
     public VirtualNodeCache() {
         this.keyToDirtyLeafIndex = new ConcurrentHashMap<>();
-        this.pathToDirtyLeafIndex = new ConcurrentHashMap<>();
+        this.pathToDirtyKeyIndex = new ConcurrentHashMap<>();
         this.pathToDirtyHashIndex = new ConcurrentHashMap<>();
         this.releaseLock = new ReentrantLock();
         this.lastReleased = new AtomicLong(-1L);
@@ -341,7 +360,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
         // Get a reference to the shared data structures
         this.keyToDirtyLeafIndex = source.keyToDirtyLeafIndex;
-        this.pathToDirtyLeafIndex = source.pathToDirtyLeafIndex;
+        this.pathToDirtyKeyIndex = source.pathToDirtyKeyIndex;
         this.pathToDirtyHashIndex = source.pathToDirtyHashIndex;
         this.releaseLock = source.releaseLock;
         this.lastReleased = source.lastReleased;
@@ -352,6 +371,15 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         // Wire up the next & prev references
         this.next.set(source);
         source.prev.set(this);
+    }
+
+    public VirtualNodeCache(
+            @NonNull final ReadableSequentialData in,
+            @NonNull final CheckedFunction<ReadableSequentialData, K, Exception> keyReader,
+            @NonNull final CheckedFunction<ReadableSequentialData, V, Exception> valueReader)
+            throws MerkleSerializationException {
+        this();
+        protoDeserialize(in, keyReader, valueReader);
     }
 
     /**
@@ -433,7 +461,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         // to be there anymore.
         getCleaningPool().execute(() -> {
             purge(dirtyLeaves, keyToDirtyLeafIndex);
-            purge(dirtyLeafPaths, pathToDirtyLeafIndex);
+            purge(dirtyLeafPaths, pathToDirtyKeyIndex);
             purge(dirtyHashes, pathToDirtyHashIndex);
 
             dirtyLeaves = null;
@@ -552,7 +580,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         assert key != null : "Keys cannot be null";
 
         // Update the path index to point to this node at this path
-        updatePaths(key, leaf.getPath(), pathToDirtyLeafIndex, dirtyLeafPaths);
+        updatePaths(key, leaf.getPath(), pathToDirtyKeyIndex, dirtyLeafPaths);
 
         // Get the first data element (mutation) in the list based on the key,
         // and then create or update the associated mutation.
@@ -587,7 +615,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         keyToDirtyLeafIndex.compute(key, (k, mutations) -> {
             mutations = mutate(leaf, mutations);
             mutations.setDeleted(true);
-            assert pathToDirtyLeafIndex.get(leaf.getPath()).isDeleted() : "It should be deleted too";
+            assert pathToDirtyKeyIndex.get(leaf.getPath()).isDeleted() : "It should be deleted too";
             return mutations;
         });
     }
@@ -609,7 +637,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     public void clearLeafPath(final long path) {
         throwIfLeafImmutable();
         // Note: this marks the mutations as deleted, in addition to clearing the value of the mutation
-        updatePaths(null, path, pathToDirtyLeafIndex, dirtyLeafPaths);
+        updatePaths(null, path, pathToDirtyKeyIndex, dirtyLeafPaths);
     }
 
     /**
@@ -715,7 +743,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
         // Note that the mutations in pathToDirtyLeafIndex contain the *path* as the key,
         // and a leaf record *key* as the value. Thus, we look up a mutation first in the
         // pathToDirtyLeafIndex, get the leaf key, and then lookup based on that key.
-        final Mutation<Long, K> mutation = lookup(pathToDirtyLeafIndex.get(path));
+        final Mutation<Long, K> mutation = lookup(pathToDirtyKeyIndex.get(path));
         // If mutation is null (path is unknown), return null regardless of forModify
         if (mutation == null) {
             return null;
@@ -1024,7 +1052,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
 
         out.writeLong(fastCopyVersion.get());
         serializeKeyToDirtyLeafIndex(keyToDirtyLeafIndex, out);
-        serializePathToDirtyLeafIndex(pathToDirtyLeafIndex, out);
+        serializePathToDirtyLeafIndex(pathToDirtyKeyIndex, out);
         serializePathToDirtyHashIndex(pathToDirtyHashIndex, out);
     }
 
@@ -1035,8 +1063,169 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         this.fastCopyVersion.set(in.readLong());
         deserializeKeyToDirtyLeafIndex(keyToDirtyLeafIndex, in, version);
-        deserializePathToDirtyLeafIndex(pathToDirtyLeafIndex, in);
+        deserializePathToDirtyLeafIndex(pathToDirtyKeyIndex, in);
         deserializePathToDirtyHashIndex(pathToDirtyHashIndex, in, version);
+    }
+
+    // Protobuf serialization
+
+    @Override
+    public int getProtoSizeInBytes() {
+        int size = 0;
+        if (fastCopyVersion.get() != 0) {
+            size += ProtoWriterTools.sizeOfTag(FIELD_VNODECACHE_COPYVERSION);
+            size += ProtoWriterTools.sizeOfVarInt64(fastCopyVersion.get());
+        }
+
+        return size;
+    }
+
+    private void protoDeserialize(
+            @NonNull final ReadableSequentialData in,
+            @NonNull final CheckedFunction<ReadableSequentialData, K, Exception> keyReader,
+            @NonNull final CheckedFunction<ReadableSequentialData, V, Exception> valueReader)
+            throws MerkleSerializationException {
+        // Defaults
+        fastCopyVersion.set(0);
+
+        while (in.hasRemaining()) {
+            final int tag = in.readVarInt(false);
+            final int fieldNum = tag >> ProtoParserTools.TAG_FIELD_OFFSET;
+            if (fieldNum == NUM_VNODECACHE_COPYVERSION) {
+                assert (tag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG.ordinal();
+                fastCopyVersion.set(in.readVarLong(false));
+            } else if (fieldNum == NUM_VNODECACHE_KEYTOLEAF) {
+                assert (tag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_DELIMITED.ordinal();
+                protoReadDelimited(in, input -> {
+                    final CacheKeyToLeafEntry<K, V> entry = new CacheKeyToLeafEntry<>(input, keyReader, valueReader);
+                    final VirtualLeafRecord<K, V> leafRecord = entry.getRecord();
+                    final Mutation<K, VirtualLeafRecord<K, V>> mutation =
+                            new Mutation<>(null, leafRecord.getKey(), leafRecord, entry.getVersion());
+                    mutation.setDeleted(entry.isDeleted());
+                    keyToDirtyLeafIndex.put(leafRecord.getKey(), mutation);
+                    dirtyLeaves.add(mutation);
+                });
+            } else if (fieldNum == NUM_VNODECACHE_PATHTOKEY) {
+                assert (tag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_DELIMITED.ordinal();
+                protoReadDelimited(in, input -> {
+                    final CachePathToKeyEntry<K> entry = new CachePathToKeyEntry<>(input, keyReader);
+                    final Mutation<Long, K> mutation =
+                            new Mutation<>(null, entry.getPath(), entry.getKey(), entry.getVersion());
+                    mutation.setDeleted(entry.isDeleted());
+                    pathToDirtyKeyIndex.put(entry.getPath(), mutation);
+                    dirtyLeafPaths.add(mutation);
+                });
+            } else if (fieldNum == NUM_VNODECACHE_PATHTOHASH) {
+                assert (tag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_DELIMITED.ordinal();
+                protoReadDelimited(in, input -> {
+                    final CachePathToHashEntry entry = new CachePathToHashEntry(input);
+                    final Mutation<Long, Hash> mutation =
+                            new Mutation<>(null, entry.getPath(), entry.getHash(), entry.getVersion());
+                    mutation.setDeleted(entry.isDeleted());
+                    pathToDirtyHashIndex.put(entry.getPath(), mutation);
+                    dirtyHashes.add(mutation);
+                });
+            } else {
+                throw new MerkleSerializationException("Unknown node cache field: " + tag);
+            }
+        }
+    }
+
+    private void protoReadDelimited(
+            @NonNull final ReadableSequentialData in,
+            @NonNull final CheckedConsumer<ReadableSequentialData, MerkleSerializationException> reader)
+            throws MerkleSerializationException {
+        final int len = in.readVarInt(false);
+        final long oldLimit = in.limit();
+        in.limit(in.position() + len);
+        try {
+            reader.accept(in);
+        } finally {
+            in.limit(oldLimit);
+        }
+    }
+
+    @Override
+    public void protoSerialize(final WritableSequentialData out) throws MerkleSerializationException {
+        if (fastCopyVersion.get() != 0) {
+            ProtoWriterTools.writeTag(out, FIELD_VNODECACHE_COPYVERSION);
+            out.writeVarLong(fastCopyVersion.get(), false);
+        }
+        protoSerializeKeyToLeaf(out);
+        protoSerializePathToKey(out);
+        protoSerializePathToHash(out);
+    }
+
+    private void protoSerializeKeyToLeaf(final WritableSequentialData out)
+            throws MerkleSerializationException {
+        assert snapshot.get() : "Only snapshots can be serialized";
+        final AtomicReference<MerkleSerializationException> ex = new AtomicReference<>();
+        for (final Map.Entry<K, Mutation<K, VirtualLeafRecord<K, V>>> entry : keyToDirtyLeafIndex.entrySet()) {
+            final Mutation<K, VirtualLeafRecord<K, V>> mutation = entry.getValue();
+            assert mutation != null : "Mutations cannot be null in a snapshot";
+            assert mutation.version <= this.fastCopyVersion.get()
+                    : "Trying to serialize keyToDirtyLeafIndex with a version ahead";
+            final CacheKeyToLeafEntry<K, V> cacheEntry =
+                    new CacheKeyToLeafEntry<>(mutation.version, mutation.value, mutation.isDeleted());
+            ProtoWriterTools.writeDelimited(out, FIELD_VNODECACHE_KEYTOLEAF, cacheEntry.getProtoSizeInBytes(), o -> {
+                try {
+                    cacheEntry.protoSerialize(o);
+                } catch (final MerkleSerializationException e) {
+                    ex.set(e);
+                }
+            });
+            if (ex.get() != null) {
+                throw ex.get();
+            }
+        }
+    }
+
+    private void protoSerializePathToKey(final WritableSequentialData out)
+            throws MerkleSerializationException {
+        assert snapshot.get() : "Only snapshots can be serialized";
+        final AtomicReference<MerkleSerializationException> ex = new AtomicReference<>();
+        for (final Map.Entry<Long, Mutation<Long, K>> entry : pathToDirtyKeyIndex.entrySet()) {
+            final Mutation<Long, K> mutation = entry.getValue();
+            assert mutation != null : "Mutations cannot be null in a snapshot";
+            assert mutation.version <= this.fastCopyVersion.get()
+                    : "Trying to serialize pathToDirtyLeafIndex with a version ahead";
+            final CachePathToKeyEntry<K> cacheEntry =
+                    new CachePathToKeyEntry<>(mutation.version, mutation.key, mutation.value, mutation.isDeleted());
+            ProtoWriterTools.writeDelimited(out, FIELD_VNODECACHE_PATHTOKEY, cacheEntry.getProtoSizeInBytes(), o -> {
+                try {
+                    cacheEntry.protoSerialize(o);
+                } catch (final MerkleSerializationException e) {
+                    ex.set(e);
+                }
+            });
+            if (ex.get() != null) {
+                throw ex.get();
+            }
+        }
+    }
+
+    private void protoSerializePathToHash(final WritableSequentialData out)
+            throws MerkleSerializationException {
+        assert snapshot.get() : "Only snapshots can be serialized";
+        final AtomicReference<MerkleSerializationException> ex = new AtomicReference<>();
+        for (final Map.Entry<Long, Mutation<Long, Hash>> entry : pathToDirtyHashIndex.entrySet()) {
+            final Mutation<Long, Hash> mutation = entry.getValue();
+            assert mutation != null : "Mutations cannot be null in a snapshot";
+            assert mutation.version <= this.fastCopyVersion.get()
+                    : "Trying to serialize pathToDirtyHashIndex with a version ahead";
+            final CachePathToHashEntry cacheEntry =
+                    new CachePathToHashEntry(mutation.version, mutation.key, mutation.value, mutation.isDeleted());
+            ProtoWriterTools.writeDelimited(out, FIELD_VNODECACHE_PATHTOHASH, cacheEntry.getProtoSizeInBytes(), o -> {
+                try {
+                    cacheEntry.protoSerialize(o);
+                } catch (final MerkleSerializationException e) {
+                    ex.set(e);
+                }
+            });
+            if (ex.get() != null) {
+                throw ex.get();
+            }
+        }
     }
 
     /**
@@ -1071,7 +1260,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             setMapSnapshotAndArray(
                     this.pathToDirtyHashIndex, newSnapshot.pathToDirtyHashIndex, newSnapshot.dirtyHashes);
             setMapSnapshotAndArray(
-                    this.pathToDirtyLeafIndex, newSnapshot.pathToDirtyLeafIndex, newSnapshot.dirtyLeafPaths);
+                    this.pathToDirtyKeyIndex, newSnapshot.pathToDirtyKeyIndex, newSnapshot.dirtyLeafPaths);
             setMapSnapshotAndArray(this.keyToDirtyLeafIndex, newSnapshot.keyToDirtyLeafIndex, newSnapshot.dirtyLeaves);
             newSnapshot.snapshot.set(true);
             newSnapshot.fastCopyVersion.set(this.fastCopyVersion.get());
@@ -1151,7 +1340,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
      * @param path
      * 		The path to update
      * @param index
-     * 		The index controlling this path. Could be {@link #pathToDirtyLeafIndex} or
+     * 		The index controlling this path. Could be {@link #pathToDirtyKeyIndex} or
      *        {@link #pathToDirtyHashIndex}.
      * @param dirtyPaths
      * 		The {@link ConcurrentArray} holding references to the dirty paths (leaf or internal).
@@ -1435,7 +1624,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     }
 
     /**
-     * Serialize the {@link #pathToDirtyLeafIndex}.
+     * Serialize the {@link #pathToDirtyKeyIndex}.
      *
      * @param map
      * 		The index map to serialize. Cannot be null.
@@ -1462,7 +1651,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
     }
 
     /**
-     * Deserialize the {@link #pathToDirtyLeafIndex}.
+     * Deserialize the {@link #pathToDirtyKeyIndex}.
      *
      * @param map
      * 		The index. Cannot be null.
@@ -1508,8 +1697,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
             assert mutation.version <= this.fastCopyVersion.get()
                     : "Trying to serialize keyToDirtyLeafIndex with a version ahead";
 
-            final VirtualLeafRecord<K, V> leaf = mutation.value;
-            out.writeSerializable(leaf, false);
+            out.writeSerializable(mutation.value, false);
             out.writeLong(mutation.version);
             out.writeBoolean(mutation.isDeleted());
         }
@@ -1639,7 +1827,7 @@ public final class VirtualNodeCache<K extends VirtualKey, V extends VirtualValue
                 .append("\n");
         //noinspection unchecked
         builder.append(toDebugStringIndex(
-                        "pathToDirtyLeafIndex", (Map<Object, Mutation>) (Object) pathToDirtyLeafIndex))
+                        "pathToDirtyLeafIndex", (Map<Object, Mutation>) (Object) pathToDirtyKeyIndex))
                 .append("\n");
         //noinspection unchecked
         builder.append(toDebugStringIndex(

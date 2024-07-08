@@ -16,9 +16,11 @@
 
 package com.swirlds.virtualmap.internal.merkle;
 
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleLeaf;
@@ -26,7 +28,9 @@ import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
 
 /**
@@ -145,5 +149,22 @@ public final class VirtualLeafNode<K extends VirtualKey, V extends VirtualValue>
     @Override
     public int hashCode() {
         return virtualRecord.hashCode();
+    }
+
+    @Override
+    public int getProtoSizeInBytes() {
+        // TODO: should it just throw UnsupportedOperationException ?
+        return virtualRecord.getProtoSizeInBytes();
+    }
+
+    @Override
+    public void protoSerialize(@NonNull final WritableSequentialData out, final Path artifactsDir) {
+        throw new UnsupportedOperationException("Virtual leaf nodes must never be serialized as a part of a state");
+    }
+
+    @Override
+    public void protoSerialize(final WritableSequentialData out) {
+        // virtualRecord.protoSerialize(out);
+        throw new UnsupportedOperationException("Virtual leaf nodes must never be serialized");
     }
 }

@@ -29,7 +29,6 @@ import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
-import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -50,28 +49,28 @@ class VirtualLeafRecordSerializerTest {
     @EnumSource(TestType.class)
     @SuppressWarnings("rawtypes")
     void testEquals(final TestType testType) {
-        final KeySerializer<?> keySerializer = testType.dataType().getKeySerializer();
-        final ValueSerializer<?> valueSerializer = testType.dataType().getValueSerializer();
+        final KeySerializer keySerializer = testType.dataType().getKeySerializer();
+        final ValueSerializer valueSerializer = testType.dataType().getValueSerializer();
 
-        final MerkleDbTableConfig<VirtualLongKey, ExampleFixedSizeVirtualValue> tableConfig1 = new MerkleDbTableConfig(
+        final MerkleDbTableConfig tableConfig1 = new MerkleDbTableConfig(
                 (short) 1,
                 DigestType.SHA_384,
                 (short) keySerializer.getCurrentDataVersion(),
                 keySerializer,
                 (short) valueSerializer.getCurrentDataVersion(),
                 valueSerializer);
-        final VirtualLeafRecordSerializer<VirtualLongKey, ExampleFixedSizeVirtualValue> virtualLeafRecordSerializer1 =
-                new VirtualLeafRecordSerializer<>(tableConfig1);
+        final VirtualLeafRecordSerializer virtualLeafRecordSerializer1 =
+                new VirtualLeafRecordSerializer(tableConfig1, keySerializer, valueSerializer);
 
-        final MerkleDbTableConfig<VirtualLongKey, ExampleFixedSizeVirtualValue> tableConfig2 = new MerkleDbTableConfig(
+        final MerkleDbTableConfig tableConfig2 = new MerkleDbTableConfig(
                 (short) 1,
                 DigestType.SHA_384,
                 (short) keySerializer.getCurrentDataVersion(),
                 keySerializer,
                 (short) valueSerializer.getCurrentDataVersion(),
                 valueSerializer);
-        final VirtualLeafRecordSerializer<VirtualLongKey, ExampleFixedSizeVirtualValue> virtualLeafRecordSerializer2 =
-                new VirtualLeafRecordSerializer<>(tableConfig2);
+        final VirtualLeafRecordSerializer virtualLeafRecordSerializer2 =
+                new VirtualLeafRecordSerializer(tableConfig2, keySerializer, valueSerializer);
 
         assertEquals(
                 virtualLeafRecordSerializer1,
@@ -156,6 +155,6 @@ class VirtualLeafRecordSerializerTest {
                 keySerializer,
                 (short) valueSerializer.getCurrentDataVersion(),
                 valueSerializer);
-        return new VirtualLeafRecordSerializer<>(tableConfig1);
+        return new VirtualLeafRecordSerializer(tableConfig1, keySerializer, valueSerializer);
     }
 }

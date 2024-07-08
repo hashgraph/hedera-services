@@ -25,7 +25,6 @@ import com.hedera.pbj.runtime.ProtoWriterTools;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.config.singleton.ConfigurationHolder;
-import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
@@ -49,6 +48,8 @@ import java.util.Objects;
  * @param <V>
  *     Virtual value type
  */
+// FUTURE WORK: remove K and V types
+// FUTURE WORK: don't implement SelfSerializable
 public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualValue> implements SelfSerializable {
 
     private static final long CLASS_ID = 0xbb41e7eb9fcad23cL;
@@ -57,16 +58,21 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
         public static final int ORIGINAL = 1;
     }
 
+    // Deprecated
     private static final FieldDefinition FIELD_TABLECONFIG_HASHVERSION =
             new FieldDefinition("hashVersion", FieldType.UINT32, false, true, false, 1);
     private static final FieldDefinition FIELD_TABLECONFIG_DIGESTTYPEID =
             new FieldDefinition("digestTypeId", FieldType.UINT32, false, false, false, 2);
+    // Deprecated
     private static final FieldDefinition FIELD_TABLECONFIG_KEYVERSION =
             new FieldDefinition("keyVersion", FieldType.UINT32, false, true, false, 3);
+    // Deprecated
     private static final FieldDefinition FIELD_TABLECONFIG_KEYSERIALIZERCLSID =
             new FieldDefinition("keySerializerClassId", FieldType.UINT64, false, false, false, 4);
+    // Deprecated
     private static final FieldDefinition FIELD_TABLECONFIG_VALUEVERSION =
             new FieldDefinition("valueVersion", FieldType.UINT32, false, true, false, 5);
+    // Deprecated
     private static final FieldDefinition FIELD_TABLECONFIG_VALUESERIALIZERCLSID =
             new FieldDefinition("valueSerializerClassId", FieldType.UINT64, false, false, false, 6);
     private static final FieldDefinition FIELD_TABLECONFIG_PREFERDISKINDICES =
@@ -77,39 +83,26 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
             new FieldDefinition("hashesRamToDiskThreshold", FieldType.UINT64, false, true, false, 9);
 
     /**
-     * Hash version.
-     */
-    private short hashVersion;
-
-    /**
      * Hash type. Only SHA_384 is supported yet.
      */
     private DigestType hashType;
 
-    /**
-     * Key version. Used for data version updates and migration.
-     */
-    private short keyVersion;
-
-    /**
-     * Key serializer. Used to serialize and deserialize keys in data files.
-     */
+    // This field is only used, when a legacy state (with SelfSerializable objects) is loaded from disk.
+    // When such state is serialized again, it is written in protobuf format, and keySerializer and
+    // valueSerializer fields aren't written.
+    @Deprecated
     private KeySerializer<K> keySerializer;
 
-    /**
-     * Value version. Used for data version updates and migration.
-     */
-    private short valueVersion;
-
-    /**
-     * Value serializer. Used to serialize and deserialize keys in data files.
-     */
+    // This field is only used, when a legacy state (with SelfSerializable objects) is loaded from disk.
+    // When such state is serialized again, it is written in protobuf format, and keySerializer and
+    // valueSerializer fields aren't written.
+    @Deprecated
     private ValueSerializer<V> valueSerializer;
 
     /**
      * Max number of keys that can be stored in a table.
      */
-    private long maxNumberOfKeys = 0;
+    private long maxNumberOfKeys = ConfigurationHolder.getConfigData(MerkleDbConfig.class).maxNumOfKeys();
 
     /**
      * Threshold where we switch from storing internal hashes in ram to storing them on disk. If it is 0 then everything
@@ -117,7 +110,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
      * we swap from ram to disk. This allows a tree where the lower levels of the tree nodes hashes are in ram and the
      * upper larger less changing layers are on disk.
      */
-    private long hashesRamToDiskThreshold = 0;
+    private long hashesRamToDiskThreshold = ConfigurationHolder.getConfigData(MerkleDbConfig.class).hashesRamToDiskThreshold();
 
     /**
      * Indicates whether to store indexes on disk or in Java heap/off-heap memory.
@@ -125,29 +118,13 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     private boolean preferDiskBasedIndices = false;
 
     /**
-     * Creates a new virtual table config with default values. This constructor should only be used
-     * for deserialization.
+     * Creates a new virtual table config with default values.
      */
     public MerkleDbTableConfig() {
-        // required for deserialization
+        this.hashType = DigestType.SHA_384;
     }
 
-    /**
-     * Creates a new virtual table config with the specified params.
-     *
-     * @param hashVersion
-     *      Hash version
-     * @param hashType
-     *      Hash type
-     * @param keyVersion
-     *      Key version
-     * @param keySerializer
-     *      Key serializer. Must not be null
-     * @param valueVersion
-     *      Value version
-     * @param valueSerializer
-     *      Value serialzier. Must not be null
-     */
+    @Deprecated(forRemoval = true)
     public MerkleDbTableConfig(
             final short hashVersion,
             final DigestType hashType,
@@ -155,21 +132,20 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
             @NonNull final KeySerializer<K> keySerializer,
             final short valueVersion,
             @NonNull final ValueSerializer<V> valueSerializer) {
-        // Mandatory fields
-        this.hashVersion = hashVersion;
         this.hashType = hashType;
-        this.keyVersion = keyVersion;
-        Objects.requireNonNull(keySerializer, "Null key serializer");
         this.keySerializer = keySerializer;
-        this.valueVersion = valueVersion;
-        Objects.requireNonNull(valueSerializer, "Null value serializer");
         this.valueSerializer = valueSerializer;
+    }
 
-        // Optional hints, may be set explicitly using setters later. Defaults are loaded from
-        // MerkleDb configuration
-        final MerkleDbConfig dbConfig = ConfigurationHolder.getConfigData(MerkleDbConfig.class);
-        maxNumberOfKeys = dbConfig.maxNumOfKeys();
-        hashesRamToDiskThreshold = dbConfig.hashesRamToDiskThreshold();
+    public MerkleDbTableConfig(
+            final DigestType hashType,
+            final long maxNumberOfKeys,
+            final long hashesRamToDiskThreshold,
+            final boolean preferDiskBasedIndices) {
+        this.hashType = hashType;
+        this.maxNumberOfKeys = maxNumberOfKeys;
+        this.hashesRamToDiskThreshold = hashesRamToDiskThreshold;
+        this.preferDiskBasedIndices = preferDiskBasedIndices;
     }
 
     public MerkleDbTableConfig(final ReadableSequentialData in) {
@@ -178,32 +154,32 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
         // config is used for defaults when a new table config is created, but when an
         // existing config is loaded, only values from the input must be used (even if some
         // of them are protobuf default and aren't present)
-        hashVersion = 0;
         hashType = DigestType.SHA_384;
-        keyVersion = 0;
-        valueVersion = 0;
-        preferDiskBasedIndices = false;
         maxNumberOfKeys = 0;
         hashesRamToDiskThreshold = 0;
+        preferDiskBasedIndices = false;
 
         while (in.hasRemaining()) {
             final int tag = in.readVarInt(false);
             final int fieldNum = tag >> TAG_FIELD_OFFSET;
             if (fieldNum == FIELD_TABLECONFIG_HASHVERSION.number()) {
-                hashVersion = (short) in.readVarInt(false);
+                // Skip hash version
+                in.readVarInt(false);
             } else if (fieldNum == FIELD_TABLECONFIG_DIGESTTYPEID.number()) {
                 final int digestTypeId = in.readVarInt(false);
                 hashType = DigestType.valueOf(digestTypeId);
             } else if (fieldNum == FIELD_TABLECONFIG_KEYVERSION.number()) {
-                keyVersion = (short) in.readVarInt(false);
+                // Skip key version
+                in.readVarInt(false);
             } else if (fieldNum == FIELD_TABLECONFIG_KEYSERIALIZERCLSID.number()) {
-                final long classId = in.readVarLong(false);
-                keySerializer = ConstructableRegistry.getInstance().createObject(classId);
+                // Skip key serializer class ID
+                in.readVarLong(false);
             } else if (fieldNum == FIELD_TABLECONFIG_VALUEVERSION.number()) {
-                valueVersion = (short) in.readVarInt(false);
+                // Skip value version
+                in.readVarInt(false);
             } else if (fieldNum == FIELD_TABLECONFIG_VALUESERIALIZERCLSID.number()) {
-                final long classId = in.readVarLong(false);
-                valueSerializer = ConstructableRegistry.getInstance().createObject(classId);
+                // Skip value serializer class ID
+                in.readVarLong(false);
             } else if (fieldNum == FIELD_TABLECONFIG_PREFERDISKINDICES.number()) {
                 preferDiskBasedIndices = in.readVarInt(false) != 0;
             } else if (fieldNum == FIELD_TABLECONFIG_MAXNUMBEROFKEYS.number()) {
@@ -217,8 +193,6 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
 
         // Check that all mandatory fields have been loaded from the stream
         Objects.requireNonNull(hashType, "Null or wrong hash type");
-        Objects.requireNonNull(keySerializer, "Null or unknown key serializer");
-        Objects.requireNonNull(valueSerializer, "Null or unknown value serializer");
         if (maxNumberOfKeys <= 0) {
             throw new IllegalArgumentException("Missing or wrong max number of keys");
         }
@@ -226,28 +200,8 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
 
     public int pbjSizeInBytes() {
         int size = 0;
-        if (hashVersion != 0) {
-            size += ProtoWriterTools.sizeOfTag(
-                    FIELD_TABLECONFIG_HASHVERSION, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
-            size += ProtoWriterTools.sizeOfVarInt32(hashVersion);
-        }
         size += ProtoWriterTools.sizeOfTag(FIELD_TABLECONFIG_DIGESTTYPEID, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
         size += ProtoWriterTools.sizeOfVarInt32(hashType.id());
-        if (keyVersion != 0) {
-            size += ProtoWriterTools.sizeOfTag(FIELD_TABLECONFIG_KEYVERSION, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
-            size += ProtoWriterTools.sizeOfVarInt32(keyVersion);
-        }
-        size += ProtoWriterTools.sizeOfTag(
-                FIELD_TABLECONFIG_KEYSERIALIZERCLSID, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
-        size += ProtoWriterTools.sizeOfVarInt64(keySerializer.getClassId());
-        if (valueVersion != 0) {
-            size += ProtoWriterTools.sizeOfTag(
-                    FIELD_TABLECONFIG_VALUEVERSION, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
-            size += ProtoWriterTools.sizeOfVarInt32(valueVersion);
-        }
-        size += ProtoWriterTools.sizeOfTag(
-                FIELD_TABLECONFIG_VALUESERIALIZERCLSID, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
-        size += ProtoWriterTools.sizeOfVarInt64(valueSerializer.getClassId());
         if (preferDiskBasedIndices) {
             size += ProtoWriterTools.sizeOfTag(
                     FIELD_TABLECONFIG_PREFERDISKINDICES, ProtoConstants.WIRE_TYPE_VARINT_OR_ZIGZAG);
@@ -266,24 +220,8 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     }
 
     public void writeTo(final WritableSequentialData out) {
-        if (hashVersion != 0) {
-            ProtoWriterTools.writeTag(out, FIELD_TABLECONFIG_HASHVERSION);
-            out.writeVarInt(hashVersion, false);
-        }
         ProtoWriterTools.writeTag(out, FIELD_TABLECONFIG_DIGESTTYPEID);
         out.writeVarInt(hashType.id(), false);
-        if (keyVersion != 0) {
-            ProtoWriterTools.writeTag(out, FIELD_TABLECONFIG_KEYVERSION);
-            out.writeVarInt(keyVersion, false);
-        }
-        ProtoWriterTools.writeTag(out, FIELD_TABLECONFIG_KEYSERIALIZERCLSID);
-        out.writeVarLong(keySerializer.getClassId(), false);
-        if (valueVersion != 0) {
-            ProtoWriterTools.writeTag(out, FIELD_TABLECONFIG_VALUEVERSION);
-            out.writeVarInt(valueVersion, false);
-        }
-        ProtoWriterTools.writeTag(out, FIELD_TABLECONFIG_VALUESERIALIZERCLSID);
-        out.writeVarLong(valueSerializer.getClassId(), false);
         if (preferDiskBasedIndices) {
             ProtoWriterTools.writeTag(out, FIELD_TABLECONFIG_PREFERDISKINDICES);
             out.writeVarInt(1, false);
@@ -298,16 +236,6 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     }
 
     /**
-     * Hash version.
-     *
-     * @return
-     *      Hash version
-     */
-    public short getHashVersion() {
-        return hashVersion;
-    }
-
-    /**
      * Hash type.
      *
      * @return
@@ -318,33 +246,14 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     }
 
     /**
-     * Key version
-     *
-     * @return
-     *      Key version
-     */
-    public short getKeyVersion() {
-        return keyVersion;
-    }
-
-    /**
      * Key serializer.
      *
      * @return
      *      Key serializer
      */
-    public KeySerializer<K> getKeySerializer() {
+    @Deprecated
+    KeySerializer<K> getKeySerializer() {
         return keySerializer;
-    }
-
-    /**
-     * Value version.
-     *
-     * @return
-     *      Value version
-     */
-    public short getValueVersion() {
-        return valueVersion;
     }
 
     /**
@@ -353,7 +262,8 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
      * @return
      *      Value serializer
      */
-    public ValueSerializer<V> getValueSerializer() {
+    @Deprecated
+    ValueSerializer<V> getValueSerializer() {
         return valueSerializer;
     }
 
@@ -452,32 +362,26 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     /**
      * {@inheritDoc}
      */
+    @Deprecated
     @Override
     public void serialize(final SerializableDataOutputStream out) throws IOException {
-        out.writeBoolean(preferDiskBasedIndices);
-        out.writeLong(maxNumberOfKeys);
-        out.writeLong(hashesRamToDiskThreshold);
-        out.writeShort(hashVersion);
-        out.writeInt(hashType.id());
-        out.writeShort(keyVersion);
-        out.writeSerializable(keySerializer, true);
-        out.writeShort(valueVersion);
-        out.writeSerializable(valueSerializer, true);
+        throw new UnsupportedOperationException("This method should no longer be used");
     }
 
     /**
      * {@inheritDoc}
      */
+    @Deprecated
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         preferDiskBasedIndices = in.readBoolean();
         maxNumberOfKeys = in.readLong();
         hashesRamToDiskThreshold = in.readLong();
-        hashVersion = in.readShort();
+        in.readShort(); // skip hash version
         hashType = DigestType.valueOf(in.readInt());
-        keyVersion = in.readShort();
+        in.readShort(); // skip key version
         keySerializer = in.readSerializable();
-        valueVersion = in.readShort();
+        in.readShort(); // skip value version
         valueSerializer = in.readSerializable();
     }
 
@@ -487,12 +391,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
      * @return Table config copy
      */
     public MerkleDbTableConfig<K, V> copy() {
-        final MerkleDbTableConfig<K, V> copy = new MerkleDbTableConfig<>(
-                hashVersion, hashType, keyVersion, keySerializer, valueVersion, valueSerializer);
-        copy.preferDiskIndices(preferDiskBasedIndices);
-        copy.hashesRamToDiskThreshold(hashesRamToDiskThreshold);
-        copy.maxNumberOfKeys(maxNumberOfKeys);
-        return copy;
+        return new MerkleDbTableConfig<>(hashType, maxNumberOfKeys, hashesRamToDiskThreshold, preferDiskBasedIndices);
     }
 
     /**
@@ -501,12 +400,7 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
     @Override
     public int hashCode() {
         return Objects.hash(
-                hashVersion,
                 hashType,
-                keyVersion,
-                keySerializer,
-                valueVersion,
-                valueSerializer,
                 preferDiskBasedIndices,
                 maxNumberOfKeys,
                 hashesRamToDiskThreshold);
@@ -523,11 +417,6 @@ public final class MerkleDbTableConfig<K extends VirtualKey, V extends VirtualVa
         return (preferDiskBasedIndices == other.preferDiskBasedIndices)
                 && (maxNumberOfKeys == other.maxNumberOfKeys)
                 && (hashesRamToDiskThreshold == other.hashesRamToDiskThreshold)
-                && (hashVersion == other.hashVersion)
-                && Objects.equals(hashType, other.hashType)
-                && (keyVersion == other.keyVersion)
-                && Objects.equals(keySerializer, other.keySerializer)
-                && (valueVersion == other.valueVersion)
-                && Objects.equals(valueSerializer, other.valueSerializer);
+                && Objects.equals(hashType, other.hashType);
     }
 }

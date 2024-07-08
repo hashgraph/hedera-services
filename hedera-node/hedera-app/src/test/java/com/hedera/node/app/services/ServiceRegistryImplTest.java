@@ -26,6 +26,8 @@ import static org.mockito.Mockito.verify;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.spi.fixtures.TestService;
 import com.hedera.node.app.spi.fixtures.state.TestSchema;
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.FieldType;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.state.spi.StateDefinition;

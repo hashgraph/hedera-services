@@ -21,9 +21,12 @@ import static com.swirlds.virtualmap.internal.Path.ROOT_PATH;
 import static com.swirlds.virtualmap.internal.Path.getLeftChildPath;
 import static com.swirlds.virtualmap.internal.Path.getRightChildPath;
 
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.crypto.Hash;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
@@ -35,6 +38,7 @@ import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.cache.VirtualNodeCache;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -287,5 +291,17 @@ public final class VirtualInternalNode<K extends VirtualKey, V extends VirtualVa
     @Override
     public long getPath() {
         return virtualHashRecord.path();
+    }
+
+    @Override
+    protected MerkleNode protoDeserializeNextChild(
+            @NonNull final ReadableSequentialData in,
+            final java.nio.file.Path artifactsDir) {
+        throw new UnsupportedOperationException("Virtual nodes must never be deserialized");
+    }
+
+    @Override
+    public void protoSerialize(@NonNull final WritableSequentialData out, java.nio.file.Path artifactsDir) {
+        throw new UnsupportedOperationException("Virtual nodes must never be serialized");
     }
 }

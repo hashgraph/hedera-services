@@ -17,9 +17,20 @@
 package com.swirlds.virtualmap;
 
 import static com.swirlds.common.io.streams.StreamDebugUtils.deserializeAndDebugOnFailure;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VIRTUALMAP_STATE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_VIRTUALMAP_VIRTUALROOT;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VIRTUALMAP_STATE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_VIRTUALMAP_VIRTUALROOT;
 import static com.swirlds.common.utility.CommonUtils.getNormalisedStringBytes;
 
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.base.function.CheckedFunction;
 import com.swirlds.common.io.ExternalSelfSerializable;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -37,6 +48,7 @@ import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import com.swirlds.virtualmap.internal.merkle.VirtualStateAccessorImpl;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;
@@ -45,6 +57,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * A {@link MerkleInternal} node that virtualizes all of its children, such that the child nodes
@@ -163,6 +176,11 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      */
     private final RuntimeObjectRecord registryRecord;
 
+    private VirtualDataSourceBuilder<K, V> deserializedDataSourceBuilder;
+
+    private CheckedFunction<ReadableSequentialData, K, Exception> keyReader;
+    private CheckedFunction<ReadableSequentialData, V, Exception> valueReader;
+
     /**
      * Required by the {@link com.swirlds.common.constructable.RuntimeConstructable} contract.
      * This can <strong>only</strong> be called as part of serialization and reconnect, not for normal use.
@@ -197,6 +215,20 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
         this();
         setChild(ChildIndices.MAP_STATE_CHILD_INDEX, source.getState().copy());
         setChild(ChildIndices.VIRTUAL_ROOT_CHILD_INDEX, source.getRoot().copy());
+    }
+
+    public VirtualMap(
+            final ReadableSequentialData in,
+            final Path artifactsDir,
+            final VirtualDataSourceBuilder<K, V> dataSourceBuilder,
+            final CheckedFunction<ReadableSequentialData, K, Exception> keyReader,
+            final CheckedFunction<ReadableSequentialData, V, Exception> valueReader)
+            throws MerkleSerializationException {
+        this();
+        this.deserializedDataSourceBuilder = dataSourceBuilder;
+        this.keyReader = keyReader;
+        this.valueReader = valueReader;
+        protoDeserialize(in, artifactsDir);
     }
 
     /**
@@ -310,7 +342,6 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
      */
     @Override
     public void serialize(final SerializableDataOutputStream out, final Path outputDirectory) throws IOException {
-
         // Create and write to state the name of the file we will expect later on deserialization
         final String outputFileName = state.getLabel() + ".vmap";
         final byte[] outputFileNameBytes = getNormalisedStringBytes(outputFileName);
@@ -373,6 +404,40 @@ public final class VirtualMap<K extends VirtualKey, V extends VirtualValue> exte
         state = virtualMapState.getValue();
         root = virtualRootNode.getValue();
         addDeserializedChildren(List.of(state, root), getVersion());
+    }
+
+    @Override
+    protected boolean isChildNodeProtoTag(final int fieldNum) {
+        return (fieldNum == NUM_VIRTUALMAP_STATE) ||
+                (fieldNum == NUM_VIRTUALMAP_VIRTUALROOT);
+    }
+
+    @Override
+    protected MerkleNode protoDeserializeNextChild(
+            @NonNull final ReadableSequentialData in,
+            final Path artifactsDir)
+            throws MerkleSerializationException {
+        if (state == null) {
+            // The first child is deserialized, it must be virtual map state
+            return new VirtualMapState(in, artifactsDir);
+        } else {
+            if (root != null) {
+                throw new MerkleSerializationException("Too many child nodes");
+            }
+            final VirtualDataSourceBuilder<K, V> builder = deserializedDataSourceBuilder;
+            assert builder != null;
+            deserializedDataSourceBuilder = null;
+            return new VirtualRootNode<>(in, artifactsDir, state, builder, keyReader, valueReader);
+        }
+    }
+
+    @Override
+    protected FieldDefinition getChildProtoField(final int childIndex) {
+        return switch (childIndex) {
+            case 0 -> FIELD_VIRTUALMAP_STATE;
+            case 1 -> FIELD_VIRTUALMAP_VIRTUALROOT;
+            default -> throw new IllegalArgumentException("Unknown child index: " + childIndex);
+        };
     }
 
     /**

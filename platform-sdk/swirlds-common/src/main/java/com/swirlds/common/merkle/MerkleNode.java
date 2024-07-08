@@ -23,6 +23,7 @@ import com.swirlds.common.io.SerializableDet;
 import com.swirlds.common.merkle.interfaces.MerkleMigratable;
 import com.swirlds.common.merkle.interfaces.MerkleTraversable;
 import com.swirlds.common.merkle.iterators.MerkleIterator;
+import com.swirlds.common.merkle.proto.ProtoSerializableNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.route.MerkleRouteIterator;
 import com.swirlds.common.merkle.synchronization.views.MaybeCustomReconnectRoot;
@@ -42,6 +43,7 @@ public interface MerkleNode
                 MerkleMigratable,
                 MerkleTraversable,
                 MaybeCustomReconnectRoot,
+                ProtoSerializableNode,
                 Reservable,
                 SerializableDet {
 

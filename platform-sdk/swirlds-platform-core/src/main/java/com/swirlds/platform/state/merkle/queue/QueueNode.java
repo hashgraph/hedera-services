@@ -16,6 +16,14 @@
 
 package com.swirlds.platform.state.merkle.queue;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_QUEUESTATE_LABEL;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_QUEUESTATE_VALUE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONSTATE_LABEL;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_SINGLETONSTATE_VALUE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_QUEUESTATE_LABEL;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_QUEUESTATE_VALUE;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_SINGLETONSTATE_LABEL;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.NUM_SINGLETONSTATE_VALUE;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logQueueAdd;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logQueueIterate;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logQueuePeek;
@@ -23,7 +31,12 @@ import static com.swirlds.platform.state.merkle.logging.StateLogger.logQueueRemo
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
+import com.hedera.pbj.runtime.FieldDefinition;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.merkle.MerkleInternal;
+import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.utility.DebugIterationEndpoint;
 import com.swirlds.common.utility.Labeled;
@@ -31,8 +44,11 @@ import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.platform.state.merkle.StateUtils;
 import com.swirlds.platform.state.merkle.singleton.StringLeaf;
 import com.swirlds.platform.state.merkle.singleton.ValueLeaf;
+import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.function.Function;
 
 /**
  * A merkle node with a string (the label) as the left child, and the merkle node value as the right
@@ -43,16 +59,17 @@ import java.util.Iterator;
  */
 @DebugIterationEndpoint
 public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled, MerkleInternal {
+
     private static final long CLASS_ID = 0x990FF87AD2691DCL;
     public static final int CLASS_VERSION = 1;
 
     /** Key codec. */
-    private final Codec<E> codec;
+    private Codec<E> codec;
 
     /** Key class id. */
-    private final Long queueNodeClassId;
+    private final long queueNodeClassId;
 
-    private final Long leafClassId;
+    private final long leafClassId;
 
     /**
      * @deprecated Only exists for constructable registry as it works today. Remove ASAP!
@@ -91,6 +108,17 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
         this.codec = other.codec;
         this.queueNodeClassId = other.queueNodeClassId;
         this.leafClassId = other.leafClassId;
+    }
+
+    public QueueNode(
+            @NonNull final ReadableSequentialData in,
+            final Path artifactsDir,
+            @NonNull final Codec<E> codec)
+            throws MerkleSerializationException {
+        this.queueNodeClassId = 0; // Not used
+        this.leafClassId = ValueLeaf.CLASS_ID; // Not used
+        this.codec = codec;
+        protoDeserialize(in, artifactsDir);
     }
 
     @Override
@@ -159,5 +187,36 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     /** Utility shorthand to get the queue */
     private FCQueue<ValueLeaf<E>> getQueue() {
         return getRight();
+    }
+
+    // Protobuf serialization
+
+    @Override
+    protected boolean isChildNodeProtoTag(final int fieldNum) {
+        return (fieldNum == NUM_QUEUESTATE_LABEL) ||
+                (fieldNum == NUM_QUEUESTATE_VALUE);
+    }
+
+    @Override
+    protected MerkleNode protoDeserializeNextChild(@NonNull ReadableSequentialData in, Path artifactsDir)
+            throws MerkleSerializationException {
+        final int childrenSoFar = getNumberOfChildren();
+        if (childrenSoFar == 0) {
+            // FUTURE WORK: check that the label matches the state definition
+            return new StringLeaf(in);
+        } else if (childrenSoFar == 1) {
+            return new FCQueue<>(in, artifactsDir, t -> new ValueLeaf<>(t, codec));
+        } else {
+            throw new MerkleSerializationException("Too many queue state child nodes");
+        }
+    }
+
+    @Override
+    protected FieldDefinition getChildProtoField(int childIndex) {
+        return switch (childIndex) {
+            case 0 -> FIELD_QUEUESTATE_LABEL;
+            case 1 -> FIELD_QUEUESTATE_VALUE;
+            default -> throw new IllegalArgumentException("Unknown queue state child index: " + childIndex);
+        };
     }
 }

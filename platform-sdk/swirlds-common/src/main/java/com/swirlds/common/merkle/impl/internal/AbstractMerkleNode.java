@@ -16,25 +16,40 @@
 
 package com.swirlds.common.merkle.impl.internal;
 
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_NODE_HASH;
 import static com.swirlds.common.merkle.route.MerkleRouteFactory.getEmptyRoute;
 
+import com.hedera.pbj.runtime.ProtoConstants;
+import com.hedera.pbj.runtime.ProtoParserTools;
+import com.hedera.pbj.runtime.ProtoWriterTools;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
+import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.base.state.Mutable;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Hashable;
+import com.swirlds.common.io.exceptions.MerkleSerializationException;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.exceptions.MerkleRouteException;
 import com.swirlds.common.merkle.impl.PartialMerkleLeaf;
 import com.swirlds.common.merkle.interfaces.HasMerkleRoute;
 import com.swirlds.common.merkle.interfaces.MerkleType;
+import com.swirlds.common.merkle.proto.MerkleNodeProtoFields;
+import com.swirlds.common.merkle.proto.MerkleProtoUtils;
+import com.swirlds.common.merkle.proto.ProtoSerializableNode;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.utility.AbstractReservable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.beans.Transient;
+import java.nio.file.Path;
 
 /**
  * This class implements boilerplate functionality for a {@link MerkleNode}.
  */
-public abstract sealed class AbstractMerkleNode extends AbstractReservable
-        implements Hashable, HasMerkleRoute, Mutable, MerkleType permits PartialMerkleLeaf, AbstractMerkleInternal {
+public abstract sealed class AbstractMerkleNode
+        extends AbstractReservable
+        implements Hashable, HasMerkleRoute, Mutable, MerkleType, ProtoSerializableNode
+        permits PartialMerkleLeaf, AbstractMerkleInternal {
 
     private boolean immutable;
 
@@ -49,6 +64,54 @@ public abstract sealed class AbstractMerkleNode extends AbstractReservable
 
     protected AbstractMerkleNode(final AbstractMerkleNode that) {
         this.route = that.getRoute();
+    }
+
+    protected AbstractMerkleNode(final @NonNull ReadableSequentialData in, final Path artifactsDir)
+            throws MerkleSerializationException {
+        protoDeserialize(in, artifactsDir);
+    }
+
+    @Override
+    public int getProtoSizeInBytes() {
+        return MerkleProtoUtils.getHashSizeInBytes(getHash());
+    }
+
+    protected void protoDeserialize(final @NonNull ReadableSequentialData in, final Path artifactsDir)
+            throws MerkleSerializationException {
+        while (in.hasRemaining()) {
+            final int tag = in.readVarInt(false);
+            final boolean fieldDeserialized = protoDeserializeField(in, artifactsDir, tag);
+            if (!fieldDeserialized) {
+                throw new MerkleSerializationException("Unknown field: " + tag);
+            }
+        }
+    }
+
+    protected boolean protoDeserializeField(
+            @NonNull final ReadableSequentialData in,
+            @Nullable final Path artifactsDir,
+            final int fieldTag)
+            throws MerkleSerializationException {
+        final int fieldNum = fieldTag >> ProtoParserTools.TAG_FIELD_OFFSET;
+        if (fieldNum == MerkleNodeProtoFields.NUM_NODE_HASH) {
+            assert (fieldTag & ProtoConstants.TAG_WIRE_TYPE_MASK) == ProtoConstants.WIRE_TYPE_DELIMITED.ordinal();
+            final int length = in.readVarInt(false);
+            final long oldLimit = in.limit();
+            try {
+                in.limit(in.position() + length);
+                setHash(MerkleProtoUtils.protoReadHash(in));
+            } finally {
+                in.limit(oldLimit);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void protoSerialize(@NonNull final WritableSequentialData out, final Path artifactsDir)
+            throws MerkleSerializationException {
+        MerkleProtoUtils.protoWriteHash(out, getHash());
     }
 
     /**

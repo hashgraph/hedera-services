@@ -70,6 +70,7 @@ import com.hedera.node.config.Utils;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -97,7 +98,9 @@ import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
@@ -309,6 +312,10 @@ public final class Hedera implements SwirldMain {
         return state;
         // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
         // return new MerkleHederaState(new HederaLifecyclesImpl(this));
+    }
+
+    public MerkleRoot loadState(final ReadableSequentialData in, final Path artifactsDir) throws IOException {
+        return new MerkleHederaState(new HederaLifecyclesImpl(this), servicesRegistry, in, artifactsDir);
     }
 
     /*==================================================================================================================

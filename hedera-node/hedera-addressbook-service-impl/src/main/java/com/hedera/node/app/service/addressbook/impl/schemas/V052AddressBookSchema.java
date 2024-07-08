@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl.schemas;
 
 import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
+import static com.swirlds.common.merkle.proto.MerkleNodeProtoFields.FIELD_STATENODE_KVNODES;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -41,6 +42,7 @@ import org.apache.logging.log4j.Logger;
  * {@code V052AddressBookSchema} is used for migrating the address book on Version 0.52.0
  */
 public class V052AddressBookSchema extends Schema {
+
     private static final Logger log = LogManager.getLogger(V052AddressBookSchema.class);
     private static final Pattern IPV4_ADDRESS_PATTERN =
             Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");

@@ -18,7 +18,6 @@ package com.swirlds.merkledb;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.crypto.DigestType;
@@ -43,6 +42,21 @@ class MerkleDbBuilderTest {
 
     private static Path testDirectory;
 
+    private static final KeySerializer<ExampleLongKeyFixedSize> KEY_SERIALIZER =
+            new ExampleLongKeyFixedSize.Serializer();
+
+    private static final ValueSerializer<ExampleFixedSizeVirtualValue> VALUE_SERIALIZER =
+            new ExampleFixedSizeVirtualValueSerializer();
+
+    private static final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> TABLE_CONFIG = createTableConfig();
+
+    private static MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> createTableConfig() {
+        return new MerkleDbTableConfig<>(
+                (short) 1, DigestType.SHA_384,
+                (short) 1, KEY_SERIALIZER,
+                (short) 1, VALUE_SERIALIZER);
+    }
+
     @BeforeAll
     static void setup() throws IOException {
         testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbBuilderTest");
@@ -54,34 +68,18 @@ class MerkleDbBuilderTest {
         assertEquals(0, MerkleDbDataSource.getCountOfOpenDatabases(), "Expected no open dbs");
     }
 
-    private MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> createTableConfig() {
-        return createTableConfig(
-                new ExampleLongKeyFixedSize.Serializer(), new ExampleFixedSizeVirtualValueSerializer());
-    }
-
-    private MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> createTableConfig(
-            final KeySerializer<ExampleLongKeyFixedSize> keySerializer,
-            final ValueSerializer<ExampleFixedSizeVirtualValue> valueSerializer) {
-        return new MerkleDbTableConfig<>(
-                (short) 1, DigestType.SHA_384,
-                (short) 1, keySerializer,
-                (short) 1, valueSerializer);
-    }
-
     @Test
     @DisplayName("Test table config is passed to data source")
     public void testTableConfig() throws IOException {
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
-                createTableConfig();
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(KEY_SERIALIZER, VALUE_SERIALIZER, TABLE_CONFIG);
         VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource = null;
         try {
             dataSource = builder.build("test1", false);
             assertTrue(dataSource instanceof MerkleDbDataSource);
             MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> merkleDbDataSource =
                     (MerkleDbDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue>) dataSource;
-            assertEquals(tableConfig, merkleDbDataSource.getTableConfig());
+            assertEquals(TABLE_CONFIG, merkleDbDataSource.getTableConfig());
         } finally {
             if (dataSource != null) {
                 dataSource.close();
@@ -92,10 +90,8 @@ class MerkleDbBuilderTest {
     @Test
     @DisplayName("Test data source config defaults")
     public void testBuilderDefaults() throws IOException {
-        final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
-                createTableConfig();
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(KEY_SERIALIZER, VALUE_SERIALIZER, TABLE_CONFIG);
         final MerkleDb defaultDatabase = MerkleDb.getDefaultInstance();
         VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource = null;
         try {
@@ -131,7 +127,7 @@ class MerkleDbBuilderTest {
                 createTableConfig();
         tableConfig.preferDiskIndices(true).maxNumberOfKeys(1999).hashesRamToDiskThreshold(Integer.MAX_VALUE >> 4);
         final MerkleDbDataSourceBuilder<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> builder =
-                new MerkleDbDataSourceBuilder<>(tableConfig);
+                new MerkleDbDataSourceBuilder<>(KEY_SERIALIZER, VALUE_SERIALIZER, tableConfig);
         final Path defaultDbPath = testDirectory.resolve("defaultDatabasePath");
         MerkleDb.setDefaultPath(defaultDbPath);
         VirtualDataSource<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> dataSource = null;
@@ -153,19 +149,5 @@ class MerkleDbBuilderTest {
                 dataSource.close();
             }
         }
-    }
-
-    @Test
-    @DisplayName("Test key serializer in table config cannot be null")
-    public void testNullKeySerializer() {
-        ValueSerializer<ExampleFixedSizeVirtualValue> valueSerializer = new ExampleFixedSizeVirtualValueSerializer();
-        assertThrows(NullPointerException.class, () -> createTableConfig(null, valueSerializer));
-    }
-
-    @Test
-    @DisplayName("Test value serializer in table config cannot be null")
-    public void testNullValueSerializer() {
-        KeySerializer<ExampleLongKeyFixedSize> keySerializer = new ExampleLongKeyFixedSize.Serializer();
-        assertThrows(NullPointerException.class, () -> createTableConfig(keySerializer, null));
     }
 }

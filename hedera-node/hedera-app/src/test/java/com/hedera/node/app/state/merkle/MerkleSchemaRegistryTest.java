@@ -431,7 +431,8 @@ class MerkleSchemaRegistryTest extends MerkleTestBase {
                     @Override
                     @SuppressWarnings("rawtypes")
                     public Set<StateDefinition> statesToCreate() {
-                        final var animalDef = StateDefinition.onDisk(ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC, 100);
+                        final var animalDef = StateDefinition.onDisk(
+                                ANIMAL_STATE_KEY, STRING_CODEC, STRING_CODEC, 100);
                         final var countryDef = StateDefinition.singleton(COUNTRY_STATE_KEY, STRING_CODEC);
                         return Set.of(animalDef, countryDef);
                     }

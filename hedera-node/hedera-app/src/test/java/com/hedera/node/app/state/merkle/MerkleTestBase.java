@@ -115,7 +115,6 @@ public class MerkleTestBase extends com.swirlds.platform.test.fixtures.state.mer
     }
 
     /** Creates a new arbitrary virtual map with the given label, storageDir, and metadata */
-    @SuppressWarnings("unchecked")
     protected VirtualMap<OnDiskKey<String>, OnDiskValue<String>> createVirtualMap(
             String label, StateMetadata<String, String> md) {
         return createVirtualMap(

@@ -40,6 +40,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -51,6 +52,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class FakeSchemaRegistry implements SchemaRegistry {
+
     private static final Logger logger = LogManager.getLogger(FakeSchemaRegistry.class);
     private final SchemaApplications schemaApplications = new SchemaApplications();
 
@@ -166,6 +168,11 @@ public class FakeSchemaRegistry implements SchemaRegistry {
         remainingStates.removeAll(statesToRemove);
         final var newStates = new FilteredWritableStates(writableStates, remainingStates);
         return new RedefinedWritableStates(writableStates, newStates);
+    }
+
+    @Override
+    public Iterator<Schema> registeredSchemas() {
+        return schemas.iterator();
     }
 
     private MigrationContext newMigrationContext(

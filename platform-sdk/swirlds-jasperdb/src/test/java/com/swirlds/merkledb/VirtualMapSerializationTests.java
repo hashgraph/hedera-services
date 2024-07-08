@@ -78,16 +78,17 @@ class VirtualMapSerializationTests {
         // MerkleDb instance, so let's use a new database location for every map
         final Path defaultVirtualMapPath = LegacyTemporaryFileBuilder.buildTemporaryFile("merkledb-source");
         MerkleDb.setDefaultPath(defaultVirtualMapPath);
+        final var keySerializer = new ExampleLongKeyFixedSize.Serializer();
+        final var valueSerializer = new ExampleFixedSizeVirtualValueSerializer();
         final MerkleDbTableConfig<ExampleLongKeyFixedSize, ExampleFixedSizeVirtualValue> tableConfig =
                 new MerkleDbTableConfig<>(
                                 (short) 1, DigestType.SHA_384,
-                                (short) 3054, new ExampleLongKeyFixedSize.Serializer(),
-                                (short) ExampleFixedSizeVirtualValue.SERIALIZATION_VERSION,
-                                        new ExampleFixedSizeVirtualValueSerializer())
+                                (short) 3054, keySerializer,
+                                (short) ExampleFixedSizeVirtualValue.SERIALIZATION_VERSION, valueSerializer)
                         .preferDiskIndices(false)
                         .hashesRamToDiskThreshold(Long.MAX_VALUE)
                         .maxNumberOfKeys(1234);
-        return new MerkleDbDataSourceBuilder<>(tableConfig);
+        return new MerkleDbDataSourceBuilder<>(keySerializer, valueSerializer, tableConfig);
     }
 
     /**

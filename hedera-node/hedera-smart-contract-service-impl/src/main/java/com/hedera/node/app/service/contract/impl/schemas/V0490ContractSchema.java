@@ -33,6 +33,7 @@ import java.util.Set;
  * for both the contract storage and bytecode.
  */
 public class V0490ContractSchema extends Schema {
+
     private static final int MAX_BYTECODES = 50_000_000;
     private static final int MAX_STORAGE_ENTRIES = 1_000_000_000;
     private static final SemanticVersion VERSION =
@@ -60,10 +61,12 @@ public class V0490ContractSchema extends Schema {
     }
 
     private @NonNull StateDefinition<SlotKey, SlotValue> storageDef() {
-        return StateDefinition.onDisk(STORAGE_KEY, SlotKey.PROTOBUF, SlotValue.PROTOBUF, MAX_STORAGE_ENTRIES);
+        return StateDefinition.onDisk(
+                STORAGE_KEY, SlotKey.PROTOBUF, SlotValue.PROTOBUF, MAX_STORAGE_ENTRIES);
     }
 
     private @NonNull StateDefinition<ContractID, Bytecode> bytecodeDef() {
-        return StateDefinition.onDisk(BYTECODE_KEY, ContractID.PROTOBUF, Bytecode.PROTOBUF, MAX_BYTECODES);
+        return StateDefinition.onDisk(
+                BYTECODE_KEY, ContractID.PROTOBUF, Bytecode.PROTOBUF, MAX_BYTECODES);
     }
 }

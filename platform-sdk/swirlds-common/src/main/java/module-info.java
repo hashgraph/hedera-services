@@ -29,6 +29,7 @@ module com.swirlds.common {
     exports com.swirlds.common.merkle.impl.internal;
     exports com.swirlds.common.merkle.interfaces;
     exports com.swirlds.common.merkle.iterators;
+    exports com.swirlds.common.merkle.proto;
     exports com.swirlds.common.merkle.route;
     exports com.swirlds.common.merkle.synchronization;
     exports com.swirlds.common.merkle.synchronization.config;

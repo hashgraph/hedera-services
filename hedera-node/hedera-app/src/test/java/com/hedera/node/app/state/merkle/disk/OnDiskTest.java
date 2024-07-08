@@ -80,26 +80,28 @@ class OnDiskTest extends MerkleTestBase {
             }
         };
 
+        final var keySerializer = new OnDiskKeySerializer<>(
+                onDiskKeySerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                AccountID.PROTOBUF);
+        final var valueSerializer = new OnDiskValueSerializer<>(
+                onDiskValueSerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                onDiskValueClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
+                Account.PROTOBUF);
         final var tableConfig = new MerkleDbTableConfig<>(
                 (short) 1,
                 DigestType.SHA_384,
                 (short) 1,
-                new OnDiskKeySerializer<>(
-                        onDiskKeySerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
-                        onDiskKeyClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
-                        AccountID.PROTOBUF),
+                keySerializer,
                 (short) 1,
-                new OnDiskValueSerializer<>(
-                        onDiskValueSerializerClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
-                        onDiskValueClassId(SERVICE_NAME, ACCOUNT_STATE_KEY),
-                        Account.PROTOBUF));
+                valueSerializer);
         // Force all hashes to disk, to make sure we're going through all the
         // serialization paths we can
         tableConfig.hashesRamToDiskThreshold(0);
         tableConfig.maxNumberOfKeys(100);
         tableConfig.preferDiskIndices(true);
 
-        final var builder = new MerkleDbDataSourceBuilder<>(storageDir, tableConfig);
+        final var builder = new MerkleDbDataSourceBuilder<>(storageDir, keySerializer, valueSerializer, tableConfig);
         virtualMap = new VirtualMap<>(StateUtils.computeLabel(SERVICE_NAME, ACCOUNT_STATE_KEY), builder);
 
         Configuration config = mock(Configuration.class);
