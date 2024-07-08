@@ -34,7 +34,7 @@ import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
-import com.hedera.node.app.service.addressbook.impl.schemas.V052AddressBookSchema;
+import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -113,13 +113,13 @@ public class AddressBookTestBase {
     protected final AccountID alias =
             AccountID.newBuilder().alias(edKeyAlias.value()).build();
 
-    protected final ServiceEndpoint endpoint1 = V052AddressBookSchema.endpointFor("127.0.0.1", 1234);
+    protected final ServiceEndpoint endpoint1 = V053AddressBookSchema.endpointFor("127.0.0.1", 1234);
 
-    protected final ServiceEndpoint endpoint2 = V052AddressBookSchema.endpointFor("127.0.0.2", 2345);
+    protected final ServiceEndpoint endpoint2 = V053AddressBookSchema.endpointFor("127.0.0.2", 2345);
 
-    protected final ServiceEndpoint endpoint3 = V052AddressBookSchema.endpointFor("test.domain.com", 3456);
+    protected final ServiceEndpoint endpoint3 = V053AddressBookSchema.endpointFor("test.domain.com", 3456);
 
-    protected final ServiceEndpoint endpoint4 = V052AddressBookSchema.endpointFor("test.domain.com", 2345)
+    protected final ServiceEndpoint endpoint4 = V053AddressBookSchema.endpointFor("test.domain.com", 2345)
             .copyBuilder()
             .ipAddressV4(endpoint1.ipAddressV4())
             .build();

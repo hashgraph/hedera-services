@@ -40,7 +40,7 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
-import com.hedera.node.app.service.addressbook.impl.schemas.V052AddressBookSchema;
+import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
@@ -371,9 +371,9 @@ class ReadableFreezeUpgradeActionsTest {
                 asAccount(3),
                 "node2",
                 List.of(
-                        V052AddressBookSchema.endpointFor("127.0.0.1", 1234),
-                        V052AddressBookSchema.endpointFor("35.186.191.247", 50211)),
-                List.of(V052AddressBookSchema.endpointFor("45.186.191.247", 50231)),
+                        V053AddressBookSchema.endpointFor("127.0.0.1", 1234),
+                        V053AddressBookSchema.endpointFor("35.186.191.247", 50211)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.247", 50231)),
                 Bytes.wrap(
                         "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc1CertificateHash"),
@@ -385,9 +385,9 @@ class ReadableFreezeUpgradeActionsTest {
                 asAccount(4),
                 "node3",
                 List.of(
-                        V052AddressBookSchema.endpointFor("127.0.0.2", 1245),
-                        V052AddressBookSchema.endpointFor("35.186.191.245", 50221)),
-                List.of(V052AddressBookSchema.endpointFor("45.186.191.245", 50225)),
+                        V053AddressBookSchema.endpointFor("127.0.0.2", 1245),
+                        V053AddressBookSchema.endpointFor("35.186.191.245", 50221)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.245", 50225)),
                 Bytes.wrap(
                         "e55c559975c1c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc2CertificateHash"),
@@ -399,9 +399,9 @@ class ReadableFreezeUpgradeActionsTest {
                 asAccount(6),
                 "node4",
                 List.of(
-                        V052AddressBookSchema.endpointFor("127.0.0.3", 1245),
-                        V052AddressBookSchema.endpointFor("35.186.191.235", 50221)),
-                List.of(V052AddressBookSchema.endpointFor("45.186.191.235", 50225)),
+                        V053AddressBookSchema.endpointFor("127.0.0.3", 1245),
+                        V053AddressBookSchema.endpointFor("35.186.191.235", 50221)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.235", 50225)),
                 Bytes.wrap(
                         "e55c55997561c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc3CertificateHash"),
@@ -413,10 +413,10 @@ class ReadableFreezeUpgradeActionsTest {
                 asAccount(8),
                 "node5",
                 List.of(
-                        V052AddressBookSchema.endpointFor("127.0.0.4", 1445),
-                        V052AddressBookSchema.endpointFor("test.domain.com", 50225),
-                        V052AddressBookSchema.endpointFor("35.186.191.225", 50225)),
-                List.of(V052AddressBookSchema.endpointFor("45.186.191.225", 50225)),
+                        V053AddressBookSchema.endpointFor("127.0.0.4", 1445),
+                        V053AddressBookSchema.endpointFor("test.domain.com", 50225),
+                        V053AddressBookSchema.endpointFor("35.186.191.225", 50225)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.225", 50225)),
                 Bytes.wrap(
                         "e55c559975c1c285c5262d6994262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc5CertificateHash"),
