@@ -38,7 +38,8 @@ public record NodeInfoImpl(
         int internalPort,
         @NonNull String hexEncodedPublicKey,
         @NonNull String memo,
-        @Nullable Bytes sigCertBytes)
+        @Nullable Bytes sigCertBytes,
+        @NonNull String selfName)
         implements NodeInfo {
     @NonNull
     static NodeInfo fromAddress(@NonNull final Address address) {
@@ -59,6 +60,7 @@ public record NodeInfoImpl(
                 address.getPortInternal(),
                 CommonUtils.hex(requireNonNull(address.getSigPublicKey()).getEncoded()),
                 address.getMemo(),
-                sigCertBytes);
+                sigCertBytes,
+                address.getSelfName());
     }
 }

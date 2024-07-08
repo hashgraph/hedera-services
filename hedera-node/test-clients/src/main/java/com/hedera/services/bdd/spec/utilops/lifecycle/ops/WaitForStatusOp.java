@@ -17,6 +17,10 @@
 package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
 import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.awaitStatus;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.hadCorrelatedBindException;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.doIfNotInterrupted;
+import static com.hedera.services.bdd.suites.regression.system.LifecycleTest.PORT_UNBINDING_WAIT_PERIOD;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -25,12 +29,16 @@ import com.hedera.services.bdd.spec.utilops.lifecycle.AbstractLifecycleOp;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Waits for the selected node or nodes specified by the {@link NodeSelector} to
  * reach the specified status within the given timeout.
  */
 public class WaitForStatusOp extends AbstractLifecycleOp {
+    private static final Logger log = LogManager.getLogger(WaitForStatusOp.class);
+
     private final Duration timeout;
     private final PlatformStatus status;
 
@@ -45,7 +53,19 @@ public class WaitForStatusOp extends AbstractLifecycleOp {
     // assertion in production code
     @SuppressWarnings("java:S5960")
     public void run(@NonNull final HederaNode node) {
-        awaitStatus(node, status, timeout);
+        try {
+            awaitStatus(node, status, timeout);
+        } catch (AssertionError error) {
+            // Try once to overcome a known issue with port unbinding, then fail if the issue persists
+            if (status == ACTIVE && hadCorrelatedBindException(error)) {
+                log.info("Sleeping for {} to allow port unbinding", PORT_UNBINDING_WAIT_PERIOD);
+                node.terminate();
+                doIfNotInterrupted(() -> Thread.sleep(PORT_UNBINDING_WAIT_PERIOD.toMillis()));
+                awaitStatus(node, status, timeout);
+            } else {
+                throw error;
+            }
+        }
     }
 
     @Override

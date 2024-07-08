@@ -140,7 +140,6 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ANOTHER_ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
@@ -244,15 +243,11 @@ public class LeakyCryptoTestsSuite {
         final var baseFee = 0.000214;
         double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
         return propertyPreservingHapiSpec("AutoAssociationPropertiesWorkAsExpected")
-                .preserving(
-                        maxAssociationsPropertyName,
-                        minAutoRenewPeriodPropertyName,
-                        UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
+                .preserving(maxAssociationsPropertyName, minAutoRenewPeriodPropertyName)
                 .given(
-                        overridingThree(
+                        overridingTwo(
                                 maxAssociationsPropertyName, "100",
-                                minAutoRenewPeriodPropertyName, "1",
-                                UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "true"),
+                                minAutoRenewPeriodPropertyName, "1"),
                         cryptoCreate(longLivedAutoAssocUser)
                                 .balance(payerBalance)
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS),
@@ -1237,10 +1232,8 @@ public class LeakyCryptoTestsSuite {
         final String tokenBcreateTxn = "tokenBCreate";
         final String transferToFU = "transferToFU";
 
-        return propertyPreservingHapiSpec("autoAssociationWorksForContracts", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("contracts.allowAutoAssociations")
+        return defaultHapiSpec("autoAssociationWorksForContracts", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
                         newKeyNamed(SUPPLY_KEY),
                         uploadInitCode(theContract),
                         contractCreate(theContract).maxAutomaticTokenAssociations(2),
@@ -1306,10 +1299,8 @@ public class LeakyCryptoTestsSuite {
         final var otherCollector = "otherCollector";
         final var finalTxn = "finalTxn";
 
-        return propertyPreservingHapiSpec("CustomFeesHaveExpectedAutoCreateInteractions", FULLY_NONDETERMINISTIC)
-                .preserving("contracts.allowAutoAssociations")
+        return defaultHapiSpec("CustomFeesHaveExpectedAutoCreateInteractions", FULLY_NONDETERMINISTIC)
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
                         wellKnownTokenEntities(),
                         cryptoCreate(otherCollector),
                         cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(42),

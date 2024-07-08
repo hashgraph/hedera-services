@@ -50,7 +50,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWit
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -103,7 +102,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
-import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ECDSA_KEY;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
@@ -2754,20 +2752,6 @@ public class ContractCallSuite {
                         allRunFor(spec, op);
                     }
                 }));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
-        return hapiTest(
-                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
-                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .maxAutomaticTokenAssociations(5)
-                        .hasPrecheck(NOT_SUPPORTED),
-                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).maxAutomaticTokenAssociations(0),
-                contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .newMaxAutomaticAssociations(5)
-                        .hasPrecheck(NOT_SUPPORTED),
-                contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT).newMemo("Hola!"));
     }
 
     @HapiTest
