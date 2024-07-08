@@ -178,13 +178,13 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
                 final var prevAccountAirdrop = pendingStore.getForModify(prevAirdropId);
                 validateTrue(prevAccountAirdrop != null, INVALID_TRANSACTION_BODY);
                 final var prevAirdropToUpdate = prevAccountAirdrop.copyBuilder().nextAirdrop(nextAirdropId).build();
-                pendingStore.putOverride(prevAirdropId, prevAirdropToUpdate);
+                pendingStore.patch(prevAirdropId, prevAirdropToUpdate);
             }
             if (nextAirdropId != null) {
                 final var nextAccountAirdrop = pendingStore.getForModify(nextAirdropId);
                 validateTrue(nextAccountAirdrop != null, INVALID_TRANSACTION_BODY);
                 final var nextAirdropToUpdate = nextAccountAirdrop.copyBuilder().previousAirdrop(prevAirdropId).build();
-                pendingStore.putOverride(nextAirdropId, nextAirdropToUpdate);
+                pendingStore.patch(nextAirdropId, nextAirdropToUpdate);
             }
         }
 
