@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokens;
@@ -280,7 +281,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void failsEhenMetadatKeyNotSet() {
+    void failsWhenMetadatKeyAndSupplyKeyNotSet() {
         final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(1L, 2L));
         readableTokenStore =
                 newReadableStoreWithTokens(Token.newBuilder().tokenId(TOKEN_123).build());
@@ -309,7 +310,7 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
-                .has(responseCode(TOKEN_HAS_NO_METADATA_KEY));
+                .has(responseCode(TOKEN_IS_IMMUTABLE));
     }
 
     @Test
