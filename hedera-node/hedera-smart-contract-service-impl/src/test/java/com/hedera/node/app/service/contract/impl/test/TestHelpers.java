@@ -143,9 +143,6 @@ public class TestHelpers {
     public static final HederaConfig DEFAULT_HEDERA_CONFIG = DEFAULT_CONFIG.getConfigData(HederaConfig.class);
     public static final ContractsConfig DEFAULT_CONTRACTS_CONFIG = DEFAULT_CONFIG.getConfigData(ContractsConfig.class);
     public static final EntitiesConfig DEFAULT_ENTITIES_CONFIG = DEFAULT_CONFIG.getConfigData(EntitiesConfig.class);
-    public static final Configuration AUTO_ASSOCIATING_CONFIG = HederaTestConfigBuilder.create()
-            .withValue("contracts.allowAutoAssociations", true)
-            .getOrCreateConfig();
 
     public static final Configuration PERMITTED_CALLERS_CONFIG = HederaTestConfigBuilder.create()
             .withValue("contracts.permittedContractCallers", Set.of(1062787L))
@@ -155,10 +152,6 @@ public class TestHelpers {
     public static final Configuration V2_TRANSFER_DISABLED_CONFIG = HederaTestConfigBuilder.create()
             .withValue("contracts.precompile.atomicCryptoTransfer.enabled", "false")
             .getOrCreateConfig();
-    public static final LedgerConfig AUTO_ASSOCIATING_LEDGER_CONFIG =
-            AUTO_ASSOCIATING_CONFIG.getConfigData(LedgerConfig.class);
-    public static final ContractsConfig AUTO_ASSOCIATING_CONTRACTS_CONFIG =
-            AUTO_ASSOCIATING_CONFIG.getConfigData(ContractsConfig.class);
     public static final ContractsConfig DEV_CHAIN_ID_CONTRACTS_CONFIG =
             DEV_CHAIN_ID_CONFIG.getConfigData(ContractsConfig.class);
     public static final int HEDERA_MAX_REFUND_PERCENTAGE = 20;
