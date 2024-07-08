@@ -81,7 +81,7 @@ public abstract class ConfigProviderBase implements ConfigProvider {
                     throw new IllegalArgumentException("File " + path + " is a directory and not a property file");
                 }
             } else {
-                logger.warn("Properties file {} does not exist and won't be used as configuration source", path);
+                logger.info("Properties file {} does not exist and won't be used as configuration source", path);
             }
         };
 

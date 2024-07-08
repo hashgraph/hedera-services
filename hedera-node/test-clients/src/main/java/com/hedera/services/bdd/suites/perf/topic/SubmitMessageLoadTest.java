@@ -47,7 +47,6 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
@@ -114,7 +113,6 @@ public class SubmitMessageLoadTest extends LoadTest {
 
     final Stream<DynamicTest> runSubmitMessages() {
         PerfTestLoadSettings settings = new PerfTestLoadSettings();
-        final AtomicInteger submittedSoFar = new AtomicInteger(0);
         Supplier<HapiSpecOperation[]> submitBurst =
                 () -> new HapiSpecOperation[] {opSupplier(settings).get()};
 
@@ -131,8 +129,8 @@ public class SubmitMessageLoadTest extends LoadTest {
                                         .passphrase(KeyFactory.PEM_PASSPHRASE),
                         // if just created a new key then export spec for later reuse
                         pemFile == null
-                                ? withOpContext(
-                                        (spec, ignore) -> spec.keys().exportSimpleKey("topicSubmitKey.pem", SUBMIT_KEY))
+                                ? withOpContext((spec, ignore) ->
+                                        spec.keys().exportEd25519Key("topicSubmitKey.pem", SUBMIT_KEY))
                                 : sleepFor(100),
                         logIt(ignore -> settings.toString()))
                 .when(

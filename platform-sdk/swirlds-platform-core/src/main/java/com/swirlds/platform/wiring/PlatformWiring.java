@@ -96,8 +96,8 @@ import com.swirlds.platform.state.signer.StateSigner;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateSavingResult;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.BirthRoundMigrationShim;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
@@ -133,10 +133,10 @@ public class PlatformWiring {
     private final ComponentWiring<EventSignatureValidator, PlatformEvent> eventSignatureValidatorWiring;
     private final ComponentWiring<OrphanBuffer, List<PlatformEvent>> orphanBufferWiring;
     private final ComponentWiring<ConsensusEngine, List<ConsensusRound>> consensusEngineWiring;
-    private final ComponentWiring<EventCreationManager, BaseEventHashedData> eventCreationManagerWiring;
+    private final ComponentWiring<EventCreationManager, UnsignedEvent> eventCreationManagerWiring;
     private final ComponentWiring<SelfEventSigner, PlatformEvent> selfEventSignerWiring;
     private final ComponentWiring<StateSnapshotManager, StateSavingResult> stateSnapshotManagerWiring;
-    private final ComponentWiring<StateSigner, ConsensusTransactionImpl> stateSignerWiring;
+    private final ComponentWiring<StateSigner, StateSignaturePayload> stateSignerWiring;
     private final PcesReplayerWiring pcesReplayerWiring;
     private final ComponentWiring<PcesWriter, Long> pcesWriterWiring;
     private final ComponentWiring<RoundDurabilityBuffer, List<ConsensusRound>> roundDurabilityBufferWiring;
@@ -522,7 +522,7 @@ public class PlatformWiring {
 
         staleEventsFromStaleEventDetector.solderTo(
                 transactionResubmitterWiring.getInputWire(TransactionResubmitter::resubmitStaleTransactions));
-        final OutputWire<ConsensusTransactionImpl> splitTransactionResubmitterOutput =
+        final OutputWire<StateSignaturePayload> splitTransactionResubmitterOutput =
                 transactionResubmitterWiring.getSplitOutput();
         splitTransactionResubmitterOutput.solderTo(
                 transactionPoolWiring.getInputWire(TransactionPool::submitSystemTransaction));

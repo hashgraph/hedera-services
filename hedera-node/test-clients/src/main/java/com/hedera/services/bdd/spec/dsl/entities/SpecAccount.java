@@ -16,9 +16,9 @@
 
 package com.hedera.services.bdd.spec.dsl.entities;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static java.util.Objects.requireNonNull;
@@ -150,6 +150,9 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     protected Creation<HapiCryptoCreate, Account> newCreation(@NonNull final HapiSpec spec) {
         final var model = builder.build();
         final var op = cryptoCreate(name).balance(model.tinybarBalance());
+        if (model.hasStakedNodeId()) {
+            op.stakedNodeId(model.stakedNodeIdOrThrow());
+        }
         return new Creation<>(op, model);
     }
 

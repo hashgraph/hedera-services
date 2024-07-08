@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_ST
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static com.hedera.services.bdd.suites.SuiteRunner.SUITE_NAME_WIDTH;
 import static com.hedera.services.bdd.suites.SuiteRunner.rightPadded;
-import static com.hedera.services.bdd.suites.TargetNetworkType.CI_DOCKER_NETWORK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
@@ -179,8 +178,7 @@ public abstract class TestBase {
         suite.skipClientTearDown();
         // Don't log unnecessary detail
         suite.setOnlyLogHeader();
-        return suite.getSpecsInSuiteWithOverrides().stream()
-                .map(spec -> spec.setSuitePrefix(suite.name() + suffix).setTargetNetworkType(CI_DOCKER_NETWORK));
+        return suite.getSpecsInSuiteWithOverrides().stream().map(spec -> spec.setSuitePrefix(suite.name() + suffix));
     }
 
     /**
@@ -203,7 +201,6 @@ public abstract class TestBase {
             final Supplier<HapiSuite> suiteSupplier, final String filter) {
         final var suite = suiteSupplier.get();
         final var tests = suite.getSpecsInSuiteWithOverrides().stream()
-                .map(s -> s.setTargetNetworkType(CI_DOCKER_NETWORK))
                 .map(s -> dynamicTest(s.getName(), () -> {
                     s.run();
                     assertEquals(
@@ -225,7 +222,6 @@ public abstract class TestBase {
     protected final DynamicContainer extractSpecsFromSuiteForEth(final Supplier<HapiSuite> suiteSupplier) {
         final var suite = suiteSupplier.get();
         final var tests = suite.getSpecsInSuiteWithOverrides().stream()
-                .map(s -> s.setTargetNetworkType(CI_DOCKER_NETWORK))
                 .map(s -> dynamicTest(s.getName() + ETH_SUFFIX, () -> {
                     s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
                     s.run();

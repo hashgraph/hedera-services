@@ -25,10 +25,7 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 public class RandomAppend implements OpProvider {
@@ -40,15 +37,10 @@ public class RandomAppend implements OpProvider {
     private final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(FILE_DELETED, INVALID_FILE_ID, INSUFFICIENT_TX_FEE, FAIL_INVALID);
 
-    private final EntityNameProvider<FileID> files;
+    private final EntityNameProvider files;
 
-    public RandomAppend(EntityNameProvider<FileID> files) {
+    public RandomAppend(EntityNameProvider files) {
         this.files = files;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return Collections.emptyList();
     }
 
     @Override

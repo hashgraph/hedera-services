@@ -34,22 +34,6 @@ mainModuleInfo {
     runtimeOnly("org.junit.platform.launcher")
 }
 
-itestModuleInfo {
-    requires("com.hedera.node.test.clients")
-    requires("org.apache.commons.lang3")
-    requires("org.junit.jupiter.api")
-    requires("org.testcontainers")
-    requires("org.testcontainers.junit.jupiter")
-    requires("org.apache.commons.lang3")
-}
-
-eetModuleInfo {
-    requires("com.hedera.node.test.clients")
-    requires("org.junit.jupiter.api")
-    requires("org.testcontainers")
-    requires("org.testcontainers.junit.jupiter")
-}
-
 sourceSets {
     // Needed because "resource" directory is misnamed. See
     // https://github.com/hashgraph/hedera-services/issues/3361
@@ -71,12 +55,12 @@ val ciCheckTagExpressions =
     mapOf(
         "hapiTestCrypto" to "CRYPTO",
         "hapiTestToken" to "TOKEN",
-        "hapiTestRestart" to "RESTART",
+        "hapiTestRestart" to "RESTART|UPGRADE",
         "hapiTestSmartContract" to "SMART_CONTRACT",
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
         "hapiTestMisc" to
-            "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT|EMBEDDED)"
+            "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT|EMBEDDED|UPGRADE)"
     )
 
 tasks {
@@ -97,7 +81,7 @@ tasks.test {
     useJUnitPlatform {
         includeTags(
             if (ciTagExpression.isBlank()) "none()|!(EMBEDDED)"
-            else "${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED)"
         )
     }
 
@@ -129,15 +113,14 @@ tasks.test {
     modularity.inferModulePath.set(false)
 }
 
-// Runs a test against an embedded network; when we have deterministic clients
-// we will add a testDeterministicEmbedded for completely reproducible streams
+// Runs tests against an embedded network that supports concurrent tests
 tasks.register<Test>("testEmbedded") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
     useJUnitPlatform {
         // Exclude tests that start and stop nodes, or explicitly preclude embedded mode
-        excludeTags("RESTART|ND_RECONNECT|IF_NOT_EMBEDDED")
+        excludeTags("RESTART|ND_RECONNECT|NOT_EMBEDDED")
     }
 
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
@@ -154,6 +137,37 @@ tasks.register<Test>("testEmbedded") {
     )
     // Tell our launcher to target an embedded network
     systemProperty("hapi.spec.embedded.mode", true)
+    // Configure log4j2.xml for the embedded node
+    systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// Runs tests against an embedded network that achieves repeatable results by running tests in a
+// single thread
+tasks.register<Test>("testRepeatable") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform {
+        // Exclude tests that start and stop nodes, or explicitly preclude embedded or repeatable
+        // mode
+        excludeTags("RESTART|ND_RECONNECT|UPGRADE|NOT_EMBEDDED|NOT_REPEATABLE")
+    }
+
+    // Disable all parallelism
+    systemProperty("junit.jupiter.execution.parallel.enabled", false)
+    systemProperty(
+        "junit.jupiter.testclass.order.default",
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+    )
+    // Tell our launcher to target a repeatable embedded network
+    systemProperty("hapi.spec.repeatable.mode", true)
     // Configure log4j2.xml for the embedded node
     systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
 

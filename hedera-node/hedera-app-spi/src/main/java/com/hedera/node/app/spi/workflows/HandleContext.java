@@ -22,22 +22,21 @@ import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomi
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.Key;
-import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
-import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
+import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.signatures.VerificationAssistant;
+import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -137,36 +136,12 @@ public interface HandleContext {
     BlockRecordInfo blockRecordInfo();
 
     /**
-     * Returns the Hedera resource prices (in thousandths of a tinycent) for the given {@link SubType} of
-     * the given {@link HederaFunctionality}. The contract service needs this information to determine both the
-     * gas price and the cost of storing logs (a function of the {@code rbh} price, which may itself vary by
-     * contract operation type).
+     * Returns a {@link ResourcePriceCalculator} that provides functionality to calculate fees for transactions.
      *
-     * @param functionality the {@link HederaFunctionality} of interest
-     * @param subType the {@link SubType} of interest
-     * @return the corresponding Hedera resource prices
+     * @return the {@link ResourcePriceCalculator}
      */
     @NonNull
-    FunctionalityResourcePrices resourcePricesFor(
-            @NonNull final HederaFunctionality functionality, @NonNull final SubType subType);
-
-    /**
-     * Get a calculator for calculating fees for the current transaction, and its {@link SubType}. Most transactions
-     * just use {@link SubType#DEFAULT}, but some (such as crypto transfer) need to be more specific.
-     *
-     * @param subType The {@link SubType} of the transaction.
-     * @return The {@link FeeCalculator} to use.
-     */
-    @NonNull
-    FeeCalculator feeCalculator(@NonNull final SubType subType);
-
-    /**
-     * Gets a {@link FeeAccumulator} used for collecting fees for the current transaction.
-     *
-     * @return The {@link FeeAccumulator} to use.
-     */
-    @NonNull
-    FeeAccumulator feeAccumulator();
+    ResourcePriceCalculator resourcePriceCalculator();
 
     /**
      * Gets a {@link ExchangeRateInfo} which provides information about the current exchange rate.
@@ -177,26 +152,11 @@ public interface HandleContext {
     ExchangeRateInfo exchangeRateInfo();
 
     /**
-     * Consumes and returns the next entity number, for use by handlers that create entities.
+     * Returns an {@link EntityNumGenerator} that can be used to generate entity numbers.
      *
-     * <p>If this method is called after a child transaction was dispatched, which is subsequently rolled back,
-     * the counter will be rolled back, too. Consequently, the provided number must not be used anymore in this case,
-     * because it will be reused.
-     *
-     * @return the next entity number
+     * @return the entity number generator
      */
-    long newEntityNum();
-
-    /**
-     * Peeks at the next entity number, for use by handlers that create entities.
-     *
-     * <p>If this method is called after a child transaction was dispatched, which is subsequently rolled back,
-     * the counter will be rolled back, too. Consequently, the provided number must not be used anymore in this case,
-     * because it will be reused.
-     *
-     * @return the next entity number
-     */
-    long peekAtNewEntityNum();
+    EntityNumGenerator entityNumGenerator();
 
     /**
      * Returns the validator for attributes of entities created or updated by handlers.
@@ -228,53 +188,12 @@ public interface HandleContext {
             throws PreCheckException;
 
     /**
-     * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
-     * there will be no corresponding {@link SignatureVerification}. If the key was provided during pre-handle, then the
-     * corresponding {@link SignatureVerification} will be returned with the result of that verification operation.
+     * Returns the {@link KeyVerifier} which can be used to verify signatures.
      *
-     * <p>The signatures of required keys are guaranteed to be verified. Optional signatures may still be in the
-     * process of being verified (and therefore may time out). The timeout can be configured via the configuration
-     * {@code hedera.workflow.verificationTimeoutMS}
-     *
-     * @param key the key to get the verification for
-     * @return the verification for the given key
-     * @throws NullPointerException if {@code key} is {@code null}
+     * @return the {@link KeyVerifier}
      */
     @NonNull
-    SignatureVerification verificationFor(@NonNull Key key);
-
-    /**
-     * Gets the {@link SignatureVerification} for the given key. If this key was not provided during pre-handle, then
-     * there will be no corresponding {@link SignatureVerification}. If the key was provided during pre-handle, then the
-     * corresponding {@link SignatureVerification} will be returned with the result of that verification operation.
-     * Additionally, the VerificationAssistant provided may modify the result for "primitive", "Contract ID", or
-     * "Delegatable Contract ID" keys, and will be called to observe and reply for each such key as it is processed.
-     *
-     * <p>The signatures of required keys are guaranteed to be verified. Optional signatures may still be in the
-     * process of being verified (and therefore may time out). The timeout can be configured via the configuration
-     * {@code hedera.workflow.verificationTimeoutMS}
-     *
-     * @param key the key to get the verification for
-     * @param callback a VerificationAssistant callback function that will observe each "primitive", "Contract ID", or
-     * "Delegatable Contract ID" key and return a boolean indicating if the given key should be considered valid.
-     * @return the verification for the given key
-     */
-    @NonNull
-    SignatureVerification verificationFor(@NonNull Key key, @NonNull VerificationAssistant callback);
-
-    /**
-     * Gets the {@link SignatureVerification} for the given hollow account.
-     *
-     * <p>The signatures of required accounts are guaranteed to be verified. Optional accounts may still be in the
-     * process of being verified (and therefore may time out). The timeout can be configured via the configuration
-     * {@code hedera.workflow.verificationTimeoutMS}
-     *
-     * @param evmAlias The evm alias to lookup verification for.
-     * @return the verification for the given hollow account.
-     * @throws NullPointerException if {@code evmAlias} is {@code null}
-     */
-    @NonNull
-    SignatureVerification verificationFor(@NonNull final Bytes evmAlias);
+    KeyVerifier keyVerifier();
 
     /**
      * Checks whether the current transaction is a privileged transaction and the payer has sufficient rights.
@@ -288,43 +207,12 @@ public interface HandleContext {
     RecordCache recordCache();
 
     /**
-     * Get a readable store given the store's interface. This gives read-only access to the store.
+     * Returns a {@link StoreFactory} that can create readable and writable stores as well as service APIs.
      *
-     * @param storeInterface The store interface to find and create a store for
-     * @param <T> Interface class for a Store
-     * @return An implementation of the provided store interface
-     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code storeInterface} is {@code null}
+     * @return the {@link StoreFactory}
      */
     @NonNull
-    <T> T readableStore(@NonNull Class<T> storeInterface);
-
-    /**
-     * Return a writable store given the store's interface. This gives write access to the store.
-     *
-     * <p>This method is limited to stores that are part of the transaction's service.
-     *
-     * @param storeInterface The store interface to find and create a store for
-     * @param <T> Interface class for a Store
-     * @return An implementation of the provided store interface
-     * @throws IllegalArgumentException if the storeInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code storeInterface} is {@code null}
-     */
-    @NonNull
-    <T> T writableStore(@NonNull Class<T> storeInterface);
-
-    /**
-     * Return a service API given the API's interface. This permits use of another service
-     * that doesn't have a corresponding HAPI {@link TransactionBody}.
-     *
-     * @param apiInterface The API interface to find and create an implementation of
-     * @param <T> Interface class for an API
-     * @return An implementation of the provided API interface
-     * @throws IllegalArgumentException if the apiInterface class provided is unknown to the app
-     * @throws NullPointerException if {@code apiInterface} is {@code null}
-     */
-    @NonNull
-    <T> T serviceApi(@NonNull Class<T> apiInterface);
+    StoreFactory storeFactory();
 
     /**
      * Returns the information about the network this transaction is being handled in.
@@ -335,16 +223,12 @@ public interface HandleContext {
     NetworkInfo networkInfo();
 
     /**
-     * Returns a record builder for the given record builder subtype.
+     * Returns the current {@link RecordBuilders} to manage record builders.
      *
-     * @param recordBuilderClass the record type
-     * @param <T> the record type
-     * @return a builder for the given record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
+     * @return the {@link RecordBuilders}
      */
     @NonNull
-    <T> T recordBuilder(@NonNull Class<T> recordBuilderClass);
+    RecordBuilders recordBuilders();
 
     /**
      * Dispatches the fee calculation for a child transaction (that might then be dispatched).
@@ -564,33 +448,6 @@ public interface HandleContext {
     }
 
     /**
-     * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
-     * context) is rolled back, all child record builders will be reverted.
-     *
-     * @param recordBuilderClass the record type
-     * @return the new child record builder
-     * @param <T> the record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
-     * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
-     * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
-     * rolled back.
-     *
-     * @param recordBuilderClass the record type
-     * @return the new child record builder
-     * @param <T> the record type
-     * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
-     * @throws IllegalArgumentException if the record builder type is unknown to the app
-     */
-    @NonNull
-    <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
-
-    /**
      * Returns the current {@link SavepointStack}.
      *
      * @return the current {@code TransactionStack}
@@ -599,38 +456,12 @@ public interface HandleContext {
     SavepointStack savepointStack();
 
     /**
-     * Revert the childRecords from the checkpoint.
-     */
-    void revertRecordsFrom(@NonNull RecordListCheckPoint recordListCheckPoint);
-
-    /**
-     * Verifies if the throttle in this operation context has enough capacity to handle the given number of the
-     * given function at the given time. (The time matters because we want to consider how much
-     * will have leaked between now and that time.)
+     * Returns the {@link ThrottleAdviser} for this transaction, which provides information about throttles.
      *
-     * @param n the number of the given function
-     * @param function the function
-     * @return true if the system should throttle the given number of the given function
-     * at the instant for which throttling should be calculated
-     */
-    boolean shouldThrottleNOfUnscaled(int n, HederaFunctionality function);
-
-    /**
-     * For each following child transaction consumes the capacity
-     * required for that child transaction in the consensus throttle buckets.
-     *
-     * @return true if all the child transactions were allowed through the throttle consideration, false otherwise.
-     */
-    boolean hasThrottleCapacityForChildTransactions();
-
-    /**
-     * Create a checkpoint for the current childRecords.
-     *
-     * @return the checkpoint for the current childRecords, containing the first preceding record and the last following
-     * record.
+     * @return the {@link ThrottleAdviser} for this transaction
      */
     @NonNull
-    RecordListCheckPoint createRecordListCheckPoint();
+    ThrottleAdviser throttleAdviser();
 
     /**
      * A stack of savepoints.

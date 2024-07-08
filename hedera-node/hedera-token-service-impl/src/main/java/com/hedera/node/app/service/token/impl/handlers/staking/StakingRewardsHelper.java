@@ -16,9 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
-import static com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils.clampedAdd;
-import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.hasStakeMetaChanges;
 import static java.util.Objects.requireNonNull;
@@ -281,5 +280,13 @@ public class StakingRewardsHelper {
         // list the id of an account that doesn't exist in the store, but was created
         // and then reverted inside an overall successful transaction
         return account != null && account.stakedNodeIdOrElse(SENTINEL_NODE_ID) != SENTINEL_NODE_ID;
+    }
+
+    private static long clampedAdd(final long a, final long b) {
+        try {
+            return Math.addExact(a, b);
+        } catch (final ArithmeticException ae) {
+            return a > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
+        }
     }
 }

@@ -63,6 +63,7 @@ public class TokenHandlers {
     private final TokenGetNftInfoHandler tokenGetNftInfoHandler;
     private final TokenGetNftInfosHandler tokenGetNftInfosHandler;
     private final TokenUpdateNftsHandler tokenUpdateNftsHandler;
+    private final TokenRejectHandler tokenRejectHandler;
 
     /**
      * Constructor for the TokenHandlers.
@@ -134,7 +135,8 @@ public class TokenHandlers {
             @NonNull final TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler,
             @NonNull final TokenGetNftInfoHandler tokenGetNftInfoHandler,
             @NonNull final TokenGetNftInfosHandler tokenGetNftInfosHandler,
-            TokenUpdateNftsHandler tokenUpdateNftsHandler) {
+            @NonNull final TokenRejectHandler tokenRejectHandler,
+            @NonNull final TokenUpdateNftsHandler tokenUpdateNftsHandler) {
         this.cryptoCreateHandler = Objects.requireNonNull(cryptoCreateHandler, "cryptoCreateHandler must not be null");
         this.cryptoUpdateHandler = Objects.requireNonNull(cryptoUpdateHandler, "cryptoUpdateHandler must not be null");
         this.cryptoTransferHandler =
@@ -190,6 +192,7 @@ public class TokenHandlers {
                 Objects.requireNonNull(tokenGetNftInfosHandler, "tokenGetNftInfosHandler must not be null");
         this.tokenUpdateNftsHandler =
                 Objects.requireNonNull(tokenUpdateNftsHandler, "tokenUpdateNftsHandler must not be null");
+        this.tokenRejectHandler = Objects.requireNonNull(tokenRejectHandler, "tokenRejectHandler must not be null");
     }
 
     /**
@@ -382,36 +385,36 @@ public class TokenHandlers {
     }
 
     /**
-     * Gets the tokenFeeScheduleUpdateHandler.
+     * Gets the tokenPauseHandler.
      *
-     * @return the tokenFeeScheduleUpdateHandler
+     * @return the tokenPauseHandler
      */
     public TokenPauseHandler tokenPauseHandler() {
         return tokenPauseHandler;
     }
 
     /**
-     * Gets the tokenFeeScheduleUpdateHandler.
+     * Gets the tokenUnpauseHandler.
      *
-     * @return the tokenFeeScheduleUpdateHandler
+     * @return the tokenUnpauseHandler
      */
     public TokenUnpauseHandler tokenUnpauseHandler() {
         return tokenUnpauseHandler;
     }
 
     /**
-     * Gets the tokenFeeScheduleUpdateHandler.
+     * Gets the cryptoGetAccountBalanceHandler.
      *
-     * @return the tokenFeeScheduleUpdateHandler
+     * @return the cryptoGetAccountBalanceHandler
      */
     public CryptoGetAccountBalanceHandler cryptoGetAccountBalanceHandler() {
         return cryptoGetAccountBalanceHandler;
     }
 
     /**
-     * Gets the cryptoGetAccountRecordsHandler.
+     * Gets the cryptoGetAccountInfoHandler.
      *
-     * @return the cryptoGetAccountRecordsHandler
+     * @return the cryptoGetAccountInfoHandler
      */
     public CryptoGetAccountInfoHandler cryptoGetAccountInfoHandler() {
         return cryptoGetAccountInfoHandler;
@@ -427,54 +430,54 @@ public class TokenHandlers {
     }
 
     /**
-     * Gets the cryptoGetAccountRecordsHandler.
+     * Gets the cryptoGetLiveHashHandler.
      *
-     * @return the cryptoGetAccountRecordsHandler
+     * @return the cryptoGetLiveHashHandler
      */
     public CryptoGetLiveHashHandler cryptoGetLiveHashHandler() {
         return cryptoGetLiveHashHandler;
     }
 
     /**
-     * Gets the cryptoGetAccountRecordsHandler.
+     * Gets the cryptoGetStakersHandler.
      *
-     * @return the cryptoGetAccountRecordsHandler
+     * @return the cryptoGetStakersHandler
      */
     public CryptoGetStakersHandler cryptoGetStakersHandler() {
         return cryptoGetStakersHandler;
     }
 
     /**
-     * Gets the cryptoGetAccountRecordsHandler.
+     * Gets the tokenGetInfoHandler.
      *
-     * @return the cryptoGetAccountRecordsHandler
+     * @return the tokenGetInfoHandler
      */
     public TokenGetInfoHandler tokenGetInfoHandler() {
         return tokenGetInfoHandler;
     }
 
     /**
-     * Gets the cryptoGetAccountRecordsHandler.
+     * Gets the tokenGetAccountNftInfosHandler.
      *
-     * @return the cryptoGetAccountRecordsHandler
+     * @return the tokenGetAccountNftInfosHandler
      */
     public TokenGetAccountNftInfosHandler tokenGetAccountNftInfosHandler() {
         return tokenGetAccountNftInfosHandler;
     }
 
     /**
-     * Gets the cryptoGetAccountRecordsHandler.
+     * Gets the tokenGetNftInfoHandler.
      *
-     * @return the cryptoGetAccountRecordsHandler
+     * @return the tokenGetNftInfoHandler
      */
     public TokenGetNftInfoHandler tokenGetNftInfoHandler() {
         return tokenGetNftInfoHandler;
     }
 
     /**
-     * Gets the cryptoGetAccountRecordsHandler.
+     * Gets the tokenGetNftInfosHandler.
      *
-     * @return the cryptoGetAccountRecordsHandler
+     * @return the tokenGetNftInfosHandler
      */
     public TokenGetNftInfosHandler tokenGetNftInfosHandler() {
         return tokenGetNftInfosHandler;
@@ -487,5 +490,14 @@ public class TokenHandlers {
      */
     public TokenUpdateNftsHandler tokenUpdateNftsHandler() {
         return tokenUpdateNftsHandler;
+    }
+
+    /**
+     * Gets the tokenRejectHandler.
+     *
+     * @return the tokenRejectHandler
+     */
+    public TokenRejectHandler tokenRejectHandler() {
+        return tokenRejectHandler;
     }
 }

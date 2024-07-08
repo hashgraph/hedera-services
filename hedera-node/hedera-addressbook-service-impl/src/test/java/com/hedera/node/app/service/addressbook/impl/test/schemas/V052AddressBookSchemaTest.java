@@ -99,7 +99,8 @@ class V052AddressBookSchemaTest extends AddressBookTestBase {
                 123,
                 "pubKey1",
                 "memo1",
-                Bytes.wrap(gossipCaCertificate));
+                Bytes.wrap(gossipCaCertificate),
+                "memo2");
         final var nodeInfo2 = new NodeInfoImpl(
                 2,
                 accountId,
@@ -110,7 +111,8 @@ class V052AddressBookSchemaTest extends AddressBookTestBase {
                 123,
                 "pubKey2",
                 "memo2",
-                Bytes.wrap(grpcCertificateHash));
+                Bytes.wrap(grpcCertificateHash),
+                "memo2");
         given(networkInfo.addressBook()).willReturn(List.of(nodeInfo1, nodeInfo2));
         given(migrationContext.networkInfo()).willReturn(networkInfo);
     }

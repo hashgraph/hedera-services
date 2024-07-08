@@ -43,13 +43,13 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class NodeDeleteHandler implements TransactionHandler {
+
     @Inject
-    public NodeDeleteHandler() {
-        // Exists for injection
-    }
+    public NodeDeleteHandler() {}
 
     @Override
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
+        requireNonNull(txn);
         final NodeDeleteTransactionBody transactionBody = txn.nodeDeleteOrThrow();
         final long nodeId = transactionBody.nodeId();
 
@@ -74,7 +74,7 @@ public class NodeDeleteHandler implements TransactionHandler {
         final NodeDeleteTransactionBody transactionBody = context.body().nodeDeleteOrThrow();
         var nodeId = transactionBody.nodeId();
 
-        final var nodeStore = context.writableStore(WritableNodeStore.class);
+        final var nodeStore = context.storeFactory().writableStore(WritableNodeStore.class);
 
         Node node = nodeStore.get(nodeId);
 
@@ -93,6 +93,12 @@ public class NodeDeleteHandler implements TransactionHandler {
     @NonNull
     @Override
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
-        return feeContext.feeCalculator(SubType.DEFAULT).calculate();
+        final var calculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT);
+        calculator.resetUsage();
+        // The price of node delete should be increased based on number of signatures.
+        // The first signature is free and is accounted in the base price, so we only need to add
+        // the price of the rest of the signatures.
+        calculator.addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1));
+        return calculator.calculate();
     }
 }

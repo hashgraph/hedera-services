@@ -41,6 +41,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -50,6 +51,7 @@ import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -57,6 +59,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,6 +83,9 @@ class FreezeHandlerTest {
 
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
+
+    @Mock(strictness = LENIENT)
+    private StoreFactory storeFactory;
 
     @Mock(strictness = LENIENT)
     private Account account;
@@ -118,10 +124,11 @@ class FreezeHandlerTest {
         given(preHandleContext.createStore(ReadableStakingInfoStore.class)).willReturn(stakingInfoStore);
 
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.readableStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
-        given(handleContext.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
-        given(handleContext.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
-        given(handleContext.readableStore(ReadableStakingInfoStore.class)).willReturn(stakingInfoStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
+        given(storeFactory.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
+        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
+        given(storeFactory.readableStore(ReadableStakingInfoStore.class)).willReturn(stakingInfoStore);
     }
 
     @Test
@@ -387,6 +394,7 @@ class FreezeHandlerTest {
         given(upgradeFileStore.peek(fileUpgradeFileId))
                 .willReturn(File.newBuilder().build());
         given(upgradeFileStore.getFull(fileUpgradeFileId)).willReturn(Bytes.wrap("Upgrade file bytes"));
+        given(nodeStore.keys()).willReturn(List.of(new EntityNumber(0)).iterator());
 
         TransactionID txnId = TransactionID.newBuilder()
                 .accountID(nonAdminAccount)
@@ -415,6 +423,7 @@ class FreezeHandlerTest {
         given(upgradeFileStore.peek(anotherFileUpgradeFileId))
                 .willReturn(File.newBuilder().build());
         given(upgradeFileStore.getFull(anotherFileUpgradeFileId)).willReturn(Bytes.wrap("Upgrade file bytes"));
+        given(nodeStore.keys()).willReturn(List.of(new EntityNumber(0)).iterator());
 
         TransactionID txnId = TransactionID.newBuilder()
                 .accountID(nonAdminAccount)

@@ -240,7 +240,7 @@ public class LeakyCryptoTestsSuite {
         final var payerBalance = 100 * ONE_HUNDRED_HBARS;
         final var updateWithExpiredAccount = "updateWithExpiredAccount";
         final var autoAssocSlotPrice = 0.0018;
-        final var baseFee = 0.00022;
+        final var baseFee = 0.000214;
         double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
         return propertyPreservingHapiSpec("AutoAssociationPropertiesWorkAsExpected")
                 .preserving(maxAssociationsPropertyName, minAutoRenewPeriodPropertyName)
@@ -264,7 +264,7 @@ public class LeakyCryptoTestsSuite {
                                 .payingWith(shortLivedAutoAssocUser)
                                 .maxAutomaticAssociations(10)
                                 .via(updateWithExpiredAccount),
-                        validateChargedUsd(updateWithExpiredAccount, plusTenSlotsFee));
+                        validateChargedUsd(updateWithExpiredAccount, baseFee));
     }
 
     @HapiTest
@@ -1232,10 +1232,8 @@ public class LeakyCryptoTestsSuite {
         final String tokenBcreateTxn = "tokenBCreate";
         final String transferToFU = "transferToFU";
 
-        return propertyPreservingHapiSpec("autoAssociationWorksForContracts", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("contracts.allowAutoAssociations")
+        return defaultHapiSpec("autoAssociationWorksForContracts", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
                         newKeyNamed(SUPPLY_KEY),
                         uploadInitCode(theContract),
                         contractCreate(theContract).maxAutomaticTokenAssociations(2),
@@ -1301,10 +1299,8 @@ public class LeakyCryptoTestsSuite {
         final var otherCollector = "otherCollector";
         final var finalTxn = "finalTxn";
 
-        return propertyPreservingHapiSpec("CustomFeesHaveExpectedAutoCreateInteractions", FULLY_NONDETERMINISTIC)
-                .preserving("contracts.allowAutoAssociations")
+        return defaultHapiSpec("CustomFeesHaveExpectedAutoCreateInteractions", FULLY_NONDETERMINISTIC)
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
                         wellKnownTokenEntities(),
                         cryptoCreate(otherCollector),
                         cryptoCreate(CIVILIAN).maxAutomaticTokenAssociations(42),

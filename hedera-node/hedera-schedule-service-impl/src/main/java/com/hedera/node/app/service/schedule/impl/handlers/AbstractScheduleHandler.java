@@ -171,7 +171,7 @@ abstract class AbstractScheduleHandler {
      */
     @Nullable
     protected Key getKeyForAccount(@NonNull final HandleContext context, @NonNull final AccountID accountToQuery) {
-        final ReadableAccountStore accountStore = context.readableStore(ReadableAccountStore.class);
+        final ReadableAccountStore accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final Account accountData = accountStore.getAccountById(accountToQuery);
         return (accountData != null && accountData.key() != null) ? accountData.key() : null;
     }
@@ -343,7 +343,8 @@ abstract class AbstractScheduleHandler {
             // set the schedule ref for the child transaction to the schedule that we're executing
             recordBuilder.scheduleRef(scheduleToExecute.scheduleId());
             // also set the child transaction ID as scheduled transaction ID in the parent record.
-            final ScheduleRecordBuilder parentRecordBuilder = context.recordBuilder(ScheduleRecordBuilder.class);
+            final ScheduleRecordBuilder parentRecordBuilder =
+                    context.recordBuilders().getOrCreate(ScheduleRecordBuilder.class);
             parentRecordBuilder.scheduledTransactionID(childTransaction.transactionID());
             return true;
         } else {
@@ -384,7 +385,7 @@ abstract class AbstractScheduleHandler {
         final var assistant = new ScheduleVerificationAssistant(currentSignatories, currentUnverifiedKeys);
         for (final Key next : scheduledRequiredKeys) {
             // The schedule verification assistant observes each primitive key in the tree
-            final SignatureVerification isVerified = context.verificationFor(next, assistant);
+            final SignatureVerification isVerified = context.keyVerifier().verificationFor(next, assistant);
             // unverified primitive keys only count if the top-level key failed verification.
             // @todo('9447') The comparison to originalPayerKey here is to match monoservice
             //      "hidden default payer" behavior. We intend to remove that behavior after v1

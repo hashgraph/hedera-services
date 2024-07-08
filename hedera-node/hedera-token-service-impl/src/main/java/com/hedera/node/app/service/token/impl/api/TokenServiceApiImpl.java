@@ -183,6 +183,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
                 .copyBuilder()
                 .key(STANDIN_CONTRACT_KEY)
                 .smartContract(true)
+                .maxAutoAssociations(hollowAccount.numberAssociations())
                 .build();
         accountStore.put(accountAsContract);
     }

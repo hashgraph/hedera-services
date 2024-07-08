@@ -55,7 +55,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.nftTransfer;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
@@ -119,6 +118,7 @@ public class AtomicCryptoTransferHTSSuite {
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
     private static final String CONTRACT = "AtomicCryptoTransfer";
     private static final String TRANSFER_MULTIPLE_TOKENS = "transferMultipleTokens";
+    private static final String TRANSFER_MULTIPLE_TOKENS_DELEGATE_CALL = "transferMultipleTokensDelegateCall";
     private static final String BASE_APPROVAL_TXN = "baseApproveTxn";
 
     public static final String SECP_256K1_SOURCE_KEY = "secp256k1Alias";
@@ -132,11 +132,9 @@ public class AtomicCryptoTransferHTSSuite {
         final var cryptoTransferRevertBalanceTooLowTxn = "cryptoTransferRevertBalanceTooLowTxn";
 
         return propertyPreservingHapiSpec("cryptoTransferForHbarOnly")
-                .preserving("contracts.allowAutoAssociations", "contracts.precompile.atomicCryptoTransfer.enabled")
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
-                        overridingTwo(
-                                "contracts.allowAutoAssociations", "true",
-                                "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(SENDER2).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
@@ -323,11 +321,9 @@ public class AtomicCryptoTransferHTSSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
-                .preserving("contracts.allowAutoAssociations", "contracts.precompile.atomicCryptoTransfer.enabled")
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
-                        overridingTwo(
-                                "contracts.allowAutoAssociations", "true",
-                                "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(SENDER2).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
@@ -431,11 +427,9 @@ public class AtomicCryptoTransferHTSSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
-                .preserving("contracts.allowAutoAssociations", "contracts.precompile.atomicCryptoTransfer.enabled")
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
-                        overridingTwo(
-                                "contracts.allowAutoAssociations", "true",
-                                "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
                         cryptoCreate(TOKEN_TREASURY),
@@ -523,11 +517,9 @@ public class AtomicCryptoTransferHTSSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
-                .preserving("contracts.allowAutoAssociations", "contracts.precompile.atomicCryptoTransfer.enabled")
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
-                        overridingTwo(
-                                "contracts.allowAutoAssociations", "true",
-                                "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS),
@@ -1161,6 +1153,7 @@ public class AtomicCryptoTransferHTSSuite {
                         childRecordsCheck(
                                 successfulTransferFromTxn,
                                 SUCCESS,
+                                recordWith().status(SUCCESS),
                                 recordWith()
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
@@ -1280,6 +1273,7 @@ public class AtomicCryptoTransferHTSSuite {
                         childRecordsCheck(
                                 successfulTransferFromTxn,
                                 SUCCESS,
+                                recordWith().status(SUCCESS),
                                 recordWith()
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
@@ -1364,9 +1358,7 @@ public class AtomicCryptoTransferHTSSuite {
                         NONDETERMINISTIC_TRANSACTION_FEES)
                 .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
-                        overridingTwo(
-                                "contracts.allowAutoAssociations", "true",
-                                "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
                         uploadInitCode(CONTRACT),
@@ -1407,6 +1399,52 @@ public class AtomicCryptoTransferHTSSuite {
                                                 .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
     }
 
+    @HapiTest
+    final Stream<DynamicTest> delegateCallShouldFail() {
+        final var failedTransferFromTxn = "failed_txn";
+        final long allowance = 20L;
+
+        return propertyPreservingHapiSpec(
+                        "delegateCallShouldFail",
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
+                        ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
+                        NONDETERMINISTIC_TRANSACTION_FEES)
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
+                .given(
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
+                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
+                .when(
+                        withOpContext((spec, opLog) -> {
+                            final var sender = spec.registry().getAccountID(SENDER);
+                            final var receiver = spec.registry().getAccountID(RECEIVER);
+                            final var amountToBeSent = 50 * ONE_HBAR;
+
+                            allRunFor(
+                                    spec,
+                                    newKeyNamed(DELEGATE_KEY)
+                                            .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, CONTRACT))),
+                                    cryptoUpdate(SENDER).key(DELEGATE_KEY),
+                                    contractCall(
+                                                    CONTRACT,
+                                                    TRANSFER_MULTIPLE_TOKENS_DELEGATE_CALL,
+                                                    transferList()
+                                                            .withAccountAmounts(
+                                                                    accountAmount(sender, -amountToBeSent, false),
+                                                                    accountAmount(receiver, amountToBeSent, false))
+                                                            .build(),
+                                                    EMPTY_TUPLE_ARRAY)
+                                            .payingWith(GENESIS)
+                                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                            .via(failedTransferFromTxn)
+                                            .gas(GAS_TO_OFFER));
+                        }),
+                        getTxnRecord(failedTransferFromTxn).andAllChildRecords().logged())
+                .then(childRecordsCheck(failedTransferFromTxn, CONTRACT_REVERT_EXECUTED));
+    }
+
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> cryptoTransferSpecialAccounts() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
@@ -1416,11 +1454,9 @@ public class AtomicCryptoTransferHTSSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
-                .preserving("contracts.allowAutoAssociations", "contracts.precompile.atomicCryptoTransfer.enabled")
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
-                        overridingTwo(
-                                "contracts.allowAutoAssociations", "true",
-                                "contracts.precompile.atomicCryptoTransfer.enabled", "true"),
+                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         cryptoCreate(RECEIVER).balance(1 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
@@ -1494,10 +1530,7 @@ public class AtomicCryptoTransferHTSSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
-                .preserving(
-                        "contracts.allowAutoAssociations",
-                        "contracts.precompile.atomicCryptoTransfer.enabled",
-                        CONTRACTS_PERMITTED_DELEGATE_CALLERS)
+                .preserving("contracts.precompile.atomicCryptoTransfer.enabled", CONTRACTS_PERMITTED_DELEGATE_CALLERS)
                 .given(
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER).balance(2 * ONE_HUNDRED_HBARS),
@@ -1515,9 +1548,7 @@ public class AtomicCryptoTransferHTSSuite {
                             whitelistedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
                         }))
                 .when(
-                        overridingThree(
-                                "contracts.allowAutoAssociations",
-                                "true",
+                        overridingTwo(
                                 "contracts.precompile.atomicCryptoTransfer.enabled",
                                 "true",
                                 CONTRACTS_PERMITTED_DELEGATE_CALLERS,

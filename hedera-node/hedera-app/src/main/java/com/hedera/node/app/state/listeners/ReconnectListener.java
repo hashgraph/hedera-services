@@ -22,7 +22,7 @@ import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.app.state.PlatformStateAccessor;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.swirlds.common.utility.AutoCloseableWrapper;
@@ -83,6 +83,8 @@ public class ReconnectListener implements ReconnectCompleteListener {
                     upgradeNodeStore,
                     upgradeStakingInfoStore);
             upgradeActions.catchUpOnMissedSideEffects(platformStateAccessor.getPlatformState());
+        } catch (Exception e) {
+            log.error("Unable to catch up on missed upgrade side effects after reconnect", e);
         }
     }
 }

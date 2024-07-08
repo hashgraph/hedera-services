@@ -16,7 +16,13 @@
 
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.REACHED;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.UNREACHABLE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DIR;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ERROR_REDIRECT_FILE;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.guaranteedExtantFile;
+import static java.lang.ProcessBuilder.Redirect.DISCARD;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -29,7 +35,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -38,6 +46,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -84,6 +93,16 @@ public class ProcessUtils {
     }
 
     /**
+     * Returns true if the given error is a bind exception that is correlated with a node starting.
+     *
+     * @param error the error to check
+     * @return true if the error is a correlated bind exception
+     */
+    public static boolean hadCorrelatedBindException(@NonNull final AssertionError error) {
+        return error.getMessage().contains("bindExceptionSeen=YES");
+    }
+
+    /**
      * Destroys any process that appears to be a node started from the given metadata, based on the
      * process command being {@code java} and having a last argument matching the node ID.
      *
@@ -97,43 +116,59 @@ public class ProcessUtils {
     }
 
     /**
-     * Starts a sub-process node from the given metadata and returns its {@link ProcessHandle}.
+     * Starts a sub-process node from the given metadata and main class reference, and returns its {@link ProcessHandle}.
      *
      * @param metadata the metadata of the node to start
+     * @param configVersion the version of the configuration to use
      * @return the {@link ProcessHandle} of the started node
      */
-    public static ProcessHandle startSubProcessNodeFrom(@NonNull final NodeMetadata metadata) {
+    public static ProcessHandle startSubProcessNodeFrom(@NonNull final NodeMetadata metadata, final int configVersion) {
         final var builder = new ProcessBuilder();
         final var environment = builder.environment();
         environment.put("LC_ALL", "en.UTF-8");
         environment.put("LANG", "en_US.UTF-8");
         environment.put("grpc.port", Integer.toString(metadata.grpcPort()));
+        environment.put("hedera.config.version", Integer.toString(configVersion));
         try {
-            return builder.command(
-                            // Use the same java command that started this process
-                            ProcessHandle.current().info().command().orElseThrow(),
-                            "-agentlib:jdwp=transport=dt_socket,server=y,suspend="
-                                    + (metadata.nodeId() == NODE_ID_TO_SUSPEND ? "y" : "n") + ",address=*:"
-                                    + (FIRST_AGENT_PORT + metadata.nodeId()),
-                            "-classpath",
-                            // Use the same classpath that started this process, excluding test-clients
-                            currentNonTestClientClasspath(),
-                            // JVM system
-                            "-Dfile.encoding=UTF-8",
-                            "-Dprometheus.endpointPortNumber=" + metadata.prometheusPort(),
-                            "-Dhedera.recordStream.logDir=" + DATA_DIR + "/" + STREAMS_DIR,
-                            "-Dhedera.profiles.active=DEV",
-                            "-Dhedera.workflows.enabled=true",
-                            "com.hedera.node.app.ServicesMain",
-                            "-local",
-                            Long.toString(metadata.nodeId()))
-                    .directory(metadata.workingDir().toFile())
-                    .inheritIO()
-                    .start()
-                    .toHandle();
+            final var redirectFile = guaranteedExtantFile(
+                    metadata.workingDirOrThrow().resolve(OUTPUT_DIR).resolve(ERROR_REDIRECT_FILE));
+            builder.command(javaCommandLineFor(metadata))
+                    .directory(metadata.workingDirOrThrow().toFile());
+            // When in CI redirect errors to a log for debugging; when running locally inherit IO
+            if (System.getenv("CI") != null) {
+                builder.redirectError(redirectFile).redirectOutput(DISCARD);
+            } else {
+                builder.inheritIO();
+            }
+            return builder.start().toHandle();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private static List<String> javaCommandLineFor(@NonNull final NodeMetadata metadata) {
+        final List<String> commandLine = new ArrayList<>();
+        commandLine.add(ProcessHandle.current().info().command().orElseThrow());
+        // Only activate JDWP if not in CI
+        if (System.getenv("CI") == null) {
+            commandLine.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend="
+                    + (metadata.nodeId() == NODE_ID_TO_SUSPEND ? "y" : "n") + ",address=*:"
+                    + (FIRST_AGENT_PORT + metadata.nodeId()));
+        }
+        commandLine.addAll(List.of(
+                "-classpath",
+                // Use the same classpath that started this process, excluding test-clients
+                currentNonTestClientClasspath(),
+                // JVM system
+                "-Dfile.encoding=UTF-8",
+                "-Dprometheus.endpointPortNumber=" + metadata.prometheusPort(),
+                "-Dhedera.recordStream.logDir=" + DATA_DIR + "/" + STREAMS_DIR,
+                "-Dhedera.profiles.active=DEV",
+                "-Dhedera.workflows.enabled=true",
+                "com.hedera.node.app.ServicesMain",
+                "-local",
+                Long.toString(metadata.nodeId())));
+        return commandLine;
     }
 
     /**
@@ -147,20 +182,37 @@ public class ProcessUtils {
     }
 
     /**
-     * Returns a future that resolves when the given condition is true, backing off checking
-     * the condition by the number of milliseconds returned by the given supplier.
+     * Returns a future that resolves when the given condition is true, backing off checking the condition by the
+     * number of milliseconds returned by the given supplier.
+     *
+     * @param condition the condition to wait for
+     * @param checkBackoffMs the supplier of the number of milliseconds to back off between checks
+     * @return
+     */
+    public static CompletableFuture<Void> conditionFuture(
+            @NonNull final BooleanSupplier condition, @NonNull final LongSupplier checkBackoffMs) {
+        return conditionFuture(() -> condition.getAsBoolean() ? REACHED : ConditionStatus.PENDING, checkBackoffMs);
+    }
+
+    /**
+     * Returns a future that resolves when the given condition is reached, or fails when it becomes unreachable,
+     * backing off checking the condition by the number of milliseconds returned by the given supplier.
      *
      * @param condition the condition to wait for
      * @param checkBackoffMs the supplier of the number of milliseconds to back off between checks
      * @return a future that resolves when the condition is true or the timeout is reached
      */
     public static CompletableFuture<Void> conditionFuture(
-            @NonNull final BooleanSupplier condition, @NonNull final LongSupplier checkBackoffMs) {
+            @NonNull final Supplier<ConditionStatus> condition, @NonNull final LongSupplier checkBackoffMs) {
         requireNonNull(condition);
         requireNonNull(checkBackoffMs);
         return CompletableFuture.runAsync(
                 () -> {
-                    while (!condition.getAsBoolean()) {
+                    ConditionStatus status;
+                    while ((status = condition.get()) != REACHED) {
+                        if (status == UNREACHABLE) {
+                            throw new IllegalStateException("Condition is unreachable");
+                        }
                         try {
                             MILLISECONDS.sleep(checkBackoffMs.getAsLong());
                         } catch (InterruptedException e) {
