@@ -229,9 +229,8 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
     private SubmitMessageOutput.Builder buildConsensusSubmitMessageOutput(@NonNull final SingleTransactionRecord item) {
         // TODO: Is there ever a case where we don't have a receipt?
         var receipt = item.transactionRecord().receiptOrThrow();
-        return SubmitMessageOutput.newBuilder()
-                .topicRunningHashVersion(RunningHashVersion.fromProtobufOrdinal(
-                        (int) receipt.topicRunningHashVersion()));
+        return SubmitMessageOutput.newBuilder().topicRunningHashVersion(RunningHashVersion.fromProtobufOrdinal((int)
+                receipt.topicRunningHashVersion()));
     }
 
     @NonNull
