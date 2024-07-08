@@ -24,18 +24,16 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoUpdate;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Optional;
 
 public class RandomAccountUpdate implements OpProvider {
-    protected final EntityNameProvider<Key> keys;
-    protected final EntityNameProvider<AccountID> accounts;
+    protected final EntityNameProvider keys;
+    protected final EntityNameProvider accounts;
 
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(ACCOUNT_DELETED, INVALID_ACCOUNT_ID);
 
-    public RandomAccountUpdate(EntityNameProvider<Key> keys, EntityNameProvider<AccountID> accounts) {
+    public RandomAccountUpdate(EntityNameProvider keys, EntityNameProvider accounts) {
         this.keys = keys;
         this.accounts = accounts;
     }

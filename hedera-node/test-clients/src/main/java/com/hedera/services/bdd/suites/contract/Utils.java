@@ -36,7 +36,6 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.fees.pricing.AssetsLoader;
-import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -58,17 +57,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -89,51 +84,6 @@ public class Utils {
     public static final String UNIQUE_CLASSPATH_RESOURCE_TPL = "contract/contracts/%s/%s";
     private static final Logger log = LogManager.getLogger(Utils.class);
     private static final String JSON_EXTENSION = ".json";
-
-    public static void main(String... args) throws IOException {
-        final var contractsLoc = "hedera-node/test-clients/src/main/java/com/hedera/services/bdd/suites/contract";
-        final var baseContractFqn = "com.hedera.services.bdd.suites.contract";
-        final var disabledCount = new AtomicLong();
-        Files.walk(Paths.get(contractsLoc))
-                .filter(p -> p.toString().endsWith(".java"))
-                .filter(p -> !p.toString().contains("V1Security"))
-                .filter(p -> !p.toString().contains("classiccalls"))
-                .filter(p -> !p.toString().contains("Utils"))
-                .map(p -> {
-                    final var packageName = p.getName(p.getNameCount() - 2);
-                    final var fileName = p.getName(p.getNameCount() - 1);
-                    final var className = fileName.toString().replace(".java", "");
-                    return baseContractFqn + "." + packageName + "." + className;
-                })
-                .forEach(name -> {
-                    try {
-                        final var type = HapiSpec.class.getClassLoader().loadClass(name);
-                        final var disabledSpecs = Arrays.stream(type.getDeclaredMethods())
-                                .filter(m -> {
-                                    final var returnType = m.getReturnType();
-                                    return returnType == HapiSpec.class;
-                                })
-                                .filter(m -> {
-                                    final var annotations = m.getDeclaredAnnotations();
-                                    return Arrays.stream(annotations)
-                                            .noneMatch(a -> a.annotationType() == HapiTest.class);
-                                })
-                                .map(Method::getName)
-                                .toArray(String[]::new);
-                        //                        final var suite = (HapiSuite) type.getConstructor().newInstance();
-                        if (disabledSpecs.length > 0) {
-                            disabledCount.addAndGet(disabledSpecs.length);
-                            System.out.println("--- Disabled for " + type.getSimpleName() + " ---");
-                            Arrays.asList(disabledSpecs).stream()
-                                    .map(s -> "    " + s)
-                                    .forEach(System.out::println);
-                        }
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-        System.out.println("Total disabled: " + disabledCount.get());
-    }
 
     public static ByteString eventSignatureOf(String event) {
         return ByteString.copyFrom(Hash.keccak256(Bytes.wrap(event.getBytes())).toArray());

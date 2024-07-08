@@ -49,6 +49,8 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
+import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.CURRENT_JAR_PATH;
+import static com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp.DEFAULT_UPGRADE_ZIP_LOC;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
@@ -83,9 +85,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.SpecOperation;
+import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -111,6 +115,7 @@ import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyAddLiveHashNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetAccountNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
+import com.hedera.services.bdd.spec.utilops.checks.VerifyGetExecutionTimeNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetFastRecordNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
@@ -131,8 +136,10 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ConfigTxtValidationOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutdownWithinOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.TryToStartNodesOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForMarkerFileOp;
 import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForStatusOp;
 import com.hedera.services.bdd.spec.utilops.mod.QueryModification;
 import com.hedera.services.bdd.spec.utilops.mod.QueryModificationsOp;
@@ -152,6 +159,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStr
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
+import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
@@ -177,10 +185,13 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.time.Duration;
@@ -409,16 +420,22 @@ public class UtilVerbs {
         return new WaitForStatusOp(NodeSelector.byName(name), FREEZE_COMPLETE, timeout);
     }
 
-    public static TryToStartNodesOp restartNode(String name) {
-        return new TryToStartNodesOp(NodeSelector.byName(name));
-    }
-
     public static WaitForStatusOp waitForActiveNetwork(@NonNull final Duration timeout) {
         return new WaitForStatusOp(NodeSelector.allNodes(), ACTIVE, timeout);
     }
 
+    public static TryToStartNodesOp restartNode(String name) {
+        return new TryToStartNodesOp(NodeSelector.byName(name));
+    }
+
     public static TryToStartNodesOp restartNetwork() {
-        return new TryToStartNodesOp(NodeSelector.allNodes());
+        return new TryToStartNodesOp(
+                NodeSelector.allNodes(), TryToStartNodesOp.UseUpgradeJar.NO, TryToStartNodesOp.ReassignPorts.YES);
+    }
+
+    public static TryToStartNodesOp restartNetworkFromUpgradeJar() {
+        return new TryToStartNodesOp(
+                NodeSelector.allNodes(), TryToStartNodesOp.UseUpgradeJar.YES, TryToStartNodesOp.ReassignPorts.YES);
     }
 
     public static ShutdownWithinOp shutdownWithin(String name, Duration timeout) {
@@ -443,6 +460,18 @@ public class UtilVerbs {
 
     public static HapiSpecWaitUntil waitUntilStartOfNextStakingPeriod(final long stakePeriodMins) {
         return untilStartOfNextStakingPeriod(stakePeriodMins);
+    }
+
+    public static BuildUpgradeZipOp buildUpgradeZipWith(@NonNull final SemanticVersion newVersion) {
+        return new BuildUpgradeZipOp(CURRENT_JAR_PATH, newVersion, DEFAULT_UPGRADE_ZIP_LOC);
+    }
+
+    public static WaitForMarkerFileOp waitForMf(@NonNull final MarkerFile markerFile, @NonNull final Duration timeout) {
+        return new WaitForMarkerFileOp(NodeSelector.allNodes(), markerFile, timeout);
+    }
+
+    public static ConfigTxtValidationOp validateAddressBooks(@NonNull final Consumer<AddressBook> bookValidator) {
+        return new ConfigTxtValidationOp(NodeSelector.allNodes(), bookValidator);
     }
 
     /**
@@ -517,10 +546,6 @@ public class UtilVerbs {
 
     public static SpecKeyFromLiteral keyFromLiteral(String name, String hexEncodedPrivateKey) {
         return new SpecKeyFromLiteral(name, hexEncodedPrivateKey);
-    }
-
-    public static HapiSpecOperation expectedEntitiesExist() {
-        return withOpContext((spec, opLog) -> spec.persistentEntities().runExistenceChecks());
     }
 
     public static SpecKeyFromEcdsaFile keyFromEcdsaFile(String loc, String name) {
@@ -643,6 +668,10 @@ public class UtilVerbs {
 
     public static VerifyGetStakersNotSupported getStakersNotSupported() {
         return new VerifyGetStakersNotSupported();
+    }
+
+    public static VerifyGetExecutionTimeNotSupported getExecutionTimeNotSupported() {
+        return new VerifyGetExecutionTimeNotSupported();
     }
 
     public static VerifyGetFastRecordNotSupported getFastRecordNotSupported() {
@@ -1083,20 +1112,29 @@ public class UtilVerbs {
 
     public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
         return withOpContext((spec, opLog) -> {
-            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, defaultFeeSchedules()));
+            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, feeSchedulesWith("FeeSchedule.json")));
             if (!spec.tryReinitializingFees()) {
                 throw new IllegalStateException("New fee schedules won't be available, dying!");
             }
         });
     }
 
-    private static ByteString defaultFeeSchedules() {
+    public static HapiSpecOperation uploadGivenFeeSchedules(String payer, String feeSchedules) {
+        return withOpContext((spec, opLog) -> {
+            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, feeSchedulesWith(feeSchedules)));
+            if (!spec.tryReinitializingFees()) {
+                throw new IllegalStateException("New fee schedules won't be available, dying!");
+            }
+        });
+    }
+
+    private static ByteString feeSchedulesWith(String feeSchedules) {
         SysFileSerde<String> serde = new FeesJsonToGrpcBytes();
         var baos = new ByteArrayOutputStream();
         try {
-            var schedulesIn = HapiFileCreate.class.getClassLoader().getResourceAsStream("FeeSchedule.json");
+            var schedulesIn = HapiFileCreate.class.getClassLoader().getResourceAsStream(feeSchedules);
             if (schedulesIn == null) {
-                throw new IllegalStateException("No FeeSchedule.json resource available!");
+                throw new IllegalStateException("No " + feeSchedules + " resource available!");
             }
             schedulesIn.transferTo(baos);
             baos.close();
@@ -1126,6 +1164,21 @@ public class UtilVerbs {
             OptionalLong tinyBarsToOffer) {
         return updateLargeFile(
                 payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer, op -> {}, (op, i) -> {});
+    }
+
+    public static HapiSpecOperation updateSpecialFile(
+            final String payer,
+            final String fileName,
+            final Path path,
+            final int bytesPerOp,
+            final int appendsPerBurst) {
+        final ByteString contents;
+        try {
+            contents = ByteString.copyFrom(Files.readAllBytes(path));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return updateSpecialFile(payer, fileName, contents, bytesPerOp, appendsPerBurst, 0);
     }
 
     public static HapiSpecOperation updateSpecialFile(
@@ -1464,6 +1517,20 @@ public class UtilVerbs {
 
     public static CustomSpecAssert validateChargedUsd(String txn, double expectedUsd, double allowedPercentDiff) {
         return validateChargedUsdWithin(txn, expectedUsd, allowedPercentDiff);
+    }
+
+    public static CustomSpecAssert validateChargedUsdWithChild(
+            String txn, double expectedUsd, double allowedPercentDiff) {
+        return assertionsHold((spec, assertLog) -> {
+            final var actualUsdCharged = getChargedUsdFromChild(spec, txn);
+            assertEquals(
+                    expectedUsd,
+                    actualUsdCharged,
+                    (allowedPercentDiff / 100.0) * expectedUsd,
+                    String.format(
+                            "%s fee (%s) more than %.2f percent different than expected!",
+                            CryptoTransferSuite.sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
+        });
     }
 
     public static CustomSpecAssert validateChargedUsdWithin(String txn, double expectedUsd, double allowedPercentDiff) {
@@ -1905,6 +1972,24 @@ public class UtilVerbs {
         allRunFor(spec, subOp);
         final var rcd = subOp.getResponseRecord();
         return (1.0 * rcd.getTransactionFee())
+                / ONE_HBAR
+                / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
+                * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
+                / 100;
+    }
+
+    private static double getChargedUsdFromChild(@NonNull final HapiSpec spec, @NonNull final String txn) {
+        requireNonNull(spec);
+        requireNonNull(txn);
+        var subOp = getTxnRecord(txn).andAllChildRecords();
+        allRunFor(spec, subOp);
+        final var rcd = subOp.getResponseRecord();
+        final var fees = subOp.getChildRecords().isEmpty()
+                ? 0L
+                : subOp.getChildRecords().stream()
+                        .mapToLong(TransactionRecord::getTransactionFee)
+                        .sum();
+        return (1.0 * (rcd.getTransactionFee() + fees))
                 / ONE_HBAR
                 / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
                 * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
