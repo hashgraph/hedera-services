@@ -149,8 +149,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final var accountStore = readableStoreFactory.getStore(ReadableAccountStore.class);
 
         // In parallel, we will pre-handle each transaction.
-        transactions.forEach(tx -> preHandlePool.execute(() -> {
-            if (tx.isSystem()) return;
+        transactions.filter(tx -> !tx.isSystem()).forEach(tx -> {
             try {
                 tx.setMetadata(preHandleTransaction(creator, readableStoreFactory, accountStore, tx));
             } catch (final Exception unexpectedException) {
@@ -161,7 +160,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                         "Possibly CATASTROPHIC failure while running the pre-handle workflow", unexpectedException);
                 tx.setMetadata(unknownFailure());
             }
-        }));
+        });
     }
 
     // For each transaction, we will use a background thread to parse the transaction, validate it, lookup the
