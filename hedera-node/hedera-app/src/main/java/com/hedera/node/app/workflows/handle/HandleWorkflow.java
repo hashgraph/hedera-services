@@ -408,75 +408,12 @@ public class HandleWorkflow {
             @NonNull final UserTxn userTxn, @NonNull final List<SingleTransactionRecordBuilder> builders) {
         final List<SingleTransactionRecord> records = new ArrayList<>();
         TransactionID.Builder idBuilder = null;
-        int indexOfUserRecord = 0;
-        if (SIMULATE_MONO) {
-            for (int i = 0; i < builders.size(); i++) {
-                if (builders.get(i).category() == USER) {
-                    indexOfUserRecord = i;
-                    idBuilder = builders.get(i).transactionID().copyBuilder();
-                } else if (builders.get(i).isPreceding() && i > indexOfUserRecord) {
-                    indexOfUserRecord++;
-                }
-            }
-        } else {
-            for (int i = 0; i < builders.size(); i++) {
-                if (builders.get(i).category() == USER) {
-                    indexOfUserRecord = i;
-                    idBuilder = builders.get(i).transactionID().copyBuilder();
-                    break;
-                }
-            }
+        int indexOfUserRecord = getUserRecordIndex(builders);
+        if (indexOfUserRecord != -1) {
+            idBuilder = builders.get(indexOfUserRecord).transactionID().copyBuilder();
         }
-        int numPrecedingSeen = 0;
-        int numFollowingSeen = 0;
-        Instant parentConsensus = null;
-        for (int i = 0; i < builders.size(); i++) {
-            final var builder = builders.get(i);
-            if (SIMULATE_MONO) {
-                if (builder.isPreceding()) {
-                    final var nonce = totalPrecedingRecords - numPrecedingSeen;
-                    builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
-                            .syncBodyIdFromRecordId()
-                            .consensusTimestamp(userTxn.consensusNow().minusNanos(nonce));
-                    records.add(0, ((SingleTransactionRecordBuilderImpl) builder).build());
-                    numPrecedingSeen++;
-                } else if (builder.category() == USER) {
-                    builder.consensusTimestamp(userTxn.consensusNow());
-                    records.add(((SingleTransactionRecordBuilderImpl) builder).build());
-                } else {
-                    final var nonce = totalPrecedingRecords + numFollowingSeen++ + 1;
-                    builder.consensusTimestamp(userTxn.consensusNow().plusNanos(numFollowingSeen));
-                    if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
-                        builder.transactionID(
-                                        requireNonNull(idBuilder).nonce(nonce).build())
-                                .syncBodyIdFromRecordId();
-                    }
-                    if (builder.category() == CHILD) {
-                        builder.parentConsensus(userTxn.consensusNow());
-                    }
-                    records.add(((SingleTransactionRecordBuilderImpl) builder).build());
-                }
-            } else {
-                final int nonce =
-                        switch (builder.category()) {
-                            case USER, SCHEDULED -> 0;
-                            case PRECEDING, CHILD -> i < indexOfUserRecord ? indexOfUserRecord - i : i;
-                        };
-                if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
-                    builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
-                            .syncBodyIdFromRecordId();
-                }
-                final var consensusNow = userTxn.consensusNow().plusNanos((long) i - indexOfUserRecord);
-                builder.consensusTimestamp(consensusNow);
-                if (builder.category() == CHILD) {
-                    builder.parentConsensus(requireNonNull(parentConsensus));
-                }
-                if (builder.isBaseRecordBuilder()) {
-                    parentConsensus = consensusNow;
-                }
-                records.add(((SingleTransactionRecordBuilderImpl) builder).build());
-            }
-        }
+
+        processBuilders(userTxn, builders, idBuilder, records, indexOfUserRecord);
         recordCache.add(
                 userTxn.creatorInfo().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), records);
         return records.stream();
@@ -621,5 +558,103 @@ public class HandleWorkflow {
                 storeMetricsService,
                 blockRecordManager,
                 this);
+    }
+
+    /* Helpers */
+
+    private void processBuilders(
+            final @NonNull UserTxn userTxn,
+            final @NonNull List<SingleTransactionRecordBuilder> builders,
+            final TransactionID.Builder idBuilder,
+            final List<SingleTransactionRecord> records,
+            final int indexOfUserRecord) {
+        int numPrecedingSeen = 0;
+        int numFollowingSeen = 0;
+        Instant parentConsensus = null;
+        for (int i = 0; i < builders.size(); i++) {
+            final var builder = builders.get(i);
+            if (SIMULATE_MONO) {
+                processSimulatingMono(userTxn, builder, records, idBuilder, numPrecedingSeen, numFollowingSeen);
+                if (builder.isPreceding()) {
+                    numPrecedingSeen++;
+                } else {
+                    numFollowingSeen++;
+                }
+            } else {
+                final int nonce = getNonce(indexOfUserRecord, builder, i);
+                if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
+                    builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+                            .syncBodyIdFromRecordId();
+                }
+                final var consensusNow = userTxn.consensusNow().plusNanos((long) i - indexOfUserRecord);
+                builder.consensusTimestamp(consensusNow);
+                if (builder.category() == CHILD) {
+                    builder.parentConsensus(requireNonNull(parentConsensus));
+                }
+                if (builder.isBaseRecordBuilder()) {
+                    parentConsensus = consensusNow;
+                }
+                records.add(((SingleTransactionRecordBuilderImpl) builder).build());
+            }
+        }
+    }
+
+    private void processSimulatingMono(
+            UserTxn userTxn,
+            SingleTransactionRecordBuilder builder,
+            List<SingleTransactionRecord> records,
+            TransactionID.Builder idBuilder,
+            int numPrecedingSeen,
+            int numFollowingSeen) {
+        if (builder.isPreceding()) {
+            final var nonce = totalPrecedingRecords - numPrecedingSeen;
+            builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+                    .syncBodyIdFromRecordId()
+                    .consensusTimestamp(userTxn.consensusNow().minusNanos(nonce));
+            records.add(0, ((SingleTransactionRecordBuilderImpl) builder).build());
+        } else if (builder.category() == USER) {
+            builder.consensusTimestamp(userTxn.consensusNow());
+            records.add(((SingleTransactionRecordBuilderImpl) builder).build());
+        } else {
+            final var nonce = totalPrecedingRecords + numFollowingSeen + 1;
+            builder.consensusTimestamp(userTxn.consensusNow().plusNanos(numFollowingSeen + 1));
+            if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
+                builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+                        .syncBodyIdFromRecordId();
+            }
+            if (builder.category() == CHILD) {
+                builder.parentConsensus(userTxn.consensusNow());
+            }
+            records.add(((SingleTransactionRecordBuilderImpl) builder).build());
+        }
+    }
+
+    private static int getNonce(
+            final int indexOfUserRecord, final SingleTransactionRecordBuilder builder, final int i) {
+        return switch (builder.category()) {
+            case USER, SCHEDULED -> 0;
+            case PRECEDING, CHILD -> i < indexOfUserRecord ? indexOfUserRecord - i : i;
+        };
+    }
+
+    private int getUserRecordIndex(final List<SingleTransactionRecordBuilder> builders) {
+        int indexOfUserRecord = -1;
+        if (SIMULATE_MONO) {
+            for (int i = 0; i < builders.size(); i++) {
+                if (builders.get(i).category() == USER) {
+                    indexOfUserRecord = i;
+                } else if (builders.get(i).isPreceding() && i > indexOfUserRecord) {
+                    indexOfUserRecord++;
+                }
+            }
+        } else {
+            for (int i = 0; i < builders.size(); i++) {
+                if (builders.get(i).category() == USER) {
+                    indexOfUserRecord = i;
+                    break;
+                }
+            }
+        }
+        return indexOfUserRecord;
     }
 }

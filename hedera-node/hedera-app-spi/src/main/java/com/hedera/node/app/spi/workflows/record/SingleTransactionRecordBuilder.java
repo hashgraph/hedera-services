@@ -63,30 +63,61 @@ public interface SingleTransactionRecordBuilder {
      */
     SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status);
 
+    /**
+     * The transaction category of the transaction that created this record
+     * @return the transaction category
+     */
     HandleContext.TransactionCategory category();
 
+    /**
+     * The behavior of the record when the parent transaction fails
+     * @return the behavior
+     */
     ReversingBehavior reversingBehavior();
 
+    /**
+     * Removes all the side effects on the record when the parent transaction fails
+     */
     void nullOutSideEffectFields();
 
-    default boolean isPreceding() {
-        return category().equals(HandleContext.TransactionCategory.PRECEDING);
-    }
-
-    default boolean isInternalDispatch() {
-        return !category().equals(USER);
-    }
-
+    /**
+     * Sets the transactionID of the record based on the user transaction record.
+     * @return the builder
+     */
     SingleTransactionRecordBuilder syncBodyIdFromRecordId();
 
+    /**
+     * Sets the consensus timestamp of the record.
+     * @param now the consensus timestamp
+     * @return the builder
+     */
     SingleTransactionRecordBuilder consensusTimestamp(@NonNull final Instant now);
 
+    /**
+     * Returns the transaction ID of the record.
+     * @return the transaction ID
+     */
     TransactionID transactionID();
 
+    /**
+     * Sets the transaction ID of the record.
+     * @param transactionID the transaction ID
+     * @return the builder
+     */
     SingleTransactionRecordBuilder transactionID(@NonNull final TransactionID transactionID);
 
+    /**
+     * Sets the parent consensus timestamp of the record.
+     * @param parentConsensus the parent consensus timestamp
+     * @return the builder
+     */
     SingleTransactionRecordBuilder parentConsensus(@NonNull final Instant parentConsensus);
 
+    /**
+     * Returns whether the record is a base record builder. A base record builder is a record builder
+     * that is created when new stack is created.
+     * @return true if the record is a base record builder; otherwise false
+     */
     boolean isBaseRecordBuilder();
 
     /**
@@ -103,6 +134,22 @@ public interface SingleTransactionRecordBuilder {
         return Transaction.newBuilder()
                 .signedTransactionBytes(signedTransactionBytes)
                 .build();
+    }
+
+    /**
+     * Returns whether the transaction is a preceding transaction.
+     * @return {@code true} if the transaction is a preceding transaction; otherwise {@code false}
+     */
+    default boolean isPreceding() {
+        return category().equals(HandleContext.TransactionCategory.PRECEDING);
+    }
+
+    /**
+     * Returns whether the transaction is an internal dispatch.
+     * @return true if the transaction is an internal dispatch; otherwise false
+     */
+    default boolean isInternalDispatch() {
+        return !category().equals(USER);
     }
 
     /**
