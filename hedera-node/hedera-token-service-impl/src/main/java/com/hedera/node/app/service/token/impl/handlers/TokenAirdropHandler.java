@@ -294,7 +294,7 @@ public class TokenAirdropHandler implements TransactionHandler {
             validateTrue(headAccountAirdrop != null, INVALID_TOKEN_ID);
             var updatedAirdrop =
                     headAccountAirdrop.copyBuilder().previousAirdrop(pendingId).build();
-            pendingStore.put(headAirdropId, updatedAirdrop);
+            pendingStore.patch(headAirdropId, updatedAirdrop);
 
             // Create new account airdrop with next airdrop ID the previous head airdrop
             newAccountAirdrop = createAccountAirdrop(pendingId, pendingValue, headAirdropId);

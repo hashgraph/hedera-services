@@ -56,9 +56,6 @@ public class ReadableAirdropStoreImpl implements ReadableAirdropStore {
     @Nullable
     public AccountAirdrop get(@NonNull final PendingAirdropId airdropId) {
         requireNonNull(airdropId);
-        if (airdropId.hasNonFungibleToken()) {
-            return null;
-        }
         return readableAirdropState.get(airdropId);
     }
 

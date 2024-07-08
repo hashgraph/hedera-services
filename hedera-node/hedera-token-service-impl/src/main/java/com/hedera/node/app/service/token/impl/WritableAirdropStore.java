@@ -66,7 +66,7 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
      * airdrop with the same id we add the value to the existing drop.
      *
      * @param airdropId    - the airdropId to be persisted.
-     * @param accountAirdrop - the value for the given airdropId to be persisted.
+     * @param accountAirdrop - the account airdrop mapping for the given airdropId to be persisted.
      */
     public void put(@NonNull final PendingAirdropId airdropId, @NonNull final AccountAirdrop accountAirdrop) {
         requireNonNull(airdropId);
@@ -90,6 +90,23 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
                             PendingAirdropValue.newBuilder().amount(newValue).build())
                     .build();
             airdropState.put(airdropId, newAccountAirdrop);
+        }
+    }
+
+    /**
+     * Updates given {@link PendingAirdropId} with new {@link AccountAirdrop} value the state,
+     * as well as exporting its ID to the transaction receipt. If there is no existing
+     * airdrop with the same id do nothing.
+     *
+     * @param airdropId    - the airdropId to be updated.
+     * @param accountAirdrop - the account airdrop mapping for the given airdropId to be updated.
+     */
+    public void patch(@NonNull final PendingAirdropId airdropId, @NonNull final AccountAirdrop accountAirdrop) {
+        requireNonNull(airdropId);
+        requireNonNull(accountAirdrop);
+
+        if (airdropState.contains(airdropId)) {
+            airdropState.put(airdropId, accountAirdrop);
         }
     }
 

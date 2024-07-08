@@ -53,12 +53,6 @@ class ReadableAirdropStoreImplTest extends StateBuilderUtil {
     }
 
     @Test
-    void getsNullIfAirdropContainsOnlyNFT() {
-        var nftAirdrop = getNonFungibleAirDrop();
-        assertThat(subject.get(nftAirdrop)).isNull();
-    }
-
-    @Test
     void getsValueIfAirdropContainsFungibleToken() {
         var fungibleAirdrop = getFungibleAirdrop();
         var airdropValue = airdropWithValue(5);
