@@ -28,7 +28,6 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.config.IsEmbeddedTest;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -304,7 +303,6 @@ public class ServicesMain implements SwirldMain {
                 ConstructableRegistry.getInstance(),
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
-                IsEmbeddedTest.NO,
                 InstantSource.system());
     }
 }

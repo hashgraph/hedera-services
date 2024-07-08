@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.records;
 
 import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.reducedFromSnapshot;
@@ -33,12 +34,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateAccount;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertHgcaaLogContains;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertHgcaaLogDoesNotContain;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usingVersion;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -54,6 +58,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
@@ -149,6 +155,23 @@ public class DuplicateManagementTest {
                 // And verify that the node is charged the network fee for submitting this transaction
                 mutateAccount("0.0.4", account -> account.tinybarBalance(0L)),
                 getAccountBalance(submittingNodeAccountId).hasTinyBars(reducedFromSnapshot("preConsensus")));
+    }
+
+    @HapiTest
+    @Tag(EMBEDDED)
+    @DisplayName("only warns of missing creator if event version is current")
+    final Stream<DynamicTest> onlyWarnsOfMissingCreatorIfCurrentVersion() {
+        return hapiTest(
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
+                        .setNode("0.0.666")
+                        .withSubmissionStrategy(usingVersion(SyntheticVersion.PAST))
+                        .hasAnyStatusAtAll(),
+                assertHgcaaLogDoesNotContain(byNodeId(0), "not in the address book", Duration.ofMillis(250)),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
+                        .setNode("0.0.666")
+                        .withSubmissionStrategy(usingVersion(SyntheticVersion.PRESENT))
+                        .hasAnyStatusAtAll(),
+                assertHgcaaLogContains(byNodeId(0), "not in the address book", Duration.ofMillis(250)));
     }
 
     @HapiTest
