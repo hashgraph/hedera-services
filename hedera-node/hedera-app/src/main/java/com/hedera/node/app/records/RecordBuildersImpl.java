@@ -47,14 +47,14 @@ public class RecordBuildersImpl implements RecordBuilders {
     @NonNull
     @Override
     public <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = stack.peek().addRecord(REVERSIBLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        final var result = stack.peek().createRecord(REVERSIBLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
         return castRecordBuilder(result, recordBuilderClass);
     }
 
     @NonNull
     @Override
     public <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = stack.peek().addRecord(REMOVABLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        final var result = stack.peek().createRecord(REMOVABLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
         return castRecordBuilder(result, recordBuilderClass);
     }
 

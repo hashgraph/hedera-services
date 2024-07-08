@@ -16,20 +16,32 @@
 
 package com.hedera.node.app.workflows.handle.stack;
 
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.state.WrappedHederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-/**
- * A save point that contains the current state and the record builders created in the current savepoint.
- * Currently, recordBuilders is not used in the codebase. It will be used in future PRs
- */
-public class FollowingSavePoint extends AbstractFollowingSavePoint {
-    public FollowingSavePoint(@NonNull WrappedHederaState state, @NonNull AbstractSavePoint parent) {
+public class BaseSavePoint extends AbstractFollowingSavePoint {
+    private final HandleContext.TransactionCategory txnCategory;
+
+    protected BaseSavePoint(
+            @NonNull final WrappedHederaState state,
+            @NonNull final AbstractSavePoint parent,
+            @NonNull final HandleContext.TransactionCategory txnCategory) {
         super(state, parent);
+        this.txnCategory = txnCategory;
     }
 
     @Override
     void commitRecords() {
-        parentSink.followingBuilders.addAll(allBuilders());
+        if (txnCategory == HandleContext.TransactionCategory.PRECEDING) {
+            parentSink.precedingBuilders.addAll(allBuilders());
+        } else {
+            parentSink.followingBuilders.addAll(allBuilders());
+        }
+    }
+
+    @Override
+    int numBuildersAfterUserBuilder() {
+        return 0;
     }
 }

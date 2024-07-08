@@ -16,8 +16,11 @@
 
 package com.hedera.node.app.workflows.handle.stack;
 
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.workflows.handle.record.RecordListBuilder.SUCCESSES;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -25,9 +28,9 @@ import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -35,39 +38,28 @@ import java.util.Objects;
  * An abstract base class for save point that contains the current state and the record builders created
  * in the current savepoint.
  */
-public abstract class AbstractSavePoint {
+public abstract class AbstractSavePoint extends RecordSink {
     private final WrappedHederaState state;
 
-    @Nullable
-    private final AbstractSavePoint parent;
+    @NonNull
+    protected final RecordSink parentSink;
 
-    protected final List<SingleTransactionRecordBuilder> recordBuilders;
-    protected final int numPreviouslyUsedRecords;
-
-    public static int maxRecords;
+    // For simulating mono
+    public static int maxBuildersAfterUserBuilder;
     public static int totalPrecedingRecords = 0;
     public static int legacyMaxPrecedingRecords = 3;
     public static final boolean SIMULATE_MONO = true;
 
-    protected AbstractSavePoint(
-            @NonNull WrappedHederaState state,
-            @Nullable final AbstractSavePoint parent,
-            final int numPreviouslyUsedRecords) {
+    protected AbstractSavePoint(@NonNull WrappedHederaState state, @NonNull final RecordSink parentSink) {
         this.state = state;
-        this.parent = parent;
-        this.numPreviouslyUsedRecords = numPreviouslyUsedRecords;
-        this.recordBuilders = new ArrayList<>();
-    }
-
-    public List<SingleTransactionRecordBuilder> recordBuilders() {
-        return recordBuilders;
+        this.parentSink = parentSink;
     }
 
     public WrappedHederaState state() {
         return state;
     }
 
-    public SingleTransactionRecordBuilderImpl addRecord(
+    public SingleTransactionRecordBuilderImpl createRecord(
             @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
             @NonNull ExternalizedRecordCustomizer customizer) {
@@ -75,7 +67,13 @@ public abstract class AbstractSavePoint {
         if (!canAddRecord(recordBuilder)) {
             throw new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
         }
-        this.recordBuilders().add(recordBuilder);
+        if (!customizer.shouldSuppressRecord()) {
+            if (txnCategory == HandleContext.TransactionCategory.PRECEDING) {
+                precedingBuilders.add(recordBuilder);
+            } else {
+                followingBuilders.add(recordBuilder);
+            }
+        }
         return recordBuilder;
     }
 
@@ -83,23 +81,54 @@ public abstract class AbstractSavePoint {
         return new FollowingSavePoint(new WrappedHederaState(state), this);
     }
 
-    public AbstractSavePoint commit() {
+    public void commit() {
         state.commit();
-        pushRecordsToParentStack();
-        return this;
+        commitRecords();
     }
 
-    public AbstractSavePoint rollback() {
+    public void rollback() {
+        rollBackRecords(precedingBuilders);
+        rollBackRecords(followingBuilders);
+        commitRecords();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * This method guarantees that the same {@link WritableStates} instance is returned for the same {@code serviceName}
+     * to ensure all modifications to a {@link WritableStates} are kept together.
+     */
+    @NonNull
+    @VisibleForTesting
+    public WritableStates getWritableStates(@NonNull final String serviceName) {
+        return state.getWritableStates(serviceName);
+    }
+
+    @NonNull
+    @VisibleForTesting
+    public ReadableStates getReadableStates(@NonNull String serviceName) {
+        return state.getReadableStates(serviceName);
+    }
+
+    abstract void commitRecords();
+
+    abstract boolean canAddRecord(SingleTransactionRecordBuilder recordBuilder);
+
+    abstract int numBuildersAfterUserBuilder();
+
+    private void rollBackRecords(final List<SingleTransactionRecordBuilder> recordBuilders) {
         boolean followingChildRemoved = false;
         for (int i = 0; i < recordBuilders.size(); i++) {
             final var recordBuilder = recordBuilders.get(i);
-            if (recordBuilder.reversingBehavior() == SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE) {
+            if (recordBuilder.reversingBehavior() == REVERSIBLE) {
                 recordBuilder.nullOutSideEffectFields();
                 if (SUCCESSES.contains(recordBuilder.status())) {
                     recordBuilder.status(ResponseCodeEnum.REVERTED_SUCCESS);
                 }
-            } else if (recordBuilder.reversingBehavior()
-                    == SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE) {
+            } else if (recordBuilder.reversingBehavior() == REMOVABLE) {
+                if (SIMULATE_MONO && recordBuilder.category() == HandleContext.TransactionCategory.PRECEDING) {
+                    totalPrecedingRecords--;
+                }
                 // Remove it from the list by setting its location to null. Then, any subsequent children that are
                 // kept will be moved into this position.
                 recordBuilders.set(i, null);
@@ -109,17 +138,5 @@ public abstract class AbstractSavePoint {
         if (followingChildRemoved) {
             recordBuilders.removeIf(Objects::isNull);
         }
-        pushRecordsToParentStack();
-        return this;
     }
-
-    private void pushRecordsToParentStack() {
-        if (parent != null) {
-            parent.recordBuilders().addAll(recordBuilders);
-        }
-    }
-
-    abstract boolean canAddRecord(SingleTransactionRecordBuilder recordBuilder);
-
-    public abstract int numChildrenUsedSoFar();
 }

@@ -19,7 +19,6 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
@@ -352,7 +351,8 @@ public class HandleWorkflow {
      */
     private void skip(@NonNull final UserTxn userTxn) {
         final TransactionInfo txnInfo = userTxn.txnInfo();
-        final var userRecord = userTxn.stack().peek().addRecord(REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        final var userRecord =
+                userTxn.stack().peek().createRecord(REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
         userRecord
                 .transaction(txnInfo.transaction())
                 .transactionBytes(txnInfo.signedBytes())

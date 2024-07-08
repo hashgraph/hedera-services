@@ -26,15 +26,30 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A save point that contains the current state and the record builders created in the current savepoint.
- * Currently, recordBuilders is not used in the codebase. It will be used in future PRs
+ * An abstract base class for save point that contains the current state and the record builders created
+ * in the current savepoint.
  */
-public class FirstSavePoint extends AbstractSavePoint {
-    private final int maxPreceding;
+public abstract class AbstractFollowingSavePoint extends AbstractSavePoint {
+    private static final long MIN_TRANS_TIMESTAMP_INCR_NANOS = 1_000;
+    protected final int numPreviouslyUsedBuilders;
 
-    public FirstSavePoint(@NonNull WrappedHederaState state, int maxPreceding, @NonNull RecordSink recordSink) {
-        super(state, recordSink);
-        this.maxPreceding = maxPreceding;
+    protected AbstractFollowingSavePoint(
+            @NonNull final WrappedHederaState state, @NonNull final AbstractSavePoint parent) {
+        super(state, parent);
+        this.numPreviouslyUsedBuilders = parent.numBuildersAfterUserBuilder();
+    }
+
+    @Override
+    boolean canAddRecord(final SingleTransactionRecordBuilder recordBuilder) {
+        if (SIMULATE_MONO) {
+            if (recordBuilder.isPreceding()) {
+                return totalPrecedingRecords < legacyMaxPrecedingRecords;
+            } else {
+                return numBuildersAfterUserBuilder() < maxBuildersAfterUserBuilder;
+            }
+        } else {
+            return numBuildersAfterUserBuilder() < MIN_TRANS_TIMESTAMP_INCR_NANOS - 1;
+        }
     }
 
     @Override
@@ -46,36 +61,11 @@ public class FirstSavePoint extends AbstractSavePoint {
         if (txnCategory == PRECEDING && SIMULATE_MONO) {
             totalPrecedingRecords++;
         }
-
         return record;
     }
 
     @Override
-    void commitRecords() {
-        parentSink.precedingBuilders.addAll(precedingBuilders);
-        parentSink.followingBuilders.addAll(followingBuilders);
-    }
-
-    @Override
-    boolean canAddRecord(final SingleTransactionRecordBuilder recordBuilder) {
-        if (SIMULATE_MONO) {
-            if (recordBuilder.isPreceding()) {
-                return totalPrecedingRecords < maxPreceding;
-            } else {
-                return followingBuilders.size() - (1 - parentSink.followingBuilders.size())
-                        < maxBuildersAfterUserBuilder;
-            }
-        } else {
-            if (recordBuilder.isPreceding()) {
-                return parentSink.precedingBuilders.size() + precedingBuilders.size() < maxPreceding;
-            } else {
-                return parentSink.followingBuilders.size() + followingBuilders.size() < maxBuildersAfterUserBuilder;
-            }
-        }
-    }
-
-    @Override
     int numBuildersAfterUserBuilder() {
-        return followingBuilders.size() + parentSink.followingBuilders.size() - 1;
+        return numPreviouslyUsedBuilders + numBuilders();
     }
 }

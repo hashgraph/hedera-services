@@ -55,8 +55,10 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     private final Deque<AbstractSavePoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
     private final int maxPreceding;
-    private List<SingleTransactionRecordBuilder> recordBuilders;
     private final SingleTransactionRecordBuilderImpl baseRecordBuilder;
+    // This is only set if this stack is root stack
+    @Nullable
+    private final RecordSink recordSink;
 
     /**
      * Constructs a new {@link SavepointStackImpl} with the given root state.
@@ -72,7 +74,13 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
             final ExternalizedRecordCustomizer externalizedRecordCustomizer) {
         this.root = requireNonNull(root, "root must not be null");
         this.maxPreceding = maxPreceding;
-        pushBaseSavepoint();
+        if (root instanceof SavepointStackImpl) {
+            recordSink = null;
+        } else {
+            recordSink = new RecordSink();
+        }
+        pushSavepoint(category);
+
         baseRecordBuilder = recordBuilderFor(category, reversingBehavior, externalizedRecordCustomizer);
         baseRecordBuilder.setBaseRecordBuilder();
     }
@@ -106,24 +114,20 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * Commits all state changes captured in this stack.
      */
     public void commitFullStack() {
-        final var lastPopped = stack.peekLast();
         while (!stack.isEmpty()) {
             stack.pop().commit();
         }
-        setRecordBuilders(lastPopped);
-        pushBaseSavepoint();
+        pushSavepoint(baseRecordBuilder.category());
     }
 
     /**
      * Rolls back all state changes captured in this stack.
      */
     public void rollbackFullStack() {
-        final var lastPopped = stack.peekLast();
         while (!stack.isEmpty()) {
             stack.pop().rollback();
         }
-        setRecordBuilders(lastPopped);
-        pushBaseSavepoint();
+        pushSavepoint(baseRecordBuilder.category());
     }
 
     @Override
@@ -187,28 +191,20 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         return writableStatesMap.computeIfAbsent(serviceName, s -> new WritableStatesStack(this, s));
     }
 
-    private void pushBaseSavepoint() {
+    private void pushSavepoint(final HandleContext.TransactionCategory category) {
         if (root instanceof SavepointStackImpl parentStack) {
-            stack.push(new FollowingSavePoint(new WrappedHederaState(root), parentStack.peek()));
+            stack.push(new BaseSavePoint(new WrappedHederaState(root), parentStack.peek(), category));
         } else {
-            stack.push(new FirstSavePoint(new WrappedHederaState(root), maxPreceding));
-        }
-    }
-
-    private void setRecordBuilders(final AbstractSavePoint lastPopped) {
-        if (recordBuilders == null) {
-            recordBuilders = requireNonNull(lastPopped).recordBuilders();
-        } else {
-            recordBuilders.addAll(requireNonNull(lastPopped).recordBuilders());
+            stack.push(new FirstSavePoint(new WrappedHederaState(root), maxPreceding, requireNonNull(recordSink)));
         }
     }
 
     public List<SingleTransactionRecordBuilder> recordBuilders() {
-        return requireNonNull(recordBuilders);
+        return requireNonNull(recordSink).allBuilders();
     }
 
     public boolean hasMoreSystemRecords() {
-        return recordBuilders == null || recordBuilders.size() < maxPreceding;
+        return requireNonNull(recordSink).precedingBuilders.size() < maxPreceding;
     }
 
     @Deprecated
@@ -216,7 +212,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     public List<SingleTransactionRecordBuilderImpl> getChildRecords() {
         final var childRecords = new ArrayList<SingleTransactionRecordBuilderImpl>();
         for (var savePoint : stack) {
-            for (var recordBuilder : savePoint.recordBuilders()) {
+            for (var recordBuilder : savePoint.followingBuilders) {
                 if (recordBuilder.category() == CHILD) {
                     childRecords.add((SingleTransactionRecordBuilderImpl) recordBuilder);
                 }
@@ -230,23 +226,23 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     }
 
     public boolean hasChildOrPrecedingRecords() {
+        if (recordSink != null && recordSink.hasChildOrPreceding(baseRecordBuilder)) {
+            return true;
+        }
         for (var savePoint : stack) {
-            for (var recordBuilder : savePoint.recordBuilders()) {
-                if (recordBuilder != baseRecordBuilder) {
-                    return true;
-                }
+            if (savePoint.hasChildOrPreceding(baseRecordBuilder)) {
+                return true;
             }
         }
         return false;
     }
 
     public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
+        if (recordSink != null) {
+            recordSink.forEachChildAndPreceding(recordBuilderClass, consumer, baseRecordBuilder);
+        }
         for (var savePoint : stack) {
-            for (var recordBuilder : savePoint.recordBuilders()) {
-                if (recordBuilder != baseRecordBuilder) {
-                    consumer.accept(recordBuilderClass.cast(recordBuilder));
-                }
-            }
+            savePoint.forEachChildAndPreceding(recordBuilderClass, consumer, baseRecordBuilder);
         }
     }
 
@@ -255,17 +251,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
             @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
             @Nullable ExternalizedRecordCustomizer customizer) {
         customizer = customizer == null ? NOOP_EXTERNALIZED_RECORD_CUSTOMIZER : customizer;
-        return switch (category) {
-            case PRECEDING -> switch (reversingBehavior) {
-                case REMOVABLE, REVERSIBLE, IRREVERSIBLE -> peek().addRecord(reversingBehavior, category, customizer);
-            };
-            case CHILD -> switch (reversingBehavior) {
-                case REMOVABLE, REVERSIBLE -> peek().addRecord(reversingBehavior, category, customizer);
-                case IRREVERSIBLE -> throw new IllegalArgumentException("CHILD cannot be IRREVERSIBLE");
-            };
-            case SCHEDULED -> peek().addRecord(REVERSIBLE, category, customizer);
-            case USER -> throw new IllegalArgumentException("USER not a valid child category");
-        };
+        return peek().createRecord(reversingBehavior, category, customizer);
     }
 
     public HandleContext.TransactionCategory txnCategory() {

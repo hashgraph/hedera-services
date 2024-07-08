@@ -63,6 +63,7 @@ import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.FirstSavePoint;
+import com.hedera.node.app.workflows.handle.stack.RecordSink;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -277,6 +278,7 @@ class ChildDispatchFactoryTest {
         given(accountStore.getAccountById(payerId))
                 .willReturn(Account.newBuilder().key(Key.DEFAULT).build());
         given(parentDispatch.stack()).willReturn(savepointStack);
-        given(savepointStack.peek()).willReturn(new FirstSavePoint(new WrappedHederaState(savepointStack), 3));
+        given(savepointStack.peek())
+                .willReturn(new FirstSavePoint(new WrappedHederaState(savepointStack), 3, new RecordSink()));
     }
 }

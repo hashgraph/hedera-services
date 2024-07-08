@@ -107,7 +107,7 @@ public record UserTxn(
             final var consensusConfig = config.getConfigData(ConsensusConfig.class);
             stack = new SavepointStackImpl(
                     state, isGenesis ? Integer.MAX_VALUE : (int) consensusConfig.handleMaxPrecedingRecords());
-            AbstractSavePoint.maxRecords = (int) consensusConfig.handleMaxFollowingRecords();
+            AbstractSavePoint.maxBuildersAfterUserBuilder = (int) consensusConfig.handleMaxFollowingRecords();
         } else {
             throw new AssertionError("Not implemented");
         }
