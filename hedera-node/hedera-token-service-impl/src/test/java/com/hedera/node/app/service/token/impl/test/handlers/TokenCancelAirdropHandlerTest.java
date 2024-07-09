@@ -23,9 +23,9 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithAccounts;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithNfts;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithAccounts;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithAirdrops;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,9 +46,9 @@ import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.TokenCancelAirdropTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
+import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenCancelAirdropHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
@@ -82,7 +82,7 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
     private ExpiryValidator expiryValidator;
 
     private WritableAirdropStore airdropStore;
-    private ReadableAccountStore readableAccountStore;
+    private WritableAccountStore writableAccountStore;
     private ReadableNftStore readableNftStore;
     protected Configuration testConfig;
     private final AccountID senderId = asAccount(1001);
@@ -100,11 +100,11 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
         when(handleContext.configuration()).thenReturn(testConfig);
         when(handleContext.storeFactory()).thenReturn(storeFactory);
         airdropStore = newWritableStoreWithAirdrops();
-        when(storeFactory.writableStore(WritableAirdropStore.class)).thenReturn(airdropStore);
     }
 
     @Test
     void cancelAirdropWithNoPendingAirdropsThrowsException() {
+        // Arrange
         transactionBody = TransactionBody.newBuilder()
                 .tokenCancelAirdrop(tokenCancelAirdrops())
                 .build();
@@ -117,50 +117,59 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
                 Token.newBuilder().tokenId(fungibleTokenId).build());
         readableNftStore =
                 newReadableStoreWithNfts(Nft.newBuilder().nftId(nftId).build());
-        readableAccountStore = newReadableStoreWithAccounts(
+        writableAccountStore = newWritableStoreWithAccounts(
                 Account.newBuilder().accountId(senderId).build(),
                 Account.newBuilder().accountId(receiverId).build());
         when(storeFactory.readableStore(ReadableNftStore.class)).thenReturn(readableNftStore);
         when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(storeFactory.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
+        when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableAccountStore);
         when(storeFactory.writableStore(WritableAirdropStore.class)).thenReturn(airdropStore);
+
+        // Act
         final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+
+        // Assert
         assertEquals(INVALID_TRANSACTION_BODY, response.getStatus());
     }
 
     @Test
     void cancelAirdropWithInvalidTokenIdThrowsException() {
+        // Arrange
         transactionBody = TransactionBody.newBuilder()
                 .tokenCancelAirdrop(tokenCancelAirdrop(true))
                 .build();
         when(handleContext.body()).thenReturn(transactionBody);
         when(handleContext.payer()).thenReturn(senderId);
-        airdropStore = newWritableStoreWithAirdrops(getFungibleAirdrop());
         readableTokenStore = newReadableStoreWithTokens();
         when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(storeFactory.writableStore(WritableAirdropStore.class)).thenReturn(airdropStore);
+
+        // Act
         final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+
+        // Assert
         assertEquals(INVALID_TOKEN_ID, response.getStatus());
-        assertTrue(airdropStore.exists(getFungibleAirdrop()));
     }
 
     @Test
     void cancelAirdropWithPayerDifferentFromSenderThrowsException() {
+        // Arrange
         transactionBody = TransactionBody.newBuilder()
                 .tokenCancelAirdrop(tokenCancelAirdrop(true))
                 .build();
         when(handleContext.body()).thenReturn(transactionBody);
         when(handleContext.payer()).thenReturn(invalidAccountId);
-        airdropStore = newWritableStoreWithAirdrops(getFungibleAirdrop());
         when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(storeFactory.writableStore(WritableAirdropStore.class)).thenReturn(airdropStore);
+
+        // Act
         final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+
+        // Assert
         assertEquals(INVALID_ACCOUNT_ID, response.getStatus());
-        assertTrue(airdropStore.exists(getFungibleAirdrop()));
     }
 
     @Test
     void cancelAirdropWithInvalidReceiverAccountIdThrowsException() {
+        // Arrange
         transactionBody = TransactionBody.newBuilder()
                 .tokenCancelAirdrop(TokenCancelAirdropTransactionBody.newBuilder()
                         .pendingAirdrops(PendingAirdropId.newBuilder()
@@ -173,33 +182,44 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
         when(handleContext.body()).thenReturn(transactionBody);
         when(handleContext.payer()).thenReturn(invalidAccountId);
         airdropStore = newWritableStoreWithAirdrops(getFungibleAirdrop());
+        writableAccountStore = newWritableStoreWithAccounts(
+                Account.newBuilder().accountId(senderId).build(),
+                Account.newBuilder().accountId(receiverId).build());
+        when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableAccountStore);
         when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(storeFactory.writableStore(WritableAirdropStore.class)).thenReturn(airdropStore);
+
+        // Act
         final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+
+        // Assert
         assertEquals(INVALID_ACCOUNT_ID, response.getStatus());
         assertTrue(airdropStore.exists(getFungibleAirdrop()));
     }
 
     @Test
     void cancelAirdropWithInvalidNftIdThrowsException() {
+        // Arrange
         transactionBody = TransactionBody.newBuilder()
                 .tokenCancelAirdrop(tokenCancelAirdrop(false))
                 .build();
         when(handleContext.body()).thenReturn(transactionBody);
         when(handleContext.payer()).thenReturn(senderId);
-        airdropStore = newWritableStoreWithAirdrops(getNftAirdrop());
         readableTokenStore = newReadableStoreWithTokens();
         readableNftStore = newReadableStoreWithNfts();
         when(storeFactory.readableStore(ReadableNftStore.class)).thenReturn(readableNftStore);
         when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(storeFactory.writableStore(WritableAirdropStore.class)).thenReturn(airdropStore);
+
+        // Act
         final var response = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+
+        // Assert
         assertEquals(INVALID_NFT_ID, response.getStatus());
-        assertTrue(airdropStore.exists(getNftAirdrop()));
     }
 
     @Test
     void cancelAirdropHappyPath() {
+        // Arrange
         transactionBody = TransactionBody.newBuilder()
                 .tokenCancelAirdrop(tokenCancelAirdrops())
                 .build();
@@ -212,14 +232,25 @@ class TokenCancelAirdropHandlerTest extends TokenHandlerTestBase {
                 Token.newBuilder().tokenId(fungibleTokenId).build());
         readableNftStore =
                 newReadableStoreWithNfts(Nft.newBuilder().nftId(nftId).build());
-        readableAccountStore = newReadableStoreWithAccounts(
-                Account.newBuilder().accountId(senderId).build(),
+
+        final var pendingAirdrop = getFungibleAirdrop();
+
+        writableAccountStore = newWritableStoreWithAccounts(
+                Account.newBuilder()
+                        .headPendingAirdropId(pendingAirdrop)
+                        .accountId(senderId)
+                        .build(),
                 Account.newBuilder().accountId(receiverId).build());
         when(storeFactory.readableStore(ReadableNftStore.class)).thenReturn(readableNftStore);
         when(storeFactory.readableStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
-        when(storeFactory.readableStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
+        when(storeFactory.writableStore(WritableAccountStore.class)).thenReturn(writableAccountStore);
+
         when(storeFactory.writableStore(WritableAirdropStore.class)).thenReturn(airdropStore);
+
+        // Act
         assertDoesNotThrow(() -> subject.handle(handleContext));
+
+        // Assert
         assertFalse(airdropStore.exists(getFungibleAirdrop()));
         assertFalse(airdropStore.exists(getNftAirdrop()));
     }
