@@ -54,11 +54,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.node.app.hapi.utils.SignatureGenerator;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import com.hedera.services.bdd.suites.utils.contracts.BoolResult;
+import com.hedera.services.bdd.utils.Signing;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
@@ -101,7 +101,7 @@ public class IsAuthorizedSuite {
 
                     final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
                     final var addressBytes = recoverAddressFromPrivateKey(privateKey);
-                    final var signedBytes = EthTxSigs.signMessage(messageHash, privateKey);
+                    final var signedBytes = Signing.signMessage(messageHash, privateKey);
 
                     final var call = contractCall(
                                     HRC632_CONTRACT,
@@ -134,7 +134,7 @@ public class IsAuthorizedSuite {
 
                     final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
                     final var addressBytes = recoverAddressFromPrivateKey(privateKey);
-                    final var signedBytes = EthTxSigs.signMessage(messageHash, privateKey);
+                    final var signedBytes = Signing.signMessage(messageHash, privateKey);
 
                     final var call = contractCall(
                                     HRC632_CONTRACT,
@@ -166,7 +166,7 @@ public class IsAuthorizedSuite {
 
                     final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
                     final var addressBytes = recoverAddressFromPrivateKey(privateKey);
-                    final var signedBytes = EthTxSigs.signMessage(messageHash, privateKey);
+                    final var signedBytes = Signing.signMessage(messageHash, privateKey);
 
                     final var call = contractCall(
                                     HRC632_CONTRACT,
@@ -199,7 +199,7 @@ public class IsAuthorizedSuite {
 
                     final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
                     final var addressBytes = recoverAddressFromPrivateKey(privateKey);
-                    final var signature = EthTxSigs.signMessage(messageHash, privateKey);
+                    final var signature = Signing.signMessage(messageHash, privateKey);
                     signature[signature.length - 1] = (byte) 2;
 
                     final var call = contractCall(
@@ -422,7 +422,7 @@ public class IsAuthorizedSuite {
                 .when(withOpContext((spec, opLog) -> {
                     final var messageHash = new Digest().digest("submit".getBytes());
                     final var privateKey = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
-                    final var signedBytes = EthTxSigs.signMessage(messageHash, privateKey);
+                    final var signedBytes = Signing.signMessage(messageHash, privateKey);
 
                     final var call = contractCall(
                                     HRC632_CONTRACT, "isAuthorizedRawCall", accountNum.get(), messageHash, signedBytes)
@@ -527,7 +527,7 @@ public class IsAuthorizedSuite {
                     final var privateKeyECDSA = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY);
                     final var privateKeyECDSAAnother = getEcdsaPrivateKeyFromSpec(spec, ECDSA_KEY_ANOTHER);
                     final var addressBytes = recoverAddressFromPrivateKey(privateKeyECDSAAnother);
-                    final var signedBytesECDSA = EthTxSigs.signMessage(messageHash32Bytes, privateKeyECDSA);
+                    final var signedBytesECDSA = Signing.signMessage(messageHash32Bytes, privateKeyECDSA);
 
                     // Perform test calls
                     final var callECDSADifferent = contractCall(

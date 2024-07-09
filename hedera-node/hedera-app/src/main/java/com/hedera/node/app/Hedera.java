@@ -857,6 +857,7 @@ public final class Hedera implements SwirldMain {
                 .map(BlockInfo::consTimeOfLastHandledTxn)
                 .orElse(EPOCH));
     }
+
     /**
      * Returns true if the source of time is the system time. Always true for live networks.
      *

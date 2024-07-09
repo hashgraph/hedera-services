@@ -5128,7 +5128,6 @@ public class TraceabilitySuite {
                         }));
     }
 
-    @HapiTest
     @Order(Integer.MAX_VALUE)
     public final Stream<DynamicTest> assertSidecars() {
         return hapiTest(withOpContext(

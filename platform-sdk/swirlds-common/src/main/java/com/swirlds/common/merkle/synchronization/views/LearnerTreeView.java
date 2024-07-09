@@ -24,8 +24,10 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -160,4 +162,26 @@ public interface LearnerTreeView<T> extends LearnerExpectedLessonQueue<T>, Learn
      * 		the node to release
      */
     void releaseNode(T node);
+
+    /**
+     * Record metrics related to queries about children of a given parent during reconnect.
+     * <p>
+     * By the definition of this method, it is obvious that the parent is an internal node in the tree.
+     * However, the children may be the next level internal nodes or leaf nodes.
+     * The metrics differentiate between internal and leaf children. The method of determining
+     * whether a given child is an internal node or a leaf may depend on the LearnerTreeView implementation,
+     * and this method allows the implementation to define this logic as appropriate.
+     *
+     * @param mapStats a metrics recorder
+     * @param parent a parent
+     * @param childIndex a child index, same as a lesson query index
+     * @param nodeAlreadyPresent true if the learner tree has the query node already
+     */
+    default void recordHashStats(
+            @NonNull final ReconnectMapStats mapStats,
+            @NonNull final T parent,
+            final int childIndex,
+            final boolean nodeAlreadyPresent) {
+        // no-op
+    }
 }

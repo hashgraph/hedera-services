@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
+import static com.hedera.services.bdd.junit.TestTags.NOT_EMBEDDED;
 import static com.hedera.services.bdd.junit.TestTags.UPGRADE;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.exceptNodeId;
@@ -83,6 +84,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  * the config version is still zero.
  */
 @Tag(UPGRADE)
+@Tag(NOT_EMBEDDED)
 @Order(MAX_VALUE)
 @DisplayName("Upgrading with DAB enabled")
 @HapiTestLifecycle
