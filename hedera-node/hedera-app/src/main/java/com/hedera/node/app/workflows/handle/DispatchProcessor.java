@@ -257,10 +257,10 @@ public class DispatchProcessor {
             @NonNull final ResponseCodeEnum status,
             @NonNull final SavepointStackImpl stack,
             @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
+        recordBuilder.status(status);
         if (rollbackStack) {
             stack.rollbackFullStack();
         }
-        recordBuilder.status(status);
     }
 
     /**

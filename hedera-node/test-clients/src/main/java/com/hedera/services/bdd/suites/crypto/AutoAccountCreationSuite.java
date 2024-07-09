@@ -1637,6 +1637,7 @@ public class AutoAccountCreationSuite {
                 .then(getTxnRecord(NFT_XFER)
                         .hasNonStakingChildRecordCount(2)
                         .hasPriority(recordWith().autoAssociationCount(1))
+                        .logged()
                         .hasChildRecords(
                                 recordWith().status(SUCCESS).memo(LAZY_MEMO),
                                 recordWith().status(SUCCESS)));

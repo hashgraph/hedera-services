@@ -316,14 +316,16 @@ public class SingleTransactionRecordBuilderImpl
         transactionReceiptBuilder.contractID((ContractID) null);
         transactionReceiptBuilder.fileID((FileID) null);
         transactionReceiptBuilder.tokenID((TokenID) null);
-        transactionReceiptBuilder.scheduleID((ScheduleID) null);
-        transactionReceiptBuilder.scheduledTransactionID((TransactionID) null);
+        if (status != ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED) {
+            transactionReceiptBuilder.scheduleID((ScheduleID) null);
+            transactionReceiptBuilder.scheduledTransactionID((TransactionID) null);
+        }
+        // Note that internal contract creations are removed instead of reversed
+        transactionRecordBuilder.scheduleRef((ScheduleID) null);
         transactionReceiptBuilder.topicRunningHash(Bytes.EMPTY);
         transactionReceiptBuilder.newTotalSupply(0L);
         transactionReceiptBuilder.topicRunningHashVersion(0L);
         transactionReceiptBuilder.topicSequenceNumber(0L);
-        // Note that internal contract creations are removed instead of reversed
-        transactionRecordBuilder.scheduleRef((ScheduleID) null);
         transactionRecordBuilder.alias(Bytes.EMPTY);
         transactionRecordBuilder.ethereumHash(Bytes.EMPTY);
         transactionRecordBuilder.evmAddress(Bytes.EMPTY);

@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_CREATE;
+import static com.hedera.hapi.node.base.HederaFunctionality.SCHEDULE_SIGN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
@@ -27,11 +29,9 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartR
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
-import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.workflows.handle.stack.AbstractSavePoint.SIMULATE_MONO;
 import static com.hedera.node.app.workflows.handle.stack.AbstractSavePoint.totalPrecedingRecords;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
-import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -75,6 +75,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.HapiUtils;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -184,20 +185,12 @@ public class HandleWorkflow {
         for (final var event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
-                if (!isSoOrdered(event.getSoftwareVersion(), version)) {
-                    // We were given an event for a node that *does not exist in the address book* and was not from a
-                    // strictly earlier software upgrade. This will be logged as a warning, as this should never happen,
-                    // and we will skip the event. The platform should guarantee that we never receive an event that
-                    // isn't associated with the address book, and every node in the address book must have an account
-                    // ID, since you cannot delete an account belonging to a node, and you cannot change the address
-                    // book
-                    // non-deterministically.
-                    logger.warn(
-                            "Received event (version {} vs current {}) from node {} which is not in the address book",
-                            com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
-                            com.hedera.hapi.util.HapiUtils.toString(version),
-                            event.getCreatorId());
-                }
+                // We were given an event for a node that *does not exist in the address book*. This will be logged as
+                // a warning, as this should never happen, and we will skip the event. The platform should guarantee
+                // that we never receive an event that isn't associated with the address book, and every node in the
+                // address book must have an account ID, since you cannot delete an account belonging to a node, and
+                // you cannot change the address book non-deterministically.
+                logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
                 return;
             }
             // log start of event to transaction state log
@@ -378,7 +371,9 @@ public class HandleWorkflow {
      */
     private boolean isOlderSoftwareEvent(@NonNull final UserTxn userTxn) {
         return this.initTrigger != EVENT_STREAM_RECOVERY
-                && SEMANTIC_VERSION_COMPARATOR.compare(version, userTxn.event().getSoftwareVersion()) > 0;
+                && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(
+                                version, userTxn.event().getSoftwareVersion())
+                        > 0;
     }
 
     /**
@@ -415,12 +410,79 @@ public class HandleWorkflow {
             @NonNull final UserTxn userTxn, @NonNull final List<SingleTransactionRecordBuilder> builders) {
         final List<SingleTransactionRecord> records = new ArrayList<>();
         TransactionID.Builder idBuilder = null;
-        int indexOfUserRecord = getUserRecordIndex(builders);
-        if (indexOfUserRecord != -1) {
-            idBuilder = builders.get(indexOfUserRecord).transactionID().copyBuilder();
+        int indexOfUserRecord = 0;
+        if (SIMULATE_MONO) {
+            for (int i = 0; i < builders.size(); i++) {
+                if (builders.get(i).category() == USER) {
+                    indexOfUserRecord = i;
+                    idBuilder = builders.get(i).transactionID().copyBuilder();
+                } else if (builders.get(i).isPreceding() && i > indexOfUserRecord) {
+                    indexOfUserRecord++;
+                }
+            }
+        } else {
+            for (int i = 0; i < builders.size(); i++) {
+                if (builders.get(i).category() == USER) {
+                    indexOfUserRecord = i;
+                    idBuilder = builders.get(i).transactionID().copyBuilder();
+                    break;
+                }
+            }
         }
-
-        processBuilders(userTxn, builders, idBuilder, records, indexOfUserRecord);
+        int numPrecedingSeen = 0;
+        int numFollowingSeen = 0;
+        Instant parentConsensus = null;
+        for (int i = 0; i < builders.size(); i++) {
+            final var builder = builders.get(i);
+            if (SIMULATE_MONO) {
+                if (builder.isPreceding()) {
+                    final var nonce = totalPrecedingRecords - numPrecedingSeen;
+                    builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+                            .syncBodyIdFromRecordId()
+                            .consensusTimestamp(userTxn.consensusNow().minusNanos(nonce));
+                    records.add(numPrecedingSeen, ((SingleTransactionRecordBuilderImpl) builder).build());
+                    numPrecedingSeen++;
+                } else if (builder.category() == USER) {
+                    builder.consensusTimestamp(userTxn.consensusNow());
+                    records.add(((SingleTransactionRecordBuilderImpl) builder).build());
+                } else {
+                    final var nonce = totalPrecedingRecords + numFollowingSeen++ + 1;
+                    final var offset =
+                            (userTxn.functionality() == SCHEDULE_CREATE || userTxn.functionality() == SCHEDULE_SIGN)
+                                    ? 3
+                                    : 0;
+                    builder.consensusTimestamp(userTxn.consensusNow().plusNanos(numFollowingSeen + offset));
+                    if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
+                        builder.transactionID(
+                                        requireNonNull(idBuilder).nonce(nonce).build())
+                                .syncBodyIdFromRecordId();
+                    }
+                    if (builder.category() == CHILD) {
+                        builder.parentConsensus(userTxn.consensusNow());
+                    }
+                    records.add(((SingleTransactionRecordBuilderImpl) builder).build());
+                }
+            } else {
+                final int nonce =
+                        switch (builder.category()) {
+                            case USER, SCHEDULED -> 0;
+                            case PRECEDING, CHILD -> i < indexOfUserRecord ? indexOfUserRecord - i : i;
+                        };
+                if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
+                    builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+                            .syncBodyIdFromRecordId();
+                }
+                final var consensusNow = userTxn.consensusNow().plusNanos((long) i - indexOfUserRecord);
+                builder.consensusTimestamp(consensusNow);
+                if (builder.category() == CHILD) {
+                    builder.parentConsensus(requireNonNull(parentConsensus));
+                }
+                if (builder.isBaseRecordBuilder()) {
+                    parentConsensus = consensusNow;
+                }
+                records.add(((SingleTransactionRecordBuilderImpl) builder).build());
+            }
+        }
         recordCache.add(
                 userTxn.creatorInfo().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), records);
         return records.stream();
@@ -565,103 +627,5 @@ public class HandleWorkflow {
                 storeMetricsService,
                 blockRecordManager,
                 this);
-    }
-
-    /* Helpers */
-
-    private void processBuilders(
-            final @NonNull UserTxn userTxn,
-            final @NonNull List<SingleTransactionRecordBuilder> builders,
-            final TransactionID.Builder idBuilder,
-            final List<SingleTransactionRecord> records,
-            final int indexOfUserRecord) {
-        int numPrecedingSeen = 0;
-        int numFollowingSeen = 0;
-        Instant parentConsensus = null;
-        for (int i = 0; i < builders.size(); i++) {
-            final var builder = builders.get(i);
-            if (SIMULATE_MONO) {
-                processSimulatingMono(userTxn, builder, records, idBuilder, numPrecedingSeen, numFollowingSeen);
-                if (builder.isPreceding()) {
-                    numPrecedingSeen++;
-                } else {
-                    numFollowingSeen++;
-                }
-            } else {
-                final int nonce = getNonce(indexOfUserRecord, builder, i);
-                if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
-                    builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
-                            .syncBodyIdFromRecordId();
-                }
-                final var consensusNow = userTxn.consensusNow().plusNanos((long) i - indexOfUserRecord);
-                builder.consensusTimestamp(consensusNow);
-                if (builder.category() == CHILD) {
-                    builder.parentConsensus(requireNonNull(parentConsensus));
-                }
-                if (builder.isBaseRecordBuilder()) {
-                    parentConsensus = consensusNow;
-                }
-                records.add(((SingleTransactionRecordBuilderImpl) builder).build());
-            }
-        }
-    }
-
-    private void processSimulatingMono(
-            UserTxn userTxn,
-            SingleTransactionRecordBuilder builder,
-            List<SingleTransactionRecord> records,
-            TransactionID.Builder idBuilder,
-            int numPrecedingSeen,
-            int numFollowingSeen) {
-        if (builder.isPreceding()) {
-            final var nonce = totalPrecedingRecords - numPrecedingSeen;
-            builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
-                    .syncBodyIdFromRecordId()
-                    .consensusTimestamp(userTxn.consensusNow().minusNanos(nonce));
-            records.add(0, ((SingleTransactionRecordBuilderImpl) builder).build());
-        } else if (builder.category() == USER) {
-            builder.consensusTimestamp(userTxn.consensusNow());
-            records.add(((SingleTransactionRecordBuilderImpl) builder).build());
-        } else {
-            final var nonce = totalPrecedingRecords + numFollowingSeen + 1;
-            builder.consensusTimestamp(userTxn.consensusNow().plusNanos(numFollowingSeen + 1));
-            if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
-                builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
-                        .syncBodyIdFromRecordId();
-            }
-            if (builder.category() == CHILD) {
-                builder.parentConsensus(userTxn.consensusNow());
-            }
-            records.add(((SingleTransactionRecordBuilderImpl) builder).build());
-        }
-    }
-
-    private static int getNonce(
-            final int indexOfUserRecord, final SingleTransactionRecordBuilder builder, final int i) {
-        return switch (builder.category()) {
-            case USER, SCHEDULED -> 0;
-            case PRECEDING, CHILD -> i < indexOfUserRecord ? indexOfUserRecord - i : i;
-        };
-    }
-
-    private int getUserRecordIndex(final List<SingleTransactionRecordBuilder> builders) {
-        int indexOfUserRecord = -1;
-        if (SIMULATE_MONO) {
-            for (int i = 0; i < builders.size(); i++) {
-                if (builders.get(i).category() == USER) {
-                    indexOfUserRecord = i;
-                } else if (builders.get(i).isPreceding() && i > indexOfUserRecord) {
-                    indexOfUserRecord++;
-                }
-            }
-        } else {
-            for (int i = 0; i < builders.size(); i++) {
-                if (builders.get(i).category() == USER) {
-                    indexOfUserRecord = i;
-                    break;
-                }
-            }
-        }
-        return indexOfUserRecord;
     }
 }

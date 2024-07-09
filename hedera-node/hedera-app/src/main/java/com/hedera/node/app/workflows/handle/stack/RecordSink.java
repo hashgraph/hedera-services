@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.stack;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -39,6 +40,7 @@ public class RecordSink {
             return followingBuilders;
         } else {
             final List<SingleTransactionRecordBuilder> allBuilders = new ArrayList<>(precedingBuilders);
+            Collections.reverse(allBuilders);
             allBuilders.addAll(followingBuilders);
             return allBuilders;
         }

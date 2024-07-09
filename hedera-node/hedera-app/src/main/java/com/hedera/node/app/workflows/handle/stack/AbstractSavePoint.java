@@ -47,7 +47,7 @@ public abstract class AbstractSavePoint extends RecordSink {
     // For simulating mono
     public static int maxBuildersAfterUserBuilder;
     public static int totalPrecedingRecords = 0;
-    public static int legacyMaxPrecedingRecords = 3;
+    public static int legacyMaxPrecedingRecords;
     public static final boolean SIMULATE_MONO = true;
 
     public static final EnumSet<ResponseCodeEnum> SUCCESSES = EnumSet.of(
