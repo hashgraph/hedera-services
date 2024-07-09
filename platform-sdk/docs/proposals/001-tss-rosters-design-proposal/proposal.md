@@ -186,7 +186,6 @@ exists on
 disk){
 
 loadStateFromDisk();
-
 }else{
 roster =
 
@@ -199,8 +198,9 @@ isGenesis =true;
         }
 
         if(
-the Statehas
-Candidate Roster){
+the State
+has Candidate
+Roster){
         // Check if this is a software upgrade, and if the TSS protocol
         // has been launched already, then also check
         // if Candidate Roster has enough signatures.
@@ -243,14 +243,14 @@ throwFatalErrorAndShutdown();
 Active Roster
 is not
 TSS-enabled){
-  /*
-  // This block will be uncommented once the TSS protocol is implemented
-	if (isGenesis) {
-		rejectAnythingButTSSMessages = true;
-		// Note that a TSS upgrade of an existing network
-		// shouldn't disable non-TSS messages processing.	
-	}
-	*/
+    /*
+        // This block will be uncommented once the TSS protocol is implemented
+        if (isGenesis) {
+            rejectAnythingButTSSMessages = true;
+            // Note that a TSS upgrade of an existing network
+            // shouldn't disable non-TSS messages processing.	
+        }
+    */
 
         // In Genesis, we've just disabled processing anything but TSS. So a new
         // network will eventually become TSS-enabled and only then will start
