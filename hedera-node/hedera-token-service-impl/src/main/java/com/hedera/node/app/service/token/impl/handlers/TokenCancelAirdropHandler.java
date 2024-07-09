@@ -150,15 +150,31 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var nftStore = context.storeFactory().readableStore(ReadableNftStore.class);
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
-        final var pendingStore = context.storeFactory().writableStore(WritableAirdropStore.class);
+        final var airdropStore = context.storeFactory().writableStore(WritableAirdropStore.class);
         final var payer = context.payer();
+
+        // Validate the pending airdrop ids
+        for (var pendingAirdropId : pendingAirdropIds) {
+            validateTrue(payer.equals(pendingAirdropId.senderIdOrThrow()), INVALID_ACCOUNT_ID);
+            if (pendingAirdropId.hasFungibleTokenType()) {
+                getIfUsable(pendingAirdropId.fungibleTokenTypeOrThrow(), tokenStore);
+            } else {
+                final var nft = pendingAirdropId.nonFungibleTokenOrThrow();
+                validateTrue(nftStore.get(nft) != null, INVALID_NFT_ID);
+            }
+            getIfUsable(
+                    pendingAirdropId.senderIdOrThrow(), accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
+            getIfUsable(
+                    pendingAirdropId.receiverIdOrThrow(), accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
+            validateTrue(airdropStore.exists(pendingAirdropId), INVALID_TRANSACTION_BODY);
+        }
 
         // delete the account airdrops from the linked list
         final var payerAccount = getIfUsable(payer, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
         validateTrue(payerAccount.hasHeadPendingAirdropId(), INVALID_TRANSACTION_BODY);
 
         for (var pendingAirdropsToCancel : pendingAirdropIds) {
-            final var accountAirdropToCancel = pendingStore.getForModify(pendingAirdropsToCancel);
+            final var accountAirdropToCancel = airdropStore.getForModify(pendingAirdropsToCancel);
             validateTrue(accountAirdropToCancel != null, INVALID_TRANSACTION_BODY);
 
             // Update the account to point to the new head if the current one is being cancelled
@@ -173,48 +189,27 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
             final var prevAirdropId = accountAirdropToCancel.previousAirdrop();
             final var nextAirdropId = accountAirdropToCancel.nextAirdrop();
             if (prevAirdropId != null) {
-                final var prevAccountAirdrop = pendingStore.getForModify(prevAirdropId);
+                final var prevAccountAirdrop = airdropStore.getForModify(prevAirdropId);
                 validateTrue(prevAccountAirdrop != null, INVALID_TRANSACTION_BODY);
                 final var prevAirdropToUpdate = prevAccountAirdrop
                         .copyBuilder()
                         .nextAirdrop(nextAirdropId)
                         .build();
-                pendingStore.patch(prevAirdropId, prevAirdropToUpdate);
+                airdropStore.patch(prevAirdropId, prevAirdropToUpdate);
             }
             if (nextAirdropId != null) {
-                final var nextAccountAirdrop = pendingStore.getForModify(nextAirdropId);
+                final var nextAccountAirdrop = airdropStore.getForModify(nextAirdropId);
                 validateTrue(nextAccountAirdrop != null, INVALID_TRANSACTION_BODY);
                 final var nextAirdropToUpdate = nextAccountAirdrop
                         .copyBuilder()
                         .previousAirdrop(prevAirdropId)
                         .build();
-                pendingStore.patch(nextAirdropId, nextAirdropToUpdate);
+                airdropStore.patch(nextAirdropId, nextAirdropToUpdate);
             }
         }
 
         // delete the pending airdrops from the airdrop store
-        pendingAirdropIds.stream()
-                .peek(pendingAirdropId -> {
-                    validateTrue(payer.equals(pendingAirdropId.senderIdOrThrow()), INVALID_ACCOUNT_ID);
-                    if (pendingAirdropId.hasFungibleTokenType()) {
-                        getIfUsable(pendingAirdropId.fungibleTokenTypeOrThrow(), tokenStore);
-                    } else {
-                        final var nft = pendingAirdropId.nonFungibleTokenOrThrow();
-                        validateTrue(nftStore.get(nft) != null, INVALID_NFT_ID);
-                    }
-                    getIfUsable(
-                            pendingAirdropId.senderIdOrThrow(),
-                            accountStore,
-                            context.expiryValidator(),
-                            INVALID_ACCOUNT_ID);
-                    getIfUsable(
-                            pendingAirdropId.receiverIdOrThrow(),
-                            accountStore,
-                            context.expiryValidator(),
-                            INVALID_ACCOUNT_ID);
-                    validateTrue(pendingStore.exists(pendingAirdropId), INVALID_TRANSACTION_BODY);
-                })
-                .forEach(pendingStore::remove);
+        pendingAirdropIds.forEach(airdropStore::remove);
     }
 
     @NonNull

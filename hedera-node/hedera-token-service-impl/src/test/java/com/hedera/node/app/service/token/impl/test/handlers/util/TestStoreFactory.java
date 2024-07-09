@@ -25,10 +25,10 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.PendingAirdropId;
-import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -209,11 +209,11 @@ public final class TestStoreFactory {
                 mock(StoreMetricsService.class));
     }
 
-    private static MapWritableKVState<PendingAirdropId, PendingAirdropValue> newAirdropStateFromAirdrops(
+    private static MapWritableKVState<PendingAirdropId, AccountAirdrop> newAirdropStateFromAirdrops(
             PendingAirdropId... airdrops) {
-        final var backingMap = new HashMap<PendingAirdropId, PendingAirdropValue>();
+        final var backingMap = new HashMap<PendingAirdropId, AccountAirdrop>();
         for (final PendingAirdropId airdrop : airdrops) {
-            backingMap.put(airdrop, PendingAirdropValue.newBuilder().build());
+            backingMap.put(airdrop, AccountAirdrop.newBuilder().build());
         }
 
         return new MapWritableKVState<>(AIRDROPS, backingMap);
