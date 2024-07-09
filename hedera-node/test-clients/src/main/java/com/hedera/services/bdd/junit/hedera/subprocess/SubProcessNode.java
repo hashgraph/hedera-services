@@ -165,7 +165,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         if (processHandle == null) {
             return CompletableFuture.completedFuture(null);
         }
-        if (!processHandle.destroyForcibly()) {
+        if (!processHandle.destroy()) {
             log.warn("May have failed to stop node '{}' with PID '{}'", metadata.nodeId(), processHandle.pid());
         }
         return processHandle.onExit().thenAccept(handle -> {
