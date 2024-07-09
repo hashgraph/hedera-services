@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.junit;
 
 import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
-import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ;
 
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.extensions.SpecNamingExtension;
@@ -32,12 +31,12 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
  * A variant of {@link HapiTest} that signals the {@link NetworkTargetingExtension} to create a separate
- * embedded network for the test to ensure the test sees the genesis transaction.
+ * embedded network for the test to ensure the test sees the genesis transaction. (No {@link ResourceLock}
+ * here because this embedded network is not shared with any other test.)
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @TestFactory
 @Tag(EMBEDDED)
 @ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
-@ResourceLock(value = "NETWORK", mode = READ)
 public @interface GenesisHapiTest {}
