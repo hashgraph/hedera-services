@@ -19,12 +19,13 @@ package com.hedera.node.app.service.addressbook.impl.schemas;
 import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
@@ -32,6 +33,7 @@ import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,14 +41,16 @@ import org.apache.logging.log4j.Logger;
  * General schema for the addressbook service
  * {@code V052AddressBookSchema} is used for migrating the address book on Version 0.52.0
  */
-public class V052AddressBookSchema extends Schema {
-    private static final Logger log = LogManager.getLogger(V052AddressBookSchema.class);
+public class V053AddressBookSchema extends Schema {
+    private static final Logger log = LogManager.getLogger(V053AddressBookSchema.class);
+    private static final Pattern IPV4_ADDRESS_PATTERN =
+            Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
 
     private static final long MAX_NODES = 100L;
     private static final SemanticVersion VERSION =
-            SemanticVersion.newBuilder().major(0).minor(52).patch(0).build();
+            SemanticVersion.newBuilder().major(0).minor(53).patch(0).build();
 
-    public V052AddressBookSchema() {
+    public V053AddressBookSchema() {
         super(VERSION);
     }
 
@@ -63,32 +67,51 @@ public class V052AddressBookSchema extends Schema {
                 ctx.newStates().get(NODES_KEY);
         final var networkInfo = ctx.networkInfo();
         final var addressBook = networkInfo.addressBook();
+        final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
+        final var adminKey =
+                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
         log.info("Started migrating nodes from address book");
 
         addressBook.forEach(nodeInfo -> {
             final var node = Node.newBuilder()
                     .nodeId(nodeInfo.nodeId())
                     .accountId(nodeInfo.accountId())
-                    .description(nodeInfo.memo())
+                    .description(nodeInfo.selfName())
                     .gossipEndpoint(List.of(
-                            ServiceEndpoint.newBuilder()
-                                    .ipAddressV4(Bytes.wrap(nodeInfo.internalHostName()))
-                                    .port(nodeInfo.internalPort())
-                                    .build(),
-                            ServiceEndpoint.newBuilder()
-                                    .ipAddressV4(Bytes.wrap(nodeInfo.externalHostName()))
-                                    .port(nodeInfo.externalPort())
-                                    .build()))
+                            endpointFor(nodeInfo.internalHostName(), nodeInfo.internalPort()),
+                            endpointFor(nodeInfo.externalHostName(), nodeInfo.externalPort())))
                     .gossipCaCertificate(nodeInfo.sigCertBytes())
                     .weight(nodeInfo.stake())
+                    .adminKey(adminKey)
                     .build();
             writableNodes.put(
                     EntityNumber.newBuilder().number(nodeInfo.nodeId()).build(), node);
         });
 
-        if (writableNodes.isModified()) {
-            ((WritableKVStateBase) writableNodes).commit();
-        }
         log.info("Migrated {} nodes from address book", addressBook.size());
+    }
+
+    /**
+     * Given a host and port, creates a {@link ServiceEndpoint} object with either an IP address or domain name
+     * depending on the given host.
+     *
+     * @param host the host
+     * @param port the port
+     * @return the {@link ServiceEndpoint} object
+     */
+    public static ServiceEndpoint endpointFor(@NonNull final String host, final int port) {
+        final var builder = ServiceEndpoint.newBuilder().port(port);
+        if (IPV4_ADDRESS_PATTERN.matcher(host).matches()) {
+            final var octets = host.split("[.]");
+            builder.ipAddressV4(Bytes.wrap(new byte[] {
+                (byte) Integer.parseInt(octets[0]),
+                (byte) Integer.parseInt(octets[1]),
+                (byte) Integer.parseInt(octets[2]),
+                (byte) Integer.parseInt(octets[3])
+            }));
+        } else {
+            builder.domainName(host);
+        }
+        return builder.build();
     }
 }

@@ -35,6 +35,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.contract.Utils;
+import com.hedera.services.bdd.utils.Signing;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -299,7 +300,7 @@ public class HapiEthereumContractCreate extends HapiBaseContractCreate<HapiEther
                 null);
 
         final byte[] privateKeyByteArray = getEcdsaPrivateKeyFromSpec(spec, privateKeyRef);
-        var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
+        var signedEthTxData = Signing.signMessage(ethTxData, privateKeyByteArray);
         spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
         final var extractedSignatures = EthTxSigs.extractSignatures(signedEthTxData);

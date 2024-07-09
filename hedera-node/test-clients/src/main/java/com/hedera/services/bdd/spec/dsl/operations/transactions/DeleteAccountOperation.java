@@ -18,8 +18,8 @@ package com.hedera.services.bdd.spec.dsl.operations.transactions;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.operations.AbstractSpecOperation;
 import edu.umd.cs.findbugs.annotations.NonNull;
