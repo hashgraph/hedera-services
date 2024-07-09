@@ -50,7 +50,6 @@ import com.hedera.node.app.service.token.impl.ReadableAccountStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
@@ -66,14 +65,19 @@ import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class NetworkAdminHandlerTestBase {
     public static final String ACCOUNTS = "ACCOUNTS";
     protected static final String TOKENS = "TOKENS";
@@ -184,7 +188,9 @@ public class NetworkAdminHandlerTestBase {
     private NetworkInfo networkInfo;
 
     @Mock
-    FeeCalculator feeCalculator;
+    protected FeeCalculator feeCalculator;
+
+    private final InstantSource instantSource = InstantSource.system();
 
     @BeforeEach
     void commonSetUp() {
@@ -321,7 +327,7 @@ public class NetworkAdminHandlerTestBase {
 
     @NonNull
     protected RecordCacheImpl emptyRecordCacheBuilder() {
-        dedupeCache = new DeduplicationCacheImpl(props);
+        dedupeCache = new DeduplicationCacheImpl(props, instantSource);
         return new RecordCacheImpl(dedupeCache, wsa, props);
     }
 

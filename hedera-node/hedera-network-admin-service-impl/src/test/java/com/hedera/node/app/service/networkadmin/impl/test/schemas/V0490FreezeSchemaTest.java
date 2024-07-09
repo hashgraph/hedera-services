@@ -19,36 +19,17 @@ package com.hedera.node.app.service.networkadmin.impl.test.schemas;
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.UPGRADE_FILE_HASH_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.BDDMockito.given;
 
 import com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema;
-import com.hedera.node.app.spi.state.MigrationContext;
-import com.hedera.node.app.spi.state.StateDefinition;
-import com.swirlds.state.spi.WritableSingletonState;
-import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.spi.StateDefinition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class V0490FreezeSchemaTest {
-
-    @Mock
-    private MigrationContext migrationContext;
-
-    @Mock
-    private WritableStates writableStates;
-
-    @Mock
-    private WritableSingletonState upgradeFileHashKeyState;
-
-    @Mock
-    private WritableSingletonState freezeTimeKeyState;
-
     private V0490FreezeSchema subject;
 
     @BeforeEach
@@ -64,16 +45,5 @@ public class V0490FreezeSchemaTest {
                 statesToCreate.stream().map(StateDefinition::stateKey).sorted().iterator();
         assertEquals(FREEZE_TIME_KEY, iter.next());
         assertEquals(UPGRADE_FILE_HASH_KEY, iter.next());
-    }
-
-    @Test
-    void setFSasExpectedAndHappyPathMigration() {
-        V0490FreezeSchema.setFs(true);
-        given(migrationContext.previousVersion()).willReturn(null);
-        given(migrationContext.newStates()).willReturn(writableStates);
-        given(writableStates.getSingleton(UPGRADE_FILE_HASH_KEY)).willReturn(upgradeFileHashKeyState);
-        given(writableStates.getSingleton(FREEZE_TIME_KEY)).willReturn(freezeTimeKeyState);
-
-        assertThatCode(() -> subject.migrate(migrationContext)).doesNotThrowAnyException();
     }
 }

@@ -82,6 +82,7 @@ public class UtilPrngHandler implements TransactionHandler {
         // been determined and loaded into the calculator.
         final var range = feeContext.body().utilPrngOrThrow().range();
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
                 .addBytesPerTransaction(range > 0 ? Integer.BYTES : 0)
                 .calculate();
@@ -112,7 +113,7 @@ public class UtilPrngHandler implements TransactionHandler {
 
         // If `range` is provided then generate a random number in the given range from the pseudoRandomBytes,
         // otherwise just use the full pseudoRandomBytes as the random number.
-        final var recordBuilder = context.recordBuilder(PrngRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(PrngRecordBuilder.class);
         if (range > 0) {
             final var pseudoRandomNumber = randomNumFromBytes(pseudoRandomBytes, range);
             recordBuilder.entropyNumber(pseudoRandomNumber);

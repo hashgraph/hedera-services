@@ -34,6 +34,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -115,7 +116,7 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
         final SplittableRandom r = new SplittableRandom();
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(
                         uploadInitCode(MINT_NFT_CONTRACT),
                         contractCreate(MINT_NFT_CONTRACT).gas(GAS_TO_OFFER),

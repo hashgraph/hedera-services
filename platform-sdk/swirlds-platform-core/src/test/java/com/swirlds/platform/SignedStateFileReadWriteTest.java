@@ -43,8 +43,8 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
+import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.RandomSignedStateGenerator;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
@@ -81,7 +81,7 @@ class SignedStateFileReadWriteTest {
     @DisplayName("writeHashInfoFile() Test")
     void writeHashInfoFileTest() throws IOException {
 
-        final State state = new RandomSignedStateGenerator().build().getState();
+        final MerkleRoot state = new RandomSignedStateGenerator().build().getState();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
         writeHashInfoFile(platformContext, testDirectory, state);
@@ -115,7 +115,7 @@ class SignedStateFileReadWriteTest {
         assertTrue(exists(stateFile), "signed state file should be present");
 
         final DeserializedSignedState deserializedSignedState =
-                readStateFile(TestPlatformContextBuilder.create().build(), stateFile);
+                readStateFile(TestPlatformContextBuilder.create().build(), stateFile, SignedStateFileUtils::readState);
         MerkleCryptoFactory.getInstance()
                 .digestTreeSync(
                         deserializedSignedState.reservedSignedState().get().getState());

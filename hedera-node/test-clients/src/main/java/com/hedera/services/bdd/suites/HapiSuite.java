@@ -104,7 +104,7 @@ public abstract class HapiSuite {
             .build();
     private static final int BYTES_PER_KB = 1024;
     public static final int MAX_CALL_DATA_SIZE = 6 * BYTES_PER_KB;
-    public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+    public static final BigInteger WEIBARS_IN_A_TINYBAR = BigInteger.valueOf(10_000_000_000L);
     // Useful for testing overflow scenarios when an ERC-20/721 ABI specifies
     // a uint256, but a valid value on Hedera will be an 8-byte long only
     public static final BigInteger MAX_UINT256_VALUE =
@@ -116,6 +116,7 @@ public abstract class HapiSuite {
     public static final long ONE_HUNDRED_HBARS = 100 * ONE_HBAR;
     public static final long THOUSAND_HBAR = 1_000 * ONE_HBAR;
     public static final long ONE_MILLION_HBARS = 1_000_000L * ONE_HBAR;
+    public static final long ONE_BILLION_HBARS = 1_000 * ONE_MILLION_HBARS;
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
     public static final String CHAIN_ID_PROP = "contracts.chainId";

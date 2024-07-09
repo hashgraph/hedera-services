@@ -18,6 +18,7 @@ package com.hedera.node.app.fees;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.FREEZE;
 import static com.hedera.hapi.node.base.HederaFunctionality.GET_ACCOUNT_DETAILS;
+import static com.hedera.hapi.node.base.HederaFunctionality.NETWORK_GET_EXECUTION_TIME;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_ACCOUNT_NFT_INFOS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_GET_NFT_INFOS;
 import static com.hedera.hapi.node.base.HederaFunctionality.TRANSACTION_GET_FAST_RECORD;
@@ -36,7 +37,7 @@ import com.hedera.hapi.node.base.TransactionFeeSchedule;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -73,7 +74,12 @@ public final class FeeManager {
      * consensus); and unsupported queries that are never answered.
      */
     private static final Set<HederaFunctionality> INAPPLICABLE_OPERATIONS = EnumSet.of(
-            FREEZE, GET_ACCOUNT_DETAILS, TRANSACTION_GET_FAST_RECORD, TOKEN_GET_NFT_INFOS, TOKEN_GET_ACCOUNT_NFT_INFOS);
+            FREEZE,
+            GET_ACCOUNT_DETAILS,
+            NETWORK_GET_EXECUTION_TIME,
+            TRANSACTION_GET_FAST_RECORD,
+            TOKEN_GET_NFT_INFOS,
+            TOKEN_GET_ACCOUNT_NFT_INFOS);
 
     private static final FeeComponents DEFAULT_FEE_COMPONENTS =
             FeeComponents.newBuilder().min(DEFAULT_FEE).max(DEFAULT_FEE).build();
@@ -103,7 +109,9 @@ public final class FeeManager {
     }
 
     /**
-     * Updates the fee schedule based on the given file content. THIS MUST BE CALLED ON THE HANDLE THREAD!!
+     * Updates the fee schedule based on the given file content.
+     *
+     * <p>IMPORTANT:</p> This can only be called when initializing a state or handling a transaction.
      *
      * @param bytes The new fee schedule file content.
      */

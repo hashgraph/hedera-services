@@ -22,9 +22,7 @@ import static com.hedera.node.app.spi.authorization.SystemPrivilege.UNAUTHORIZED
 import static com.hedera.node.app.spi.authorization.SystemPrivilege.UNNECESSARY;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.primitives.Longs;
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.file.SystemDeleteTransactionBody;
 import com.hedera.hapi.node.file.SystemUndeleteTransactionBody;
@@ -36,7 +34,6 @@ import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
 import javax.inject.Inject;
 
 /**
@@ -86,22 +83,6 @@ public class PrivilegesVerifier {
                     payerId, txBody.fileUpdateOrThrow().fileIDOrThrow().fileNum());
             case FILE_APPEND -> checkFileChange(
                     payerId, txBody.fileAppendOrThrow().fileIDOrThrow().fileNum());
-            case CONTRACT_UPDATE -> {
-                var contractId = txBody.contractUpdateInstanceOrThrow().contractIDOrThrow();
-
-                if (contractId.hasEvmAddress()) {
-                    var contractIdFromEvmAddress =
-                            contractIdFromEvmAddress(contractId.evmAddress().toByteArray());
-                    yield checkFileChange(payerId, contractIdFromEvmAddress.contractNumOrThrow());
-                } else {
-                    yield checkFileChange(
-                            payerId,
-                            txBody.contractUpdateInstanceOrThrow()
-                                    .contractIDOrThrow()
-                                    .contractNumOrThrow());
-                }
-            }
-
                 // Authorization for crypto updates
             case CRYPTO_UPDATE -> checkCryptoUpdate(payerId, txBody.cryptoUpdateAccountOrThrow());
 
@@ -110,20 +91,7 @@ public class PrivilegesVerifier {
                     txBody.fileDeleteOrThrow().fileIDOrThrow().fileNum());
             case CRYPTO_DELETE -> checkEntityDelete(
                     txBody.cryptoDeleteOrThrow().deleteAccountIDOrThrow().accountNumOrThrow());
-            case CONTRACT_DELETE -> {
-                var contractId = txBody.contractDeleteInstanceOrThrow().contractIDOrThrow();
-
-                if (contractId.hasEvmAddress()) {
-                    var contractIdFromEvmAddress =
-                            contractIdFromEvmAddress(contractId.evmAddress().toByteArray());
-                    yield checkEntityDelete(contractIdFromEvmAddress.contractNumOrThrow());
-                } else {
-                    yield checkEntityDelete(txBody.contractDeleteInstanceOrThrow()
-                            .contractIDOrThrow()
-                            .contractNumOrThrow());
-                }
-            }
-
+            case NODE_CREATE, NODE_DELETE -> checkNodeChange(payerId);
             default -> SystemPrivilege.UNNECESSARY;
         };
     }
@@ -139,10 +107,6 @@ public class PrivilegesVerifier {
 
     private boolean isTreasury(@NonNull final AccountID accountID) {
         return accountID.accountNumOrThrow() == accountsConfig.treasury();
-    }
-
-    private boolean isSystemAdmin(@NonNull final AccountID accountID) {
-        return accountID.accountNumOrThrow() == accountsConfig.systemAdmin();
     }
 
     private boolean hasSoftwareUpdatePrivilege(@NonNull final AccountID accountID) {
@@ -171,6 +135,10 @@ public class PrivilegesVerifier {
 
     private boolean hasFeeSchedulePrivilige(@NonNull final AccountID accountID) {
         return accountID.accountNumOrThrow() == accountsConfig.feeSchedulesAdmin() || isSuperUser(accountID);
+    }
+
+    private boolean hasNodeChangePrivilige(@NonNull final AccountID accountID) {
+        return accountID.accountNumOrThrow() == accountsConfig.addressBookAdmin() || isSuperUser(accountID);
     }
 
     private SystemPrivilege checkFreeze(@NonNull final AccountID accountID) {
@@ -234,7 +202,7 @@ public class PrivilegesVerifier {
         final var targetId = op.accountIDToUpdateOrElse(AccountID.DEFAULT);
         final long targetNum = targetId.accountNumOrElse(0L);
         final var treasury = accountsConfig.treasury();
-        final var payerNum = payerId.accountNumOrThrow();
+        final var payerNum = payerId.accountNumOrElse(0L);
 
         if (!isSystemEntity(targetNum)) {
             return UNNECESSARY;
@@ -249,14 +217,11 @@ public class PrivilegesVerifier {
         }
     }
 
-    private SystemPrivilege checkEntityDelete(final long entityNum) {
-        return isSystemEntity(entityNum) ? IMPERMISSIBLE : UNNECESSARY;
+    private SystemPrivilege checkNodeChange(@NonNull final AccountID payerId) {
+        return hasNodeChangePrivilige(payerId) ? AUTHORIZED : UNAUTHORIZED;
     }
 
-    // move to somewhere else
-    private ContractID contractIdFromEvmAddress(final byte[] bytes) {
-        return ContractID.newBuilder()
-                .contractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
-                .build();
+    private SystemPrivilege checkEntityDelete(final long entityNum) {
+        return isSystemEntity(entityNum) ? IMPERMISSIBLE : UNNECESSARY;
     }
 }

@@ -30,7 +30,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -79,7 +79,7 @@ class ConsensusEventLinkerTests {
 
         for (int i = 0; i < 10_000; i++) {
 
-            final GossipEvent event = generator.generateEvent().getBaseEvent();
+            final PlatformEvent event = generator.generateEvent().getBaseEvent();
 
             // Verify correct behavior when added to the linker.
 
@@ -94,17 +94,17 @@ class ConsensusEventLinkerTests {
                 linkedEvents.add(linkedEvent);
                 assertSame(event, linkedEvent.getBaseEvent());
 
-                final EventDescriptor selfParent = event.getHashedData().getSelfParent();
+                final EventDescriptor selfParent = event.getSelfParent();
                 if (selfParent == null || eventWindow.isAncient(selfParent)) {
                     assertNull(linkedEvent.getSelfParent());
                 } else {
                     assertNotNull(linkedEvent.getSelfParent());
                     assertEquals(
-                            event.getHashedData().getSelfParent(),
+                            event.getSelfParent(),
                             linkedEvent.getSelfParent().getBaseEvent().getDescriptor());
                 }
 
-                final List<EventDescriptor> otherParents = event.getHashedData().getOtherParents();
+                final List<EventDescriptor> otherParents = event.getOtherParents();
                 if (otherParents.isEmpty()) {
                     assertNull(linkedEvent.getOtherParent());
                 } else {

@@ -18,8 +18,8 @@ package com.hedera.services.bdd.spec.transactions.crypto;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.evmAddressFromSecp256k1Key;
@@ -48,7 +48,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ShardID;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Arrays;
@@ -88,7 +87,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
     private Optional<Function<HapiSpec, Long>> balanceFn = Optional.empty();
     private Optional<Integer> maxAutomaticTokenAssociations = Optional.empty();
     private Optional<Consumer<AccountID>> newAccountIdObserver = Optional.empty();
-    private final Optional<Consumer<TokenID>> newTokenIdObserver = Optional.empty();
     private Optional<String> stakedAccountId = Optional.empty();
     private Optional<Long> stakedNodeId = Optional.empty();
     private boolean isDeclinedReward = false;
@@ -269,7 +267,7 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
-        key = key != null ? key : netOf(spec, keyName, keyShape, keyType, Optional.of(this::effectiveKeyGen));
+        key = key != null ? key : netOf(spec, keyName, keyShape, keyType);
         final long amount = balanceFn.map(fn -> fn.apply(spec)).orElse(initialBalance.orElse(-1L));
         initialBalance = (amount >= 0) ? Optional.of(amount) : Optional.empty();
         final CryptoCreateTransactionBody opBody = spec.txns()
@@ -329,7 +327,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
             return;
         }
         final var createdAccountId = lastReceipt.getAccountID();
-        final var createdTokenId = lastReceipt.getTokenID();
         if (recharging) {
             spec.registry()
                     .setRecharging(account, initialBalance.orElse(spec.setup().defaultBalance()));
@@ -340,7 +337,6 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         spec.registry().saveKey(account, key);
         spec.registry().saveAccountId(account, createdAccountId);
         newAccountIdObserver.ifPresent(obs -> obs.accept(createdAccountId));
-        newTokenIdObserver.ifPresent(obs -> obs.accept(createdTokenId));
         receiverSigRequired.ifPresent(r -> spec.registry().saveSigRequirement(account, r));
         Optional.ofNullable(addressObserver)
                 .ifPresent(obs -> evmAddress.ifPresentOrElse(
@@ -376,6 +372,10 @@ public class HapiCryptoCreate extends HapiTxnOp<HapiCryptoCreate> {
         return Optional.ofNullable(lastReceipt)
                 .map(receipt -> receipt.getAccountID().getAccountNum())
                 .orElse(-1L);
+    }
+
+    public Key getKey() {
+        return key;
     }
 
     public HapiCryptoCreate withMatchingEvmAddress() {

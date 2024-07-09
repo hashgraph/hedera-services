@@ -18,7 +18,7 @@ package com.hedera.services.bdd.junit.hedera;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.services.bdd.suites.TargetNetworkType;
+import com.hedera.services.bdd.spec.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -68,8 +68,7 @@ public interface HederaNetwork {
             @NonNull AccountID nodeAccountId);
 
     /**
-     * Returns the network type; for now this is always
-     * {@link TargetNetworkType#SHARED_HAPI_TEST_NETWORK}.
+     * Returns the network type.
      *
      * @return the network type
      */

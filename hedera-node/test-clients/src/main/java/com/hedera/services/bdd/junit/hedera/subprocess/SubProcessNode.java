@@ -16,6 +16,13 @@
 
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.PENDING;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.REACHED;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.UNREACHABLE;
+import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen.NO;
+import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen.YES;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.DOWN;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.NA;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.UP;
@@ -28,14 +35,16 @@ import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.Hedera;
-import com.hedera.services.bdd.junit.hedera.AbstractNode;
+import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen;
 import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,7 +56,7 @@ import java.util.regex.Pattern;
 /**
  * A node running in its own OS process as a subprocess of the JUnit test runner.
  */
-public class SubProcessNode extends AbstractNode implements HederaNode {
+public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements HederaNode {
     /**
      * How many milliseconds to wait between retries when scanning the application log for
      * the node status.
@@ -63,6 +72,10 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
      * within a minute or so, it's not going to be; and we should fall back to log scanning.)
      */
     private static final int MAX_PROMETHEUS_RETRIES = 666;
+    /**
+     * How many retries to make between checking if a bind exception has been thrown in the logs.
+     */
+    private static final int BINDING_CHECK_INTERVAL = 10;
 
     private final Pattern statusPattern;
     private final GrpcPinger grpcPinger;
@@ -72,10 +85,6 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
      */
     @Nullable
     private ProcessHandle processHandle;
-    /**
-     * Whether the working directory has been initialized.
-     */
-    private boolean workingDirInitialized;
 
     public SubProcessNode(
             @NonNull final NodeMetadata metadata,
@@ -83,7 +92,7 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
             @NonNull final PrometheusClient prometheusClient) {
         super(metadata);
         this.grpcPinger = requireNonNull(grpcPinger);
-        this.statusPattern = Pattern.compile(".*Hederanode#" + getNodeId() + " is (\\w+)");
+        this.statusPattern = Pattern.compile(".*HederaNode#" + getNodeId() + " is (\\w+)");
         this.prometheusClient = requireNonNull(prometheusClient);
         // Just something to keep checkModuleInfo from claiming we don't require com.hedera.node.app
         requireNonNull(Hedera.class);
@@ -91,18 +100,14 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
 
     @Override
     public SubProcessNode initWorkingDir(@NonNull final String configTxt) {
-        recreateWorkingDir(metadata.workingDir(), configTxt);
+        recreateWorkingDir(requireNonNull(metadata.workingDir()), configTxt);
         workingDirInitialized = true;
         return this;
     }
 
     @Override
     public SubProcessNode start() {
-        assertStopped();
-        assertWorkingDirInitialized();
-        destroyAnySubProcessNodeWithId(metadata.nodeId());
-        processHandle = startSubProcessNodeFrom(metadata);
-        return this;
+        return startWithConfigVersion(0);
     }
 
     @Override
@@ -122,7 +127,8 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
         final var retryCount = new AtomicInteger();
         return conditionFuture(
                 () -> {
-                    final var lookupAttempt = retryCount.get() <= MAX_PROMETHEUS_RETRIES
+                    final var nominalSoFar = retryCount.get() <= MAX_PROMETHEUS_RETRIES;
+                    final var lookupAttempt = nominalSoFar
                             ? prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort())
                             : statusFromLog();
                     var grpcStatus = NA;
@@ -131,11 +137,30 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
                         grpcStatus = grpcPinger.isLive(metadata.grpcPort()) ? UP : DOWN;
                         statusReached = grpcStatus == UP;
                     }
-                    if (nodeStatusObserver != null) {
-                        nodeStatusObserver.accept(
-                                new NodeStatus(lookupAttempt, grpcStatus, retryCount.getAndIncrement()));
+                    var bindExceptionSeen = BindExceptionSeen.NA;
+                    // This extra logic just barely justifies its existence by giving up
+                    // immediately when a bind exception is seen in the logs, since in
+                    // practice these are never transient; it also lets us try reassigning
+                    // ports when first starting the network to maybe salvage the run
+                    if (!statusReached
+                            && status == ACTIVE
+                            && !nominalSoFar
+                            && retryCount.get() % BINDING_CHECK_INTERVAL == 0) {
+                        if (swirldsLogContains("java.net.BindException")) {
+                            bindExceptionSeen = YES;
+                        } else {
+                            bindExceptionSeen = NO;
+                        }
                     }
-                    return statusReached;
+                    if (nodeStatusObserver != null) {
+                        nodeStatusObserver.accept(new NodeStatus(
+                                lookupAttempt, grpcStatus, bindExceptionSeen, retryCount.getAndIncrement()));
+                    }
+                    if (statusReached) {
+                        return REACHED;
+                    } else {
+                        return bindExceptionSeen == YES ? UNREACHABLE : PENDING;
+                    }
                 },
                 () -> retryCount.get() > MAX_PROMETHEUS_RETRIES ? LOG_SCAN_BACKOFF_MS : PROMETHEUS_BACKOFF_MS);
     }
@@ -148,6 +173,40 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
     @Override
     public String toString() {
         return "SubProcessNode{" + "metadata=" + metadata + ", workingDirInitialized=" + workingDirInitialized + '}';
+    }
+
+    @Override
+    protected SubProcessNode self() {
+        return this;
+    }
+
+    public SubProcessNode startWithConfigVersion(final int configVersion) {
+        assertStopped();
+        assertWorkingDirInitialized();
+        destroyAnySubProcessNodeWithId(metadata.nodeId());
+        processHandle = startSubProcessNodeFrom(metadata, configVersion);
+        return this;
+    }
+
+    /**
+     * Reassigns the ports used by this node.
+     *
+     * @param grpcPort the new gRPC port
+     * @param gossipPort the new gossip port
+     * @param tlsGossipPort the new TLS gossip port
+     * @param prometheusPort the new Prometheus port
+     */
+    public void reassignPorts(
+            final int grpcPort, final int gossipPort, final int tlsGossipPort, final int prometheusPort) {
+        metadata = metadata.withNewPorts(grpcPort, gossipPort, tlsGossipPort, prometheusPort);
+    }
+
+    private boolean swirldsLogContains(@NonNull final String text) {
+        try (var lines = Files.lines(getExternalPath(SWIRLDS_LOG))) {
+            return lines.anyMatch(line -> line.contains(text));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private boolean stopWith(@NonNull final BooleanFunction<ProcessHandle> stop) {
@@ -165,15 +224,9 @@ public class SubProcessNode extends AbstractNode implements HederaNode {
         }
     }
 
-    private void assertWorkingDirInitialized() {
-        if (!workingDirInitialized) {
-            throw new IllegalStateException("Working directory not initialized");
-        }
-    }
-
     private StatusLookupAttempt statusFromLog() {
         final AtomicReference<String> status = new AtomicReference<>();
-        try (final var lines = Files.lines(getApplicationLogPath())) {
+        try (final var lines = Files.lines(getExternalPath(APPLICATION_LOG))) {
             lines.map(statusPattern::matcher).filter(Matcher::matches).forEach(matcher -> status.set(matcher.group(1)));
             return newLogAttempt(status.get(), status.get() == null ? "No status line in log" : null);
         } catch (IOException e) {

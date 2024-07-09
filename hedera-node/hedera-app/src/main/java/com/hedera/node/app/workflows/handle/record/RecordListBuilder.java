@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
+import static com.hedera.node.app.spi.workflows.HandleContext.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.LIMITED_CHILD_RECORDS;
-import static com.hedera.node.app.workflows.handle.HandleContextImpl.PrecedingTransactionCategory.UNLIMITED_CHILD_RECORDS;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.HandleContextImpl;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl.ReversingBehavior;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
@@ -40,6 +39,9 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import javax.inject.Inject;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * This class manages all record builders that are used while a single user transaction is running.
@@ -67,6 +69,8 @@ import java.util.Objects;
  * <p>As with all classes intended to be used within the handle-workflow, this class is <em>not</em> thread-safe.
  */
 public final class RecordListBuilder {
+    private static final Logger logger = LogManager.getLogger(RecordListBuilder.class);
+
     private static final String CONFIGURATION_MUST_NOT_BE_NULL = "configuration must not be null";
     private static final EnumSet<ResponseCodeEnum> SUCCESSES = EnumSet.of(
             ResponseCodeEnum.OK,
@@ -100,6 +104,7 @@ public final class RecordListBuilder {
      * @param consensusTimestamp The consensus timestamp of the user transaction
      * @throws NullPointerException if {@code recordBuilder} is {@code null}
      */
+    @Inject
     public RecordListBuilder(@NonNull final Instant consensusTimestamp) {
         this.userTxnRecordBuilder = new SingleTransactionRecordBuilderImpl(
                 requireNonNull(consensusTimestamp, "recordBuilder must not be null"));
@@ -147,7 +152,7 @@ public final class RecordListBuilder {
      */
     public SingleTransactionRecordBuilderImpl addPreceding(
             @NonNull final Configuration configuration,
-            final HandleContextImpl.PrecedingTransactionCategory precedingTxnCategory) {
+            final HandleContext.PrecedingTransactionCategory precedingTxnCategory) {
         requireNonNull(configuration, CONFIGURATION_MUST_NOT_BE_NULL);
         return doAddPreceding(configuration, ReversingBehavior.IRREVERSIBLE, precedingTxnCategory);
     }
@@ -165,7 +170,7 @@ public final class RecordListBuilder {
     public SingleTransactionRecordBuilderImpl doAddPreceding(
             @NonNull final Configuration configuration,
             @NonNull final ReversingBehavior reversingBehavior,
-            @NonNull final HandleContextImpl.PrecedingTransactionCategory precedingTxnCategory) {
+            @NonNull final HandleContext.PrecedingTransactionCategory precedingTxnCategory) {
         // Lazily create. FUTURE: We should reuse the RecordListBuilder between handle calls, and we should
         // reuse these lists. Then we can omit this lazy create entirely and produce less garbage overall.
         if (precedingTxnRecordBuilders == null) {
@@ -190,7 +195,8 @@ public final class RecordListBuilder {
         // user transaction. The second item is T-2, and so on.
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
         final var consensusNow = parentConsensusTimestamp.minusNanos(precedingCount + 1L);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, TransactionCategory.PRECEDING);
         precedingTxnRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
@@ -288,7 +294,8 @@ public final class RecordListBuilder {
                 childCategory == TransactionCategory.SCHEDULED ? consensusConfig.handleMaxPrecedingRecords() + 1 : 1L;
         final Instant consensusNow = prevConsensusNow.plusNanos(nextRecordOffset);
         // Note we do not repeat exchange rates for child transactions
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer, childCategory);
         // Only set parent consensus timestamp for child records if one is not provided
         if (!childCategory.equals(HandleContext.TransactionCategory.SCHEDULED)) {
             recordBuilder.parentConsensus(parentConsensusTimestamp);
@@ -356,6 +363,9 @@ public final class RecordListBuilder {
             // or close to it.
             index = childRecordBuilders.lastIndexOf(recordBuilder) + 1;
             if (index == 0) {
+                if (precedingTxnRecordBuilders.contains(recordBuilder)) {
+                    return;
+                }
                 throw new IllegalArgumentException("recordBuilder not found");
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import com.diffplug.spotless.FormatterFunc
 import com.diffplug.spotless.FormatterStep
 
 /**
- * Adds self-correcting behavior as spotless step which properly removes the comments which causes the
- * google-java-formatter plugin to rupture (eg: \/\*-).
+ * Adds self-correcting behavior as spotless step which properly removes the comments which causes
+ * the google-java-formatter plugin to rupture (eg: \/\*-).
  */
 class RepairDashedCommentsFormatterStep {
     companion object {
@@ -42,10 +42,6 @@ class RepairDashedCommentsFormatterStep {
 
     private class State(val openingCommentRegex: Regex, val closingCommentRegex: Regex) :
         java.io.Serializable {
-        companion object {
-            private const val serialVersionUID = -113
-        }
-
 
         fun toFormatter(): FormatterFunc {
             return FormatterFunc { unixStr ->

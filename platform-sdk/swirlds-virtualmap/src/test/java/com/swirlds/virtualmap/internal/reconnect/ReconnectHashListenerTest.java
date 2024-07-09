@@ -33,6 +33,7 @@ import com.swirlds.virtualmap.internal.hash.VirtualHasher;
 import com.swirlds.virtualmap.test.fixtures.InMemoryBuilder;
 import com.swirlds.virtualmap.test.fixtures.TestKey;
 import com.swirlds.virtualmap.test.fixtures.TestValue;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -168,9 +169,9 @@ class ReconnectHashListenerTest {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+                @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
+                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
                 final boolean isReconnectContext)
                 throws IOException {
             final var ir = pathHashRecordsToUpdate.toList();
@@ -185,9 +186,9 @@ class ReconnectHashListenerTest {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
+                @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
+                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete)
                 throws IOException {
 
             saveRecords(

@@ -52,8 +52,7 @@ import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectExplicitCo
 import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectFailedContractBytecodeSidecarFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
@@ -119,7 +118,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
@@ -141,6 +140,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
@@ -184,12 +184,10 @@ public class TraceabilitySuite {
     public static final String SIDECARS_PROP = "contracts.sidecars";
 
     @BeforeAll
-    static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
-        specManager.setup(
+    static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws Throwable {
+        testLifecycle.doAdhoc(
                 withOpContext((spec, opLog) -> GLOBAL_WATCHER.set(new SidecarWatcher(spec.streamsLoc(byNodeId(0))))),
-                overridingTwo(
-                        "contracts.throttle.throttleByGas", "false",
-                        "contracts.enforceCreationThrottle", "false"));
+                overriding("contracts.enforceCreationThrottle", "false"));
     }
 
     @HapiTest
@@ -4876,13 +4874,13 @@ public class TraceabilitySuite {
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
                 .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
                 .given(
-                        overridingThree(
+                        overridingAllOf(Map.of(
                                 CHAIN_ID_PROPERTY,
                                 "298",
                                 LAZY_CREATE_PROPERTY,
                                 "true",
                                 "contracts.evm.version",
-                                "v0.34"),
+                                "v0.34")),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(RECIPIENT_KEY2).shape(SECP_256K1_SHAPE),
@@ -5131,7 +5129,6 @@ public class TraceabilitySuite {
                         }));
     }
 
-    @HapiTest
     @Order(Integer.MAX_VALUE)
     public final Stream<DynamicTest> assertSidecars() {
         return hapiTest(withOpContext(

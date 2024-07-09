@@ -18,7 +18,6 @@ package com.swirlds.platform.event.creation.tipset;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 import static com.swirlds.platform.event.creation.tipset.TipsetAdvancementWeight.ZERO_ADVANCEMENT_WEIGHT;
-import static com.swirlds.platform.event.creation.tipset.TipsetUtils.getParentDescriptors;
 import static com.swirlds.platform.system.events.EventConstants.CREATOR_ID_UNDEFINED;
 
 import com.swirlds.base.time.Time;
@@ -32,14 +31,15 @@ import com.swirlds.platform.consensus.ConsensusConstants;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
+import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
@@ -117,6 +117,11 @@ public class TipsetEventCreator implements EventCreator {
     private final RateLimitedLogger noParentFoundLogger;
 
     /**
+     * Event hasher for unsigned events.
+     */
+    private final StatefulEventHasher statefulEventHasher = new StatefulEventHasher();
+
+    /**
      * Create a new tipset event creator.
      *
      * @param platformContext     the platform context
@@ -170,12 +175,12 @@ public class TipsetEventCreator implements EventCreator {
      * {@inheritDoc}
      */
     @Override
-    public void registerEvent(@NonNull final GossipEvent event) {
+    public void registerEvent(@NonNull final PlatformEvent event) {
         if (eventWindow.isAncient(event)) {
             return;
         }
 
-        final NodeId eventCreator = event.getHashedData().getCreatorId();
+        final NodeId eventCreator = event.getCreatorId();
         if (!addressBook.contains(eventCreator)) {
             return;
         }
@@ -186,12 +191,9 @@ public class TipsetEventCreator implements EventCreator {
                 // Normally we will ingest self events before we get to this point, but it's possible
                 // to learn of self events for the first time here if we are loading from a restart or reconnect.
                 lastSelfEvent = event.getDescriptor();
-                lastSelfEventCreationTime = event.getHashedData().getTimeCreated();
-                lastSelfEventTransactionCount = event.getHashedData().getTransactions() == null
-                        ? 0
-                        : event.getHashedData().getTransactions().length;
-                childlessOtherEventTracker.registerSelfEventParents(
-                        event.getHashedData().getOtherParents());
+                lastSelfEventCreationTime = event.getTimeCreated();
+                lastSelfEventTransactionCount = event.getPayloadCount();
+                childlessOtherEventTracker.registerSelfEventParents(event.getOtherParents());
             } else {
                 // We already ingested this self event (when it was created),
                 return;
@@ -199,7 +201,7 @@ public class TipsetEventCreator implements EventCreator {
         }
 
         final EventDescriptor descriptor = event.getDescriptor();
-        final List<EventDescriptor> parentDescriptors = getParentDescriptors(event.getHashedData());
+        final List<EventDescriptor> parentDescriptors = event.getAllParents();
 
         tipsetTracker.addEvent(descriptor, parentDescriptors);
 
@@ -223,7 +225,7 @@ public class TipsetEventCreator implements EventCreator {
      */
     @Override
     @Nullable
-    public BaseEventHashedData maybeCreateEvent() {
+    public UnsignedEvent maybeCreateEvent() {
         if (networkSize == 1) {
             // Special case: network of size 1.
             // We can always create a new event, no need to run the tipset algorithm.
@@ -250,7 +252,7 @@ public class TipsetEventCreator implements EventCreator {
      *
      * @return the new event
      */
-    private BaseEventHashedData createEventForSizeOneNetwork() {
+    private UnsignedEvent createEventForSizeOneNetwork() {
         // There is a quirk in size 1 networks where we can only
         // reach consensus if the self parent is also the other parent.
         // Unexpected, but harmless. So just use the same event
@@ -264,7 +266,7 @@ public class TipsetEventCreator implements EventCreator {
      * @return the new event, or null if it is not legal to create a new event
      */
     @Nullable
-    private BaseEventHashedData createEventByOptimizingAdvancementWeight() {
+    private UnsignedEvent createEventByOptimizingAdvancementWeight() {
         final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
         Collections.shuffle(possibleOtherParents, random);
 
@@ -309,7 +311,7 @@ public class TipsetEventCreator implements EventCreator {
      * @return the new event, or null if it is not legal to create a new event
      */
     @Nullable
-    private BaseEventHashedData createEventToReduceSelfishness() {
+    private UnsignedEvent createEventToReduceSelfishness() {
         final List<EventDescriptor> possibleOtherParents = childlessOtherEventTracker.getChildlessEvents();
         final List<EventDescriptor> ignoredNodes = new ArrayList<>(possibleOtherParents.size());
 
@@ -382,7 +384,7 @@ public class TipsetEventCreator implements EventCreator {
      * @param otherParent the other parent, or null if there is no other parent
      * @return the new event
      */
-    private BaseEventHashedData buildAndProcessEvent(@Nullable final EventDescriptor otherParent) {
+    private UnsignedEvent buildAndProcessEvent(@Nullable final EventDescriptor otherParent) {
         final List<EventDescriptor> parentDescriptors = new ArrayList<>(2);
         if (lastSelfEvent != null) {
             parentDescriptors.add(lastSelfEvent);
@@ -391,7 +393,7 @@ public class TipsetEventCreator implements EventCreator {
             parentDescriptors.add(otherParent);
         }
 
-        final BaseEventHashedData event = assembleEventObject(otherParent);
+        final UnsignedEvent event = assembleEventObject(otherParent);
 
         final EventDescriptor descriptor = event.getDescriptor();
         tipsetTracker.addEvent(descriptor, parentDescriptors);
@@ -419,7 +421,7 @@ public class TipsetEventCreator implements EventCreator {
      * @return the event
      */
     @NonNull
-    private BaseEventHashedData assembleEventObject(@Nullable final EventDescriptor otherParent) {
+    private UnsignedEvent assembleEventObject(@Nullable final EventDescriptor otherParent) {
         final Instant now = time.now();
         final Instant timeCreated;
         if (lastSelfEvent == null) {
@@ -429,7 +431,7 @@ public class TipsetEventCreator implements EventCreator {
                     now, lastSelfEventCreationTime, lastSelfEventTransactionCount);
         }
 
-        final BaseEventHashedData event = new BaseEventHashedData(
+        final UnsignedEvent event = new UnsignedEvent(
                 softwareVersion,
                 selfId,
                 lastSelfEvent,
@@ -439,7 +441,7 @@ public class TipsetEventCreator implements EventCreator {
                         : ConsensusConstants.ROUND_FIRST,
                 timeCreated,
                 transactionSupplier.getTransactions());
-        cryptography.digestSync(event);
+        statefulEventHasher.hashEvent(event);
 
         return event;
     }

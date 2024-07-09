@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.swirlds.platform.test.fixtures.state.merkle.MerkleTestBase;
+import java.util.Spliterators;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -142,9 +144,14 @@ class OnDiskWritableStateTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("Iterate over keys in the virtual map is not allowed")
-        void iterateThrows() {
-            assertThatThrownBy(() -> state.keys()).isInstanceOf(UnsupportedOperationException.class);
+        @DisplayName("Iteration includes both mutations and committed state")
+        void iterateIncludesMutations() {
+            add(A_KEY, "Apple");
+            add(B_KEY, "Banana");
+            state.put(C_KEY, "Cherry");
+            final var actual = StreamSupport.stream(Spliterators.spliterator(state.keys(), 3, 0), false)
+                    .toList();
+            assertThat(actual).containsExactlyInAnyOrder(A_KEY, B_KEY, C_KEY);
         }
     }
 

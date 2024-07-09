@@ -31,6 +31,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -97,7 +98,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
 
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(cryptoCreate(CIVILIAN)
                         .payingWith(GENESIS)
                         .balance(ONE_MILLION_HBARS)

@@ -29,6 +29,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;
@@ -75,7 +76,7 @@ public class PerpetualLocalCalls extends HapiSuite {
     private Function<HapiSpec, OpProvider> localCallsFactory() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(uploadInitCode(CHILD_STORAGE), contractCreate(CHILD_STORAGE));
             }
 

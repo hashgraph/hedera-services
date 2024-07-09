@@ -16,10 +16,13 @@
 
 package com.hedera.node.app.spi.workflows.record;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -57,6 +60,12 @@ public interface SingleTransactionRecordBuilder {
      * @return the builder
      */
     SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status);
+
+    HandleContext.TransactionCategory category();
+
+    default boolean isInternalDispatch() {
+        return !category().equals(USER);
+    }
 
     /**
      * Convenience method to package as {@link TransactionBody} as a {@link Transaction} .

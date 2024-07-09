@@ -143,7 +143,6 @@ import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.ACC
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.ACCOUNT_INFO_AFTER_CALL;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CALL_TX;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CALL_TX_REC;
-import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CONTRACTS_MAX_GAS_PER_SEC;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.CONTRACT_FROM;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.DEFAULT_MAX_AUTO_RENEW_PERIOD;
@@ -291,7 +290,6 @@ public class LeakyContractTestsSuite {
     private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
-    private static final String CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY = "contracts.allowAutoAssociations";
     private static final String TRANSFER_CONTRACT = "NonDelegateCryptoTransfer";
     private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
     private static final String CRYPTO_TRANSFER = "CryptoTransfer";
@@ -1593,12 +1591,12 @@ public class LeakyContractTestsSuite {
                         "GasLimitOverMaxGasLimitFailsPrecheck",
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
-                .preserving(CONTRACTS_MAX_GAS_PER_SEC)
+                .preserving("contracts.maxGasPerSec")
                 .given(
                         uploadInitCode(SIMPLE_UPDATE_CONTRACT),
                         uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
                         contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        overriding(CONTRACTS_MAX_GAS_PER_SEC, "100"))
+                        overriding("contracts.maxGasPerSec", "100"))
                 .when()
                 .then(
                         contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
@@ -1709,9 +1707,8 @@ public class LeakyContractTestsSuite {
         final int maxAutoAssociations = 100;
         final String CONTRACT = "Multipurpose";
 
-        return propertyPreservingHapiSpec("autoAssociationSlotsAppearsInInfo", NONDETERMINISTIC_NONCE)
-                .preserving(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY)
-                .given(overriding(CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY, "true"))
+        return defaultHapiSpec("autoAssociationSlotsAppearsInInfo", NONDETERMINISTIC_NONCE)
+                .given()
                 .when()
                 .then(
                         newKeyNamed(ADMIN_KEY),
@@ -1937,16 +1934,14 @@ public class LeakyContractTestsSuite {
         final var DELEGATE_KEY = "contractKey";
         final var NOT_SUPPORTED_TXN = "notSupportedTxn";
         final var TOTAL_SUPPLY = 1_000;
-        final var ALLOW_AUTO_ASSOCIATIONS_PROPERTY = CONTRACT_ALLOW_ASSOCIATIONS_PROPERTY;
 
         return propertyPreservingHapiSpec(
                         "lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
-                .preserving(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, LAZY_CREATION_ENABLED)
+                .preserving(LAZY_CREATION_ENABLED)
                 .given(
-                        overriding(ALLOW_AUTO_ASSOCIATIONS_PROPERTY, "true"),
                         UtilVerbs.overriding(LAZY_CREATION_ENABLED, FALSE),
                         cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
                         cryptoCreate(TOKEN_TREASURY),

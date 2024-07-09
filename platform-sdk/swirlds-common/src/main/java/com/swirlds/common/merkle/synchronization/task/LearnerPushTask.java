@@ -23,6 +23,7 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
@@ -54,6 +55,8 @@ public class LearnerPushTask<T> {
     private final AtomicReference<T> root;
     private final LearnerTreeView<T> view;
     private final ReconnectNodeCount nodeCount;
+
+    private final ReconnectMapStats mapStats = new ReconnectMapStats() {};
 
     private final Queue<MerkleNode> rootsToReceive;
 
@@ -197,6 +200,8 @@ public class LearnerPushTask<T> {
             }
             final boolean nodeAlreadyPresent = originalHash != null && originalHash.equals(teacherHash);
             out.sendAsync(new QueryResponse(nodeAlreadyPresent));
+            mapStats.incrementTransfersFromLearner();
+            view.recordHashStats(mapStats, newParent, childIndex, nodeAlreadyPresent);
 
             view.expectLessonFor(newParent, childIndex, originalChild, nodeAlreadyPresent);
             in.anticipateMessage();
@@ -207,6 +212,10 @@ public class LearnerPushTask<T> {
      * Update node counts for statistics.
      */
     private void addToNodeCount(final ExpectedLesson<T> expectedLesson, final Lesson<T> lesson, final T newChild) {
+        if (lesson.isLeafLesson()) {
+            mapStats.incrementLeafData(1, expectedLesson.isNodeAlreadyPresent() ? 1 : 0);
+        }
+
         if (lesson.isCurrentNodeUpToDate()) {
             return;
         }
@@ -241,6 +250,7 @@ public class LearnerPushTask<T> {
 
                 final ExpectedLesson<T> expectedLesson = view.getNextExpectedLesson();
                 final Lesson<T> lesson = in.readAnticipatedMessage();
+                mapStats.incrementTransfersFromTeacher();
 
                 final T parent = expectedLesson.getParent();
 
@@ -270,5 +280,7 @@ public class LearnerPushTask<T> {
             logger.error(EXCEPTION.getMarker(), "exception in the learner's receiving thread", ex);
             throw new MerkleSynchronizationException("exception in the learner's receiving thread", ex);
         }
+
+        logger.info(RECONNECT.getMarker(), "learner thread closed input, output, and view for the current subtree");
     }
 }

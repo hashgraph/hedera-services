@@ -17,7 +17,9 @@
 package com.hedera.services.bdd.junit.hedera.remote;
 
 import com.hedera.services.bdd.junit.hedera.AbstractNode;
+import com.hedera.services.bdd.junit.hedera.ExternalPath;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
+import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus;
 import com.swirlds.platform.system.status.PlatformStatus;
@@ -33,13 +35,8 @@ public class RemoteNode extends AbstractNode implements HederaNode {
     }
 
     @Override
-    public Path getRecordStreamPath() {
-        throw new UnsupportedOperationException("A remote node's streams do not have a local path");
-    }
-
-    @Override
-    public Path getApplicationLogPath() {
-        throw new UnsupportedOperationException("A remote node's logs do not have a local path");
+    public Path getExternalPath(@NonNull final ExternalPath path) {
+        throw new UnsupportedOperationException("There is no local path to a remote node's " + path);
     }
 
     @Override
@@ -61,6 +58,11 @@ public class RemoteNode extends AbstractNode implements HederaNode {
     @Override
     public boolean terminate() {
         throw new UnsupportedOperationException("Cannot terminate a remote node");
+    }
+
+    @Override
+    public CompletableFuture<Void> mfFuture(@NonNull MarkerFile markerFile) {
+        throw new UnsupportedOperationException("Cannot check marker files on a remote node");
     }
 
     @Override

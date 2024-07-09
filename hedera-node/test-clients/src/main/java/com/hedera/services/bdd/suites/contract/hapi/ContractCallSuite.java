@@ -50,7 +50,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWit
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -69,7 +68,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -104,7 +102,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
-import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ECDSA_KEY;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
@@ -112,7 +109,6 @@ import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.NESTE
 import static com.hedera.services.bdd.suites.regression.factories.HollowAccountCompletedFuzzingFactory.CONTRACT;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_NEGATIVE_VALUE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -205,7 +201,6 @@ public class ContractCallSuite {
     private static final String BENEFICIARY = "beneficiary";
     private static final String RECEIVER = "receiver";
     private static final String GET_BALANCE = "getBalance";
-    public static final String CONTRACTS_MAX_GAS_PER_SEC = "contracts.maxGasPerSec";
     private static final String TRANSFER_TXN = "transferTxn";
     public static final String ACCOUNT_INFO_AFTER_CALL = "accountInfoAfterCall";
     public static final String TRANSFER_TO_CALLER = "transferToCaller";
@@ -1572,38 +1567,6 @@ public class ContractCallSuite {
     }
 
     @HapiTest
-    final Stream<DynamicTest> callFailsWhenAmountIsNegativeButStillChargedFee() {
-        final var payer = "payer";
-        return defaultHapiSpec("callFailsWhenAmountIsNegativeButStillChargedFee")
-                .given(
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT)
-                                .adminKey(THRESHOLD)
-                                .gas(1_000_000)
-                                .refusingEthConversion(),
-                        cryptoCreate(payer).balance(ONE_MILLION_HBARS).payingWith(GENESIS))
-                .when(ifHapiTest(withOpContext((spec, ignore) -> {
-                    final var subop1 = balanceSnapshot("balanceBefore0", payer);
-                    final var subop2 = contractCall(PAY_RECEIVABLE_CONTRACT)
-                            .via(PAY_TXN)
-                            .payingWith(payer)
-                            .sending(-DEPOSIT_AMOUNT)
-                            .hasKnownStatus(CONTRACT_NEGATIVE_VALUE)
-                            .refusingEthConversion();
-                    final var subop3 = getTxnRecord(PAY_TXN).logged();
-                    allRunFor(spec, subop1, subop2, subop3);
-                    final var delta = subop3.getResponseRecord()
-                            .getTransferList()
-                            .getAccountAmounts(0)
-                            .getAmount();
-                    final var subop4 =
-                            getAccountBalance(payer).hasTinyBars(changeFromSnapshot("balanceBefore0", -delta));
-                    allRunFor(spec, subop4);
-                })))
-                .then();
-    }
-
-    @HapiTest
     final Stream<DynamicTest> insufficientGas() {
         return defaultHapiSpec("InsufficientGas", NONDETERMINISTIC_CONTRACT_CALL_RESULTS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -2789,20 +2752,6 @@ public class ContractCallSuite {
                         allRunFor(spec, op);
                     }
                 }));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
-        return hapiTest(
-                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
-                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .maxAutomaticTokenAssociations(5)
-                        .hasPrecheck(NOT_SUPPORTED),
-                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).maxAutomaticTokenAssociations(0),
-                contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .newMaxAutomaticAssociations(5)
-                        .hasPrecheck(NOT_SUPPORTED),
-                contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT).newMemo("Hola!"));
     }
 
     @HapiTest

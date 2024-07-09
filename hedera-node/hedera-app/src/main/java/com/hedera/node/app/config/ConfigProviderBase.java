@@ -81,13 +81,16 @@ public abstract class ConfigProviderBase implements ConfigProvider {
                     throw new IllegalArgumentException("File " + path + " is a directory and not a property file");
                 }
             } else {
-                logger.warn("Properties file {} does not exist and won't be used as configuration source", path);
+                logger.info("Properties file {} does not exist and won't be used as configuration source", path);
             }
         };
 
         try {
-            final Path propertiesPath =
-                    Optional.ofNullable(System.getenv(envName)).map(Path::of).orElseGet(() -> Path.of(defaultPath));
+            final Path propertiesPath = Optional.ofNullable(System.getenv(envName))
+                    .or(() -> Optional.ofNullable(
+                            System.getProperty(envName.toLowerCase().replace("_", "."))))
+                    .map(Path::of)
+                    .orElseGet(() -> Path.of(defaultPath));
             addSource.accept(propertiesPath, priority);
         } catch (final Exception e) {
             throw new IllegalStateException("Can not create config source for application properties", e);

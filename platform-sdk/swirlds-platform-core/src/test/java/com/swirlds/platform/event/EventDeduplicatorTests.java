@@ -18,7 +18,7 @@ package com.swirlds.platform.event;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
-import static com.swirlds.platform.test.fixtures.event.EventUtils.serializeGossipEvent;
+import static com.swirlds.platform.test.fixtures.event.EventUtils.serializePlatformEvent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -73,22 +73,22 @@ class EventDeduplicatorTests {
     }
 
     /**
-     * Create a test gossip event
+     * Create a test platform event
      *
      * @param creatorId  the creator of the event
      * @param generation the generation of the event
      * @param birthRound the birth round of the event
-     * @return the mocked gossip event
+     * @return the mocked platform event
      */
-    private GossipEvent createGossipEvent(
+    private PlatformEvent createPlatformEvent(
             @NonNull final NodeId creatorId, final long generation, final long birthRound) {
 
-        final GossipEvent selfParent = new TestingEventBuilder(random)
+        final PlatformEvent selfParent = new TestingEventBuilder(random)
                 .setCreatorId(creatorId)
                 .setBirthRound(birthRound - 1)
                 .build();
 
-        final GossipEvent event = new TestingEventBuilder(random)
+        final PlatformEvent event = new TestingEventBuilder(random)
                 .setCreatorId(creatorId)
                 .setBirthRound(birthRound)
                 .setSelfParent(selfParent)
@@ -99,7 +99,7 @@ class EventDeduplicatorTests {
     }
 
     private static void validateEmittedEvent(
-            @Nullable final GossipEvent event,
+            @Nullable final PlatformEvent event,
             final long minimumGenerationNonAncient,
             final long minimumRoundNonAncient,
             @NonNull final AncientMode ancientMode,
@@ -112,7 +112,7 @@ class EventDeduplicatorTests {
             } else {
                 assertFalse(event.getGeneration() < minimumGenerationNonAncient, "Ancient events shouldn't be emitted");
             }
-            assertTrue(emittedEvents.add(ByteBuffer.wrap(serializeGossipEvent(event))), "Event was emitted twice");
+            assertTrue(emittedEvents.add(ByteBuffer.wrap(serializePlatformEvent(event))), "Event was emitted twice");
         }
     }
 
@@ -131,7 +131,7 @@ class EventDeduplicatorTests {
         final Set<ByteBuffer> emittedEvents = new HashSet<>();
 
         // events that have been submitted to the deduplicator
-        final List<GossipEvent> submittedEvents = new ArrayList<>();
+        final List<PlatformEvent> submittedEvents = new ArrayList<>();
 
         final AtomicLong eventsExitedIntakePipeline = new AtomicLong(0);
         final IntakeEventCounter intakeEventCounter = mock(IntakeEventCounter.class);
@@ -173,7 +173,7 @@ class EventDeduplicatorTests {
                     }
                 }
 
-                final GossipEvent newEvent = createGossipEvent(creatorId, eventGeneration, eventBirthRound);
+                final PlatformEvent newEvent = createPlatformEvent(creatorId, eventGeneration, eventBirthRound);
 
                 validateEmittedEvent(
                         deduplicator.handleEvent(newEvent),
@@ -195,10 +195,10 @@ class EventDeduplicatorTests {
                         emittedEvents);
             } else {
                 // submit a duplicate event with a different signature 25% of the time
-                final GossipEvent duplicateEvent = new GossipEvent(
+                final PlatformEvent duplicateEvent = new PlatformEvent(
                         submittedEvents
                                 .get(random.nextInt(submittedEvents.size()))
-                                .getHashedData(),
+                                .getUnsignedEvent(),
                         randomSignatureBytes(random) // randomize the signature
                         );
 

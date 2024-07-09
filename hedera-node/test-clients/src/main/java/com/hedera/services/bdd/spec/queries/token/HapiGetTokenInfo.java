@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.spec.queries.token;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static java.util.stream.Collectors.toCollection;
@@ -83,12 +84,40 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
     private Optional<String> expectedSymbol = Optional.empty();
     private Optional<String> expectedName = Optional.empty();
     private Optional<String> expectedTreasury = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitAdminKey;
+
     private Optional<String> expectedAdminKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitKycKey;
+
     private Optional<String> expectedKycKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitFreezeKey;
+
     private Optional<String> expectedFreezeKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitSupplyKey;
+
     private Optional<String> expectedSupplyKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitWipeKey;
+
     private Optional<String> expectedWipeKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitFeeScheduleKey;
+
     private Optional<String> expectedFeeScheduleKey = Optional.empty();
+
+    @Nullable
+    private com.hedera.hapi.node.base.Key explicitPauseKey;
+
     private Optional<String> expectedPauseKey = Optional.empty();
     private boolean emptyAdminKey = false;
     private boolean emptyWipeKey = false;
@@ -240,8 +269,23 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasFreezeKey(com.hedera.hapi.node.base.Key key) {
+        explicitFreezeKey = key;
+        return this;
+    }
+
     public HapiGetTokenInfo hasAdminKey(String name) {
         expectedAdminKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiGetTokenInfo hasAdminKey(com.hedera.hapi.node.base.Key key) {
+        explicitAdminKey = key;
+        return this;
+    }
+
+    public HapiGetTokenInfo hasPauseKey(com.hedera.hapi.node.base.Key key) {
+        explicitPauseKey = key;
         return this;
     }
 
@@ -277,8 +321,18 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasKycKey(com.hedera.hapi.node.base.Key key) {
+        explicitKycKey = key;
+        return this;
+    }
+
     public HapiGetTokenInfo hasKycKey(String name) {
         expectedKycKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiGetTokenInfo hasSupplyKey(com.hedera.hapi.node.base.Key key) {
+        explicitSupplyKey = key;
         return this;
     }
 
@@ -287,8 +341,18 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
         return this;
     }
 
+    public HapiGetTokenInfo hasWipeKey(com.hedera.hapi.node.base.Key key) {
+        explicitWipeKey = key;
+        return this;
+    }
+
     public HapiGetTokenInfo hasWipeKey(String name) {
         expectedWipeKey = Optional.of(name);
+        return this;
+    }
+
+    public HapiGetTokenInfo hasFeeScheduleKey(com.hedera.hapi.node.base.Key key) {
+        explicitFeeScheduleKey = key;
         return this;
     }
 
@@ -474,6 +538,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getFreezeKey());
         } else if (invalidFreezeKey) {
             assertForAllZerosInvalidKey(actualInfo.getFreezeKey());
+        } else if (explicitFreezeKey != null) {
+            Assertions.assertEquals(fromPbj(explicitFreezeKey), actualInfo.getFreezeKey(), "Wrong token freeze key!");
         } else {
             assertFor(
                     actualInfo.getFreezeKey(),
@@ -487,6 +553,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getAdminKey());
         } else if (invalidAdminKey) {
             assertForAllZerosInvalidKey(actualInfo.getAdminKey());
+        } else if (explicitAdminKey != null) {
+            Assertions.assertEquals(fromPbj(explicitAdminKey), actualInfo.getAdminKey(), "Wrong token admin key!");
         } else {
             assertFor(
                     actualInfo.getAdminKey(),
@@ -500,6 +568,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getWipeKey());
         } else if (invalidWipeKey) {
             assertForAllZerosInvalidKey(actualInfo.getWipeKey());
+        } else if (explicitWipeKey != null) {
+            Assertions.assertEquals(fromPbj(explicitWipeKey), actualInfo.getWipeKey(), "Wrong token wipe key!");
         } else {
             assertFor(
                     actualInfo.getWipeKey(),
@@ -513,6 +583,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getKycKey());
         } else if (invalidKycKey) {
             assertForAllZerosInvalidKey(actualInfo.getKycKey());
+        } else if (explicitKycKey != null) {
+            Assertions.assertEquals(fromPbj(explicitKycKey), actualInfo.getKycKey(), "Wrong token KYC key!");
         } else {
             assertFor(
                     actualInfo.getKycKey(),
@@ -526,6 +598,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getSupplyKey());
         } else if (invalidSupplyKey) {
             assertForAllZerosInvalidKey(actualInfo.getSupplyKey());
+        } else if (explicitSupplyKey != null) {
+            Assertions.assertEquals(fromPbj(explicitSupplyKey), actualInfo.getSupplyKey(), "Wrong token supply key!");
         } else {
             assertFor(
                     actualInfo.getSupplyKey(),
@@ -539,6 +613,9 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getFeeScheduleKey());
         } else if (invalidFeeScheduleKey) {
             assertForAllZerosInvalidKey(actualInfo.getFeeScheduleKey());
+        } else if (explicitFeeScheduleKey != null) {
+            Assertions.assertEquals(
+                    fromPbj(explicitFeeScheduleKey), actualInfo.getFeeScheduleKey(), "Wrong token fee schedule key!");
         } else {
             assertFor(
                     actualInfo.getFeeScheduleKey(),
@@ -552,6 +629,8 @@ public class HapiGetTokenInfo extends HapiQueryOp<HapiGetTokenInfo> {
             assertForRemovedKey(actualInfo.getPauseKey());
         } else if (invalidPauseKey) {
             assertForAllZerosInvalidKey(actualInfo.getPauseKey());
+        } else if (explicitPauseKey != null) {
+            Assertions.assertEquals(fromPbj(explicitPauseKey), actualInfo.getPauseKey(), "Wrong token pause key!");
         } else {
             assertFor(
                     actualInfo.getPauseKey(),

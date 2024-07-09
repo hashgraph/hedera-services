@@ -18,8 +18,8 @@ package com.swirlds.platform.event.creation;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
 import com.swirlds.platform.consensus.EventWindow;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -38,15 +38,15 @@ public interface EventCreationManager {
      */
     @InputWireLabel("heartbeat")
     @Nullable
-    BaseEventHashedData maybeCreateEvent();
+    UnsignedEvent maybeCreateEvent();
 
     /**
      * Register a new event from event intake.
      *
      * @param event the event to add
      */
-    @InputWireLabel("GossipEvent")
-    void registerEvent(@NonNull GossipEvent event);
+    @InputWireLabel("PlatformEvent")
+    void registerEvent(@NonNull PlatformEvent event);
 
     /**
      * Update the event window, defining the minimum threshold for an event to be non-ancient.

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Collections.emptySet;
@@ -48,6 +49,7 @@ import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import com.hedera.hapi.util.HapiUtils;
+import com.hedera.node.app.service.addressbook.impl.records.NodeCreateRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusCreateTopicRecordBuilder;
 import com.hedera.node.app.service.consensus.impl.records.ConsensusSubmitMessageRecordBuilder;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
@@ -72,6 +74,7 @@ import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -133,7 +136,8 @@ public class SingleTransactionRecordBuilderImpl
                 GenesisAccountRecordBuilder,
                 ContractOperationRecordBuilder,
                 TokenAccountWipeRecordBuilder,
-                CryptoUpdateRecordBuilder {
+                CryptoUpdateRecordBuilder,
+                NodeCreateRecordBuilder {
     private static final Comparator<TokenAssociation> TOKEN_ASSOCIATION_COMPARATOR =
             Comparator.<TokenAssociation>comparingLong(a -> a.tokenId().tokenNum())
                     .thenComparingLong(a -> a.accountIdOrThrow().accountNum());
@@ -183,6 +187,9 @@ public class SingleTransactionRecordBuilderImpl
     // Used for some child records builders.
     private final ReversingBehavior reversingBehavior;
 
+    // Category of the record
+    private final TransactionCategory category;
+
     // Used to customize the externalized form of a dispatched child transaction, right before
     // its record stream item is built; lets the contract service externalize certain dispatched
     // CryptoCreate transactions as ContractCreate synthetic transactions
@@ -220,7 +227,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param consensusNow the consensus timestamp for the transaction
      */
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
-        this(consensusNow, ReversingBehavior.REVERSIBLE);
+        this(consensusNow, ReversingBehavior.REVERSIBLE, USER);
     }
 
     /**
@@ -230,8 +237,10 @@ public class SingleTransactionRecordBuilderImpl
      * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
      */
     public SingleTransactionRecordBuilderImpl(
-            @NonNull final Instant consensusNow, final ReversingBehavior reversingBehavior) {
-        this(consensusNow, reversingBehavior, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+            @NonNull final Instant consensusNow,
+            final ReversingBehavior reversingBehavior,
+            final TransactionCategory category) {
+        this(consensusNow, reversingBehavior, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, category);
     }
 
     /**
@@ -244,10 +253,12 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl(
             @NonNull final Instant consensusNow,
             @NonNull final ReversingBehavior reversingBehavior,
-            @NonNull final ExternalizedRecordCustomizer customizer) {
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final TransactionCategory category) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
         this.reversingBehavior = requireNonNull(reversingBehavior, "reversingBehavior must not be null");
         this.customizer = requireNonNull(customizer, "customizer must not be null");
+        this.category = requireNonNull(category, "category must not be null");
     }
 
     /**
@@ -956,6 +967,19 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
+     * Sets the receipt nodeID.
+     *
+     * @param nodeId the nodeId for the receipt
+     * @return the builder
+     */
+    @Override
+    @NonNull
+    public SingleTransactionRecordBuilderImpl nodeID(long nodeId) {
+        transactionReceiptBuilder.nodeId(nodeId);
+        return this;
+    }
+
+    /**
      * Sets the receipt newTotalSupply.
      *
      * @param newTotalSupply the newTotalSupply for the receipt
@@ -1201,5 +1225,14 @@ public class SingleTransactionRecordBuilderImpl
      */
     public List<AccountAmount> getPaidStakingRewards() {
         return paidStakingRewards;
+    }
+
+    /**
+     * Returns the {@link TransactionRecord.Builder} of the record. It can be PRECEDING, CHILD, USER or SCHEDULED.
+     * @return the {@link TransactionRecord.Builder} of the record
+     */
+    @Override
+    public TransactionCategory category() {
+        return category;
     }
 }

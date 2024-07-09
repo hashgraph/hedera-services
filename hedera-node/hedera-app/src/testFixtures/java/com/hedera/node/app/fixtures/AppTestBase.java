@@ -29,18 +29,15 @@ import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.info.NetworkInfoImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.info.NodeInfo;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
 import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
@@ -59,7 +56,11 @@ import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import com.swirlds.platform.test.fixtures.state.TestBase;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.spi.info.SelfNodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
@@ -93,6 +94,8 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     // are being set appropriately.
     /** Used as a dependency to the {@link Metrics} system. */
     public static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+
+    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
 
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
@@ -152,9 +155,13 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             10,
             "127.0.0.1",
             50211,
+            "127.0.0.4",
+            23456,
             "0123456789012345678901234567890123456789012345678901234567890123",
             "Node7",
-            softwareVersion);
+            Bytes.wrap("cert7"),
+            softwareVersion,
+            "Node7");
 
     /**
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
@@ -326,9 +333,13 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                         10,
                         "127.0.0.1",
                         50211,
+                        "127.0.0.4",
+                        23456,
                         "0123456789012345678901234567890123456789012345678901234567890123",
                         "Node7",
-                        hederaSoftwareVersion);
+                        Bytes.wrap("cert7"),
+                        hederaSoftwareVersion,
+                        "Node7");
             } else {
                 realSelfNodeInfo = new SelfNodeInfoImpl(
                         selfNodeInfo.nodeId(),
@@ -336,9 +347,13 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                         selfNodeInfo.stake(),
                         selfNodeInfo.externalHostName(),
                         selfNodeInfo.externalPort(),
+                        selfNodeInfo.internalHostName(),
+                        selfNodeInfo.internalPort(),
                         selfNodeInfo.hexEncodedPublicKey(),
                         selfNodeInfo.memo(),
-                        hederaSoftwareVersion);
+                        selfNodeInfo.sigCertBytes(),
+                        hederaSoftwareVersion,
+                        selfNodeInfo.selfName());
             }
 
             final var workingStateAccessor = new WorkingStateAccessor();

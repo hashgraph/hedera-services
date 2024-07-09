@@ -78,6 +78,7 @@ import com.swirlds.platform.state.spi.ReadableSingletonStateBase;
 import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -101,6 +102,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3, readableStates4;
     private CryptoOpsUsage cryptoOpsUsage;
+    private final InstantSource instantSource = InstantSource.system();
 
     private CryptoGetAccountInfoHandler subject;
 
@@ -111,7 +113,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     public void setUp() {
         super.setUp();
         cryptoOpsUsage = new CryptoOpsUsage();
-        subject = new CryptoGetAccountInfoHandler(cryptoOpsUsage);
+        subject = new CryptoGetAccountInfoHandler(cryptoOpsUsage, instantSource);
     }
 
     @Test
@@ -484,10 +486,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     private void setupConfig(boolean balancesInQueriesEnabled) {
         final var configBuilder = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
-                .withValue("ledger.id", "0x03");
-        if (balancesInQueriesEnabled) {
-            configBuilder.withValue("tokens.balancesInQueries.enabled", true);
-        }
+                .withValue("ledger.id", "0x03")
+                .withValue("tokens.balancesInQueries.enabled", balancesInQueriesEnabled);
         given(context.configuration()).willReturn(configBuilder.getOrCreateConfig());
     }
 

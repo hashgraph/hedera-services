@@ -74,7 +74,6 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test,
             com.hedera.node.test.clients,
             com.swirlds.platform.core.test.fixtures,
-            com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.test.fixtures;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
@@ -131,6 +130,7 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.pool;
     exports com.swirlds.platform.state.snapshot;
 
+    requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.base;
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
@@ -143,7 +143,6 @@ module com.swirlds.platform.core {
     requires transitive com.swirlds.virtualmap;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
-    requires transitive com.hedera.node.hapi;
     requires transitive com.hedera.pbj.runtime;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;

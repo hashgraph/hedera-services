@@ -24,12 +24,11 @@ import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventCounter;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.sequence.map.SequenceMap;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
-import com.swirlds.platform.system.events.BaseEventHashedData;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -128,19 +127,18 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @return the linked event, or null if the event is ancient
      */
     @Nullable
-    public EventImpl linkEvent(@NonNull final GossipEvent event) {
+    public EventImpl linkEvent(@NonNull final PlatformEvent event) {
         if (eventWindow.isAncient(event)) {
             // This event is ancient, so we don't need to link it.
             ancientEventAdded(event);
             return null;
         }
 
-        final BaseEventHashedData hashedData = event.getHashedData();
-        final EventImpl selfParent = getParentToLink(event, hashedData.getSelfParent());
+        final EventImpl selfParent = getParentToLink(event, event.getSelfParent());
 
         // FUTURE WORK: Extend other parent linking to support multiple other parents.
         // Until then, take the first parent in the list.
-        final List<EventDescriptor> otherParents = hashedData.getOtherParents();
+        final List<EventDescriptor> otherParents = event.getOtherParents();
         final EventImpl otherParent = otherParents.isEmpty() ? null : getParentToLink(event, otherParents.get(0));
 
         final EventImpl linkedEvent = new EventImpl(event, selfParent, otherParent);
@@ -183,7 +181,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @param parentDescriptor the descriptor of the missing parent
      */
     protected void childHasMissingParent(
-            @NonNull final GossipEvent child, @NonNull final EventDescriptor parentDescriptor) {
+            @NonNull final PlatformEvent child, @NonNull final EventDescriptor parentDescriptor) {
         missingParentLogger.error(
                 EXCEPTION.getMarker(),
                 "Child has a missing parent. This should not be possible. Child: {}, Parent EventDescriptor: {}",
@@ -199,7 +197,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @param candidateParent  the parent event that we found in the parentHashMap
      */
     protected void parentHasIncorrectGeneration(
-            @NonNull final GossipEvent child,
+            @NonNull final PlatformEvent child,
             @NonNull final EventDescriptor parentDescriptor,
             @NonNull final EventImpl candidateParent) {
         generationMismatchLogger.warn(
@@ -220,7 +218,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @param candidateParent  the parent event that we found in the parentHashMap
      */
     protected void parentHasIncorrectBirthRound(
-            @NonNull final GossipEvent child,
+            @NonNull final PlatformEvent child,
             @NonNull final EventDescriptor parentDescriptor,
             @NonNull final EventImpl candidateParent) {
         birthRoundMismatchLogger.warn(
@@ -243,7 +241,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      * @param childTimeCreated  the time created of the child event
      */
     protected void childTimeIsNotAfterSelfParentTime(
-            @NonNull final GossipEvent child,
+            @NonNull final PlatformEvent child,
             @NonNull final EventImpl candidateParent,
             @NonNull final Instant parentTimeCreated,
             @NonNull final Instant childTimeCreated) {
@@ -262,7 +260,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      *
      * @param event the event that was discarded
      */
-    protected void ancientEventAdded(@NonNull final GossipEvent event) {
+    protected void ancientEventAdded(@NonNull final PlatformEvent event) {
         // Implement this if extra action is needed.
     }
 
@@ -292,7 +290,7 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
      */
     @Nullable
     private EventImpl getParentToLink(
-            @NonNull final GossipEvent child, @Nullable final EventDescriptor parentDescriptor) {
+            @NonNull final PlatformEvent child, @Nullable final EventDescriptor parentDescriptor) {
 
         if (parentDescriptor == null) {
             // There is no claimed parent for linking.
@@ -320,9 +318,8 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
             return null;
         }
 
-        final Instant parentTimeCreated =
-                candidateParent.getBaseEvent().getHashedData().getTimeCreated();
-        final Instant childTimeCreated = child.getHashedData().getTimeCreated();
+        final Instant parentTimeCreated = candidateParent.getBaseEvent().getTimeCreated();
+        final Instant childTimeCreated = child.getTimeCreated();
 
         // only do this check for self parent, since the event creator doesn't consider other parent creation time
         // when deciding on the event creation time

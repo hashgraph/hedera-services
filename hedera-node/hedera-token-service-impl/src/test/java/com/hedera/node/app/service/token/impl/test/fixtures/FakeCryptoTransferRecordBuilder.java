@@ -25,11 +25,12 @@ import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Fake Crypto Transfer Record Builder
@@ -46,7 +47,7 @@ public class FakeCryptoTransferRecordBuilder {
      */
     public CryptoTransferRecordBuilder create() {
         return new CryptoTransferRecordBuilder() {
-            @NotNull
+            @NonNull
             @Override
             public TransactionBody transactionBody() {
                 return TransactionBody.DEFAULT;
@@ -62,58 +63,63 @@ public class FakeCryptoTransferRecordBuilder {
             private List<AssessedCustomFee> assessedCustomFees;
 
             @Override
-            public SingleTransactionRecordBuilder status(@NotNull ResponseCodeEnum status) {
+            public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
                 return this;
+            }
+
+            @Override
+            public HandleContext.TransactionCategory category() {
+                return HandleContext.TransactionCategory.USER;
             }
 
             private List<AccountAmount> paidStakingRewards;
             private List<TokenAssociation> automaticTokenAssociations;
             private ContractFunctionResult contractCallResult;
 
-            @NotNull
+            @NonNull
             @Override
             public ResponseCodeEnum status() {
                 return ResponseCodeEnum.SUCCESS;
             }
 
-            @NotNull
+            @NonNull
             @Override
-            public CryptoTransferRecordBuilder transferList(@NotNull final TransferList hbarTransfers) {
+            public CryptoTransferRecordBuilder transferList(@NonNull final TransferList hbarTransfers) {
                 this.transferList = hbarTransfers;
                 return this;
             }
 
-            @NotNull
+            @NonNull
             @Override
             public CryptoTransferRecordBuilder tokenTransferLists(
-                    @NotNull final List<TokenTransferList> tokenTransferLists) {
+                    @NonNull final List<TokenTransferList> tokenTransferLists) {
                 this.tokenTransferLists = tokenTransferLists;
                 return this;
             }
 
-            @NotNull
+            @NonNull
             @Override
             public CryptoTransferRecordBuilder assessedCustomFees(
-                    @NotNull final List<AssessedCustomFee> assessedCustomFees) {
+                    @NonNull final List<AssessedCustomFee> assessedCustomFees) {
                 this.assessedCustomFees = assessedCustomFees;
                 return this;
             }
 
             @Override
             public CryptoTransferRecordBuilder paidStakingRewards(
-                    @NotNull final List<AccountAmount> paidStakingRewards) {
+                    @NonNull final List<AccountAmount> paidStakingRewards) {
                 this.paidStakingRewards = paidStakingRewards;
                 return this;
             }
 
             @Override
             public CryptoTransferRecordBuilder addAutomaticTokenAssociation(
-                    @NotNull final TokenAssociation tokenAssociation) {
+                    @NonNull final TokenAssociation tokenAssociation) {
                 this.automaticTokenAssociations = Arrays.asList(tokenAssociation);
                 return this;
             }
 
-            @NotNull
+            @NonNull
             @Override
             public CryptoTransferRecordBuilder contractCallResult(@Nullable ContractFunctionResult result) {
                 this.contractCallResult = result;

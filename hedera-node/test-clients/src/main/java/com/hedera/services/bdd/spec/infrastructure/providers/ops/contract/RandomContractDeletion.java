@@ -21,7 +21,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static java.util.Collections.EMPTY_LIST;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
@@ -29,7 +28,6 @@ import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourc
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -51,11 +49,6 @@ public class RandomContractDeletion implements OpProvider {
         this.accounts = accounts;
         this.contracts = contracts;
         this.customOutcomes = customOutcomes;
-    }
-
-    @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return EMPTY_LIST;
     }
 
     @Override

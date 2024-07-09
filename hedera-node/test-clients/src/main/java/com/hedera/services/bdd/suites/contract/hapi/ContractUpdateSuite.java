@@ -16,8 +16,10 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -38,6 +40,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -59,13 +62,15 @@ import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -494,15 +499,35 @@ public class ContractUpdateSuite {
                 }));
     }
 
-    @HapiTest
-    final Stream<DynamicTest> cannotUpdateMaxAutomaticAssociations() {
-        return defaultHapiSpec("cannotUpdateMaxAutomaticAssociations")
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> tryContractUpdateWithMaxAutoAssociations() {
+        return propertyPreservingHapiSpec("tryContractUpdateWithMaxAutoAssociations")
+                .preserving("ledger.maxAutoAssociations")
                 .given(
+                        overriding("ledger.maxAutoAssociations", "5000"),
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY))
                 .when()
-                .then(contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).hasKnownStatus(NOT_SUPPORTED));
+                .then(
+                        contractUpdate(CONTRACT)
+                                .newMaxAutomaticAssociations(-2)
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        contractUpdate(CONTRACT)
+                                .newMaxAutomaticAssociations(-200)
+                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                        contractUpdate(CONTRACT)
+                                .newMaxAutomaticAssociations(5001)
+                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
+                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)),
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(0).hasKnownStatus(SUCCESS),
+                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
+                        contractUpdate(CONTRACT)
+                                .newMaxAutomaticAssociations(5000)
+                                .hasKnownStatus(SUCCESS),
+                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(5000)));
     }
 
     @HapiTest

@@ -99,12 +99,6 @@ public interface TokenContext {
     <T> T addUncheckedPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
-     * Indicate whether this is the first transaction since node startup
-     * @return true if this is the first transaction since node startup
-     */
-    boolean isFirstTransaction();
-
-    /**
      * Signal that any records created during startup migrations have been streamed.
      */
     void markMigrationRecordsStreamed();

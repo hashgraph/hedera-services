@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.misc;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -27,6 +28,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +40,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
+@Tag(NOT_REPEATABLE)
 public class ConsensusQueriesStressTests {
     private AtomicLong duration = new AtomicLong(10);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
@@ -61,7 +65,7 @@ public class ConsensusQueriesStressTests {
 
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(createTopic("about").topicMemo(memo));
             }
 
