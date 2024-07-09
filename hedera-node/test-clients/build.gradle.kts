@@ -51,7 +51,7 @@ tasks.register<JavaExec>("runTestClient") {
     mainClass = providers.gradleProperty("testClient")
 }
 
-val ciCheckTagExpressions =
+val prCheckTagExpressions =
     mapOf(
         "hapiTestCrypto" to "CRYPTO",
         "hapiTestToken" to "TOKEN",
@@ -62,9 +62,19 @@ val ciCheckTagExpressions =
         "hapiTestMisc" to
             "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT|EMBEDDED|UPGRADE)"
     )
+val prCheckInitialPorts =
+    mapOf(
+        "hapiTestCrypto" to "30000",
+        "hapiTestToken" to "31000",
+        "hapiTestRestart" to "32000",
+        "hapiTestSmartContract" to "33000",
+        "hapiTestNDReconnect" to "34000",
+        "hapiTestTimeConsuming" to "35000",
+        "hapiTestMisc" to "36000"
+    )
 
 tasks {
-    ciCheckTagExpressions.forEach { (taskName, _) -> register(taskName) { dependsOn("test") } }
+    prCheckTagExpressions.forEach { (taskName, _) -> register(taskName) { dependsOn("test") } }
 }
 
 tasks.test {
@@ -74,7 +84,7 @@ tasks.test {
     val ciTagExpression =
         gradle.startParameter.taskNames
             .stream()
-            .map { ciCheckTagExpressions[it] ?: "" }
+            .map { prCheckTagExpressions[it] ?: "" }
             .filter { it.isNotBlank() }
             .toList()
             .joinToString("|")
@@ -84,6 +94,16 @@ tasks.test {
             else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED)"
         )
     }
+
+    // Choose a different initial port for each test task if running as PR check
+    val initialPort =
+        gradle.startParameter.taskNames
+            .stream()
+            .map { prCheckInitialPorts[it] ?: "" }
+            .filter { it.isNotBlank() }
+            .findFirst()
+            .orElse("")
+    systemProperty("hapi.spec.initial.port", initialPort)
 
     // Default quiet mode is "false" unless we are running in CI or set it explicitly to "true"
     systemProperty(

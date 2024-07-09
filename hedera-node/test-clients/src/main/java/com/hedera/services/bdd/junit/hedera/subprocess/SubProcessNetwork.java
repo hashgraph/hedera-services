@@ -156,6 +156,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 var bindException = false;
                 do {
                     if (bindException) {
+                        log.warn("Bind exception detected, retrying network initialization");
                         // Completely rebuild the network and try again
                         nodes.forEach(node -> {
                             node.stopFuture()
@@ -378,7 +379,13 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         initializeNextPortsForNetwork(size, randomPortAfter(FIRST_CANDIDATE_PORT, size * PORTS_PER_NODE));
     }
 
-    private static void initializeNextPortsForNetwork(final int size, final int firstGrpcPort) {
+    /**
+     * Initializes the next ports for the network with the given size and first gRPC port.
+     *
+     * @param size the number of nodes in the network
+     * @param firstGrpcPort the first gRPC port
+     */
+    public static void initializeNextPortsForNetwork(final int size, final int firstGrpcPort) {
         // Suppose firstGrpcPort is 10000 with 4 nodes in the network, then:
         //   - nextGrpcPort = 10000
         //   - nextGossipPort = 10008
