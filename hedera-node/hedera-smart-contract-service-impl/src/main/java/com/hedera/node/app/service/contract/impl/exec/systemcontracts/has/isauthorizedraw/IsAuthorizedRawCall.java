@@ -60,9 +60,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
     private static final ECRECPrecompiledContract ecPrecompile =
             new ECRECPrecompiledContract(noCalculationGasCalculator);
 
-    // FUTURE: Gas for system contract method calls needs to be a) determined by measurement of
-    // resources consumed, and b) incorporated into the fee schedule
-    private static final long HARDCODED_GAS_REQUIREMENT_GAS = 1_500_000L;
+    private final CustomGasCalculator customGasCalculator;
 
     public enum SignatureType {
         INVALID,
@@ -78,11 +76,13 @@ public class IsAuthorizedRawCall extends AbstractCall {
             @NonNull final HasCallAttempt attempt,
             final Address address,
             @NonNull final byte[] messageHash,
-            @NonNull final byte[] signature) {
+            @NonNull final byte[] signature,
+            @NonNull final CustomGasCalculator customGasCalculator) {
         super(attempt.systemContractGasCalculator(), attempt.enhancement(), true);
         this.address = requireNonNull(address);
         this.messageHash = requireNonNull(messageHash);
         this.signature = requireNonNull(signature);
+        this.customGasCalculator = requireNonNull(customGasCalculator);
     }
 
     @NonNull
@@ -90,27 +90,40 @@ public class IsAuthorizedRawCall extends AbstractCall {
     public PricedResult execute(@NonNull final MessageFrame frame) {
         requireNonNull(frame, "frame");
 
-        final Function<ResponseCodeEnum, PricedResult> bail = rce -> reversionWith(rce, HARDCODED_GAS_REQUIREMENT_GAS);
-
-        // Fail fast if user didn't supply monstrous amount of gas
-        final long availableGas = frame.getRemainingGas();
-        if (availableGas < HARDCODED_GAS_REQUIREMENT_GAS) return bail.apply(INSUFFICIENT_GAS);
-
-        // Figure out what kind of signature we're dealing with thus what kind of account+key we need
+        // First things first: What kind of signature are we dealing with, thus what kind of account+key we need
         final var signatureType =
                 switch (signature.length) {
                     case 65 -> SignatureType.EC;
                     case 64 -> SignatureType.ED;
                     default -> SignatureType.INVALID;
                 };
+
+        // Now we know how much gas this call will cost
+        final long gasRequirement =
+                switch (signatureType) {
+                    case EC -> customGasCalculator.getEcrecPrecompiledContractGasCost();
+                    case ED -> customGasCalculator.getEdSignatureVerificationSystemContractGasCost();
+                    case INVALID -> Math.min(
+                            customGasCalculator.getEcrecPrecompiledContractGasCost(),
+                            customGasCalculator.getEdSignatureVerificationSystemContractGasCost());
+                };
+
+        // Prepare the short-circuit error status returns
+        final Function<ResponseCodeEnum, PricedResult> bail = rce -> reversionWith(rce, gasRequirement);
+
+        // Must have a valid signature type to continue
         if (signatureType == SignatureType.INVALID)
             return bail.apply(INVALID_TRANSACTION_BODY /* should be: "invalid argument to precompile" */);
+
+        // Fail immediately if user didn't supply sufficient gas
+        final long availableGas = frame.getRemainingGas();
+        if (availableGas < gasRequirement) return bail.apply(INSUFFICIENT_GAS);
 
         // Validate parameters according to signature type
         if (!switch (signatureType) {
             case EC -> messageHash.length == 32;
             case ED -> true;
-            default -> throw new IllegalStateException("Unexpected value: " + signatureType);
+            case INVALID -> throw new IllegalStateException("Unexpected value: " + signatureType);
         }) return bail.apply(INVALID_TRANSACTION_BODY /* should be: "invalid argument to precompile */);
 
         // Gotta have an account that the given address is an alias for
@@ -135,9 +148,9 @@ public class IsAuthorizedRawCall extends AbstractCall {
         // Key must match signature type
         if (key.isPresent()) {
             if (!switch (signatureType) {
-                case ED -> key.get().hasEd25519();
                 case EC -> false;
-                default -> false;
+                case ED -> key.get().hasEd25519();
+                case INVALID -> false;
             }) return bail.apply(INVALID_SIGNATURE_TYPE_MISMATCHING_KEY);
         }
 
@@ -146,11 +159,11 @@ public class IsAuthorizedRawCall extends AbstractCall {
                 switch (signatureType) {
                     case EC -> validateEcSignature(address, frame);
                     case ED -> validateEdSignature(account, key.get());
-                    default -> false;
+                    case INVALID -> false;
                 };
 
-        final var result = gasOnly(
-                successResult(encodedAuthorizationOutput(authorized), HARDCODED_GAS_REQUIREMENT_GAS), SUCCESS, true);
+        final var result =
+                gasOnly(successResult(encodedAuthorizationOutput(authorized), gasRequirement), SUCCESS, true);
         return result;
     }
 

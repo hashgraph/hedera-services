@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -212,7 +213,11 @@ public class ReadableFreezeUpgradeActions {
             @Nullable final Timestamp now,
             @Nullable List<ActiveNode> nodes) {
         try {
-            FileUtils.cleanDirectory(artifactsLoc.toFile());
+            final var artifactsDir = artifactsLoc.toFile();
+            if (!FileUtils.isDirectory(artifactsDir)) {
+                FileUtils.forceMkdir(artifactsDir);
+            }
+            FileUtils.cleanDirectory(artifactsDir);
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
             if (desc.equals(PREPARE_UPGRADE_DESC)) {
@@ -221,11 +226,11 @@ public class ReadableFreezeUpgradeActions {
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
             writeSecondMarker(marker, now);
-        } catch (final IOException e) {
+        } catch (final Throwable t) {
             // catch and log instead of throwing because upgrade process looks at the presence or absence
             // of marker files to determine whether to proceed with the upgrade
             // if second marker is present, that means the zip file was successfully extracted
-            log.error("Failed to unzip archive for NMT consumption", e);
+            log.error("Failed to unzip archive for NMT consumption", t);
             log.error(MANUAL_REMEDIATION_ALERT);
         }
     }
@@ -244,6 +249,7 @@ public class ReadableFreezeUpgradeActions {
                 final var bw = new BufferedWriter(fw)) {
             activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
             writeNextNodeId(activeNodes, bw);
+            bw.flush();
         } catch (final IOException e) {
             log.error("Failed to generate {} with exception : {}", configTxt, e);
         }
@@ -274,8 +280,7 @@ public class ReadableFreezeUpgradeActions {
         var line = new StringBuilder();
         int weight = 0;
         final var node = activeNode.node();
-        final var name = "node" + (node.nodeId() + 1);
-        final var alias = nameToAlias(name);
+        final var alias = nameToAlias(node.description());
         final var pemFile = pathToWrite.resolve("s-public-" + alias + ".pem");
         final int INT = 0;
         final int EXT = 1;
@@ -290,17 +295,17 @@ public class ReadableFreezeUpgradeActions {
             line.append("address, ")
                     .append(node.nodeId())
                     .append(", ")
-                    .append(node.nodeId()) // nodeId as nickname
+                    .append(node.nodeId())
                     .append(", ")
-                    .append(name)
+                    .append(node.description())
                     .append(", ")
                     .append(weight)
                     .append(", ")
-                    .append(gossipEndpoints.get(INT).ipAddressV4().asUtf8String())
+                    .append(hostNameFor(gossipEndpoints.get(INT)))
                     .append(", ")
                     .append(gossipEndpoints.get(INT).port())
                     .append(", ")
-                    .append(gossipEndpoints.get(EXT).ipAddressV4().asUtf8String())
+                    .append(hostNameFor(gossipEndpoints.get(EXT)))
                     .append(", ")
                     .append(gossipEndpoints.get(EXT).port())
                     .append(", ")
@@ -320,6 +325,21 @@ public class ReadableFreezeUpgradeActions {
         } else {
             log.error("Node has {} gossip endpoints, expected greater than 1", gossipEndpoints.size());
         }
+    }
+
+    private String hostNameFor(@NonNull final ServiceEndpoint endpoint) {
+        return endpoint.ipAddressV4().length() == 4
+                ? ipV4AddressFromOctets(endpoint.ipAddressV4())
+                : endpoint.domainName();
+    }
+
+    private String ipV4AddressFromOctets(@NonNull final Bytes encoded) {
+        return (encoded.getByte(0) & 0xFF) + "."
+                + (encoded.getByte(1) & 0xFF)
+                + "."
+                + (encoded.getByte(2) & 0xFF)
+                + "."
+                + (encoded.getByte(3) & 0xFF);
     }
 
     private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {

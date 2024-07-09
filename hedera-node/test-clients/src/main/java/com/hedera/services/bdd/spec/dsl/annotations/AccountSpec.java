@@ -36,4 +36,18 @@ public @interface AccountSpec {
      * @return the spec name of the account
      */
     String name() default "";
+
+    /**
+     * If set, the initial balance of the account.
+     *
+     * @return the initial balance of the account
+     */
+    long balance() default 0;
+
+    /**
+     * If set, the initial staked node id of the account.
+     *
+     * @return the initial staked node id of the account
+     */
+    long stakedNodeId() default -1;
 }

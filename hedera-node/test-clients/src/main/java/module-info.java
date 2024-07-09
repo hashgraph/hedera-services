@@ -3,7 +3,6 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.utilops.inventory;
     exports com.hedera.services.bdd.suites;
     exports com.hedera.services.bdd.suites.utils.sysfiles.serdes;
-    exports com.hedera.services.bdd;
     exports com.hedera.services.bdd.spec;
     exports com.hedera.services.bdd.spec.infrastructure;
     exports com.hedera.services.bdd.spec.props;
@@ -82,6 +81,7 @@ module com.hedera.node.test.clients {
     requires java.net.http;
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j.core;
+    requires org.assertj.core;
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.datatypes;
     requires org.hyperledger.besu.internal.crypto;

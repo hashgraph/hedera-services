@@ -204,7 +204,7 @@ jobs:
 
       - name: Compile
         id: gradle-build
-        run: ${GRADLE_EXEC} assemble --scan
+        run: ${GRADLE_EXEC} assemble :test-clients:yahCliJar --scan
 
       - name: Spotless Check
         if: ${{ inputs.enable-spotless-check && !cancelled() }}
@@ -478,7 +478,7 @@ jobs:
 
       - name: Publish To Codecov
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
-        uses: codecov/codecov-action@54bcd8715eee62d40e33596ef5e8f0f48dbbccab # v4.1.0
+        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
         env:
           CODECOV_TOKEN: ${{ secrets.codecov-token }}
         with:
