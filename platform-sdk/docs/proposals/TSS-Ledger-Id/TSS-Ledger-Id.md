@@ -4,15 +4,11 @@
 
 ## Summary
 
-This proposal is for the integration of a threshold signature scheme into the consensus nodes to allow them to create a
-private/public key pair for the ledger that can be used to sign blocks and construct block proofs. The private key must
-be a secret that no one knows. The public key is known by all and functions as the ledger id. The consensus nodes must
-be able to aggregate their individual signatures on a message into a valid ledger signature that is verifiable by
-the ledger id. Through signing a block with the ledger private key, we can use Merkle Proofs to extend the signature
-to cover the contents of the block and the state changes processed in that round. This forms the basis of Block
-Proofs and provides a way for external parties to verify that certain facts are true on the ledger at a particular
-point in time. Part of our goal is that users could write EVM smart contracts that can verify the Block Proofs and
-make decisions based on their claims.
+This proposal is for the integration of a threshold signature scheme into the consensus nodes to create a
+private/public key pair for the ledger that can be used to sign blocks. The private key must be a secret that no one
+knows. The public key is known by all and functions as the ledger id. The consensus nodes must be able to aggregate
+their individual signatures on a message into a valid ledger signature that is verifiable by the ledger id. Part of our
+goal is that users could write EVM smart contracts that can verify the block signatures.
 
 | Metadata           | Entities                                   | 
 |--------------------|--------------------------------------------|
@@ -25,12 +21,16 @@ make decisions based on their claims.
 
 ## Purpose and Context
 
-Users of a ledger want to have cryptographic proofs that a statement was true on the ledger at a particular point in
-time. Our chosen method for providing these types of proofs is to assign a permanent public/private key pair to the
-ledger for use in signing blocks and constructing block proofs. The ledger private key must be a secret that no one
-knows. The ledger public key is known by all and functions as the ledger id. While the ledger private key is unknown to
-anyone, the consensus nodes must be able to aggregate their individual signatures on a message into a valid ledger
-signature for the message that is verifiable by the ledger id.
+The purpose of this proposal is to integrate a BLS based Threshold Signature Schemes (TSS) into consensus nodes to
+give a network a ledger id and create a way of signing the root hash of blocks such that the signature can be
+verified by the ledger id.
+
+In this BLS based TSS, the network is assigned a durable BLS private/public key pair where the public key is the ledger
+id and the private key is a secret that no one knows. Each node in the network is given a number of shares  
+proportional to its signing weight. Each share is a BLS key on the same elliptic curve as the ledger key. When the
+network needs to sign a block root hash, each node uses its shares to sign the block root hash and gossips the
+signature out to the network. When a node has collected a threshold number of signatures on the same block root hash,
+it can aggregate the signatures into a ledger signature that is verifiable by the ledger id.
 
 The TSS effort has been broken down into four separate proposals: TSS-Library, TSS-Roster, TSS-Ledger-ID, and
 TSS-Block-Signing.
@@ -47,44 +47,37 @@ TSS-Block-Signing.
 This  `TSS-Ledger-ID` proposal covers changes to the following elements:
 
 * The process of generating the ledger key pair for new networks and existing networks.
-* The process for signing a message with the ledger private key.
 * The process of transferring the ability of the ledger to sign a message from one set of consensus nodes to another.
 * The new state data structures needed to store TSS Key material and the ledger id.
 * The new components needed in the framework to support creating and transferring the ledger key.
 * The modified startup process to initialize the signing capability.
+* For each node, the creation of a new Elliptic Curve (EC) key called its `elGamalKey` that is used in creating shares.
 
 ### Goals
 
 The following capabilities are the goals of this proposal:
 
-1. `Ledger Signing API` - The app gives a message to the platform to sign. The platform signs the message with its
-   shares, gossips the signatures, and aggregates share signatures into a ledger signature. The ledger signature is
-   returned to the app through the `PlatformPublisher`.
-2. `TSS Bootstrap on Existing Network` - Able to setup an existing network with a ledger public/private key pair.
-3. `TSS Bootstrap for New Network` - Able to setup a new network with a ledger public/private key pair.
-4. `Keying The Next Roster` - Able to transfer the ability to sign a message with the ledger private key from one set of
-   consensus nodes to another.
+1. `TSS Bootstrap on Existing Network` - Able to setup an existing network with a ledger public/private key pair.
+2. `TSS Bootstrap for New Network` - Able to setup a new network with a ledger public/private key pair.
+3. `Keying The Next Roster` - Able to transfer the ability to sign a message with the ledger private key from one
+   set of consensus nodes to another.
+4. Testing of the TSS signing capability with verification by an EVM smart contract using the ALT_BN128
+   [precompiles that are available in the EVM](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1829.md).
 
 ### Non-Goals
 
 The following are not goals of this proposal:
 
 1. Achieving a fully dynamic address book life-cycle.
-2. Block Proofs or the signing of blocks.
-3. Verification of signed messages beyond the consensus node.
-    * It is not within the scope of this proposal and effort to develop, test, and deploy a smart contract that can
-      verify a block proof. It is expected that mathematics works and that our use of the ALT-BN128 curve will
-      dovetail with the
-      [precompiles that are available in the EVM](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1829.md).
 
 ### Dependencies, Interactions, and Implications
 
 Dependencies on the TSS-Library
 
-* At minimum, the top-level API in the TSS-Proposal is defined and can be mocked for initial development.
+* At minimum, the top-level API in the TSS-Library is defined and can be mocked for initial development.
 * The complete implementation of the TSS-Library is required for the TSS-Ledger-ID proposal to be fully implemented.
-* Consensus nodes must have their long-term EC keys generated and stored in the address book in a release prior to the
-  TSS-Ledger-ID proposal being delivered.
+* Consensus nodes must have their `elGamelKey` generated with the private key stored on disk and the public key
+  stored in the roster prior to the TSS-Ledger-ID proposal being delivered.
 
 Dependencies on the TSS-Roster
 
@@ -97,12 +90,12 @@ Impacts of TSS-Ledger-ID to Services Team
   roster to have key material generated.
 * Services will need to know or detect when the candidate roster fails to be adopted due to not having enough key
   material generated.
-* The node's long term EC public key will need to be added to the address book.
+* The node's public `elGamalKey` will need to be added to the address book.
     * This requires modification of the HAPI transactions that manage the address book.
 
 Impacts to DevOps Team
 
-* Each consensus node will need a new long term EC key in addition to the existing RSA key.
+* Each consensus node will need a new `elGamalKey` in addition to the existing RSA key.
     * EC Key generation will have to happen before a node can join the network.
 * A new node added to an existing network will need to be given a state from an existing node after the network has
   adopted the address book containing the new node.
@@ -116,49 +109,32 @@ Implications Of Completion
 
 TSS Core Requirements
 
-| Requirement ID | Requirement Description                                                                                                      |
-|----------------|------------------------------------------------------------------------------------------------------------------------------|
-| TSS-001        | The ledger MUST have a public/private signing key pair that does not change when the consensus roster changes.               |
-| TSS-002        | The ledger private key MUST be a secret that nobody knows.                                                                   |
-| TSS-003        | The `ledger id` MUST be a public key that everyone knows and able to verify signatures from the ledger private key.          |
-| TSS-004        | The ledger signature for a message MUST be produced through a threshold number of consensus nodes signing the message.       |
-| TSS-005        | There MUST be a way to bootstrap an existing network's consensus roster with to give the ledger a public/private signing key |
-| TSS-006        | There MUST be a way for a new network to generate a public/private signing key for the ledger.                               |
-| TSS-007        | There MUST be a way to rotate the ledger's public/private signing key.                                                       |
-| TSS-008        | The ledger signature SHOULD be verifiable by an EVM smart contract without excessive cost or time.                           |
-| TSS-009        | The TSS implementation SHOULD be able to switch elliptic curves.                                                             |
-| TSS-010        | The TSS algorithm SHOULD be able to model consensus weight with high precision.                                              |
-| TSS-011        | Minimize the number of steps a Node Operator needs to perform.                                                               |
+| Requirement ID | Requirement Description                                                                                                                |
+|----------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| TSS-001        | The ledger MUST have a public/private signing key pair that does not change when the consensus roster changes.                         |
+| TSS-002        | The ledger private key MUST be a secret that nobody knows.                                                                             |
+| TSS-003        | The `ledger id` MUST be a public key that everyone knows and able to verify signatures from the ledger private key.                    |
+| TSS-004        | The ledger signature MUST be produced through aggregating signatures from consensus nodes representing more than 1/2 consensus weight. |
+| TSS-005        | There MUST be a way to bootstrap an existing network's consensus roster with the ledger public/private signing key                     |
+| TSS-006        | There MUST be a way for a new network to generate a public/private signing key for the ledger.                                         |
+| TSS-007        | There MUST be a way to rotate the ledger's public/private signing key.                                                                 |
+| TSS-008        | The ledger signature SHOULD be verifiable by an EVM smart contract without excessive gas cost.                                         |
+| TSS-009        | The TSS implementation SHOULD be able to switch elliptic curves.                                                                       |
+| TSS-010        | The TSS algorithm SHOULD be able to model consensus weight with high precision.                                                        |
+| TSS-011        | Minimize the number of steps a Node Operator needs to perform.                                                                         |
 
 Block Signing Requirements
 
-| Requirement ID | Requirement Description                               |
-|----------------|-------------------------------------------------------|
-| TSSBS-001      | The initial block in the block stream MUST be signed. |
-| TSSBS-002      | On a new network, the initial block MUST be block 0   |
+| Requirement ID | Requirement Description                                                                 |
+|----------------|-----------------------------------------------------------------------------------------|
+| TSSBS-001      | The initial block in the block stream MUST be signed and verifiable with the ledger id. |
+| TSSBS-002      | On a new network, the initial block MUST be block 0                                     |
 
 ### Design Decisions
 
 #### New Address Book Life-Cycle
 
-The TSS-Roster design proposal will deliver after Dynamic Address Book (DAB) Phase 2 and must be delivered at least
-1 release prior to the TSS-Ledger-ID proposal. This proposal modifies the address book and roster lifecycle
-presented in TSS-Roster. To explain the modification, we present the TSS-Roster life-cycle here:
-
-1. The application address book has 3 states: `Active` (AAB), `Candidate` (CAB), and `Future` (FAB).
-    * The FAB is updated by every HAPI transaction that is already received in Dynamic Address Book Phase 2.
-    * The CAB is a snapshot of the FAB when the app is ready to initiate an address book rotation.
-2. The platform receives a `Roster`, which is a subset of the Address Book. There are 3 roster states: `active`,
-   `candidate`, and `previous`.
-    * The `previous roster` is needed for validation in replay of the pre-consensus event stream.
-    * The `active roster` is the roster currently used in consensus.
-    * The `candidate roster` is the roster that will be adopted upon the next software upgrade.
-3. When the app is ready to initiate an address book rotation, it sets a `candidate roster` in the state just before the
-   freeze and restart during a software upgrade.
-4. If set, the `candidate roster` is always adopted as the new `active roster` after restart in the software upgrade.
-5. The CAB becomes the AAB when the app learns that the `candidate roster` has become the `active roster`.
-
-The TSS-Ledger-ID modifications to the life-cycle are as follows:
+The TSS-Ledger-ID proposal modifies the address book and roster lifecycle presented in TSS-Roster as follows:
 
 1. The `Roster` format does not change.
 2. The app must set the `candidate roster` early enough to allow the nodes to generate the key material for the new
@@ -187,13 +163,13 @@ share is required to participate in the signing since a threshold number of shar
 ledger private key, if they so choose.
 
 The Groth21 algorithm requires specific Elliptic Curve (EC)s with the ability to produce bilinear pairings. Each
-node will need its own long-term EC key pair on the curve for use in the groth21 TSS algorithm. Each node receives
-some number of shares in proportion to the consensus weight assigned to it. Each share is an EC key pair on the
-same curve. All public keys of the shares are known, and aggregating a threshold number of share public keys will
-produce the ledger id. Only the node has access to the private key of its own shares. Each node must keep their
-private keys to themselves since a threshold number of share private keys can aggregate to recover the ledger
-private key. An aggregate number of signatures on the same message from the share private keys will aggregate to
-recover the ledger signature on the message.
+node will need its own long-term EC key pair, called an `elGamalKey`, on the curve for use in the groth21 TSS
+algorithm. Each node receives some number of shares in proportion to the consensus weight assigned to it. Each share
+is an EC key pair on the same curve. All public keys of the shares are known, and aggregating a threshold number of
+share public keys will produce the ledger id. Only the node has access to the private key of its own shares. Each
+node must keep their private keys to themselves since a threshold number of share private keys can aggregate to
+recover the ledger private key. An aggregate number of signatures on the same message from the share private keys
+will aggregate to recover the ledger signature on the message.
 
 Transferring the ability to generate ledger signatures from one set of consensus nodes to another is done by having
 each node generate a `TssMessage` for each share that fractures the share into a number of subshares or `shares of
@@ -207,23 +183,25 @@ knows.
 
 ![TSS re-keying next consensus roster](./Groth21-re-keying-shares-of-shares.drawio.svg)
 
-This process of re-keying the next consensus roster during an address book change takes an asynchronous amount of
-time through multiple rounds of consensus to complete. This requires saving incremental progress in the state to ensure
-that the process can resume from any point if a node or the network restarts. Switching to the next consensus roster
-cannot happen until that roster has enough nodes able to recover a threshold number of shares so that an aggregation of
-node signatures can generate the ledger signature.
+This process of keying the candidate roster during an address book change takes an asynchronous amount of time
+through multiple rounds of consensus to complete. This requires saving incremental progress in the state to ensure
+that the process can resume from any point if a node or the network restarts. Switching to the candidate roster must
+not happen until enough nodes have voted that they have verified a threshold number of TssMessages from the active
+roster. Verification succeeds when a node is able to recover the ledger id from the collected TssMessages. A vote
+consists of a bit vector where each bit corresponds to a share id and is set to 1 if the share id's TssMessage was
+valid and used in the recovery of the ledger id.
 
 ##### Elliptic Curve Decisions
 
-Our first implementation of Groth21 will use the ALT_BN128 elliptic curve which is in use and verifiable by EVMs.  
-If and when the Ethereum ecosystem adopts BLS12_381, we will likely switch over to that more secure curve.
+Our first implementation of Groth21 will use the ALT_BN128 elliptic curve which has precompiles in the EVM.  
+If the Ethereum ecosystem creates precompiles for BLS12_381, we may switch over to that more secure curve.
 
 ##### New Elliptic Curve Node Keys
 
-Each node will need a new long-term EC key pair in addition to the existing RSA key pair. The EC key pair will be
+Each node will need a new `elGamalKey` pair in addition to the existing RSA key pair. The `elGamalKey` pair will be
 used in the Groth21 algorithm to generate and decrypt `TSS-Messages`. These new EC Keys will not be used for
 signing messages, only for generating the shares. It is the share keys that are used to sign messages. The public
-keys of these long-term node specific EC keys must be in the address book.
+keys of the `elGamalKeys` must be in the address book.
 
 ##### Groth21 Drawbacks
 
@@ -247,11 +225,11 @@ calculated as follows:
 
 ##### Threshold for recovery of Signatures and Ledger Id.
 
-Our public claim is that we can tolerate up to 1/3 of the stake assigned to malicious nodes. Our
-threshold for recovery of ledger signatures and the ledger id must be strictly greater than the following values:
+The network must be able to tolerate up to 1/3 of the stake assigned to malicious nodes. The threshold for recovery
+of ledger signatures and the ledger id must be strictly greater than the following values:
 
-1. `floor(TS/3)` where `TS` is the total number of shares.
-2. `M` where `M` is the max number of shares assigned to any node.
+1. `floor(TS/3)+N` where `TS` is the total number of shares and `N` is the number of nodes with shares. (malicious
+   stake threshold)
 
 The integer threshold we will use is `ceiling(TS /2)`.
 
@@ -289,7 +267,7 @@ existing network. There are several options to consider in the TSS bootstrap pro
 
 1. Do we allow block number and round number to be out of sync?
 2. Do we need the initial block produced to be signed by the ledger id?
-3. For new networks, Do we need to produce a signed block 0?
+3. For new networks, do we need to produce a signed block 0?
 4. For existing networks, does the TSS bootstrap roster sign blocks prior to its existence?
 
 ##### For New Networks
@@ -306,6 +284,7 @@ the nodes can cryptographically verify that the setup process took place correct
 re-derive the ledger id. Each node can validate the TssMessages have come from a sufficient variety of nodes. With
 the assumption that no greater than 1/3 of the nodes are malicious, the threshold of 1/2 ensures that the malicious
 nodes will not be able to recover the ledger id if they collude together.
+nodes will not be able to recover the ledger id if they collude together.
 
 The process of the platform restarting itself after performing a pre-genesis keying phase is new startup logic.  
 This should not involve an interruption of the containing process. While we are in the pre-genesis phase the
@@ -316,7 +295,7 @@ will accept application transactions when it becomes active.
 
 Given the requirement of TSSBS-001, the setup of the TSS Key Material must happen before the software upgrade that
 enables block streams. In order to reduce risk and density of complex software changes, giving the nodes
-their long term EC keys and changing the roster life-cycle through the TSS-Roster effort should be completed and
+their `elGamalKeys` and changing the roster life-cycle through the TSS-Roster effort should be completed and
 delivered in a software release prior to the delivery.
 
 The schedule of delivery of capability is explored in a later section in this proposal.
@@ -375,6 +354,8 @@ To request a ledger signature, the application invokes a new method on the `Stat
 
 To receive a ledger signature, the application registers a callback with the platform builder:
 
+TODO: Move signing API to TSS-Block-Signing proposal.
+
 * `PlatformBuilder::withLedgerSignatureCallback(Consumer<PairingSignature> ledgerSignatureConsumer)`
 
 #### System Transactions
@@ -409,15 +390,17 @@ TODO: Protobuf of data
 
 ##### Consensus Rosters
 
-This proposal extends the roster data format where each `RosterEntry` has a new long term public EC key called a
+This proposal extends the roster data format where each `RosterEntry` has a new `elGamalKey` called a
 `tssEcKey` that is used in the Groth21 algorithm.
 
 TODO: Protobuf of data
 
 ##### Key Material (TSS Data Map)
 
-The TSS Data Map is a Map Merkle Leaf that is a combined map of all the key material for all rosters that are
+The TSS Data Map is a combined map of all the key material for all rosters that are
 tracked and the votes by nodes that have validated the key material.
+
+TODO:  Separate the maps since the state API can handle them separate.
 
 Keys in the TSS Data Map have the following structure: (KeyType, RosterHash, SequenceNumber).
 
@@ -430,6 +413,8 @@ The value associated with a TSS_MESSAGE key is the pair (ShareId, TssMessage)
 1. ShareId - The id of the share that the message is related to.
 2. TssMessage - the raw bytes of the TssMessage
 
+TODO: protobuf for TssMessage (modify the TSS-Library proposal)
+
 The value associated with a TSS_VOTE key is a bit vector with the following interpretation
 
 * The order of bits from the least significant bit to the most significant bit corresponds to the numeric order of
@@ -440,6 +425,8 @@ The value associated with a TSS_VOTE key is a bit vector with the following inte
   was not used in the reconstruction of the ledger id.
 * If the sum of the bits is greater than the threshold, then the vote is a yes vote in favor of adopting the
   candidate roster.
+
+TODO: protobuf for TssVote
 
 Lifecycle Invariants
 
@@ -523,6 +510,8 @@ The following are new components or entities in the system:
 3. TSS Message Creator (Wired)
 4. TSS Message Validator (Wired)
 5. TSS Signing Manager (Wired)
+
+TODO: Move the Signing Manager to the TSS-Block-Signing proposal.
 
 ![TSS Platform Wiring](./TSS-Wiring-Diagram.drawio.png)
 
