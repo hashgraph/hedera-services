@@ -36,6 +36,32 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 public class NodeCreateSuite {
+
+/*
+    @HapiTest
+    final Stream<DynamicTest> adminKeyIsInvalid() {
+
+    }
+
+       @HapiTest
+    final Stream<DynamicTest> adminKeyIsIsValid() {
+
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> allFieldsSetHappyCase() {
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> allFieldsSetDomainHappyCase() {
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> allFieldsSetIPHappyCase() {
+    }
+
+ */
+
     @HapiTest
     @Tag(EMBEDDED)
     final Stream<DynamicTest> createNodeWorks() {
