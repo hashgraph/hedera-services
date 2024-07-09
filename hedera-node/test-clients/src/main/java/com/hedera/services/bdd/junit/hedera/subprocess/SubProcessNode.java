@@ -18,6 +18,11 @@ package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.PENDING;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.REACHED;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.UNREACHABLE;
+import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen.NO;
+import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen.YES;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.DOWN;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.NA;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.UP;
@@ -39,8 +44,8 @@ import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -102,7 +107,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
 
     @Override
     public SubProcessNode start() {
-        return startWithJar(null);
+        return startWithConfigVersion(0);
     }
 
     @Override
@@ -141,18 +146,21 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
                             && status == ACTIVE
                             && !nominalSoFar
                             && retryCount.get() % BINDING_CHECK_INTERVAL == 0) {
-                        bindExceptionSeen = swirldsLogContains("java.net.BindException")
-                                ? BindExceptionSeen.YES
-                                : BindExceptionSeen.NO;
+                        if (swirldsLogContains("java.net.BindException")) {
+                            bindExceptionSeen = YES;
+                        } else {
+                            bindExceptionSeen = NO;
+                        }
                     }
                     if (nodeStatusObserver != null) {
                         nodeStatusObserver.accept(new NodeStatus(
                                 lookupAttempt, grpcStatus, bindExceptionSeen, retryCount.getAndIncrement()));
                     }
-                    if (bindExceptionSeen == BindExceptionSeen.YES) {
-                        throw new IllegalStateException("Address already in use");
+                    if (statusReached) {
+                        return REACHED;
+                    } else {
+                        return bindExceptionSeen == YES ? UNREACHABLE : PENDING;
                     }
-                    return statusReached;
                 },
                 () -> retryCount.get() > MAX_PROMETHEUS_RETRIES ? LOG_SCAN_BACKOFF_MS : PROMETHEUS_BACKOFF_MS);
     }
@@ -172,16 +180,11 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         return this;
     }
 
-    public SubProcessNode startWithJar(@Nullable final Path jarPath) {
+    public SubProcessNode startWithConfigVersion(final int configVersion) {
         assertStopped();
         assertWorkingDirInitialized();
         destroyAnySubProcessNodeWithId(metadata.nodeId());
-        if (jarPath == null) {
-            processHandle = startSubProcessNodeFrom(metadata, null);
-        } else {
-            final var jarLoc = jarPath.normalize().toAbsolutePath().toString();
-            processHandle = startSubProcessNodeFrom(metadata, jarLoc);
-        }
+        processHandle = startSubProcessNodeFrom(metadata, configVersion);
         return this;
     }
 
@@ -201,8 +204,8 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
     private boolean swirldsLogContains(@NonNull final String text) {
         try (var lines = Files.lines(getExternalPath(SWIRLDS_LOG))) {
             return lines.anyMatch(line -> line.contains(text));
-        } catch (IOException ignore) {
-            return false;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 

@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd;
+package com.hedera.services.bdd.spec;
 
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;

@@ -104,4 +104,10 @@ public interface NodeInfo {
      * @return the port. Non-negative.
      */
     int internalPort();
+
+    /**
+     * The "self name" of this node.
+     * @return the self name
+     */
+    String selfName();
 }

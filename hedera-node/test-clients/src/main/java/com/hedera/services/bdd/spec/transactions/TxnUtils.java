@@ -47,9 +47,9 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -130,6 +130,10 @@ public class TxnUtils {
     public static Key ALL_ZEROS_INVALID_KEY = Key.newBuilder()
             .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000"))
             .build();
+
+    public static Key netOf(@NonNull final HapiSpec spec, @NonNull final Optional<String> keyName) {
+        return netOf(spec, keyName, Optional.empty(), Optional.empty());
+    }
 
     public static Key netOf(
             @NonNull final HapiSpec spec,

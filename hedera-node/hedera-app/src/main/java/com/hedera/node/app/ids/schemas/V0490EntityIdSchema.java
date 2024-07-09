@@ -39,8 +39,6 @@ public class V0490EntityIdSchema extends Schema {
 
     public static final String ENTITY_ID_STATE_KEY = "ENTITY_ID";
 
-    private static long fs = -1;
-
     public V0490EntityIdSchema() {
         super(VERSION);
     }
@@ -75,23 +73,8 @@ public class V0490EntityIdSchema extends Schema {
         if (isGenesis) {
             // Set the initial entity id to the first user entity minus one
             final var entityNum = config.firstUserEntity() - 1;
-            log.info("Setting initial entity id to " + entityNum);
+            log.info("Setting initial entity id to {}", entityNum);
             entityIdState.put(new EntityNumber(entityNum));
         }
-
-        if (fs > -1) {
-            log.info("BBM: Setting initial entity id to " + fs);
-            entityIdState.put(new EntityNumber(fs - 1));
-        } else {
-            log.warn("BBM: no entity ID 'from' state found");
-        }
-
-        // Usually we un-assign the 'from' state here, but in this case there's no need because the only field
-        // is
-        // a copied long
-    }
-
-    public static void setFs(long fs) {
-        V0490EntityIdSchema.fs = fs;
     }
 }

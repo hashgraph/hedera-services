@@ -146,6 +146,11 @@ public class FakeNetworkInfo implements NetworkInfo {
             public Bytes sigCertBytes() {
                 return FAKE_NODE_INFOS.get(0).sigCertBytes();
             }
+
+            @Override
+            public String selfName() {
+                return FAKE_NODE_INFOS.getFirst().selfName();
+            }
         };
     }
 
@@ -226,6 +231,11 @@ public class FakeNetworkInfo implements NetworkInfo {
             @Override
             public Bytes sigCertBytes() {
                 return sigCertBytes;
+            }
+
+            @Override
+            public String selfName() {
+                return memo;
             }
         };
     }

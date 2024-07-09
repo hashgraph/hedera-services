@@ -55,7 +55,7 @@ val ciCheckTagExpressions =
     mapOf(
         "hapiTestCrypto" to "CRYPTO",
         "hapiTestToken" to "TOKEN",
-        "hapiTestRestart" to "RESTART",
+        "hapiTestRestart" to "RESTART|UPGRADE",
         "hapiTestSmartContract" to "SMART_CONTRACT",
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
@@ -274,11 +274,6 @@ val cleanYahCli =
         group = "copy"
         delete(File(project.file("yahcli"), "yahcli.jar"))
     }
-
-tasks.assemble {
-    dependsOn(tasks.shadowJar)
-    dependsOn(copyYahCli)
-}
 
 tasks.clean {
     dependsOn(cleanYahCli)
