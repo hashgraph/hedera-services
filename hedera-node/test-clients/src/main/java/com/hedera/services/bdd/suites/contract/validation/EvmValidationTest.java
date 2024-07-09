@@ -22,17 +22,18 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -46,13 +47,13 @@ import org.junit.jupiter.api.Tag;
 @HapiTestLifecycle
 public class EvmValidationTest {
     @Nested
-    @DisplayName("balanceOf")
+    @DisplayName("calling balanceOf")
     class BalanceOf {
         @ContractSpec(contract = "BalanceChecker46Version", creationGas = 10_000_000L)
         static SpecContract balanceChecker46Version;
 
         @HapiTest
-        @DisplayName("can be called successfully on non-existent contract")
+        @DisplayName("succeeds on non-existent contract")
         public Stream<DynamicTest> canCallBalanceOperationNonExtantContract() {
             final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
             return hapiTest(balanceChecker46Version
@@ -62,7 +63,7 @@ public class EvmValidationTest {
     }
 
     @Nested
-    @DisplayName("touchAccountContract")
+    @DisplayName("calling touchAccountContract")
     class TouchAccountContract {
         private static String touchAccountContract = "TouchAccountContract";
 
@@ -71,58 +72,71 @@ public class EvmValidationTest {
             specManager.setup(uploadInitCode(touchAccountContract), contractCreate(touchAccountContract));
         }
 
-        @HapiTest
-        @DisplayName("fail transferring value to long zero address 00000000000000000000000000000000000007d0 ")
-        public Stream<DynamicTest> lazyCreateToLongZeroFails() {
-            final var LONG_ZERO_ADDRESS = "00000000000000000000000000000000000007d0";
-            return hapiTest(sourcing(
-                    () -> contractCall(touchAccountContract, "touchAccount", asHeadlongAddress(LONG_ZERO_ADDRESS))
-                            .gas(100_000L)
-                            .sending(ONE_HBAR)
-                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+        @Nested
+        @DisplayName("fails")
+        class CallFails {
+            @HapiTest
+            @DisplayName("when transferring value to long zero address 00000000000000000000000000000000000007d0 ")
+            public Stream<DynamicTest> lazyCreateToLongZeroFails() {
+                final var LONG_ZERO_ADDRESS = "00000000000000000000000000000000000007d0";
+                return callContractWithValue(LONG_ZERO_ADDRESS, CONTRACT_REVERT_EXECUTED);
+            }
+
+            @HapiTest
+            @DisplayName("when transferring value to long zero burn address 000000000000000000000000000000000000dEaD ")
+            public Stream<DynamicTest> lazyCreateToLongZeroBurnAddressFails() {
+                final var LONG_ZERO_BURN_ADDRESS = "000000000000000000000000000000000000dEaD";
+                return callContractWithValue(LONG_ZERO_BURN_ADDRESS, CONTRACT_REVERT_EXECUTED);
+            }
+
+            @HapiTest
+            @DisplayName("when transferring value to all zero address 0000000000000000000000000000000000000000 ")
+            public Stream<DynamicTest> lazyCreateToAllZeroFails() {
+                final var ALL_ZERO_ADDRESS = "0000000000000000000000000000000000000000";
+                return callContractWithValue(ALL_ZERO_ADDRESS, CONTRACT_REVERT_EXECUTED);
+            }
         }
 
-        @HapiTest
-        @DisplayName("fail transferring value to long zero burn address 000000000000000000000000000000000000dEaD ")
-        public Stream<DynamicTest> lazyCreateToLongZeroBurnAddressFails() {
-            final var LONG_ZERO_BURN_ADDRESS = "000000000000000000000000000000000000dEaD";
-            return hapiTest(sourcing(
-                    () -> contractCall(touchAccountContract, "touchAccount", asHeadlongAddress(LONG_ZERO_BURN_ADDRESS))
-                            .gas(100_000L)
-                            .sending(ONE_HBAR)
-                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+        @Nested
+        @DisplayName("succeeds")
+        class CallSucceeds {
+            @HapiTest
+            @DisplayName("when transferring value to evm address 0000000100000000000000020000000000000003")
+            public Stream<DynamicTest> lazyCreateToEvmAddressSucceeds() {
+                final var EVM_ADDRESS = "0000000100000000000000020000000000000003";
+                return callContractWithValue(EVM_ADDRESS, ResponseCodeEnum.SUCCESS);
+            }
+
+            @HapiTest
+            @DisplayName("when transferring value to realistic evm address 388C818CA8B9251b393131C08a736A67ccB19297")
+            public Stream<DynamicTest> lazyCreateToRealisticEvmAddressSucceeds() {
+                final var REALISTIC_EVM_ADDRESS = "388C818CA8B9251b393131C08a736A67ccB19297";
+                return callContractWithValue(REALISTIC_EVM_ADDRESS, ResponseCodeEnum.SUCCESS);
+            }
         }
 
-        @HapiTest
-        @DisplayName("fail transferring value to all zero address 0000000000000000000000000000000000000000 ")
-        public Stream<DynamicTest> lazyCreateToAllZeroFails() {
-            final var ALL_ZERO_ADDRESS = "0000000000000000000000000000000000000000";
-            return hapiTest(sourcing(
-                    () -> contractCall(touchAccountContract, "touchAccount", asHeadlongAddress(ALL_ZERO_ADDRESS))
-                            .gas(100_000L)
-                            .sending(ONE_HBAR)
-                            // This seems incorrect, we should probably be consistent with the other long zero addresses
-                            .hasKnownStatus(INVALID_FEE_SUBMITTED)));
+        private static Stream<DynamicTest> callContractWithValue(
+                final String address, final ResponseCodeEnum expectedStatus) {
+            return hapiTest(contractCall(touchAccountContract, "touchAccount", asHeadlongAddress(address))
+                    .gas(100_000L)
+                    .sending(ONE_HBAR)
+                    .hasKnownStatus(expectedStatus));
         }
+    }
+
+    @Nested
+    @DisplayName("empty contract")
+    class EmptyContract {
+        private static String emptyContract = "EmptyContract";
 
         @HapiTest
-        @DisplayName("can transfer value to evm address 0000000100000000000000020000000000000003")
-        public Stream<DynamicTest> lazyCreateToEvmAddressSucceeds() {
-            final var EVM_ADDRESS = "0000000100000000000000020000000000000003";
+        @DisplayName("should fail to deploy")
+        public Stream<DynamicTest> canCallBalanceOperationNonExtantContract() {
             return hapiTest(
-                    sourcing(() -> contractCall(touchAccountContract, "touchAccount", asHeadlongAddress(EVM_ADDRESS))
-                            .gas(100_000L)
-                            .sending(ONE_HBAR)));
-        }
-
-        @HapiTest
-        @DisplayName("can transfer value to realistic evm address 388C818CA8B9251b393131C08a736A67ccB19297")
-        public Stream<DynamicTest> lazyCreateToRealisticEvmAddressSucceeds() {
-            final var EVM_ADDRESS = "388C818CA8B9251b393131C08a736A67ccB19297";
-            return hapiTest(
-                    sourcing(() -> contractCall(touchAccountContract, "touchAccount", asHeadlongAddress(EVM_ADDRESS))
-                            .gas(100_000L)
-                            .sending(ONE_HBAR)));
+                    uploadInitCode(emptyContract),
+                    contractCreate(emptyContract)
+                            .inlineInitCode(ByteString.copyFrom(new byte[0]))
+                            .hasKnownStatus(CONTRACT_BYTECODE_EMPTY));
         }
     }
 }
