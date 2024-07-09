@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.cli.sign.test;
+package com.hedera.services.cli.test.sign;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -65,7 +65,7 @@ class AccountBalanceSignCommandTest {
         final var signatureFileDestination = Path.of(tmpDir.getPath() + "/2023-03-23T14_25_29.576022Z_Balances.pb_sig");
         final var fileToSign = Path.of(Objects.requireNonNull(AccountBalanceSignCommandTest.class
                         .getClassLoader()
-                        .getResource("com.hedera.services.cli.sign.test/2023-03-23T14_25_29.576022Z_Balances.pb"))
+                        .getResource("com.hedera.services.cli.test.sign/2023-03-23T14_25_29.576022Z_Balances.pb"))
                 .getPath());
 
         // when:

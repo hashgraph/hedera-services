@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.cli.sign.test;
+package com.hedera.services.cli.test.sign;
 
 import com.swirlds.platform.util.FileSigningUtils;
 import java.net.URISyntaxException;
@@ -30,7 +30,7 @@ public class TestUtils {
             return FileSigningUtils.loadPfxKey(
                     Path.of(Objects.requireNonNull(TestUtils.class
                                     .getClassLoader()
-                                    .getResource("com.hedera.services.cli.sign.test/private-aaaa.pfx"))
+                                    .getResource("com.hedera.services.cli.test.sign/private-aaaa.pfx"))
                             .toURI()),
                     "password",
                     "s-aaaa");
@@ -45,7 +45,7 @@ public class TestUtils {
             return FileSigningUtils.loadPfxKey(
                     Path.of(Objects.requireNonNull(TestUtils.class
                                     .getClassLoader()
-                                    .getResource("com.hedera.services.cli.sign.test/" + fileName))
+                                    .getResource("com.hedera.services.cli.test.sign/" + fileName))
                             .toURI()),
                     "password",
                     "s-node0000");
@@ -58,7 +58,7 @@ public class TestUtils {
     static Path loadResourceFile(String resourceFileName) {
         return Path.of(Objects.requireNonNull(TestUtils.class
                         .getClassLoader()
-                        .getResource("com.hedera.services.cli.sign.test/" + resourceFileName))
+                        .getResource("com.hedera.services.cli.test.sign/" + resourceFileName))
                 .getPath());
     }
 }
