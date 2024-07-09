@@ -18,9 +18,14 @@ package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
 import com.hedera.services.bdd.spec.dsl.annotations.FungibleTokenSpec;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
@@ -43,8 +48,19 @@ public class IsAssociatedSystemContractTest {
     static SpecContract hrcContract;
 
     @HapiTest
-    @DisplayName("check if a token is associated with an account")
-    public Stream<DynamicTest> checkIfTokenIsAssociatedWithAnAccount() {
-        return hapiTest(hrcContract.call("isAssociated", immutableToken));
+    @DisplayName("check token is not associated with an account with static call")
+    public Stream<DynamicTest> checkTokenIsNotAssociatedWithAnAccountWithStaticCall() {
+        return hapiTest(hrcContract
+                .staticCall("isAssociated", immutableToken)
+                .andAssert(query -> query.has(ContractFnResultAsserts.resultWith()
+                        .resultThruAbi(
+                                getABIFor(FUNCTION, "isAssociated", "HRCContract"),
+                                isLiteralResult(new Object[] {false})))));
+    }
+
+    @HapiTest
+    @DisplayName("check token is not associated with an account")
+    public Stream<DynamicTest> checkTokenIsNotAssociatedWithAnAccount() {
+        return hapiTest(hrcContract.call("isAssociated", immutableToken).andAssert(txn -> txn.hasKnownStatus(SUCCESS)));
     }
 }
