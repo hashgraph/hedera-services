@@ -41,9 +41,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ServiceApiRegistryTest {
 
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
-    private static final ServiceApiDefinition<TestApi1> DEF_1 = new ServiceApiDefinition<>(TestApi1.class, TestApi1::new);
-    private static final ServiceApiDefinition<TestApi2> DEF_2 = new ServiceApiDefinition<>(TestApi2.class, TestApi2::new);
-    private static final ServiceApiDefinition<TestApi3> DEF_3 = new ServiceApiDefinition<>(TestApi3.class, TestApi3::new);
+    private static final ServiceApiDefinition<TestApi1> DEF_1 =
+            new ServiceApiDefinition<>(TestApi1.class, TestApi1::new);
+    private static final ServiceApiDefinition<TestApi2> DEF_2 =
+            new ServiceApiDefinition<>(TestApi2.class, TestApi2::new);
+    private static final ServiceApiDefinition<TestApi3> DEF_3 =
+            new ServiceApiDefinition<>(TestApi3.class, TestApi3::new);
 
     @Mock
     private HederaState state;
@@ -63,24 +66,33 @@ class ServiceApiRegistryTest {
     void failsWithNullParameters() {
         assertThatThrownBy(() -> registry.registerServiceApi(null, DEF_1)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> registry.registerServiceApi("test", null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> registry.registerServiceApis(null, List.of(DEF_1))).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> registry.registerServiceApis("test", (Collection<ServiceApiDefinition<?>>) null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> registry.registerServiceApis(null, Arrays.array(DEF_1))).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> registry.registerServiceApis("test", (ServiceApiDefinition<?>) null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> registry.registerServiceApis(null, List.of(DEF_1)))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> registry.registerServiceApis("test", (Collection<ServiceApiDefinition<?>>) null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> registry.registerServiceApis(null, Arrays.array(DEF_1)))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> registry.registerServiceApis("test", (ServiceApiDefinition<?>) null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void succeedsDifferentSizeCollection() {
         assertThatCode(() -> registry.registerServiceApis("test", List.of())).doesNotThrowAnyException();
-        assertThatCode(() -> registry.registerServiceApis("test", List.of(DEF_1))).doesNotThrowAnyException();
-        assertThatCode(() -> registry.registerServiceApis("test", List.of(DEF_2, DEF_3))).doesNotThrowAnyException();
+        assertThatCode(() -> registry.registerServiceApis("test", List.of(DEF_1)))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> registry.registerServiceApis("test", List.of(DEF_2, DEF_3)))
+                .doesNotThrowAnyException();
     }
 
     @Test
     void succeedsDifferentSizeArray() {
-        assertThatCode(() -> registry.registerServiceApis("test", Arrays.array())).doesNotThrowAnyException();
-        assertThatCode(() -> registry.registerServiceApis("test", Arrays.array(DEF_1))).doesNotThrowAnyException();
-        assertThatCode(() -> registry.registerServiceApis("test", Arrays.array(DEF_2, DEF_3))).doesNotThrowAnyException();
+        assertThatCode(() -> registry.registerServiceApis("test", Arrays.array()))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> registry.registerServiceApis("test", Arrays.array(DEF_1)))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> registry.registerServiceApis("test", Arrays.array(DEF_2, DEF_3)))
+                .doesNotThrowAnyException();
     }
 
     @Nested

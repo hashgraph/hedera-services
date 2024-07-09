@@ -43,19 +43,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class StoreRegistryTest {
 
-    private static final ReadableStoreDefinition<TestReadableStore1> READ_DEF_1 = new ReadableStoreDefinition<>(
-            TestReadableStore1.class, TestReadableStore1::new);
-    private static final ReadableStoreDefinition<TestReadableStore2> READ_DEF_2 = new ReadableStoreDefinition<>(
-            TestReadableStore2.class, TestReadableStore2::new);
-    private static final ReadableStoreDefinition<TestReadableStore3> READ_DEF_3 = new ReadableStoreDefinition<>(
-            TestReadableStore3.class, TestReadableStore3::new);
+    private static final ReadableStoreDefinition<TestReadableStore1> READ_DEF_1 =
+            new ReadableStoreDefinition<>(TestReadableStore1.class, TestReadableStore1::new);
+    private static final ReadableStoreDefinition<TestReadableStore2> READ_DEF_2 =
+            new ReadableStoreDefinition<>(TestReadableStore2.class, TestReadableStore2::new);
+    private static final ReadableStoreDefinition<TestReadableStore3> READ_DEF_3 =
+            new ReadableStoreDefinition<>(TestReadableStore3.class, TestReadableStore3::new);
 
-    private static final WritableStoreDefinition<TestWritableStore1> WRITE_DEF_1 = new WritableStoreDefinition<>(
-            TestWritableStore1.class, TestWritableStore1::new);
-    private static final WritableStoreDefinition<TestWritableStore2> WRITE_DEF_2 = new WritableStoreDefinition<>(
-            TestWritableStore2.class, TestWritableStore2::new);
-    private static final WritableStoreDefinition<TestWritableStore3> WRITE_DEF_3 = new WritableStoreDefinition<>(
-            TestWritableStore3.class, TestWritableStore3::new);
+    private static final WritableStoreDefinition<TestWritableStore1> WRITE_DEF_1 =
+            new WritableStoreDefinition<>(TestWritableStore1.class, TestWritableStore1::new);
+    private static final WritableStoreDefinition<TestWritableStore2> WRITE_DEF_2 =
+            new WritableStoreDefinition<>(TestWritableStore2.class, TestWritableStore2::new);
+    private static final WritableStoreDefinition<TestWritableStore3> WRITE_DEF_3 =
+            new WritableStoreDefinition<>(TestWritableStore3.class, TestWritableStore3::new);
 
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
 
@@ -78,38 +78,39 @@ public class StoreRegistryTest {
         @SuppressWarnings("DataFlowIssue")
         @Test
         void failsWithNullParameters() {
-            assertThatThrownBy(() -> registry.registerReadableStore(null, READ_DEF_1)).isInstanceOf(
-                    NullPointerException.class);
-            assertThatThrownBy(() -> registry.registerReadableStore("test", null)).isInstanceOf(
-                    NullPointerException.class);
-            assertThatThrownBy(() -> registry.registerReadableStores(null, List.of(READ_DEF_1))).isInstanceOf(
-                    NullPointerException.class);
-            assertThatThrownBy(() -> registry.registerReadableStores("test",
-                    (Collection<ReadableStoreDefinition<?>>) null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> registry.registerReadableStores(null, Arrays.array(READ_DEF_1))).isInstanceOf(
-                    NullPointerException.class);
-            assertThatThrownBy(
-                    () -> registry.registerReadableStores("test", (ReadableStoreDefinition<?>) null)).isInstanceOf(
-                    NullPointerException.class);
+            assertThatThrownBy(() -> registry.registerReadableStore(null, READ_DEF_1))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> registry.registerReadableStore("test", null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> registry.registerReadableStores(null, List.of(READ_DEF_1)))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() ->
+                            registry.registerReadableStores("test", (Collection<ReadableStoreDefinition<?>>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> registry.registerReadableStores(null, Arrays.array(READ_DEF_1)))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> registry.registerReadableStores("test", (ReadableStoreDefinition<?>) null))
+                    .isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void succeedsWithDifferentSizeCollection() {
-            assertThatCode(() -> registry.registerReadableStores("test", List.of())).doesNotThrowAnyException();
-            assertThatCode(
-                    () -> registry.registerReadableStores("test", List.of(READ_DEF_1))).doesNotThrowAnyException();
-            assertThatCode(
-                    () -> registry.registerReadableStores("test",
-                            List.of(READ_DEF_2, READ_DEF_3))).doesNotThrowAnyException();
+            assertThatCode(() -> registry.registerReadableStores("test", List.of()))
+                    .doesNotThrowAnyException();
+            assertThatCode(() -> registry.registerReadableStores("test", List.of(READ_DEF_1)))
+                    .doesNotThrowAnyException();
+            assertThatCode(() -> registry.registerReadableStores("test", List.of(READ_DEF_2, READ_DEF_3)))
+                    .doesNotThrowAnyException();
         }
 
         @Test
         void succeedsWithDifferentSizeArray() {
-            assertThatCode(() -> registry.registerReadableStores("test", Arrays.array())).doesNotThrowAnyException();
-            assertThatCode(
-                    () -> registry.registerReadableStores("test", Arrays.array(READ_DEF_1))).doesNotThrowAnyException();
-            assertThatCode(() -> registry.registerReadableStores("test",
-                    Arrays.array(READ_DEF_2, READ_DEF_3))).doesNotThrowAnyException();
+            assertThatCode(() -> registry.registerReadableStores("test", Arrays.array()))
+                    .doesNotThrowAnyException();
+            assertThatCode(() -> registry.registerReadableStores("test", Arrays.array(READ_DEF_1)))
+                    .doesNotThrowAnyException();
+            assertThatCode(() -> registry.registerReadableStores("test", Arrays.array(READ_DEF_2, READ_DEF_3)))
+                    .doesNotThrowAnyException();
         }
     }
 
@@ -119,39 +120,39 @@ public class StoreRegistryTest {
         @SuppressWarnings("DataFlowIssue")
         @Test
         void failsWithNullParameters() {
-            assertThatThrownBy(() -> registry.registerWritableStores(null, WRITE_DEF_1)).isInstanceOf(
-                    NullPointerException.class);
-            assertThatThrownBy(() -> registry.registerWritableStore("test", null)).isInstanceOf(
-                    NullPointerException.class);
-            assertThatThrownBy(() -> registry.registerWritableStores(null, List.of(WRITE_DEF_1))).isInstanceOf(
-                    NullPointerException.class);
-            assertThatThrownBy(() -> registry.registerWritableStores("test",
-                    (Collection<WritableStoreDefinition<?>>) null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> registry.registerWritableStores(null, Arrays.array(WRITE_DEF_1))).isInstanceOf(
-                    NullPointerException.class);
-            assertThatThrownBy(
-                    () -> registry.registerWritableStores("test", (WritableStoreDefinition<?>) null)).isInstanceOf(
-                    NullPointerException.class);
+            assertThatThrownBy(() -> registry.registerWritableStores(null, WRITE_DEF_1))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> registry.registerWritableStore("test", null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> registry.registerWritableStores(null, List.of(WRITE_DEF_1)))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() ->
+                            registry.registerWritableStores("test", (Collection<WritableStoreDefinition<?>>) null))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> registry.registerWritableStores(null, Arrays.array(WRITE_DEF_1)))
+                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> registry.registerWritableStores("test", (WritableStoreDefinition<?>) null))
+                    .isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void succeedsWithDifferentSizeCollection() {
-            assertThatCode(() -> registry.registerWritableStores("test", List.of())).doesNotThrowAnyException();
-            assertThatCode(
-                    () -> registry.registerWritableStores("test", List.of(WRITE_DEF_1))).doesNotThrowAnyException();
-            assertThatCode(
-                    () -> registry.registerWritableStores("test",
-                            List.of(WRITE_DEF_2, WRITE_DEF_3))).doesNotThrowAnyException();
+            assertThatCode(() -> registry.registerWritableStores("test", List.of()))
+                    .doesNotThrowAnyException();
+            assertThatCode(() -> registry.registerWritableStores("test", List.of(WRITE_DEF_1)))
+                    .doesNotThrowAnyException();
+            assertThatCode(() -> registry.registerWritableStores("test", List.of(WRITE_DEF_2, WRITE_DEF_3)))
+                    .doesNotThrowAnyException();
         }
 
         @Test
         void succeedsWithDifferentSizeArray() {
-            assertThatCode(() -> registry.registerWritableStores("test", Arrays.array())).doesNotThrowAnyException();
-            assertThatCode(
-                    () -> registry.registerWritableStores("test",
-                            Arrays.array(WRITE_DEF_1))).doesNotThrowAnyException();
-            assertThatCode(() -> registry.registerWritableStores("test",
-                    Arrays.array(WRITE_DEF_2, WRITE_DEF_3))).doesNotThrowAnyException();
+            assertThatCode(() -> registry.registerWritableStores("test", Arrays.array()))
+                    .doesNotThrowAnyException();
+            assertThatCode(() -> registry.registerWritableStores("test", Arrays.array(WRITE_DEF_1)))
+                    .doesNotThrowAnyException();
+            assertThatCode(() -> registry.registerWritableStores("test", Arrays.array(WRITE_DEF_2, WRITE_DEF_3)))
+                    .doesNotThrowAnyException();
         }
     }
 
@@ -186,12 +187,12 @@ public class StoreRegistryTest {
         void failsWithInvalidProvider() {
             registry.registerReadableStores(
                     "test",
-                    new ReadableStoreDefinition<>(TestReadableStore1.class, StoreRegistryTest::brokenReadableStoreFactory));
-            assertThatThrownBy(() -> factory.getStore(TestReadableStore1.class)).isInstanceOf(
-                    IllegalArgumentException.class);
+                    new ReadableStoreDefinition<>(
+                            TestReadableStore1.class, StoreRegistryTest::brokenReadableStoreFactory));
+            assertThatThrownBy(() -> factory.getStore(TestReadableStore1.class))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
-
 
     @Nested
     class StoreFactoryTests {
@@ -232,25 +233,27 @@ public class StoreRegistryTest {
         void failsWithInvalidReadableStoreProvider() {
             registry.registerReadableStores(
                     "test",
-                    new ReadableStoreDefinition<>(TestReadableStore1.class, StoreRegistryTest::brokenReadableStoreFactory));
-            assertThatThrownBy(() -> factory.readableStore(TestReadableStore1.class)).isInstanceOf(
-                    IllegalArgumentException.class);
+                    new ReadableStoreDefinition<>(
+                            TestReadableStore1.class, StoreRegistryTest::brokenReadableStoreFactory));
+            assertThatThrownBy(() -> factory.readableStore(TestReadableStore1.class))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         void failsWithInvalidWritableStoreProvider() {
             registry.registerWritableStore(
                     "test",
-                    new WritableStoreDefinition<>(TestWritableStore1.class, StoreRegistryTest::brokenWritableStoreFactory));
-            assertThatThrownBy(() -> factory.writableStore(TestWritableStore1.class)).isInstanceOf(
-                    IllegalArgumentException.class);
+                    new WritableStoreDefinition<>(
+                            TestWritableStore1.class, StoreRegistryTest::brokenWritableStoreFactory));
+            assertThatThrownBy(() -> factory.writableStore(TestWritableStore1.class))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         void failsWithDifferentService() {
             registry.registerWritableStore("unknown", WRITE_DEF_1);
-            assertThatThrownBy(() -> factory.writableStore(TestWritableStore1.class)).isInstanceOf(
-                    IllegalArgumentException.class);
+            assertThatThrownBy(() -> factory.writableStore(TestWritableStore1.class))
+                    .isInstanceOf(IllegalArgumentException.class);
         }
     }
 
@@ -277,24 +280,28 @@ public class StoreRegistryTest {
     }
 
     public static class TestWritableStore1 {
-        public TestWritableStore1(WritableStates states, Configuration configuration, StoreMetricsService storeMetricsService) {
+        public TestWritableStore1(
+                WritableStates states, Configuration configuration, StoreMetricsService storeMetricsService) {
             // no-op
         }
     }
 
     public static class TestWritableStore2 {
-        public TestWritableStore2(WritableStates states, Configuration configuration, StoreMetricsService storeMetricsService) {
+        public TestWritableStore2(
+                WritableStates states, Configuration configuration, StoreMetricsService storeMetricsService) {
             // no-op
         }
     }
 
     public static class TestWritableStore3 {
-        public TestWritableStore3(WritableStates states, Configuration configuration, StoreMetricsService storeMetricsService) {
+        public TestWritableStore3(
+                WritableStates states, Configuration configuration, StoreMetricsService storeMetricsService) {
             // no-op
         }
     }
 
-    public static TestWritableStore1 brokenWritableStoreFactory(WritableStates states, Configuration configuration, StoreMetricsService storeMetricsService) {
+    public static TestWritableStore1 brokenWritableStoreFactory(
+            WritableStates states, Configuration configuration, StoreMetricsService storeMetricsService) {
         return null;
     }
 }
