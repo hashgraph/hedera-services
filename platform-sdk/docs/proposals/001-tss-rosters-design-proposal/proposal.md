@@ -84,8 +84,8 @@ RosterEntry "1" *-- "many" ServiceEndpoint
 
 ```
 It is noteworthy that the roster must be immutable to guarantee the integrity of the computed hash.
-This map of rosters will typically contain the current Active Roster, an optional previously Active Roster, the optional
-previous Candidate Roster (a roster created from a candidate address book), and an optional current Candidate Roster.
+This map of rosters will typically contain the current Active Roster, an optional previously Active Roster, and an
+optional current Candidate Roster.
 There will be new fields in PlatformState - `candidateRosterHash` and `activeRosterHash` - such that at adoption time,
 the way to trigger the adoption of a roster will be by the client code inserting a roster in the roster map, alongside
 setting the `candidateRosterHash` field in the PlatformState. If a `candidateRosterHash` hash entry already exist in the
@@ -97,13 +97,8 @@ which is computationally expensive.
 Another benefit of this approach is that adoption trigger becomes simple (app sets the roster) with delineated
 responsibilities between the app and the platform.
 
-Some edge cases worth considering include:
-
-1. multiple concurrent roster submission - has a potential for introducing race conditions. We will prevent this by
-   guaranteeing immutability on rosters.
-2. Size control on the map of rosters - we certainly don’t want this map to grow infinitely so insertion of rosters will
-   be controlled, with clear rules for removal of unused rosters - the acceptance of a new Candidate Roster
-   will invalidate and remove the current candidate roster.
+This map will not grow infinitely. Insertion of rosters will be controlled. The acceptance of a new Candidate Roster
+will invalidate and remove the current candidate roster.
 
 ###### Roster Validity
 
@@ -180,40 +175,31 @@ There will not be any other separate artifacts stored elsewhere (e.g., directly 
 
 The pseudocode for the startup procedure will look as follows:
 
-```java
-if(a State
-exists on
-disk){
+```code
+if(a State exists on disk) {
+    loadStateFromDisk();
+} else {
+    roster = loadFromConfigTxt();
+    // Install the roster as both Active Roster and Candidate Roster in the new state:
+    createEmptyState(roster);
+    // So the node will only be able to sign using its RSA key, w/o any TSS.
+    isGenesis =true;
+}
 
-loadStateFromDisk();
-}else{
-roster =
+if(the State has Candidate Roster) {
+    // Check if this is a software upgrade, and if the TSS protocol
+    // has been launched already, then also check
+    // if Candidate Roster has enough signatures.
+    // Note that we switch to Candidate Roster during a software upgrade unconditionally
+    // until the TSS protocol is actually launched.
+    if(isSoftwareUpgrade /* && Candidate Roster is complete */) {
 
-loadFromConfigTxt();
-
-// Install the roster as both Active Roster and Candidate Roster in the new state:
-createEmptyState(roster);
-// So the node will only be able to sign using its RSA key, w/o any TSS.
-isGenesis =true;
-        }
-
-        if(
-the State
-has Candidate
-Roster){
-        // Check if this is a software upgrade, and if the TSS protocol
-        // has been launched already, then also check
-        // if Candidate Roster has enough signatures.
-        // Note that we switch to Candidate Roster during a software upgrade unconditionally
-        // until the TSS protocol is actually launched.
-        if(isSoftwareUpgrade /* && Candidate Roster is complete */){
-
-// This MUST be performed under `isSoftwareUpgrade` to ensure that
-// the entire network is being restarted, and so every node adopts the Candidate Roster,
-// and hence no ISSes happen.
-// Modify the state and put Candidate Roster into Active Roster, effectively clearing the Candidate Roster.
-makeCRtheAR();
-// May make a record of the previous Active Roster if necessary (e.g. for PCES replay)
+        // This MUST be performed under `isSoftwareUpgrade` to ensure that
+        // the entire network is being restarted, and so every node adopts the Candidate Roster,
+        // and hence no ISSes happen.
+        // Modify the state and put Candidate Roster into Active Roster, effectively clearing the Candidate Roster.
+        makeCRtheAR();
+        // May make a record of the previous Active Roster if necessary (e.g. for PCES replay)
     }
 
 	/*
@@ -227,22 +213,16 @@ makeCRtheAR();
 		// that the network can be restarted in order to adopt the Candidate Roster.
 	}
 	*/
-            }
+}
 
-            if(
-the State
-has no
-Active Roster){
+if(the State has no Active Roster) {
 
-// This should never happen
-throwFatalErrorAndShutdown();
+    // This should never happen
+    throwFatalErrorAndShutdown();
 }
 
 // Check if the Active Roster is TSS-enabled
-        if(
-Active Roster
-is not
-TSS-enabled){
+if(Active Roster is not TSS-enabled) {
     /*
         // This block will be uncommented once the TSS protocol is implemented
         if (isGenesis) {
@@ -252,16 +232,16 @@ TSS-enabled){
         }
     */
 
-        // In Genesis, we've just disabled processing anything but TSS. So a new
-        // network will eventually become TSS-enabled and only then will start
-        // processing non-TSS events.
-        // An existing, non-genesis network will continue to operate as before,
-        // and if a Candidate Roster was present in the state, we enabled processing TSS messages
-        // above. So it will become TSS-enabled eventually, too, indicating
-        // the readiness for a TSS upgrade via the metric mentioned above.
-        // Note that until a Candidate Roster is installed in the state, the existing network
-        // will simply continue to operate as usual with its regular RSA keys.
-        }
+    // In Genesis, we've just disabled processing anything but TSS. So a new
+    // network will eventually become TSS-enabled and only then will start
+    // processing non-TSS events.
+    // An existing, non-genesis network will continue to operate as before,
+    // and if a Candidate Roster was present in the state, we enabled processing TSS messages
+    // above. So it will become TSS-enabled eventually, too, indicating
+    // the readiness for a TSS upgrade via the metric mentioned above.
+    // Note that until a Candidate Roster is installed in the state, the existing network
+    // will simply continue to operate as usual with its regular RSA keys.
+}
 
 // At this point the Active Roster in the state is what we'll be using as a roster.
 // If an incomplete Candidate Roster exists, we've started exchanging TSS messages above.
