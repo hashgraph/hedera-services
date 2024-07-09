@@ -65,6 +65,7 @@ public class WaitForStatusOp extends AbstractLifecycleOp {
                         .join();
                 log.info("Sleeping for {} to allow port unbinding", PORT_UNBINDING_WAIT_PERIOD);
                 doIfNotInterrupted(() -> Thread.sleep(PORT_UNBINDING_WAIT_PERIOD.toMillis()));
+                node.start();
                 awaitStatus(node, status, timeout);
             } else {
                 throw error;

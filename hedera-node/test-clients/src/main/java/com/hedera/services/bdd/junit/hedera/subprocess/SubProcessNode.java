@@ -39,6 +39,7 @@ import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen;
+import com.hedera.services.bdd.suites.regression.system.LifecycleTest;
 import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -111,7 +112,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
 
     @Override
     public SubProcessNode start() {
-        return startWithConfigVersion(0);
+        return startWithConfigVersion(LifecycleTest.CURRENT_CONFIG_VERSION.get());
     }
 
     @Override
