@@ -21,7 +21,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static java.util.Collections.emptyList;
 
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.SpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.stream.IntStream;

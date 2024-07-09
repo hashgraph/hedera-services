@@ -43,7 +43,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.AccountSpec;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.utilops.FakeNmt;
@@ -101,8 +101,8 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
     static SpecAccount NODE3_STAKER;
 
     @BeforeAll
-    static void beforeAll(@NonNull final SpecManager manager) throws Throwable {
-        manager.setup(
+    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+        testLifecycle.doAdhoc(
                 ensureStakingActivated(),
                 touchBalanceOf(NODE0_STAKER, NODE1_STAKER, NODE2_STAKER, NODE3_STAKER),
                 waitUntilStartOfNextStakingPeriod(1));
@@ -131,8 +131,8 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
     @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
     class AfterRemovingNode1 {
         @BeforeAll
-        static void beforeAll(@NonNull final SpecManager manager) throws Throwable {
-            manager.setup(nodeDelete("1"));
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+            testLifecycle.doAdhoc(nodeDelete("1"));
         }
 
         @HapiTest
@@ -169,8 +169,8 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                 AccountID.newBuilder().setAccountNum(7L).build();
 
         @BeforeAll
-        static void beforeAll(@NonNull final SpecManager manager) throws Throwable {
-            manager.setup(nodeCreate("node4")
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+            testLifecycle.doAdhoc(nodeCreate("node4")
                     .accountId(NEW_ACCOUNT_ID)
                     .description(CLASSIC_NODE_NAMES[4])
                     .withAvailableSubProcessPorts());
