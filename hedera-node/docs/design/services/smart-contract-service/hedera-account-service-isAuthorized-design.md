@@ -23,15 +23,15 @@ The first release of HIP-632 will include only `isAuthorizedRaw`.
 
 ## Where does this go?
 
-A "hedera account service" system contract is being set up in
+A "hedera account service" system contract is in
 `com.hedera.node.app.service.contract.impl.exec.systemcontracts.has`, and also at
 `...contract.impl.exec.processors.HasTranslatorsModule` (for the individual methods).
 
 Following the existing pattern for HAS each method will be given a package under 
 `...contract.impl.exec.systemcontracts.has` with two classes:
 * `[method]Translator` - which first confirms that the call is for the given method, and
-  then builds a `TransactionBody` for it.
-* `[method]Call` - which takes that `TransactionBody` and then has an `execute()` method
+  then builds an `IsAuthorizedRawCall` for it.
+* `[method]Call` - which has an `execute()` method
   that does the work.
   
 ## Design for `isAuthorizedRaw`
@@ -57,10 +57,12 @@ the `HederaWorldUpdater.Enhancement`).  Validating the signature is done by dire
   * Some fee will be charged to account for the signature verification cost, but it
 will have to be hard-coded (at this time) because we have no access to that fine-grained
 fee now.
-    * Current proposal is to charge a fixed fee (in dollars) derived from the cost of a 
-      crypto transfer of 1 tinybar signed with an EC key.
+    * At this time a hardcoded 1.5M gas will be charged for an ED signature verification
+        * This was determined by a _very rough_ measurement of the amount of resources (CPU time) 
+          needed by a single signature verification.
 
-A feature flag will control enabling `isAuthorizedRaw`.
+A feature flag will control enabling `isAuthorizedRaw`: `contracts.systemContract.accountService.isAuthorizedRawEnabled`
+* This flag will be `true` (i.e., _enabled_) for release 0.52.
 
 ## Future considerations
 
@@ -91,6 +93,7 @@ boolean output argument.
    * But I don't know of any such example, so **low priority** 
 1. EVM alias of Hedera account w/ single ED key, valid hash+signature -> SUCCESS + true
 1. EVM alias Hedera account w/ single ED key, _invalid_ hash+signature -> SUCCESS + false
+1. EC and ED validation _with sufficient gas_ succeeds
 
 ### Negative
 
@@ -105,6 +108,7 @@ All negative tests return some failure status.
 1. EVM alias of Hedera account w/ 1 key which is EC -> FAILED
 1. EVM alias of Hedera account w/ (any) threshold key -> FAILED
 1. EVM alias of Hedera account w/ (any) "key list" type key -> FAILED
+1. EC and ED validation _without sufficient gas_ -> FAILED
 
 __
 
