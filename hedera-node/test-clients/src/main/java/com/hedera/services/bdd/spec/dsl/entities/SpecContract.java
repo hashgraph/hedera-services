@@ -148,7 +148,7 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
         final SpecOperation op;
         constructorArgs = withSubstitutedTypes(spec.targetNetworkOrThrow(), constructorArgs);
         if (initcode.size() < MAX_INLINE_INITCODE_SIZE) {
-            op = contractCreate(name, constructorArgs).inlineInitCode(initcode);
+            op = contractCreate(name, constructorArgs).gas(creationGas).inlineInitCode(initcode);
         } else {
             op = blockingOrder(
                     createLargeFile(GENESIS, contractName, initcode),

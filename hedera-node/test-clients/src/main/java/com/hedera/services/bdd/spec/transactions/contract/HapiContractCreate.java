@@ -59,6 +59,7 @@ import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.ObjLongConsumer;
 import java.util.function.Supplier;
+import org.bouncycastle.util.encoders.Hex;
 
 public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreate> {
     static final Key DEPRECATED_CID_ADMIN_KEY = Key.newBuilder()
@@ -354,7 +355,8 @@ public class HapiContractCreate extends HapiBaseContractCreate<HapiContractCreat
                                 b.setAdminKey(adminKey);
                             }
                             inlineInitcode.ifPresentOrElse(
-                                    b::setInitcode, () -> b.setFileID(TxnUtils.asFileId(bytecodeFile.get(), spec)));
+                                    iic -> b.setInitcode(ByteString.copyFrom(Hex.decode(iic.toByteArray()))),
+                                    () -> b.setFileID(TxnUtils.asFileId(bytecodeFile.get(), spec)));
                             autoRenewPeriodSecs.ifPresent(p -> b.setAutoRenewPeriod(
                                     Duration.newBuilder().setSeconds(p).build()));
                             balance.ifPresent(b::setInitialBalance);
