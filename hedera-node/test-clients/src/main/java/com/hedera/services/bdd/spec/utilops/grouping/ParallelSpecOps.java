@@ -19,9 +19,9 @@ package com.hedera.services.bdd.spec.utilops.grouping;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.base.MoreObjects;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 import edu.umd.cs.findbugs.annotations.NonNull;

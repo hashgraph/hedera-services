@@ -24,7 +24,7 @@ import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classi
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.rm;
-import static com.hedera.services.bdd.suites.TargetNetworkType.SUBPROCESS_NETWORK;
+import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
@@ -38,8 +38,8 @@ import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.spec.TargetNetworkType;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
-import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;

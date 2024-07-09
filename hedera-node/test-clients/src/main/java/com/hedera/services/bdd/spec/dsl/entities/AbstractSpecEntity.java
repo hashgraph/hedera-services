@@ -22,9 +22,9 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.supplyAsync;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntityRegistrar;
 import com.hedera.services.bdd.spec.dsl.operations.deferred.DoWithModelOperation;
