@@ -18,6 +18,7 @@ package com.swirlds.common.merkle.synchronization.views;
 
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 
 /**
  * Nodes that are want to use a custom view for reconnect must extend this interface and
@@ -51,7 +52,7 @@ public interface CustomReconnectRoot<T, L> extends MerkleNode {
      *
      * @return a view representing this subtree
      */
-    LearnerTreeView<L> buildLearnerView(final ReconnectConfig reconnectConfig);
+    LearnerTreeView<L> buildLearnerView(final ReconnectConfig reconnectConfig, final ReconnectMapStats mapStats);
 
     /**
      * If the original node in this position is of the correct type then the learner's node is initialized via

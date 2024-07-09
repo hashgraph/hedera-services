@@ -56,7 +56,7 @@ public class LearnerPushTask<T> {
     private final LearnerTreeView<T> view;
     private final ReconnectNodeCount nodeCount;
 
-    private final ReconnectMapStats mapStats = new ReconnectMapStats() {};
+    private final ReconnectMapStats mapStats;
 
     private final Queue<MerkleNode> rootsToReceive;
 
@@ -87,7 +87,8 @@ public class LearnerPushTask<T> {
             final Queue<MerkleNode> rootsToReceive,
             final AtomicReference<T> root,
             final LearnerTreeView<T> view,
-            final ReconnectNodeCount nodeCount) {
+            final ReconnectNodeCount nodeCount,
+            final ReconnectMapStats mapStats) {
         this.workGroup = workGroup;
         this.in = in;
         this.out = out;
@@ -95,6 +96,7 @@ public class LearnerPushTask<T> {
         this.root = root;
         this.view = view;
         this.nodeCount = nodeCount;
+        this.mapStats = mapStats;
     }
 
     public void start() {

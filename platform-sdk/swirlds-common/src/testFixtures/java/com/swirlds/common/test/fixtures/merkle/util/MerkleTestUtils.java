@@ -998,7 +998,8 @@ public final class MerkleTestUtils {
                                 streams.getLearnerOutput(),
                                 startingTree,
                                 streams::disconnect,
-                                reconnectConfig) {
+                                reconnectConfig,
+                                null) {
 
                             @Override
                             protected StandardWorkGroup createStandardWorkGroup(

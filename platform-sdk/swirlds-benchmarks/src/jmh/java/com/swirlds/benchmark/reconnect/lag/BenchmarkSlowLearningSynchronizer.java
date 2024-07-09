@@ -27,6 +27,7 @@ import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.metrics.api.Metrics;
 
 /**
  * A {@link LearningSynchronizer} with simulated delay.
@@ -52,8 +53,9 @@ public class BenchmarkSlowLearningSynchronizer extends LearningSynchronizer {
             final long delayNetworkMicroseconds,
             final double delayNetworkFuzzRangePercent,
             final Runnable breakConnection,
-            final ReconnectConfig reconnectConfig) {
-        super(getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig);
+            final ReconnectConfig reconnectConfig,
+            final Metrics metrics) {
+        super(getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig, metrics);
 
         this.randomSeed = randomSeed;
         this.delayStorageMicroseconds = delayStorageMicroseconds;

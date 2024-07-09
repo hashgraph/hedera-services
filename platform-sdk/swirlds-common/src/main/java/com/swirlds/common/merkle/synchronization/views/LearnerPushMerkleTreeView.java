@@ -59,15 +59,19 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
     private final Queue<ExpectedLesson<MerkleNode>> expectedLessons;
     private final LinkedList<MerkleInternal> nodesToInitialize;
 
+    private final ReconnectMapStats mapStats;
+
     /**
      * Create a new standard tree view out of an in-memory merkle tree (or subtree).
      *
      * @param root
      * 		the root of the tree (or subtree)
      */
-    public LearnerPushMerkleTreeView(final ReconnectConfig reconnectConfig, final MerkleNode root) {
+    public LearnerPushMerkleTreeView(
+            final ReconnectConfig reconnectConfig, final MerkleNode root, final ReconnectMapStats mapStats) {
         this.reconnectConfig = reconnectConfig;
         this.originalRoot = root;
+        this.mapStats = mapStats;
         expectedLessons = new LinkedList<>();
         nodesToInitialize = new LinkedList<>();
     }
@@ -87,7 +91,7 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
         out.start();
 
         final LearnerPushTask<MerkleNode> learnerThread = new LearnerPushTask<>(
-                workGroup, in, out, rootsToReceive, reconstructedRoot, this, learningSynchronizer);
+                workGroup, in, out, rootsToReceive, reconstructedRoot, this, learningSynchronizer, mapStats);
         learnerThread.start();
     }
 

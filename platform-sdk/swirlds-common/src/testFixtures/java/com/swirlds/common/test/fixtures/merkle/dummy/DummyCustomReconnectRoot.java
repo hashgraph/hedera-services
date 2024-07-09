@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.task.NodeToSend;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
@@ -105,8 +106,9 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
      * {@inheritDoc}
      */
     @Override
-    public LearnerTreeView<MerkleNode> buildLearnerView(final ReconnectConfig reconnectConfig) {
-        return new DummyLearnerPushMerkleTreeView(reconnectConfig, this);
+    public LearnerTreeView<MerkleNode> buildLearnerView(
+            final ReconnectConfig reconnectConfig, final ReconnectMapStats mapStats) {
+        return new DummyLearnerPushMerkleTreeView(reconnectConfig, this, mapStats);
     }
 
     /**

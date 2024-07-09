@@ -192,8 +192,14 @@ public class ReconnectLearner {
 
         final ReconnectConfig reconnectConfig =
                 platformContext.getConfiguration().getConfigData(ReconnectConfig.class);
-        final LearningSynchronizer synchronizer =
-                new LearningSynchronizer(threadManager, in, out, currentState, connection::disconnect, reconnectConfig);
+        final LearningSynchronizer synchronizer = new LearningSynchronizer(
+                threadManager,
+                in,
+                out,
+                currentState,
+                connection::disconnect,
+                reconnectConfig,
+                platformContext.getMetrics());
         synchronizer.synchronize();
 
         final MerkleRoot state = (MerkleRoot) synchronizer.getRoot();

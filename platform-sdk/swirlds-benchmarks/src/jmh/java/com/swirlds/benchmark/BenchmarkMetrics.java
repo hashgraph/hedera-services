@@ -395,6 +395,10 @@ public final class BenchmarkMetrics {
         consumer.accept(INSTANCE.metrics);
     }
 
+    public static Metrics getMetrics() {
+        return INSTANCE.metrics;
+    }
+
     public static LongGauge registerTPS() {
         return INSTANCE.metrics.getOrCreate(TPS_CONFIG);
     }

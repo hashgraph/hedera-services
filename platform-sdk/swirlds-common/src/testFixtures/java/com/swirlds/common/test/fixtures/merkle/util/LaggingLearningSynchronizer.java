@@ -45,7 +45,7 @@ public class LaggingLearningSynchronizer extends LearningSynchronizer {
             final int latencyMilliseconds,
             final Runnable breakConnection,
             final ReconnectConfig reconnectConfig) {
-        super(getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig);
+        super(getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig, null);
 
         this.latencyMilliseconds = latencyMilliseconds;
     }

@@ -28,6 +28,11 @@ package com.swirlds.common.merkle.synchronization.stats;
  */
 public interface ReconnectMapStats {
     /**
+     * A no-operations implementation of the ReconnectMapStats interface that does nothing.
+     */
+    ReconnectMapStats NO_OP = new ReconnectMapStats() {};
+
+    /**
      * Increment a transfers from teacher counter.
      * <p>
      * Different reconnect algorithms may define the term "transfer" differently. Examples of a transfer from teacher: <br>

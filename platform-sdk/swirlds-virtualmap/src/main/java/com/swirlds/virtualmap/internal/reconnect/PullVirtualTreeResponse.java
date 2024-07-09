@@ -20,6 +20,7 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
+import com.swirlds.virtualmap.internal.Path;
 import java.io.IOException;
 
 /**
@@ -112,6 +113,11 @@ public class PullVirtualTreeResponse implements SelfSerializable {
         assert learnerView != null;
         path = in.readLong();
         final boolean isClean = in.read() == 0;
+        if (path != Path.ROOT_PATH && learnerView.isLeaf(path)) {
+            learnerView.getMapStats().incrementLeafHashes(1, isClean ? 1 : 0);
+        } else {
+            learnerView.getMapStats().incrementInternalHashes(1, isClean ? 1 : 0);
+        }
         learnerView.readNode(in, path, isClean);
     }
 

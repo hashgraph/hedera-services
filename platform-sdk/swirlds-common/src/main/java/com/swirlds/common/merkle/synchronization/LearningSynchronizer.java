@@ -27,6 +27,8 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapMetrics;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
@@ -37,6 +39,7 @@ import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.logging.legacy.payload.SynchronizationCompletePayload;
+import com.swirlds.metrics.api.Metrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -91,6 +94,8 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      */
     private final ThreadManager threadManager;
 
+    private final ReconnectMapStats mapStats;
+
     /**
      * Create a new learning synchronizer.
      *
@@ -109,7 +114,8 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             @NonNull final MerkleDataOutputStream out,
             @NonNull final MerkleNode root,
             @NonNull final Runnable breakConnection,
-            @NonNull final ReconnectConfig reconnectConfig) {
+            @NonNull final ReconnectConfig reconnectConfig,
+            @NonNull final Metrics metrics) {
 
         this.threadManager = Objects.requireNonNull(threadManager, "threadManager is null");
 
@@ -122,6 +128,10 @@ public class LearningSynchronizer implements ReconnectNodeCount {
         rootsToReceive.add(root);
 
         this.breakConnection = breakConnection;
+
+        this.mapStats = metrics == null // to support unit tests
+                ? ReconnectMapStats.NO_OP
+                : new ReconnectMapMetrics(metrics, null, null);
     }
 
     /**
@@ -272,10 +282,10 @@ public class LearningSynchronizer implements ReconnectNodeCount {
 
         final LearnerTreeView<T> view;
         if (root == null || !root.hasCustomReconnectView()) {
-            view = (LearnerTreeView<T>) new LearnerPushMerkleTreeView(reconnectConfig, root);
+            view = (LearnerTreeView<T>) new LearnerPushMerkleTreeView(reconnectConfig, root, mapStats);
         } else {
             assert root instanceof CustomReconnectRoot;
-            view = ((CustomReconnectRoot<?, T>) root).buildLearnerView(reconnectConfig);
+            view = ((CustomReconnectRoot<?, T>) root).buildLearnerView(reconnectConfig, mapStats);
         }
 
         final AtomicReference<T> reconstructedRoot = new AtomicReference<>();
