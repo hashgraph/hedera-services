@@ -57,6 +57,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.StringReader;
@@ -146,27 +147,6 @@ public class V0490FileSchema extends Schema {
         final var filesConfig = genesisContext.configuration().getConfigData(FilesConfig.class);
         final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
 
-        final var nodeAddresses = new ArrayList<NodeAddress>();
-        for (final var nodeInfo : networkInfo.addressBook()) {
-            nodeAddresses.add(NodeAddress.newBuilder()
-                    .nodeId(nodeInfo.nodeId())
-                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
-                    .nodeAccountId(nodeInfo.accountId()) // don't use memo as it is deprecated.
-                    .serviceEndpoint(
-                            // we really don't have grpc proxy name and port for now. Temporary values are set.
-                            // After Dynamic Address Book Phase 2 release, we will have the correct values.Then update
-                            // here.
-                            ServiceEndpoint.newBuilder()
-                                    .ipAddressV4(Bytes.wrap("1.0.0.0"))
-                                    .port(1)
-                                    .build())
-                    .build());
-        }
-
-        final var nodeAddressBook =
-                NodeAddressBook.newBuilder().nodeAddress(nodeAddresses).build();
-        final var nodeAddressBookProto = NodeAddressBook.PROTOBUF.toBytes(nodeAddressBook);
-
         // Create the master key that will own both of these special files
         final var masterKey = KeyList.newBuilder()
                 .keys(Key.newBuilder()
@@ -179,7 +159,7 @@ public class V0490FileSchema extends Schema {
         genesisContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
-                                .contents(nodeAddressBookProto)
+                                .contents(genesisAddressBook(networkInfo))
                                 .keys(masterKey)
                                 .expirationTime(maxLifetimeExpiry(genesisContext))
                                 .build())
@@ -203,19 +183,57 @@ public class V0490FileSchema extends Schema {
                     .build());
         }
 
-        final var nodeDetails =
-                NodeAddressBook.newBuilder().nodeAddress(nodeAddresses).build();
-        final var nodeDetailsProto = NodeAddressBook.PROTOBUF.toBytes(nodeDetails);
         final var nodeInfoFileNum = filesConfig.nodeDetails();
         genesisContext.dispatchCreation(
                 TransactionBody.newBuilder()
                         .fileCreate(FileCreateTransactionBody.newBuilder()
-                                .contents(nodeDetailsProto)
+                                .contents(genesisNodeDetails(networkInfo))
                                 .keys(masterKey)
                                 .expirationTime(maxLifetimeExpiry(genesisContext))
                                 .build())
                         .build(),
                 nodeInfoFileNum);
+    }
+
+    public Bytes genesisAddressBook(@NonNull final NetworkInfo networkInfo) {
+        final var nodeAddresses = new ArrayList<NodeAddress>();
+        for (final var nodeInfo : networkInfo.addressBook()) {
+            nodeAddresses.add(NodeAddress.newBuilder()
+                    .nodeId(nodeInfo.nodeId())
+                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
+                    .nodeAccountId(nodeInfo.accountId()) // don't use memo as it is deprecated.
+                    .serviceEndpoint(
+                            // we really don't have grpc proxy name and port for now. Temporary values are set.
+                            // After Dynamic Address Book Phase 2 release, we will have the correct values.Then update
+                            // here.
+                            ServiceEndpoint.newBuilder()
+                                    .ipAddressV4(Bytes.wrap("1.0.0.0"))
+                                    .port(1)
+                                    .build())
+                    .build());
+        }
+        return NodeAddressBook.PROTOBUF.toBytes(
+                NodeAddressBook.newBuilder().nodeAddress(nodeAddresses).build());
+    }
+
+    public Bytes genesisNodeDetails(@NonNull final NetworkInfo networkInfo) {
+        final var nodeDetails = new ArrayList<NodeAddress>();
+        for (final var nodeInfo : networkInfo.addressBook()) {
+            nodeDetails.add(NodeAddress.newBuilder()
+                    .stake(nodeInfo.stake())
+                    .nodeAccountId(nodeInfo.accountId())
+                    .nodeId(nodeInfo.nodeId())
+                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
+                    // we really don't have grpc proxy name and port for now.Temporary values are set.
+                    // After Dynamic Address Book Phase 2 release, we will have the correct values. Then update here.
+                    .serviceEndpoint(ServiceEndpoint.newBuilder()
+                            .ipAddressV4(Bytes.wrap("1.0.0.0"))
+                            .port(1)
+                            .build())
+                    .build());
+        }
+        return NodeAddressBook.PROTOBUF.toBytes(
+                NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
     }
 
     // ================================================================================================================
@@ -413,7 +431,23 @@ public class V0490FileSchema extends Schema {
     // ================================================================================================================
     // Creates and loads the HAPI Permissions into state
     public void createGenesisHapiPermissions(@NonNull final GenesisContext genesisContext) {
-        final var bootstrapConfig = genesisContext.configuration().getConfigData(BootstrapConfig.class);
+        final var config = genesisContext.configuration();
+        final var bootstrapConfig = config.getConfigData(BootstrapConfig.class);
+        final var masterKey =
+                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        genesisContext.dispatchCreation(
+                TransactionBody.newBuilder()
+                        .fileCreate(FileCreateTransactionBody.newBuilder()
+                                .contents(genesisHapiPermissions(config))
+                                .keys(KeyList.newBuilder().keys(masterKey))
+                                .expirationTime(maxLifetimeExpiry(genesisContext))
+                                .build())
+                        .build(),
+                genesisContext.configuration().getConfigData(FilesConfig.class).hapiPermissions());
+    }
+
+    public Bytes genesisHapiPermissions(@NonNull final Configuration config) {
+        final var bootstrapConfig = config.getConfigData(BootstrapConfig.class);
         // Get the path to the HAPI permissions file
         final var pathToApiPermissions = Path.of(bootstrapConfig.hapiPermissionsPath());
         // If the file exists, load from there
@@ -439,7 +473,6 @@ public class V0490FileSchema extends Schema {
                 throw new IllegalArgumentException("API Permissions could not be loaded from classpath", e);
             }
         }
-
         // Parse the HAPI permissions file into a ServicesConfigurationList protobuf object
         final var settings = new ArrayList<Setting>();
         try (final var in = new StringReader(apiPermissionsContent)) {
@@ -455,19 +488,8 @@ public class V0490FileSchema extends Schema {
             logger.fatal("API Permissions could not be parsed");
             throw new IllegalArgumentException("API Permissions could not be parsed", e);
         }
-        final var masterKey =
-                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
-        final var permissionsConfig =
-                ServicesConfigurationList.newBuilder().nameValue(settings).build();
-        genesisContext.dispatchCreation(
-                TransactionBody.newBuilder()
-                        .fileCreate(FileCreateTransactionBody.newBuilder()
-                                .contents(ServicesConfigurationList.PROTOBUF.toBytes(permissionsConfig))
-                                .keys(KeyList.newBuilder().keys(masterKey))
-                                .expirationTime(maxLifetimeExpiry(genesisContext))
-                                .build())
-                        .build(),
-                genesisContext.configuration().getConfigData(FilesConfig.class).hapiPermissions());
+        return ServicesConfigurationList.PROTOBUF.toBytes(
+                ServicesConfigurationList.newBuilder().nameValue(settings).build());
     }
 
     // ================================================================================================================

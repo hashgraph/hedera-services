@@ -19,6 +19,7 @@ package com.hedera.node.app.service.file.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.notGenesisCreation;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -39,11 +40,11 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.FilesConfig;
-import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Map;
@@ -58,6 +59,7 @@ import javax.inject.Singleton;
 public class FileGetContentsHandler extends FileQueryBase {
     private final FileFeeBuilder usageEstimator;
     private final V0490FileSchema genesisSchema;
+    private final NetworkInfo networkInfo;
 
     /**
      * Constructs a {@link FileGetContentsHandler} with the given {@link FileFeeBuilder}.
@@ -65,9 +67,12 @@ public class FileGetContentsHandler extends FileQueryBase {
      */
     @Inject
     public FileGetContentsHandler(
-            @NonNull final FileFeeBuilder usageEstimator, @NonNull final V0490FileSchema genesisSchema) {
+            @NonNull final FileFeeBuilder usageEstimator,
+            @NonNull final V0490FileSchema genesisSchema,
+            @NonNull final NetworkInfo networkInfo) {
         this.usageEstimator = requireNonNull(usageEstimator);
         this.genesisSchema = requireNonNull(genesisSchema);
+        this.networkInfo = networkInfo;
     }
 
     @Override
@@ -145,16 +150,12 @@ public class FileGetContentsHandler extends FileQueryBase {
             @NonNull final Configuration config) {
         final var meta = fileStore.getFileMetadata(fileID);
         if (meta == null) {
-            if (fileID.fileNum() < config.getConfigData(HederaConfig.class).firstUserEntity()) {
-                final var genesisContent = genesisContentProviders(config).get(fileID);
-                return genesisContent != null
-                        ? FileContents.newBuilder()
-                                .fileID(fileID)
-                                .contents(genesisContent.apply(config))
-                                .build()
-                        : null;
-            } else {
+            if (notGenesisCreation(fileID, config)) {
                 return null;
+            } else {
+                final var genesisContent =
+                        genesisContentProviders(config).get(fileID.fileNum()).apply(config);
+                return new FileContents(fileID, genesisContent);
             }
         } else {
             final var info = FileContents.newBuilder();
@@ -164,16 +165,16 @@ public class FileGetContentsHandler extends FileQueryBase {
         }
     }
 
-    private Map<FileID, Function<Configuration, Bytes>> genesisContentProviders(@NonNull final Configuration config) {
+    private Map<Long, Function<Configuration, Bytes>> genesisContentProviders(@NonNull final Configuration config) {
         final var filesConfig = config.getConfigData(FilesConfig.class);
-        final var hederaConfig = config.getConfigData(HederaConfig.class);
-        final var shard = hederaConfig.shard();
-        final var realm = hederaConfig.realm();
         return Map.of(
-                new FileID(shard, realm, filesConfig.feeSchedules()), genesisSchema::genesisFeeSchedules,
-                new FileID(shard, realm, filesConfig.exchangeRates()), genesisSchema::genesisExchangeRates,
-                new FileID(shard, realm, filesConfig.networkProperties()), genesisSchema::genesisNetworkProperties,
-                new FileID(shard, realm, filesConfig.throttleDefinitions()), genesisSchema::genesisThrottleDefinitions);
+                filesConfig.addressBook(), ignore -> genesisSchema.genesisAddressBook(networkInfo),
+                filesConfig.nodeDetails(), ignore -> genesisSchema.genesisNodeDetails(networkInfo),
+                filesConfig.feeSchedules(), genesisSchema::genesisFeeSchedules,
+                filesConfig.exchangeRates(), genesisSchema::genesisExchangeRates,
+                filesConfig.networkProperties(), genesisSchema::genesisNetworkProperties,
+                filesConfig.hapiPermissions(), genesisSchema::genesisHapiPermissions,
+                filesConfig.throttleDefinitions(), genesisSchema::genesisThrottleDefinitions);
     }
 
     private FeeData usageGivenType(final FileContents fileContents, final ResponseType type) {

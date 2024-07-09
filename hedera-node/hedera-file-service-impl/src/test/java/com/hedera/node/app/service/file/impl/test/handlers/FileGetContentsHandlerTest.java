@@ -49,6 +49,7 @@ import com.hedera.node.app.service.file.impl.test.FileTestBase;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.info.NetworkInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,11 +68,14 @@ class FileGetContentsHandlerTest extends FileTestBase {
     @Mock
     private V0490FileSchema genesisSchema;
 
+    @Mock
+    private NetworkInfo networkInfo;
+
     private FileGetContentsHandler subject;
 
     @BeforeEach
     void setUp() {
-        subject = new FileGetContentsHandler(usageEstimator, genesisSchema);
+        subject = new FileGetContentsHandler(usageEstimator, genesisSchema, networkInfo);
     }
 
     @Test

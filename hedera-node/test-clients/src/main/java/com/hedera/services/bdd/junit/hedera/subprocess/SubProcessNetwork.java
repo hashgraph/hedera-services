@@ -23,7 +23,6 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.hadCo
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.rm;
 import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
@@ -162,7 +161,8 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                             node.stopFuture()
                                     .orTimeout(ProcessUtils.STOP_TIMEOUT.getSeconds(), TimeUnit.SECONDS)
                                     .join();
-                            rm(node.metadata().workingDirOrThrow());
+                            // Begins by deleting the working directory
+                            node.initWorkingDir(configTxt);
                         });
                         assignNewPorts();
                         clients = null;

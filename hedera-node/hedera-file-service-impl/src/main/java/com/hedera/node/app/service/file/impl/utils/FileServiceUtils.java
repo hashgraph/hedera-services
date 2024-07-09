@@ -36,7 +36,9 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -79,7 +81,7 @@ public class FileServiceUtils {
         // Certain system files will be created before the genesis transaction, so by the time any handler
         // is invoked at consensus, they will necessarily exist
         final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
-        if (notGenesisCreation(fileId.fileNum(), filesConfig)) {
+        if (notGenesisCreation(fileId, context.configuration())) {
             mustExist(fileStore.getFileMetadata(fileId), INVALID_FILE_ID);
         }
     }
@@ -202,11 +204,17 @@ public class FileServiceUtils {
     /**
      * Returns true if the given file number is not created before handling the genesis transaction.
      *
-     * @param fileNum the file number
-     * @param filesConfig the files configuration
+     * @param fileID the file id to check
+     * @param config the network configuration
      * @return true if the file number is not created before handling the genesis transaction
      */
-    private static boolean notGenesisCreation(final long fileNum, @NonNull final FilesConfig filesConfig) {
+    public static boolean notGenesisCreation(final FileID fileID, @NonNull final Configuration config) {
+        final var hederaConfig = config.getConfigData(HederaConfig.class);
+        if (fileID.shardNum() != hederaConfig.shard() || fileID.realmNum() != hederaConfig.realm()) {
+            return true;
+        }
+        final var fileNum = fileID.fileNum();
+        final var filesConfig = config.getConfigData(FilesConfig.class);
         return !filesConfig.softwareUpdateRange().containsInclusive(fileNum)
                 && fileNum != filesConfig.addressBook()
                 && fileNum != filesConfig.nodeDetails()
