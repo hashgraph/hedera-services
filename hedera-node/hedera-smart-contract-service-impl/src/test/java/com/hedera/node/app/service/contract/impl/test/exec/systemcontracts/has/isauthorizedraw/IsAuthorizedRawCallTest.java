@@ -32,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw.IsAuthorizedRawCall;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
@@ -48,6 +49,8 @@ class IsAuthorizedRawCallTest extends CallTestBase {
 
     @Mock
     private HasCallAttempt attempt;
+
+    private CustomGasCalculator customGasCalculator = new CustomGasCalculator();
 
     @BeforeEach
     void setup() {
@@ -91,6 +94,6 @@ class IsAuthorizedRawCallTest extends CallTestBase {
 
     @NonNull
     IsAuthorizedRawCall getSubject(@NonNull final Address address) {
-        return new IsAuthorizedRawCall(attempt, address, messageHash, signature);
+        return new IsAuthorizedRawCall(attempt, address, messageHash, signature, customGasCalculator);
     }
 }

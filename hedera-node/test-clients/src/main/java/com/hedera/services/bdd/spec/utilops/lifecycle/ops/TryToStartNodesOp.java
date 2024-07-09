@@ -16,8 +16,6 @@
 
 package com.hedera.services.bdd.spec.utilops.lifecycle.ops;
 
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.JAR_FILE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.junit.hedera.HederaNode;
@@ -37,29 +35,27 @@ import org.junit.jupiter.api.Assertions;
 public class TryToStartNodesOp extends AbstractLifecycleOp {
     private static final Logger log = LogManager.getLogger(TryToStartNodesOp.class);
 
-    public enum UseUpgradeJar {
-        YES,
-        NO
-    }
+    private final int configVersion;
 
     public enum ReassignPorts {
         YES,
         NO
     }
 
-    private final UseUpgradeJar useUpgradeJar;
     private final ReassignPorts reassignPorts;
 
     public TryToStartNodesOp(@NonNull final NodeSelector selector) {
-        this(selector, UseUpgradeJar.NO, ReassignPorts.NO);
+        this(selector, 0, ReassignPorts.NO);
+    }
+
+    public TryToStartNodesOp(@NonNull final NodeSelector selector, final int configVersion) {
+        this(selector, configVersion, ReassignPorts.NO);
     }
 
     public TryToStartNodesOp(
-            @NonNull final NodeSelector selector,
-            @NonNull final UseUpgradeJar useUpgradeJar,
-            @NonNull final ReassignPorts reassignPorts) {
+            @NonNull final NodeSelector selector, final int configVersion, @NonNull final ReassignPorts reassignPorts) {
         super(selector);
-        this.useUpgradeJar = requireNonNull(useUpgradeJar);
+        this.configVersion = configVersion;
         this.reassignPorts = requireNonNull(reassignPorts);
     }
 
@@ -76,19 +72,12 @@ public class TryToStartNodesOp extends AbstractLifecycleOp {
 
     @Override
     protected void run(@NonNull final HederaNode node) {
-        log.info("Starting node '{}'", node.getName());
+        log.info("Starting node '{}' - {}", node.getName(), node.metadata());
         try {
-            switch (useUpgradeJar) {
-                case YES -> {
-                    if (!(node instanceof SubProcessNode subProcessNode)) {
-                        throw new IllegalStateException("Node is not a SubProcessNode");
-                    }
-                    final var upgradeJar =
-                            node.getExternalPath(UPGRADE_ARTIFACTS_DIR).resolve(JAR_FILE);
-                    subProcessNode.startWithJar(upgradeJar);
-                }
-                case NO -> node.start();
+            if (!(node instanceof SubProcessNode subProcessNode)) {
+                throw new IllegalStateException("Node is not a SubProcessNode");
             }
+            subProcessNode.startWithConfigVersion(configVersion);
         } catch (Exception e) {
             log.error("Node '{}' failed to start", node, e);
             Assertions.fail("Node " + node + " failed to start (" + e.getMessage() + ")");

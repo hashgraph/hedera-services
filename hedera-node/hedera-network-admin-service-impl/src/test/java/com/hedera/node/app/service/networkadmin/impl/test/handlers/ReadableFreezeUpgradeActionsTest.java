@@ -34,13 +34,13 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.Builder;
 import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.schemas.V052AddressBookSchema;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
@@ -369,11 +369,11 @@ class ReadableFreezeUpgradeActionsTest {
         final var node1 = new Node(
                 1,
                 asAccount(3),
-                "node1description",
+                "node2",
                 List.of(
-                        new ServiceEndpoint(Bytes.wrap("127.0.0.1"), 1234, null),
-                        new ServiceEndpoint(Bytes.wrap("35.186.191.247"), 50211, null)),
-                List.of(new ServiceEndpoint(Bytes.wrap("45.186.191.247"), 50231, null)),
+                        V052AddressBookSchema.endpointFor("127.0.0.1", 1234),
+                        V052AddressBookSchema.endpointFor("35.186.191.247", 50211)),
+                List.of(V052AddressBookSchema.endpointFor("45.186.191.247", 50231)),
                 Bytes.wrap(
                         "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc1CertificateHash"),
@@ -383,11 +383,11 @@ class ReadableFreezeUpgradeActionsTest {
         final var node2 = new Node(
                 2,
                 asAccount(4),
-                "node2description",
+                "node3",
                 List.of(
-                        new ServiceEndpoint(Bytes.wrap("127.0.0.2"), 1245, null),
-                        new ServiceEndpoint(Bytes.wrap("35.186.191.245"), 50221, null)),
-                List.of(new ServiceEndpoint(Bytes.wrap("45.186.191.245"), 50225, null)),
+                        V052AddressBookSchema.endpointFor("127.0.0.2", 1245),
+                        V052AddressBookSchema.endpointFor("35.186.191.245", 50221)),
+                List.of(V052AddressBookSchema.endpointFor("45.186.191.245", 50225)),
                 Bytes.wrap(
                         "e55c559975c1c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc2CertificateHash"),
@@ -397,11 +397,11 @@ class ReadableFreezeUpgradeActionsTest {
         final var node3 = new Node(
                 3,
                 asAccount(6),
-                "node3description",
+                "node4",
                 List.of(
-                        new ServiceEndpoint(Bytes.wrap("127.0.0.3"), 1245, null),
-                        new ServiceEndpoint(Bytes.wrap("35.186.191.235"), 50221, null)),
-                List.of(new ServiceEndpoint(Bytes.wrap("45.186.191.235"), 50225, null)),
+                        V052AddressBookSchema.endpointFor("127.0.0.3", 1245),
+                        V052AddressBookSchema.endpointFor("35.186.191.235", 50221)),
+                List.of(V052AddressBookSchema.endpointFor("45.186.191.235", 50225)),
                 Bytes.wrap(
                         "e55c55997561c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc3CertificateHash"),
@@ -411,12 +411,12 @@ class ReadableFreezeUpgradeActionsTest {
         final var node4 = new Node(
                 4,
                 asAccount(8),
-                "node4description",
+                "node5",
                 List.of(
-                        new ServiceEndpoint(Bytes.wrap("127.0.0.4"), 1445, null),
-                        new ServiceEndpoint(Bytes.wrap("test.domain.com"), 50225, null),
-                        new ServiceEndpoint(Bytes.wrap("35.186.191.225"), 50225, null)),
-                List.of(new ServiceEndpoint(Bytes.wrap("45.186.191.225"), 50225, null)),
+                        V052AddressBookSchema.endpointFor("127.0.0.4", 1445),
+                        V052AddressBookSchema.endpointFor("test.domain.com", 50225),
+                        V052AddressBookSchema.endpointFor("35.186.191.225", 50225)),
+                List.of(V052AddressBookSchema.endpointFor("45.186.191.225", 50225)),
                 Bytes.wrap(
                         "e55c559975c1c285c5262d6994262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc5CertificateHash"),

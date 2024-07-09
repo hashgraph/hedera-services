@@ -37,12 +37,12 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxSigs;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.suites.contract.Utils;
+import com.hedera.services.bdd.utils.Signing;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -352,7 +352,7 @@ public class HapiEthereumCall extends HapiBaseCall<HapiEthereumCall> {
                 null);
 
         byte[] privateKeyByteArray = getEcdsaPrivateKeyFromSpec(spec, privateKeyRef);
-        var signedEthTxData = EthTxSigs.signMessage(ethTxData, privateKeyByteArray);
+        var signedEthTxData = Signing.signMessage(ethTxData, privateKeyByteArray);
         spec.registry().saveBytes(ETH_HASH_KEY, ByteString.copyFrom((signedEthTxData.getEthereumHash())));
 
         if (createCallDataFile || callData.length > MAX_CALL_DATA_SIZE) {

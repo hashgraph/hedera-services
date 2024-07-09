@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.signMessage;
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -66,7 +65,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getEcdsaPrivateKeyF
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -79,7 +77,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -88,7 +85,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.RELAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
-import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -105,7 +101,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
@@ -124,6 +119,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.utils.Signing;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -161,7 +157,8 @@ public class ContractCreateSuite {
             "f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
     private static final String EXPECTED_DEPLOYER_ADDRESS = "4e59b44847b379578588920ca78fbf26c0b4956c";
     private static final String DEPLOYER = "DeployerContract";
-    public static final String CONTRACTS_ALLOW_AUTO_ASSOCIATIONS = "contracts.allowAutoAssociations";
+    public static final String ENTITIES_UNLIMITED_AUTO_ASSOCIATIONS_ENABLED =
+            "entities.unlimitedAutoAssociationsEnabled";
     public static final String LEDGER_MAX_AUTO_ASSOCIATIONS = "ledger.maxAutoAssociations";
 
     private static final String FUNGIBLE_TOKEN = "fungible";
@@ -310,7 +307,7 @@ public class ContractCreateSuite {
                                 .hasKnownStatus(INVALID_FILE_ID)
                                 .refusingEthConversion(),
                         explicitEthereumTransaction(neverToBe, (spec, b) -> {
-                                    final var signedEthTx = signMessage(
+                                    final var signedEthTx = Signing.signMessage(
                                             placeholderEthTx(),
                                             getEcdsaPrivateKeyFromSpec(spec, SECP_256K1_SOURCE_KEY));
                                     b.setCallData(systemFileId)
@@ -338,10 +335,9 @@ public class ContractCreateSuite {
         final var multiPurpose = "Multipurpose";
         final var createContract = "CreateTrivial";
         return propertyPreservingHapiSpec("contractCreationsHaveValidAssociations")
-                .preserving(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, LEDGER_MAX_AUTO_ASSOCIATIONS)
+                .preserving(LEDGER_MAX_AUTO_ASSOCIATIONS)
                 .given(
-                        overridingTwo(
-                                CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, TRUE_VALUE, LEDGER_MAX_AUTO_ASSOCIATIONS, "5000"),
+                        overriding(LEDGER_MAX_AUTO_ASSOCIATIONS, "5000"),
                         newKeyNamed(MULTI_KEY),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
@@ -809,17 +805,12 @@ public class ContractCreateSuite {
                         .logged());
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> contractCreateShouldChargeTheSame() {
         final var createFeeWithMaxAutoAssoc = 10L;
         final var contract1 = "EmptyOne";
         final var contract2 = "EmptyTwo";
-        return propertyPreservingHapiSpec("contractCreateShouldChargeTheSame")
-                .preserving("contracts.allowAutoAssociations")
-                .given(
-                        uploadInitCode(contract1),
-                        uploadInitCode(contract2),
-                        overriding("contracts.allowAutoAssociations", TRUE_VALUE))
+        return defaultHapiSpec("contractCreateShouldChargeTheSame")
+                .given(uploadInitCode(contract1), uploadInitCode(contract2))
                 .when(
                         contractCreate(contract1)
                                 .via(contract1)
@@ -945,19 +936,6 @@ public class ContractCreateSuite {
                                 .logged())
                 .when()
                 .then();
-    }
-
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
-    final Stream<DynamicTest> cannotSetMaxAutomaticAssociations() {
-        return propertyPreservingHapiSpec("cannotSetMaxAutomaticAssociations")
-                .preserving(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS)
-                .given(
-                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
-                        overriding(CONTRACTS_ALLOW_AUTO_ASSOCIATIONS, FALSE_VALUE))
-                .when()
-                .then(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .maxAutomaticTokenAssociations(10)
-                        .hasKnownStatus(NOT_SUPPORTED));
     }
 
     private EthTxData placeholderEthTx() {
