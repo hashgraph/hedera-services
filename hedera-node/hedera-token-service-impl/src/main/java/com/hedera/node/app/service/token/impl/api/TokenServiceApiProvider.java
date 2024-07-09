@@ -35,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public enum TokenServiceApiProvider implements ServiceApiProvider<TokenServiceApi> {
     /** The singleton instance. */
     TOKEN_SERVICE_API_PROVIDER;
+
     @Override
     public String serviceName() {
         return TokenService.NAME;
