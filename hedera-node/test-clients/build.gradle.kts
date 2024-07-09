@@ -295,11 +295,6 @@ val cleanYahCli =
         delete(File(project.file("yahcli"), "yahcli.jar"))
     }
 
-tasks.assemble {
-    dependsOn(tasks.shadowJar)
-    dependsOn(copyYahCli)
-}
-
 tasks.clean {
     dependsOn(cleanYahCli)
     dependsOn(cleanValidation)
