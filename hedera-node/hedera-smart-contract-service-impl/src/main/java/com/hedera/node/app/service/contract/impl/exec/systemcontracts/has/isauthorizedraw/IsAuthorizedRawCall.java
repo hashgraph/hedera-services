@@ -60,14 +60,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
     private static final ECRECPrecompiledContract ecPrecompile =
             new ECRECPrecompiledContract(noCalculationGasCalculator);
 
-    // FUTURE: Gas for system contract method calls needs to be a) determined by measurement of
-    // resources consumed, and b) incorporated into the fee schedule
-
-    // Gas charge for an ED key - (rough) estimate of resources used (FUTURE: to be refined)
-    private static final long HARDCODED_ED_GAS_REQUIREMENT_GAS = 1_500_000L;
-
-    // Gas charge for an EC key - this is what Ethereum charges for ECRECOVER precompile
-    private static final long HARDCODED_EC_GAS_REQUIREMENT_GAS = 3_000;
+    private final CustomGasCalculator customGasCalculator;
 
     public enum SignatureType {
         INVALID,
@@ -83,11 +76,13 @@ public class IsAuthorizedRawCall extends AbstractCall {
             @NonNull final HasCallAttempt attempt,
             final Address address,
             @NonNull final byte[] messageHash,
-            @NonNull final byte[] signature) {
+            @NonNull final byte[] signature,
+            @NonNull final CustomGasCalculator customGasCalculator) {
         super(attempt.systemContractGasCalculator(), attempt.enhancement(), true);
         this.address = requireNonNull(address);
         this.messageHash = requireNonNull(messageHash);
         this.signature = requireNonNull(signature);
+        this.customGasCalculator = requireNonNull(customGasCalculator);
     }
 
     @NonNull
@@ -106,9 +101,11 @@ public class IsAuthorizedRawCall extends AbstractCall {
         // Now we know how much gas this call will cost
         final long gasRequirement =
                 switch (signatureType) {
-                    case EC -> HARDCODED_EC_GAS_REQUIREMENT_GAS;
-                    case ED -> HARDCODED_ED_GAS_REQUIREMENT_GAS;
-                    case INVALID -> Math.min(HARDCODED_EC_GAS_REQUIREMENT_GAS, HARDCODED_ED_GAS_REQUIREMENT_GAS);
+                    case EC -> customGasCalculator.getEcrecPrecompiledContractGasCost();
+                    case ED -> customGasCalculator.getEdSignatureVerificationSystemContractGasCost();
+                    case INVALID -> Math.min(
+                            customGasCalculator.getEcrecPrecompiledContractGasCost(),
+                            customGasCalculator.getEdSignatureVerificationSystemContractGasCost());
                 };
 
         // Prepare the short-circuit error status returns
