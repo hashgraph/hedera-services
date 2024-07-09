@@ -19,7 +19,7 @@ platform.
 
 The introduction of the Threshold Signature Scheme (TSS) requires a new mechanism for managing node participation in
 consensus and block signing.
-Roster, an immutable subset of the address book, will provide this mechanism, ensuring efficient and secure key
+The Roster, an immutable subset of the address book, will provide this mechanism, ensuring efficient and secure key
 management for TSS operations.
 This proposal attempts to provide a specification for the behavior of rosters starting from their creation from the
 Candidate Address Book (CAB) to their terminal state within the TSS specification.
@@ -31,7 +31,8 @@ nodes.
 The CAB is a snapshot of the Future Address Book (FAB), and it is created when the app decides to adopt a new address
 book.
 
-This proposal specifies that Roster(s) will be created from the CAB by the Hedera app and passed to the platform code.
+This proposal specifies that one or more Roster(s) will be created from the CAB by the Hedera app and passed to the
+platform code.
 The mechanism for doing so is detailed below.
 
 ### Requirements
@@ -67,8 +68,8 @@ class Roster {
 class RosterEntry {
     NodeId nodeId
     long weight
-    X509Certificate signingCert
-    PairingPublicKey tssEcKey
+    X509Certificate gossipCaCertificate
+    PairingPublicKey tssEcPublicKey
     List~ServiceEndpoint~ gossipEndpoints
 }
 
@@ -104,15 +105,17 @@ Some edge cases worth considering include:
    be controlled, with clear rules for removal of unused rosters - the acceptance of a new Candidate Roster
    will invalidate and remove the current candidate roster.
 
-###### Roster API - Implementation
+###### Roster Validity
 
-Implementation of some new TSS components has been proposed.
-See [link](https://www.notion.so/TSS-Platform-Architecture-04b15df371ba4b1d848360542e05a030?pvs=21).
+In simple terms, the following constitutes a valid roster:
 
-It is **important** to note that before the TSS protocol is implemented and launched, the Platform will adopt a
-Candidate Roster during any software upgrade if the Candidate Roster is present in the state. Only after the TSS
-protocol is launched will we be able to add an extra condition to verify that the Candidate Roster is ready to be
-adopted.
+1. The roster must have at least one RosterEntry.
+2. All RosterEntry/ies must have a non-zero weight.
+3. All RosterEntry/ies must have a valid X509Certificate.
+4. All RosterEntry/ies must have a valid PairingPublicKey.
+5. All RosterEntry/ies must have at least one ServiceEndpoint.
+6. All ServiceEndpoint/s must have a valid IP address, port, or domain name.
+7. The roster must have a unique NodeId for each RosterEntry.
 
 ### Core Behaviors, in summary
 
@@ -171,10 +174,7 @@ private key and the signing X509Certificate certificate - that will be stored on
 However, it is up to Services to manage the lifecycle of these files, and not the platform.
 
 There will not be any other separate artifacts stored elsewhere (e.g., directly on disk.).
-The only artifact that will continue to be stored on disk separately from the State is the `config.txt`, which, as
-explained in *Bootstrapping Genesis for a brand-new network* section below, will only ever be used once during a genesis
-of a brand-new network. The `config.txt` file, or at least its part that describes the address book components, will
-never be used in the life cycle of an existing network after that.
+
 
 ### Startup procedure (pseudo-code)
 
@@ -272,33 +272,6 @@ TSS-enabled){
 // just as it does today.
 ```
 
-### Bootstrapping Genesis for a brand new network
-
-This proposal already creates a new interface for the services to install a Candidate Roster—via a Platform API, or
-similar—which ultimately stores the Candidate Roster in a designated location in the State.
-The Startup procedure described above consumes the Candidate Roster from that location and starts its processing or
-adoption based on its readiness.
-
-The `config.txt` will only ever be used literally once—when a brand new network goes through its genesis.
-The `config.txt` will never be used again in the network life cycle.
-
-Given that:
-
-1. we need a special mechanism for supplying a genesis roster to a brand new network, and
-2. this mechanism is only ever used once during genesis, and
-3. we already have a support for `config.txt` in the platform, and
-4. we already propose a public interface for Services to install Candidate Rosters in existing networks
-
-there should be absolutely no need to introduce any additional mechanisms or interfaces between Platform and Services to
-supply a genesis roster.
-
-If we must, we may add a field to the `config.txt` to indicate the number of shares for each node.
-This should be a relatively trivial change.
-However, since the `config.txt` would only ever be used once during genesis, it’s a lot simpler to skip that and assume
-equal shares for all genesis nodes, and only start supporting non-equal shares when a new Candidate Roster is installed
-via the new public interface of the Platform API. But as mentioned, if we must support this at genesis for brand new
-networks, we can do that, and it should be trivial.
-
 ### Roster changes needed for Components
 
 - Reconnect. Reconnect logic currently exchanges and validates address book between the learner and teacher nodes. The
@@ -317,16 +290,14 @@ Some of the obvious test cases to be covered in the plan include validating one 
 
 1. New valid Candidate Roster created with no subsequent one sent by app. Verify accept.
 2. New valid Candidate Roster created with subsequent one sent by app. Verify accept.
-3. Invalid roster(s) sent. Verify reject.
-4. Empty roster(s) sent. Verify reject.
+3. Invalid roster(s) sent by the app. Verify reject.
+4. Empty roster(s) sent by the app. Verify reject.
 5. Node Failures During Roster Change: What happens if nodes fails or disconnects during a roster change? Verify valid
    node successfully reconnects.
 6. Concurrent Roster Updates: What if we make multiple roster updates concurrently? Verify no effect on adoption.
-7. Rosters with nodes with zero or maximum shares. What happens?
-8. Roster recovery? Node receives roster, crashes. Wakes up … ?
+8. Roster recovery? Node receives candidate roster, crashes. Wakes up, reconnects. Verify recovery.
 9. What testing do we need for genesis new network?
-10. What testing do we need for an already new network with no previous TSS upgrade
-11. What testing do we need for an already new network with previous TSS upgrade
+10. What end to end testing do we need for brand new network that uses the TSS signature scheme to sign its blocks?
 
 ### Metrics
 
