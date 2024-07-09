@@ -69,7 +69,7 @@ All record builders are also pushed to a `RecordSink` of the root SavePointStack
 created for the user stack with a state that has all the previous changes committed and creates the User transaction
 base record builder.
 
-[savepoint-stack.md](savepoint-stack.md)
+![Committing a SavePointStack](images/savepoint-stack.png)
 
 ### Rollback
 
