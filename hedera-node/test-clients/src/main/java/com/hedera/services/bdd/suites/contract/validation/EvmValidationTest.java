@@ -30,7 +30,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -68,8 +68,8 @@ public class EvmValidationTest {
         private static String touchAccountContract = "TouchAccountContract";
 
         @BeforeAll
-        static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
-            specManager.setup(uploadInitCode(touchAccountContract), contractCreate(touchAccountContract));
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws Throwable {
+            testLifecycle.doAdhoc(uploadInitCode(touchAccountContract), contractCreate(touchAccountContract));
         }
 
         @Nested
