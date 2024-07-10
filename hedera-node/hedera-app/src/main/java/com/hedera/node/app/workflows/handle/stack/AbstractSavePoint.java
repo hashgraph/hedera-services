@@ -16,6 +16,12 @@
 
 package com.hedera.node.app.workflows.handle.stack;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 
@@ -50,11 +56,8 @@ public abstract class AbstractSavePoint extends RecordSink {
     public static int legacyMaxPrecedingRecords;
     public static final boolean SIMULATE_MONO = true;
 
-    public static final EnumSet<ResponseCodeEnum> SUCCESSES = EnumSet.of(
-            ResponseCodeEnum.OK,
-            ResponseCodeEnum.SUCCESS,
-            ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED,
-            ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+    public static final EnumSet<ResponseCodeEnum> SUCCESSES =
+            EnumSet.of(OK, SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED, SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
 
     protected AbstractSavePoint(@NonNull WrappedHederaState state, @NonNull final RecordSink parentSink) {
         this.state = state;
@@ -71,16 +74,14 @@ public abstract class AbstractSavePoint extends RecordSink {
             @NonNull ExternalizedRecordCustomizer customizer) {
         final var recordBuilder = new SingleTransactionRecordBuilderImpl(reversingBehavior, customizer, txnCategory);
         if (!canAddRecord(recordBuilder)) {
-            throw new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
+            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
         }
         if (!customizer.shouldSuppressRecord()) {
-            if (txnCategory == HandleContext.TransactionCategory.PRECEDING) {
+            if (txnCategory == PRECEDING) {
                 precedingBuilders.add(recordBuilder);
             } else {
                 followingBuilders.add(recordBuilder);
             }
-        }else{
-            System.out.println("Record suppressed");
         }
         return recordBuilder;
     }
@@ -134,7 +135,7 @@ public abstract class AbstractSavePoint extends RecordSink {
                     recordBuilder.status(ResponseCodeEnum.REVERTED_SUCCESS);
                 }
             } else if (recordBuilder.reversingBehavior() == REMOVABLE) {
-                if (SIMULATE_MONO && recordBuilder.category() == HandleContext.TransactionCategory.PRECEDING) {
+                if (SIMULATE_MONO && recordBuilder.category() == PRECEDING) {
                     totalPrecedingRecords--;
                 }
                 // Remove it from the list by setting its location to null. Then, any subsequent children that are

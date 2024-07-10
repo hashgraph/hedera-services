@@ -33,6 +33,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.records.ReadableBlockRecordStore;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.token.impl.comparator.TokenComparators;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
@@ -78,6 +79,9 @@ class GenesisSetupTest {
     private SyntheticAccountCreator syntheticAccountCreator;
 
     @Mock
+    private FileServiceImpl fileService;
+
+    @Mock
     private GenesisAccountRecordBuilder genesisAccountRecordBuilder;
 
     private GenesisSetup subject;
@@ -92,12 +96,12 @@ class GenesisSetupTest {
 
         given(blockStore.getLastBlockInfo()).willReturn(defaultStartupBlockInfo());
 
-        subject = new GenesisSetup(syntheticAccountCreator);
+        subject = new GenesisSetup(fileService, syntheticAccountCreator);
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void setupInCreatesAllRecords() {
+    void externalizeInitSideEffectsCreatesAllRecords() {
         final var acctId3 = ACCOUNT_ID_1.copyBuilder().accountNum(3).build();
         final var acct3 = ACCOUNT_1.copyBuilder().accountId(acctId3).build();
         final var acctId4 = ACCOUNT_ID_1.copyBuilder().accountNum(4).build();
@@ -126,7 +130,7 @@ class GenesisSetupTest {
                 .generateSyntheticAccounts(any(), any(), any(), any(), any(), any());
 
         // Call the first time to make sure records are generated
-        subject.setupIn(context);
+        subject.externalizeInitSideEffects(context);
 
         verifyBuilderInvoked(ACCOUNT_ID_1, EXPECTED_SYSTEM_ACCOUNT_CREATION_MEMO, ACCT_1_BALANCE);
         verifyBuilderInvoked(ACCOUNT_ID_2, EXPECTED_STAKING_MEMO);
@@ -134,15 +138,15 @@ class GenesisSetupTest {
         verifyBuilderInvoked(acctId4, EXPECTED_TREASURY_CLONE_MEMO);
         verifyBuilderInvoked(acctId5, null);
 
-        // Call setupIn() a second time to make sure no other records are created
+        // Call externalizeInitSideEffects() a second time to make sure no other records are created
         Mockito.clearInvocations(genesisAccountRecordBuilder);
-        assertThatThrownBy(() -> subject.setupIn(context)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> subject.externalizeInitSideEffects(context)).isInstanceOf(NullPointerException.class);
         verifyNoInteractions(genesisAccountRecordBuilder);
     }
 
     @Test
-    void setupInCreatesNoRecordsWhenEmpty() {
-        subject.setupIn(context);
+    void externalizeInitSideEffectsCreatesNoRecordsWhenEmpty() {
+        subject.externalizeInitSideEffects(context);
         verifyNoInteractions(genesisAccountRecordBuilder);
         verify(context, never()).markMigrationRecordsStreamed();
     }

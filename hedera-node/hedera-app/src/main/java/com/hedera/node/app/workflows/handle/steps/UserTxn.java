@@ -106,9 +106,10 @@ public record UserTxn(
         if (SIMULATE_MONO) {
             final var consensusConfig = config.getConfigData(ConsensusConfig.class);
             AbstractSavePoint.maxBuildersAfterUserBuilder = (int) consensusConfig.handleMaxFollowingRecords();
-            AbstractSavePoint.legacyMaxPrecedingRecords = (int) consensusConfig.handleMaxPrecedingRecords();
-            stack = new SavepointStackImpl(
-                    state, isGenesis ? Integer.MAX_VALUE : (int) consensusConfig.handleMaxPrecedingRecords());
+            final var maxPrecedingBuilders =
+                    isGenesis ? Integer.MAX_VALUE : (int) consensusConfig.handleMaxPrecedingRecords();
+            AbstractSavePoint.legacyMaxPrecedingRecords = maxPrecedingBuilders;
+            stack = SavepointStackImpl.newRootStack(state, maxPrecedingBuilders);
         } else {
             throw new AssertionError("Not implemented");
         }

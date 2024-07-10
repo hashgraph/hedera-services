@@ -16,7 +16,11 @@
 
 package com.hedera.services.bdd.spec.dsl.annotations;
 
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
+
 import com.hedera.services.bdd.junit.extensions.SpecEntityExtension;
+import com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -24,30 +28,30 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Describes a {@link com.hedera.services.bdd.spec.dsl.entities.SpecAccount}.
+ * Describes a {@link com.hedera.services.bdd.spec.dsl.entities.SpecToken}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.PARAMETER})
 @ExtendWith(SpecEntityExtension.class)
-public @interface AccountSpec {
+public @interface FungibleToken {
     /**
-     * If set, a different {@link com.hedera.services.bdd.spec.HapiSpec} name to use for the account.
+     * If set, a {@link com.hedera.services.bdd.spec.HapiSpec} name to use for the token.
      *
-     * @return the spec name of the account
+     * @return the spec name of the contract
      */
     String name() default "";
 
     /**
-     * If set, the initial balance of the account.
+     * The types of keys to associate with the token.
      *
-     * @return the initial balance of the account
+     * @return the types of keys to associate with the token
      */
-    long balance() default 0;
+    SpecTokenKey[] keys() default {ADMIN_KEY, SUPPLY_KEY};
 
     /**
-     * If set, the initial staked node id of the account.
+     * Whether to use an auto-renew account for the token.
      *
-     * @return the initial staked node id of the account
+     * @return whether to use an auto-renew account for the token
      */
-    long stakedNodeId() default -1;
+    boolean useAutoRenewAccount() default false;
 }

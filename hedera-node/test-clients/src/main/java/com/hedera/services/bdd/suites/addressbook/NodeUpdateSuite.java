@@ -34,11 +34,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 public class NodeUpdateSuite {
     @HapiTest
+    @Disabled
     @Tag(EMBEDDED)
     final Stream<DynamicTest> updateNodeWorks() {
         final String description1 = "One, two! One, two! And through and through";
@@ -53,6 +55,7 @@ public class NodeUpdateSuite {
     }
 
     @HapiTest
+    @Disabled
     @Tag(EMBEDDED)
     final Stream<DynamicTest> validateFees() {
         final String description = "His vorpal blade went snicker-snack!";

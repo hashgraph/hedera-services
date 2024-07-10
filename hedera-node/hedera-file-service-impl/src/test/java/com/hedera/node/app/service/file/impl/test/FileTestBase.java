@@ -37,6 +37,7 @@ import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.test.fixtures.state.ListReadableQueueState;
 import com.swirlds.platform.test.fixtures.state.ListWritableQueueState;
 import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
@@ -57,6 +58,7 @@ public class FileTestBase {
     private static final String C_NAME = "cccccccccccccccccccccccccccccccc";
     private static final Function<String, Key.Builder> KEY_BUILDER =
             value -> Key.newBuilder().ed25519(Bytes.wrap(value.getBytes()));
+    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     public static final Key A_KEY_LIST = Key.newBuilder()
             .keyList(KeyList.newBuilder()
                     .keys(

@@ -57,7 +57,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.aaWith;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_INFINITE_SUPPLY_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.assertAliasBalanceAndFeeInChildRecord;
-import static com.hedera.services.bdd.suites.token.TokenAssociationV1SecurityModelSpecs.VANILLA_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -343,7 +342,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
         return defaultHapiSpec("transferTokensToEVMAddressAliasUnlimitedAssociations")
                 .given(
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
-                        tokenCreate(VANILLA_TOKEN)
+                        tokenCreate("vanilla")
                                 .tokenType(FUNGIBLE_COMMON)
                                 .treasury(PARTY)
                                 .initialSupply(1_000),
@@ -355,7 +354,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                             final var addressBytes = recoverAddressFromPubKey(tmp);
                             assert addressBytes != null;
                             final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            ftId.set(registry.getTokenID(VANILLA_TOKEN));
+                            ftId.set(registry.getTokenID("vanilla"));
                             partyId.set(registry.getAccountID(PARTY));
                             partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
                             counterAlias.set(evmAddressBytes);

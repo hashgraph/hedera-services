@@ -55,18 +55,21 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
         assertWorkingDirInitialized();
         // Without the normal lag of node startup, record stream assertions may check this directory too fast
         ensureDir(getExternalPath(STREAMS_DIR).normalize().toString());
-        try (var ignored =
-                Configurator.initialize(null, getExternalPath(LOG4J2_XML).toString())) {
-            System.setProperty(
-                    "hedera.app.properties.path",
-                    getExternalPath(APPLICATION_PROPERTIES).toAbsolutePath().toString());
-            System.setProperty(
-                    "hedera.genesis.properties.path",
-                    getExternalPath(GENESIS_PROPERTIES).toAbsolutePath().toString());
-            System.setProperty(
-                    "hedera.recordStream.logDir",
-                    getExternalPath(STREAMS_DIR).getParent().toString());
-            System.setProperty("hedera.profiles.active", "DEV");
+        System.setProperty(
+                "hedera.app.properties.path",
+                getExternalPath(APPLICATION_PROPERTIES).toAbsolutePath().toString());
+        System.setProperty(
+                "hedera.genesis.properties.path",
+                getExternalPath(GENESIS_PROPERTIES).toAbsolutePath().toString());
+        System.setProperty(
+                "hedera.recordStream.logDir",
+                getExternalPath(STREAMS_DIR).getParent().toString());
+        System.setProperty("hedera.profiles.active", "DEV");
+        if (getExternalPath(LOG4J2_XML).toString().contains("embedded-test")) {
+            try (var ignored =
+                    Configurator.initialize(null, getExternalPath(LOG4J2_XML).toString())) {
+                // Only initialize logging for the shared embedded network
+            }
         }
         return this;
     }
@@ -76,16 +79,6 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
         super.initWorkingDir(configTxt);
         updateUpgradeArtifactsProperty(getExternalPath(APPLICATION_PROPERTIES), getExternalPath(UPGRADE_ARTIFACTS_DIR));
         return this;
-    }
-
-    @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Cannot stop a single node in an embedded network");
-    }
-
-    @Override
-    public boolean terminate() {
-        throw new UnsupportedOperationException("Cannot terminate a single node in an embedded network");
     }
 
     @Override

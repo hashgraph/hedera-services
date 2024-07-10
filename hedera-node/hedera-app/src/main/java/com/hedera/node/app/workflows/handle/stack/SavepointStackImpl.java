@@ -22,6 +22,7 @@ import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomi
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -61,12 +62,47 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     private final RecordSink recordSink;
 
     /**
+     * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
+     *
+     * @param root the root state
+     * @param maxPreceding the maximum number of preceding builders with available consensus times
+     * @return the root {@link SavepointStackImpl}
+     */
+    public static SavepointStackImpl newRootStack(@NonNull final HederaState root, final int maxPreceding) {
+        return new SavepointStackImpl(root, maxPreceding, REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+    }
+
+    /**
+     * Constructs a new child {@link SavepointStackImpl} for the given state, where the child dispatch has the given
+     * reversing behavior, transaction category, and record customizer.
+     *
+     * @param root the state on which the child dispatch i sbased
+     * @param reversingBehavior the reversing behavior
+     * @param category the transaction category
+     * @param externalizedRecordCustomizer the record customizer
+     * @return the child {@link SavepointStackImpl}
+     */
+    public static SavepointStackImpl newChildStack(
+            @NonNull final HederaState root,
+            @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
+            @NonNull final HandleContext.TransactionCategory category,
+            @NonNull final ExternalizedRecordCustomizer externalizedRecordCustomizer) {
+        return new SavepointStackImpl(
+                root, Integer.MAX_VALUE, reversingBehavior, category, externalizedRecordCustomizer);
+    }
+
+    @VisibleForTesting
+    public SavepointStackImpl(@NonNull final HederaState root, final int maxPreceding) {
+        this(root, maxPreceding, REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+    }
+
+    /**
      * Constructs a new {@link SavepointStackImpl} with the given root state.
      *
      * @param root the root state
      * @throws NullPointerException if {@code root} is {@code null}
      */
-    public SavepointStackImpl(
+    private SavepointStackImpl(
             @NonNull final HederaState root,
             final int maxPreceding,
             final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
@@ -83,10 +119,6 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
         baseRecordBuilder = recordBuilderFor(category, reversingBehavior, externalizedRecordCustomizer);
         baseRecordBuilder.setBaseRecordBuilder();
-    }
-
-    public SavepointStackImpl(@NonNull final HederaState root, final int maxPreceding) {
-        this(root, maxPreceding, REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
     }
 
     @Override
@@ -162,7 +194,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     /**
      * {@inheritDoc}
-     *
+     * <p>
      * The {@link ReadableStates} instances returned from this method are based on the {@link WritableStates} instances
      * for the same service name. This means that any modifications to the {@link WritableStates} will be reflected
      * in the {@link ReadableStates} instances returned from this method.
@@ -178,7 +210,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     /**
      * {@inheritDoc}
-     *
+     * <p>
      * This method guarantees that the same {@link WritableStates} instance is returned for the same {@code serviceName}
      * to ensure all modifications to a {@link WritableStates} are kept together.
      */

@@ -166,7 +166,8 @@ public class ChildDispatchFactory {
         final var preHandleResult =
                 dispatchPreHandleForChildTxn(txBody, syntheticPayerId, config, readableStoreFactory);
         final var childTxnInfo = getTxnInfoFrom(txBody);
-        final var childStack = new SavepointStackImpl(stack, 0, reversingBehavior, category, customizer);
+        // The limiting factor on adding builders to child
+        final var childStack = SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer);
         final var recordBuilder = initializedForChild(childStack.baseRecordBuilder(), childTxnInfo);
         return newChildDispatch(
                 recordBuilder,
