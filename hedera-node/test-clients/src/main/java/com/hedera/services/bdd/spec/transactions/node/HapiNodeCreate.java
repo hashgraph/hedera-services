@@ -28,6 +28,7 @@ import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
+import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -61,20 +62,30 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     private Optional<byte[]> gossipCaCertificate = Optional.empty();
     private Optional<byte[]> grpcCertificateHash = Optional.empty();
     private Optional<LongConsumer> newNumObserver = Optional.empty();
+    private Optional<String> adminKeyName = Optional.empty();
+
 
     @Nullable
-    private Key key;
-
-    @Nullable
-    private String keyName;
+    private Key adminKey;
 
     public HapiNodeCreate(@NonNull final String nodeName) {
         this.nodeName = nodeName;
     }
 
+    public HapiNodeCreate adminKeyName(final String s) {
+        adminKeyName = Optional.of(s);
+        return this;
+    }
+
+    public HapiNodeCreate adminKey(final Key k) {
+        adminKey = k;
+        return this;
+    }
+
+
     @Override
     protected Key lookupKey(final HapiSpec spec, final String name) {
-        return name.equals(nodeName) ? key : spec.registry().getKey(name);
+        return name.equals(nodeName) ? adminKey : spec.registry().getKey(name);
     }
 
     @Override
@@ -150,7 +161,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
-        key = key != null ? key : netOf(spec, Optional.ofNullable(keyName));
+        adminKey = adminKey != null ? adminKey : netOf(spec, Optional.ofNullable(adminKeyName.get()));
         if (useAvailableSubProcessPorts) {
             if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
                 throw new IllegalStateException("Target is not a SubProcessNetwork");
@@ -163,7 +174,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
                         NodeCreateTransactionBody.class, builder -> {
                             accountId.ifPresent(builder::setAccountId);
                             description.ifPresent(builder::setDescription);
-                            builder.setAdminKey(key);
+                            builder.setAdminKey(adminKey);
                             if (!gossipEndpoints.isEmpty()) {
                                 builder.clearGossipEndpoint().addAllGossipEndpoint(gossipEndpoints);
                             }
@@ -178,7 +189,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> key);
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> adminKey);
     }
 
     @Override
