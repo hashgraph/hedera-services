@@ -63,35 +63,39 @@ import org.junit.jupiter.api.Tag;
 @HapiTestLifecycle
 public class IsAssociatedSystemContractTest {
 
-    @FungibleTokenSpec(name = "immutableToken")
-    static SpecFungibleToken immutableToken;
+    @Nested
+    @DisplayName("static call")
+    class staticCall {
+        @FungibleTokenSpec(name = "immutableToken")
+        static SpecFungibleToken immutableToken;
 
-    @NonFungibleTokenSpec(name = "immutableNft")
-    static SpecNonFungibleToken immutableNft;
+        @NonFungibleTokenSpec(name = "immutableNft")
+        static SpecNonFungibleToken immutableNft;
 
-    @ContractSpec(contract = "HRCContract", creationGas = 4_000_000L)
-    static SpecContract hrcContract;
+        @ContractSpec(contract = "HRCContract", creationGas = 4_000_000L)
+        static SpecContract hrcContract;
 
-    @HapiTest
-    @DisplayName("check token is not associated with an account with static call")
-    public Stream<DynamicTest> checkTokenIsNotAssociatedWithAnAccountWithStaticCall() {
-        return hapiTest(hrcContract
-                .staticCall("isAssociated", immutableToken)
-                .andAssert(query -> query.has(ContractFnResultAsserts.resultWith()
-                        .resultThruAbi(
-                                getABIFor(FUNCTION, "isAssociated", "HRCContract"),
-                                isLiteralResult(new Object[] {false})))));
-    }
+        @HapiTest
+        @DisplayName("check token is not associated with an account with static call")
+        public Stream<DynamicTest> checkTokenIsNotAssociatedWithAnAccountWithStaticCall() {
+            return hapiTest(hrcContract
+                    .staticCall("isAssociated", immutableToken)
+                    .andAssert(query -> query.has(ContractFnResultAsserts.resultWith()
+                            .resultThruAbi(
+                                    getABIFor(FUNCTION, "isAssociated", "HRCContract"),
+                                    isLiteralResult(new Object[] {false})))));
+        }
 
-    @HapiTest
-    @DisplayName("check nft is not associated with an account with static call")
-    public Stream<DynamicTest> checkNftIsNotAssociatedWithAnAccountWithStaticCall() {
-        return hapiTest(hrcContract
-                .staticCall("isAssociated", immutableNft)
-                .andAssert(query -> query.has(ContractFnResultAsserts.resultWith()
-                        .resultThruAbi(
-                                getABIFor(FUNCTION, "isAssociated", "HRCContract"),
-                                isLiteralResult(new Object[] {false})))));
+        @HapiTest
+        @DisplayName("check nft is not associated with an account with static call")
+        public Stream<DynamicTest> checkNftIsNotAssociatedWithAnAccountWithStaticCall() {
+            return hapiTest(hrcContract
+                    .staticCall("isAssociated", immutableNft)
+                    .andAssert(query -> query.has(ContractFnResultAsserts.resultWith()
+                            .resultThruAbi(
+                                    getABIFor(FUNCTION, "isAssociated", "HRCContract"),
+                                    isLiteralResult(new Object[] {false})))));
+        }
     }
 
     @Nested
