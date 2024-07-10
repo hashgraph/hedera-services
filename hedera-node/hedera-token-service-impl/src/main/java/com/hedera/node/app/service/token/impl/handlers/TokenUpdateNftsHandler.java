@@ -87,9 +87,10 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var txn = context.body();
         final var op = txn.tokenUpdateNftsOrThrow();
         final var tokenStore = context.createStore(ReadableTokenStore.class);
-        final var nftStore = context.createStore(ReadableNftStore.class);
         final var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
         if (token == null) throw new PreCheckException(INVALID_TOKEN_ID);
+
+        final var nftStore = context.createStore(ReadableNftStore.class);
         if (serialNumbersInTreasury(
                 token.treasuryAccountIdOrThrow(), op.serialNumbers(), nftStore, token.tokenIdOrThrow())) {
             if (token.hasMetadataKey() && token.hasSupplyKey()) {
