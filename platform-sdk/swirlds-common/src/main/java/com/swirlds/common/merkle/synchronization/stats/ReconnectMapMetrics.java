@@ -125,8 +125,8 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
      */
     @Override
     public void incrementInternalHashes(final int hashNum, final int cleanHashNum) {
-        internalHashes.add(hashNum);
-        internalCleanHashes.add(cleanHashNum);
+        if (hashNum > 0) internalHashes.add(hashNum);
+        if (cleanHashNum > 0) internalCleanHashes.add(cleanHashNum);
         if (aggregateStats != null) {
             aggregateStats.incrementInternalHashes(hashNum, cleanHashNum);
         }
@@ -137,8 +137,8 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
      */
     @Override
     public void incrementInternalData(final int dataNum, final int cleanDataNum) {
-        internalData.add(dataNum);
-        internalCleanData.add(cleanDataNum);
+        if (dataNum > 0) internalData.add(dataNum);
+        if (cleanDataNum > 0) internalCleanData.add(cleanDataNum);
         if (aggregateStats != null) {
             aggregateStats.incrementInternalData(dataNum, cleanDataNum);
         }
@@ -149,8 +149,8 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
      */
     @Override
     public void incrementLeafHashes(final int hashNum, final int cleanHashNum) {
-        leafHashes.add(hashNum);
-        leafCleanHashes.add(cleanHashNum);
+        if (hashNum > 0) leafHashes.add(hashNum);
+        if (cleanHashNum > 0) leafCleanHashes.add(cleanHashNum);
         if (aggregateStats != null) {
             aggregateStats.incrementLeafHashes(hashNum, cleanHashNum);
         }
@@ -161,8 +161,8 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
      */
     @Override
     public void incrementLeafData(final int dataNum, final int cleanDataNum) {
-        leafData.add(dataNum);
-        leafCleanData.add(cleanDataNum);
+        if (dataNum > 0) leafData.add(dataNum);
+        if (cleanDataNum > 0) leafCleanData.add(cleanDataNum);
         if (aggregateStats != null) {
             aggregateStats.incrementLeafData(dataNum, cleanDataNum);
         }
