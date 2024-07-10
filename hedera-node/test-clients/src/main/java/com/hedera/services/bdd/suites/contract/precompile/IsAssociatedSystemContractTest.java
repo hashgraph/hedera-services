@@ -76,8 +76,8 @@ public class IsAssociatedSystemContractTest {
         static SpecContract hrcContract;
 
         @HapiTest
-        @DisplayName("check token is not associated with an account with static call")
-        public Stream<DynamicTest> checkTokenIsNotAssociatedWithAnAccountWithStaticCall() {
+        @DisplayName("check token is not associated with an account")
+        public Stream<DynamicTest> checkTokenIsNotAssociatedWithAnAccount() {
             return hapiTest(hrcContract
                     .staticCall("isAssociated", immutableToken)
                     .andAssert(query -> query.has(ContractFnResultAsserts.resultWith()
@@ -87,8 +87,8 @@ public class IsAssociatedSystemContractTest {
         }
 
         @HapiTest
-        @DisplayName("check nft is not associated with an account with static call")
-        public Stream<DynamicTest> checkNftIsNotAssociatedWithAnAccountWithStaticCall() {
+        @DisplayName("check nft is not associated with an account")
+        public Stream<DynamicTest> checkNftIsNotAssociatedWithAnAccount() {
             return hapiTest(hrcContract
                     .staticCall("isAssociated", immutableNft)
                     .andAssert(query -> query.has(ContractFnResultAsserts.resultWith()
@@ -103,7 +103,7 @@ public class IsAssociatedSystemContractTest {
     class Contract {
         static final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
         static final AtomicReference<String> nonFungibleTokenNum = new AtomicReference<>();
-        private static final String hrcContract = "hrcContract";
+        private static final String hrcContract = "HRCContract";
 
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
@@ -137,7 +137,7 @@ public class IsAssociatedSystemContractTest {
                                     .contractCallResult(resultWith()
                                             .resultThruAbi(
                                                     getABIFor(
-                                                            Utils.FunctionType.FUNCTION, "isAssociated", "hrcContract"),
+                                                            Utils.FunctionType.FUNCTION, "isAssociated", "HRCContract"),
                                                     isLiteralResult(new Object[] {false})))));
         }
 
@@ -159,7 +159,7 @@ public class IsAssociatedSystemContractTest {
                                     .contractCallResult(resultWith()
                                             .resultThruAbi(
                                                     getABIFor(
-                                                            Utils.FunctionType.FUNCTION, "isAssociated", "hrcContract"),
+                                                            Utils.FunctionType.FUNCTION, "isAssociated", "HRCContract"),
                                                     isLiteralResult(new Object[] {false})))));
         }
     }
