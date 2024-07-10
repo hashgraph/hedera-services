@@ -45,7 +45,8 @@ public abstract class AbstractFollowingSavePoint extends AbstractSavePoint {
             if (recordBuilder.isPreceding()) {
                 return totalPrecedingRecords < legacyMaxPrecedingRecords;
             } else {
-                return numBuildersAfterUserBuilder() < maxBuildersAfterUserBuilder;
+                final var numBuildersAfterUserBuilder = numBuildersAfterUserBuilder();
+                return numBuildersAfterUserBuilder < maxBuildersAfterUserBuilder;
             }
         } else {
             return numBuildersAfterUserBuilder() < MIN_TRANS_TIMESTAMP_INCR_NANOS - 1;

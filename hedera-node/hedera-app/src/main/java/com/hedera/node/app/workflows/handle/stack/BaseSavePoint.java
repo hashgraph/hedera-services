@@ -39,9 +39,4 @@ public class BaseSavePoint extends AbstractFollowingSavePoint {
             parentSink.followingBuilders.addAll(allBuilders());
         }
     }
-
-    @Override
-    int numBuildersAfterUserBuilder() {
-        return 0;
-    }
 }
