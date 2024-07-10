@@ -38,6 +38,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -80,39 +81,274 @@ public class TokenUpdateNftsSuite {
                         .signedBy(DEFAULT_PAYER, "multiKey")));
     }
 
+    /**
+     * <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-850.md">HIP-850</a>
+     * Tests that the transaction fails if it is not signed by the metadata key or the supply key.
+     * @return the dynamic test
+     */
     @HapiTest
-    final Stream<DynamicTest> failsIfTokenHasNoMetadataKey() {
-        return defaultHapiSpec("failsIfTokenHasNoMetadataKey")
+    final Stream<DynamicTest> failsIfNoMetadataKeyOrSupplyKey() {
+        return defaultHapiSpec("failsIfNoMetadataKeyOrSupplyKey")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
+                        newKeyNamed(METADATA_KEY),
+                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .tokenType(NON_FUNGIBLE_UNIQUE)
                                 .treasury(TOKEN_TREASURY)
-                                .supplyKey(SUPPLY_KEY)
                                 .maxSupply(12L)
+                                .supplyKey(SUPPLY_KEY)
+                                .metadataKey(METADATA_KEY)
                                 .initialSupply(0L),
-                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"))))
+                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
                 .when()
-                .then(
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasMetadata(ByteString.copyFromUtf8("a")),
-                        tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
-                                .hasKnownStatus(TOKEN_HAS_NO_METADATA_KEY),
-                        getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L).hasMetadata(ByteString.copyFromUtf8("a")));
+                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+                        .payingWith(TOKEN_TREASURY)
+                        .fee(10 * ONE_HBAR)
+                        .via("nftUpdateTxn")
+                        .hasKnownStatus(INVALID_SIGNATURE));
     }
 
     /**
      * <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-850.md">HIP-850</a>
-     * Tests that the supply key can sign the transaction while the NFT serials are in the treasury, tokenUpdateNfts
-     * is expected to have a status of TOKEN_IS_IMMUTABLE as serial 1 is not in the treasury
+     * Tests that the transaction succeeds if it is signed by the supply key and metadata key while serials are in the treasury.
      * @return the dynamic test
      */
     @HapiTest
-    final Stream<DynamicTest> failsIfSupplyKeyNftsNotInTreasury() {
-        return defaultHapiSpec("failsIfSupplyKeyNftsNotInTreasury")
+    final Stream<DynamicTest> supplyKeyAndMetadataKeyInTreasury() {
+        return defaultHapiSpec("supplyKeyAndMetadataKeyInTreasury")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY),
+                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(12L)
+                                .supplyKey(SUPPLY_KEY)
+                                .metadataKey(METADATA_KEY)
+                                .initialSupply(0L),
+                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
+                .when()
+                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+                        .signedBy(SUPPLY_KEY, METADATA_KEY)
+                        .payingWith(TOKEN_TREASURY)
+                        .fee(10 * ONE_HBAR)
+                        .via("nftUpdateTxn")
+                        .hasKnownStatus(SUCCESS));
+    }
+
+    /**
+     * <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-850.md">HIP-850</a>
+     * Tests that the transaction succeeds if it is signed by the supply key and metadata key while serials are outside the treasury.
+     * @return the dynamic test
+     */
+    @HapiTest
+    final Stream<DynamicTest> supplyKeyAndMetadataKeyOutsideTreasury() {
+        return defaultHapiSpec("supplyKeyAndMetadataKeyOutsideTreasury")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY),
+                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(12L)
+                                .supplyKey(SUPPLY_KEY)
+                                .metadataKey(METADATA_KEY)
+                                .initialSupply(0L),
+                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
+                .when(cryptoTransfer(
+                        TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, RECEIVER)))
+                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+                        .signedBy(SUPPLY_KEY, METADATA_KEY)
+                        .payingWith(TOKEN_TREASURY)
+                        .fee(10 * ONE_HBAR)
+                        .via("nftUpdateTxn")
+                        .hasKnownStatus(SUCCESS));
+    }
+
+    /**
+     * <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-850.md">HIP-850</a>
+     * Tests that the transaction succeeds if it is signed by the metadata key while serials are in the treasury.
+     * @return the dynamic test
+     */
+    @HapiTest
+    final Stream<DynamicTest> metadataKeySignedInTreasury() {
+        return defaultHapiSpec("supplyKeyAndMetadataKeyOutsideTreasury")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY),
+                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(12L)
+                                .supplyKey(SUPPLY_KEY)
+                                .metadataKey(METADATA_KEY)
+                                .initialSupply(0L),
+                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
+                .when()
+                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+                        .signedBy(METADATA_KEY)
+                        .payingWith(TOKEN_TREASURY)
+                        .fee(10 * ONE_HBAR)
+                        .via("nftUpdateTxn")
+                        .hasKnownStatus(SUCCESS));
+    }
+
+    /**
+     * <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-850.md">HIP-850</a>
+     * Tests the transaction succeeds if it is signed by the metadata key while serials are outside the treasury.
+     * @return the dynamic test
+     */
+    @HapiTest
+    final Stream<DynamicTest> metadataKeySignedOutsideTreasury() {
+        return defaultHapiSpec("metadataKeySignedOutsideTreasury")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY),
+                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(12L)
+                                .supplyKey(SUPPLY_KEY)
+                                .metadataKey(METADATA_KEY)
+                                .initialSupply(0L),
+                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
+                .when(cryptoTransfer(
+                        TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, RECEIVER)))
+                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+                        .signedBy(METADATA_KEY)
+                        .payingWith(TOKEN_TREASURY)
+                        .fee(10 * ONE_HBAR)
+                        .via("nftUpdateTxn")
+                        .hasKnownStatus(SUCCESS));
+    }
+
+    /**
+     * <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-850.md">HIP-850</a>
+     * Tests that the transaction succeeds if it is signed by the supply key while serials are in the treasury.
+     * @return the dynamic test
+     */
+    @HapiTest
+    final Stream<DynamicTest> supplyKeySignedInTreasury() {
+        return defaultHapiSpec("supplyKeySignedInTreasury")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY),
+                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(12L)
+                                .supplyKey(SUPPLY_KEY)
+                                .metadataKey(METADATA_KEY)
+                                .initialSupply(0L),
+                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
+                .when()
+                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+                        .signedBy(SUPPLY_KEY)
+                        .payingWith(TOKEN_TREASURY)
+                        .fee(10 * ONE_HBAR)
+                        .via("nftUpdateTxn")
+                        .hasKnownStatus(SUCCESS));
+    }
+
+    /**
+     * <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-850.md">HIP-850</a>
+     * Tests that the transaction fails if it is signed by the supply key while serials are outside the treasury.
+     * @return the dynamic test
+     */
+    @HapiTest
+    final Stream<DynamicTest> supplyKeySignedOutsideTreasury() {
+        return defaultHapiSpec("supplyKeySignedOutsideTreasury")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY),
+                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(12L)
+                                .supplyKey(SUPPLY_KEY)
+                                .metadataKey(METADATA_KEY)
+                                .initialSupply(0L),
+                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
+                .when(cryptoTransfer(
+                        TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 1L).between(TOKEN_TREASURY, RECEIVER)))
+                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+                        .signedBy(SUPPLY_KEY)
+                        .payingWith(TOKEN_TREASURY)
+                        .fee(10 * ONE_HBAR)
+                        .via("nftUpdateTxn")
+                        .hasKnownStatus(INVALID_SIGNATURE));
+    }
+
+    /**
+     * <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-850.md">HIP-850</a>
+     * Tests that the transaction succeeds if it is signed by the supply key (Token no metadata key) while serials are in the treasury.
+     * @return the dynamic test
+     */
+    @HapiTest
+    final Stream<DynamicTest> noMetadataKeySignedInTreasury() {
+        return defaultHapiSpec("noMetadataKeySignedInTreasury")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY),
+                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(12L)
+                                .supplyKey(SUPPLY_KEY)
+                                .initialSupply(0L),
+                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
+                .when()
+                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+                        .signedBy(SUPPLY_KEY)
+                        .payingWith(TOKEN_TREASURY)
+                        .fee(10 * ONE_HBAR)
+                        .via("nftUpdateTxn")
+                        .hasKnownStatus(SUCCESS));
+    }
+
+    /**
+     * <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-850.md">HIP-850</a>
+     * Tests that the transaction fails if it is signed by the supply key (Token no metadata key) while serials are outside the treasury.
+     * @return the dynamic test
+     */
+    @HapiTest
+    final Stream<DynamicTest> noMetadataKeySignedOutsideTreasury() {
+        return defaultHapiSpec("noMetadataKeySignedOutsideTreasury")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY),
                         cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
                         cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
@@ -132,42 +368,6 @@ public class TokenUpdateNftsSuite {
                         .fee(10 * ONE_HBAR)
                         .via("nftUpdateTxn")
                         .hasKnownStatus(TOKEN_HAS_NO_METADATA_KEY));
-    }
-
-    /**
-     * <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-850.md">HIP-850</a>
-     * Tests that the supply key can sign the transaction while the NFT serials are in the treasury
-     * @return the dynamic test
-     */
-    @HapiTest
-    final Stream<DynamicTest> supplyKeyCanSignTransactionNoMetadataKey() {
-        return defaultHapiSpec("supplyKeyCanSignTransaction")
-                .given(
-                        newKeyNamed(SUPPLY_KEY),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(12L)
-                                .supplyKey(SUPPLY_KEY)
-                                .initialSupply(0L),
-                        mintToken(
-                                NON_FUNGIBLE_TOKEN,
-                                List.of(
-                                        copyFromUtf8("a"),
-                                        copyFromUtf8("b"),
-                                        copyFromUtf8("c"),
-                                        copyFromUtf8("d"),
-                                        copyFromUtf8("e"))))
-                .when(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L, 2L, 3L, 4L, 5L))
-                        .signedBy(SUPPLY_KEY)
-                        .payingWith(TOKEN_TREASURY)
-                        .fee(10 * ONE_HBAR)
-                        .via("nftUpdateTxn"))
-                .then(getTokenNftInfo(NON_FUNGIBLE_TOKEN, 1L)
-                        .hasSerialNum(1L)
-                        .hasMetadata(ByteString.copyFromUtf8(NFT_TEST_METADATA)));
     }
 
     @HapiTest

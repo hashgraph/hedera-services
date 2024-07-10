@@ -21,8 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MISSING_SERIAL_NUMBERS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
-import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -90,24 +90,22 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var nftStore = context.createStore(ReadableNftStore.class);
         final var token = tokenStore.get(op.tokenOrElse(TokenID.DEFAULT));
         if (token == null) throw new PreCheckException(INVALID_TOKEN_ID);
-        if (token.hasMetadataKey()) {
-            // If the token has a metadata key, either the metadata key or the supply key can sign the transaction
-            // as long as all serial numbers being updated are owned by the treasury account
-            if (token.hasSupplyKey()
-                    && verifySerialNumbersInTreasury(
-                            token.treasuryAccountIdOrThrow(), op.serialNumbers(), nftStore, token.tokenIdOrThrow())) {
+        if (serialNumbersInTreasury(
+                token.treasuryAccountIdOrThrow(), op.serialNumbers(), nftStore, token.tokenIdOrThrow())) {
+            if (token.hasMetadataKey() && token.hasSupplyKey()) {
                 context.requireKey(oneOf(token.metadataKeyOrThrow(), token.supplyKeyOrThrow()));
-            } else {
+            } else if (token.hasMetadataKey()) {
                 context.requireKey(token.metadataKeyOrThrow());
-            }
-        } else if (token.hasSupplyKey()) {
-            // If the token does not have a metadata key, the supply key can be used if it exists and
-            // all serial numbers being updated are owned by the treasury account
-            if (verifySerialNumbersInTreasury(
-                    token.treasuryAccountIdOrThrow(), op.serialNumbers(), nftStore, token.tokenIdOrThrow())) {
+            } else if (token.hasSupplyKey()) {
                 context.requireKey(token.supplyKeyOrThrow());
             } else {
                 throw new PreCheckException(TOKEN_IS_IMMUTABLE);
+            }
+        } else {
+            if (token.hasMetadataKey()) {
+                context.requireKey(token.metadataKeyOrThrow());
+            } else {
+                throw new PreCheckException(TOKEN_HAS_NO_METADATA_KEY);
             }
         }
     }
@@ -118,17 +116,10 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var txnBody = context.body();
         final var op = txnBody.tokenUpdateNftsOrThrow();
         final var tokenId = op.tokenOrThrow();
-
-        // Ensure that the token has metadataKey
         final var storeFactory = context.storeFactory();
-        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
-        final var token = getIfUsable(tokenId, tokenStore);
-        if (!token.hasMetadataKey() && !token.hasSupplyKey()) {
-            throw new HandleException(TOKEN_IS_IMMUTABLE);
-        }
+        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
 
         validateSemantics(context, op);
-        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
 
         // Wrap in Set to de-duplicate serial numbers
         final var nftSerialNums = new LinkedHashSet<>(op.serialNumbers());
@@ -202,7 +193,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
      * @param tokenId the token id
      * @return true if all serial numbers are owned by the treasury account
      */
-    private boolean verifySerialNumbersInTreasury(
+    private boolean serialNumbersInTreasury(
             @NonNull final AccountID treasuryAccount,
             @NonNull final List<Long> serialNumbers,
             @NonNull final ReadableNftStore nftStore,

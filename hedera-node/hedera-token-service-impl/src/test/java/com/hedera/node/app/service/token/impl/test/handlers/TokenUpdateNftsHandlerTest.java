@@ -17,9 +17,7 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
@@ -34,6 +32,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
@@ -45,6 +44,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenUpdateNftsTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -61,6 +61,8 @@ import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.PreCheckException;
+import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -94,6 +96,24 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock
     private AttributeValidator attributeValidator;
+
+    @Mock
+    private PreHandleContext preHandleContext;
+
+    @Mock
+    private TransactionBody transactionBody;
+
+    @Mock
+    private TokenUpdateNftsTransactionBody tokenUpdateNftsTransactionBody;
+
+    @Mock
+    private ReadableTokenStore readableTokenStore;
+
+    @Mock
+    private ReadableNftStore readableNftStore;
+
+    @Mock
+    private Token token;
 
     private TokenUpdateNftsHandler subject;
     private TransactionBody txn;
@@ -220,30 +240,57 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
     }
 
     @Test
-    void failsWhenNotSignedByMetadataKey() {
-        final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(1L, 2L));
+    void preHandle_WhenTokenHasMetadataKeyAndSupplyKey() {
+        when(preHandleContext.body()).thenReturn(transactionBody);
+        when(transactionBody.tokenUpdateNftsOrThrow()).thenReturn(tokenUpdateNftsTransactionBody);
+        when(tokenUpdateNftsTransactionBody.tokenOrElse(TokenID.DEFAULT)).thenReturn(nonFungibleTokenId);
+        when(preHandleContext.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(readableTokenStore.get(nonFungibleTokenId)).thenReturn(token);
+        when(token.hasMetadataKey()).thenReturn(true);
+        when(token.hasSupplyKey()).thenReturn(true);
 
-        final var totalFungibleSupply = 5;
-        writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                .tokenId(TOKEN_123)
-                .tokenType(TokenType.FUNGIBLE_COMMON)
-                .treasuryAccountId(ACCOUNT_1339)
-                .supplyKey((Key) null) // Intentionally missing supply key
-                .totalSupply(totalFungibleSupply)
-                .build());
-        writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                .accountId(ACCOUNT_1339)
-                .tokenId(TOKEN_123)
-                .balance(totalFungibleSupply)
-                .build());
-        final var txn = new TokenUpdateNftBuilder()
-                .newNftUpdateTransactionBody(
-                        TOKEN_123, Bytes.wrap("test metadata"), serialNumbers.toArray(new Long[0]));
-        final var context = keyMockContext(txn);
+        assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
+    }
 
-        assertThatThrownBy(() -> subject.handle(context))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(INVALID_TOKEN_ID));
+    @Test
+    void preHandle_WhenTokenHasMetadataKeyOnly() {
+        when(preHandleContext.body()).thenReturn(transactionBody);
+        when(transactionBody.tokenUpdateNftsOrThrow()).thenReturn(tokenUpdateNftsTransactionBody);
+        when(tokenUpdateNftsTransactionBody.tokenOrElse(TokenID.DEFAULT)).thenReturn(nonFungibleTokenId);
+        when(preHandleContext.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(readableTokenStore.get(nonFungibleTokenId)).thenReturn(token);
+        when(token.hasMetadataKey()).thenReturn(true);
+        when(token.hasSupplyKey()).thenReturn(false);
+
+        assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void preHandle_WhenTokenHasSupplyKeyOnly() {
+        when(preHandleContext.body()).thenReturn(transactionBody);
+        when(transactionBody.tokenUpdateNftsOrThrow()).thenReturn(tokenUpdateNftsTransactionBody);
+        when(tokenUpdateNftsTransactionBody.tokenOrElse(TokenID.DEFAULT)).thenReturn(nonFungibleTokenId);
+        when(preHandleContext.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(readableTokenStore.get(nonFungibleTokenId)).thenReturn(token);
+        when(token.hasMetadataKey()).thenReturn(false);
+        when(token.hasSupplyKey()).thenReturn(true);
+
+        assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void preHandle_WhenTokenHasNoMetadataKeyAndSupplyKey() {
+        when(preHandleContext.body()).thenReturn(transactionBody);
+        when(transactionBody.tokenUpdateNftsOrThrow()).thenReturn(tokenUpdateNftsTransactionBody);
+        when(tokenUpdateNftsTransactionBody.tokenOrElse(TokenID.DEFAULT)).thenReturn(nonFungibleTokenId);
+        when(preHandleContext.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(readableTokenStore.get(nonFungibleTokenId)).thenReturn(token);
+        when(token.hasMetadataKey()).thenReturn(false);
+        when(token.hasSupplyKey()).thenReturn(false);
+
+        Assertions.assertThatThrownBy(() -> subject.preHandle(preHandleContext))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(TOKEN_IS_IMMUTABLE));
     }
 
     @Test
@@ -278,39 +325,6 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(INVALID_NFT_ID));
-    }
-
-    @Test
-    void failsWhenMetadatKeyAndSupplyKeyNotSet() {
-        final List<Long> serialNumbers = new ArrayList<>(Arrays.asList(1L, 2L));
-        readableTokenStore =
-                newReadableStoreWithTokens(Token.newBuilder().tokenId(TOKEN_123).build());
-        writableTokenStore = newWritableStoreWithTokens(Token.newBuilder()
-                .tokenId(TOKEN_123)
-                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                .treasuryAccountId(ACCOUNT_1339)
-                .supplyKey(TOKEN_SUPPLY_KT.asPbjKey())
-                .totalSupply(10)
-                .build());
-        writableTokenRelStore = newWritableStoreWithTokenRels(TokenRelation.newBuilder()
-                .accountId(ACCOUNT_1339)
-                .tokenId(TOKEN_123)
-                .balance(10)
-                .build());
-        writableNftStore = new WritableNftStore(
-                new MapWritableStates(
-                        Map.of("NFTS", MapWritableKVState.builder("NFTS").build())),
-                CONFIGURATION,
-                storeMetricsService);
-
-        final var txn = new TokenUpdateNftBuilder()
-                .newNftUpdateTransactionBody(
-                        TOKEN_123, Bytes.wrap("test metadata"), serialNumbers.toArray(new Long[0]));
-        mockContext(txn);
-
-        Assertions.assertThatThrownBy(() -> subject.handle(handleContext))
-                .isInstanceOf(HandleException.class)
-                .has(responseCode(TOKEN_IS_IMMUTABLE));
     }
 
     @Test
