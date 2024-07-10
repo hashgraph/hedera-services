@@ -113,12 +113,12 @@ public class PullVirtualTreeResponse implements SelfSerializable {
         assert learnerView != null;
         path = in.readLong();
         final boolean isClean = in.read() == 0;
-        if (path != Path.ROOT_PATH && learnerView.isLeaf(path)) {
+        learnerView.readNode(in, path, isClean);
+        if (learnerView.isLeaf(path)) {
             learnerView.getMapStats().incrementLeafHashes(1, isClean ? 1 : 0);
         } else {
             learnerView.getMapStats().incrementInternalHashes(1, isClean ? 1 : 0);
         }
-        learnerView.readNode(in, path, isClean);
     }
 
     public long getPath() {
