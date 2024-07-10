@@ -51,7 +51,7 @@ This  `TSS-Ledger-ID` proposal covers changes to the following elements:
 * The new state data structures needed to store TSS Key material and the ledger id.
 * The new components needed in the framework to support creating and transferring the ledger key.
 * The modified startup process to initialize the signing capability.
-* For each node, the creation of a new Elliptic Curve (EC) key called its `elGamalKey` that is used in creating shares.
+* For each node, the creation of a new Elliptic Curve (EC) key called its `tssEcKey` that is used in creating shares.
 
 ### Goals
 
@@ -90,12 +90,12 @@ Impacts of TSS-Ledger-ID to Services Team
   roster to have key material generated.
 * Services will need to know or detect when the candidate roster fails to be adopted due to not having enough key
   material generated.
-* The node's public `elGamalKey` will need to be added to the address book.
+* All nodes' public `tssEcKeys` will need to be added to the address book.
     * This requires modification of the HAPI transactions that manage the address book.
 
 Impacts to DevOps Team
 
-* Each consensus node will need a new `elGamalKey` in addition to the existing RSA key.
+* Each consensus node will need a new `tssEcKey` in addition to the existing RSA key.
     * EC Key generation will have to happen before a node can join the network.
 * A new node added to an existing network will need to be given a state from an existing node after the network has
   adopted the address book containing the new node.
@@ -128,7 +128,7 @@ Block Signing Requirements
 | Requirement ID | Requirement Description                                                                 |
 |----------------|-----------------------------------------------------------------------------------------|
 | TSSBS-001      | The initial block in the block stream MUST be signed and verifiable with the ledger id. |
-| TSSBS-002      | On a new network, the initial block MUST be block 0                                     |
+| TSSBS-002      | On a new network, the initial block MUST be block 1                                     |
 
 ### Design Decisions
 
@@ -163,7 +163,7 @@ share is required to participate in the signing since a threshold number of shar
 ledger private key, if they so choose.
 
 The Groth21 algorithm requires specific Elliptic Curve (EC)s with the ability to produce bilinear pairings. Each
-node will need its own long-term EC key pair, called an `elGamalKey`, on the curve for use in the groth21 TSS
+node will need its own long-term EC key pair, called an `tssEcKey`, on the curve for use in the groth21 TSS
 algorithm. Each node receives some number of shares in proportion to the consensus weight assigned to it. Each share
 is an EC key pair on the same curve. All public keys of the shares are known, and aggregating a threshold number of
 share public keys will produce the ledger id. Only the node has access to the private key of its own shares. Each
@@ -198,10 +198,10 @@ If the Ethereum ecosystem creates precompiles for BLS12_381, we may switch over 
 
 ##### New Elliptic Curve Node Keys
 
-Each node will need a new `elGamalKey` pair in addition to the existing RSA key pair. The `elGamalKey` pair will be
+Each node will need a new `tssEcKey` pair in addition to the existing RSA key pair. The `tssEcKey` pair will be
 used in the Groth21 algorithm to generate and decrypt `TSS-Messages`. These new EC Keys will not be used for
 signing messages, only for generating the shares. It is the share keys that are used to sign messages. The public
-keys of the `elGamalKeys` must be in the address book.
+keys of the `tssEcKeys` must be in the address book.
 
 ##### Groth21 Drawbacks
 
@@ -217,11 +217,11 @@ This modeling of weight uses small integer precision.
 Given that we have a low resolution for modeling weight, the number of shares assigned to each node will be
 calculated as follows:
 
-* Let `M` be the max number of shares that any node can have.
-* Let `maxweight` be the max weight assigned to any node.
-* Let `weight(node)` be the weight assigned to the node.
-* Let `numShares(node)` be the number of shares assigned to the node.
-* then `numShares(node) = ceiling(M * weight(node) / maxweight)` where the operations are floating point.
+* Let `N` be the max number of shares that any node can have.
+* Let `maxWeight` be the max weight assigned to any node.
+* Let `weight[i]` be the weight assigned to node `i`.
+* Let `numShares[i]` be the number of shares assigned to node `i`.
+* then `numShares[i] = (N * weight[i] / maxWeight) + (weight[i] / maxWeight * maxWeight == weight[i] ? 0 : 1);`
 
 ##### Threshold for recovery of Signatures and Ledger Id.
 
@@ -267,7 +267,7 @@ existing network. There are several options to consider in the TSS bootstrap pro
 
 1. Do we allow block number and round number to be out of sync?
 2. Do we need the initial block produced to be signed by the ledger id?
-3. For new networks, do we need to produce a signed block 0?
+3. For new networks, do we need to produce a signed block 1?
 4. For existing networks, does the TSS bootstrap roster sign blocks prior to its existence?
 
 ##### For New Networks
@@ -275,27 +275,31 @@ existing network. There are several options to consider in the TSS bootstrap pro
 There will be a pre-genesis phase where the genesis roster is keyed and a random ledger id is created. This will
 happen through running the platform without application transactions. After the platform keys the roster, the
 platform restarts itself with a copy of the genesis state and adding to it the TSS key material and ledger
-id. After platform restart, application transactions are accepted and the platform starts building the new hashgraph
-from round 0. This process ensures that block 0 containing application transactions is signed by the ledger and
-verifiable with the ledger id.
+id. After the platform restarts, application transactions are accepted and the platform starts building a new
+hashgraph from round 0. This ensures that the first transactions handled by the network are in a block that can be
+signed as soon as possible. The alternative is that blocks will go unsigned until the nodes go through TSS
+bootstrap.
 
-While this solution does not have the history of setting up the ledger id in the hashgraph after platform restart,
-the nodes can cryptographically verify that the setup process took place correctly through using the TSS key material to
-re-derive the ledger id. Each node can validate the TssMessages have come from a sufficient variety of nodes. With
-the assumption that no greater than 1/3 of the nodes are malicious, the threshold of 1/2 ensures that the malicious
-nodes will not be able to recover the ledger id if they collude together.
-nodes will not be able to recover the ledger id if they collude together.
+While this solution does not capture the TSS bootstrap communication in the history of the hashgraph after the
+platform restarts, nodes can cryptographically verify that the setup process took place correctly through using the
+TSS key material to re-derive the ledger id. Each node can validate the TssMessages have come from a sufficient
+variety of nodes. With the assumption that no greater than 1/3 weight is assigned to malicious nodes, the threshold
+of 1/2 ensures that the malicious nodes will not be able to recover the ledger private key if they collude together.
 
 The process of the platform restarting itself after performing a pre-genesis keying phase is new startup logic.  
 This should not involve an interruption of the containing process. While we are in the pre-genesis phase the
 platform will not accept application transactions. Once the platform has restarted itself with a keyed roster, it
 will accept application transactions when it becomes active.
 
+A node in the pre-genesis phase cannot gossip with nodes that have restarted and are out of pre-genesis. If a
+pre-genesis node connects with a post-genesis node, the pre-genesis node will need to perform a reconnect to receive
+an updated state containing the tss key material and ledger id.
+
 ##### For Existing Networks
 
 Given the requirement of TSSBS-001, the setup of the TSS Key Material must happen before the software upgrade that
 enables block streams. In order to reduce risk and density of complex software changes, giving the nodes
-their `elGamalKeys` and changing the roster life-cycle through the TSS-Roster effort should be completed and
+their `tssEcKeys` and changing the roster life-cycle through the TSS-Roster effort should be completed and
 delivered in a software release prior to the delivery.
 
 The schedule of delivery of capability is explored in a later section in this proposal.
@@ -306,20 +310,19 @@ material can generate the ledger key.
 
 ##### TSS Bootstrap Process - Alternatives Considered
 
-| N | Option                                                                                                        | 1-1 round to block                   | round # == block #                                   | Ledger signs initial block           | Ledger signs block 0                 | TSS keying in hashgraph history      | TSS keying in block history          | Minimal DevOps Impact                | Implementation Complexity                 | Notes                                                                              |
+| N | Option                                                                                                        | 1-1 round to block                   | round # == block #                                   | Ledger signs initial block           | Ledger signs block 1                 | TSS keying in hashgraph history      | TSS keying in block history          | Minimal DevOps Impact                | Implementation Complexity                 | Notes                                                                              |
 |---|---------------------------------------------------------------------------------------------------------------|--------------------------------------|------------------------------------------------------|--------------------------------------|--------------------------------------|--------------------------------------|--------------------------------------|--------------------------------------|-------------------------------------------|------------------------------------------------------------------------------------|
-| 1 | TSS Setup in block history, initial block > 0 and not signed                                                  | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">LOW</span>      | Mainnet if Block Streams ships before Block Proofs                                 |
-| 2 | TSS Setup not in block history, initial block > 0 and is signed                                               | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">LOW</span>      | Mainnet if Block Streams ships with Block Proofs                                   |
-| 3 | TSS Setup not in block history, initial block == 0 and is signed                                              | <span style="color:green">YES</span> | <br/><span style="color:red">NO</span>, fixed offset | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:orange">LOW-MED</span> | Cognitive burden to reason about block # and round # discrepancy.                  |
-| 4 | TSS Setup in block history, initial block > 0, covers all prior rounds, and is signed                         | <span style="color:red">NO</span>    | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:orange">MED</span>     |                                                                                    |
-| 5 | TSS Setup in block history, initial block == 0, covers all prior rounds, and is signed                        | <span style="color:red">NO</span>    | <br/><span style="color:red">NO</span>, fixed offset | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:orange">MED</span>     | Cognitive burden to reason about block # and round # discrepancy.                  |
+| 1 | TSS Setup in block history, initial block > 1 and not signed                                                  | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">LOW</span>      | Mainnet if Block Streams ships before Block Proofs                                 |
+| 2 | TSS Setup not in block history, initial block > 1 and is signed                                               | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">LOW</span>      | Mainnet if Block Streams ships with Block Proofs                                   |
+| 3 | TSS Setup not in block history, initial block == 1 and is signed                                              | <span style="color:green">YES</span> | <br/><span style="color:red">NO</span>, fixed offset | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:orange">LOW-MED</span> | Cognitive burden to reason about block # and round # discrepancy.                  |
+| 4 | TSS Setup in block history, initial block > 1, covers all prior rounds, and is signed                         | <span style="color:red">NO</span>    | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:orange">MED</span>     |                                                                                    |
+| 5 | TSS Setup in block history, initial block == 1, covers all prior rounds, and is signed                        | <span style="color:red">NO</span>    | <br/><span style="color:red">NO</span>, fixed offset | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:orange">MED</span>     | Cognitive burden to reason about block # and round # discrepancy.                  |
 | 6 | Retrospectively sign the initial blocks with TSS once it becomes available.                                   | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | TSS Genesis Roster signs older blocks.  This is compatible with all other options. |
 | 7 | Pre-Genesis: Separate app with genesis roster creates key material in state before network officially starts. | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            |
 | 8 | Instead of separate app, detect genesis, key the state, network restart from round 0 with keyed state.        | <span style="color:green">YES</span> | <span style="color:green">YES</span>                 | <span style="color:green">YES</span> | <span style="color:green">YES</span> | <span style="color:red">NO</span>    | <span style="color:red">NO</span>    | <span style="color:green">YES</span> | <span style="color:red">HIGH</span>       | Applies to new networks only.  Use Option 1 or 2 for existing networks.            | 
 
 Option 2 was chosen for existing networks and Option 8 was selected for new networks. This decision was made to
-ensure that the first block in the block stream is signed by the ledger and that new networks always have block 0
-signed.
+ensure that the first block in the block stream is can be signed by the ledger.
 
 ---
 
@@ -350,7 +353,7 @@ signatures into a ledger signature. The ledger signature is then asynchronously 
 
 To request a ledger signature, the application invokes a new method on the `State`:
 
-* `State::sign(byte[] message) throws NotReadyException`
+* `SwirldState::sign(byte[] message) throws NotReadyException`
 
 To receive a ledger signature, the application registers a callback with the platform builder:
 
@@ -381,16 +384,16 @@ signatures.
 
 ##### Ledger Id
 
-The `ledgerId` is the public ledger key able to verify ledger signatures. It is used by both the application and the
-platform. This value should not change during address book changes and its value does not change unless the network
-goes through a another TSS bootstrap process. Since its value is not expected to change, storing it in a singleton
-Merkle Leaf by itself is appropriate.
+The `ledgerId` is the public ledger key able to verify ledger signatures. It is used by the platform and other
+entities outside the consensus node. This value should not change during address book changes and its value does
+not change unless the network goes through another TSS bootstrap process. Since its value is not expected to change,
+storing it in a singleton Merkle Leaf by itself is appropriate.
 
 TODO: Protobuf of data
 
 ##### Consensus Rosters
 
-This proposal extends the roster data format where each `RosterEntry` has a new `elGamalKey` called a
+This proposal extends the roster data format where each `RosterEntry` has a new `tssEcKey` called a
 `tssEcKey` that is used in the Groth21 algorithm.
 
 TODO: Protobuf of data
@@ -777,11 +780,11 @@ Apart from the obvious unit testing of methods and classes, the following scenar
     * Bad TssMessages
     * Failure to reach threshold number of votes
     * Bad TssShareSignatures
-* Turtle Tests
+* HAPI Tests
+    * A down node during pre-genesis needing to reconnect to get the key material.
     * Reconnect
     * Down nodes during bootstrap and re-keying
     * Multi-release migration
-    * Signing API, constructing signatures across software upgrade.
 
 ### Integration Tests
 
