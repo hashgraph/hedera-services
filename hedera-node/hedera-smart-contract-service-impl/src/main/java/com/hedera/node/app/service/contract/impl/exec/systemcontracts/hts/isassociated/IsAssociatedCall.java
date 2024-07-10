@@ -33,10 +33,10 @@ public class IsAssociatedCall extends AbstractRevertibleTokenViewCall {
     private final AccountID sender;
 
     public IsAssociatedCall(
-            SystemContractGasCalculator systemContractGasCalculator,
-            Enhancement enhancement,
-            AccountID sender,
-            Token token) {
+            @NonNull final SystemContractGasCalculator systemContractGasCalculator,
+            @NonNull final Enhancement enhancement,
+            @NonNull final AccountID sender,
+            @NonNull final Token token) {
         super(systemContractGasCalculator, enhancement, token);
         this.sender = sender;
     }
