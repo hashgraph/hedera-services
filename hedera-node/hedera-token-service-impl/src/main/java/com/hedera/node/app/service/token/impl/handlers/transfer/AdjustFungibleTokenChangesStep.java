@@ -29,9 +29,9 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -49,22 +49,21 @@ import java.util.Map;
  * Puts all fungible token changes from CryptoTransfer into state's modifications map.
  */
 public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements TransferStep {
-    // The CryptoTransferTransactionBody here is obtained by replacing aliases with their
-    // corresponding accountIds.
-    private final CryptoTransferTransactionBody op;
+
+    private final List<TokenTransferList> tokenTransferLists;
     private final AccountID topLevelPayer;
 
     /**
-     * Constructs the step with the CryptoTransferTransactionBody and the topLevelPayer.
-     * @param op the CryptoTransferTransactionBody
+     * Constructs the step with token transfer lists and the payer account.
+     * @param tokenTransferLists the token transfer lists
      * @param topLevelPayer the payer account
      */
     public AdjustFungibleTokenChangesStep(
-            @NonNull final CryptoTransferTransactionBody op, @NonNull final AccountID topLevelPayer) {
-        requireNonNull(op);
+            @NonNull final List<TokenTransferList> tokenTransferLists, @NonNull final AccountID topLevelPayer) {
+        requireNonNull(tokenTransferLists);
         requireNonNull(topLevelPayer);
 
-        this.op = op;
+        this.tokenTransferLists = tokenTransferLists;
         this.topLevelPayer = topLevelPayer;
     }
 
@@ -84,7 +83,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
         // Look at all fungible token transfers and put into aggregatedFungibleTokenChanges map.
         // Also, put any transfers happening with allowances in allowanceTransfers map.
-        for (final var transfers : op.tokenTransfers()) {
+        for (final var transfers : tokenTransferLists) {
             final var tokenId = transfers.tokenOrThrow();
             final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 

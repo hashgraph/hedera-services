@@ -19,6 +19,7 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
@@ -73,19 +74,23 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
     }
 
     @Override
-    public TransactionResponse submit(@NonNull final Transaction transaction, @NonNull final AccountID nodeAccountId) {
+    public TransactionResponse submit(
+            @NonNull final Transaction transaction,
+            @NonNull final AccountID nodeAccountId,
+            @NonNull final SemanticVersion semanticVersion) {
         requireNonNull(transaction);
         requireNonNull(nodeAccountId);
+        requireNonNull(semanticVersion);
         var response = OK_RESPONSE;
         if (defaultNodeAccountId.equals(nodeAccountId)) {
             final var responseBuffer = BufferedData.allocate(MAX_PLATFORM_TXN_SIZE);
             hedera.ingestWorkflow().submitTransaction(Bytes.wrap(transaction.toByteArray()), responseBuffer);
             response = parseTransactionResponse(responseBuffer);
         } else {
-            final var nodeId = requireNonNull(nodeIds.get(nodeAccountId), "Missing node account id");
+            final var nodeId = nodeIds.getOrDefault(nodeAccountId, MISSING_NODE_ID);
             warnOfSkippedIngestChecks(nodeAccountId, nodeId);
             platform.lastCreatedEvent = new FakeEvent(
-                    nodeId, time.now(), version, new SwirldTransaction(Bytes.wrap(transaction.toByteArray())));
+                    nodeId, time.now(), semanticVersion, new SwirldTransaction(Bytes.wrap(transaction.toByteArray())));
         }
         if (response.getNodeTransactionPrecheckCode() == OK) {
             hedera.onPreHandle(platform.lastCreatedEvent, state);
@@ -107,8 +112,11 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
 
         @Override
         public boolean createTransaction(@NonNull byte[] transaction) {
-            lastCreatedEvent =
-                    new FakeEvent(defaultNodeId, time.now(), version, new SwirldTransaction(Bytes.wrap(transaction)));
+            lastCreatedEvent = new FakeEvent(
+                    defaultNodeId,
+                    time.now(),
+                    version.getPbjSemanticVersion(),
+                    new SwirldTransaction(Bytes.wrap(transaction)));
             return true;
         }
 
@@ -121,7 +129,10 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
             time.tick(SIMULATED_ROUND_DURATION);
             final var firstRoundTime = time.now();
             final var consensusEvents = List.<ConsensusEvent>of(new FakeConsensusEvent(
-                    requireNonNull(lastCreatedEvent), consensusOrder.getAndIncrement(), firstRoundTime, version));
+                    requireNonNull(lastCreatedEvent),
+                    consensusOrder.getAndIncrement(),
+                    firstRoundTime,
+                    lastCreatedEvent.getSoftwareVersion()));
             return new FakeRound(roundNo.getAndIncrement(), addressBook, consensusEvents);
         }
     }

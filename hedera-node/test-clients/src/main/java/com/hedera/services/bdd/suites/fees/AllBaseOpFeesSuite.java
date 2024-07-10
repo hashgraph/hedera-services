@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.fees;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -35,9 +36,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenReject;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.wipeTokenAccount;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingNFT;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenReject.rejectingToken;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
@@ -57,6 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.keys.KeyLabels;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.QueryVerbs;
@@ -64,6 +70,7 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
 import java.util.List;
@@ -75,17 +82,20 @@ import org.junit.jupiter.api.Tag;
 public class AllBaseOpFeesSuite {
     private static final String PAYER = "payer";
     private static final double ALLOWED_DIFFERENCE_PERCENTAGE = 0.01;
+    private static final double ALLOWED_DIFFERENCE = 1;
 
     private static final String TREASURE_KEY = "treasureKey";
     private static final String FUNGIBLE_COMMON_TOKEN = "fungibleCommonToken";
 
     private static final String ADMIN_KEY = "adminKey";
+    private static final String MULTI_KEY = "multiKey";
     private static final String SUPPLY_KEY = "supplyKey";
     private static final String FREEZE_KEY = "freezeKey";
     private static final String WIPE_KEY = "wipeKey";
     private static final String KYC_KEY = "kycKey";
 
     private static final String CIVILIAN_ACCT = "civilian";
+    private static final String ALICE = "alice";
 
     private static final String UNIQUE_TOKEN = "nftType";
 
@@ -93,6 +103,9 @@ public class AllBaseOpFeesSuite {
 
     private static final String UNFREEZE = "unfreeze";
 
+    private static final double EXPECTED_FUNGIBLE_REJECT_PRICE_USD = 0.001;
+    private static final double EXPECTED_NFT_REJECT_PRICE_USD = 0.00100245;
+    private static final double EXPECTED_MIX_REJECT_PRICE_USD = 0.00375498;
     private static final double EXPECTED_UNFREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_FREEZE_PRICE_USD = 0.001;
     private static final double EXPECTED_NFT_MINT_PRICE_USD = 0.02;
@@ -229,6 +242,63 @@ public class AllBaseOpFeesSuite {
                         .blankMemo()
                         .via(BASE_TXN))
                 .then(validateChargedUsdWithin(BASE_TXN, EXPECTED_NFT_BURN_PRICE_USD, 0.01));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    final Stream<DynamicTest> baseCommonTokenRejectChargedAsExpected() {
+        return defaultHapiSpec("baseCommonTokenRejectChargedAsExpected")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(ALICE).balance(ONE_HUNDRED_HBARS),
+                        tokenCreate(FUNGIBLE_COMMON_TOKEN)
+                                .initialSupply(1000L)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TOKEN_TREASURY),
+                        tokenCreate(UNIQUE_TOKEN)
+                                .initialSupply(0)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY)
+                                .treasury(TOKEN_TREASURY)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE),
+                        mintToken(
+                                UNIQUE_TOKEN,
+                                List.of(
+                                        metadata("nemo the fish"),
+                                        metadata("garfield the cat"),
+                                        metadata("snoopy the dog"))),
+                        tokenAssociate(ALICE, FUNGIBLE_COMMON_TOKEN, UNIQUE_TOKEN),
+                        cryptoTransfer(movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, ALICE))
+                                .payingWith(TOKEN_TREASURY)
+                                .via("nftTransfer"),
+                        cryptoTransfer(moving(100, FUNGIBLE_COMMON_TOKEN).between(TOKEN_TREASURY, ALICE))
+                                .payingWith(TOKEN_TREASURY)
+                                .via("fungibleTransfer"))
+                .when(
+                        tokenReject(rejectingToken(FUNGIBLE_COMMON_TOKEN))
+                                .payingWith(ALICE)
+                                .via("rejectFungible"),
+                        tokenReject(rejectingNFT(UNIQUE_TOKEN, 1))
+                                .payingWith(ALICE)
+                                .via("rejectNft"),
+                        cryptoTransfer(
+                                        movingUnique(UNIQUE_TOKEN, 1L).between(TOKEN_TREASURY, ALICE),
+                                        moving(100, FUNGIBLE_COMMON_TOKEN).between(TOKEN_TREASURY, ALICE))
+                                .payingWith(ALICE)
+                                .via("transferMix"),
+                        tokenReject(ALICE, rejectingNFT(UNIQUE_TOKEN, 1), rejectingToken(FUNGIBLE_COMMON_TOKEN))
+                                .payingWith(TOKEN_TREASURY)
+                                .via("rejectMix"))
+                .then(
+                        validateChargedUsdWithin(
+                                "fungibleTransfer", EXPECTED_FUNGIBLE_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                        validateChargedUsdWithin("nftTransfer", EXPECTED_NFT_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                        validateChargedUsdWithin("transferMix", EXPECTED_MIX_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                        validateChargedUsdWithin(
+                                "rejectFungible", EXPECTED_FUNGIBLE_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                        validateChargedUsdWithin("rejectNft", EXPECTED_NFT_REJECT_PRICE_USD, ALLOWED_DIFFERENCE),
+                        validateChargedUsdWithin("rejectMix", EXPECTED_MIX_REJECT_PRICE_USD, ALLOWED_DIFFERENCE));
     }
 
     @HapiTest

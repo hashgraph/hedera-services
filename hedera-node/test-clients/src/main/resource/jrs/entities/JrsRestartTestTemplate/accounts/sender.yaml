@@ -1,3 +1,0 @@
-account:
-  balance: 1
-  key: {generateIfMissing: true, wordsLoc: sender.words}

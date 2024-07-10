@@ -34,22 +34,6 @@ mainModuleInfo {
     runtimeOnly("org.junit.platform.launcher")
 }
 
-itestModuleInfo {
-    requires("com.hedera.node.test.clients")
-    requires("org.apache.commons.lang3")
-    requires("org.junit.jupiter.api")
-    requires("org.testcontainers")
-    requires("org.testcontainers.junit.jupiter")
-    requires("org.apache.commons.lang3")
-}
-
-eetModuleInfo {
-    requires("com.hedera.node.test.clients")
-    requires("org.junit.jupiter.api")
-    requires("org.testcontainers")
-    requires("org.testcontainers.junit.jupiter")
-}
-
 sourceSets {
     // Needed because "resource" directory is misnamed. See
     // https://github.com/hashgraph/hedera-services/issues/3361
@@ -71,12 +55,12 @@ val ciCheckTagExpressions =
     mapOf(
         "hapiTestCrypto" to "CRYPTO",
         "hapiTestToken" to "TOKEN",
-        "hapiTestRestart" to "RESTART",
+        "hapiTestRestart" to "RESTART|UPGRADE",
         "hapiTestSmartContract" to "SMART_CONTRACT",
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
         "hapiTestMisc" to
-            "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT|EMBEDDED)"
+            "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT|EMBEDDED|UPGRADE)"
     )
 
 tasks {
@@ -290,11 +274,6 @@ val cleanYahCli =
         group = "copy"
         delete(File(project.file("yahcli"), "yahcli.jar"))
     }
-
-tasks.assemble {
-    dependsOn(tasks.shadowJar)
-    dependsOn(copyYahCli)
-}
 
 tasks.clean {
     dependsOn(cleanYahCli)

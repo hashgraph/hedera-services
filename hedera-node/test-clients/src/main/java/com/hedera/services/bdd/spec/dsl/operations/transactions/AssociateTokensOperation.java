@@ -18,8 +18,8 @@ package com.hedera.services.bdd.spec.dsl.operations.transactions;
 
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecToken;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate;
@@ -48,17 +48,11 @@ public class AssociateTokensOperation extends AbstractSpecTransaction<AssociateT
         this.tokens = tokens;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     protected AssociateTokensOperation self() {
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @NonNull
     @Override
     protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {

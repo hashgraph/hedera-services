@@ -18,7 +18,7 @@ package com.hedera.services.bdd.junit.hedera.embedded.fakes;
 
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.platform.system.SoftwareVersion;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,7 +34,7 @@ public class FakeConsensusEvent extends FakeEvent implements ConsensusEvent {
             @NonNull final FakeEvent event,
             final long consensusOrder,
             @NonNull final Instant consensusTimestamp,
-            @NonNull final SoftwareVersion version) {
+            @NonNull final SemanticVersion version) {
         super(event.getCreatorId(), event.getTimeCreated(), version, event.transaction);
         this.consensusOrder = consensusOrder;
         this.consensusTimestamp = requireNonNull(consensusTimestamp);

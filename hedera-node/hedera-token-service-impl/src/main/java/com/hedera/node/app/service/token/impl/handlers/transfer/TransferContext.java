@@ -31,7 +31,7 @@ import java.util.Map;
  * The resolutions are needed in further steps to is IDs instead of aliases.
  * It also has helper function to create accounts from alias.
  * This class stores all the needed information that is shared between steps in handling a CryptoTransfer transaction.
- * The lifecycle of this clas is the same as the lifecycle of a CryptoTransfer transaction.
+ * The lifecycle of this class is the same as the lifecycle of a CryptoTransfer transaction.
  */
 public interface TransferContext {
     /**

@@ -23,10 +23,13 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartR
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
+import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -62,7 +65,6 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
@@ -101,7 +103,7 @@ public class HandleWorkflow {
     private final CacheWarmer cacheWarmer;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
-    private final SoftwareVersion version;
+    private final SemanticVersion version;
     private final InitTrigger initTrigger;
     private final HollowAccountCompletions hollowAccountCompletions;
     private final GenesisSetup genesisSetup;
@@ -126,7 +128,7 @@ public class HandleWorkflow {
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final SoftwareVersion version,
+            @NonNull final SemanticVersion version,
             @NonNull final InitTrigger initTrigger,
             @NonNull final HollowAccountCompletions hollowAccountCompletions,
             @NonNull final GenesisSetup genesisSetup,
@@ -173,12 +175,20 @@ public class HandleWorkflow {
         for (final var event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
-                // We were given an event for a node that *does not exist in the address book*. This will be logged as
-                // a warning, as this should never happen, and we will skip the event. The platform should guarantee
-                // that we never receive an event that isn't associated with the address book, and every node in the
-                // address book must have an account ID, since you cannot delete an account belonging to a node, and
-                // you cannot change the address book non-deterministically.
-                logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
+                if (!isSoOrdered(event.getSoftwareVersion(), version)) {
+                    // We were given an event for a node that *does not exist in the address book* and was not from a
+                    // strictly earlier software upgrade. This will be logged as a warning, as this should never happen,
+                    // and we will skip the event. The platform should guarantee that we never receive an event that
+                    // isn't associated with the address book, and every node in the address book must have an account
+                    // ID, since you cannot delete an account belonging to a node, and you cannot change the address
+                    // book
+                    // non-deterministically.
+                    logger.warn(
+                            "Received event (version {} vs current {}) from node {} which is not in the address book",
+                            com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
+                            com.hedera.hapi.util.HapiUtils.toString(version),
+                            event.getCreatorId());
+                }
                 return;
             }
             // log start of event to transaction state log
@@ -357,7 +367,7 @@ public class HandleWorkflow {
      */
     private boolean isOlderSoftwareEvent(@NonNull final UserTxn userTxn) {
         return this.initTrigger != EVENT_STREAM_RECOVERY
-                && version.compareTo(userTxn.event().getSoftwareVersion()) > 0;
+                && SEMANTIC_VERSION_COMPARATOR.compare(version, userTxn.event().getSoftwareVersion()) > 0;
     }
 
     /**

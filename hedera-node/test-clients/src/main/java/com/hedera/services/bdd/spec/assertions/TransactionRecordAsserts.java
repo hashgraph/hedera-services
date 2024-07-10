@@ -358,6 +358,19 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
+    public TransactionRecordAsserts autoAssociationCount(int autoAssociations) {
+        this.<List<TokenAssociation>>registerTypedProvider("automaticTokenAssociationsList", spec -> associations -> {
+            try {
+                assertEquals(
+                        autoAssociations, associations.size(), "Wrong # of automatic associations: " + associations);
+            } catch (Throwable t) {
+                return List.of(t);
+            }
+            return EMPTY_LIST;
+        });
+        return this;
+    }
+
     public TransactionRecordAsserts ethereumHash(ByteString hash) {
         registerTypedProvider("ethereumHash", shouldBe(hash));
         return this;

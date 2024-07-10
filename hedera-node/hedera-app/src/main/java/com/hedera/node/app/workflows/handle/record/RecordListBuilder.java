@@ -195,7 +195,8 @@ public final class RecordListBuilder {
         // user transaction. The second item is T-2, and so on.
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
         final var consensusNow = parentConsensusTimestamp.minusNanos(precedingCount + 1L);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, TransactionCategory.PRECEDING);
         precedingTxnRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
@@ -293,7 +294,8 @@ public final class RecordListBuilder {
                 childCategory == TransactionCategory.SCHEDULED ? consensusConfig.handleMaxPrecedingRecords() + 1 : 1L;
         final Instant consensusNow = prevConsensusNow.plusNanos(nextRecordOffset);
         // Note we do not repeat exchange rates for child transactions
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer, childCategory);
         // Only set parent consensus timestamp for child records if one is not provided
         if (!childCategory.equals(HandleContext.TransactionCategory.SCHEDULED)) {
             recordBuilder.parentConsensus(parentConsensusTimestamp);

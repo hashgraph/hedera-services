@@ -27,4 +27,7 @@ contract HRC632Contract is HederaAccountService {
         }
     }
 
+    function isAuthorizedRawCall(address account, bytes memory messageHash, bytes memory signature) external returns (bool result) {
+        result = HederaAccountService.isAuthorizedRaw(account, messageHash, signature);
+    }
 }
