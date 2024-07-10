@@ -258,6 +258,27 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
     }
 
     /**
+     * Check that the gas used is in a given range
+     * @param lowerBoundInclusive if present (not null), is the lowest acceptable value for gas used
+     * @param upperBoundExclusive if present (not null), is the highest acceptable value for gas used
+     */
+    public ContractFnResultAsserts gasUsedIsInRange(final Long lowerBoundInclusive, final Long upperBoundExclusive) {
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            long gasUsed = result.getGasUsed();
+            if (lowerBoundInclusive != null)
+                assertTrue(
+                        gasUsed >= lowerBoundInclusive,
+                        "gas, %d, is less than %d".formatted(gasUsed, lowerBoundInclusive));
+            if (upperBoundExclusive != null)
+                assertTrue(
+                        gasUsed <= upperBoundExclusive,
+                        "gas, %d, is more than %d".formatted(gasUsed, upperBoundExclusive));
+        });
+        return this;
+    }
+
+    /**
      * Adds an assertion that the gas used is the expected value, up to some small
      * variation due to differences in intrinsic gas cost for EVM payloads that
      * reference addresses that may contain different numbers of zero bytes.

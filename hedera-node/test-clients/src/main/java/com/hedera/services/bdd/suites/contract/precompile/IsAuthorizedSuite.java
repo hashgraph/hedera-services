@@ -633,8 +633,10 @@ public class IsAuthorizedSuite {
                             .hasPriority(recordWith()
                                     .status(SUCCESS)
                                     .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))))
-                    : throughWhen.then(
-                            getTxnRecord(recordName).hasPriority(recordWith().status(INSUFFICIENT_GAS)));
+                    : throughWhen.then(getTxnRecord(recordName)
+                            .hasPriority(recordWith()
+                                    .status(INSUFFICIENT_GAS)
+                                    .contractCallResult(resultWith().gasUsed(testCase.gasAmount()))));
             dynamicTests.add(hapiSpec);
         }
 
@@ -645,7 +647,9 @@ public class IsAuthorizedSuite {
     final Stream<DynamicTest> isAuthorizedRawED25519CheckGasRequirements() {
 
         // Intrinsic gas is 21_000, hard-coded verification charge is 1_500_000, but there's also the contract itself
-        // that we're calling
+        // that we're calling - allow 55K gas (actually, determined empirically)
+
+        final long GAS_BURNT_IN_ADDITION_TO_IS_AUTHORIZED_RAW_ALLOWANCE = 55_000L;
 
         record TestCase(long gasAmount, ResponseCodeEnum status) {}
         final var testCases = new ArrayList<TestCase>();
@@ -701,7 +705,15 @@ public class IsAuthorizedSuite {
                                     .status(SUCCESS)
                                     .contractCallResult(resultWith().contractCallResult(BoolResult.flag(true)))))
                     : throughWhen.then(childRecordsCheck(
-                            recordName, CONTRACT_REVERT_EXECUTED, recordWith().status(INSUFFICIENT_GAS)));
+                            recordName,
+                            CONTRACT_REVERT_EXECUTED,
+                            recordWith()
+                                    .status(INSUFFICIENT_GAS)
+                                    .contractCallResult(resultWith()
+                                            .gasUsedIsInRange(
+                                                    (testCase.gasAmount()
+                                                            - GAS_BURNT_IN_ADDITION_TO_IS_AUTHORIZED_RAW_ALLOWANCE),
+                                                    testCase.gasAmount()))));
             dynamicTests.add(hapiSpec);
         }
 
