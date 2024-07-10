@@ -311,81 +311,32 @@ There will not be any other separate artifacts stored elsewhere (e.g., directly 
 
 The pseudocode for the startup procedure will look as follows:
 
-```code
-if(a State exists on disk) {
-    loadStateFromDisk();
-} else {
-    roster = loadFromConfigTxt();
-    // Install the roster as both Active Roster and Candidate Roster in the new state:
-    createEmptyState(roster);
-    // So the node will only be able to sign using its RSA key, w/o any TSS.
-    isGenesis =true;
-}
-
-if(the State has Candidate Roster) {
-    // Check if this is a software upgrade, and if the TSS protocol
-    // has been launched already, then also check
-    // if Candidate Roster has enough signatures.
-    // Note that we switch to Candidate Roster during a software upgrade unconditionally
-    // until the TSS protocol is actually launched.
-    if(isSoftwareUpgrade /* && Candidate Roster is complete */) {
-
-        // This MUST be performed under `isSoftwareUpgrade` to ensure that
-        // the entire network is being restarted, and so every node adopts the Candidate Roster,
-        // and hence no ISSes happen.
-        // Modify the state and put Candidate Roster into Active Roster, effectively clearing the Candidate Roster.
-        makeCRtheAR();
-        // May make a record of the previous Active Roster if necessary (e.g. for PCES replay)
+```java
+/**
+ * Start the platform.
+ * @param state an initial state. The caller either loads it from disk if the node has run before,
+ *              or constructs a new empty state and stores the genesis roster in there
+ *              as the current active roster.
+ */
+void startPlatform(final State state) {
+    if (the State has Candidate Roster) {
+        if (isSoftwareUpgrade) {
+            // This MUST be performed under `isSoftwareUpgrade` to ensure that
+            // the entire network is being restarted, and so every node adopts the Candidate Roster,
+            // and hence no ISSes happen.
+            // Modify the state and put Candidate Roster into Active Roster, effectively clearing the Candidate Roster.
+            makeCRtheAR();
+            // May make a record of the previous Active Roster if necessary (e.g. for PCES replay)
+        }
     }
 
-	/*
-	// This block will be uncommented once the TSS protocol is implemented
-	if (Candidate Roster is not complete) {
-		// Call the "TSS State Observer" to make it initiate the TSS protocol.
-		// See the Detecting a new Candidate Roster (aka the new “Platform API”) section below.
-		callTSSStateObserverToStartTSSProtocol();
-		// NOTE: processing of TSS messages will emit a percentage metric indicating the readiness
-		// of the Candidate Roster for adoption. Once the metric is at 100%, this shows
-		// that the network can be restarted in order to adopt the Candidate Roster.
-	}
-	*/
- }
+    if (the State has no Active Roster) {
+        // This should never happen, but we have to check this because we're given a state as an argument.
+        throwFatalErrorAndShutdown();
+    }
 
-if(the State has no Active Roster) {
-
-    // This should never happen
-    throwFatalErrorAndShutdown();
+    // At this point the Active Roster in the state is what we'll be using as a roster.
 }
-
-// Check if the Active Roster is TSS-enabled
-if(Active Roster is not TSS-enabled) {
-    /*
-        // This block will be uncommented once the TSS protocol is implemented
-        if (isGenesis) {
-            rejectAnythingButTSSMessages = true;
-            // Note that a TSS upgrade of an existing network
-            // shouldn't disable non-TSS messages processing.	
-        }
-    */
-
-    // In Genesis, we've just disabled processing anything but TSS. So a new
-    // network will eventually become TSS-enabled and only then will start
-    // processing non-TSS events.
-    // An existing, non-genesis network will continue to operate as before,
-    // and if a Candidate Roster was present in the state, we enabled processing TSS messages
-    // above. So it will become TSS-enabled eventually, too, indicating
-    // the readiness for a TSS upgrade via the metric mentioned above.
-    // Note that until a Candidate Roster is installed in the state, the existing network
-    // will simply continue to operate as usual with its regular RSA keys.
-}
-
-// At this point the Active Roster in the state is what we'll be using as a roster.
-// If an incomplete Candidate Roster exists, we've started exchanging TSS messages above.
-// If it's genesis, we've disabled processing anything but TSS messages above.
-// If Active Roster is already TSS-enabled (a mature network running after the TSS
-// upgrade), then the node will be able to sign using TSS.
-// If Active Roster isn't TSS-enabled yet, then the node will sign using its RSA key only,
-// just as it does today.
 ```
 
 ### Roster changes needed for Components
