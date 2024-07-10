@@ -160,6 +160,25 @@ public class TokenMovement {
         return token;
     }
 
+    /**
+     *  Try to identify any Token -> Receiver in this movement that has no relations.
+     *  It is used when we try to estimate airdrops fee, that should be prepaid by the sender.
+     *
+     * @return map Token to list of receivers accounts
+     */
+    public List<String> getAccountsWithMissingRelations(HapiSpec spec) {
+        var accountsWithoutRel = new ArrayList<String>();
+        if (receiver.isPresent() && !spec.registry().hasTokenRel(receiver.get(), token)) {
+            accountsWithoutRel.add(receiver.get());
+        }
+        receivers.ifPresent(strings -> strings.forEach(receiver -> {
+            if (!spec.registry().hasTokenRel(receiver, token)) {
+                accountsWithoutRel.add(receiver);
+            }
+        }));
+        return accountsWithoutRel;
+    }
+
     public boolean isTrulyToken() {
         return token != null && !token.equals(HapiSuite.HBAR_TOKEN_SENTINEL);
     }

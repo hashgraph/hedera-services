@@ -580,6 +580,10 @@ public class HapiSpecRegistry {
         put(tokenRelKey(account, token), new TokenAccountRegistryRel(token, account));
     }
 
+    public boolean hasTokenRel(String account, String token) {
+        return has(tokenRelKey(account, token), TokenAccountRegistryRel.class);
+    }
+
     private String tokenRelKey(String account, String token) {
         return account + "|" + token;
     }
