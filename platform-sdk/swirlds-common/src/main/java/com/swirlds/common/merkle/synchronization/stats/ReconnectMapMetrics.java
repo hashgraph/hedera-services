@@ -59,7 +59,7 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
         Objects.requireNonNull(metrics, "metrics must not be null");
         this.aggregateStats = aggregateStats;
         // Normalize the label
-        final String label = originalLabel.replace('.', '_');
+        final String label = originalLabel == null ? null : originalLabel.replace('.', '_');
 
         this.transfersFromTeacher = metrics.getOrCreate(
                 new Counter.Config(RECONNECT_MAP_CATEGORY, formatName("transfersFromTeacher", label))
