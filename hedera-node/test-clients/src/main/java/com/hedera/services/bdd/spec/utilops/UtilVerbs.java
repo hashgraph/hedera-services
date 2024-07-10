@@ -16,10 +16,12 @@
 
 package com.hedera.services.bdd.spec.utilops;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromByteString;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
@@ -44,6 +46,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateInitCodeWithConstructorArgs;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate.getUpdated121;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
@@ -857,21 +860,35 @@ public class UtilVerbs {
     }
 
     /**
-     * Returns an operation that computes and executes a list of {@link HapiSpecOperation}s
-     * returned by a function whose input is a map from the names of requested registry entities
-     * (accounts or tokens) to their EVM addresses.
+     * Returns an operation that computes and executes a of {@link SpecOperation} returned by a function whose
+     * input is the EVM address implied by the given key.
      *
-     * @param accountOrTokens the names of the requested registry entities
-     * @param opFn the function that computes the list of operations
-     * @return the operation that computes and executes the list of operations
+     * @param opFn the function that computes the resulting operation
+     * @return the operation that computes and executes the operation using the address
      */
-    public static HapiSpecOperation withHeadlongAddressesFor(
-            @NonNull final List<String> accountOrTokens,
-            @NonNull final Function<Map<String, Address>, List<SpecOperation>> opFn) {
+    public static SpecOperation withAddressOfKey(
+            @NonNull final String key, @NonNull final Function<Address, SpecOperation> opFn) {
         return withOpContext((spec, opLog) -> {
-            final Map<String, Address> addresses = new HashMap<>();
-            // FUTURE - populate this map
-            allRunFor(spec, opFn.apply(addresses));
+            final var publicKey = fromByteString(spec.registry().getKey(key).getECDSASecp256K1());
+            final var address =
+                    asHeadlongAddress(recoverAddressFromPubKey(publicKey).toByteArray());
+            allRunFor(spec, opFn.apply(address));
+        });
+    }
+
+    /**
+     * Returns an operation that computes and executes a of {@link SpecOperation} returned by a function whose
+     * input is the long-zero EVM address implied by the given account's id.
+     *
+     * @param opFn the function that computes the resulting operation
+     * @return the operation that computes and executes the operation using the address
+     */
+    public static SpecOperation withLongZeroAddress(
+            @NonNull final String account, @NonNull final Function<Address, SpecOperation> opFn) {
+        return withOpContext((spec, opLog) -> {
+            final var address =
+                    HapiPropertySource.idAsHeadlongAddress(spec.registry().getAccountID(account));
+            allRunFor(spec, opFn.apply(address));
         });
     }
 
