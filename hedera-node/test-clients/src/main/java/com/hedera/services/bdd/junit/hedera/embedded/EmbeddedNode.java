@@ -55,18 +55,21 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
         assertWorkingDirInitialized();
         // Without the normal lag of node startup, record stream assertions may check this directory too fast
         ensureDir(getExternalPath(STREAMS_DIR).normalize().toString());
-        try (var ignored =
-                Configurator.initialize(null, getExternalPath(LOG4J2_XML).toString())) {
-            System.setProperty(
-                    "hedera.app.properties.path",
-                    getExternalPath(APPLICATION_PROPERTIES).toAbsolutePath().toString());
-            System.setProperty(
-                    "hedera.genesis.properties.path",
-                    getExternalPath(GENESIS_PROPERTIES).toAbsolutePath().toString());
-            System.setProperty(
-                    "hedera.recordStream.logDir",
-                    getExternalPath(STREAMS_DIR).getParent().toString());
-            System.setProperty("hedera.profiles.active", "DEV");
+        System.setProperty(
+                "hedera.app.properties.path",
+                getExternalPath(APPLICATION_PROPERTIES).toAbsolutePath().toString());
+        System.setProperty(
+                "hedera.genesis.properties.path",
+                getExternalPath(GENESIS_PROPERTIES).toAbsolutePath().toString());
+        System.setProperty(
+                "hedera.recordStream.logDir",
+                getExternalPath(STREAMS_DIR).getParent().toString());
+        System.setProperty("hedera.profiles.active", "DEV");
+        if (getExternalPath(LOG4J2_XML).toString().contains("embedded-test")) {
+            try (var ignored =
+                    Configurator.initialize(null, getExternalPath(LOG4J2_XML).toString())) {
+                // Only initialize logging for the shared embedded network
+            }
         }
         return this;
     }

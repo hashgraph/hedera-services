@@ -18,8 +18,9 @@ package com.hedera.node.app.hapi.utils.forensics;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.timestampToInstant;
 
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.services.stream.proto.RecordStreamItem;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -75,7 +76,7 @@ public record RecordStreamEntry(TransactionParts parts, TransactionRecord txnRec
      * @return the created file ID
      */
     public FileID createdFileId() {
-        return txnRecord.getReceipt().getFileID();
+        return CommonPbjConverters.toPbj(txnRecord.getReceipt().getFileID());
     }
 
     public HederaFunctionality function() {

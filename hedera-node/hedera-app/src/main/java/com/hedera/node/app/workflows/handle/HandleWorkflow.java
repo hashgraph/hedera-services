@@ -476,7 +476,7 @@ public class HandleWorkflow {
 
     private void updateNodeStakes(@NonNull final UserTxn userTxn) {
         try {
-            nodeStakeUpdates.process(userTxn.stack(), userTxn.tokenContextImpl());
+            nodeStakeUpdates.process(userTxn.stack(), userTxn.tokenContextImpl(), userTxn.isGenesisTxn());
         } catch (final Exception e) {
             // We don't propagate a failure here to avoid a catastrophic scenario
             // where we are "stuck" trying to process node stake updates and never

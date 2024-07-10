@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
-import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+import static com.hedera.services.bdd.junit.TestTags.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
@@ -117,7 +117,7 @@ public class TxnRecordRegression {
     }
 
     @HapiTest
-    @Tag(EMBEDDED)
+    @Tag(REPEATABLE)
     final Stream<DynamicTest> receiptUnavailableAfterCacheTtl() {
         return hapiTest(
                 cryptoCreate("misc").via("success").balance(1_000L),

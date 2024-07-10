@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
 import static com.hedera.node.app.service.file.impl.utils.FileServiceUtils.notGenesisCreation;
+import static com.hedera.pbj.runtime.io.buffer.Bytes.EMPTY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.FileID;
@@ -153,8 +154,9 @@ public class FileGetContentsHandler extends FileQueryBase {
             if (notGenesisCreation(fileID, config)) {
                 return null;
             } else {
-                final var genesisContent =
-                        genesisContentProviders(config).get(fileID.fileNum()).apply(config);
+                final var genesisContent = genesisContentProviders(config)
+                        .getOrDefault(fileID.fileNum(), ignore -> EMPTY)
+                        .apply(config);
                 return new FileContents(fileID, genesisContent);
             }
         } else {

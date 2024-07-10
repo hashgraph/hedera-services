@@ -78,9 +78,8 @@ public class FileServiceUtils {
             throws PreCheckException {
         requireNonNull(context);
         requireNonNull(fileId);
-        // Certain system files will be created before the genesis transaction, so by the time any handler
-        // is invoked at consensus, they will necessarily exist
-        final var filesConfig = context.configuration().getConfigData(FilesConfig.class);
+        // System files are created as a side effect of handling the genesis transaction, so by the time any
+        // handler is invoked at consensus, they will necessarily exist
         if (notGenesisCreation(fileId, context.configuration())) {
             mustExist(fileStore.getFileMetadata(fileId), INVALID_FILE_ID);
         }
