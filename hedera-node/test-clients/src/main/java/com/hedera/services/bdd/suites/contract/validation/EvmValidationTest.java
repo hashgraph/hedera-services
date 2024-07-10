@@ -25,6 +25,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.google.protobuf.ByteString;
@@ -93,7 +94,7 @@ public class EvmValidationTest {
             @DisplayName("when transferring value to all zero address 0000000000000000000000000000000000000000 ")
             public Stream<DynamicTest> lazyCreateToAllZeroFails() {
                 final var ALL_ZERO_ADDRESS = "0000000000000000000000000000000000000000";
-                return callContractWithValue(ALL_ZERO_ADDRESS, CONTRACT_REVERT_EXECUTED);
+                return callContractWithValue(ALL_ZERO_ADDRESS, INVALID_CONTRACT_ID);
             }
         }
 

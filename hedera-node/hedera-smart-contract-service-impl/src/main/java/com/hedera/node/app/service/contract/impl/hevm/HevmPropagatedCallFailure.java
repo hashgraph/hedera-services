@@ -42,7 +42,11 @@ public enum HevmPropagatedCallFailure {
     /**
      * The call failed because invalid fee was submitted for an EVM call
      */
-    INVALID_FEE_SUBMITTED(CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED);
+    INVALID_FEE_SUBMITTED(CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED),
+    /**
+     * The call failed because the contract id submitted for an EVM call was invalid
+     */
+    INVALID_CONTRACT_ID(CustomExceptionalHaltReason.INVALID_CONTRACT_ID);
 
     private final @Nullable CustomExceptionalHaltReason exceptionalHaltReason;
 
