@@ -64,7 +64,7 @@ public interface LifecycleTest {
     Duration MIXED_OPS_BURST_DURATION = Duration.ofSeconds(10);
     Duration EXEC_IMMEDIATE_MF_TIMEOUT = Duration.ofSeconds(10);
     Duration RESTART_TO_ACTIVE_TIMEOUT = Duration.ofSeconds(180);
-    Duration PORT_UNBINDING_WAIT_PERIOD = Duration.ofSeconds(240);
+    Duration PORT_UNBINDING_WAIT_PERIOD = Duration.ofSeconds(180);
     AtomicInteger CURRENT_CONFIG_VERSION = new AtomicInteger(0);
 
     /**

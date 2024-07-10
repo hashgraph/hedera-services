@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.PENDING;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.REACHED;
-import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.UNREACHABLE;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen.NO;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen.YES;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.DOWN;
@@ -76,7 +75,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
      * before resorting to scanning the application log. (Empirically, if Prometheus is not up
      * within a minute or so, it's not going to be; and we should fall back to log scanning.)
      */
-    private static final int MAX_PROMETHEUS_RETRIES = 666;
+    private static final int MAX_PROMETHEUS_RETRIES = 1000;
     /**
      * How many retries to make between checking if a bind exception has been thrown in the logs.
      */
@@ -151,11 +150,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
                         nodeStatusObserver.accept(new NodeStatus(
                                 lookupAttempt, grpcStatus, bindExceptionSeen, retryCount.getAndIncrement()));
                     }
-                    if (statusReached) {
-                        return REACHED;
-                    } else {
-                        return bindExceptionSeen == YES ? UNREACHABLE : PENDING;
-                    }
+                    return statusReached ? REACHED : PENDING;
                 },
                 () -> retryCount.get() > MAX_PROMETHEUS_RETRIES ? LOG_SCAN_BACKOFF_MS : PROMETHEUS_BACKOFF_MS);
     }
