@@ -24,12 +24,15 @@ import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.re
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWithFunctionAbi;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
@@ -99,8 +102,8 @@ public class IsAssociatedSystemContractTest {
     }
 
     @Nested
-    @DisplayName("calling from Contract")
-    class Contract {
+    @DisplayName("returns false")
+    class ReturnsFalse {
         static final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
         static final AtomicReference<String> nonFungibleTokenNum = new AtomicReference<>();
         private static final String hrcContract = "HRCContract";
@@ -108,20 +111,22 @@ public class IsAssociatedSystemContractTest {
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
             testLifecycle.doAdhoc(
+                    cryptoCreate("account").balance(100 * ONE_HUNDRED_HBARS),
                     uploadInitCode(hrcContract),
                     contractCreate(hrcContract),
                     newKeyNamed("multikey"),
-                    tokenCreate("fungibleToken").exposingCreatedIdTo(fungibleTokenNum::set),
+                    tokenCreate("fungibleToken").treasury("account").exposingCreatedIdTo(fungibleTokenNum::set),
                     tokenCreate("nonFungibleToken")
                             .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                            .treasury("account")
                             .initialSupply(0)
                             .supplyKey("multikey")
                             .exposingCreatedIdTo(nonFungibleTokenNum::set));
         }
 
         @HapiTest
-        @DisplayName("check token is not associated with an account")
-        public Stream<DynamicTest> checkTokenIsNotAssociatedWithAnAccount() {
+        @DisplayName("when token is not associated with a contract")
+        public Stream<DynamicTest> checkTokenIsNotAssociatedWithContract() {
             return hapiTest(
                     sourcing(() -> contractCall(
                                     hrcContract,
@@ -142,8 +147,8 @@ public class IsAssociatedSystemContractTest {
         }
 
         @HapiTest
-        @DisplayName("check nft is not associated with an account")
-        public Stream<DynamicTest> checkNftIsNotAssociatedWithAnAccount() {
+        @DisplayName("when nft is not associated with a contract")
+        public Stream<DynamicTest> checkNftIsNotAssociatedWithContract() {
             return hapiTest(
                     sourcing(() -> contractCall(
                                     hrcContract,
@@ -162,32 +167,76 @@ public class IsAssociatedSystemContractTest {
                                                             Utils.FunctionType.FUNCTION, "isAssociated", "HRCContract"),
                                                     isLiteralResult(new Object[] {false})))));
         }
+
+        @HapiTest
+        @DisplayName("when token is not associated with an account EOA call")
+        public Stream<DynamicTest> checkTokenIsNotAssociatedWithAnAccount() {
+            return hapiTest(
+                    sourcing(() -> contractCallWithFunctionAbi(
+                                    asHexedSolidityAddress(asToken(fungibleTokenNum.get())),
+                                    getABIFor(Utils.FunctionType.FUNCTION, "isAssociated", "HRC"))
+                            .gas(1_000_000)
+                            .via("test")),
+                    childRecordsCheck(
+                            "test",
+                            SUCCESS,
+                            TransactionRecordAsserts.recordWith()
+                                    .status(SUCCESS)
+                                    .contractCallResult(resultWith()
+                                            .resultThruAbi(
+                                                    getABIFor(Utils.FunctionType.FUNCTION, "isAssociated", "HRC"),
+                                                    isLiteralResult(new Object[] {false})))));
+        }
+
+        @HapiTest
+        @DisplayName("when nft is not associated with an account EOA call")
+        public Stream<DynamicTest> checkNftIsNotAssociatedWithAnAccount() {
+            return hapiTest(
+                    sourcing(() -> contractCallWithFunctionAbi(
+                                    asHexedSolidityAddress(asToken(nonFungibleTokenNum.get())),
+                                    getABIFor(Utils.FunctionType.FUNCTION, "isAssociated", "HRC"))
+                            .gas(1_000_000)
+                            .via("test")),
+                    childRecordsCheck(
+                            "test",
+                            SUCCESS,
+                            TransactionRecordAsserts.recordWith()
+                                    .status(SUCCESS)
+                                    .contractCallResult(resultWith()
+                                            .resultThruAbi(
+                                                    getABIFor(Utils.FunctionType.FUNCTION, "isAssociated", "HRC"),
+                                                    isLiteralResult(new Object[] {false})))));
+        }
     }
 
     @Nested
-    @DisplayName("calling from EOA")
-    class EOA {
-        static final AtomicReference<String> fungibleTokenNum = new AtomicReference<>();
-        static final AtomicReference<String> nonFungibleTokenNum = new AtomicReference<>();
+    @DisplayName("returns true")
+    class ReturnsTrue {
+        static final AtomicReference<String> fungibleTokenNum2 = new AtomicReference<>();
+        static final AtomicReference<String> nonFungibleTokenNum2 = new AtomicReference<>();
+        private static final String hrcContract = "HRCContract";
 
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
             testLifecycle.doAdhoc(
+                    uploadInitCode(hrcContract),
+                    contractCreate(hrcContract),
                     newKeyNamed("multikey"),
-                    tokenCreate("fungibleToken").exposingCreatedIdTo(fungibleTokenNum::set),
+                    tokenCreate("fungibleToken").exposingCreatedIdTo(fungibleTokenNum2::set),
                     tokenCreate("nonFungibleToken")
                             .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                             .initialSupply(0)
                             .supplyKey("multikey")
-                            .exposingCreatedIdTo(nonFungibleTokenNum::set));
+                            .exposingCreatedIdTo(nonFungibleTokenNum2::set),
+                    tokenAssociate(hrcContract, "fungibleToken", "nonFungibleToken"));
         }
 
         @HapiTest
-        @DisplayName("check token is associated with an account")
+        @DisplayName("when token is associated with an account EOA call")
         public Stream<DynamicTest> checkTokenIsAssociatedWithAnAccount() {
             return hapiTest(
                     sourcing(() -> contractCallWithFunctionAbi(
-                                    asHexedSolidityAddress(asToken(fungibleTokenNum.get())),
+                                    asHexedSolidityAddress(asToken(fungibleTokenNum2.get())),
                                     getABIFor(Utils.FunctionType.FUNCTION, "isAssociated", "HRC"))
                             .gas(1_000_000)
                             .via("test")),
@@ -203,11 +252,11 @@ public class IsAssociatedSystemContractTest {
         }
 
         @HapiTest
-        @DisplayName("check nft is associated with an account")
+        @DisplayName("when nft is associated with an account EOA call")
         public Stream<DynamicTest> checkNftIsAssociatedWithAnAccount() {
             return hapiTest(
                     sourcing(() -> contractCallWithFunctionAbi(
-                                    asHexedSolidityAddress(asToken(nonFungibleTokenNum.get())),
+                                    asHexedSolidityAddress(asToken(nonFungibleTokenNum2.get())),
                                     getABIFor(Utils.FunctionType.FUNCTION, "isAssociated", "HRC"))
                             .gas(1_000_000)
                             .via("test")),
@@ -219,6 +268,50 @@ public class IsAssociatedSystemContractTest {
                                     .contractCallResult(resultWith()
                                             .resultThruAbi(
                                                     getABIFor(Utils.FunctionType.FUNCTION, "isAssociated", "HRC"),
+                                                    isLiteralResult(new Object[] {true})))));
+        }
+
+        @HapiTest
+        @DisplayName("when token is associated with a contract")
+        public Stream<DynamicTest> checkTokenIsNotAssociatedWithContract() {
+            return hapiTest(
+                    sourcing(() -> contractCall(
+                                    hrcContract,
+                                    "isAssociated",
+                                    asHeadlongAddress(asHexedSolidityAddress(asToken(fungibleTokenNum2.get()))))
+                            .gas(1_000_000)
+                            .via("test")),
+                    childRecordsCheck(
+                            "test",
+                            SUCCESS,
+                            TransactionRecordAsserts.recordWith()
+                                    .status(SUCCESS)
+                                    .contractCallResult(resultWith()
+                                            .resultThruAbi(
+                                                    getABIFor(
+                                                            Utils.FunctionType.FUNCTION, "isAssociated", "HRCContract"),
+                                                    isLiteralResult(new Object[] {true})))));
+        }
+
+        @HapiTest
+        @DisplayName("when nft is associated with a contract")
+        public Stream<DynamicTest> checkNftIsNotAssociatedWithContract() {
+            return hapiTest(
+                    sourcing(() -> contractCall(
+                                    hrcContract,
+                                    "isAssociated",
+                                    asHeadlongAddress(asHexedSolidityAddress(asToken(nonFungibleTokenNum2.get()))))
+                            .gas(1_000_000)
+                            .via("test")),
+                    childRecordsCheck(
+                            "test",
+                            SUCCESS,
+                            TransactionRecordAsserts.recordWith()
+                                    .status(SUCCESS)
+                                    .contractCallResult(resultWith()
+                                            .resultThruAbi(
+                                                    getABIFor(
+                                                            Utils.FunctionType.FUNCTION, "isAssociated", "HRCContract"),
                                                     isLiteralResult(new Object[] {true})))));
         }
     }
