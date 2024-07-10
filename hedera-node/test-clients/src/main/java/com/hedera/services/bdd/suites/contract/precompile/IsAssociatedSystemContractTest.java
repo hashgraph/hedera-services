@@ -68,7 +68,7 @@ public class IsAssociatedSystemContractTest {
 
     @Nested
     @DisplayName("static call")
-    class staticCall {
+    class StaticCall {
         @FungibleTokenSpec(name = "immutableToken")
         static SpecFungibleToken immutableToken;
 
