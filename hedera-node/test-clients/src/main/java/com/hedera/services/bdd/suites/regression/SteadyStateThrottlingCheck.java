@@ -50,12 +50,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
 import java.util.Collections;
