@@ -77,9 +77,9 @@ public class EvmValidationTest {
         @DisplayName("fails")
         class CallFails {
             @HapiTest
-            @DisplayName("when transferring value to long zero address 00000000000000000000000000000000000007d0 ")
+            @DisplayName("when transferring value to long zero address 00000000000000000000000000000000001117d0 ")
             public Stream<DynamicTest> lazyCreateToLongZeroFails() {
-                final var LONG_ZERO_ADDRESS = "00000000000000000000000000000000000007d0";
+                final var LONG_ZERO_ADDRESS = "00000000000000000000000000000000001117d0";
                 return callContractWithValue(LONG_ZERO_ADDRESS, CONTRACT_REVERT_EXECUTED);
             }
 
