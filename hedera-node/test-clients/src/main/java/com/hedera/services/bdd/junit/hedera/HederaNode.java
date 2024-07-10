@@ -90,6 +90,7 @@ public interface HederaNode {
 
     /**
      * Stops the node software forcibly.
+     * @return true if the node was stopped, false otherwise
      */
     boolean terminate();
 
@@ -133,4 +134,10 @@ public interface HederaNode {
     default String hapiSpecInfo() {
         return getHost() + ":" + getGrpcPort() + ":0.0." + getAccountId().accountNumOrThrow();
     }
+
+    /**
+     * Returns the metadata for this node.
+     * @return the metadata for this node
+     */
+    NodeMetadata metadata();
 }

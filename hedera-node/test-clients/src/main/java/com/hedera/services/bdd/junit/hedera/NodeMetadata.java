@@ -30,7 +30,7 @@ public record NodeMetadata(
         String host,
         int grpcPort,
         int gossipPort,
-        int tlsGossipPort,
+        int gossipTlsPort,
         int prometheusPort,
         @Nullable Path workingDir) {
     public static final int UNKNOWN_PORT = -1;

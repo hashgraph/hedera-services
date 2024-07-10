@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarallowance.HbarAllowanceTranslator;
@@ -55,12 +56,15 @@ public class IsAuthorizedRawTranslatorTest {
     @Mock
     private SystemContractGasCalculator gasCalculator;
 
+    @Mock
+    private CustomGasCalculator customGasCalculator;
+
     private IsAuthorizedRawTranslator subject;
 
     @BeforeEach
     void setUp() {
         final var featureFlags = new Version051FeatureFlags();
-        subject = new IsAuthorizedRawTranslator(featureFlags);
+        subject = new IsAuthorizedRawTranslator(featureFlags, customGasCalculator);
     }
 
     @Test

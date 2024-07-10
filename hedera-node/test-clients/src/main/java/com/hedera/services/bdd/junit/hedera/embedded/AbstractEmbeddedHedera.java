@@ -28,8 +28,8 @@ import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.StreamSupport.stream;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.Hedera;
-import com.hedera.node.app.config.IsEmbeddedTest;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.version.HederaSoftwareVersion;
@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.platform.NodeId;
@@ -69,7 +70,12 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     private static final int NANOS_IN_A_SECOND = 1_000_000_000;
     private static final long VALID_START_TIME_OFFSET_SECS = 42;
+    private static final SemanticVersion EARLIER_SEMVER =
+            SemanticVersion.newBuilder().patch(1).build();
+    private static final SemanticVersion LATER_SEMVER =
+            SemanticVersion.newBuilder().major(999).build();
 
+    protected static final NodeId MISSING_NODE_ID = new NodeId(666L);
     protected static final int MAX_PLATFORM_TXN_SIZE = 1024 * 6;
     protected static final int MAX_QUERY_RESPONSE_SIZE = 1024 * 1024 * 2;
     protected static final TransactionResponse OK_RESPONSE = TransactionResponse.getDefaultInstance();
@@ -103,7 +109,6 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
                 ConstructableRegistry.getInstance(),
                 FakeServicesRegistry.FACTORY,
                 new FakeServiceMigrator(),
-                IsEmbeddedTest.YES,
                 this::now);
         version = (HederaSoftwareVersion) hedera.getSoftwareVersion();
         Runtime.getRuntime().addShutdownHook(new Thread(executorService::shutdownNow));
@@ -154,12 +159,44 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
         return parseQueryResponse(responseBuffer);
     }
 
+    @Override
+    public TransactionResponse submit(
+            @NonNull final Transaction transaction,
+            @NonNull final AccountID nodeAccountId,
+            @NonNull final SyntheticVersion syntheticVersion) {
+        if (defaultNodeAccountId.equals(nodeAccountId)) {
+            assertCurrent(syntheticVersion);
+        }
+        return submit(
+                transaction,
+                nodeAccountId,
+                switch (syntheticVersion) {
+                    case PAST -> EARLIER_SEMVER;
+                    case PRESENT -> version.getPbjSemanticVersion();
+                    case FUTURE -> LATER_SEMVER;
+                });
+    }
+
+    protected abstract TransactionResponse submit(
+            @NonNull Transaction transaction, @NonNull AccountID nodeAccountId, @NonNull SemanticVersion version);
+
     /**
      * Returns the fake platform to start and stop.
      *
      * @return the fake platform
      */
     protected abstract AbstractFakePlatform fakePlatform();
+
+    /**
+     * Fails fast if somehow a user tries to manipulate the version when submitting to the default node account.
+     *
+     * @param syntheticVersion the synthetic version
+     */
+    private void assertCurrent(@NonNull final SyntheticVersion syntheticVersion) {
+        if (syntheticVersion != SyntheticVersion.PRESENT) {
+            throw new UnsupportedOperationException("Event version used at ingest by default node is always PRESENT");
+        }
+    }
 
     protected static TransactionResponse parseTransactionResponse(@NonNull final BufferedData responseBuffer) {
         try {

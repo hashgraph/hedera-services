@@ -120,7 +120,7 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("check that fees are 1 for delete node trx")
-    public void testCalculateFeesInvocations() throws IOException {
+    void testCalculateFeesInvocations() throws IOException {
         final var feeCtx = mock(FeeContext.class);
         final var feeCalcFact = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);

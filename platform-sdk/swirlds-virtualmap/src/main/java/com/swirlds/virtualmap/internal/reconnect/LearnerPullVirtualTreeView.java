@@ -27,6 +27,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
@@ -40,6 +41,7 @@ import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Queue;
@@ -354,5 +356,22 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     @Override
     public Long convertMerkleRootToViewType(final MerkleNode node) {
         throw new UnsupportedOperationException("Nested virtual maps not supported");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void recordHashStats(
+            @NonNull final ReconnectMapStats mapStats,
+            @NonNull final Long parent,
+            final int childIndex,
+            final boolean nodeAlreadyPresent) {
+        final long childPath = Path.getChildPath(parent, childIndex);
+        if (isLeaf(childPath)) {
+            mapStats.incrementLeafHashes(1, nodeAlreadyPresent ? 1 : 0);
+        } else {
+            mapStats.incrementInternalHashes(1, nodeAlreadyPresent ? 1 : 0);
+        }
     }
 }

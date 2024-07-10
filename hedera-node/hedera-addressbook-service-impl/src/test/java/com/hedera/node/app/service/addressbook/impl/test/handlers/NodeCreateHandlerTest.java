@@ -564,7 +564,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("check that fees are 1 for delete node trx")
-    public void testCalculateFeesInvocations() {
+    void testCalculateFeesInvocations() {
         final var feeCtx = mock(FeeContext.class);
         final var feeCalcFact = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);

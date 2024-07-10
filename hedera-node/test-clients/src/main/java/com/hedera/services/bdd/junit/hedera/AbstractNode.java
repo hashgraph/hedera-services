@@ -94,4 +94,9 @@ public abstract class AbstractNode implements HederaNode {
                     .resolve(CURRENT_DIR);
         };
     }
+
+    @Override
+    public NodeMetadata metadata() {
+        return metadata;
+    }
 }

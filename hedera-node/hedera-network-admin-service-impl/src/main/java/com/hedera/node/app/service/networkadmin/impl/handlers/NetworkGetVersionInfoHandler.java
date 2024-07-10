@@ -35,6 +35,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.VersionConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -93,17 +94,22 @@ public class NetworkGetVersionInfoHandler extends PaidQueryHandler {
     public Response findResponse(@NonNull final QueryContext context, @NonNull final ResponseHeader header) {
         requireNonNull(context);
         requireNonNull(header);
-        final VersionConfig semanticVersionConfig = context.configuration().getConfigData(VersionConfig.class);
-
+        final var versionConfig = context.configuration().getConfigData(VersionConfig.class);
+        final var hederaConfig = context.configuration().getConfigData(HederaConfig.class);
         final var query = context.query();
         final var op = query.networkGetVersionInfoOrThrow();
         final NetworkGetVersionInfoResponse.Builder responseBuilder = NetworkGetVersionInfoResponse.newBuilder();
         final ResponseType responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == OK && responseType != COST_ANSWER) {
-            responseBuilder
-                    .hederaServicesVersion(semanticVersionConfig.servicesVersion())
-                    .hapiProtoVersion(semanticVersionConfig.hapiVersion());
+            final var servicesVersion = (hederaConfig.configVersion() == 0)
+                    ? versionConfig.servicesVersion()
+                    : versionConfig
+                            .servicesVersion()
+                            .copyBuilder()
+                            .build("" + hederaConfig.configVersion())
+                            .build();
+            responseBuilder.hederaServicesVersion(servicesVersion).hapiProtoVersion(versionConfig.hapiVersion());
         }
 
         return Response.newBuilder().networkGetVersionInfo(responseBuilder).build();

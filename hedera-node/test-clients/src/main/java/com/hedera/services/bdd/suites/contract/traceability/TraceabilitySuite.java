@@ -118,7 +118,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
@@ -184,8 +184,8 @@ public class TraceabilitySuite {
     public static final String SIDECARS_PROP = "contracts.sidecars";
 
     @BeforeAll
-    static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
-        specManager.setup(
+    static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws Throwable {
+        testLifecycle.doAdhoc(
                 withOpContext((spec, opLog) -> GLOBAL_WATCHER.set(new SidecarWatcher(spec.streamsLoc(byNodeId(0))))),
                 overriding("contracts.enforceCreationThrottle", "false"));
     }
@@ -5129,7 +5129,6 @@ public class TraceabilitySuite {
                         }));
     }
 
-    @HapiTest
     @Order(Integer.MAX_VALUE)
     public final Stream<DynamicTest> assertSidecars() {
         return hapiTest(withOpContext(
