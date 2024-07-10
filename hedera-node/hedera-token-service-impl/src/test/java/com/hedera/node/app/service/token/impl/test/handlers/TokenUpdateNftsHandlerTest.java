@@ -17,7 +17,9 @@
 package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newReadableStoreWithTokens;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory.newWritableStoreWithTokenRels;
@@ -40,6 +42,7 @@ import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenUpdateNftsTransactionBody;
@@ -114,6 +117,9 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
 
     @Mock
     private Token token;
+
+    @Mock
+    private Nft nft;
 
     private TokenUpdateNftsHandler subject;
     private TransactionBody txn;
@@ -237,6 +243,55 @@ class TokenUpdateNftsHandlerTest extends CryptoTokenHandlerTestBase {
         final var context = keyMockContext(txn);
 
         assertThatCode(() -> subject.pureChecks(context.body())).doesNotThrowAnyException();
+    }
+
+    @Test
+    void preHandle_WhenTokenIsNull() {
+        when(preHandleContext.body()).thenReturn(transactionBody);
+        when(transactionBody.tokenUpdateNftsOrThrow()).thenReturn(tokenUpdateNftsTransactionBody);
+        when(tokenUpdateNftsTransactionBody.tokenOrElse(TokenID.DEFAULT)).thenReturn(TokenID.DEFAULT);
+        when(preHandleContext.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(readableTokenStore.get(TokenID.DEFAULT)).thenReturn(null);
+
+        Assertions.assertThatThrownBy(() -> subject.preHandle(preHandleContext))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(INVALID_TOKEN_ID));
+    }
+
+    @Test
+    void preHandle_WhenTokenHasMetadatayKeySerialsOutsideTreasury() {
+        when(preHandleContext.body()).thenReturn(transactionBody);
+        when(transactionBody.tokenUpdateNftsOrThrow()).thenReturn(tokenUpdateNftsTransactionBody);
+        when(tokenUpdateNftsTransactionBody.tokenOrElse(TokenID.DEFAULT)).thenReturn(nonFungibleTokenId);
+        when(tokenUpdateNftsTransactionBody.serialNumbers()).thenReturn(List.of(1L));
+        when(preHandleContext.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(preHandleContext.createStore(ReadableNftStore.class)).thenReturn(readableNftStore);
+        when(readableTokenStore.get(nonFungibleTokenId)).thenReturn(token);
+        when(readableNftStore.get(nonFungibleTokenId, 1L)).thenReturn(nft);
+        when(token.tokenIdOrThrow()).thenReturn(nonFungibleTokenId);
+        when(nft.ownerId()).thenReturn(AccountID.newBuilder().accountNum(1).build());
+        when(token.hasMetadataKey()).thenReturn(true);
+
+        assertThatCode(() -> subject.preHandle(preHandleContext)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void preHandle_WhenTokenHasNoMetadataKeySerialsOutsideTreasury() {
+        when(preHandleContext.body()).thenReturn(transactionBody);
+        when(transactionBody.tokenUpdateNftsOrThrow()).thenReturn(tokenUpdateNftsTransactionBody);
+        when(tokenUpdateNftsTransactionBody.tokenOrElse(TokenID.DEFAULT)).thenReturn(nonFungibleTokenId);
+        when(tokenUpdateNftsTransactionBody.serialNumbers()).thenReturn(List.of(1L));
+        when(preHandleContext.createStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
+        when(preHandleContext.createStore(ReadableNftStore.class)).thenReturn(readableNftStore);
+        when(readableTokenStore.get(nonFungibleTokenId)).thenReturn(token);
+        when(readableNftStore.get(nonFungibleTokenId, 1L)).thenReturn(nft);
+        when(token.tokenIdOrThrow()).thenReturn(nonFungibleTokenId);
+        when(nft.ownerId()).thenReturn(AccountID.newBuilder().accountNum(1).build());
+        when(token.hasMetadataKey()).thenReturn(false);
+
+        Assertions.assertThatThrownBy(() -> subject.preHandle(preHandleContext))
+                .isInstanceOf(PreCheckException.class)
+                .has(responseCode(TOKEN_HAS_NO_METADATA_KEY));
     }
 
     @Test
