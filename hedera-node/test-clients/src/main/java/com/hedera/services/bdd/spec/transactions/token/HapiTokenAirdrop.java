@@ -85,7 +85,7 @@ public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
     }
 
     private long estimateTransferFees(HapiSpec spec, int numPayerKeys) throws Throwable {
-        // convert transfer list in to transfer transaction
+        // convert transfer list in to crypto transfer transaction
         var cryptoTransferBodyBuilder = CryptoTransferTransactionBody.newBuilder();
         final var xfers = transfersAllFor(spec);
         for (final TokenTransferList scopedXfers : xfers) {
@@ -95,8 +95,7 @@ public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
                 (b) -> b.setCryptoTransfer(cryptoTransferBodyBuilder.build());
         final Transaction.Builder builder2 = spec.txns().getReadyToSign(cryptoTransferTxnBodyConsumer, null, spec);
 
-        Transaction transferTx = null;
-        transferTx = getSigned(spec, builder2, signersToUseFor(spec));
+        final var transferTx = getSigned(spec, builder2, signersToUseFor(spec));
 
         // return estimated fee
         return spec.fees()
@@ -116,9 +115,9 @@ public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
                         .addTokens(spec.registry().getTokenID(movement.getToken()))
                         .setAccount(spec.registry().getKeyAlias(receiver))
                         .build();
-                Consumer<TransactionBody.Builder> test2 = (b) -> b.setTokenAssociate(tokenAssociateTransactionBody);
-                final Transaction.Builder builder2 = spec.txns().getReadyToSign(test2, null, spec);
-                final var associationTx = getSigned(spec, builder2, signersToUseFor(spec));
+                Consumer<TransactionBody.Builder> associateTxnConsumer = (b) -> b.setTokenAssociate(tokenAssociateTransactionBody);
+                final Transaction.Builder transactionBuilder = spec.txns().getReadyToSign(associateTxnConsumer, null, spec);
+                final var associationTx = getSigned(spec, transactionBuilder, signersToUseFor(spec));
                 final var expiry = lookupExpiry(spec, receiver);
                 FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
                     var estimate = TokenAssociateUsage.newEstimate(
