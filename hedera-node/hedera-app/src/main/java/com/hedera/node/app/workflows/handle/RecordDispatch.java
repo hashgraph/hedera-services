@@ -24,9 +24,9 @@ import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.config.api.Configuration;
@@ -37,7 +37,7 @@ import java.time.Instant;
 import java.util.Set;
 
 public record RecordDispatch(
-        @NonNull SingleTransactionRecordBuilderImpl recordBuilder,
+        @NonNull SingleTransactionRecordBuilder recordsBuilder,
         @NonNull Configuration config,
         @NonNull Fees fees,
         @NonNull TransactionInfo txnInfo,

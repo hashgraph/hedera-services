@@ -75,11 +75,11 @@ base record builder.
 
 When rollback is called by `HandleWorkflow` on the `SavePointStack`, all the state changes of that particular stack
 are rolled back. RecordBuilders will not be deleted from any save points. But based on the reversingBehavior of 
-the recordBuilder, the records will be reversed in the recordSink.
+the recordBuilder, the records will be reversed in the builderSink.
 - If the recordBuilder is `REVERSIBLE`, all the side effects are removed on the record. if it is a `SUCCESS` record, 
 a `REVERTED_SUCCESS` status is set on the record
 - If the recordBuilder is `REMOVABLE`, the record is removed from the list of recordBuilders.
-After these changes the records are pushed to the parent stack's recordSink based on the type of savepoint similar 
+After these changes the records are pushed to the parent stack's builderSink based on the type of savepoint similar 
 to commit.
 
 ### RollbackFullStack

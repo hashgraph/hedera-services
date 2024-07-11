@@ -37,11 +37,11 @@ import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
 import com.hedera.node.app.workflows.handle.dispatch.ValidationResult;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
@@ -256,8 +256,8 @@ public class DispatchProcessor {
             final boolean rollbackStack,
             @NonNull final ResponseCodeEnum status,
             @NonNull final SavepointStackImpl stack,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
-        recordBuilder.status(status);
+            @NonNull final SingleTransactionRecordBuilder builder) {
+        builder.status(status);
         if (rollbackStack) {
             stack.rollbackFullStack();
         }

@@ -123,8 +123,6 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
     private static final TokenID newTokenId =
             TokenID.newBuilder().tokenNum(3000L).build();
-    private static final Timestamp expiry =
-            Timestamp.newBuilder().seconds(1234600L).build();
     private final AccountID autoRenewAccountId = ownerId;
 
     @BeforeEach

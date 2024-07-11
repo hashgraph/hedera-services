@@ -18,6 +18,8 @@ package com.hedera.node.app.records;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
@@ -60,14 +62,9 @@ class RecordBuildersImplTest {
     }
 
     @Test
-    void testGetRecordBuilder() {
-        final var actual = subject.getOrCreate(CryptoCreateRecordBuilder.class);
-        assertThat(actual).isEqualTo(recordBuilder);
-    }
-
-    @Test
     void testAddChildRecordBuilder() {
         final var childRecordBuilder = mock(SingleTransactionRecordBuilderImpl.class);
+        given(stack.createBuilder(any(), any(), any())).willReturn(childRecordBuilder);
 
         final var actual = subject.addChildRecordBuilder(CryptoCreateRecordBuilder.class);
 
@@ -77,6 +74,7 @@ class RecordBuildersImplTest {
     @Test
     void testAddRemovableChildRecordBuilder() {
         final var childRecordBuilder = mock(SingleTransactionRecordBuilderImpl.class);
+        given(stack.createBuilder(any(), any(), any())).willReturn(childRecordBuilder);
 
         final var actual = subject.addRemovableChildRecordBuilder(CryptoCreateRecordBuilder.class);
 

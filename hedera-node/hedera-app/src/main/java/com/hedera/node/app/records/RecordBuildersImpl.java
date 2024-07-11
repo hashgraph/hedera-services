@@ -23,7 +23,7 @@ import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBu
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.records.RecordBuilders;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -41,29 +41,28 @@ public class RecordBuildersImpl implements RecordBuilders {
     @Override
     public <T> T getOrCreate(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castRecordBuilder(stack.baseRecordBuilder(), recordBuilderClass);
+        return castBuilder(stack.baseRecordBuilder(), recordBuilderClass);
     }
 
     @NonNull
     @Override
     public <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = stack.peek().createRecord(REVERSIBLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
-        return castRecordBuilder(result, recordBuilderClass);
+        final var result = stack.createBuilder(REVERSIBLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        return castBuilder(result, recordBuilderClass);
     }
 
     @NonNull
     @Override
     public <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = stack.peek().createRecord(REMOVABLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
-        return castRecordBuilder(result, recordBuilderClass);
+        final var result = stack.createBuilder(REMOVABLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        return castBuilder(result, recordBuilderClass);
     }
 
-    public static <T> T castRecordBuilder(
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
-            @NonNull final Class<T> recordBuilderClass) {
-        if (!recordBuilderClass.isInstance(recordBuilder)) {
+    public static <T> T castBuilder(
+            @NonNull final SingleTransactionRecordBuilder builder, @NonNull final Class<T> builderClass) {
+        if (!builderClass.isInstance(builder)) {
             throw new IllegalArgumentException("Not a valid record builder class");
         }
-        return recordBuilderClass.cast(recordBuilder);
+        return builderClass.cast(builder);
     }
 }

@@ -20,14 +20,14 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.state.WrappedHederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class BaseSavePoint extends AbstractFollowingSavePoint {
+public class BaseSavepoint extends AbstractFollowingSavepoint {
     private final HandleContext.TransactionCategory txnCategory;
 
-    protected BaseSavePoint(
+    protected BaseSavepoint(
             @NonNull final WrappedHederaState state,
-            @NonNull final AbstractSavePoint parent,
+            @NonNull final Savepoint parent,
             @NonNull final HandleContext.TransactionCategory txnCategory) {
-        super(state, parent);
+        super(state, (AbstractSavepoint) parent);
         this.txnCategory = txnCategory;
     }
 

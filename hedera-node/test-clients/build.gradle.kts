@@ -88,8 +88,8 @@ tasks.test {
             .joinToString("|")
     useJUnitPlatform {
         includeTags(
-            if (ciTagExpression.isBlank()) "none()|!(EMBEDDED)"
-            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED)"
+            if (ciTagExpression.isBlank()) "none()|!(EMBEDDED|REPEATABLE)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED|REPEATABLE)"
         )
     }
 

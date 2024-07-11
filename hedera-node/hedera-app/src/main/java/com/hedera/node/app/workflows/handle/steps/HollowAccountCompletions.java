@@ -19,8 +19,8 @@ package com.hedera.node.app.workflows.handle.steps;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.workflows.handle.stack.AbstractSavePoint.SIMULATE_MONO;
-import static com.hedera.node.app.workflows.handle.stack.AbstractSavePoint.totalPrecedingRecords;
+import static com.hedera.node.app.workflows.handle.stack.AbstractSavepoint.SIMULATE_MONO;
+import static com.hedera.node.app.workflows.handle.stack.AbstractSavepoint.totalPrecedingRecords;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;

@@ -244,7 +244,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public ExchangeRateInfo exchangeRateInfo() {
-        return exchangeRateManager.exchangeRateInfo(stack.peek().state());
+        return exchangeRateManager.exchangeRateInfo(stack);
     }
 
     @Override
@@ -508,6 +508,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             }
             paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
         }
-        return RecordBuildersImpl.castRecordBuilder(childDispatch.recordBuilder(), recordBuilderClass);
+        return RecordBuildersImpl.castBuilder(childDispatch.recordBuilder(), recordBuilderClass);
     }
 }

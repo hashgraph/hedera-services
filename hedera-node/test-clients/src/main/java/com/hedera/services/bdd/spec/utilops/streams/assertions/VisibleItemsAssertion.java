@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
 import static com.hedera.services.bdd.spec.utilops.streams.assertions.BaseIdScreenedAssertion.baseFieldsMatch;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -39,19 +40,32 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class VisibleItemsAssertion implements RecordStreamAssertion {
+    private static final long FIRST_USER_NUM = 1001L;
+
     static final Logger log = LogManager.getLogger(VisibleItemsAssertion.class);
 
     private final HapiSpec spec;
     private final Set<String> unseenIds;
     private final CountDownLatch latch;
     private final Map<String, List<RecordStreamEntry>> entries = new HashMap<>();
-    private final boolean withLogging = false;
+    private final boolean withLogging = true;
 
     @Nullable
     private String lastSeenId = null;
 
-    public VisibleItemsAssertion(@NonNull final HapiSpec spec, @NonNull final String... specTxnIds) {
+    private final SkipSynthItems skipSynthItems;
+
+    public enum SkipSynthItems {
+        YES,
+        NO
+    }
+
+    public VisibleItemsAssertion(
+            @NonNull final HapiSpec spec,
+            @NonNull final SkipSynthItems skipSynthItems,
+            @NonNull final String... specTxnIds) {
         this.spec = requireNonNull(spec);
+        this.skipSynthItems = requireNonNull(skipSynthItems);
         unseenIds = new HashSet<>() {
             {
                 addAll(List.of(specTxnIds));
@@ -84,16 +98,21 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
                 .findFirst()
                 .ifPresentOrElse(
                         seenId -> {
-                            if (withLogging) {
-                                log.info(
-                                        "Saw {} as {}", seenId, item.getRecord().getTransactionID());
+                            final var entry = RecordStreamEntry.from(item);
+                            if (skipSynthItems == SkipSynthItems.NO || !isSynthItem(entry)) {
+                                if (withLogging) {
+                                    log.info(
+                                            "Saw {} as {}",
+                                            seenId,
+                                            item.getRecord().getTransactionID());
+                                }
+                                entries.computeIfAbsent(seenId, ignore -> new ArrayList<>())
+                                        .add(entry);
+                                if (!seenId.equals(lastSeenId)) {
+                                    maybeFinishLastSeen();
+                                }
+                                lastSeenId = seenId;
                             }
-                            entries.computeIfAbsent(seenId, ignore -> new ArrayList<>())
-                                    .add(RecordStreamEntry.from(item));
-                            if (!seenId.equals(lastSeenId)) {
-                                maybeFinishLastSeen();
-                            }
-                            lastSeenId = seenId;
                         },
                         this::maybeFinishLastSeen);
         return true;
@@ -110,5 +129,13 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
             lastSeenId = null;
             latch.countDown();
         }
+    }
+
+    private static boolean isSynthItem(@NonNull final RecordStreamEntry entry) {
+        final var receipt = entry.transactionRecord().getReceipt();
+        return entry.function() == NodeStakeUpdate
+                || (receipt.getAccountID().hasAccountNum()
+                        && receipt.getAccountID().getAccountNum() < FIRST_USER_NUM)
+                || (receipt.hasFileID() && receipt.getFileID().getFileNum() < FIRST_USER_NUM);
     }
 }

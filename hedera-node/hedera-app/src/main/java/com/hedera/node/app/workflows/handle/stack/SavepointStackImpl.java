@@ -22,13 +22,13 @@ import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomi
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.WrappedHederaState;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -43,22 +43,54 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * The default implementation of {@link SavepointStack}.
- * The {@link SavepointStackImpl} is a stack of {@link HederaState} instances that can be used to create savepoints.
- * Each savepoint captures the state of the {@link HederaState} at the time the savepoint was created and all the changes
- * made to the state from the time savepoint is created. It also captures all the records {@link SingleTransactionRecordBuilder}
- * created in the savepoint.
- * Currently, records are not used in the codebase. It will be used in future PRs.
+ * A stack of savepoints scoped to a dispatch. Each savepoint captures the state of the {@link HederaState} at the time
+ * the savepoint was created and all the changes made to the state from the time savepoint is created. It also captures
+ * all the stream item builders created in the savepoint.
  */
 public class SavepointStackImpl implements SavepointStack, HederaState {
     private final HederaState root;
-    private final Deque<AbstractSavePoint> stack = new ArrayDeque<>();
+    private final Deque<Savepoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
-    private final int maxPreceding;
-    private final SingleTransactionRecordBuilderImpl baseRecordBuilder;
+    private final int maxPrecedingBuilders;
+    private final SingleTransactionRecordBuilder baseRecordBuilder;
     // This is only set if this stack is root stack
     @Nullable
-    private final RecordSink recordSink;
+    private final BuilderSink builderSink;
+
+    /**
+     * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
+     *
+     * @param root the root state
+     * @param maxPreceding the maximum number of preceding builders with available consensus times
+     * @return the root {@link SavepointStackImpl}
+     */
+    public static SavepointStackImpl newRootStack(@NonNull final HederaState root, final int maxPreceding) {
+        return new SavepointStackImpl(root, maxPreceding, REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+    }
+
+    /**
+     * Constructs a new child {@link SavepointStackImpl} for the given state, where the child dispatch has the given
+     * reversing behavior, transaction category, and record customizer.
+     *
+     * @param root the state on which the child dispatch i sbased
+     * @param reversingBehavior the reversing behavior
+     * @param category the transaction category
+     * @param externalizedRecordCustomizer the record customizer
+     * @return the child {@link SavepointStackImpl}
+     */
+    public static SavepointStackImpl newChildStack(
+            @NonNull final HederaState root,
+            @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
+            @NonNull final HandleContext.TransactionCategory category,
+            @NonNull final ExternalizedRecordCustomizer externalizedRecordCustomizer) {
+        return new SavepointStackImpl(
+                root, Integer.MAX_VALUE, reversingBehavior, category, externalizedRecordCustomizer);
+    }
+
+    @VisibleForTesting
+    public SavepointStackImpl(@NonNull final HederaState root, final int maxPrecedingBuilders) {
+        this(root, maxPrecedingBuilders, REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+    }
 
     /**
      * Constructs a new {@link SavepointStackImpl} with the given root state.
@@ -66,27 +98,21 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @param root the root state
      * @throws NullPointerException if {@code root} is {@code null}
      */
-    public SavepointStackImpl(
+    private SavepointStackImpl(
             @NonNull final HederaState root,
-            final int maxPreceding,
+            final int maxPrecedingBuilders,
             final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
             final HandleContext.TransactionCategory category,
-            final ExternalizedRecordCustomizer externalizedRecordCustomizer) {
+            final ExternalizedRecordCustomizer customizer) {
         this.root = requireNonNull(root, "root must not be null");
-        this.maxPreceding = maxPreceding;
+        this.maxPrecedingBuilders = maxPrecedingBuilders;
         if (root instanceof SavepointStackImpl) {
-            recordSink = null;
+            builderSink = null;
         } else {
-            recordSink = new RecordSink();
+            builderSink = new BuilderSink();
         }
         pushSavepoint(category);
-
-        baseRecordBuilder = recordBuilderFor(category, reversingBehavior, externalizedRecordCustomizer);
-        baseRecordBuilder.setBaseRecordBuilder();
-    }
-
-    public SavepointStackImpl(@NonNull final HederaState root, final int maxPreceding) {
-        this(root, maxPreceding, REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        baseRecordBuilder = peek().createBuilder(reversingBehavior, category, customizer, true);
     }
 
     @Override
@@ -142,7 +168,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @throws IllegalStateException if the stack has been committed already
      */
     @NonNull
-    public AbstractSavePoint peek() {
+    Savepoint peek() {
         if (stack.isEmpty()) {
             throw new IllegalStateException("The stack has already been committed");
         }
@@ -162,7 +188,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     /**
      * {@inheritDoc}
-     *
+     * <p>
      * The {@link ReadableStates} instances returned from this method are based on the {@link WritableStates} instances
      * for the same service name. This means that any modifications to the {@link WritableStates} will be reflected
      * in the {@link ReadableStates} instances returned from this method.
@@ -178,7 +204,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     /**
      * {@inheritDoc}
-     *
+     * <p>
      * This method guarantees that the same {@link WritableStates} instance is returned for the same {@code serviceName}
      * to ensure all modifications to a {@link WritableStates} are kept together.
      */
@@ -193,44 +219,50 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     private void pushSavepoint(final HandleContext.TransactionCategory category) {
         if (root instanceof SavepointStackImpl parentStack) {
-            stack.push(new BaseSavePoint(new WrappedHederaState(root), parentStack.peek(), category));
+            stack.push(new BaseSavepoint(new WrappedHederaState(root), parentStack.peek(), category));
         } else {
-            stack.push(new FirstSavePoint(new WrappedHederaState(root), maxPreceding, requireNonNull(recordSink)));
+            stack.push(new FirstSavepoint(
+                    new WrappedHederaState(root), maxPrecedingBuilders, requireNonNull(builderSink)));
         }
     }
 
     public List<SingleTransactionRecordBuilder> recordBuilders() {
-        return requireNonNull(recordSink).allBuilders();
+        return requireNonNull(builderSink).allBuilders();
     }
 
     public boolean hasMoreSystemRecords() {
-        return requireNonNull(recordSink).precedingBuilders.size() < maxPreceding;
+        return requireNonNull(builderSink).precedingBuilders.size() < maxPrecedingBuilders;
     }
 
+    /**
+     * Returns all following child records in the stack for use in end-of-EVM-transaction throttling.
+     * <p>
+     * To be removed on completion of HIP-993 and adoption of per-dispatch throttling.
+     * @return the list of child records
+     */
     @Deprecated
-    // TODO : Will be removed soon
-    public List<SingleTransactionRecordBuilderImpl> getChildRecords() {
-        final var childRecords = new ArrayList<SingleTransactionRecordBuilderImpl>();
+    public List<SingleTransactionRecordBuilder> getChildRecords() {
+        final var childRecords = new ArrayList<SingleTransactionRecordBuilder>();
         for (var savePoint : stack) {
-            for (var recordBuilder : savePoint.followingBuilders) {
+            for (var recordBuilder : ((AbstractSavepoint) savePoint).followingBuilders) {
                 if (recordBuilder.category() == CHILD) {
-                    childRecords.add((SingleTransactionRecordBuilderImpl) recordBuilder);
+                    childRecords.add(recordBuilder);
                 }
             }
         }
         return childRecords;
     }
 
-    public SingleTransactionRecordBuilderImpl baseRecordBuilder() {
+    public SingleTransactionRecordBuilder baseRecordBuilder() {
         return baseRecordBuilder;
     }
 
     public boolean hasChildOrPrecedingRecords() {
-        if (recordSink != null && recordSink.hasChildOrPreceding(baseRecordBuilder)) {
+        if (builderSink != null && builderSink.hasOther(baseRecordBuilder)) {
             return true;
         }
         for (var savePoint : stack) {
-            if (savePoint.hasChildOrPreceding(baseRecordBuilder)) {
+            if (savePoint.hasOther(baseRecordBuilder)) {
                 return true;
             }
         }
@@ -238,23 +270,22 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     }
 
     public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
-        if (recordSink != null) {
-            recordSink.forEachChildAndPreceding(recordBuilderClass, consumer, baseRecordBuilder);
+        if (builderSink != null) {
+            builderSink.forEachOther(consumer, recordBuilderClass, baseRecordBuilder);
         }
         for (var savePoint : stack) {
-            savePoint.forEachChildAndPreceding(recordBuilderClass, consumer, baseRecordBuilder);
+            savePoint.forEachOther(consumer, recordBuilderClass, baseRecordBuilder);
         }
-    }
-
-    private SingleTransactionRecordBuilderImpl recordBuilderFor(
-            @NonNull final HandleContext.TransactionCategory category,
-            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
-            @Nullable ExternalizedRecordCustomizer customizer) {
-        customizer = customizer == null ? NOOP_EXTERNALIZED_RECORD_CUSTOMIZER : customizer;
-        return peek().createRecord(reversingBehavior, category, customizer);
     }
 
     public HandleContext.TransactionCategory txnCategory() {
         return baseRecordBuilder.category();
+    }
+
+    public SingleTransactionRecordBuilder createBuilder(
+            @NonNull SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
+            @NonNull HandleContext.TransactionCategory txnCategory,
+            @NonNull ExternalizedRecordCustomizer customizer) {
+        return peek().createBuilder(reversingBehavior, txnCategory, customizer, false);
     }
 }

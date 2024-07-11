@@ -77,7 +77,6 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
-import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,7 +89,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenBurnHandlerTest extends ParityTestBase {
     private static final AccountID ACCOUNT_1339 = BaseCryptoHandler.asAccount(1339);
     private static final TokenID TOKEN_123 = BaseTokenHandler.asToken(123);
-    private static final Instant SOMETIME = Instant.ofEpochSecond(1_234_567, 890);
     private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator();
     private final TokenBurnHandler subject = new TokenBurnHandler(validator);
     private Configuration configuration;
