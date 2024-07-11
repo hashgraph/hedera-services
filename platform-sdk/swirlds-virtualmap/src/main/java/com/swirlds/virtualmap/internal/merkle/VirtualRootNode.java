@@ -1458,7 +1458,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public LearnerTreeView<Long> buildLearnerView(
-            final ReconnectConfig reconnectConfig, final ReconnectMapStats mapStats) {
+            final ReconnectConfig reconnectConfig, @NonNull final ReconnectMapStats mapStats) {
         assert originalMap != null;
         // During reconnect we want to look up state from the original records
         final VirtualStateAccessor originalState = originalMap.getState();

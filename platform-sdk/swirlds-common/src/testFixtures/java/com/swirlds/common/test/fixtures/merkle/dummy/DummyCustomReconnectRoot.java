@@ -27,6 +27,7 @@ import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -107,7 +108,7 @@ public class DummyCustomReconnectRoot extends DummyMerkleInternal
      */
     @Override
     public LearnerTreeView<MerkleNode> buildLearnerView(
-            final ReconnectConfig reconnectConfig, final ReconnectMapStats mapStats) {
+            final ReconnectConfig reconnectConfig, @NonNull final ReconnectMapStats mapStats) {
         return new DummyLearnerPushMerkleTreeView(reconnectConfig, this, mapStats);
     }
 

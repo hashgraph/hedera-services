@@ -34,6 +34,7 @@ import com.swirlds.metrics.api.LongGauge;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
@@ -395,6 +396,11 @@ public final class BenchmarkMetrics {
         consumer.accept(INSTANCE.metrics);
     }
 
+    /**
+     * Returns a Metrics instance.
+     * @return a Metrics instance.
+     */
+    @NonNull
     public static Metrics getMetrics() {
         return INSTANCE.metrics;
     }

@@ -66,9 +66,11 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
      *
      * @param root
      * 		the root of the tree (or subtree)
+     * @param mapStats
+     *      a ReconnectMapStats object to collect reconnect metrics
      */
     public LearnerPushMerkleTreeView(
-            final ReconnectConfig reconnectConfig, final MerkleNode root, final ReconnectMapStats mapStats) {
+            final ReconnectConfig reconnectConfig, final MerkleNode root, @NonNull final ReconnectMapStats mapStats) {
         this.reconnectConfig = reconnectConfig;
         this.originalRoot = root;
         this.mapStats = mapStats;

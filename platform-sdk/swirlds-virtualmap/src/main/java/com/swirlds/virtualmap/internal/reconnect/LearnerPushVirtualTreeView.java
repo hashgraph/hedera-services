@@ -137,6 +137,8 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      * 		A {@link VirtualStateAccessor} for accessing state (first and last paths) from the
      * 		modified <strong>reconnect</strong> tree. We only use first and last leaf path from this state.
      * 		Cannot be null.
+     * @param mapStats
+     *      A ReconnectMapStats object to collect reconnect metrics
      */
     public LearnerPushVirtualTreeView(
             final ReconnectConfig reconnectConfig,
@@ -145,7 +147,7 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
             final VirtualStateAccessor originalState,
             final VirtualStateAccessor reconnectState,
             final ReconnectNodeRemover<K, V> nodeRemover,
-            final ReconnectMapStats mapStats) {
+            @NonNull final ReconnectMapStats mapStats) {
         super(root, originalState, reconnectState);
         this.reconnectConfig = reconnectConfig;
         this.originalRecords = Objects.requireNonNull(originalRecords);

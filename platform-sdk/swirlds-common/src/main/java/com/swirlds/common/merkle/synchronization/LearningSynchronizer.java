@@ -107,6 +107,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
      *                        deadlock if there is a thread stuck on a blocking IO operation that will never finish due
      *                        to a failure.
      * @param reconnectConfig the configuration for the reconnect
+     * @param metrics         a Metrics instance for ReconnectMapStats
      */
     public LearningSynchronizer(
             @NonNull final ThreadManager threadManager,
@@ -129,9 +130,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
 
         this.breakConnection = breakConnection;
 
-        this.mapStats = metrics == null // to support unit tests
-                ? ReconnectMapStats.NO_OP
-                : new ReconnectMapMetrics(metrics, null, null);
+        this.mapStats = new ReconnectMapMetrics(metrics, null, null);
     }
 
     /**

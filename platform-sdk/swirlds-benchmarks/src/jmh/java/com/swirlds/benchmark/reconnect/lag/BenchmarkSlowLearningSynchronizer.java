@@ -28,6 +28,7 @@ import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.metrics.api.Metrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@link LearningSynchronizer} with simulated delay.
@@ -42,6 +43,7 @@ public class BenchmarkSlowLearningSynchronizer extends LearningSynchronizer {
 
     /**
      * Create a new learning synchronizer with simulated latency.
+     * @param metrics a Metrics instance for ReconnectMapStats
      */
     public BenchmarkSlowLearningSynchronizer(
             final MerkleDataInputStream in,
@@ -54,7 +56,7 @@ public class BenchmarkSlowLearningSynchronizer extends LearningSynchronizer {
             final double delayNetworkFuzzRangePercent,
             final Runnable breakConnection,
             final ReconnectConfig reconnectConfig,
-            final Metrics metrics) {
+            @NonNull final Metrics metrics) {
         super(getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig, metrics);
 
         this.randomSeed = randomSeed;

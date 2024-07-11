@@ -45,6 +45,8 @@ import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.metrics.api.Counter;
+import com.swirlds.metrics.api.Metrics;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -57,6 +59,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import org.mockito.Mockito;
 
 /**
  * Utility methods for testing merkle trees.
@@ -990,6 +993,10 @@ public final class MerkleTestUtils {
             final LearningSynchronizer learner;
             final TeachingSynchronizer teacher;
 
+            final Metrics metrics = Mockito.mock(Metrics.class);
+            final Counter counter = Mockito.mock(Counter.class);
+            Mockito.doReturn(counter).when(metrics).getOrCreate(Mockito.any());
+
             if (latencyMilliseconds == 0) {
                 learner =
                         new LearningSynchronizer(
@@ -999,7 +1006,7 @@ public final class MerkleTestUtils {
                                 startingTree,
                                 streams::disconnect,
                                 reconnectConfig,
-                                null) {
+                                metrics) {
 
                             @Override
                             protected StandardWorkGroup createStandardWorkGroup(
@@ -1047,7 +1054,8 @@ public final class MerkleTestUtils {
                                 startingTree,
                                 latencyMilliseconds,
                                 streams::disconnect,
-                                reconnectConfig) {
+                                reconnectConfig,
+                                metrics) {
                             @Override
                             protected StandardWorkGroup createStandardWorkGroup(
                                     ThreadManager threadManager,
