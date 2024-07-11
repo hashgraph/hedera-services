@@ -32,7 +32,7 @@ public class HashTreeManager<T> {
     private final Codec<T> codec;
     List<Bytes> inputsCompleteSubtreeHashes;
     List<Bytes> outputsCompleteSubtreeHashes;
-    private final List<Bytes> hashList = new ArrayList<>(); // Correctly defining and initializing hashList
+    private List<Bytes> hashList = new ArrayList<>();
 
     private enum Alternator {
         LEFT,
@@ -94,7 +94,6 @@ public class HashTreeManager<T> {
     }
 
     public void setHeader(Bytes bytes) {}
-    ;
 
     public void acceptItem(T item) {
         boolean isForInputMerkleTree = isForInput(item);
@@ -144,27 +143,26 @@ public class HashTreeManager<T> {
 
     /* This method calculates the Merkle root hash of a list of elements provided by Output Merkle Tree. */
     public String calculateMerkleRootOnOutputTree(List<OutputMerkleTreeData> elements) {
-        List<String> hashList = new ArrayList<>();
 
         // Initial hashing of elements
         for (OutputMerkleTreeData element : elements) {
             System.out.println(
                     "Writing element " + element + " to the stream, with Hash: " + sha384(element.toString()));
-            hashList.add(sha384(element.toString()).toString());
+            hashList.add(sha384(element.toString()));
 
             // Perform the double hashing operation
             int i = hashList.size() - 1;
             while (i % 2 != 0) {
                 i = i / 2;
-                String x = hashList.remove(i);
-                String y = hashList.remove(i);
-                System.out.println("Adding: " + i + "," + sha384(x + y));
-                hashList.add(i, sha384(x + y).toString());
+                Bytes x = hashList.remove(i);
+                Bytes y = hashList.remove(i);
+                System.out.println("Adding: " + i + "," + sha384(String.valueOf(x.append(y))));
+                hashList.add(i, sha384(String.valueOf(x.append(y))));
             }
         }
 
         // Calculate Merkle root hash
-        String merkleRootHash = hashList.get(hashList.size() - 1);
+        String merkleRootHash = String.valueOf(hashList.get(hashList.size() - 1));
         for (int i = hashList.size() - 2; i >= 0; i--) {
             merkleRootHash = sha384(hashList.get(i) + merkleRootHash).toString();
         }
