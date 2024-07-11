@@ -79,7 +79,7 @@ public abstract class AbstractSavePoint extends RecordSink {
             } else {
                 followingBuilders.add(recordBuilder);
             }
-        }else{
+        } else {
             System.out.println("Record suppressed");
         }
         return recordBuilder;

@@ -18,7 +18,6 @@ package com.hedera.node.app.throttle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -95,10 +94,10 @@ class AppThrottleAdviserTest {
 
     @Test
     void allowsThrottleCapacityForChildrenIfNoneShouldThrottle() {
-        given(oneChildBuilder.status()).willReturn(SUCCESS);
-        given(oneChildBuilder.transaction()).willReturn(CRYPTO_TRANSFER_TXN_INFO.transaction());
-        given(oneChildBuilder.transactionBody()).willReturn(CRYPTO_TRANSFER_TXN_INFO.txBody());
-        given(twoChildBuilder.status()).willReturn(REVERTED_SUCCESS);
+        //        given(oneChildBuilder.status()).willReturn(SUCCESS);
+        //        given(oneChildBuilder.transaction()).willReturn(CRYPTO_TRANSFER_TXN_INFO.transaction());
+        //        given(oneChildBuilder.transactionBody()).willReturn(CRYPTO_TRANSFER_TXN_INFO.txBody());
+        //        given(twoChildBuilder.status()).willReturn(REVERTED_SUCCESS);
 
         assertThat(subject.hasThrottleCapacityForChildTransactions()).isTrue();
     }
