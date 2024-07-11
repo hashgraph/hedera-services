@@ -64,8 +64,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -107,7 +105,6 @@ import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_INFINITE_SUPPLY_TOKEN;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.PARTY;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TOKEN_A_CREATE;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.TRUE;
 import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.MULTI_KEY;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_STILL_OWNS_NFTS;
@@ -627,7 +624,7 @@ public class Create2OperationSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    @HapiTest
+    @LeakyHapiTest
     final Stream<DynamicTest> canMergeCreate2MultipleCreatesWithHollowAccount() {
         final var tcValue = 1_234L;
         final var contract = "Create2MultipleCreates";
@@ -710,20 +707,13 @@ public class Create2OperationSuite {
                                 .via(CREATE_2_TXN)),
                         // mod-service externalizes internal creations in order of their initiation,
                         // while mono-service externalizes them in order of their completion
-                        ifHapiTest(captureChildCreate2MetaFor(
+                        captureChildCreate2MetaFor(
                                 3,
                                 0,
                                 "Merged deployed contract with hollow account",
                                 CREATE_2_TXN,
                                 mergedMirrorAddr,
-                                mergedAliasAddr)),
-                        ifNotHapiTest(captureChildCreate2MetaFor(
-                                3,
-                                2,
-                                "Merged deployed contract with hollow account",
-                                CREATE_2_TXN,
-                                mergedMirrorAddr,
-                                mergedAliasAddr)),
+                                mergedAliasAddr),
                         withOpContext((spec, opLog) -> {
                             final var opExpectedMergedNonce = getTxnRecord(CREATE_2_TXN)
                                     .andAllChildRecords()
@@ -1312,7 +1302,7 @@ public class Create2OperationSuite {
                                 .via(CREATION)));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> canMergeCreate2ChildWithHollowAccountUnlimitedAssociations() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
@@ -1327,15 +1317,13 @@ public class Create2OperationSuite {
         final AtomicReference<String> mergedMirrorAddr = new AtomicReference<>();
         final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
+        return defaultHapiSpec(
                         "CanMergeCreate2ChildWithHollowAccountUnlimitedAssociations",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_LOG_DATA)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
@@ -1427,15 +1415,13 @@ public class Create2OperationSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
+        return defaultHapiSpec(
                         "CanMergeCreate2ChildWithHollowAccountHbarAndFungibleTransferUnlimitedAssociations",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_LOG_DATA)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
@@ -1550,15 +1536,13 @@ public class Create2OperationSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
+        return defaultHapiSpec(
                         "CanMergeCreate2ChildWithHollowAccountFungibleAndNftTransferUnlimitedAssociations",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_LOG_DATA)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
@@ -1675,15 +1659,13 @@ public class Create2OperationSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
+        return defaultHapiSpec(
                         "CanMergeCreate2ChildWithHollowAccountFungibleTransferUnlimitedAssociations",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_LOG_DATA)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
@@ -1786,15 +1768,13 @@ public class Create2OperationSuite {
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final int nftTransfersSize = 10;
 
-        return propertyPreservingHapiSpec(
+        return defaultHapiSpec(
                         "CanMergeCreate2ChildWithHollowAccountNftTransfersUnlimitedAssociations",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_LOG_DATA)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
@@ -1925,20 +1905,19 @@ public class Create2OperationSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        final int givenOpsSize = 7;
+        final int givenOpsSize = 6;
         HapiSpecOperation[] givenOps = new HapiSpecOperation[givenOpsSize + (fungibleTransfersSize * 2)];
-        givenOps[0] = overriding("entities.unlimitedAutoAssociationsEnabled", TRUE);
-        givenOps[1] = newKeyNamed(adminKey);
-        givenOps[2] = newKeyNamed(MULTI_KEY);
-        givenOps[3] = uploadInitCode(contract);
-        givenOps[4] = contractCreate(contract)
+        givenOps[0] = newKeyNamed(adminKey);
+        givenOps[1] = newKeyNamed(MULTI_KEY);
+        givenOps[2] = uploadInitCode(contract);
+        givenOps[3] = contractCreate(contract)
                 .payingWith(GENESIS)
                 .adminKey(adminKey)
                 .entityMemo(ENTITY_MEMO)
                 .via(CREATE_2_TXN)
                 .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num)));
-        givenOps[5] = cryptoCreate(PARTY).maxAutomaticTokenAssociations(2);
-        givenOps[6] = setIdentifiers(Optional.empty(), Optional.empty(), Optional.of(partyId), Optional.of(partyAlias));
+        givenOps[4] = cryptoCreate(PARTY).maxAutomaticTokenAssociations(2);
+        givenOps[5] = setIdentifiers(Optional.empty(), Optional.empty(), Optional.of(partyId), Optional.of(partyAlias));
 
         int j = 0;
         for (int i = givenOpsSize; i < fungibleTransfersSize + givenOpsSize; i++) {
@@ -1967,6 +1946,7 @@ public class Create2OperationSuite {
                 .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(givenOps)
                 .when(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                         // GET BYTECODE OF THE CREATE2 CONTRACT
                         sourcing(() -> contractCallLocal(
                                         contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
@@ -1988,7 +1968,6 @@ public class Create2OperationSuite {
                                 .logged()
                                 .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
                         sourcing(() -> getAccountInfo(hollowCreationAddress.get())
-                                .hasMaxAutomaticAssociations(-1)
                                 .hasAlreadyUsedAutomaticAssociations(fungibleTransfersSize)
                                 .logged()))
                 .then(

@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.inPriorityOrder;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType;
 import static com.hedera.services.bdd.spec.keys.deterministic.Bip0032.mnemonicToEd25519Key;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bytecodePath;
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 import com.hedera.node.app.hapi.utils.keys.Ed25519Utils;
@@ -41,34 +40,22 @@ import java.util.stream.Stream;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * Aggregates the properties to be used in setting up a {@link HapiSpec}.
+ */
 public class HapiSpecSetup {
     private final SplittableRandom r = new SplittableRandom(1_234_567L);
-
-    private static final HapiPropertySource defaultNodeProps;
-
-    static {
-        defaultNodeProps = new JutilPropertySource("bootstrap.properties");
-    }
-
-    public static HapiPropertySource getDefaultNodeProps() {
-        return defaultNodeProps;
-    }
-
-    public static String getDefaultProp(@NonNull final String property) {
-        requireNonNull(property);
-        return defaultNodeProps.get(property);
-    }
 
     private Set<ResponseCodeEnum> streamlinedIngestChecks = null;
     private HapiPropertySource ciPropertiesMap = null;
     private static HapiPropertySource DEFAULT_PROPERTY_SOURCE = null;
     private static final HapiPropertySource BASE_DEFAULT_PROPERTY_SOURCE = JutilPropertySource.getDefaultInstance();
 
-    public static final HapiPropertySource getDefaultPropertySource() {
+    public static HapiPropertySource getDefaultPropertySource() {
         if (DEFAULT_PROPERTY_SOURCE == null) {
             String globals = System.getProperty("global.property.overrides");
             globals = (globals == null) ? "" : globals;
-            String[] sources = globals.length() > 0 ? globals.split(",") : new String[0];
+            String[] sources = !globals.isEmpty() ? globals.split(",") : new String[0];
             DEFAULT_PROPERTY_SOURCE =
                     inPriorityOrder(asSources(Stream.of(Stream.of(sources), Stream.of(BASE_DEFAULT_PROPERTY_SOURCE))
                             .flatMap(Function.identity())
@@ -138,7 +125,7 @@ public class HapiSpecSetup {
      *
      * @param props A map of new properties
      */
-    public void addOverrides(final Map<String, Object> props) {
+    public void addOverrides(@NonNull final Map<String, String> props) {
         this.props = HapiPropertySource.inPriorityOrder(new MapPropertySource(props), this.props);
     }
 
@@ -314,14 +301,6 @@ public class HapiSpecSetup {
         return props.get("default.payer.name");
     }
 
-    public AccountID defaultProxy() {
-        return props.getAccount("default.proxy");
-    }
-
-    public long defaultQueueSaturationMs() {
-        return props.getLong("default.queueSaturation.ms");
-    }
-
     public RealmID defaultRealm() {
         return props.getRealm("default.realm");
     }
@@ -359,14 +338,6 @@ public class HapiSpecSetup {
 
     public int defaultThresholdN() {
         return props.getInteger("default.thresholdKey.N");
-    }
-
-    public String defaultTokenSymbol() {
-        return props.get("default.token.symbol");
-    }
-
-    public String defaultTokenName() {
-        return props.get("default.token.name");
     }
 
     public long defaultTokenInitialSupply() {

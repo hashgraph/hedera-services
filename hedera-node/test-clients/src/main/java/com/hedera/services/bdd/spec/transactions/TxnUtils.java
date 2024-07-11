@@ -17,10 +17,6 @@
 package com.hedera.services.bdd.spec.transactions;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.extractTransactionBody;
-import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.BASIC_RECEIPT_SIZE;
-import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.FEE_MATRICES_CONST;
-import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.HRS_DIVISOR;
-import static com.hedera.node.app.hapi.utils.fee.FeeBuilder.RECEIPT_STORAGE_TIME_SEC;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asEntityNumber;
@@ -51,9 +47,9 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -68,8 +64,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EntityNumber;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -136,6 +130,10 @@ public class TxnUtils {
     public static Key ALL_ZEROS_INVALID_KEY = Key.newBuilder()
             .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000"))
             .build();
+
+    public static Key netOf(@NonNull final HapiSpec spec, @NonNull final Optional<String> keyName) {
+        return netOf(spec, keyName, Optional.empty(), Optional.empty());
+    }
 
     public static Key netOf(
             @NonNull final HapiSpec spec,
@@ -449,16 +447,6 @@ public class TxnUtils {
     private static final char[] UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
     private static final char[] ALNUM = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
 
-    public static String readableTxnId(final TransactionID txnId) {
-        final var validStart = txnId.getTransactionValidStart();
-        final var startInstant = Instant.ofEpochSecond(validStart.getSeconds(), validStart.getNanos());
-        return new StringBuilder()
-                .append(HapiPropertySource.asAccountString(txnId.getAccountID()))
-                .append("@")
-                .append(startInstant)
-                .toString();
-    }
-
     public static String readableTokenTransfers(final List<TokenTransferList> tokenTransfers) {
         return tokenTransfers.stream()
                 .map(scopedXfers -> String.format(
@@ -510,40 +498,7 @@ public class TxnUtils {
         return deduction.isPresent() ? OptionalLong.of(deduction.get().getAmount()) : OptionalLong.empty();
     }
 
-    public static FeeData defaultPartitioning(final FeeComponents components, final int numPayerKeys) {
-        final var partitions = FeeData.newBuilder();
-
-        final long networkRbh = nonDegenerateDiv(BASIC_RECEIPT_SIZE * RECEIPT_STORAGE_TIME_SEC, HRS_DIVISOR);
-        final var network = FeeComponents.newBuilder()
-                .setConstant(FEE_MATRICES_CONST)
-                .setBpt(components.getBpt())
-                .setVpt(components.getVpt())
-                .setRbh(networkRbh);
-
-        final var node = FeeComponents.newBuilder()
-                .setConstant(FEE_MATRICES_CONST)
-                .setBpt(components.getBpt())
-                .setVpt(numPayerKeys)
-                .setBpr(components.getBpr())
-                .setSbpr(components.getSbpr());
-
-        final var service = FeeComponents.newBuilder()
-                .setConstant(FEE_MATRICES_CONST)
-                .setRbh(components.getRbh())
-                .setSbh(components.getSbh())
-                .setTv(components.getTv());
-
-        partitions.setNetworkdata(network).setNodedata(node).setServicedata(service);
-
-        return partitions.build();
-    }
-
-    public static long nonDegenerateDiv(final long dividend, final int divisor) {
-        return (dividend == 0) ? 0 : Math.max(1, dividend / divisor);
-    }
-
     // Following methods are for negative test cases purpose, use with caution
-
     public static Transaction replaceTxnMemo(final Transaction txn, final String newMemo) {
         try {
             final TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
@@ -556,7 +511,6 @@ public class TxnUtils {
     }
 
     public static Transaction replaceTxnPayerAccount(final Transaction txn, final AccountID accountID) {
-        final Transaction newTxn = Transaction.getDefaultInstance();
         try {
             final TransactionBody.Builder txnBody = TransactionBody.newBuilder().mergeFrom(txn.getBodyBytes());
             txnBody.setTransactionID(TransactionID.newBuilder()
@@ -728,7 +682,7 @@ public class TxnUtils {
     }
 
     public static void triggerAndCloseAtLeastOneFile(@NonNull final HapiSpec spec) throws InterruptedException {
-        Thread.sleep(END_OF_BLOCK_PERIOD_SLEEP_PERIOD.toMillis());
+        spec.sleepConsensusTime(END_OF_BLOCK_PERIOD_SLEEP_PERIOD);
         // Should trigger a new record to be written if we have crossed a 2-second boundary
         final var triggerOp = TxnVerbs.cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
                 .deferStatusResolution()
@@ -741,7 +695,7 @@ public class TxnUtils {
         doIfNotInterrupted(() -> {
             triggerAndCloseAtLeastOneFile(spec);
             log.info("Sleeping a bit to give the record stream a chance to close");
-            Thread.sleep(BLOCK_CREATION_SLEEP_PERIOD.toMillis());
+            spec.sleepConsensusTime(BLOCK_CREATION_SLEEP_PERIOD);
         });
     }
 

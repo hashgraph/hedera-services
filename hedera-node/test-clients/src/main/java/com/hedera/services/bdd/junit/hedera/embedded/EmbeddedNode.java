@@ -18,8 +18,11 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.GENESIS_PROPERTIES;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.LOG4J2_XML;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.UPGRADE_ARTIFACTS_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ensureDir;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.updateUpgradeArtifactsProperty;
 
 import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
@@ -32,6 +35,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.core.config.Configurator;
 
 /**
  * A node running in the same OS process as the JUnit test runner, with a direct reference
@@ -60,17 +64,21 @@ public class EmbeddedNode extends AbstractLocalNode<EmbeddedNode> implements Hed
         System.setProperty(
                 "hedera.recordStream.logDir",
                 getExternalPath(STREAMS_DIR).getParent().toString());
+        System.setProperty("hedera.profiles.active", "DEV");
+        if (getExternalPath(LOG4J2_XML).toString().contains("embedded-test")) {
+            try (var ignored =
+                    Configurator.initialize(null, getExternalPath(LOG4J2_XML).toString())) {
+                // Only initialize logging for the shared embedded network
+            }
+        }
         return this;
     }
 
     @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Cannot stop a single node in an embedded network");
-    }
-
-    @Override
-    public boolean terminate() {
-        throw new UnsupportedOperationException("Cannot terminate a single node in an embedded network");
+    public EmbeddedNode initWorkingDir(@NonNull String configTxt) {
+        super.initWorkingDir(configTxt);
+        updateUpgradeArtifactsProperty(getExternalPath(APPLICATION_PROPERTIES), getExternalPath(UPGRADE_ARTIFACTS_DIR));
+        return this;
     }
 
     @Override

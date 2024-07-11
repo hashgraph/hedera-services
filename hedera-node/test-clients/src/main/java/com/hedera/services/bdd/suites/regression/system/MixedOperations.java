@@ -30,18 +30,7 @@ import java.util.concurrent.TimeUnit;
  * These operations will be further extended in the future
  */
 public class MixedOperations {
-
-    static final String SUBMIT_KEY = "submitKey";
-    static final String ADMIN_KEY = "adminKey";
-    static final String TOKEN = "token";
-    static final String NFT = "nft";
-    static final String SENDER = "sender";
-    static final String RECEIVER = "receiver";
-    static final String TOPIC = "topic";
-    static final String TREASURY = "treasury";
-    static final String PAYER = "payer";
     final int numSubmissions;
-    static final String SOME_BYTE_CODE = "contractByteCode";
 
     public MixedOperations(int numSubmissions) {
         this.numSubmissions = numSubmissions;

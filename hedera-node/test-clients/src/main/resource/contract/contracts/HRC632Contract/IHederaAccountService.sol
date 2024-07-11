@@ -24,4 +24,15 @@ interface IHederaAccountService {
         address spender,
         int256 amount
     ) external returns (int64 responseCode);
+
+    /// Determines if the signature is valid for the given message hash and account.
+    /// It is assumed that the signature is composed of a single EDCSA or ED25519 key.
+    /// @param account The account to check the signature against
+    /// @param messageHash The hash of the message to check the signature against
+    /// @param signature The signature to check
+    /// @return response True if the signature is valid, false otherwise
+    function isAuthorizedRaw(
+        address account,
+        bytes memory messageHash,
+        bytes memory signature) external returns (bool response);
 }

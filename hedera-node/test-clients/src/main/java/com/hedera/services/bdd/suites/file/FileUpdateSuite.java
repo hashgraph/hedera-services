@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDE
 import static com.hedera.services.bdd.junit.ContextRequirement.UPGRADE_FILE_CONTENT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpecSetup.getDefaultProp;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -54,6 +53,8 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHbarFee;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeSpecs.fixedHtsFee;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfig;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingAllOf;
@@ -61,6 +62,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateSpecialFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
@@ -109,7 +111,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
@@ -135,24 +136,8 @@ public class FileUpdateSuite {
     private static final String INDIRECT_GET_ABI = "getIndirect";
     private static final String CHAIN_ID_GET_ABI = "getChainID";
     private static final String INVALID_ENTITY_ID = "1.2.3";
-
-    private static final String MAX_CUSTOM_FEES_PROP = "tokens.maxCustomFeesAllowed";
-    private static final String MAX_REFUND_GAS_PROP = "contracts.maxRefundPercentOfGasLimit";
-    private static final String CHAIN_ID_PROP = "contracts.chainId";
-
-    private static final long DEFAULT_CHAIN_ID =
-            parseLong(HapiSpecSetup.getDefaultNodeProps().get(CHAIN_ID_PROP));
-    private static final long DEFAULT_MAX_LIFETIME =
-            parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
-    private static final String DEFAULT_MAX_CUSTOM_FEES =
-            HapiSpecSetup.getDefaultNodeProps().get(MAX_CUSTOM_FEES_PROP);
-
-    public static final String STORAGE_PRICE_TIERS_PROP = "contract.storageSlotPriceTiers";
-    public static final String FREE_PRICE_TIER_PROP = "contracts.freeStorageTierLimit";
     public static final String CIVILIAN = "civilian";
     public static final String TEST_TOPIC = "testTopic";
-    public static final String STAKING_FEES_NODE_REWARD_PERCENTAGE = "staking.fees.nodeRewardPercentage";
-    public static final String STAKING_FEES_STAKING_REWARD_PERCENTAGE = "staking.fees.stakingRewardPercentage";
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
@@ -207,8 +192,9 @@ public class FileUpdateSuite {
     final Stream<DynamicTest> notTooManyFeeScheduleCanBeCreated() {
         final var denom = "fungible";
         final var token = "token";
-        return defaultHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
-                .given(overriding(MAX_CUSTOM_FEES_PROP, "1"))
+        return propertyPreservingHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
+                .preserving("tokens.maxCustomFeesAllowed")
+                .given(overriding("tokens.maxCustomFeesAllowed", "1"))
                 .when(
                         tokenCreate(denom),
                         tokenCreate(token)
@@ -216,7 +202,7 @@ public class FileUpdateSuite {
                                 .withCustom(fixedHbarFee(1, DEFAULT_PAYER))
                                 .withCustom(fixedHtsFee(1, denom, DEFAULT_PAYER))
                                 .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG))
-                .then(overriding(MAX_CUSTOM_FEES_PROP, DEFAULT_MAX_CUSTOM_FEES));
+                .then();
     }
 
     @LeakyHapiTest(UPGRADE_FILE_CONTENT)
@@ -353,16 +339,19 @@ public class FileUpdateSuite {
         return defaultHapiSpec("CannotUpdateExpirationPastMaxLifetime")
                 .given(fileCreate("test"))
                 .when()
-                .then(fileUpdate("test")
-                        .lifetime(DEFAULT_MAX_LIFETIME + 12_345L)
-                        .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
+                .then(doWithStartupConfig("entities.maxLifetime", maxLifetime -> fileUpdate("test")
+                        .lifetime(parseLong(maxLifetime) + 12_345L)
+                        .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)));
     }
 
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> maxRefundIsEnforced() {
         return propertyPreservingHapiSpec("MaxRefundIsEnforced")
-                .preserving(MAX_REFUND_GAS_PROP)
-                .given(overriding(MAX_REFUND_GAS_PROP, "5"), uploadInitCode(CONTRACT), contractCreate(CONTRACT))
+                .preserving("contracts.maxRefundPercentOfGasLimit")
+                .given(
+                        overriding("contracts.maxRefundPercentOfGasLimit", "5"),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
                 .when(contractCall(CONTRACT, CREATE_TXN).gas(1000000L))
                 .then(contractCallLocal(CONTRACT, INDIRECT_GET_ABI)
                         .gas(300000L)
@@ -373,9 +362,9 @@ public class FileUpdateSuite {
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> allUnusedGasIsRefundedIfSoConfigured() {
         return propertyPreservingHapiSpec("AllUnusedGasIsRefundedIfSoConfigured")
-                .preserving(MAX_REFUND_GAS_PROP)
+                .preserving("contracts.maxRefundPercentOfGasLimit")
                 .given(
-                        overriding(MAX_REFUND_GAS_PROP, "100"),
+                        overriding("contracts.maxRefundPercentOfGasLimit", "100"),
                         uploadInitCode(CONTRACT),
                         contractCreate(CONTRACT).gas(100_000L))
                 .when(contractCall(CONTRACT, CREATE_TXN).gas(1_000_000L))
@@ -512,22 +501,25 @@ public class FileUpdateSuite {
         final var firstCallTxn = "firstCallTxn";
         final var secondCallTxn = "secondCallTxn";
         return propertyPreservingHapiSpec("ChainIdChangesDynamically")
-                .preserving(CHAIN_ID_PROP)
+                .preserving("contracts.chainId")
                 .given(
                         uploadInitCode(chainIdUser),
                         contractCreate(chainIdUser),
                         contractCall(chainIdUser, CHAIN_ID_GET_ABI).via(firstCallTxn),
-                        contractCallLocal(chainIdUser, CHAIN_ID_GET_ABI)
-                                .has(resultWith()
-                                        .contractCallResult(bigIntResult(parseLong(getDefaultProp(CHAIN_ID_PROP))))),
-                        getTxnRecord(firstCallTxn)
-                                .hasPriority(recordWith()
-                                        .contractCallResult(
-                                                resultWith().contractCallResult(bigIntResult(DEFAULT_CHAIN_ID)))),
-                        contractCallLocal(chainIdUser, "getSavedChainID")
-                                .has(resultWith().contractCallResult(bigIntResult(DEFAULT_CHAIN_ID))))
+                        doSeveralWithStartupConfig("contracts.chainId", chainId -> {
+                            final var expectedChainId = bigIntResult(parseLong(chainId));
+                            return specOps(
+                                    contractCallLocal(chainIdUser, CHAIN_ID_GET_ABI)
+                                            .has(resultWith().contractCallResult(expectedChainId)),
+                                    getTxnRecord(firstCallTxn)
+                                            .hasPriority(recordWith()
+                                                    .contractCallResult(
+                                                            resultWith().contractCallResult(expectedChainId))),
+                                    contractCallLocal(chainIdUser, "getSavedChainID")
+                                            .has(resultWith().contractCallResult(expectedChainId)));
+                        }))
                 .when(
-                        overriding(CHAIN_ID_PROP, "" + otherChainId),
+                        overriding("contracts.chainId", "" + otherChainId),
                         contractCreate(chainIdUser),
                         contractCall(chainIdUser, CHAIN_ID_GET_ABI).via(secondCallTxn),
                         contractCallLocal(chainIdUser, CHAIN_ID_GET_ABI)
@@ -589,10 +581,10 @@ public class FileUpdateSuite {
         final AtomicLong expectedStorageFee = new AtomicLong();
         return propertyPreservingHapiSpec("RentItemizedAsExpectedWithOverridePriceTiers")
                 .preserving(
-                        FREE_PRICE_TIER_PROP,
-                        STORAGE_PRICE_TIERS_PROP,
-                        STAKING_FEES_NODE_REWARD_PERCENTAGE,
-                        STAKING_FEES_STAKING_REWARD_PERCENTAGE)
+                        "contracts.freeStorageTierLimit",
+                        "contract.storageSlotPriceTiers",
+                        "staking.fees.nodeRewardPercentage",
+                        "staking.fees.stakingRewardPercentage")
                 .given(
                         uploadInitCode(slotUser),
                         cryptoCreate(autoRenew).balance(0L),
@@ -603,18 +595,18 @@ public class FileUpdateSuite {
                         getTxnRecord(creation).hasNonStakingChildRecordCount(1))
                 .when(
                         overridingThree(
-                                STORAGE_PRICE_TIERS_PROP,
+                                "contract.storageSlotPriceTiers",
                                 "10000til100M",
-                                STAKING_FEES_NODE_REWARD_PERCENTAGE,
+                                "staking.fees.nodeRewardPercentage",
                                 "0",
-                                STAKING_FEES_STAKING_REWARD_PERCENTAGE,
+                                "staking.fees.stakingRewardPercentage",
                                 "0"),
                         // Validate free tier is respected
                         contractCall(slotUser, "consumeB", BigInteger.ONE).via(bSet),
                         getTxnRecord(bSet).hasNonStakingChildRecordCount(0),
                         contractCallLocal(slotUser, "slotB")
                                 .exposingTypedResultsTo(results -> assertEquals(BigInteger.ONE, results[0])),
-                        overriding(FREE_PRICE_TIER_PROP, "0"),
+                        overriding("contracts.freeStorageTierLimit", "0"),
                         // And validate auto-renew account must be storage fees must be payable
                         contractCall(slotUser, "consumeA", BigInteger.TWO, BigInteger.valueOf(3))
                                 .gas(oddGasAmount)

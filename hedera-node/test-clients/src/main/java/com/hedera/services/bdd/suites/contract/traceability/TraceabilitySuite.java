@@ -118,7 +118,7 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.StateChange;
 import com.hedera.services.bdd.spec.assertions.StorageChange;
@@ -179,13 +179,12 @@ public class TraceabilitySuite {
     private static final String SET_SECOND_SLOT = "setSlot2";
     private static final String DELEGATE_CALL_ADDRESS_GET_SLOT_2 = "delegateCallAddressGetSlot2";
     private static final String AUTO_ACCOUNT_TXN = "autoAccount";
-    private static final String CHAIN_ID_PROPERTY = "contracts.chainId";
     private static final String LAZY_CREATE_PROPERTY = "lazyCreation.enabled";
     public static final String SIDECARS_PROP = "contracts.sidecars";
 
     @BeforeAll
-    static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
-        specManager.setup(
+    static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws Throwable {
+        testLifecycle.doAdhoc(
                 withOpContext((spec, opLog) -> GLOBAL_WATCHER.set(new SidecarWatcher(spec.streamsLoc(byNodeId(0))))),
                 overriding("contracts.enforceCreationThrottle", "false"));
     }
@@ -4872,10 +4871,10 @@ public class TraceabilitySuite {
                         NONDETERMINISTIC_NONCE,
                         ALLOW_SKIPPED_ENTITY_IDS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
-                .preserving(CHAIN_ID_PROPERTY, LAZY_CREATE_PROPERTY, "contracts.evm.version")
+                .preserving("contracts.chainId", LAZY_CREATE_PROPERTY, "contracts.evm.version")
                 .given(
                         overridingAllOf(Map.of(
-                                CHAIN_ID_PROPERTY,
+                                "contracts.chainId",
                                 "298",
                                 LAZY_CREATE_PROPERTY,
                                 "true",
@@ -5129,7 +5128,6 @@ public class TraceabilitySuite {
                         }));
     }
 
-    @HapiTest
     @Order(Integer.MAX_VALUE)
     public final Stream<DynamicTest> assertSidecars() {
         return hapiTest(withOpContext(
