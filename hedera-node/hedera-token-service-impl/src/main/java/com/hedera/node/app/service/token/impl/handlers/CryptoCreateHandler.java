@@ -102,6 +102,11 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoCreateHandler extends BaseCryptoHandler implements TransactionHandler {
 
+    private static final TransactionBody UPDATE_TXN_BODY_BUILDER = TransactionBody.newBuilder()
+            .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
+                    .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build()))
+            .build();
+
     private final CryptoCreateValidator cryptoCreateValidator;
     private final StakingValidator stakingValidator;
 
@@ -448,8 +453,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         // Variable bytes plus two additional longs for balance and auto-renew period; plus a boolean for receiver sig
         // required.
-        final var body = feeContext.body();
-        final var op = body.cryptoCreateAccountOrThrow();
+        final var op = feeContext.body().cryptoCreateAccountOrThrow();
         final var keySize =
                 op.hasKey() ? getAccountKeyStorageSize(CommonPbjConverters.fromPbj(op.keyOrElse(Key.DEFAULT))) : 0L;
         final var unlimitedAutoAssociations =
@@ -467,13 +471,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
             fee.addRamByteSeconds(op.maxAutomaticTokenAssociations() * lifeTime * CREATE_SLOT_MULTIPLIER);
         }
         if (IMMUTABILITY_SENTINEL_KEY.equals(op.key())) {
-            final var updateTxnBody = TransactionBody.newBuilder()
-                    .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
-                            .key(Key.newBuilder().ecdsaSecp256k1(Bytes.EMPTY).build()))
-                    .transactionID(body.transactionID())
-                    .build();
-
-            final var lazyCreationFee = feeContext.dispatchComputeFees(updateTxnBody, feeContext.payer());
+            final var lazyCreationFee = feeContext.dispatchComputeFees(UPDATE_TXN_BODY_BUILDER, feeContext.payer());
             return fee.calculate().plus(lazyCreationFee);
         }
         return fee.calculate();
