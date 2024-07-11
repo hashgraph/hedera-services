@@ -96,7 +96,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -105,8 +104,6 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.app.workflows.handle.stack.BuilderSink;
-import com.hedera.node.app.workflows.handle.stack.FirstSavepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
@@ -565,8 +562,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                         final var childContext = invocation.getArgument(0, HandleContext.class);
                         final var childStack = (SavepointStackImpl) childContext.savepointStack();
                         childStack
-                                .peek()
-                                .state()
                                 .getWritableStates(FOOD_SERVICE)
                                 .get(FRUIT_STATE_KEY)
                                 .put(A_KEY, ACAI);
@@ -649,8 +644,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         @Test
         void testDispatchPrecedingWithChangedDataDoesntFail() {
             final var context = createContext(txBody, HandleContext.TransactionCategory.USER);
-            given(stack.peek()).willReturn(new FirstSavepoint(new WrappedHederaState(baseState), 3, new BuilderSink()));
-            when(stack.peek().state().getWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
             final Map<String, String> newData = new HashMap<>(BASE_DATA);
             newData.put(B_KEY, BLUEBERRY);
 
@@ -719,7 +712,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Test
     void testExchangeRateInfo() {
-        given(stack.peek()).willReturn(new FirstSavepoint(new WrappedHederaState(baseState), 3, new BuilderSink()));
         assertSame(exchangeRateInfo, subject.exchangeRateInfo());
     }
 

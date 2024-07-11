@@ -168,7 +168,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @throws IllegalStateException if the stack has been committed already
      */
     @NonNull
-    public Savepoint peek() {
+    Savepoint peek() {
         if (stack.isEmpty()) {
             throw new IllegalStateException("The stack has already been committed");
         }
@@ -280,5 +280,12 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     public HandleContext.TransactionCategory txnCategory() {
         return baseRecordBuilder.category();
+    }
+
+    public SingleTransactionRecordBuilder createBuilder(
+            @NonNull SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
+            @NonNull HandleContext.TransactionCategory txnCategory,
+            @NonNull ExternalizedRecordCustomizer customizer) {
+        return peek().createBuilder(reversingBehavior, txnCategory, customizer, false);
     }
 }

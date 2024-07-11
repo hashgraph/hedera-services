@@ -110,8 +110,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @NonNull
     @Override
     public <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result =
-                stack.peek().createBuilder(IRREVERSIBLE, PRECEDING, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, false);
+        final var result = stack.createBuilder(IRREVERSIBLE, PRECEDING, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
         return castBuilder(result, recordBuilderClass);
     }
 

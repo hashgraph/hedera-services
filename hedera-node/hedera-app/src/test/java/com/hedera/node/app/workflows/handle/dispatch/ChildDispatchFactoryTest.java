@@ -54,15 +54,12 @@ import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.app.workflows.handle.stack.BuilderSink;
-import com.hedera.node.app.workflows.handle.stack.FirstSavepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -274,7 +271,5 @@ class ChildDispatchFactoryTest {
         given(accountStore.getAccountById(payerId))
                 .willReturn(Account.newBuilder().key(Key.DEFAULT).build());
         given(parentDispatch.stack()).willReturn(savepointStack);
-        given(savepointStack.peek())
-                .willReturn(new FirstSavepoint(new WrappedHederaState(savepointStack), 3, new BuilderSink()));
     }
 }
