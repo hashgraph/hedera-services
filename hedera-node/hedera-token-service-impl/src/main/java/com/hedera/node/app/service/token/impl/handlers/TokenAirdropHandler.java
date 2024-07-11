@@ -75,8 +75,6 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.service.token.impl.util.CryptoTransferFeeCalculator;
-import com.hedera.node.app.service.token.impl.util.TokenAssociateToAccountFeeCalculator;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
@@ -321,9 +319,23 @@ public class TokenAirdropHandler implements TransactionHandler {
 
         final var defaultAirdropFees =
                 feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT).calculate();
-        final var cryptoTransferFees = CryptoTransferFeeCalculator.calculate(feeContext, null, op.tokenTransfers());
+        final var cryptoTransferFees = calculateCryptoTransferFees(feeContext, op.tokenTransfers());
         final var tokenAssociationFees = calculateTokenAssociationFees(feeContext, op);
         return combineFees(List.of(defaultAirdropFees, cryptoTransferFees, tokenAssociationFees));
+    }
+
+    private Fees calculateCryptoTransferFees(
+            @NonNull FeeContext feeContext, @NonNull List<TokenTransferList> tokenTransfers) {
+        var cryptoTransferBody = CryptoTransferTransactionBody.newBuilder()
+                .tokenTransfers(tokenTransfers)
+                .build();
+
+        final var syntheticCryptoTransferTxn = TransactionBody.newBuilder()
+                .cryptoTransfer(cryptoTransferBody)
+                .transactionID(feeContext.body().transactionID())
+                .build();
+
+        return feeContext.dispatchComputeFees(syntheticCryptoTransferTxn, feeContext.payer());
     }
 
     /**
@@ -365,7 +377,7 @@ public class TokenAirdropHandler implements TransactionHandler {
                     .transactionID(feeContext.body().transactionID())
                     .build();
 
-            feeList.add(TokenAssociateToAccountFeeCalculator.calculate(syntheticTxn, feeContext));
+            feeList.add(feeContext.dispatchComputeFees(syntheticTxn, feeContext.payer()));
         }
 
         return combineFees(feeList);

@@ -30,7 +30,6 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -48,8 +47,6 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
-import com.hedera.node.app.service.token.impl.util.CryptoTransferFeeCalculator;
-import com.hedera.node.app.service.token.impl.util.TokenAssociateToAccountFeeCalculator;
 import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
@@ -397,21 +394,12 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         when(feeContext.readableStore(ReadableTokenRelationStore.class)).thenReturn(readableTokenRelationStore);
         when(readableTokenRelationStore.get(any(), any())).thenReturn(null);
 
-        try (var cryptoTransferFeeCalculator = mockStatic(CryptoTransferFeeCalculator.class);
-                var tokenAssociateToAccountFeeCalculator = mockStatic(TokenAssociateToAccountFeeCalculator.class); ) {
+        when(feeContext.dispatchComputeFees(any(), any())).thenReturn(new Fees(30, 30, 30));
 
-            cryptoTransferFeeCalculator
-                    .when(() -> CryptoTransferFeeCalculator.calculate(any(), any(), any()))
-                    .thenReturn(new Fees(20, 20, 20));
-            tokenAssociateToAccountFeeCalculator
-                    .when(() -> TokenAssociateToAccountFeeCalculator.calculate(any(), any()))
-                    .thenReturn(new Fees(30, 30, 30));
-
-            final var fees = tokenAirdropHandler.calculateFees(feeContext);
-            assertEquals(60, fees.networkFee());
-            assertEquals(60, fees.nodeFee());
-            assertEquals(60, fees.serviceFee());
-        }
+        final var fees = tokenAirdropHandler.calculateFees(feeContext);
+        assertEquals(70, fees.networkFee());
+        assertEquals(70, fees.nodeFee());
+        assertEquals(70, fees.serviceFee());
     }
 
     private void setupAirdropMocks(TokenAirdropTransactionBody body, boolean enableAirdrop) {
