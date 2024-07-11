@@ -243,7 +243,7 @@ public class LeakyCryptoTestsSuite {
         final var baseFee = 0.000214;
         double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
         return propertyPreservingHapiSpec("AutoAssociationPropertiesWorkAsExpected")
-                .preserving(maxAssociationsPropertyName, minAutoRenewPeriodPropertyName)
+                .preserving("ledger.maxAutoAssociations", "ledger.autoRenewPeriod.minDuration")
                 .given(
                         overridingTwo(
                                 maxAssociationsPropertyName, "100",

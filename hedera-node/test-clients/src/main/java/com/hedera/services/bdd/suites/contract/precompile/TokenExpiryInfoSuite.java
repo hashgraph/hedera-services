@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
@@ -62,10 +63,13 @@ import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.utilops.RunnableOp;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
@@ -96,9 +100,10 @@ public class TokenExpiryInfoSuite {
 
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
-
+        final AtomicLong newExpiry = new AtomicLong();
         return defaultHapiSpec("updateExpiryInfoForToken")
                 .given(
+                        new RunnableOp(() -> newExpiry.set(Instant.now().getEpochSecond() + 7776666)),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(UPDATED_AUTO_RENEW_ACCOUNT)
@@ -111,7 +116,6 @@ public class TokenExpiryInfoSuite {
                         tokenCreate(VANILLA_TOKEN)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .treasury(TOKEN_TREASURY)
-                                .expiry(100)
                                 .autoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                                 .maxSupply(1000)
@@ -124,7 +128,7 @@ public class TokenExpiryInfoSuite {
                                         TOKEN_EXPIRY_CONTRACT,
                                         UPDATE_EXPIRY_INFO_FOR_TOKEN,
                                         asHeadlongAddress(INVALID_ADDRESS),
-                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        newExpiry.get(),
                                         HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
                                         MONTH_IN_SECONDS)
                                 .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
@@ -136,7 +140,7 @@ public class TokenExpiryInfoSuite {
                                         TOKEN_EXPIRY_CONTRACT,
                                         UPDATE_EXPIRY_INFO_FOR_TOKEN,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        0L,
                                         HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
                                         MONTH_IN_SECONDS)
                                 .via("invalidSignatureTxn")
@@ -150,7 +154,7 @@ public class TokenExpiryInfoSuite {
                                         TOKEN_EXPIRY_CONTRACT,
                                         UPDATE_EXPIRY_INFO_FOR_TOKEN,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                        100L,
+                                        1L,
                                         HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
                                         MONTH_IN_SECONDS)
                                 .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
@@ -162,7 +166,7 @@ public class TokenExpiryInfoSuite {
                                         TOKEN_EXPIRY_CONTRACT,
                                         UPDATE_EXPIRY_INFO_FOR_TOKEN,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        0L,
                                         asHeadlongAddress(INVALID_ADDRESS),
                                         MONTH_IN_SECONDS)
                                 .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
@@ -174,7 +178,7 @@ public class TokenExpiryInfoSuite {
                                         TOKEN_EXPIRY_CONTRACT,
                                         UPDATE_EXPIRY_INFO_FOR_TOKEN,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        0L,
                                         HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
                                         1L)
                                 .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
@@ -186,7 +190,7 @@ public class TokenExpiryInfoSuite {
                                         TOKEN_EXPIRY_CONTRACT,
                                         UPDATE_EXPIRY_INFO_FOR_TOKEN,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        newExpiry.get(),
                                         HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
                                         MONTH_IN_SECONDS)
                                 .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
@@ -234,7 +238,7 @@ public class TokenExpiryInfoSuite {
                                     .getTokenInfo()
                                     .getAutoRenewPeriod()
                                     .getSeconds();
-                            assertEquals(expirySecond, DEFAULT_MAX_LIFETIME - 12_345L);
+                            assertEquals(expirySecond, newExpiry.get());
                             assertEquals(autoRenewAccount, spec.registry().getAccountID(UPDATED_AUTO_RENEW_ACCOUNT));
                             assertEquals(autoRenewPeriod, MONTH_IN_SECONDS);
                         }));
@@ -245,8 +249,10 @@ public class TokenExpiryInfoSuite {
     final Stream<DynamicTest> updateExpiryInfoForTokenAndReadLatestInfo() {
         final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
         final AtomicReference<AccountID> updatedAutoRenewAccountID = new AtomicReference<>();
+        final AtomicLong newExpiry = new AtomicLong();
         return defaultHapiSpec("updateExpiryInfoForTokenAndReadLatestInfo")
                 .given(
+                        new RunnableOp(() -> newExpiry.set(Instant.now().getEpochSecond() + 7776666)),
                         cryptoCreate(TOKEN_TREASURY).balance(0L),
                         cryptoCreate(AUTO_RENEW_ACCOUNT).balance(0L),
                         cryptoCreate(UPDATED_AUTO_RENEW_ACCOUNT)
@@ -259,7 +265,6 @@ public class TokenExpiryInfoSuite {
                         tokenCreate(VANILLA_TOKEN)
                                 .supplyType(TokenSupplyType.FINITE)
                                 .treasury(TOKEN_TREASURY)
-                                .expiry(100)
                                 .autoRenewAccount(AUTO_RENEW_ACCOUNT)
                                 .autoRenewPeriod(THREE_MONTHS_IN_SECONDS)
                                 .maxSupply(1000)
@@ -271,17 +276,17 @@ public class TokenExpiryInfoSuite {
                         newKeyNamed(CONTRACT_KEY).shape(TRESHOLD_KEY_SHAPE.signedWith(sigs(ON, TOKEN_EXPIRY_CONTRACT))),
                         tokenUpdate(VANILLA_TOKEN).adminKey(CONTRACT_KEY).signedByPayerAnd(ADMIN_KEY, CONTRACT_KEY),
                         cryptoUpdate(UPDATED_AUTO_RENEW_ACCOUNT).key(CONTRACT_KEY),
-                        contractCall(
+                        sourcing(() -> contractCall(
                                         TOKEN_EXPIRY_CONTRACT,
                                         UPDATE_EXPIRY_INFO_FOR_TOKEN_AND_READ_LATEST_INFO,
                                         HapiParserUtil.asHeadlongAddress(asAddress(vanillaTokenID.get())),
-                                        DEFAULT_MAX_LIFETIME - 12_345L,
+                                        newExpiry.get(),
                                         HapiParserUtil.asHeadlongAddress(asAddress(updatedAutoRenewAccountID.get())),
                                         MONTH_IN_SECONDS)
                                 .alsoSigningWithFullPrefix(ADMIN_KEY, UPDATED_AUTO_RENEW_ACCOUNT)
                                 .via("updateExpiryAndReadLatestInfoTxn")
                                 .gas(GAS_TO_OFFER)
-                                .payingWith(GENESIS))))
+                                .payingWith(GENESIS)))))
                 .then(withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         childRecordsCheck(
@@ -295,7 +300,7 @@ public class TokenExpiryInfoSuite {
                                                         .forFunction(FunctionType.HAPI_GET_TOKEN_EXPIRY_INFO)
                                                         .withStatus(SUCCESS)
                                                         .withExpiry(
-                                                                DEFAULT_MAX_LIFETIME - 12_345L,
+                                                                newExpiry.get(),
                                                                 updatedAutoRenewAccountID.get(),
                                                                 MONTH_IN_SECONDS)))))));
     }

@@ -196,7 +196,7 @@ public class TopicUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateMultipleFields() {
-        long expirationTimestamp = Instant.now().getEpochSecond() + 10000000; // more than default.autorenew
+        long expirationTimestamp = Instant.now().getEpochSecond() + 7999990; // more than default.autorenew
         // .secs=7000000
         return defaultHapiSpec("updateMultipleFields")
                 .given(

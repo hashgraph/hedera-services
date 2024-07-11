@@ -81,10 +81,12 @@ import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.utilops.RunnableOp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -265,11 +267,16 @@ public class ContractUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updatingExpiryWorks() {
-        final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
+        final var someValidExpiry = new AtomicLong();
         return defaultHapiSpec("UpdatingExpiryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractUpdate(CONTRACT).newExpirySecs(newExpiry))
-                .then(getContractInfo(CONTRACT).has(contractWith().expiry(newExpiry)));
+                .given(
+                        new RunnableOp(() ->
+                                someValidExpiry.set(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 123L)),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
+                .when(sourcing(() -> contractUpdate(CONTRACT).newExpirySecs(someValidExpiry.get())))
+                .then(sourcing(
+                        () -> getContractInfo(CONTRACT).has(contractWith().expiry(someValidExpiry.get()))));
     }
 
     @HapiTest

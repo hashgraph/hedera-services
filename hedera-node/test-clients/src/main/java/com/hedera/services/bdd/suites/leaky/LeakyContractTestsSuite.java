@@ -1550,14 +1550,19 @@ public class LeakyContractTestsSuite {
         final AtomicLong longLivedPayerGasUsed = new AtomicLong();
         final AtomicReference<String> toyMakerMirror = new AtomicReference<>();
 
-        return defaultHapiSpec(
+        return propertyPreservingHapiSpec(
                         "ContractCreationStoragePriceMatchesFinalExpiry",
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_NONCE)
+                .preserving(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, "entities.maxLifetime")
                 .given(
-                        overriding(LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION, "" + longLifetime),
+                        overridingTwo(
+                                LEDGER_AUTO_RENEW_PERIOD_MAX_DURATION,
+                                "" + longLifetime,
+                                "entities.maxLifetime",
+                                "3153600000"),
                         cryptoCreate(normalPayer),
                         cryptoCreate(longLivedPayer).autoRenewSecs(longLifetime),
                         uploadInitCode(toyMaker, createIndirectly),
