@@ -65,14 +65,16 @@ public interface Savepoint extends HederaState {
      * in this savepoint.
      *
      * @param reversingBehavior the reversing behavior to apply to the builder on rollback
-     * @param txnCategory the category of transaction initiating the new builder
-     * @param customizer the customizer to apply when externalizing the builder
+     * @param txnCategory       the category of transaction initiating the new builder
+     * @param customizer        the customizer to apply when externalizing the builder
+     * @param isBaseBuilder     whether the builder is the base builder for the stack
      * @return the new builder
      */
     SingleTransactionRecordBuilder createBuilder(
             @NonNull ReversingBehavior reversingBehavior,
             @NonNull HandleContext.TransactionCategory txnCategory,
-            @NonNull ExternalizedRecordCustomizer customizer);
+            @NonNull ExternalizedRecordCustomizer customizer,
+            final boolean isBaseBuilder);
 
     /**
      * Returns whether this savepoint has accumulated any builders other than the designated base builder.

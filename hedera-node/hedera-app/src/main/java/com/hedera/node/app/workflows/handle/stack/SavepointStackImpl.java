@@ -112,7 +112,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
             builderSink = new BuilderSink();
         }
         pushSavepoint(category);
-        baseRecordBuilder = peek().createBuilder(reversingBehavior, category, customizer);
+        baseRecordBuilder = peek().createBuilder(reversingBehavior, category, customizer, true);
     }
 
     @Override

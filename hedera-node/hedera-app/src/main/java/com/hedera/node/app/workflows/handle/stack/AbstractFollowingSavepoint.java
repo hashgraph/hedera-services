@@ -57,11 +57,12 @@ public abstract class AbstractFollowingSavepoint extends AbstractSavepoint {
     public SingleTransactionRecordBuilder createBuilder(
             @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
-            @NonNull final ExternalizedRecordCustomizer customizer) {
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            final boolean isBaseBuilder) {
         requireNonNull(reversingBehavior);
         requireNonNull(txnCategory);
         requireNonNull(customizer);
-        final var record = super.createBuilder(reversingBehavior, txnCategory, customizer);
+        final var record = super.createBuilder(reversingBehavior, txnCategory, customizer, isBaseBuilder);
         if (txnCategory == PRECEDING && SIMULATE_MONO) {
             totalPrecedingRecords++;
         }

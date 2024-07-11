@@ -18,35 +18,24 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
  * The {@link BuilderSink} supports accumulating stream item builders that are either preceding or
  * following an implicit "base builder". It supports traversing and coalescing its builders.
- * <p>
- * Two items are worth noting, as follows:
- * <ul>
- *     <li>Client code is free to designate any builder as the base builder; this class is agnostic
- *     about the base builder's identity.</li>
- *     <li>This class interprets each added preceding builder as <b>coming before</b> all builders
- *     already added. This ensures that {@link TransactionCategory#PRECEDING} dispatches of child
- *     dispatches which are themselves {@link TransactionCategory#PRECEDING} end up in the correct
- *     order.</li>
- * </ul>
+ * It is worth noting, client code is free to designate any builder as the base builder; this class is agnostic
+ * about the base builder's identity.
  */
 public class BuilderSink {
     protected final List<SingleTransactionRecordBuilder> precedingBuilders = new ArrayList<>();
     protected final List<SingleTransactionRecordBuilder> followingBuilders = new ArrayList<>();
 
     /**
-     * Returns all the builders accumulated in this sink, with the preceding builders appearing in the
-     * reverse order they were added.
+     * Returns all the builders accumulated in this sink.
      * @return all accumulated builders
      */
     public List<SingleTransactionRecordBuilder> allBuilders() {
@@ -54,7 +43,6 @@ public class BuilderSink {
             return followingBuilders;
         } else {
             final List<SingleTransactionRecordBuilder> allBuilders = new ArrayList<>(precedingBuilders);
-            Collections.reverse(allBuilders);
             allBuilders.addAll(followingBuilders);
             return allBuilders;
         }

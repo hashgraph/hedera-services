@@ -88,7 +88,8 @@ public abstract class AbstractSavepoint extends BuilderSink implements Savepoint
     public SingleTransactionRecordBuilder createBuilder(
             @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
-            @NonNull final ExternalizedRecordCustomizer customizer) {
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            final boolean isBaseBuilder) {
         requireNonNull(reversingBehavior);
         requireNonNull(txnCategory);
         requireNonNull(customizer);
@@ -97,7 +98,7 @@ public abstract class AbstractSavepoint extends BuilderSink implements Savepoint
             throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
         }
         if (!customizer.shouldSuppressRecord()) {
-            if (txnCategory == PRECEDING) {
+            if (txnCategory == PRECEDING && !isBaseBuilder) {
                 precedingBuilders.add(builder);
             } else {
                 followingBuilders.add(builder);

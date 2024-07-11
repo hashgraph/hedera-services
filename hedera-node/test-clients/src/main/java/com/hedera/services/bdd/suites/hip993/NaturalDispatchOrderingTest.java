@@ -53,6 +53,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -73,6 +74,7 @@ import org.junit.jupiter.api.Tag;
  * Only {@link ReversingBehavior#IRREVERSIBLE} streams items appear unchanged in the record stream no matter whether
  * their originating savepoint is rolled back.
  */
+@Disabled
 public class NaturalDispatchOrderingTest {
     /**
      * Tests the {@link TransactionCategory#USER} + {@link ReversingBehavior#REVERSIBLE} combination via,

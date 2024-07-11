@@ -18,11 +18,6 @@ package com.hedera.node.app.throttle;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
 import static com.hedera.hapi.node.base.HederaFunctionality.CRYPTO_TRANSFER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -90,28 +85,5 @@ class AppThrottleAdviserTest {
     void forwardsShouldThrottleNOfUnscaled() {
         subject.shouldThrottleNOfUnscaled(2, CRYPTO_TRANSFER);
         verify(networkUtilizationManager).shouldThrottleNOfUnscaled(2, CRYPTO_TRANSFER, CONSENSUS_NOW);
-    }
-
-    @Test
-    void allowsThrottleCapacityForChildrenIfNoneShouldThrottle() {
-        //        given(oneChildBuilder.status()).willReturn(SUCCESS);
-        //        given(oneChildBuilder.transaction()).willReturn(CRYPTO_TRANSFER_TXN_INFO.transaction());
-        //        given(oneChildBuilder.transactionBody()).willReturn(CRYPTO_TRANSFER_TXN_INFO.txBody());
-        //        given(twoChildBuilder.status()).willReturn(REVERTED_SUCCESS);
-
-        assertThat(subject.hasThrottleCapacityForChildTransactions()).isTrue();
-    }
-
-    @Test
-    void doesntAllowThrottleCapacityForChildrenIfOneShouldThrottle() {
-        given(oneChildBuilder.status()).willReturn(SUCCESS);
-        given(oneChildBuilder.transaction()).willReturn(CONTRACT_CALL_TXN_INFO.transaction());
-        given(oneChildBuilder.transactionBody()).willReturn(CONTRACT_CALL_TXN_INFO.txBody());
-        given(twoChildBuilder.status()).willReturn(SUCCESS);
-        given(twoChildBuilder.transaction()).willReturn(CRYPTO_TRANSFER_TXN_INFO.transaction());
-        given(twoChildBuilder.transactionBody()).willReturn(CRYPTO_TRANSFER_TXN_INFO.txBody());
-        given(networkUtilizationManager.shouldThrottle(any(), eq(stack), eq(CONSENSUS_NOW)))
-                .willReturn(true);
-        assertThat(subject.hasThrottleCapacityForChildTransactions()).isFalse();
     }
 }

@@ -362,7 +362,7 @@ public class HandleWorkflow {
     private void skip(@NonNull final UserTxn userTxn) {
         final TransactionInfo txnInfo = userTxn.txnInfo();
         final SingleTransactionRecordBuilder builder =
-                userTxn.stack().peek().createBuilder(REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+                userTxn.stack().peek().createBuilder(REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, true);
         builder.transaction(txnInfo.transaction())
                 .transactionBytes(txnInfo.signedBytes())
                 .transactionID(txnInfo.txBody().transactionIDOrElse(TransactionID.DEFAULT))
@@ -442,7 +442,7 @@ public class HandleWorkflow {
             final var builder = builders.get(i);
             if (SIMULATE_MONO) {
                 if (builder.isPreceding()) {
-                    final var nonce = totalPrecedingRecords - numPrecedingSeen;
+                    final var nonce = numPrecedingSeen + 1;
                     builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
                             .syncBodyIdFromRecordId()
                             .consensusTimestamp(userTxn.consensusNow().minusNanos(nonce));

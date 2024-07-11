@@ -40,8 +40,9 @@ public class FirstSavepoint extends AbstractSavepoint {
     public SingleTransactionRecordBuilder createBuilder(
             @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
-            @NonNull ExternalizedRecordCustomizer customizer) {
-        final var record = super.createBuilder(reversingBehavior, txnCategory, customizer);
+            @NonNull ExternalizedRecordCustomizer customizer,
+            final boolean isBaseBuilder) {
+        final var record = super.createBuilder(reversingBehavior, txnCategory, customizer, isBaseBuilder);
         if (txnCategory == PRECEDING && SIMULATE_MONO) {
             totalPrecedingRecords++;
         }
