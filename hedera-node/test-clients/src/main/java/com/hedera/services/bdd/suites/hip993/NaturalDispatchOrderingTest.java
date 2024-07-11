@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
@@ -65,13 +66,13 @@ import org.junit.jupiter.api.Tag;
  * [HIP-993](<a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/a64bdb258d52ba4ce1ca26bede8e03871b9ade10/HIP/hip-993.md#natural-ordering-of-preceding-records">...</a>).
  * <p>
  * The only stream items created in a savepoint that are <b>not</b> expected to be present are those with reversing
- * behavior {@link ReversingBehavior#REMOVABLE}, and whose originating savepoint was rolled back.
+ * behavior {@link SingleTransactionRecordBuilder.ReversingBehavior#REMOVABLE}, and whose originating savepoint was rolled back.
  * <p>
  * All other stream items are expected to be present in the record stream once created; but if they are
- * {@link ReversingBehavior#REVERSIBLE}, their status may be changed from {@link ResponseCodeEnum#SUCCESS} to
+ * {@link SingleTransactionRecordBuilder.ReversingBehavior#REVERSIBLE}, their status may be changed from {@link ResponseCodeEnum#SUCCESS} to
  * {@link ResponseCodeEnum#REVERTED_SUCCESS} when their originating savepoint is rolled back.
  * <p>
- * Only {@link ReversingBehavior#IRREVERSIBLE} streams items appear unchanged in the record stream no matter whether
+ * Only {@link SingleTransactionRecordBuilder.ReversingBehavior#IRREVERSIBLE} streams items appear unchanged in the record stream no matter whether
  * their originating savepoint is rolled back.
  */
 @Disabled

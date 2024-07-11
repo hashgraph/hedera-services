@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,7 +68,6 @@ public class NodeDeleteSuite {
                         nodeDelete("node100")
                                 .setNode("0.0.5")
                                 .payingWith("payer")
-                                .fee(ONE_HBAR)
                                 .hasKnownStatus(UNAUTHORIZED)
                                 .via("failedDeletion"))
                 .when()
@@ -81,14 +81,44 @@ public class NodeDeleteSuite {
                                 .setNode("0.0.5")
                                 .payingWith("payer")
                                 .signedBy("payer", "randomAccount", "testKey")
-                                .fee(ONE_HBAR)
                                 .hasKnownStatus(UNAUTHORIZED)
                                 .via("multipleSigsDeletion"),
                         validateChargedUsdWithin("multipleSigsDeletion", 0.0011276316, 3.0),
-                        nodeDelete("node100").fee(ONE_HBAR).via("deleteNode"),
+                        nodeDelete("node100").via("deleteNode"),
                         getTxnRecord("deleteNode").logged(),
                         // The fee is not charged here because the payer is privileged
                         validateChargedUsdWithin("deleteNode", 0.0, 3.0));
+    }
+
+    @HapiTest
+    @Tag(EMBEDDED)
+    final Stream<DynamicTest> validateFeesInsufficientAmount() {
+        final String description = "His vorpal blade went snicker-snack!";
+        return defaultHapiSpec("validateFees")
+                .given(
+                        newKeyNamed("testKey"),
+                        newKeyNamed("randomAccount"),
+                        cryptoCreate("payer").balance(10_000_000_000L),
+                        nodeCreate("node100").description(description).fee(ONE_HBAR),
+                        // Submit to a different node so ingest check is skipped
+                        nodeDelete("node100")
+                                .setNode("0.0.5")
+                                .fee(1)
+                                .payingWith("payer")
+                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                                .via("failedDeletion"))
+                .when()
+                .then(
+                        getTxnRecord("failedDeletion").logged(),
+                        // Submit with several signatures and the price should increase
+                        nodeDelete("node100")
+                                .setNode("0.0.5")
+                                .payingWith("payer")
+                                .signedBy("payer", "randomAccount", "testKey")
+                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                                .via("multipleSigsDeletion"),
+                        nodeDelete("node100").via("deleteNode"),
+                        getTxnRecord("deleteNode").logged());
     }
 
     @HapiTest
