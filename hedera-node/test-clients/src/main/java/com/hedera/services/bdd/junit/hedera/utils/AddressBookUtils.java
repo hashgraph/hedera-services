@@ -148,16 +148,15 @@ public class AddressBookUtils {
      * @return ServiceEndpoint
      */
     public static ServiceEndpoint endpointFor(@NonNull final String host, final int port) {
-        final Pattern IPV4_ADDRESS_PATTERN =
-                Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
+        final Pattern IPV4_ADDRESS_PATTERN = Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
         final var builder = ServiceEndpoint.newBuilder().setPort(port);
         if (IPV4_ADDRESS_PATTERN.matcher(host).matches()) {
             final var octets = host.split("[.]");
             builder.setIpAddressV4(ByteString.copyFrom((new byte[] {
-                    (byte) Integer.parseInt(octets[0]),
-                    (byte) Integer.parseInt(octets[1]),
-                    (byte) Integer.parseInt(octets[2]),
-                    (byte) Integer.parseInt(octets[3])
+                (byte) Integer.parseInt(octets[0]),
+                (byte) Integer.parseInt(octets[1]),
+                (byte) Integer.parseInt(octets[2]),
+                (byte) Integer.parseInt(octets[3])
             })));
         } else {
             builder.setDomainName(host);

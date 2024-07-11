@@ -28,7 +28,6 @@ import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
-import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicCreate;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -64,7 +63,6 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     private Optional<LongConsumer> newNumObserver = Optional.empty();
     private Optional<String> adminKeyName = Optional.empty();
 
-
     @Nullable
     private Key adminKey;
 
@@ -81,7 +79,6 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         adminKey = k;
         return this;
     }
-
 
     @Override
     protected Key lookupKey(final HapiSpec spec, final String name) {
