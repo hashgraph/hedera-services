@@ -24,8 +24,6 @@ import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.AbstractSerializableHashable;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.crypto.RunningHash;
-import com.swirlds.common.crypto.RunningHashable;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
@@ -50,7 +48,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * A class used to hold information about an event transferred through gossip
  */
-public class PlatformEvent extends AbstractSerializableHashable implements ConsensusEvent, RunningHashable {
+public class PlatformEvent extends AbstractSerializableHashable implements ConsensusEvent {
     private static final EventConsensusData NO_CONSENSUS =
             new EventConsensusData(null, ConsensusConstants.NO_CONSENSUS_ORDER);
     private static final long CLASS_ID = 0xfe16b46795bfb8dcL;
@@ -106,11 +104,6 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
      * version right before the birth round migration.
      */
     private long birthRound;
-
-    /**
-     * Running hash of this event
-     */
-    private final RunningHash runningHash = new RunningHash();
 
     @SuppressWarnings("unused") // needed for RuntimeConstructable
     public PlatformEvent() {}
@@ -197,11 +190,6 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         this.signature = Bytes.wrap(signature);
         timeReceived = Instant.now();
         this.birthRound = unsignedEvent.getBirthRound();
-    }
-
-    @Override
-    public RunningHash getRunningHash() {
-        return runningHash;
     }
 
     /**

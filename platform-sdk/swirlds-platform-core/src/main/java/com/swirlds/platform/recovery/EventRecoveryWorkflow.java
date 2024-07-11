@@ -356,7 +356,8 @@ public final class EventRecoveryWorkflow {
 
         platform.close();
 
-        return new RecoveredState(signedState, (PlatformEvent) Objects.requireNonNull(lastEvent));
+        return new RecoveredState(
+                signedState, ((DetailedConsensusEvent) Objects.requireNonNull(lastEvent)).getPlatformEvent());
     }
 
     /**
