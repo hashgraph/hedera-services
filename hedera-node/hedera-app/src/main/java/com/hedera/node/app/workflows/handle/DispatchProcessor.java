@@ -136,7 +136,7 @@ public class DispatchProcessor {
         try {
             dispatchUsageManager.screenForCapacity(dispatch);
             dispatcher.dispatchHandle(dispatch.handleContext());
-            dispatch.recordsBuilder().status(SUCCESS);
+            dispatch.recordBuilder().status(SUCCESS);
             // Only user transactions can trigger system updates in the current system
             if (dispatch.txnCategory() == USER) {
                 handleSystemUpdates(dispatch);
@@ -144,7 +144,7 @@ public class DispatchProcessor {
             return USER_TRANSACTION;
         } catch (HandleException e) {
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
-            rollback(e.shouldRollbackStack(), e.getStatus(), dispatch.stack(), dispatch.recordsBuilder());
+            rollback(e.shouldRollbackStack(), e.getStatus(), dispatch.stack(), dispatch.recordBuilder());
             if (e.shouldRollbackStack()) {
                 chargePayer(dispatch, validationResult);
             }
@@ -171,7 +171,7 @@ public class DispatchProcessor {
         final var fileUpdateResult = systemFileUpdates.handleTxBody(
                 dispatch.stack(), dispatch.txnInfo().txBody());
 
-        dispatch.recordsBuilder()
+        dispatch.recordBuilder()
                 .exchangeRate(exchangeRateManager.exchangeRates())
                 .status(fileUpdateResult);
 
@@ -194,7 +194,7 @@ public class DispatchProcessor {
             @NonNull final Dispatch dispatch,
             @NonNull final ValidationResult validationResult,
             @NonNull final ResponseCodeEnum status) {
-        rollback(true, status, dispatch.stack(), dispatch.recordsBuilder());
+        rollback(true, status, dispatch.stack(), dispatch.recordBuilder());
         chargePayer(dispatch, validationResult.withoutServiceFee());
         return FEES_ONLY;
     }
@@ -206,7 +206,7 @@ public class DispatchProcessor {
      * @param report the due diligence report for the dispatch
      */
     private void chargeCreator(@NonNull final Dispatch dispatch, @NonNull final ValidationResult report) {
-        dispatch.recordsBuilder().status(report.creatorErrorOrThrow());
+        dispatch.recordBuilder().status(report.creatorErrorOrThrow());
         dispatch.feeAccumulator()
                 .chargeNetworkFee(report.creatorId(), dispatch.fees().networkFee());
     }
@@ -274,16 +274,16 @@ public class DispatchProcessor {
      */
     private boolean alreadyFailed(@NonNull final Dispatch dispatch, @NonNull final ValidationResult validationResult) {
         if (validationResult.isPayerError()) {
-            dispatch.recordsBuilder().status(validationResult.payerErrorOrThrow());
+            dispatch.recordBuilder().status(validationResult.payerErrorOrThrow());
             return true;
         }
         final var authorizationFailure = maybeAuthorizationFailure(dispatch);
         if (authorizationFailure != null) {
-            dispatch.recordsBuilder().status(authorizationFailure);
+            dispatch.recordBuilder().status(authorizationFailure);
             return true;
         }
         if (failsSignatureVerification(dispatch)) {
-            dispatch.recordsBuilder().status(INVALID_SIGNATURE);
+            dispatch.recordBuilder().status(INVALID_SIGNATURE);
             return true;
         }
         return false;

@@ -501,13 +501,13 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             stack.commitFullStack();
         }
         // This can be non-empty for SCHEDULED dispatches, if rewards are paid for the triggered transaction
-        final var paidStakingRewards = childDispatch.recordsBuilder().getPaidStakingRewards();
+        final var paidStakingRewards = childDispatch.recordBuilder().getPaidStakingRewards();
         if (!paidStakingRewards.isEmpty()) {
             if (dispatchPaidRewards == null) {
                 dispatchPaidRewards = new LinkedHashMap<>();
             }
             paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
         }
-        return RecordBuildersImpl.castBuilder(childDispatch.recordsBuilder(), recordBuilderClass);
+        return RecordBuildersImpl.castBuilder(childDispatch.recordBuilder(), recordBuilderClass);
     }
 }

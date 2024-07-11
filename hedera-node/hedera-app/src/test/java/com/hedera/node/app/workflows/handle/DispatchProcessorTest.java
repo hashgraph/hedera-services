@@ -191,7 +191,7 @@ class DispatchProcessorTest {
                 exchangeRateManager,
                 dispatcher);
         given(dispatch.stack()).willReturn(stack);
-        given(dispatch.recordsBuilder()).willReturn(recordBuilder);
+        given(dispatch.recordBuilder()).willReturn(recordBuilder);
     }
 
     @Test

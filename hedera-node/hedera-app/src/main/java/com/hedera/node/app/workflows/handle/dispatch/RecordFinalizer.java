@@ -65,7 +65,7 @@ public class RecordFinalizer {
                     dispatch.finalizeContext(),
                     dispatch.txnInfo().functionality(),
                     extraRewardReceivers(
-                            dispatch.txnInfo().txBody(), dispatch.txnInfo().functionality(), dispatch.recordsBuilder()),
+                            dispatch.txnInfo().txBody(), dispatch.txnInfo().functionality(), dispatch.recordBuilder()),
                     dispatch.handleContext().dispatchPaidRewards());
             case CHILD, PRECEDING -> recordFinalizer.finalizeNonStakingRecord(
                     dispatch.finalizeContext(), dispatch.txnInfo().functionality());

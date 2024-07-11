@@ -79,7 +79,7 @@ public interface Dispatch {
      *
      * @return the builder
      */
-    SingleTransactionRecordBuilder recordsBuilder();
+    SingleTransactionRecordBuilder recordBuilder();
 
     /**
      * The configuration for the dispatch.
