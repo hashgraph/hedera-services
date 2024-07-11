@@ -230,7 +230,6 @@ public class Hip17UnhappyTokensSuite {
                                 .entityMemo(FIRST_MEMO)
                                 .treasury(TOKEN_TREASURY)
                                 .autoRenewAccount(AUTO_RENEW_ACCT)
-                                .autoRenewPeriod(100)
                                 .initialSupply(0)
                                 .adminKey(ADMIN_KEY)
                                 .freezeKey(FREEZE_KEY)
@@ -248,7 +247,6 @@ public class Hip17UnhappyTokensSuite {
                                 .entityMemo(SECOND_MEMO)
                                 .treasury(NEW_TOKEN_TREASURY)
                                 .autoRenewAccount(NEW_AUTO_RENEW_ACCT)
-                                .autoRenewPeriod(101)
                                 .freezeKey(NEW_FREEZE_KEY)
                                 .kycKey(NEW_KYC_KEY)
                                 .supplyKey(NEW_SUPPLY_KEY)
@@ -269,7 +267,6 @@ public class Hip17UnhappyTokensSuite {
                                 .hasKnownStatus(TOKEN_WAS_DELETED),
                         tokenUpdate(NFTdeleted)
                                 .autoRenewAccount(NEW_AUTO_RENEW_ACCT)
-                                .autoRenewPeriod(102)
                                 .signedByPayerAnd(ADMIN_KEY, NEW_AUTO_RENEW_ACCT)
                                 .hasKnownStatus(TOKEN_WAS_DELETED),
                         tokenUpdate(NFTdeleted)

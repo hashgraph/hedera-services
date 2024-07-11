@@ -36,11 +36,9 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.resetToDefault;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
-import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
@@ -94,9 +92,9 @@ public class LeakyEthereumTestsSuite {
                         "legacyUnprotectedEtxBeforeEIP155",
                         NONDETERMINISTIC_ETHEREUM_DATA,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
-                .preserving(CHAIN_ID_PROP)
+                .preserving("contracts.chainId")
                 .given(
-                        overriding(CHAIN_ID_PROP, "" + chainId),
+                        overriding("contracts.chainId", "" + chainId),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
@@ -105,7 +103,7 @@ public class LeakyEthereumTestsSuite {
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
                 .when(
-                        overriding(CHAIN_ID_PROP, "" + chainId),
+                        overriding("contracts.chainId", "" + chainId),
                         ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
                                 .type(EthTransactionType.LEGACY_ETHEREUM)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -118,13 +116,11 @@ public class LeakyEthereumTestsSuite {
                                 .gasLimit(1_000_000L)
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS))
-                .then(
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                getTxnRecord("legacyBeforeEIP155")
-                                        .logged()
-                                        .hasPriority(recordWith().status(SUCCESS)))),
-                        resetToDefault(CHAIN_ID_PROP));
+                .then(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        getTxnRecord("legacyBeforeEIP155")
+                                .logged()
+                                .hasPriority(recordWith().status(SUCCESS)))));
     }
 
     // test legacy ethereum transactions after EIP155
@@ -140,9 +136,9 @@ public class LeakyEthereumTestsSuite {
 
         return propertyPreservingHapiSpec(
                         "legacyEtxAfterEIP155", NONDETERMINISTIC_ETHEREUM_DATA, NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
-                .preserving(CHAIN_ID_PROP)
+                .preserving("contracts.chainId")
                 .given(
-                        overriding(CHAIN_ID_PROP, "" + chainId),
+                        overriding("contracts.chainId", "" + chainId),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
                         cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
@@ -151,7 +147,7 @@ public class LeakyEthereumTestsSuite {
                         uploadInitCode(PAY_RECEIVABLE_CONTRACT),
                         contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
                 .when(
-                        overriding(CHAIN_ID_PROP, "" + chainId),
+                        overriding("contracts.chainId", "" + chainId),
                         ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
                                 .type(EthTransactionType.LEGACY_ETHEREUM)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
@@ -164,13 +160,11 @@ public class LeakyEthereumTestsSuite {
                                 .gasLimit(1_000_000L)
                                 .sending(depositAmount)
                                 .hasKnownStatus(ResponseCodeEnum.SUCCESS))
-                .then(
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                getTxnRecord("legacyAfterEIP155")
-                                        .logged()
-                                        .hasPriority(recordWith().status(SUCCESS)))),
-                        resetToDefault(CHAIN_ID_PROP));
+                .then(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        getTxnRecord("legacyAfterEIP155")
+                                .logged()
+                                .hasPriority(recordWith().status(SUCCESS)))));
     }
 
     @LeakyHapiTest

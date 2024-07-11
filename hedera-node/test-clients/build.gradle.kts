@@ -51,7 +51,7 @@ tasks.register<JavaExec>("runTestClient") {
     mainClass = providers.gradleProperty("testClient")
 }
 
-val ciCheckTagExpressions =
+val prCheckTags =
     mapOf(
         "hapiTestCrypto" to "CRYPTO",
         "hapiTestToken" to "TOKEN",
@@ -62,10 +62,18 @@ val ciCheckTagExpressions =
         "hapiTestMisc" to
             "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT|EMBEDDED|UPGRADE)"
     )
+val prCheckStartPorts =
+    mapOf(
+        "hapiTestCrypto" to "30000",
+        "hapiTestToken" to "31000",
+        "hapiTestRestart" to "32000",
+        "hapiTestSmartContract" to "33000",
+        "hapiTestNDReconnect" to "34000",
+        "hapiTestTimeConsuming" to "35000",
+        "hapiTestMisc" to "36000"
+    )
 
-tasks {
-    ciCheckTagExpressions.forEach { (taskName, _) -> register(taskName) { dependsOn("test") } }
-}
+tasks { prCheckTags.forEach { (taskName, _) -> register(taskName) { dependsOn("test") } } }
 
 tasks.test {
     testClassesDirs = sourceSets.main.get().output.classesDirs
@@ -74,7 +82,7 @@ tasks.test {
     val ciTagExpression =
         gradle.startParameter.taskNames
             .stream()
-            .map { ciCheckTagExpressions[it] ?: "" }
+            .map { prCheckTags[it] ?: "" }
             .filter { it.isNotBlank() }
             .toList()
             .joinToString("|")
@@ -84,6 +92,16 @@ tasks.test {
             else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED)"
         )
     }
+
+    // Choose a different initial port for each test task if running as PR check
+    val initialPort =
+        gradle.startParameter.taskNames
+            .stream()
+            .map { prCheckStartPorts[it] ?: "" }
+            .filter { it.isNotBlank() }
+            .findFirst()
+            .orElse("")
+    systemProperty("hapi.spec.initial.port", initialPort)
 
     // Default quiet mode is "false" unless we are running in CI or set it explicitly to "true"
     systemProperty(
@@ -113,14 +131,34 @@ tasks.test {
     modularity.inferModulePath.set(false)
 }
 
+val prEmbeddedCheckTags =
+    mapOf(
+        "hapiEmbeddedMisc" to "EMBEDDED",
+    )
+
+tasks {
+    prEmbeddedCheckTags.forEach { (taskName, _) ->
+        register(taskName) { dependsOn("testEmbedded") }
+    }
+}
+
 // Runs tests against an embedded network that supports concurrent tests
 tasks.register<Test>("testEmbedded") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
+    val ciTagExpression =
+        gradle.startParameter.taskNames
+            .stream()
+            .map { prEmbeddedCheckTags[it] ?: "" }
+            .filter { it.isNotBlank() }
+            .toList()
+            .joinToString("|")
     useJUnitPlatform {
-        // Exclude tests that start and stop nodes, or explicitly preclude embedded mode
-        excludeTags("RESTART|ND_RECONNECT|NOT_EMBEDDED")
+        includeTags(
+            if (ciTagExpression.isBlank()) "none()|!(RESTART|ND_RECONNECT|UPGRADE|NOT_EMBEDDED)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)"
+        )
     }
 
     systemProperty("junit.jupiter.execution.parallel.enabled", true)

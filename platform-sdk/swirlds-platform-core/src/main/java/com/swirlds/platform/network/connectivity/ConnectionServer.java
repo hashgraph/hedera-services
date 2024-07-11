@@ -72,7 +72,7 @@ public class ConnectionServer implements InterruptableRunnable {
         try (final ServerSocket serverSocket = socketFactory.createServerSocket(port)) {
             listen(serverSocket);
         } catch (final RuntimeException | IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Cannot bind ServerSocket", e);
+            logger.error(EXCEPTION.getMarker(), "Cannot bind ServerSocket on port {}", port, e);
         }
         // if the above fails, sleep a while before trying again
         Thread.sleep(SLEEP_AFTER_BIND_FAILED_MS);

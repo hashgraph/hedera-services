@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hapi.utils;
 
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
@@ -820,5 +821,14 @@ public class CommonPbjConverters {
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Converts a {@link ByteString} to a {@link Bytes} object.
+     * @param contents The {@link ByteString} to convert.
+     * @return The {@link Bytes} object.
+     */
+    public static Bytes fromByteString(ByteString contents) {
+        return Bytes.wrap(unwrapUnsafelyIfPossible(contents));
     }
 }
