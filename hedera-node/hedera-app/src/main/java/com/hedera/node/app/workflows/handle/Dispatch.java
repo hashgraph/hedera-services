@@ -79,7 +79,7 @@ public interface Dispatch {
      *
      * @return the builder
      */
-    SingleTransactionRecordBuilder streamItemsBuilder();
+    SingleTransactionRecordBuilder recordsBuilder();
 
     /**
      * The configuration for the dispatch.

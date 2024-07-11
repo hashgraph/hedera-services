@@ -108,7 +108,7 @@ public class DispatchUsageManager {
                 } else {
                     leakUnusedGas(dispatch);
                 }
-                if (dispatch.streamItemsBuilder().status() != SUCCESS) {
+                if (dispatch.recordsBuilder().status() != SUCCESS) {
                     if (canAutoCreate(function)) {
                         reclaimFailedCryptoCreateCapacity(dispatch);
                     }
@@ -127,7 +127,7 @@ public class DispatchUsageManager {
      * @param dispatch the dispatch
      */
     private void leakUnusedGas(@NonNull final Dispatch dispatch) {
-        final var builder = dispatch.streamItemsBuilder();
+        final var builder = dispatch.recordsBuilder();
         // (FUTURE) There can be cases where the EVM halts and consumes all gas even though not
         // much actual work was done; in such cases, the gas used is still reported to be at
         // least 80% of the gas limit. If we want to be more precise, we can probably use the

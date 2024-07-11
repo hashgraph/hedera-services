@@ -695,7 +695,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             final var context = createContext(txBody, HandleContext.TransactionCategory.USER);
 
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
-            given(childDispatch.streamItemsBuilder()).willReturn(childRecordBuilder);
+            given(childDispatch.recordsBuilder()).willReturn(childRecordBuilder);
             given(childRecordBuilder.getPaidStakingRewards())
                     .willReturn(List.of(
                             AccountAmount.newBuilder()
@@ -785,7 +785,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                         any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
                         any()))
                 .thenReturn(childDispatch);
-        lenient().when(childDispatch.streamItemsBuilder()).thenReturn(childRecordBuilder);
+        lenient().when(childDispatch.recordsBuilder()).thenReturn(childRecordBuilder);
         lenient()
                 .when(stack.getWritableStates(TokenService.NAME))
                 .thenReturn(MapWritableStates.builder()
