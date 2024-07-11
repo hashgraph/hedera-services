@@ -4,12 +4,12 @@
 
 [HIP-218](https://hips.hedera.com/hip/hip-218) proposed a way to enable treating HTS tokens in an equivalent manner
 to ERC tokens in the EVM world by creating a proxy redirect facade contract.  We need to extend 
-this functionality to include `associate` and `dissociate` functions which are part of functionality available to HTS tokens
+this functionality to include `associate`, `dissociate` and `isAssociated` functions which are part of functionality available to HTS tokens
 but not ERC tokens.
 
 ## Goals
 
-- Extend the proxy redirect token facade contract to enable calling `associate` and `dissociate` functions on tokens.
+- Extend the proxy redirect token facade contract to enable calling `associate`, `dissociate` and `isAssociated` functions on tokens.
 
 ## Non Goals
 
@@ -47,24 +47,26 @@ contract Assembly {
 ```
 5. This means that _any_ function can be redirected-to as long as the HTS precompile handles the redirect call [here](https://github.com/hashgraph/hedera-services/blob/29e49604eff059c6bc0c0a4dd2a738f194b32c04/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/precompile/HTSPrecompiledContract.java#L557). 
 
-In particular, the mechanism described above will be extended to include calls to `associate` and `dissociate` functions in the HTSPrecompileContact class method which handles ABI_ID_REDIRECT_FOR_TOKEN function selector.
+In particular, the mechanism described above will be extended to include calls to `associate`, `dissociate` and `isAssociated` functions in the HTSPrecompileContact class method which handles ABI_ID_REDIRECT_FOR_TOKEN function selector.
 
-The following table describes the function selector for the new `associate` and `dissociate` functions and the associated function signatures.
+The following table describes the function selector for the new `associate`, `dissociate` and `isAssociated` functions and the associated function signatures.
 
-| Function Selector | Function Signature |
-|-------------------|--------------------|
-| 0x0a754de6        | associate()        |
-| 0x5c9217e0        | dissociate()       |
+| Function Selector  | Function Signature |
+|--------------------|--------------------|
+| 0x0a754de6         | associate()        |
+| 0x5c9217e0         | dissociate()       |
+| 0x4d8fdd6d         | isAssociated()     |
 
 No arguments are necessary because 
 - The token address was already determined by looking up the contract address to determine if it is an HTS token address.
-- The address to associate/dissociate will be the caller (i.e. msg.sender)
+- The address to associate/dissociate/isAssociated will be the caller (i.e. msg.sender)
 
-Once the above functionality has been implemented in services, the end user will be able to call the `associate` and `dissociate` functions as follows:
+Once the above functionality has been implemented in services, the end user will be able to call the `associate`, `dissociate` and `isAssociated` functions as follows:
 
 ```
 IHRC(tokenAddress).associate()
 IHRC(tokenAddress).dissociate()
+IHRC(tokenAddress).isAssociated()
 ```
 
 The solidity interface for IHRC will be the following
@@ -73,6 +75,7 @@ The solidity interface for IHRC will be the following
 interface IHRC {
     function associate() external returns (responseCode);
     function dissociate() external returns (responseCode);
+    function isAssociated() external returns (bool associated);
 }
 ```
 
@@ -96,10 +99,10 @@ Does a feature gate need to be added to control the accessibility to this functi
 ## Acceptance Tests
 
 ### Positive Tests
-- Create a contract that performs the `associate` and `dissociate` functions on a fungible token and ensure that the functions can be called successfully by an EOA.
-- Create a contract that performs the `associate` and `dissociate` functions on an NFT and ensure that the functions can be called successfully by an EOA.
-- Create a contract that performs the `associate` and `dissociate` functions on a fungible token and ensure that the functions can be called successfully by a contract.
-- Create a contract that performs the `associate` and `dissociate` functions on an NFT and ensure that the functions can be called successfully by a contract.
+- Create a contract that performs the `associate`, `dissociate` and `isAssociated` functions on a fungible token and ensure that the functions can be called successfully by an EOA.
+- Create a contract that performs the `associate`, `dissociate` and `isAssociated` functions on an NFT and ensure that the functions can be called successfully by an EOA.
+- Create a contract that performs the `associate`, `dissociate` and `isAssociated` functions on a fungible token and ensure that the functions can be called successfully by a contract.
+- Create a contract that performs the `associate`, `dissociate` and `isAssociated` functions on an NFT and ensure that the functions can be called successfully by a contract.
 - Ensure that the `associate` and `dissociate` functions disregards the signature when called via the token facade.
 
 ### Negative Tests
