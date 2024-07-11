@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.crypto;
+package com.hedera.services.bdd.suites.crypto.airdrops;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
@@ -30,6 +30,7 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAutoCreatedAcco
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAirdrop;
@@ -52,6 +53,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
@@ -675,6 +677,23 @@ public class TokenAirdropSuite {
                                 defaultMovementOfToken("FUNGIBLE11"))
                         .payingWith(OWNER)
                         .hasPrecheck(INVALID_TRANSACTION_BODY));
+    }
+
+    @HapiTest
+    @DisplayName("delete account with relation to pending airdrop")
+    final Stream<DynamicTest> canNotDeleteAccountRelatedToAirdrop() {
+        return defaultHapiSpec("should fail - ACCOUNT_HAS_PENDING_AIRDROPS")
+                .given(
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .treasury(OWNER))
+                .when()
+                .then(
+                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                .payingWith(OWNER),
+                        cryptoDelete(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
     }
 
     private TokenMovement defaultMovementOfToken(String token) {
