@@ -1,4 +1,4 @@
-# IHRC Facade Associate and Dissociate Functionality
+# IHRC Facade Associate, Dissociate and isAssociated Functionality
 
 ## Purpose
 
