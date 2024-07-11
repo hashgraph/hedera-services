@@ -28,10 +28,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * detail, and are happy with just the API provided by this interface.
  */
 public interface HederaState {
-    /**
-     * The name of the thread that handles transactions. For the sake of the app, to allow logging.
-     */
-    String TRANSACTION_HANDLING_THREAD_NAME = "<scheduler TransactionHandler>";
 
     /**
      * Returns a {@link ReadableStates} for the given named service. If such a service doesn't

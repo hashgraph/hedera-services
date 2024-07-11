@@ -16,8 +16,6 @@
 
 package com.swirlds.state.merkle.logging;
 
-import static com.swirlds.state.HederaState.TRANSACTION_HANDLING_THREAD_NAME;
-
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ScheduleID;
@@ -47,6 +45,11 @@ import org.apache.logging.log4j.Logger;
 public class StateLogger {
     /** The logger we are using for the State log */
     private static final Logger logger = LogManager.getLogger(StateLogger.class);
+
+    /**
+     * The name of the thread that handles transactions. For the sake of the app, to allow logging.
+     */
+    private static final String TRANSACTION_HANDLING_THREAD_NAME = "<scheduler TransactionHandler>";
 
     /**
      * Log the read of a singleton.
