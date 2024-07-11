@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdateNfts;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -40,6 +41,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
@@ -57,6 +59,7 @@ public class TokenUpdateNftsSuite {
     private static final String NON_FUNGIBLE_TOKEN = "nonFungible";
     private static final String SUPPLY_KEY = "supplyKey";
     private static final String METADATA_KEY = "metadataKey";
+    private static final String ADMIN_KEY = "adminKey";
 
     private static final String WIPE_KEY = "wipeKey";
     private static final String NFT_TEST_METADATA = " test metadata";
@@ -368,6 +371,46 @@ public class TokenUpdateNftsSuite {
                         .fee(10 * ONE_HBAR)
                         .via("nftUpdateTxn")
                         .hasKnownStatus(TOKEN_HAS_NO_METADATA_KEY));
+    }
+
+    /**
+     * <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-850.md">HIP-850</a>
+     * Tests that the transaction will fail if the Token does not have a metadata key or supply key after minting.
+     * @return the dynamic test
+     */
+    @HapiTest
+    final Stream<DynamicTest> noTokenMetadataKeyOrSupplyKeyAfterMinting() {
+        return defaultHapiSpec("noTokenMetadataKeyOrSupplyKeyAfterMinting")
+                .given(
+                        newKeyNamed(SUPPLY_KEY),
+                        newKeyNamed(METADATA_KEY),
+                        newKeyNamed(ADMIN_KEY),
+                        cryptoCreate(TOKEN_TREASURY).maxAutomaticTokenAssociations(4),
+                        cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(4),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .supplyType(TokenSupplyType.FINITE)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .treasury(TOKEN_TREASURY)
+                                .maxSupply(12L)
+                                .supplyKey(SUPPLY_KEY)
+                                .metadataKey(METADATA_KEY)
+                                .adminKey(ADMIN_KEY)
+                                .initialSupply(0L),
+                        tokenAssociate(RECEIVER, NON_FUNGIBLE_TOKEN),
+                        mintToken(NON_FUNGIBLE_TOKEN, List.of(copyFromUtf8("a"), copyFromUtf8("b"))))
+                .when(tokenUpdate(NON_FUNGIBLE_TOKEN)
+                        .signedBy(ADMIN_KEY)
+                        .properlyEmptyingSupplyKey()
+                        .properlyEmptyingMetadataKey()
+                        .payingWith(TOKEN_TREASURY)
+                        .fee(10 * ONE_HBAR)
+                        .via("tokenUpdateTxn"))
+                .then(tokenUpdateNfts(NON_FUNGIBLE_TOKEN, NFT_TEST_METADATA, List.of(1L))
+                        .signedBy(SUPPLY_KEY)
+                        .payingWith(TOKEN_TREASURY)
+                        .fee(10 * ONE_HBAR)
+                        .via("nftUpdateTxn")
+                        .hasKnownStatus(TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY));
     }
 
     @HapiTest
