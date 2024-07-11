@@ -439,22 +439,54 @@ public class TokenAirdropSuite {
      *  3. When receiver is associated and have enough balance - the node will expect signature - INVALID_SIGNATURE
      */
     @HapiTest
-    @DisplayName("containing negative amount of fungible tokens")
-    final Stream<DynamicTest> airdropNegativeAmountFails() {
-        return defaultHapiSpec("should fail")
+    @DisplayName("containing negative amount and receiver is not associated")
+    final Stream<DynamicTest> airdropNegativeAmountFails1() {
+        return defaultHapiSpec("should fail - TOKEN_NOT_ASSOCIATED_TO_ACCOUNT")
                 .given(
                         cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
                         cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(-1),
                         tokenCreate(FUNGIBLE_TOKEN)
                                 .tokenType(TokenType.FUNGIBLE_COMMON)
                                 .treasury(OWNER))
-                // todo add the other 3 cases
-                // cryptoTransfer(moving(15, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)))
                 .when()
                 .then(tokenAirdrop(
                                 moving(-15, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                        .hasKnownStatusFrom(
-                                TOKEN_NOT_ASSOCIATED_TO_ACCOUNT, INVALID_ACCOUNT_AMOUNTS, INVALID_SIGNATURE));
+                        .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+    }
+
+    @HapiTest
+    @DisplayName("containing negative amount and receiver don't have enough balance")
+    final Stream<DynamicTest> airdropNegativeAmountFails2() {
+        return defaultHapiSpec("should fail - INVALID_ACCOUNT_AMOUNTS")
+                .given(
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(-1),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .treasury(OWNER),
+                        tokenAssociate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS, FUNGIBLE_TOKEN))
+                .when()
+                .then(tokenAirdrop(
+                                moving(-15, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                        .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS));
+    }
+
+    @HapiTest
+    @DisplayName("containing negative amount")
+    final Stream<DynamicTest> airdropNegativeAmountFails3() {
+        return defaultHapiSpec("should fail - INVALID_SIGNATURE")
+                .given(
+                        cryptoCreate(OWNER).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS).maxAutomaticTokenAssociations(-1),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .treasury(OWNER),
+                        cryptoTransfer(
+                                moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)))
+                .when()
+                .then(tokenAirdrop(
+                                moving(-15, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+                        .hasKnownStatus(INVALID_SIGNATURE));
     }
 
     @HapiTest
