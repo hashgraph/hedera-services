@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.steps;
 
+import static com.hedera.node.app.fixtures.AppTestBase.DEFAULT_CONFIG;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.DEFAULT_STAKING_PERIOD_MINS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -87,14 +88,8 @@ class NodeStakeUpdatesTest {
     }
 
     @Test
-    void processUpdateCalledForNullConsensusTime() {
-        given(blockStore.getLastBlockInfo())
-                .willReturn(BlockInfo.newBuilder()
-                        .consTimeOfLastHandledTxn((Timestamp) null)
-                        .build());
-        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567);
-
-        subject.process(stack, context);
+    void processUpdateCalledForGenesisTxn() {
+        subject.process(stack, context, true);
 
         verify(stakingPeriodCalculator).updateNodes(context);
         verify(exchangeRateManager).updateMidnightRates(stack);
@@ -111,7 +106,7 @@ class NodeStakeUpdatesTest {
                                 .nanos(CONSENSUS_TIME_1234567.getNano()))
                         .build());
 
-        subject.process(stack, context);
+        subject.process(stack, context, false);
 
         verifyNoInteractions(stakingPeriodCalculator);
         verifyNoInteractions(exchangeRateManager);
@@ -135,7 +130,7 @@ class NodeStakeUpdatesTest {
                         NodeStakeUpdates.isNextStakingPeriod(currentConsensusTime, CONSENSUS_TIME_1234567, context))
                 .isTrue();
 
-        subject.process(stack, context);
+        subject.process(stack, context, false);
 
         verify(stakingPeriodCalculator)
                 .updateNodes(argThat(stakingContext -> currentConsensusTime.equals(stakingContext.consensusTime())));
@@ -147,13 +142,14 @@ class NodeStakeUpdatesTest {
         doThrow(new RuntimeException("test exception"))
                 .when(stakingPeriodCalculator)
                 .updateNodes(any());
-        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plusSeconds(10));
         given(blockStore.getLastBlockInfo())
                 .willReturn(BlockInfo.newBuilder()
-                        .consTimeOfLastHandledTxn((Timestamp) null)
+                        .consTimeOfLastHandledTxn(new Timestamp(CONSENSUS_TIME_1234567.getEpochSecond(), 0))
                         .build());
+        given(context.consensusTime()).willReturn(CONSENSUS_TIME_1234567.plus(Duration.ofDays(2)));
+        given(context.configuration()).willReturn(DEFAULT_CONFIG);
 
-        Assertions.assertThatNoException().isThrownBy(() -> subject.process(stack, context));
+        Assertions.assertThatNoException().isThrownBy(() -> subject.process(stack, context, false));
         verify(stakingPeriodCalculator).updateNodes(context);
         verify(exchangeRateManager).updateMidnightRates(stack);
     }

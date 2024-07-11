@@ -78,7 +78,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
         subject = new TokenMintHandler(new TokenSupplyChangeOpsValidator());
-        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
+        recordBuilder = new SingleTransactionRecordBuilderImpl();
     }
 
     @Test

@@ -139,8 +139,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALIAS_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -2247,7 +2247,7 @@ public class CryptoTransferSuite {
                     .sending(ONE_HBAR * 10)
                     .via("sendViaTransfer" + i)
                     .gas(100000)
-                    .hasKnownStatus(INVALID_FEE_SUBMITTED);
+                    .hasKnownStatus(INVALID_CONTRACT_ID);
 
             opsArray[nonExistingSystemAccounts.size() + i] = contractCall(
                             contract, "sendViaSend", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
@@ -2255,7 +2255,7 @@ public class CryptoTransferSuite {
                     .sending(ONE_HBAR * 10)
                     .via("sendViaSend" + i)
                     .gas(100000)
-                    .hasKnownStatus(INVALID_FEE_SUBMITTED);
+                    .hasKnownStatus(INVALID_CONTRACT_ID);
 
             opsArray[nonExistingSystemAccounts.size() * 2 + i] = contractCall(
                             contract, "sendViaCall", mirrorAddrWith(nonExistingSystemAccounts.get(i)))
@@ -2263,7 +2263,7 @@ public class CryptoTransferSuite {
                     .sending(ONE_HBAR * 10)
                     .via("sendViaCall" + i)
                     .gas(100000)
-                    .hasKnownStatus(INVALID_FEE_SUBMITTED);
+                    .hasKnownStatus(INVALID_CONTRACT_ID);
         }
         return defaultHapiSpec("testTransferToNonExistingSystemAccounts", EXPECT_STREAMLINED_INGEST_RECORDS)
                 .given(

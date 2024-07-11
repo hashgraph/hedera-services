@@ -72,7 +72,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl(consensusInstant);
+                    return new SingleTransactionRecordBuilderImpl();
                 });
 
         refreshWritableStores();
@@ -394,7 +394,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                             new TokenRelation(fungibleTokenIDB, payerId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl(consensusInstant);
+                    return new SingleTransactionRecordBuilderImpl();
                 });
         givenDifferentTxn(body, payerId);
 

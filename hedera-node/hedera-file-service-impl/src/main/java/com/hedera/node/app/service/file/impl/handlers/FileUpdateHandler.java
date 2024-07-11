@@ -261,9 +261,9 @@ public class FileUpdateHandler implements TransactionHandler {
                     handleContext.body().transactionID().transactionValidStart().seconds();
             final long effectiveDuration = op.expirationTime().seconds() - startSeconds;
 
-            final var entityConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
-            final long maxEntityLifetime = entityConfig.autoRenewPeriodMaxDuration();
-            final long minEntityLifetime = entityConfig.autoRenewPeriodMinDuration();
+            final var ledgerConfig = handleContext.configuration().getConfigData(LedgerConfig.class);
+            final long maxEntityLifetime = ledgerConfig.autoRenewPeriodMaxDuration();
+            final long minEntityLifetime = ledgerConfig.autoRenewPeriodMinDuration();
 
             validateTrue(
                     effectiveDuration >= minEntityLifetime && effectiveDuration <= maxEntityLifetime,

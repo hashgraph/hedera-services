@@ -53,7 +53,7 @@ public class HgcaaLogValidator {
         private static final String PROBLEM_DELIMITER = "\n========================================\n";
 
         private static final List<List<String>> PROBLEM_PATTERNS_TO_IGNORE = List.of(
-                List.of("BBM:"),
+                List.of("not in the address book"),
                 List.of("Specified TLS cert", "doesn't exist"),
                 List.of("Could not start TLS server, will continue without it"),
                 List.of("Properties file", "does not exist and won't be used as configuration source"),

@@ -144,6 +144,15 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
     }
 
     /**
+     * Gets the auto-renew account.
+     *
+     * @return the auto-renew account
+     */
+    public SpecAccount autoRenewAccount() {
+        return autoRenewAccount;
+    }
+
+    /**
      * Returns an operation to authorize the given contracts to act on behalf of this token.
      *
      * @param contracts the contracts to authorize

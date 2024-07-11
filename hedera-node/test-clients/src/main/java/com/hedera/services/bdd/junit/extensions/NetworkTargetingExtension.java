@@ -17,9 +17,12 @@
 package com.hedera.services.bdd.junit.extensions;
 
 import static com.hedera.services.bdd.junit.extensions.ExtensionUtils.hapiTestMethodOf;
+import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 
+import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
+import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,7 +45,15 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
 
     @Override
     public void beforeEach(@NonNull final ExtensionContext extensionContext) {
-        hapiTestMethodOf(extensionContext).ifPresent(ignore -> HapiSpec.TARGET_NETWORK.set(SHARED_NETWORK.get()));
+        hapiTestMethodOf(extensionContext).ifPresent(method -> {
+            if (isAnnotated(method, GenesisHapiTest.class)) {
+                final var targetNetwork = new EmbeddedNetwork(method.getName().toUpperCase(), method.getName());
+                targetNetwork.start();
+                HapiSpec.TARGET_NETWORK.set(targetNetwork);
+            } else {
+                HapiSpec.TARGET_NETWORK.set(SHARED_NETWORK.get());
+            }
+        });
     }
 
     @Override

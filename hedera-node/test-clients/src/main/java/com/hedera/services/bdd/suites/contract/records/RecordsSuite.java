@@ -48,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.primitives.Longs;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -196,8 +195,11 @@ public class RecordsSuite {
                     final var secondCallTimestamp =
                             Longs.fromByteArray(Arrays.copyOfRange(secondCallTimeLogData, 24, 32));
 
-                    final var firstBlockPeriod = canonicalBlockPeriod(firstCallRecord.getConsensusTimestamp());
-                    final var secondBlockPeriod = canonicalBlockPeriod(secondCallRecord.getConsensusTimestamp());
+                    final var blockPeriod = spec.startupProperties().getLong("hedera.recordStream.logPeriod");
+                    final var firstBlockPeriod =
+                            canonicalBlockPeriod(firstCallRecord.getConsensusTimestamp(), blockPeriod);
+                    final var secondBlockPeriod =
+                            canonicalBlockPeriod(secondCallRecord.getConsensusTimestamp(), blockPeriod);
 
                     // In general both calls will be handled in the same block period, and should hence have the
                     // same Ethereum block timestamp; but timing fluctuations in CI _can_ cause them to be handled
@@ -301,11 +303,11 @@ public class RecordsSuite {
      * Returns the canonical block period for the given consensus timestamp.
      *
      * @param consensusTimestamp the consensus timestamp
+     * @param blockPeriod the number of seconds in a block period
      * @return the canonical block period
      */
-    private long canonicalBlockPeriod(@NonNull final Timestamp consensusTimestamp) {
-        return Objects.requireNonNull(consensusTimestamp).getSeconds()
-                / Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("hedera.recordStream.logPeriod"));
+    private long canonicalBlockPeriod(@NonNull final Timestamp consensusTimestamp, long blockPeriod) {
+        return Objects.requireNonNull(consensusTimestamp).getSeconds() / blockPeriod;
     }
 
     private long sumAmountsInTransferList(List<AccountAmount> transferList) {
