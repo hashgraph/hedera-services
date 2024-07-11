@@ -55,6 +55,7 @@ module com.hedera.node.hapi {
     exports com.hederahashgraph.api.proto.java;
     exports com.hederahashgraph.service.proto.java;
     exports com.hedera.hapi.util;
+    exports com.hedera.hapi.platform.state;
 
     requires transitive com.google.common;
     requires transitive com.google.protobuf;

@@ -26,7 +26,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.freeze.FreezeType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.networkadmin.FreezeService;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
@@ -57,11 +57,12 @@ public class PlatformStateUpdates {
      * notifies the registered facility.
      *
      * @param state the current state
+     * @param platformState the platform state accessor
      * @param txBody the transaction body
      */
     public void handleTxBody(
             @NonNull final State state,
-            @NonNull final PlatformState platformState,
+            @NonNull final PlatformStateAccessor platformState,
             @NonNull final TransactionBody txBody) {
         requireNonNull(state, "state must not be null");
         requireNonNull(txBody, "txBody must not be null");

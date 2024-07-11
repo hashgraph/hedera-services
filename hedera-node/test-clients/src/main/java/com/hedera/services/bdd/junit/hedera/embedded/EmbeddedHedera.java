@@ -24,7 +24,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -48,11 +48,11 @@ public interface EmbeddedHedera {
     FakeState state();
 
     /**
-     * Returns the platform state of the embedded Hedera node.
+     * Returns the platform state accessor of the embedded Hedera node.
      *
-     * @return the platform state of the embedded Hedera node
+     * @return the platform state accessor of the embedded Hedera node
      */
-    PlatformState platformState();
+    PlatformStateAccessor platformState();
 
     /**
      * Returns the next in a repeatable sequence of valid start times that the embedded Hedera's

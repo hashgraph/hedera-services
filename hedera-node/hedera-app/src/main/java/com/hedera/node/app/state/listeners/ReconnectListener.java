@@ -23,7 +23,7 @@ import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.ReadableFreezeUpgradeActions;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
-import com.hedera.node.app.state.PlatformStateAccessor;
+import com.hedera.node.app.state.PlatformStateHolder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.NetworkAdminConfig;
@@ -47,16 +47,16 @@ public class ReconnectListener implements ReconnectCompleteListener {
 
     private final Executor executor;
     private final ConfigProvider configProvider;
-    private final PlatformStateAccessor platformStateAccessor;
+    private final PlatformStateHolder platformStateHolder;
 
     @Inject
     public ReconnectListener(
             @NonNull @Named("FreezeService") final Executor executor,
             @NonNull final ConfigProvider configProvider,
-            @NonNull final PlatformStateAccessor platformStateAccessor) {
+            @NonNull final PlatformStateHolder platformStateHolder) {
         this.executor = executor;
         this.configProvider = configProvider;
-        this.platformStateAccessor = platformStateAccessor;
+        this.platformStateHolder = platformStateHolder;
     }
 
     @Override
@@ -81,7 +81,7 @@ public class ReconnectListener implements ReconnectCompleteListener {
             // Because we only leave the latest Dagger infrastructure registered with the platform
             // notification system when the reconnect state is initialized, this platform state
             // will be up-to-date
-            upgradeActions.catchUpOnMissedSideEffects(platformStateAccessor.getPlatformState());
+            upgradeActions.catchUpOnMissedSideEffects(platformStateHolder.getPlatformStateAccessor());
         } catch (Exception e) {
             log.error("Unable to catch up on missed upgrade side effects after reconnect", e);
         }

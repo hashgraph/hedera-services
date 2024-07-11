@@ -37,9 +37,9 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
+import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -113,16 +113,21 @@ public class RandomSignedStateGenerator {
             addressBookInstance = addressBook;
         }
 
+        final SoftwareVersion softwareVersionInstance;
+        if (softwareVersion == null) {
+            softwareVersionInstance = new BasicSoftwareVersion(random.nextInt(1, 100));
+        } else {
+            softwareVersionInstance = softwareVersion;
+        }
+
         final MerkleRoot stateInstance;
         if (state == null) {
             if (useBlockingState) {
                 stateInstance = new BlockingSwirldState();
             } else {
-                stateInstance = new MerkleStateRoot(new NoOpMerkleStateLifecycles());
+                stateInstance = new MerkleStateRoot(
+                        new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major()));
             }
-            PlatformState platformState = new PlatformState();
-            platformState.setAddressBook(addressBookInstance);
-            stateInstance.setPlatformState(platformState);
         } else {
             stateInstance = state;
         }
@@ -162,13 +167,6 @@ public class RandomSignedStateGenerator {
             roundsNonAncientInstance = roundsNonAncient;
         }
 
-        final SoftwareVersion softwareVersionInstance;
-        if (softwareVersion == null) {
-            softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextInt()));
-        } else {
-            softwareVersionInstance = softwareVersion;
-        }
-
         final ConsensusSnapshot consensusSnapshotInstance;
         if (consensusSnapshot == null) {
             consensusSnapshotInstance = new ConsensusSnapshot(
@@ -183,14 +181,14 @@ public class RandomSignedStateGenerator {
             consensusSnapshotInstance = consensusSnapshot;
         }
 
-        final PlatformState platformState = stateInstance.getPlatformState();
+        final PlatformStateAccessor platformState = stateInstance.getPlatformStateAccessor();
 
-        platformState.setRound(roundInstance);
+        platformState.setSnapshot(consensusSnapshotInstance);
+        platformState.setAddressBook(addressBookInstance);
         platformState.setLegacyRunningEventHash(legacyRunningEventHashInstance);
-        platformState.setConsensusTimestamp(consensusTimestampInstance);
         platformState.setCreationSoftwareVersion(softwareVersionInstance);
         platformState.setRoundsNonAncient(roundsNonAncientInstance);
-        platformState.setSnapshot(consensusSnapshotInstance);
+        platformState.setConsensusTimestamp(consensusTimestampInstance);
 
         if (signatureVerifier == null) {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;

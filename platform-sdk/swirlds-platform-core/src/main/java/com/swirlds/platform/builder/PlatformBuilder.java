@@ -191,13 +191,13 @@ public final class PlatformBuilder {
     /**
      * Constructor.
      *
-     * @param appName             the name of the application, currently used for deciding where to store states on
-     *                            disk
-     * @param swirldName          the name of the swirld, currently used for deciding where to store states on disk
-     * @param selfId              the ID of this node
-     * @param softwareVersion     the software version of the application
-     * @param genesisStateBuilder a supplier that will be called to create the genesis state, if necessary
-     * @param snapshotStateReader a function to read an existing state snapshot, if exists
+     * @param appName               the name of the application, currently used for deciding where to store states on
+     *                              disk
+     * @param swirldName            the name of the swirld, currently used for deciding where to store states on disk
+     * @param softwareVersion       the software version of the application
+     * @param genesisStateBuilder   a supplier that will be called to create the genesis state, if necessary
+     * @param snapshotStateReader   a function to read an existing state snapshot, if exists
+     * @param selfId                the ID of this node
      */
     private PlatformBuilder(
             @NonNull final String appName,
@@ -537,11 +537,11 @@ public final class PlatformBuilder {
             // Update the address book with the current address book read from config.txt.
             // Eventually we will not do this, and only transactions will be capable of
             // modifying the address book.
-            state.getPlatformState()
+            state.getPlatformStateAccessor()
                     .setAddressBook(
                             addressBookInitializer.getCurrentAddressBook().copy());
 
-            state.getPlatformState()
+            state.getPlatformStateAccessor()
                     .setPreviousAddressBook(
                             addressBookInitializer.getPreviousAddressBook() == null
                                     ? null
@@ -552,7 +552,7 @@ public final class PlatformBuilder {
 
         // At this point the initial state must have the current address book set.  If not, something is wrong.
         final AddressBook addressBook =
-                initialState.get().getState().getPlatformState().getAddressBook();
+                initialState.get().getState().getPlatformStateAccessor().getAddressBook();
         if (addressBook == null) {
             throw new IllegalStateException("The current address book of the initial state is null.");
         }

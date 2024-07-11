@@ -57,6 +57,7 @@ import com.hedera.node.app.spi.fixtures.util.LoggingTarget;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
@@ -253,7 +254,7 @@ class ReadableFreezeUpgradeActionsTest {
 
     @Test
     void testCatchUpOnMissedSideEffects() throws IOException {
-        PlatformState platformState = createMockPlatformState();
+        PlatformStateAccessor platformState = createMockPlatformState();
         LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 1, 0, 0);
         Instant checkpoint = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
         platformState.setFreezeTime(checkpoint);
@@ -273,7 +274,7 @@ class ReadableFreezeUpgradeActionsTest {
 
     @Test
     void invokeMissedUpgradePrepException() {
-        PlatformState platformState = createMockPlatformState();
+        PlatformStateAccessor platformState = createMockPlatformState();
         given(writableFreezeStore.updateFileHash()).willReturn(Bytes.wrap("fake hash"));
         subject.isPreparedFileHashValidGiven(null, null);
         assertThatNullPointerException().isThrownBy(() -> subject.catchUpOnMissedSideEffects(platformState));
@@ -293,7 +294,7 @@ class ReadableFreezeUpgradeActionsTest {
 
     @Test
     void testIfFreezeIsScheduled() {
-        PlatformState platformState = createMockPlatformState();
+        PlatformStateAccessor platformState = createMockPlatformState();
         LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 1, 0, 0);
         Instant checkpoint = localDateTime.atZone(ZoneId.of("UTC")).toInstant();
 
@@ -311,8 +312,8 @@ class ReadableFreezeUpgradeActionsTest {
         assertThat(subject.isFreezeScheduled(platformState)).isFalse();
     }
 
-    private PlatformState createMockPlatformState() {
-        final PlatformState platformState = new PlatformState();
+    private PlatformStateAccessor createMockPlatformState() {
+        final PlatformStateAccessor platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
         return platformState;
     }

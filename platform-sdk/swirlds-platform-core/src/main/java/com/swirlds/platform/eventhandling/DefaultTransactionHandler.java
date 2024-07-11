@@ -37,7 +37,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
@@ -220,8 +220,8 @@ public class DefaultTransactionHandler implements TransactionHandler {
      * @param round the consensus round
      */
     private void updatePlatformState(@NonNull final ConsensusRound round) {
-        final PlatformState platformState =
-                swirldStateManager.getConsensusState().getPlatformState();
+        final PlatformStateAccessor platformState =
+                swirldStateManager.getConsensusState().getPlatformStateAccessor();
 
         platformState.setRound(round.getRoundNum());
         platformState.setConsensusTimestamp(round.getConsensusTimestamp());
@@ -237,8 +237,8 @@ public class DefaultTransactionHandler implements TransactionHandler {
      * @throws InterruptedException if this thread is interrupted
      */
     private void updateRunningEventHash(@NonNull final ConsensusRound round) throws InterruptedException {
-        final PlatformState platformState =
-                swirldStateManager.getConsensusState().getPlatformState();
+        final PlatformStateAccessor platformState =
+                swirldStateManager.getConsensusState().getPlatformStateAccessor();
 
         if (writeLegacyRunningEventHash) {
             // Update the running hash object. If there are no events, the running hash does not change.

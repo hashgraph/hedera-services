@@ -64,7 +64,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.TransactionWrapper;
 import com.swirlds.state.State;
@@ -84,7 +84,7 @@ public class StandaloneDispatchFactory {
     private final FeeManager feeManager;
     private final Authorizer authorizer;
     private final NetworkInfo networkInfo;
-    private final PlatformState platformState;
+    private final PlatformStateAccessor platformState;
     private final ConfigProvider configProvider;
     private final DispatchProcessor dispatchProcessor;
     private final PreHandleWorkflow preHandleWorkflow;
@@ -100,7 +100,7 @@ public class StandaloneDispatchFactory {
             @NonNull final FeeManager feeManager,
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final PlatformState platformState,
+            @NonNull final PlatformStateAccessor platformState,
             @NonNull final ConfigProvider configProvider,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final PreHandleWorkflow preHandleWorkflow,

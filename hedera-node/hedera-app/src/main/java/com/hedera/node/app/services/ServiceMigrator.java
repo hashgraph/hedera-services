@@ -33,13 +33,13 @@ public interface ServiceMigrator {
     /**
      * Perform the migrations on the given state.
      *
-     * @param state The state to migrate
+     * @param state            The state to migrate
      * @param servicesRegistry The services registry to use for the migrations
-     * @param previousVersion The previous version of the state
-     * @param currentVersion The current version of the state
-     * @param config The configuration to use for the migrations
-     * @param networkInfo The network information to use for the migrations
-     * @param metrics The metrics to use for the migrations
+     * @param previousVersion  The previous version of the state
+     * @param currentVersion   The current version of the state
+     * @param config           The configuration to use for the migrations
+     * @param networkInfo      The network information to use for the migrations
+     * @param metrics          The metrics to use for the migrations
      */
     void doMigrations(
             @NonNull State state,

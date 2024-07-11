@@ -51,21 +51,22 @@ public interface MerkleStateLifecycles {
      * @param platformState the working state of the platform
      * @param state the working state of the network
      */
-    void onHandleConsensusRound(@NonNull Round round, @NonNull PlatformState platformState, @NonNull State state);
+    void onHandleConsensusRound(
+            @NonNull Round round, @NonNull PlatformStateAccessor platformState, @NonNull State state);
 
     /**
      * Called when the platform is initializing the network state.
      *
-     * @param state the working state of the network to be initialized
-     * @param platform the platform used by this node
+     * @param state                 the working state of the network to be initialized
+     * @param platform              the platform used by this node
      * @param platformState the working state of the platform
-     * @param trigger the reason for the initialization
-     * @param previousVersion if non-null, the network version that was previously in use
+     * @param trigger               the reason for the initialization
+     * @param previousVersion       if non-null, the network version that was previously in use
      */
     void onStateInitialized(
             @NonNull State state,
             @NonNull Platform platform,
-            @NonNull PlatformState platformState,
+            @NonNull PlatformStateAccessor platformState,
             @NonNull InitTrigger trigger,
             @Nullable SoftwareVersion previousVersion);
 

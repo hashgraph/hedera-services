@@ -17,7 +17,7 @@
 package com.hedera.node.app.state.merkle;
 
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SoftwareVersion;
@@ -31,7 +31,7 @@ public interface OnStateInitialized {
     void onStateInitialized(
             @NonNull MerkleStateRoot state,
             @NonNull Platform platform,
-            @NonNull PlatformState platformState,
+            @NonNull PlatformStateAccessor platformState,
             @NonNull InitTrigger trigger,
             @Nullable SoftwareVersion deserializedVersion);
 }

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.state;
 
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.Round;
 import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -24,5 +24,5 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 /** Listener invoked for each consensus round that occurs. */
 @FunctionalInterface
 public interface HandleConsensusRoundListener {
-    void onConsensusRound(@NonNull Round round, @NonNull PlatformState platformState, @NonNull State state);
+    void onConsensusRound(@NonNull Round round, @NonNull PlatformStateAccessor platformState, @NonNull State state);
 }

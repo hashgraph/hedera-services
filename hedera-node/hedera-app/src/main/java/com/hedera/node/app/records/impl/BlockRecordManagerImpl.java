@@ -36,7 +36,7 @@ import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.state.State;
 import com.swirlds.state.spi.WritableSingletonStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -159,7 +159,7 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     public boolean startUserTransaction(
             @NonNull final Instant consensusTime,
             @NonNull final State state,
-            @NonNull final PlatformState platformState) {
+            @NonNull final PlatformStateAccessor platformState) {
         if (EPOCH.equals(lastBlockInfo.firstConsTimeOfCurrentBlock())) {
             // This is the first transaction of the first block, so set both the firstConsTimeOfCurrentBlock
             // and the current consensus time to now

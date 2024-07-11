@@ -17,6 +17,8 @@
 package com.swirlds.platform;
 
 import static com.swirlds.common.io.utility.FileUtils.throwIfFileExists;
+import static com.swirlds.platform.state.PlatformStateAccessor.PLATFORM_NAME;
+import static com.swirlds.platform.state.PlatformStateAccessor.PLATFORM_STATE_KEY;
 import static com.swirlds.platform.state.snapshot.SignedStateFileReader.readStateFile;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.CURRENT_ADDRESS_BOOK_FILE_NAME;
 import static com.swirlds.platform.state.snapshot.SignedStateFileUtils.HASH_INFO_FILE_NAME;
@@ -31,6 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.state.PlatformState;
 import com.swirlds.common.config.StateCommonConfig_;
 import com.swirlds.common.constructable.ClassConstructorPair;
 import com.swirlds.common.constructable.ConstructableRegistry;
@@ -40,6 +44,7 @@ import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -51,6 +56,10 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.DeserializedSignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.state.snapshot.StateToDiskReason;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
+import com.swirlds.state.merkle.StateUtils;
+import com.swirlds.state.merkle.singleton.SingletonNode;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -69,27 +78,45 @@ class SignedStateFileReadWriteTest {
     @TempDir
     Path testDirectory;
 
+    private static SemanticVersion platformVersion;
+    private SignedState signedState;
+
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
         final var registry = ConstructableRegistry.getInstance();
+        platformVersion =
+                SemanticVersion.newBuilder().major(RandomUtils.nextInt(1, 100)).build();
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.platform");
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(MerkleStateRoot.class, MerkleStateRoot::new));
+        registry.registerConstructables("com.swirlds.state");
+        registry.registerConstructable(new ClassConstructorPair(
+                MerkleStateRoot.class,
+                () -> new MerkleStateRoot(
+                        new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major()))));
+        registry.registerConstructable(new ClassConstructorPair(
+                SingletonNode.class,
+                () -> new SingletonNode<>(
+                        PLATFORM_NAME,
+                        PLATFORM_STATE_KEY,
+                        StateUtils.computeClassId(PLATFORM_NAME, PLATFORM_STATE_KEY, platformVersion, "SingletonLeaf"),
+                        PlatformState.PROTOBUF,
+                        null)));
     }
 
     @BeforeEach
     void beforeEach() throws IOException {
         LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory.resolve("tmp"));
+        signedState = new RandomSignedStateGenerator()
+                .setSoftwareVersion(new BasicSoftwareVersion(platformVersion.minor()))
+                .build();
     }
 
     @Test
     @DisplayName("writeHashInfoFile() Test")
     void writeHashInfoFileTest() throws IOException {
-
-        final MerkleRoot state = new RandomSignedStateGenerator().build().getState();
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
+        MerkleRoot state = signedState.getState();
         writeHashInfoFile(platformContext, testDirectory, state);
         final StateConfig stateConfig =
                 new TestConfigBuilder().getOrCreateConfig().getConfigData(StateConfig.class);
@@ -138,7 +165,6 @@ class SignedStateFileReadWriteTest {
     @Test
     @DisplayName("writeSavedStateToDisk() Test")
     void writeSavedStateToDiskTest() throws IOException {
-        final SignedState signedState = new RandomSignedStateGenerator().build();
         final Path directory = testDirectory.resolve("state");
 
         final Path stateFile = directory.resolve(SIGNED_STATE_FILE_NAME);

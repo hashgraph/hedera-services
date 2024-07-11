@@ -18,6 +18,8 @@ package com.hedera.node.app.version;
 
 import static com.hedera.hapi.util.HapiUtils.alphaNumberOrMaxValue;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
+import static com.swirlds.state.spi.HapiUtils.deserializeSemVer;
+import static com.swirlds.state.spi.HapiUtils.serializeSemVer;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.util.HapiUtils;
@@ -28,6 +30,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.util.Objects;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * An implementation of {@link SoftwareVersion} which can be saved in state and holds information about the HAPI and
@@ -59,6 +62,12 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         // For ConstructableRegistry. Do not use.
     }
 
+    /**
+     * Constructs a new instance with the given versions.
+     * @param hapiVersion HAPI version
+     * @param servicesVersion services version
+     * @param configVersion config version
+     */
     public HederaSoftwareVersion(
             final SemanticVersion hapiVersion,
             @NonNull final SemanticVersion servicesVersion,
@@ -66,6 +75,19 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         this.hapiVersion = hapiVersion;
         this.configVersion = configVersion;
         this.servicesVersion = Objects.requireNonNull(servicesVersion, "servicesVersion must not be null");
+    }
+
+    /**
+     * Constructs a new instance with the given versions. This constructor derives config version from {@code build} parameter of {@code servicesVersion}.
+     * @param hapiVersion HAPI version
+     * @param servicesVersion services version
+     */
+    public HederaSoftwareVersion(final SemanticVersion hapiVersion, @NonNull final SemanticVersion servicesVersion) {
+        this.hapiVersion = hapiVersion;
+        this.servicesVersion = Objects.requireNonNull(servicesVersion, "servicesVersion must not be null");
+        if (!StringUtils.isEmpty(servicesVersion.build())) {
+            this.configVersion = Integer.parseInt(servicesVersion.build());
+        }
     }
 
     @Override
@@ -121,43 +143,12 @@ public class HederaSoftwareVersion implements SoftwareVersion {
         }
     }
 
-    private static SemanticVersion deserializeSemVer(final SerializableDataInputStream in) throws IOException {
-        final var ans = SemanticVersion.newBuilder();
-        ans.major(in.readInt()).minor(in.readInt()).patch(in.readInt());
-        if (in.readBoolean()) {
-            ans.pre(in.readNormalisedString(Integer.MAX_VALUE));
-        }
-        if (in.readBoolean()) {
-            ans.build(in.readNormalisedString(Integer.MAX_VALUE));
-        }
-        return ans.build();
-    }
-
     @Override
     public void serialize(SerializableDataOutputStream out) throws IOException {
         serializeSemVer(hapiVersion, out);
         serializeSemVer(servicesVersion, out);
         if (deserializedVersion >= RELEASE_048_VERSION) {
             out.writeInt(configVersion);
-        }
-    }
-
-    private static void serializeSemVer(final SemanticVersion semVer, final SerializableDataOutputStream out)
-            throws IOException {
-        out.writeInt(semVer.major());
-        out.writeInt(semVer.minor());
-        out.writeInt(semVer.patch());
-        serializeIfUsed(semVer.pre(), out);
-        serializeIfUsed(semVer.build(), out);
-    }
-
-    private static void serializeIfUsed(final String semVerPart, final SerializableDataOutputStream out)
-            throws IOException {
-        if (semVerPart.isBlank()) {
-            out.writeBoolean(false);
-        } else {
-            out.writeBoolean(true);
-            out.writeNormalisedString(semVerPart);
         }
     }
 

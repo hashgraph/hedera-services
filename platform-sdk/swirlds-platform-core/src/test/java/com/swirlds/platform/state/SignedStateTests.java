@@ -27,13 +27,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.exceptions.ReferenceCountException;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
+import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +46,9 @@ import org.junit.jupiter.api.Test;
 
 @DisplayName("SignedState Tests")
 class SignedStateTests {
+
+    private SemanticVersion version = SemanticVersion.newBuilder().major(1).build();
+
     /**
      * Generate a signed state.
      */
@@ -58,12 +63,12 @@ class SignedStateTests {
      * @param releaseCallback this method is called when the State is released
      */
     private MerkleStateRoot buildMockState(final Runnable reserveCallback, final Runnable releaseCallback) {
+        final MerkleStateRoot state = spy(new MerkleStateRoot(
+                new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major())));
 
-        final MerkleStateRoot state = spy(new MerkleStateRoot(new NoOpMerkleStateLifecycles()));
-
-        final PlatformState platformState = new PlatformState();
+        final PlatformStateAccessor platformState = new PlatformState();
         platformState.setAddressBook(mock(AddressBook.class));
-        when(state.getPlatformState()).thenReturn(platformState);
+        when(state.getPlatformStateAccessor()).thenReturn(platformState);
         if (reserveCallback != null) {
             doAnswer(invocation -> {
                         reserveCallback.run();
@@ -203,9 +208,10 @@ class SignedStateTests {
     @Test
     @DisplayName("Alternate Constructor Reservations Test")
     void alternateConstructorReservationsTest() {
-        final MerkleRoot state = spy(new MerkleStateRoot(new NoOpMerkleStateLifecycles()));
+        final MerkleRoot state = spy(new MerkleStateRoot(
+                new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major())));
         final PlatformState platformState = mock(PlatformState.class);
-        when(state.getPlatformState()).thenReturn(platformState);
+        when(state.getPlatformStateAccessor()).thenReturn(platformState);
         when(platformState.getRound()).thenReturn(0L);
         final SignedState signedState = new SignedState(
                 TestPlatformContextBuilder.create().build(),

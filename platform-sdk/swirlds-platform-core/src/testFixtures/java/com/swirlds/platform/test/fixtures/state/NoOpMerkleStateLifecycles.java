@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.platform.test;
+package com.swirlds.platform.test.fixtures.state;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -38,7 +38,7 @@ public class NoOpMerkleStateLifecycles implements MerkleStateLifecycles {
 
     @Override
     public void onHandleConsensusRound(
-            @NonNull Round round, @NonNull PlatformState platformState, @NonNull State state) {
+            @NonNull Round round, @NonNull PlatformStateAccessor platformState, @NonNull State state) {
         // no-op
     }
 
@@ -46,7 +46,7 @@ public class NoOpMerkleStateLifecycles implements MerkleStateLifecycles {
     public void onStateInitialized(
             @NonNull State state,
             @NonNull Platform platform,
-            @NonNull PlatformState platformState,
+            @NonNull PlatformStateAccessor platformState,
             @NonNull InitTrigger trigger,
             @Nullable SoftwareVersion previousVersion) {
         // no-op

@@ -44,10 +44,11 @@ import com.swirlds.platform.state.RandomSignedStateGenerator;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.signed.SignedStateValidator;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.time.Duration;
@@ -88,7 +89,9 @@ final class ReconnectTest {
         registry.registerConstructables("com.swirlds.platform.state.signed");
         registry.registerConstructables("com.swirlds.platform.system");
         registry.registerConstructable(new ClassConstructorPair(
-                MerkleStateRoot.class, () -> new MerkleStateRoot(new NoOpMerkleStateLifecycles())));
+                MerkleStateRoot.class,
+                () -> new MerkleStateRoot(
+                        new NoOpMerkleStateLifecycles(), (version) -> new BasicSoftwareVersion(version.major()))));
     }
 
     @Test

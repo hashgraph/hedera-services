@@ -18,8 +18,8 @@ package com.hedera.node.app;
 
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.hedera.node.app.state.PlatformStateAccessor;
-import com.swirlds.platform.state.PlatformState;
+import com.hedera.node.app.state.PlatformStateHolder;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,22 +27,22 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class PlatformStateAccessorTest {
+class PlatformStateHolderTest {
     @Mock
-    private PlatformState platformState;
+    private PlatformStateAccessor platformState;
 
     @Test
     void beanMethodsWork() {
         // setup:
-        final var subject = new PlatformStateAccessor();
+        final var subject = new PlatformStateHolder();
 
         // expect:
-        assertNull(subject.getPlatformState());
+        assertNull(subject.getPlatformStateAccessor());
 
         // and when:
-        subject.setPlatformState(platformState);
+        subject.setPlatformStateAccessor(platformState);
 
         // expect:
-        Assertions.assertSame(platformState, subject.getPlatformState());
+        Assertions.assertSame(platformState, subject.getPlatformStateAccessor());
     }
 }

@@ -35,7 +35,7 @@ import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.BufferedWriter;
@@ -162,7 +162,7 @@ public class ReadableFreezeUpgradeActions {
         writeMarker(file, now);
     }
 
-    public void catchUpOnMissedSideEffects(final PlatformState platformState) {
+    public void catchUpOnMissedSideEffects(final PlatformStateAccessor platformState) {
         catchUpOnMissedFreezeScheduling(platformState);
         catchUpOnMissedUpgradePrep();
     }
@@ -204,7 +204,7 @@ public class ReadableFreezeUpgradeActions {
      * @param platformState the platform state
      * @return true if a freeze is scheduled, false otherwise
      */
-    public boolean isFreezeScheduled(final PlatformState platformState) {
+    public boolean isFreezeScheduled(final PlatformStateAccessor platformState) {
         requireNonNull(platformState, "Cannot check freeze schedule without access to the dual state");
         final var freezeTime = platformState.getFreezeTime();
         return freezeTime != null && !freezeTime.equals(platformState.getLastFrozenTime());
@@ -375,7 +375,7 @@ public class ReadableFreezeUpgradeActions {
                 + (encoded.getByte(3) & 0xFF);
     }
 
-    private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {
+    private void catchUpOnMissedFreezeScheduling(final PlatformStateAccessor platformState) {
         final var isUpgradePrepared = freezeStore.updateFileHash() != null;
         if (isFreezeScheduled(platformState) && isUpgradePrepared) {
             final var freezeTime = requireNonNull(platformState.getFreezeTime());

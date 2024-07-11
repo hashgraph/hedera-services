@@ -69,7 +69,7 @@ import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -94,7 +94,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final StoreFactoryImpl storeFactory;
     private final AccountID payerId;
     private final AppKeyVerifier verifier;
-    private final PlatformState platformState;
+    private final PlatformStateAccessor platformState;
     private final HederaFunctionality topLevelFunction;
     private final Key payerKey;
     private final ExchangeRateManager exchangeRateManager;
@@ -122,7 +122,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final StoreFactoryImpl storeFactory,
             @NonNull final AccountID payerId,
             @NonNull final AppKeyVerifier verifier,
-            @NonNull final PlatformState platformState,
+            @NonNull final PlatformStateAccessor platformState,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final Key payerKey,
             @NonNull final ExchangeRateManager exchangeRateManager,

@@ -19,10 +19,10 @@ package com.swirlds.platform.state;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,13 +34,8 @@ public class SwirldStateManagerUtilsTests {
     @Test
     void testFastCopyIsMutable() {
 
-        final MerkleStateRoot state = new MerkleStateRoot();
-
-        final PlatformState platformState = mock(PlatformState.class);
-        when(platformState.getClassId()).thenReturn(PlatformState.CLASS_ID);
-        when(platformState.copy()).thenReturn(platformState);
-        state.setPlatformState(platformState);
-
+        final MerkleStateRoot state = new MerkleStateRoot(
+                new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major()));
         state.reserve();
         final SwirldStateMetrics stats = mock(SwirldStateMetrics.class);
         final MerkleRoot result = SwirldStateManagerUtils.fastCopy(state, stats, new BasicSoftwareVersion(1));

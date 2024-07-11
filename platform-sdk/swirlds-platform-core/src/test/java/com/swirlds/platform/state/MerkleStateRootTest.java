@@ -16,8 +16,6 @@
 
 package com.swirlds.platform.state;
 
-import static com.swirlds.common.test.fixtures.RandomUtils.nextLong;
-import static com.swirlds.platform.state.MerkleStateRoot.PLATFORM_STATE_INDEX;
 import static com.swirlds.state.StateChangeListener.StateType.MAP;
 import static com.swirlds.state.StateChangeListener.StateType.QUEUE;
 import static com.swirlds.state.StateChangeListener.StateType.SINGLETON;
@@ -30,6 +28,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.swirlds.base.state.MutabilityException;
+import com.swirlds.common.constructable.ClassConstructorPair;
+import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkle.map.MerkleMap;
@@ -40,6 +40,7 @@ import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
+import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.State;
 import com.swirlds.state.StateChangeListener;
@@ -62,7 +63,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -76,6 +76,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class MerkleStateRootTest extends MerkleTestBase {
     /** The merkle tree we will test with */
     private MerkleStateRoot stateRoot;
+
+    private int originalChildrenCount;
 
     private final AtomicBoolean onPreHandleCalled = new AtomicBoolean(false);
     private final AtomicBoolean onHandleCalled = new AtomicBoolean(false);
@@ -94,7 +96,7 @@ class MerkleStateRootTest extends MerkleTestBase {
 
         @Override
         public void onHandleConsensusRound(
-                @NonNull Round round, @NonNull PlatformState platformState, @NonNull State state) {
+                @NonNull Round round, @NonNull PlatformStateAccessor platformState, @NonNull State state) {
             onHandleCalled.set(true);
         }
 
@@ -102,7 +104,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         public void onStateInitialized(
                 @NonNull State state,
                 @NonNull Platform platform,
-                @NonNull PlatformState platformState,
+                @NonNull PlatformStateAccessor platformState,
                 @NonNull InitTrigger trigger,
                 @Nullable SoftwareVersion previousVersion) {}
 
@@ -120,9 +122,14 @@ class MerkleStateRootTest extends MerkleTestBase {
      * be added.
      */
     @BeforeEach
-    void setUp() {
+    void setUp() throws ConstructableRegistryException {
+        setupConstructableRegistry();
+        registry.registerConstructable(new ClassConstructorPair(
+                MerkleStateRoot.class,
+                () -> new MerkleStateRoot(new NoOpMerkleStateLifecycles(), softwareVersionSupplier)));
         setupFruitMerkleMap();
-        stateRoot = new MerkleStateRoot(lifecycles);
+        stateRoot = new MerkleStateRoot(lifecycles, softwareVersionSupplier);
+        originalChildrenCount = stateRoot.getNumberOfChildren();
     }
 
     /** Looks for a merkle node with the given label */
@@ -178,7 +185,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @DisplayName("Adding a service")
         void addingService() {
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(originalChildrenCount + 1);
             assertThat(getNodeForLabel(fruitLabel)).isSameAs(fruitMerkleMap);
         }
 
@@ -192,7 +199,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitVirtualMap);
 
             // Then we can see it is on the tree
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(originalChildrenCount + 1);
             assertThat(getNodeForLabel(fruitLabel)).isSameAs(fruitVirtualMap);
         }
 
@@ -206,7 +213,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
 
             // Then we can see it is on the tree
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(originalChildrenCount + 1);
             assertThat(getNodeForLabel(countryLabel)).isSameAs(countrySingleton);
         }
 
@@ -220,16 +227,16 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
 
             // Then we can see it is on the tree
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(originalChildrenCount + 1);
             assertThat(getNodeForLabel(steamLabel)).isSameAs(steamQueue);
         }
 
         @Test
         @DisplayName("Adding a service to a MerkleStateRoot that has other node types on it")
         void addingServiceWhenNonServiceNodeChildrenExist() {
-            stateRoot.setChild(0, Mockito.mock(MerkleNode.class));
+            stateRoot.setChild(1, Mockito.mock(MerkleNode.class));
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(2);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(originalChildrenCount + 2);
             assertThat(getNodeForLabel(fruitLabel)).isSameAs(fruitMerkleMap);
         }
 
@@ -238,7 +245,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         void addingServiceTwiceIsIdempotent() {
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(originalChildrenCount + 1);
             assertThat(getNodeForLabel(fruitLabel)).isSameAs(fruitMerkleMap);
         }
 
@@ -252,7 +259,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> map2);
 
             // Then the original node is kept and the second node ignored
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(originalChildrenCount + 1);
             assertThat(getNodeForLabel(fruitLabel)).isSameAs(fruitMerkleMap);
         }
 
@@ -270,7 +277,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             stateRoot.putServiceStateIfAbsent(fruitMetadata2, () -> fruitMerkleMap);
 
             // Then the original node is kept and the second node ignored
-            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(1);
+            assertThat(stateRoot.getNumberOfChildren()).isEqualTo(originalChildrenCount + 1);
             assertThat(getNodeForLabel(fruitLabel)).isSameAs(fruitMerkleMap);
 
             // NOTE: I don't have a good way to test that the metadata is intact...
@@ -444,7 +451,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             // Given a State with the fruit merkle map, which somehow has
             // lost the merkle node (this should NEVER HAPPEN in real life!)
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            stateRoot.setChild(0, null);
+            stateRoot.setChild(1, null);
 
             // When we get the ReadableStates
             final var states = stateRoot.getReadableStates(FIRST_SERVICE);
@@ -628,7 +635,7 @@ class MerkleStateRootTest extends MerkleTestBase {
             // Given a State with the fruit virtual map, which somehow has
             // lost the merkle node (this should NEVER HAPPEN in real life!)
             stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            stateRoot.setChild(0, null);
+            stateRoot.setChild(1, null);
 
             // When we get the WritableStates
             final var states = stateRoot.getWritableStates(FIRST_SERVICE);
@@ -746,7 +753,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         void handleConsensusRoundCallback() {
             final var round = Mockito.mock(Round.class);
             final var platformState = Mockito.mock(PlatformState.class);
-            final var state = new MerkleStateRoot(lifecycles);
+            final var state = new MerkleStateRoot(lifecycles, softwareVersionSupplier);
 
             state.handleConsensusRound(round, platformState);
             assertThat(onHandleCalled).isTrue();
@@ -815,80 +822,6 @@ class MerkleStateRootTest extends MerkleTestBase {
             assertThat(onUpdateWeightCalled).isFalse();
             stateRoot.updateWeight(Mockito.mock(AddressBook.class), Mockito.mock(PlatformContext.class));
             assertThat(onUpdateWeightCalled).isTrue();
-        }
-    }
-
-    @Nested
-    @DisplayName("Platform State configuration test")
-    final class PlatformStateConfigurationTest {
-        @Test
-        @DisplayName("Platform state is the first child")
-        void platformStateIsTheFirst() {
-            final var platformState = Mockito.mock(PlatformState.class);
-            stateRoot.setPlatformState(platformState);
-            assertThat(stateRoot.getPlatformState()).isSameAs(platformState);
-        }
-
-        @Test
-        @DisplayName("Platform state is NOT the first child")
-        void platformStateIsNotTheFirst() {
-            setupAnimalMerkleMap();
-            setupSingletonCountry();
-            setupSteamQueue();
-
-            // Given a State with the fruit and animal and country states
-            stateRoot.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
-            stateRoot.putServiceStateIfAbsent(animalMetadata, () -> animalMerkleMap);
-            stateRoot.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
-            stateRoot.putServiceStateIfAbsent(steamMetadata, () -> steamQueue);
-
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, FRUIT_STATE_KEY)).isEqualTo(0);
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, ANIMAL_STATE_KEY)).isEqualTo(1);
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, COUNTRY_STATE_KEY))
-                    .isEqualTo(2);
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, STEAM_STATE_KEY)).isEqualTo(3);
-
-            final var platformState = Mockito.mock(PlatformState.class);
-            stateRoot.setPlatformState(platformState);
-            assertThat(stateRoot.<MerkleNode>getChild(PLATFORM_STATE_INDEX)).isSameAs(platformState);
-
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, FRUIT_STATE_KEY)).isEqualTo(1);
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, ANIMAL_STATE_KEY)).isEqualTo(2);
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, COUNTRY_STATE_KEY))
-                    .isEqualTo(3);
-            assertThat(stateRoot.findNodeIndex(FIRST_SERVICE, STEAM_STATE_KEY)).isEqualTo(4);
-        }
-
-        @Test
-        @DisplayName("Platform state is set twice (same instance) ")
-        void platformStatSetTwice_sameInstance() {
-            final var platformState = new PlatformState();
-            platformState.setRound(nextLong());
-            stateRoot.setPlatformState(platformState);
-            assertThat(stateRoot.getPlatformState()).usingRecursiveComparison().isEqualTo(platformState);
-            stateRoot.setPlatformState(platformState);
-            assertThat(stateRoot.getPlatformState())
-                    .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
-                            .withIgnoredFields("reservationCount")
-                            .build())
-                    .isEqualTo(platformState);
-        }
-
-        @Test
-        @DisplayName("Platform state is set twice (different instance) ")
-        void platformStatSetTwice_differentInstance() {
-            final var platformState1 = new PlatformState();
-            platformState1.setRound(nextLong());
-            stateRoot.setPlatformState(platformState1);
-            assertThat(stateRoot.getPlatformState()).usingRecursiveComparison().isEqualTo(platformState1);
-            final var platformState2 = new PlatformState();
-            platformState2.setRound(nextLong());
-            stateRoot.setPlatformState(platformState2);
-            assertThat(stateRoot.getPlatformState())
-                    .usingRecursiveComparison(RecursiveComparisonConfiguration.builder()
-                            .withIgnoredFields("route")
-                            .build())
-                    .isEqualTo(platformState2);
         }
     }
 

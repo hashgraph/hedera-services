@@ -65,7 +65,7 @@ import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.State;
@@ -79,7 +79,7 @@ public record UserTxn(
         @NonNull HederaFunctionality functionality,
         @NonNull Instant consensusNow,
         @NonNull State state,
-        @NonNull PlatformState platformState,
+        @NonNull PlatformStateAccessor platformState,
         @NonNull ConsensusEvent event,
         @NonNull ConsensusTransaction platformTxn,
         @NonNull TransactionInfo txnInfo,
@@ -94,7 +94,7 @@ public record UserTxn(
     public static UserTxn from(
             // @UserTxnScope
             @NonNull final State state,
-            @NonNull final PlatformState platformState,
+            @NonNull final PlatformStateAccessor platformState,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creatorInfo,
             @NonNull final ConsensusTransaction platformTxn,
@@ -151,7 +151,8 @@ public record UserTxn(
      * @param state the Hedera state
      * @return whether the given state indicates this transaction is the first after an upgrade
      */
-    private static boolean isUpgradeBoundary(@NonNull final PlatformState platformState, @NonNull final State state) {
+    private static boolean isUpgradeBoundary(
+            @NonNull final PlatformStateAccessor platformState, @NonNull final State state) {
         if (platformState.getFreezeTime() == null
                 || !platformState.getFreezeTime().equals(platformState.getLastFrozenTime())) {
             return false;

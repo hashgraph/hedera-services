@@ -16,24 +16,24 @@
 
 package com.hedera.node.app.state;
 
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 @Singleton
-public class PlatformStateAccessor {
-    private PlatformState platformState = null;
+public class PlatformStateHolder {
+    private PlatformStateAccessor platformState = null;
 
     @Inject
-    public PlatformStateAccessor() {
+    public PlatformStateHolder() {
         // Default constructor
     }
 
-    public PlatformState getPlatformState() {
+    public PlatformStateAccessor getPlatformStateAccessor() {
         return platformState;
     }
 
-    public void setPlatformState(PlatformState platformState) {
+    public void setPlatformStateAccessor(PlatformStateAccessor platformState) {
         this.platformState = platformState;
     }
 }

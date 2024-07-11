@@ -366,7 +366,11 @@ public class PlatformComponentBuilder {
                     blocks.platformContext(),
                     CryptoStatic::verifySignature,
                     blocks.appVersion().getPbjSemanticVersion(),
-                    blocks.initialState().get().getState().getPlatformState().getPreviousAddressBook(),
+                    blocks.initialState()
+                            .get()
+                            .getState()
+                            .getPlatformStateAccessor()
+                            .getPreviousAddressBook(),
                     blocks.initialAddressBook(),
                     blocks.intakeEventCounter());
         }
@@ -865,7 +869,11 @@ public class PlatformComponentBuilder {
 
             issDetector = new DefaultIssDetector(
                     blocks.platformContext(),
-                    blocks.initialState().get().getState().getPlatformState().getAddressBook(),
+                    blocks.initialState()
+                            .get()
+                            .getState()
+                            .getPlatformStateAccessor()
+                            .getAddressBook(),
                     blocks.appVersion().getPbjSemanticVersion(),
                     ignorePreconsensusSignatures,
                     roundToIgnore);

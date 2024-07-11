@@ -194,7 +194,7 @@ public final class BootstrapUtils {
 
         final SoftwareVersion loadedSoftwareVersion = loadedSignedState == null
                 ? null
-                : loadedSignedState.getState().getPlatformState().getCreationSoftwareVersion();
+                : loadedSignedState.getState().getPlatformStateAccessor().getCreationSoftwareVersion();
         final int versionComparison = loadedSoftwareVersion == null ? 1 : appVersion.compareTo(loadedSoftwareVersion);
         final boolean softwareUpgrade;
         if (versionComparison < 0) {

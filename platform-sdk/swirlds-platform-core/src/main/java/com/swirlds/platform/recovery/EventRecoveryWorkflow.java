@@ -52,7 +52,7 @@ import com.swirlds.platform.recovery.internal.RecoveredState;
 import com.swirlds.platform.recovery.internal.RecoveryPlatform;
 import com.swirlds.platform.recovery.internal.StreamedRound;
 import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.state.snapshot.SignedStateFileReader;
@@ -153,7 +153,7 @@ public final class EventRecoveryWorkflow {
                         platformContext, signedStateFile, SignedStateFileUtils::readState)
                 .reservedSignedState()) {
             StaticSoftwareVersion.setSoftwareVersion(
-                    initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
+                    initialState.get().getState().getPlatformStateAccessor().getCreationSoftwareVersion());
 
             logger.info(
                     STARTUP.getMarker(),
@@ -313,9 +313,9 @@ public final class EventRecoveryWorkflow {
                 .getSwirldState()
                 .init(
                         platform,
-                        initialState.get().getState().getPlatformState(),
+                        initialState.get().getState().getPlatformStateAccessor(),
                         InitTrigger.EVENT_STREAM_RECOVERY,
-                        initialState.get().getState().getPlatformState().getCreationSoftwareVersion());
+                        initialState.get().getState().getPlatformStateAccessor().getCreationSoftwareVersion());
 
         appMain.init(platform, platform.getSelfId());
 
@@ -380,30 +380,30 @@ public final class EventRecoveryWorkflow {
         final PlatformEvent lastEvent = ((CesEvent) getLastEvent(round)).getPlatformEvent();
         new StatefulEventHasher().hashEvent(lastEvent);
 
-        final PlatformState platformState = newState.getPlatformState();
+        final PlatformStateAccessor platformState = newState.getPlatformStateAccessor();
 
         platformState.setRound(round.getRoundNum());
         platformState.setLegacyRunningEventHash(getHashEventsCons(
-                previousState.get().getState().getPlatformState().getLegacyRunningEventHash(), round));
+                previousState.get().getState().getPlatformStateAccessor().getLegacyRunningEventHash(), round));
         platformState.setConsensusTimestamp(currentRoundTimestamp);
         platformState.setSnapshot(SyntheticSnapshot.generateSyntheticSnapshot(
                 round.getRoundNum(), lastEvent.getConsensusOrder(), currentRoundTimestamp, config, lastEvent));
         platformState.setCreationSoftwareVersion(
-                previousState.get().getState().getPlatformState().getCreationSoftwareVersion());
+                previousState.get().getState().getPlatformStateAccessor().getCreationSoftwareVersion());
 
         applyTransactions(
                 previousState.get().getSwirldState().cast(),
                 newState.getSwirldState().cast(),
-                newState.getPlatformState(),
+                newState.getPlatformStateAccessor(),
                 round);
 
         final boolean isFreezeState = isFreezeState(
                 previousState.get().getConsensusTimestamp(),
                 currentRoundTimestamp,
-                newState.getPlatformState().getFreezeTime());
+                newState.getPlatformStateAccessor().getFreezeTime());
         if (isFreezeState) {
-            newState.getPlatformState()
-                    .setLastFrozenTime(newState.getPlatformState().getFreezeTime());
+            newState.getPlatformStateAccessor()
+                    .setLastFrozenTime(newState.getPlatformStateAccessor().getFreezeTime());
         }
 
         final ReservedSignedState signedState = new SignedState(
@@ -476,7 +476,7 @@ public final class EventRecoveryWorkflow {
     static void applyTransactions(
             final SwirldState immutableState,
             final SwirldState mutableState,
-            final PlatformState platformState,
+            final PlatformStateAccessor platformState,
             final Round round) {
 
         mutableState.throwIfImmutable();

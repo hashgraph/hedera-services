@@ -19,7 +19,7 @@ package com.swirlds.platform.state.signed;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
-import static com.swirlds.platform.state.PlatformState.GENESIS_ROUND;
+import static com.swirlds.platform.state.PlatformStateAccessor.GENESIS_ROUND;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.CREATION;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RELEASE;
 import static com.swirlds.platform.state.signed.SignedStateHistory.SignedStateAction.RESERVE;
@@ -213,7 +213,7 @@ public class SignedState implements SignedStateInfo {
      */
     @Override
     public long getRound() {
-        return state.getPlatformState().getRound();
+        return state.getPlatformStateAccessor().getRound();
     }
 
     /**
@@ -222,7 +222,7 @@ public class SignedState implements SignedStateInfo {
      * @return true if this is the genesis state
      */
     public boolean isGenesisState() {
-        return state.getPlatformState().getRound() == GENESIS_ROUND;
+        return state.getPlatformStateAccessor().getRound() == GENESIS_ROUND;
     }
 
     /**
@@ -258,7 +258,7 @@ public class SignedState implements SignedStateInfo {
     @Override
     public @NonNull AddressBook getAddressBook() {
         return Objects.requireNonNull(
-                getState().getPlatformState().getAddressBook(),
+                getState().getPlatformStateAccessor().getAddressBook(),
                 "address book stored in this signed state is null, this should never happen");
     }
 
@@ -455,7 +455,7 @@ public class SignedState implements SignedStateInfo {
      * @return the consensus timestamp for this signed state.
      */
     public @NonNull Instant getConsensusTimestamp() {
-        return state.getPlatformState().getConsensusTimestamp();
+        return state.getPlatformStateAccessor().getConsensusTimestamp();
     }
 
     /**

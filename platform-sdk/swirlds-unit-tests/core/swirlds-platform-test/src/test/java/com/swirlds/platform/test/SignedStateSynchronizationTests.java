@@ -26,6 +26,8 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.signed.SignedState;
+import com.swirlds.platform.system.BasicSoftwareVersion;
+import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -39,9 +41,11 @@ public class SignedStateSynchronizationTests {
     @BeforeAll
     static void setUp() throws ConstructableRegistryException {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
-        registry.registerConstructables("");
-        ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(MerkleStateRoot.class, MerkleStateRoot::new));
+        registry.registerConstructables("com.swirlds");
+        registry.registerConstructable(new ClassConstructorPair(
+                MerkleStateRoot.class,
+                () -> new MerkleStateRoot(
+                        new NoOpMerkleStateLifecycles(), version -> new BasicSoftwareVersion(version.major()))));
     }
 
     @Test

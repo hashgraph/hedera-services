@@ -64,7 +64,9 @@ import com.swirlds.platform.state.snapshot.SignedStateFileUtils;
 import com.swirlds.platform.state.snapshot.StateDumpRequest;
 import com.swirlds.platform.state.snapshot.StateSavingResult;
 import com.swirlds.platform.state.snapshot.StateSnapshotManager;
+import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.test.fixtures.state.BlockingSwirldState;
+import com.swirlds.platform.test.fixtures.state.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.wiring.components.StateAndRound;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -100,9 +102,13 @@ class StateFileManagerTests {
 
     @BeforeAll
     static void beforeAll() throws ConstructableRegistryException {
-        ConstructableRegistry.getInstance().registerConstructables("");
+        ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
         ConstructableRegistry.getInstance()
-                .registerConstructable(new ClassConstructorPair(MerkleStateRoot.class, MerkleStateRoot::new));
+                .registerConstructable(new ClassConstructorPair(
+                        MerkleStateRoot.class,
+                        () -> new MerkleStateRoot(
+                                new NoOpMerkleStateLifecycles(),
+                                version -> new BasicSoftwareVersion(version.major()))));
     }
 
     @BeforeEach

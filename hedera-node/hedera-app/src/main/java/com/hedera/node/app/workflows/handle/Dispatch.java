@@ -32,7 +32,7 @@ import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.state.PlatformStateAccessor;
 import com.swirlds.state.spi.Service;
 import com.swirlds.state.spi.info.NodeInfo;
 import java.time.Instant;
@@ -192,11 +192,11 @@ public interface Dispatch {
     FinalizeContext finalizeContext();
 
     /**
-     * The platform state for the dispatch.
+     * The platform state accessor for the dispatch.
      *
      * @return the platform state
      */
-    PlatformState platformState();
+    PlatformStateAccessor platformState();
 
     /**
      * The result of applying the {@link PreHandleWorkflow} to the dispatch;

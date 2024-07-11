@@ -38,27 +38,23 @@ public final class GenesisStateBuilder {
      *
      * @return a genesis platform state
      */
-    private static PlatformState buildGenesisPlatformState(
-            final AddressBook addressBook, final SoftwareVersion appVersion) {
+    private static void initGenesisPlatformState(
+            PlatformStateAccessor platformState, final AddressBook addressBook, final SoftwareVersion appVersion) {
 
-        final PlatformState platformState = new PlatformState();
         platformState.setAddressBook(addressBook.copy());
-
         platformState.setCreationSoftwareVersion(appVersion);
         platformState.setRound(0);
         platformState.setLegacyRunningEventHash(null);
         platformState.setConsensusTimestamp(Instant.ofEpochSecond(0L));
-
-        return platformState;
     }
 
     /**
      * Build and initialize a genesis state.
      *
-     * @param platformContext the platform context
-     * @param addressBook     the current address book
-     * @param appVersion      the software version of the app
-     * @param stateRoot       the merkle root node of the state
+     * @param platformContext       the platform context
+     * @param addressBook           the current address book
+     * @param appVersion            the software version of the app
+     * @param stateRoot             the merkle root node of the state
      * @return a reserved genesis signed state
      */
     public static ReservedSignedState buildGenesisState(
@@ -68,11 +64,18 @@ public final class GenesisStateBuilder {
             @NonNull final MerkleRoot stateRoot) {
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-        stateRoot.setPlatformState(buildGenesisPlatformState(addressBook, appVersion));
+        final PlatformStateAccessor platformState;
+        if (stateRoot instanceof MerkleStateRoot root) {
+            platformState = new PlatformStateAccessorSingleton(root);
+        } else {
+            platformState = new PlatformState();
+        }
+
+        initGenesisPlatformState(platformState, addressBook, appVersion);
 
         final long genesisFreezeTime = basicConfig.genesisFreezeTime();
         if (genesisFreezeTime > 0) {
-            stateRoot.getPlatformState().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
+            stateRoot.getPlatformStateAccessor().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
         }
 
         final SignedState signedState = new SignedState(
