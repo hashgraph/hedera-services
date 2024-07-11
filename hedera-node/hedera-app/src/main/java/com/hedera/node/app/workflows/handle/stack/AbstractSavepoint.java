@@ -26,7 +26,6 @@ import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBu
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -35,8 +34,6 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.swirlds.state.HederaState;
-import com.swirlds.state.spi.ReadableStates;
-import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.List;
@@ -109,24 +106,6 @@ public abstract class AbstractSavepoint extends BuilderSink implements Savepoint
 
     public Savepoint createFollowingSavePoint() {
         return new FollowingSavepoint(new WrappedHederaState(state), this);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * This method guarantees that the same {@link WritableStates} instance is returned for the same {@code serviceName}
-     * to ensure all modifications to a {@link WritableStates} are kept together.
-     */
-    @NonNull
-    @VisibleForTesting
-    public WritableStates getWritableStates(@NonNull final String serviceName) {
-        return state.getWritableStates(serviceName);
-    }
-
-    @NonNull
-    @VisibleForTesting
-    public ReadableStates getReadableStates(@NonNull String serviceName) {
-        return state.getReadableStates(serviceName);
     }
 
     abstract void commitRecords();
