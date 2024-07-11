@@ -206,10 +206,9 @@ public class SingleTransactionRecordBuilderImpl
      * Creates new transaction record builder where reversion will leave its record in the stream
      * with either a failure status or {@link ResponseCodeEnum#REVERTED_SUCCESS}.
      *
-     * @param consensusNow the consensus timestamp for the transaction
      */
     @VisibleForTesting
-    public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
+    public SingleTransactionRecordBuilderImpl() {
         this(REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, USER);
     }
 

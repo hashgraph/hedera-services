@@ -89,7 +89,7 @@ public class RecordFinalizerTest {
             Bytes.EMPTY,
             HederaFunctionality.CRYPTO_TRANSFER);
 
-    private SingleTransactionRecordBuilderImpl recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
+    private SingleTransactionRecordBuilderImpl recordBuilder = new SingleTransactionRecordBuilderImpl();
     private RecordFinalizer subject;
 
     @BeforeEach
