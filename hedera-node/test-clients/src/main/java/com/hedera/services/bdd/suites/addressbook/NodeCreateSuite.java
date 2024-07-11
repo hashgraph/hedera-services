@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -62,7 +63,6 @@ public class NodeCreateSuite {
                                 .signedBy("payer")
                                 .description(description)
                                 .setNode("0.0.4")
-                                .fee(ONE_HBAR)
                                 .hasKnownStatus(UNAUTHORIZED)
                                 .via("nodeCreationFailed"))
                 .when()
@@ -82,10 +82,47 @@ public class NodeCreateSuite {
                                 .signedBy("payer", "randomAccount", "testKey")
                                 .description(description)
                                 .setNode("0.0.4")
-                                .fee(ONE_HBAR)
                                 .hasKnownStatus(UNAUTHORIZED)
                                 .via("multipleSigsCreation"),
                         validateChargedUsdWithin("multipleSigsCreation", 0.0011276316, 3.0));
+    }
+
+    @HapiTest
+    @Tag(EMBEDDED)
+    final Stream<DynamicTest> validateFeesInsufficientAmount() {
+        final String description = "His vorpal blade went snicker-snack!";
+        return defaultHapiSpec("validateFees")
+                .given(
+                        newKeyNamed("testKey"),
+                        newKeyNamed("randomAccount"),
+                        cryptoCreate("payer").balance(10_000_000_000L),
+                        // Submit to a different node so ingest check is skipped
+                        nodeCreate("ntb")
+                                .payingWith("payer")
+                                .signedBy("payer")
+                                .description(description)
+                                .setNode("0.0.4")
+                                .fee(1)
+                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                                .via("nodeCreationFailed"))
+                .when()
+                .then(
+                        getTxnRecord("nodeCreationFailed").logged(),
+                        nodeCreate("ntb").description(description).via("nodeCreation"),
+                        getTxnRecord("nodeCreation").logged(),
+                        // But, note that the fee will not be charged for privileged payer
+                        // The fee is charged here because the payer is not privileged
+                        validateChargedUsdWithin("nodeCreation", 0.0, 0.0),
+
+                        // Submit with several signatures and the price should increase
+                        nodeCreate("ntb")
+                                .payingWith("payer")
+                                .signedBy("payer", "randomAccount", "testKey")
+                                .description(description)
+                                .setNode("0.0.4")
+                                .fee(1)
+                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                                .via("multipleSigsCreation"));
     }
 
     @HapiTest
