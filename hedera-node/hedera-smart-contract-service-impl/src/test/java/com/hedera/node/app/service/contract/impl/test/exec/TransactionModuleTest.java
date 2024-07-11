@@ -66,7 +66,6 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
-import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.swirlds.state.spi.info.NetworkInfo;
 import java.time.Instant;
@@ -226,7 +225,7 @@ class TransactionModuleTest {
     @Test
     void providesSystemGasContractCalculator() {
         // Given a transaction-specific dispatch cost of 6 tinycent...
-        given(context.dispatchComputeFees(TransactionBody.DEFAULT, AccountID.DEFAULT, ComputeDispatchFeesAsTopLevel.NO))
+        given(context.dispatchComputeFees(TransactionBody.DEFAULT, AccountID.DEFAULT))
                 .willReturn(new Fees(1, 2, 3));
         // But a canonical price of 66 tinycents for an approve call (which, being
         // greater than the above 6 tinycents, is the effective price)...
