@@ -28,7 +28,7 @@ import java.util.function.Consumer;
  * A transactional unit that buffers all changes to a wrapped Hedera state, along with any stream item builders
  * whose lifecycle is tied to that of the state changes. May be committed or rolled back.
  */
-public interface Savepoint {
+public interface Savepoint extends HederaState {
     /**
      * Returns the state that this savepoint is buffering changes for, including all modifications made so far.
      *
