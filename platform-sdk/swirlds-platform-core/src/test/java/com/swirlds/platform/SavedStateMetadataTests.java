@@ -115,8 +115,6 @@ class SavedStateMetadataTests {
         }
         final long signingWeightSum = random.nextLong();
         final long totalWeight = random.nextLong();
-        final Hash epochHash = random.nextBoolean() ? randomHash(random) : null;
-        final String epochHashString = epochHash == null ? "null" : epochHash.toMnemonic();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
@@ -132,9 +130,7 @@ class SavedStateMetadataTests {
                 nodeId,
                 signingNodes,
                 signingWeightSum,
-                totalWeight,
-                epochHash,
-                epochHashString);
+                totalWeight);
 
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
@@ -152,8 +148,6 @@ class SavedStateMetadataTests {
         assertEquals(signingNodes, deserialized.signingNodes());
         assertEquals(signingWeightSum, deserialized.signingWeightSum());
         assertEquals(totalWeight, deserialized.totalWeight());
-        assertEquals(epochHash, deserialized.epochHash());
-        assertEquals(epochHashString, deserialized.epochHashMnemonic());
     }
 
     @Test
@@ -173,8 +167,6 @@ class SavedStateMetadataTests {
         final List<NodeId> signingNodes = new ArrayList<>();
         final long signingWeightSum = random.nextLong();
         final long totalWeight = random.nextLong();
-        final Hash epochHash = random.nextBoolean() ? randomHash(random) : null;
-        final String epochHashString = epochHash == null ? "null" : epochHash.toMnemonic();
 
         final SavedStateMetadata metadata = new SavedStateMetadata(
                 round,
@@ -190,9 +182,7 @@ class SavedStateMetadataTests {
                 nodeId,
                 signingNodes,
                 signingWeightSum,
-                totalWeight,
-                epochHash,
-                epochHashString);
+                totalWeight);
 
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
@@ -208,8 +198,6 @@ class SavedStateMetadataTests {
         assertEquals(signingNodes, deserialized.signingNodes());
         assertEquals(signingWeightSum, deserialized.signingWeightSum());
         assertEquals(totalWeight, deserialized.totalWeight());
-        assertEquals(epochHash, deserialized.epochHash());
-        assertEquals(epochHashString, deserialized.epochHashMnemonic());
     }
 
     @Test
@@ -276,9 +264,7 @@ class SavedStateMetadataTests {
                 nodeId,
                 signingNodes,
                 signingWeightSum,
-                totalWeight,
-                epochHash,
-                epochHashString);
+                totalWeight);
 
         final SavedStateMetadata deserialized = serializeDeserialize(metadata);
 
@@ -294,8 +280,6 @@ class SavedStateMetadataTests {
         assertEquals(signingNodes, deserialized.signingNodes());
         assertEquals(signingWeightSum, deserialized.signingWeightSum());
         assertEquals(totalWeight, deserialized.totalWeight());
-        assertEquals(epochHash, deserialized.epochHash());
-        assertEquals(epochHashString, deserialized.epochHashMnemonic());
     }
 
     private interface FileUpdater {
@@ -358,9 +342,7 @@ class SavedStateMetadataTests {
                 nodeId,
                 signingNodes,
                 signingWeightSum,
-                totalWeight,
-                epochHash,
-                epochHash.toMnemonic());
+                totalWeight);
 
         final Path path = testDirectory.resolve("metadata.txt");
         metadata.write(path);
@@ -415,16 +397,6 @@ class SavedStateMetadataTests {
         assertEquals(signingNodes, deserialized.signingNodes());
         assertEquals(signingWeightSum, deserialized.signingWeightSum());
         assertEquals(totalWeight, deserialized.totalWeight());
-        if (invalidFields.contains(EPOCH_HASH)) {
-            assertNull(deserialized.epochHash());
-        } else {
-            assertEquals(epochHash, deserialized.epochHash());
-        }
-        if (invalidFields.contains(SavedStateMetadataField.EPOCH_HASH_MNEMONIC)) {
-            assertNull(deserialized.epochHashMnemonic());
-        } else {
-            assertEquals(epochHash.toMnemonic(), deserialized.epochHashMnemonic());
-        }
     }
 
     @Test
