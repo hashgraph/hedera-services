@@ -17,25 +17,27 @@
 package com.hedera.services.bdd.suites.addressbook;
 
 
+
 import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.endpointFor;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.STANDIN_CONTRACT_ID_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BAD_ENCODING;
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -44,8 +46,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -53,6 +57,11 @@ import org.junit.jupiter.api.Tag;
 public class NodeCreateSuite {
 
     public static final String ED_25519_KEY = "ed25519Alias";
+    public static List<ServiceEndpoint> GOSSIP_ENDPOINTS = Arrays.asList(ServiceEndpoint.newBuilder().setDomainName("test.com").setPort(123).build(),ServiceEndpoint.newBuilder().setDomainName("test2.com").setPort(123).build());
+    public static List<ServiceEndpoint> SERVICES_ENDPOINTS = Arrays.asList(ServiceEndpoint.newBuilder().setDomainName("service.com").setPort(234).build());
+    public static List<ServiceEndpoint> GOSSIP_ENDPOINTS_IPS = Arrays.asList(endpointFor("192.168.1.200",123),endpointFor("192.168.1.201", 123));
+    public static List<ServiceEndpoint> SERVICES_ENDPOINTS_IPS = Arrays.asList(endpointFor("192.168.1.205",234));
+
 
 
     @HapiTest
@@ -102,20 +111,38 @@ public class NodeCreateSuite {
                            .hasPrecheck(OK)
                            .hasKnownStatus(SUCCESS));
     }
-/*
+
     @HapiTest
-    final Stream<DynamicTest> allFieldsSetHappyCase() {
+    final Stream<DynamicTest> allFieldsSetHappyCaseForDomains() {
+        return hapiTest(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
+                overriding("nodes.gossipFqdnRestricted", "false"),
+                nodeCreate("nodeCreate")
+                        .description("hello")
+                        .gossipCaCertificate("gossip".getBytes())
+                        .grpcCertificateHash("hash".getBytes())
+                        .accountId(asAccount("0.0.100"))
+                        .gossipEndpoint(GOSSIP_ENDPOINTS)
+                        .serviceEndpoint(SERVICES_ENDPOINTS)
+                        .adminKeyName(ED_25519_KEY)
+                        .hasPrecheck(OK)
+                        .hasKnownStatus(SUCCESS));
     }
 
     @HapiTest
-    final Stream<DynamicTest> allFieldsSetDomainHappyCase() {
+    final Stream<DynamicTest> allFieldsSetHappyCaseForIps() {
+        return hapiTest(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
+                overriding("nodes.gossipFqdnRestricted", "false"),
+                nodeCreate("nodeCreate")
+                        .description("hello")
+                        .gossipCaCertificate("gossip".getBytes())
+                        .grpcCertificateHash("hash".getBytes())
+                        .accountId(asAccount("0.0.100"))
+                        .gossipEndpoint(GOSSIP_ENDPOINTS_IPS)
+                        .serviceEndpoint(SERVICES_ENDPOINTS_IPS)
+                        .adminKeyName(ED_25519_KEY)
+                        .hasPrecheck(OK)
+                        .hasKnownStatus(SUCCESS));
     }
-
-    @HapiTest
-    final Stream<DynamicTest> allFieldsSetIPHappyCase() {
-    }
-
- */
 
     @HapiTest
     final Stream<DynamicTest> createNodeWorks() {
@@ -169,7 +196,6 @@ public class NodeCreateSuite {
     }
 
     @HapiTest
-    @Tag(EMBEDDED)
     final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("failsAtIngestForUnAuthorizedTxns")
@@ -185,4 +211,5 @@ public class NodeCreateSuite {
                 .when()
                 .then();
     }
+
 }

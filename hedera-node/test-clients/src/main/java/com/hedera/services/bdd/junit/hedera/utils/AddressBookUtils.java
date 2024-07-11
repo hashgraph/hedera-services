@@ -20,15 +20,18 @@ import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.working
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.StreamSupport.stream;
 
+import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -135,5 +138,30 @@ public class AddressBookUtils {
      */
     public static Stream<Long> nodeIdsFrom(AddressBook addressBook) {
         return stream(addressBook.spliterator(), false).map(Address::getNodeId).map(NodeId::id);
+    }
+
+    /**
+     *  Returns service end point base on the host and port.
+     *
+     * @param host is an ip or domain name
+     * @param port
+     * @return ServiceEndpoint
+     */
+    public static ServiceEndpoint endpointFor(@NonNull final String host, final int port) {
+        final Pattern IPV4_ADDRESS_PATTERN =
+                Pattern.compile("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.?\\b){4}$");
+        final var builder = ServiceEndpoint.newBuilder().setPort(port);
+        if (IPV4_ADDRESS_PATTERN.matcher(host).matches()) {
+            final var octets = host.split("[.]");
+            builder.setIpAddressV4(ByteString.copyFrom((new byte[] {
+                    (byte) Integer.parseInt(octets[0]),
+                    (byte) Integer.parseInt(octets[1]),
+                    (byte) Integer.parseInt(octets[2]),
+                    (byte) Integer.parseInt(octets[3])
+            })));
+        } else {
+            builder.setDomainName(host);
+        }
+        return builder.build();
     }
 }
