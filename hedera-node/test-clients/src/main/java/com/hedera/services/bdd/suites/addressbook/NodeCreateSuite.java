@@ -93,11 +93,11 @@ public class NodeCreateSuite {
                 .hasKnownStatus(INVALID_PAYER_SIGNATURE));
     }
 
-       @HapiTest
+    @HapiTest
     final Stream<DynamicTest> adminKeyIsIsValid() {
            return hapiTest(newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
                    cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
-                   nodeCreate("nodeCreate").setNode("0.0.4")
+                   nodeCreate("nodeCreate")
                            .adminKeyName(ED_25519_KEY)
                            .hasPrecheck(OK)
                            .hasKnownStatus(SUCCESS));
@@ -118,7 +118,6 @@ public class NodeCreateSuite {
  */
 
     @HapiTest
-    @Tag(EMBEDDED)
     final Stream<DynamicTest> createNodeWorks() {
         final String description = "His vorpal blade went snicker-snack!";
 

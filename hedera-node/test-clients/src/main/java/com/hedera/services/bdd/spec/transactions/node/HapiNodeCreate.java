@@ -161,7 +161,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
-        adminKey = adminKey != null ? adminKey : netOf(spec, Optional.ofNullable(adminKeyName.get()));
+        adminKey = adminKey != null ? adminKey : netOf(spec, adminKeyName);
         if (useAvailableSubProcessPorts) {
             if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
                 throw new IllegalStateException("Target is not a SubProcessNetwork");
