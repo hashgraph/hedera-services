@@ -86,9 +86,9 @@ import static com.swirlds.common.utility.CommonUtils.hex;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.assertions.AccountInfoAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -341,6 +341,7 @@ public class LazyCreateThroughPrecompileSuite {
                                     TRANSFER_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
+                                    recordWith().status(SUCCESS),
                                     recordWith().status(SUCCESS)),
                             getTxnRecord(TRANSFER_TXN).exposingTo(record -> {
                                 Assertions.assertEquals(
@@ -462,6 +463,7 @@ public class LazyCreateThroughPrecompileSuite {
                                     TRANSFER_FROM_ACCOUNT_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
+                                    recordWith().status(SUCCESS),
                                     recordWith().status(SUCCESS)),
                             getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).exposingTo(record -> {
                                 Assertions.assertEquals(
@@ -564,6 +566,7 @@ public class LazyCreateThroughPrecompileSuite {
                                     TRANSFER_FROM_ACCOUNT_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS),
+                                    recordWith().status(SUCCESS),
                                     recordWith().status(SUCCESS)),
                             getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).exposingTo(record -> {
                                 Assertions.assertEquals(
@@ -633,6 +636,7 @@ public class LazyCreateThroughPrecompileSuite {
                                     successfulTransferFromTxn,
                                     SUCCESS,
                                     recordWith().status(SUCCESS).memo(LAZY_MEMO),
+                                    recordWith().status(SUCCESS),
                                     recordWith()
                                             .status(SUCCESS)
                                             .contractCallResult(resultWith()
@@ -702,6 +706,7 @@ public class LazyCreateThroughPrecompileSuite {
                                     TRANSFER_TXN,
                                     SUCCESS,
                                     recordWith().status(SUCCESS).memo(LAZY_MEMO),
+                                    recordWith().status(SUCCESS),
                                     recordWith()
                                             .status(SUCCESS)
                                             .contractCallResult(resultWith()

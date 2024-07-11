@@ -25,15 +25,14 @@ import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.TopicID;
 import java.util.Optional;
 
 public class RandomTopicUpdate implements OpProvider {
-    private final EntityNameProvider<TopicID> topics;
+    private final EntityNameProvider topics;
     private final ResponseCodeEnum[] customOutcomes;
     private final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(TOPIC_EXPIRED, INVALID_TOPIC_ID);
 
-    public RandomTopicUpdate(EntityNameProvider<TopicID> topics, ResponseCodeEnum[] customOutcomes) {
+    public RandomTopicUpdate(EntityNameProvider topics, ResponseCodeEnum[] customOutcomes) {
         this.topics = topics;
         this.customOutcomes = customOutcomes;
     }

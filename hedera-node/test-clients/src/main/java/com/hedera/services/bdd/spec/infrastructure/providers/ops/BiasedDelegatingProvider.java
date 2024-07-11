@@ -19,8 +19,8 @@ package com.hedera.services.bdd.spec.infrastructure.providers.ops;
 import static java.util.Collections.binarySearch;
 import static java.util.stream.Collectors.toList;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;

@@ -19,6 +19,7 @@ package com.swirlds.platform.state.merkle.disk;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapGet;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapGetForModify;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapGetSize;
+import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapIterate;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapPut;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapRemove;
 import static java.util.Objects.requireNonNull;
@@ -90,7 +91,9 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
     @NonNull
     @Override
     protected Iterator<K> iterateFromDataSource() {
-        throw new UnsupportedOperationException("You cannot iterate over a virtual map's keys!");
+        // Log to transaction state log, what was iterated
+        logMapIterate(getStateKey(), virtualMap);
+        return new OnDiskIterator<>(virtualMap);
     }
 
     /** {@inheritDoc} */

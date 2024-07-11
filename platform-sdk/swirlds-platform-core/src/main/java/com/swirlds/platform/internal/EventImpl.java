@@ -205,7 +205,7 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
     //////////////////////////////////////////
 
     //////////////////////////////////////////
-    // BaseEventHashedData
+    // Unsigned Event
     //////////////////////////////////////////
 
     public Instant getTimeCreated() {
@@ -220,7 +220,7 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
      * @return array of transactions inside this event instance
      */
     public ConsensusTransactionImpl[] getTransactions() {
-        return baseEvent.getHashedData().getTransactions();
+        return baseEvent.getUnsignedEvent().getTransactions();
     }
 
     public boolean isCreatedBy(final NodeId id) {

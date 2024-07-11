@@ -50,7 +50,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCallWit
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCustomCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractDelete;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
@@ -103,7 +102,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIForContract;
-import static com.hedera.services.bdd.suites.contract.hapi.ContractCreateSuite.EMPTY_CONSTRUCTOR_CONTRACT;
 import static com.hedera.services.bdd.suites.contract.opcodes.Create2OperationSuite.SALT;
 import static com.hedera.services.bdd.suites.contract.precompile.CreatePrecompileSuite.ECDSA_KEY;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
@@ -117,7 +115,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
@@ -349,14 +346,14 @@ public class ContractCallSuite {
                                 .hasKnownStatus(SUCCESS),
                         contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
                                 .payingWith(somebody)
-                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
+                                .hasKnownStatus(INVALID_CONTRACT_ID),
                         cryptoUpdate(account).receiverSigRequired(false).signedBy(GENESIS),
                         contractCall(TEST_CONTRACT, "lowLevelECREC")
                                 .payingWith(somebody)
                                 .hasKnownStatus(SUCCESS),
                         contractCall(TEST_CONTRACT, "lowLevelECRECWithValue")
                                 .payingWith(somebody)
-                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
+                                .hasKnownStatus(INVALID_CONTRACT_ID),
                         getAccountBalance(account).hasTinyBars(changeFromSnapshot("start", +0)));
     }
 
@@ -415,7 +412,7 @@ public class ContractCallSuite {
                                                 .build()))
                                 .sending(500L)
                                 .via(zeroAddressWithValueTxn)
-                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
+                                .hasKnownStatus(INVALID_CONTRACT_ID),
                         // call to existing account in the 0-750 range, without precompile collision on the same address
                         contractCall(
                                         TEST_CONTRACT,
@@ -435,7 +432,7 @@ public class ContractCallSuite {
                                                 .build()))
                                 .via(existingSystemEntityWithValueTxn)
                                 .sending(500L)
-                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
+                                .hasKnownStatus(INVALID_CONTRACT_ID),
                         // call to existing account in the 0-750 range, WITH precompile collision
                         contractCall(
                                         TEST_CONTRACT,
@@ -454,7 +451,7 @@ public class ContractCallSuite {
                                                 .build()))
                                 .via(existingNumAndPrecompileWithValueTxn)
                                 .sending(500L)
-                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
+                                .hasKnownStatus(INVALID_CONTRACT_ID),
                         // call to non-existing account in the 0-750 range
                         contractCall(
                                         TEST_CONTRACT,
@@ -473,7 +470,7 @@ public class ContractCallSuite {
                                                 .build()))
                                 .via(nonExistingSystemEntityWithValueTxn)
                                 .sending(500L)
-                                .hasKnownStatus(INVALID_FEE_SUBMITTED),
+                                .hasKnownStatus(INVALID_CONTRACT_ID),
                         // delegate call to collision address (0.0.1)
                         contractCall(
                                         TEST_CONTRACT,
@@ -524,28 +521,28 @@ public class ContractCallSuite {
                                 .hasPriority(recordWith().status(SUCCESS))
                                 .logged(),
                         getTxnRecord(zeroAddressWithValueTxn)
-                                .hasPriority(recordWith().status(INVALID_FEE_SUBMITTED))
+                                .hasPriority(recordWith().status(INVALID_CONTRACT_ID))
                                 .logged(),
                         getTxnRecord(existingSystemEntityTxn)
                                 .hasPriority(recordWith()
                                         .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(existingSystemEntityWithValueTxn)
-                                .hasPriority(recordWith().status(INVALID_FEE_SUBMITTED))
+                                .hasPriority(recordWith().status(INVALID_CONTRACT_ID))
                                 .logged(),
                         getTxnRecord(existingNumAndPrecompileTxn)
                                 .hasPriority(recordWith()
                                         .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(existingNumAndPrecompileWithValueTxn)
-                                .hasPriority(recordWith().status(INVALID_FEE_SUBMITTED))
+                                .hasPriority(recordWith().status(INVALID_CONTRACT_ID))
                                 .logged(),
                         getTxnRecord(nonExistingSystemEntityTxn)
                                 .hasPriority(recordWith()
                                         .contractCallResult(resultWith().contractCallResult(successfulResult)))
                                 .logged(),
                         getTxnRecord(nonExistingSystemEntityWithValueTxn)
-                                .hasPriority(recordWith().status(INVALID_FEE_SUBMITTED))
+                                .hasPriority(recordWith().status(INVALID_CONTRACT_ID))
                                 .logged(),
                         getTxnRecord(existingNumAndPrecompileDelegateCallTxn)
                                 .hasPriority(recordWith()
@@ -887,7 +884,7 @@ public class ContractCallSuite {
                                         "callWithValue",
                                         BigInteger.valueOf(minValueToAccessGatedMethodAtCurrentRate.get()))
                                 .sending(minValueToAccessGatedMethodAtCurrentRate.get())
-                                .hasKnownStatus(INVALID_FEE_SUBMITTED)));
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
     }
 
     /**
@@ -2754,20 +2751,6 @@ public class ContractCallSuite {
                         allRunFor(spec, op);
                     }
                 }));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> rejectsCreationAndUpdateOfAssociationsWhenFlagDisabled() {
-        return hapiTest(
-                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
-                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .maxAutomaticTokenAssociations(5)
-                        .hasPrecheck(NOT_SUPPORTED),
-                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).maxAutomaticTokenAssociations(0),
-                contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT)
-                        .newMaxAutomaticAssociations(5)
-                        .hasPrecheck(NOT_SUPPORTED),
-                contractUpdate(EMPTY_CONSTRUCTOR_CONTRACT).newMemo("Hola!"));
     }
 
     @HapiTest

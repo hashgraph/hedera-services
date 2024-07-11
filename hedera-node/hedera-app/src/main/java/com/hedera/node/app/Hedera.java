@@ -17,7 +17,6 @@
 package com.hedera.node.app;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.node.app.config.IsEmbeddedTest.NO;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.MOD_POST_EVENT_STREAM_REPLAY;
 import static com.hedera.node.app.statedumpers.DumpCheckpoint.selectedDumpCheckpoints;
@@ -37,7 +36,6 @@ import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.config.BootstrapConfigProviderImpl;
 import com.hedera.node.app.config.ConfigProviderImpl;
-import com.hedera.node.app.config.IsEmbeddedTest;
 import com.hedera.node.app.fees.FeeService;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.info.CurrentPlatformStatusImpl;
@@ -170,11 +168,6 @@ public final class Hedera implements SwirldMain {
     private final HederaSoftwareVersion version;
 
     /**
-     * Whether this node is running in an embedded test environment.
-     */
-    private final IsEmbeddedTest isEmbeddedTest;
-
-    /**
      * The source of time the node should use for screening transactions at ingest.
      */
     private final InstantSource instantSource;
@@ -228,11 +221,9 @@ public final class Hedera implements SwirldMain {
             @NonNull final ConstructableRegistry constructableRegistry,
             @NonNull final ServicesRegistry.Factory registryFactory,
             @NonNull final ServiceMigrator migrator,
-            @NonNull final IsEmbeddedTest isEmbeddedTest,
             @NonNull final InstantSource instantSource) {
         requireNonNull(registryFactory);
         requireNonNull(constructableRegistry);
-        this.isEmbeddedTest = requireNonNull(isEmbeddedTest);
         this.serviceMigrator = requireNonNull(migrator);
         this.instantSource = requireNonNull(instantSource);
         logger.info(
@@ -250,7 +241,7 @@ public final class Hedera implements SwirldMain {
         servicesRegistry = registryFactory.create(constructableRegistry, bootstrapConfig);
         logger.info(
                 "Creating Hedera Consensus Node {} with HAPI {}",
-                () -> HapiUtils.toString(version.getServicesVersion()),
+                () -> version.readableServicesVersion(),
                 () -> HapiUtils.toString(version.getHapiVersion()));
         contractServiceImpl = new ContractServiceImpl(instantSource);
         // Register all service schema RuntimeConstructable factories before platform init
@@ -351,11 +342,11 @@ public final class Hedera implements SwirldMain {
         logger.info(
                 "Initializing Hedera state version {} in {} mode with trigger {} and previous version {}",
                 version,
-                trigger,
                 configProvider
                         .getConfiguration()
                         .getConfigData(HederaConfig.class)
                         .activeProfile(),
+                trigger,
                 previousVersion == null ? "<NONE>" : previousVersion);
         logger.info(
                 "Platform state includes freeze time={} and last frozen={}",
@@ -405,12 +396,14 @@ public final class Hedera implements SwirldMain {
             @Nullable final HederaSoftwareVersion deserializedVersion,
             @NonNull final InitTrigger trigger,
             @NonNull final Metrics metrics) {
-        final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getServicesVersion();
-        final var currentVersion = version.getServicesVersion();
+        final var previousVersion = deserializedVersion == null ? null : deserializedVersion.getPbjSemanticVersion();
+        final var currentVersion = version.getPbjSemanticVersion();
+        final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
         logger.info(
-                "Migrating from Services version {} to {} with trigger {}",
-                () -> previousVersion == null ? "<NONE>" : HapiUtils.toString(previousVersion),
-                () -> HapiUtils.toString(currentVersion),
+                "{} from Services version {} @ current {} with trigger {}",
+                () -> isUpgrade ? "Upgrading" : (previousVersion == null ? "Starting" : "Restarting"),
+                () -> HapiUtils.toString(previousVersion),
+                version::readableServicesVersion,
                 () -> trigger);
         final var selfNodeInfo = extractSelfNodeInfo(platform, version);
         final var networkInfo = new UnavailableLedgerIdNetworkInfo(selfNodeInfo, platform);
@@ -425,7 +418,6 @@ public final class Hedera implements SwirldMain {
                 configProvider.getConfiguration(),
                 networkInfo,
                 metrics);
-        final var isUpgrade = isSoOrdered(previousVersion, currentVersion);
         if (isUpgrade && !trigger.equals(RECONNECT)) {
             // (FUTURE) We should probably remove this mono-service vestige, as it not currently used anywhere and
             // is hard to reconcile with a form of migration compatible with block streams and zero-downtime
@@ -567,9 +559,14 @@ public final class Hedera implements SwirldMain {
         final var creator =
                 daggerApp.networkInfo().nodeInfo(event.getCreatorId().id());
         if (creator == null) {
-            // We were given an event for a node that *does not exist in the address book*. This will be logged as
-            // a warning, as this should never happen, and we will skip the event, which may well result in an ISS.
-            logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
+            // It's normal immediately post-upgrade to still see events from a node removed from the address book
+            if (!isSoOrdered(event.getSoftwareVersion(), version.getPbjSemanticVersion())) {
+                logger.warn(
+                        "Received event (version {} vs current {}) from node {} which is not in the address book",
+                        com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
+                        com.hedera.hapi.util.HapiUtils.toString(version.getPbjSemanticVersion()),
+                        event.getCreatorId());
+            }
             return;
         }
 
@@ -615,7 +612,7 @@ public final class Hedera implements SwirldMain {
      * Start the gRPC Server if it is not already running.
      */
     void startGrpcServer() {
-        if (isEmbeddedTest == NO && !daggerApp.grpcServerManager().isRunning()) {
+        if (isNotEmbedded() && !daggerApp.grpcServerManager().isRunning()) {
             daggerApp.grpcServerManager().start();
         }
     }
@@ -624,7 +621,7 @@ public final class Hedera implements SwirldMain {
      * Called to perform orderly shutdown of the gRPC servers.
      */
     public void shutdownGrpcServer() {
-        if (isEmbeddedTest == NO) {
+        if (isNotEmbedded()) {
             daggerApp.grpcServerManager().stop();
         }
     }
@@ -712,12 +709,12 @@ public final class Hedera implements SwirldMain {
         daggerApp.platformStateAccessor().setPlatformState(platformState);
     }
 
-    private static HederaSoftwareVersion getNodeStartupVersion(@NonNull final Configuration startupConfig) {
-        final var versionConfig = startupConfig.getConfigData(VersionConfig.class);
+    private static HederaSoftwareVersion getNodeStartupVersion(@NonNull final Configuration config) {
+        final var versionConfig = config.getConfigData(VersionConfig.class);
         return new HederaSoftwareVersion(
                 versionConfig.hapiVersion(),
                 versionConfig.servicesVersion(),
-                startupConfig.getConfigData(HederaConfig.class).configVersion());
+                config.getConfigData(HederaConfig.class).configVersion());
     }
 
     private void logConfiguration() {
@@ -809,5 +806,14 @@ public final class Hedera implements SwirldMain {
         final var selfId = platform.getSelfId();
         final var nodeAddress = platform.getAddressBook().getAddress(selfId);
         return SelfNodeInfoImpl.of(nodeAddress, version);
+    }
+
+    /**
+     * Returns true if the source of time is the system time. Always true for live networks.
+     *
+     * @return true if the source of time is the system time
+     */
+    private boolean isNotEmbedded() {
+        return instantSource == InstantSource.system();
     }
 }

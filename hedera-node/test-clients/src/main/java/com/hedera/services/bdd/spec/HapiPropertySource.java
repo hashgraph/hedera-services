@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
 import static java.lang.System.arraycopy;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -27,7 +28,6 @@ import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.hedera.services.bdd.spec.props.MapPropertySource;
-import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -83,20 +83,6 @@ public interface HapiPropertySource {
                 }
             };
         }
-    }
-
-    default HapiSpec.CostSnapshotMode getCostSnapshotMode(String property) {
-        return HapiSpec.CostSnapshotMode.valueOf(get(property));
-    }
-
-    /**
-     * Returns the property as a {@link AutoSnapshotRecordSource} value.
-     *
-     * @param property the property to get
-     * @return the {@link AutoSnapshotRecordSource} value
-     */
-    default AutoSnapshotRecordSource getAutoSnapshotRecordSource(@NonNull final String property) {
-        return AutoSnapshotRecordSource.valueOf(get(property));
     }
 
     default HapiSpec.UTF8Mode getUTF8Mode(String property) {
@@ -259,7 +245,7 @@ public interface HapiPropertySource {
     static ServiceEndpoint asServiceEndpoint(String v) {
         String[] parts = v.split(":");
         return ServiceEndpoint.newBuilder()
-                .setIpAddressV4(ByteString.copyFromUtf8(parts[0]))
+                .setIpAddressV4(asOctets(parts[0]))
                 .setPort(Integer.parseInt(parts[1]))
                 .build();
     }
