@@ -19,6 +19,7 @@ package com.hedera.services.bdd.junit.hedera;
 import static java.util.Objects.requireNonNull;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -31,7 +32,7 @@ public abstract class AbstractNetwork implements HederaNetwork {
 
     protected AbstractNetwork(@NonNull final String networkName, @NonNull final List<HederaNode> nodes) {
         this.networkName = requireNonNull(networkName);
-        this.nodes = requireNonNull(nodes);
+        this.nodes = new ArrayList<>(requireNonNull(nodes));
     }
 
     /**

@@ -142,7 +142,7 @@ final class HederaSoftwareVersionTest {
 
         assertEquals(RELEASE_027_VERSION, deserializedVersion.getVersion());
         assertEquals(semver("1.2.3"), deserializedVersion.getHapiVersion());
-        assertEquals(semver("4.5.6"), deserializedVersion.getServicesVersion());
+        assertEquals(semver("4.5.6-2147483647"), deserializedVersion.getPbjSemanticVersion());
 
         // Write the deserialized version back to a byte array. It should exactly match the original byte array.
         final ByteArrayOutputStream newBytes = new ByteArrayOutputStream();
@@ -185,7 +185,6 @@ final class HederaSoftwareVersionTest {
         deserializedVersion.deserialize(in, deserializedVersion.getVersion());
 
         assertThat(deserializedVersion.getHapiVersion()).isEqualTo(version.getHapiVersion());
-        assertThat(deserializedVersion.getServicesVersion()).isEqualTo(version.getServicesVersion());
         assertThat(deserializedVersion.getPbjSemanticVersion()).isEqualTo(version.getPbjSemanticVersion());
     }
 

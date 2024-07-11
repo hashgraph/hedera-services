@@ -130,7 +130,9 @@ _Please note that the expected behavior described in this section is valid if th
      - success, if the address is a contract, and we are using the correct ABI;
      - success with no op, if there is no contract;
      - fail, if the address is a contract, and we are **not** using the correct ABI.
-   - **Hedera:** success, the HTS, ExchangeRate and PRNG system contracts exist on these addresses accordingly.
+   - **Hedera:** the HTS, ExchangeRate and PRNG system contracts exist on these addresses accordingly.
+     - success, if we are using the correct ABI;
+     - fail, if we are **not** using the correct ABI.
 5. For address range 0x16A → 0x3E8 (0.0.362 → 0.0.1000):
    - **Ethereum:**
      - success, if the address is a contract, and we are using the correct ABI;

@@ -16,6 +16,8 @@
 
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.REACHED;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.UNREACHABLE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.DATA_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.ERROR_REDIRECT_FILE;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.OUTPUT_DIR;
@@ -28,7 +30,6 @@ import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -37,7 +38,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -46,9 +46,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
-import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
@@ -94,6 +93,16 @@ public class ProcessUtils {
     }
 
     /**
+     * Returns true if the given error is a bind exception that is correlated with a node starting.
+     *
+     * @param error the error to check
+     * @return true if the error is a correlated bind exception
+     */
+    public static boolean hadCorrelatedBindException(@NonNull final AssertionError error) {
+        return error.getMessage().contains("bindExceptionSeen=YES");
+    }
+
+    /**
      * Destroys any process that appears to be a node started from the given metadata, based on the
      * process command being {@code java} and having a last argument matching the node ID.
      *
@@ -110,20 +119,20 @@ public class ProcessUtils {
      * Starts a sub-process node from the given metadata and main class reference, and returns its {@link ProcessHandle}.
      *
      * @param metadata the metadata of the node to start
-     * @param appJar if non-null, the JAR to use in place of the hedera-app build artifacts
+     * @param configVersion the version of the configuration to use
      * @return the {@link ProcessHandle} of the started node
      */
-    public static ProcessHandle startSubProcessNodeFrom(
-            @NonNull final NodeMetadata metadata, @Nullable final String appJar) {
+    public static ProcessHandle startSubProcessNodeFrom(@NonNull final NodeMetadata metadata, final int configVersion) {
         final var builder = new ProcessBuilder();
         final var environment = builder.environment();
         environment.put("LC_ALL", "en.UTF-8");
         environment.put("LANG", "en_US.UTF-8");
         environment.put("grpc.port", Integer.toString(metadata.grpcPort()));
+        environment.put("hedera.config.version", Integer.toString(configVersion));
         try {
             final var redirectFile = guaranteedExtantFile(
                     metadata.workingDirOrThrow().resolve(OUTPUT_DIR).resolve(ERROR_REDIRECT_FILE));
-            builder.command(javaCommandLineFor(metadata, appJar))
+            builder.command(javaCommandLineFor(metadata))
                     .directory(metadata.workingDirOrThrow().toFile());
             // When in CI redirect errors to a log for debugging; when running locally inherit IO
             if (System.getenv("CI") != null) {
@@ -137,8 +146,7 @@ public class ProcessUtils {
         }
     }
 
-    private static List<String> javaCommandLineFor(
-            @NonNull final NodeMetadata metadata, @Nullable final String appJar) {
+    private static List<String> javaCommandLineFor(@NonNull final NodeMetadata metadata) {
         final List<String> commandLine = new ArrayList<>();
         commandLine.add(ProcessHandle.current().info().command().orElseThrow());
         // Only activate JDWP if not in CI
@@ -150,7 +158,7 @@ public class ProcessUtils {
         commandLine.addAll(List.of(
                 "-classpath",
                 // Use the same classpath that started this process, excluding test-clients
-                currentNonTestClientClasspath(appJar),
+                currentNonTestClientClasspath(),
                 // JVM system
                 "-Dfile.encoding=UTF-8",
                 "-Dprometheus.endpointPortNumber=" + metadata.prometheusPort(),
@@ -174,20 +182,37 @@ public class ProcessUtils {
     }
 
     /**
-     * Returns a future that resolves when the given condition is true, backing off checking
-     * the condition by the number of milliseconds returned by the given supplier.
+     * Returns a future that resolves when the given condition is true, backing off checking the condition by the
+     * number of milliseconds returned by the given supplier.
+     *
+     * @param condition the condition to wait for
+     * @param checkBackoffMs the supplier of the number of milliseconds to back off between checks
+     * @return
+     */
+    public static CompletableFuture<Void> conditionFuture(
+            @NonNull final BooleanSupplier condition, @NonNull final LongSupplier checkBackoffMs) {
+        return conditionFuture(() -> condition.getAsBoolean() ? REACHED : ConditionStatus.PENDING, checkBackoffMs);
+    }
+
+    /**
+     * Returns a future that resolves when the given condition is reached, or fails when it becomes unreachable,
+     * backing off checking the condition by the number of milliseconds returned by the given supplier.
      *
      * @param condition the condition to wait for
      * @param checkBackoffMs the supplier of the number of milliseconds to back off between checks
      * @return a future that resolves when the condition is true or the timeout is reached
      */
     public static CompletableFuture<Void> conditionFuture(
-            @NonNull final BooleanSupplier condition, @NonNull final LongSupplier checkBackoffMs) {
+            @NonNull final Supplier<ConditionStatus> condition, @NonNull final LongSupplier checkBackoffMs) {
         requireNonNull(condition);
         requireNonNull(checkBackoffMs);
         return CompletableFuture.runAsync(
                 () -> {
-                    while (!condition.getAsBoolean()) {
+                    ConditionStatus status;
+                    while ((status = condition.get()) != REACHED) {
+                        if (status == UNREACHABLE) {
+                            throw new IllegalStateException("Condition is unreachable");
+                        }
                         try {
                             MILLISECONDS.sleep(checkBackoffMs.getAsLong());
                         } catch (InterruptedException e) {
@@ -199,7 +224,7 @@ public class ProcessUtils {
                 EXECUTOR);
     }
 
-    private static String currentNonTestClientClasspath(@Nullable final String appJar) {
+    private static String currentNonTestClientClasspath() {
         // Could have been launched with -cp, or -classpath, or @/path/to/classpathFile.txt, or maybe module path?
         final var args = ProcessHandle.current().info().arguments().orElse(EMPTY_STRING_ARRAY);
 
@@ -222,11 +247,8 @@ public class ProcessUtils {
         if (classpath.isBlank()) {
             throw new IllegalStateException("Cannot discover the classpath. Was --module-path used instead?");
         }
-        Predicate<String> test = s -> !s.contains("test-clients");
-        if (appJar != null) {
-            test = test.and(s -> !s.contains("hedera-app/"));
-        }
-        return Stream.concat(Arrays.stream(classpath.split(":")).filter(test), Optional.ofNullable(appJar).stream())
+        return Arrays.stream(classpath.split(":"))
+                .filter(s -> !s.contains("test-clients"))
                 .collect(Collectors.joining(":"));
     }
 

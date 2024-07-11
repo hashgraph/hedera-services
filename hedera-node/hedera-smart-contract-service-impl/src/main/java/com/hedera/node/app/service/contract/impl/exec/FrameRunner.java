@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.contractsConfigOf;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.getAndClearPropagatedCallFailure;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.maybeNext;
@@ -173,8 +173,8 @@ public class FrameRunner {
     private void propagateHaltException(MessageFrame frame, ExceptionalHaltReason haltReason) {
         if (haltReason.equals(INSUFFICIENT_CHILD_RECORDS)) {
             setPropagatedCallFailure(frame, HevmPropagatedCallFailure.RESULT_CANNOT_BE_EXTERNALIZED);
-        } else if (haltReason.equals(INVALID_FEE_SUBMITTED)) {
-            setPropagatedCallFailure(frame, HevmPropagatedCallFailure.INVALID_FEE_SUBMITTED);
+        } else if (haltReason.equals(INVALID_CONTRACT_ID)) {
+            setPropagatedCallFailure(frame, HevmPropagatedCallFailure.INVALID_CONTRACT_ID);
         }
     }
 }

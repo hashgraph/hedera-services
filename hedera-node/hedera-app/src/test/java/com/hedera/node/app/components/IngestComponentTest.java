@@ -79,7 +79,8 @@ class IngestComponentTest {
                 new HederaSoftwareVersion(
                         SemanticVersion.newBuilder().major(1).build(),
                         SemanticVersion.newBuilder().major(2).build(),
-                        0));
+                        0),
+                "Node7");
 
         final var configProvider = new ConfigProviderImpl(false);
         app = DaggerHederaInjectionComponent.builder()

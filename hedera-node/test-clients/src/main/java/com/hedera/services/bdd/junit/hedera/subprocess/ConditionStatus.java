@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.config;
+package com.hedera.services.bdd.junit.hedera.subprocess;
 
 /**
- * Whether the node is "embedded" in a test runner, hence does not need gRPC servers.
+ * Enumerates possible status for a condition we are awaiting..
  */
-public enum IsEmbeddedTest {
-    YES,
-    NO
+public enum ConditionStatus {
+    REACHED,
+    PENDING,
+    UNREACHABLE,
 }

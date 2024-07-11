@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.spec.utilops.records;
 
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.TargetNetworkType;
+import com.hedera.services.bdd.spec.TargetNetworkType;
 
 /**
  * Enumerates the different modes in which a {@link SnapshotModeOp} can be run.

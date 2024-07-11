@@ -1,0 +1,1 @@
+[{"inputs":[{"internalType":"address payable","name":"Address","type":"address"}],"name":"touchAccount","outputs":[],"stateMutability":"payable","type":"function"},{"stateMutability":"payable","type":"receive"}]
