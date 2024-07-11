@@ -9,6 +9,7 @@ module com.hedera.node.app.service.file.impl {
     requires transitive com.swirlds.state.api;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
+    requires transitive static java.compiler; // javax.annotation.processing.Generated
     requires transitive javax.inject;
     requires com.swirlds.common;
     requires com.fasterxml.jackson.databind;
@@ -16,7 +17,6 @@ module com.hedera.node.app.service.file.impl {
     requires org.apache.commons.lang3;
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
-    requires transitive static java.compiler; // javax.annotation.processing.Generated
 
     exports com.hedera.node.app.service.file.impl.handlers;
     exports com.hedera.node.app.service.file.impl.records;
