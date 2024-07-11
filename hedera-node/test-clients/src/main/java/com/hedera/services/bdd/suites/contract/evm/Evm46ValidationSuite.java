@@ -65,7 +65,6 @@ import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.b
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -1217,7 +1216,7 @@ public class Evm46ValidationSuite {
                                 .gas(GAS_LIMIT_FOR_CALL * 4)
                                 .sending(2L)
                                 .via(INNER_TXN)
-                                .hasKnownStatus(INVALID_FEE_SUBMITTED))
+                                .hasKnownStatus(INVALID_CONTRACT_ID))
                 .then(getAccountBalance(MAKE_CALLS_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
@@ -1299,7 +1298,7 @@ public class Evm46ValidationSuite {
                                                 mirrorAddrWith(targetId.get().getAccountNum()))
                                         .gas(GAS_LIMIT_FOR_CALL * 4)
                                         .via(INNER_TXN)
-                                        .hasKnownStatus(INVALID_FEE_SUBMITTED))))
+                                        .hasKnownStatus(INVALID_CONTRACT_ID))))
                 .then(getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
@@ -1372,7 +1371,7 @@ public class Evm46ValidationSuite {
                                                 mirrorAddrWith(targetId.get().getAccountNum()))
                                         .gas(GAS_LIMIT_FOR_CALL * 4)
                                         .via(INNER_TXN)
-                                        .hasKnownStatus(INVALID_FEE_SUBMITTED))))
+                                        .hasKnownStatus(INVALID_CONTRACT_ID))))
                 .then(getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 

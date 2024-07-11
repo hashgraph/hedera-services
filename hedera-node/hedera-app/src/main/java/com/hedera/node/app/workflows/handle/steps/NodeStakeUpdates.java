@@ -64,22 +64,30 @@ public class NodeStakeUpdates {
      * <p>The only exception to this rule is when {@code consensusTimeOfLastHandledTxn} is null,
      * <b>which should only happen on node startup.</b> The node should therefore run this process
      * to catch up on updates and distributions when first coming online.
+     *
      * @param stack the savepoint stack
+     * @param isGenesis whether the current transaction is the genesis transaction
+     * @param tokenContext the token context
      */
-    public void process(@NonNull final SavepointStackImpl stack, @NonNull final TokenContext tokenContext) {
+    public void process(
+            @NonNull final SavepointStackImpl stack,
+            @NonNull final TokenContext tokenContext,
+            final boolean isGenesis) {
         requireNonNull(stack, "stack must not be null");
         requireNonNull(tokenContext, "tokenContext must not be null");
         final var blockStore = tokenContext.readableStore(ReadableBlockRecordStore.class);
-        final var consensusTimeOfLastHandledTxn = blockStore.getLastBlockInfo().consTimeOfLastHandledTxn();
-
-        final var consensusTime = tokenContext.consensusTime();
-        if (consensusTimeOfLastHandledTxn == null
-                || (consensusTime.getEpochSecond() > consensusTimeOfLastHandledTxn.seconds()
-                        && isNextStakingPeriod(
-                                consensusTime,
-                                Instant.ofEpochSecond(
-                                        consensusTimeOfLastHandledTxn.seconds(), consensusTimeOfLastHandledTxn.nanos()),
-                                tokenContext))) {
+        var shouldExport = isGenesis;
+        if (!shouldExport) {
+            final var consensusTime = tokenContext.consensusTime();
+            final var lastHandleTime = blockStore.getLastBlockInfo().consTimeOfLastHandledTxnOrThrow();
+            if (consensusTime.getEpochSecond() > lastHandleTime.seconds()) {
+                shouldExport = isNextStakingPeriod(
+                        consensusTime,
+                        Instant.ofEpochSecond(lastHandleTime.seconds(), lastHandleTime.nanos()),
+                        tokenContext);
+            }
+        }
+        if (shouldExport) {
             try {
                 // handle staking updates
                 stakingCalculator.updateNodes(tokenContext);
