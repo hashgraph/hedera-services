@@ -46,7 +46,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingWithDecimals;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_COLLECTOR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -66,10 +65,10 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -79,9 +78,9 @@ import com.swirlds.common.utility.CommonUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
@@ -109,15 +108,10 @@ public class TokenAirdropSuite {
     private static final String SECP_256K1_KEY = "secp256K1";
 
     @BeforeAll
-    static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
-        specManager.setup(overriding(AIRDROPS_ENABLED, "true"));
-        specManager.setup(overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "true"));
-    }
-
-    @AfterAll
-    static void afterAll(@NonNull final SpecManager specManager) throws Throwable {
-        specManager.teardown(overriding(AIRDROPS_ENABLED, "false"));
-        specManager.teardown(overriding(UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "false"));
+    static void beforeAll(@NonNull final TestLifecycle lifecycle) {
+        lifecycle.overrideInClass(Map.of(
+                AIRDROPS_ENABLED, "true",
+                UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "true"));
     }
 
     @HapiTest

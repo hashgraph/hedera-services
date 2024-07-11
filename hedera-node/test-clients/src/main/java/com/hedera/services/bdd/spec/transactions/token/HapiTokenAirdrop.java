@@ -115,8 +115,10 @@ public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
                         .addTokens(spec.registry().getTokenID(movement.getToken()))
                         .setAccount(spec.registry().getKeyAlias(receiver))
                         .build();
-                Consumer<TransactionBody.Builder> associateTxnConsumer = (b) -> b.setTokenAssociate(tokenAssociateTransactionBody);
-                final Transaction.Builder transactionBuilder = spec.txns().getReadyToSign(associateTxnConsumer, null, spec);
+                Consumer<TransactionBody.Builder> associateTxnConsumer =
+                        (b) -> b.setTokenAssociate(tokenAssociateTransactionBody);
+                final Transaction.Builder transactionBuilder =
+                        spec.txns().getReadyToSign(associateTxnConsumer, null, spec);
                 final var associationTx = getSigned(spec, transactionBuilder, signersToUseFor(spec));
                 final var expiry = lookupExpiry(spec, receiver);
                 FeeCalculator.ActivityMetrics metricsCalc = (_txn, svo) -> {
