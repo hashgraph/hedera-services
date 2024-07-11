@@ -131,7 +131,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusInstant);
+        recordBuilder = new SingleTransactionRecordBuilderImpl();
         tokenFieldsValidator = new TokenAttributesValidator();
         customFeesValidator = new CustomFeesValidator();
         tokenCreateValidator = new TokenCreateValidator(tokenFieldsValidator);

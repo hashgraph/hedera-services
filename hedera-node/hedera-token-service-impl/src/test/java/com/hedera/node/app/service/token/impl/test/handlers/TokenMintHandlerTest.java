@@ -68,7 +68,6 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
     private final Bytes metadata1 = Bytes.wrap("memo".getBytes());
     private final Bytes metadata2 = Bytes.wrap("memo2".getBytes());
-    private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
     private SingleTransactionRecordBuilderImpl recordBuilder;
     private TokenMintHandler subject;
 
@@ -78,7 +77,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
         subject = new TokenMintHandler(new TokenSupplyChangeOpsValidator());
-        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
+        recordBuilder = new SingleTransactionRecordBuilderImpl();
     }
 
     @Test
