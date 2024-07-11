@@ -396,7 +396,6 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     @Test
     void preHandleWorksWhenAdminKeyValid() throws PreCheckException {
-        mockPayerLookup(anotherKey);
         txn = new NodeUpdateBuilder()
                 .withNodeId(nodeId.number())
                 .withAccountId(asAccount(53))
@@ -412,7 +411,6 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     @Test
     void preHandleFailedWhenAdminKeyInValid() throws PreCheckException {
-        mockPayerLookup(anotherKey);
         txn = new NodeUpdateBuilder()
                 .withNodeId(nodeId.number())
                 .withAdminKey(invalidKey)
@@ -423,7 +421,6 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     @Test
     void preHandleFailedWhenNodeNotExist() throws PreCheckException {
-        mockPayerLookup(anotherKey);
         txn = new NodeUpdateBuilder().withNodeId(2).build();
         final var context = setupPreHandle(true, txn);
         assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_NODE_ID);
@@ -431,7 +428,6 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     @Test
     void preHandleFailedWhenNodeDeleted() throws PreCheckException {
-        mockPayerLookup(anotherKey);
         givenValidNode(true);
         refreshStoresWithCurrentNodeInReadable();
         txn = new NodeUpdateBuilder().withNodeId(nodeId.number()).build();
@@ -441,7 +437,6 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     @Test
     void preHandleFailedWhenOldAdminKeyInValid() throws PreCheckException {
-        mockPayerLookup(anotherKey);
         givenValidNodeWithAdminKey(invalidKey);
         refreshStoresWithCurrentNodeInReadable();
         txn = new NodeUpdateBuilder().withNodeId(nodeId.number()).build();
@@ -451,7 +446,6 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     @Test
     void preHandleWorksFailWhenAccountIdNotGood() throws PreCheckException {
-        mockPayerLookup(anotherKey);
         txn = new NodeUpdateBuilder()
                 .withNodeId(nodeId.number())
                 .withAdminKey(key)
@@ -463,7 +457,6 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     @Test
     void preHandleWorksFailWhenAccountIdIsAlias() throws PreCheckException {
-        mockPayerLookup(anotherKey);
         txn = new NodeUpdateBuilder()
                 .withNodeId(nodeId.number())
                 .withAdminKey(key)
@@ -475,7 +468,6 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
     @Test
     void preHandleWorksFailWhenUpdateAccountIdNotAllowed() throws PreCheckException {
-        mockPayerLookup(anotherKey);
         txn = new NodeUpdateBuilder()
                 .withNodeId(nodeId.number())
                 .withAdminKey(key)
@@ -518,6 +510,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
         final var config = HederaTestConfigBuilder.create()
                 .withValue("nodes.updateAccountIdAllowed", updateAccountIdAllowed)
                 .getOrCreateConfig();
+        mockPayerLookup(anotherKey);
         final var context = new FakePreHandleContext(accountStore, txn, config);
         context.registerStore(ReadableNodeStore.class, readableStore);
         return context;

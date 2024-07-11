@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle.validation;
 
+import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_CREATE_TOPIC;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_EXPIRED_AND_PENDING_REMOVAL;
@@ -67,7 +69,7 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
             @NonNull final ExpiryMeta creationMeta,
             @NonNull final HederaFunctionality functionality) {
         if (creationMeta.hasAutoRenewAccountId()) {
-            validateAutoRenewAccount(creationMeta.autoRenewAccountId());
+            validateAutoRenewAccount(requireNonNull(creationMeta.autoRenewAccountId()));
         }
 
         long effectiveExpiry = creationMeta.expiry();
@@ -79,12 +81,12 @@ public class ExpiryValidatorImpl implements ExpiryValidator {
         }
         // To maintain same behaviour for differential testing this condition is needed.
         // FUTURE: This condition should be removed after differential testing is done
-        if (functionality == HederaFunctionality.CONSENSUS_CREATE_TOPIC) {
+        if (functionality == CONSENSUS_CREATE_TOPIC) {
             // In mono-service this check is done first for topic creation.
             context.attributeValidator().validateExpiry(effectiveExpiry);
             // Even if the effective expiry is valid, we still also require any explicit auto-renew period to be valid
             validateAutoRenew(creationMeta);
-        } else if (functionality == HederaFunctionality.TOKEN_CREATE) {
+        } else if (functionality == TOKEN_CREATE) {
             // In mono-service, INVALID_RENEWAL_PERIOD is thrown for token creation and update
             // if the autoRenewPeriod is not in range.
             // It would be more correct to throw AUTO_RENEW_DURATION_NOT_IN_RANGE like the other services do,

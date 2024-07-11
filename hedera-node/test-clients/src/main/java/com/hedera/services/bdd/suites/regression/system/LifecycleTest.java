@@ -20,6 +20,8 @@ import static com.hedera.services.bdd.junit.hedera.MarkerFile.EXEC_IMMEDIATE_MF;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.buildUpgradeZipFrom;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doAdhoc;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeUpgrade;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.noOp;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.prepareUpgrade;
@@ -39,14 +41,15 @@ import static com.hedera.services.bdd.suites.freeze.CommonUpgradeResources.upgra
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.burstOfTps;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.utilops.FakeNmt;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 /**
@@ -62,19 +65,18 @@ public interface LifecycleTest {
     Duration EXEC_IMMEDIATE_MF_TIMEOUT = Duration.ofSeconds(10);
     Duration RESTART_TO_ACTIVE_TIMEOUT = Duration.ofSeconds(180);
     Duration PORT_UNBINDING_WAIT_PERIOD = Duration.ofSeconds(180);
+    AtomicInteger CURRENT_CONFIG_VERSION = new AtomicInteger(0);
 
     /**
      * Returns an operation that asserts that the current version of the network has the given
      * semantic version modified by the given config version.
      *
      * @param versionSupplier the supplier of the expected version
-     * @param configVersion the expected configuration version
      * @return the operation
      */
-    default HapiSpecOperation assertVersion(
-            @NonNull final Supplier<SemanticVersion> versionSupplier, final int configVersion) {
-        return sourcing(() ->
-                getVersionInfo().hasProtoServicesVersion(fromBaseAndConfig(versionSupplier.get(), configVersion)));
+    default HapiSpecOperation assertExpectedConfigVersion(@NonNull final Supplier<SemanticVersion> versionSupplier) {
+        return sourcing(() -> getVersionInfo()
+                .hasProtoServicesVersion(fromBaseAndConfig(versionSupplier.get(), CURRENT_CONFIG_VERSION.get())));
     }
 
     /**
@@ -117,12 +119,43 @@ public interface LifecycleTest {
     }
 
     /**
+     * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP.
+     * @return the operation
+     */
+    default SpecOperation upgradeToNextConfigVersion() {
+        return sourcing(() -> upgradeToConfigVersion(CURRENT_CONFIG_VERSION.get() + 1, noOp()));
+    }
+
+    /**
+     * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP.
+     * @return the operation
+     */
+    default SpecOperation restartAtNextConfigVersion() {
+        return blockingOrder(
+                freezeOnly().startingIn(5).seconds().payingWith(GENESIS),
+                confirmFreezeAndShutdown(),
+                sourcing(() -> FakeNmt.restartNetwork(CURRENT_CONFIG_VERSION.incrementAndGet())),
+                waitForActiveNetwork(RESTART_TIMEOUT));
+    }
+
+    /**
      * Returns an operation that upgrades the network to the given configuration version using a fake upgrade ZIP.
      * @param version the configuration version to upgrade to
      * @return the operation
      */
     default HapiSpecOperation upgradeToConfigVersion(final int version) {
         return upgradeToConfigVersion(version, noOp());
+    }
+
+    /**
+     * Returns an operation that upgrades the network to the next configuration version using a fake upgrade ZIP,
+     * running the given operation before the network is restarted.
+     *
+     * @param preRestartOp an operation to run before the network is restarted
+     * @return the operation
+     */
+    default SpecOperation upgradeToNextConfigVersion(@NonNull final SpecOperation preRestartOp) {
+        return sourcing(() -> upgradeToConfigVersion(CURRENT_CONFIG_VERSION.get() + 1, preRestartOp));
     }
 
     /**
@@ -143,7 +176,8 @@ public interface LifecycleTest {
                         .havingHash(upgradeFileHashAt(FAKE_UPGRADE_ZIP_LOC))),
                 confirmFreezeAndShutdown(),
                 preRestartOp,
-                FakeNmt.restartNetworkWithConfigVersion(version),
+                FakeNmt.restartNetwork(version),
+                doAdhoc(() -> CURRENT_CONFIG_VERSION.set(version)),
                 waitForActiveNetwork(RESTART_TIMEOUT));
     }
 

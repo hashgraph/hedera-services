@@ -18,8 +18,8 @@ package com.hedera.services.bdd.spec.dsl.operations.queries;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.operations.AbstractSpecOperation;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;

@@ -27,9 +27,9 @@ import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTIO
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.suites.HapiSuite;
 import java.math.BigInteger;

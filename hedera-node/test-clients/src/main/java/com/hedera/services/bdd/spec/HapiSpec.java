@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImp
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
+import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.ERROR;
@@ -67,13 +68,12 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.junit.hedera.remote.RemoteNetwork;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.fees.FeesAndRatesProvider;
 import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
@@ -90,7 +90,6 @@ import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStreamAssertion;
 import com.hedera.services.bdd.spec.verification.traceability.SidecarWatcher;
-import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -151,7 +150,7 @@ public class HapiSpec implements Runnable, Executable {
     private static final String AS_WRITTEN_DISPLAY_NAME = "as written";
 
     public static final ThreadLocal<HederaNetwork> TARGET_NETWORK = new ThreadLocal<>();
-    public static final ThreadLocal<SpecManager> SPEC_MANAGER = new ThreadLocal<>();
+    public static final ThreadLocal<TestLifecycle> TEST_LIFECYCLE = new ThreadLocal<>();
     public static final ThreadLocal<String> SPEC_NAME = new ThreadLocal<>();
 
     private static final AtomicLong NEXT_AUTO_SCHEDULE_NUM = new AtomicLong(1);
@@ -266,7 +265,7 @@ public class HapiSpec implements Runnable, Executable {
      *
      * @param props A map of new properties
      */
-    public void addOverrideProperties(final Map<String, Object> props) {
+    public void addOverrideProperties(@NonNull final Map<String, String> props) {
         hapiSetup.addOverrides(props);
     }
 
@@ -410,6 +409,14 @@ public class HapiSpec implements Runnable, Executable {
      */
     public @NonNull HederaNetwork targetNetworkOrThrow() {
         return requireNonNull(targetNetwork);
+    }
+
+    /**
+     * Returns the best-effort representation of the properties in effect on startup of the target network.
+     * @return the startup properties
+     */
+    public @NonNull HapiPropertySource startupProperties() {
+        return targetNetworkOrThrow().startupProperties();
     }
 
     /**
@@ -639,6 +646,10 @@ public class HapiSpec implements Runnable, Executable {
         }
         if (sidecarWatcher != null) {
             sidecarWatcher.ensureUnsubscribed();
+        }
+        // Also terminate any embedded network not being shared by multiple specs
+        if (targetNetwork instanceof EmbeddedNetwork embeddedNetwork && embeddedNetwork != SHARED_NETWORK.get()) {
+            embeddedNetwork.terminate();
         }
     }
 
@@ -1190,8 +1201,8 @@ public class HapiSpec implements Runnable, Executable {
             log.info("Targeting network '{}' for spec '{}'", targetNetwork.name(), spec.name);
             doTargetSpec(spec, targetNetwork);
         }
-        Optional.ofNullable(SPEC_MANAGER.get())
-                .map(SpecManager::getSharedStates)
+        Optional.ofNullable(TEST_LIFECYCLE.get())
+                .map(TestLifecycle::getSharedStates)
                 .ifPresent(spec::setSharedStates);
         return spec;
     }
@@ -1212,7 +1223,7 @@ public class HapiSpec implements Runnable, Executable {
         spec.addOverrideProperties(Map.of("nodes", specNodes));
 
         if (targetNetwork instanceof EmbeddedNetwork embeddedNetwork) {
-            final Map<String, Object> overrides;
+            final Map<String, String> overrides;
             if (repeatableModeRequested()) {
                 // Statuses are immediately available in repeatable mode because ingest is synchronous;
                 // ECDSA signatures are inherently random, so use only ED25519 in repeatable mode

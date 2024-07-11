@@ -18,8 +18,8 @@ package com.hedera.services.bdd.spec.utilops.grouping;
 
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.utilops.UtilOp;
 
 public class InBlockingOrder extends UtilOp implements GroupedOps<InBlockingOrder> {

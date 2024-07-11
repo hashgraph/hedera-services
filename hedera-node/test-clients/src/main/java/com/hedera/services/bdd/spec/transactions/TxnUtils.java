@@ -47,9 +47,9 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -682,7 +682,7 @@ public class TxnUtils {
     }
 
     public static void triggerAndCloseAtLeastOneFile(@NonNull final HapiSpec spec) throws InterruptedException {
-        Thread.sleep(END_OF_BLOCK_PERIOD_SLEEP_PERIOD.toMillis());
+        spec.sleepConsensusTime(END_OF_BLOCK_PERIOD_SLEEP_PERIOD);
         // Should trigger a new record to be written if we have crossed a 2-second boundary
         final var triggerOp = TxnVerbs.cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
                 .deferStatusResolution()
@@ -695,7 +695,7 @@ public class TxnUtils {
         doIfNotInterrupted(() -> {
             triggerAndCloseAtLeastOneFile(spec);
             log.info("Sleeping a bit to give the record stream a chance to close");
-            Thread.sleep(BLOCK_CREATION_SLEEP_PERIOD.toMillis());
+            spec.sleepConsensusTime(BLOCK_CREATION_SLEEP_PERIOD);
         });
     }
 

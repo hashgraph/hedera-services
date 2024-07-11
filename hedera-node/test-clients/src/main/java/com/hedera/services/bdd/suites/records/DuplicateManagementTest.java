@@ -57,6 +57,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
 import java.time.Duration;
@@ -68,7 +69,7 @@ import org.junit.jupiter.api.Tag;
 
 public class DuplicateManagementTest {
     private static final String REPEATED = "repeated";
-    private static final String TXN_ID = "txnId";
+    public static final String TXN_ID = "txnId";
     private static final String TO = "0.0.3";
     private static final String CIVILIAN = "civilian";
     private static final long MS_TO_WAIT_FOR_CONSENSUS = 6_000L;
@@ -134,8 +135,8 @@ public class DuplicateManagementTest {
                         }));
     }
 
-    @HapiTest
     @Tag(EMBEDDED)
+    @GenesisHapiTest
     @DisplayName("if a node submits an authorized transaction without payer signature, it is charged the network fee")
     final Stream<DynamicTest> chargesNetworkFeeToNodeThatSubmitsAuthorizedTransactionWithoutPayerSignature() {
         final var submittingNodeAccountId = "0.0.4";
@@ -166,12 +167,14 @@ public class DuplicateManagementTest {
                         .setNode("0.0.666")
                         .withSubmissionStrategy(usingVersion(SyntheticVersion.PAST))
                         .hasAnyStatusAtAll(),
-                assertHgcaaLogDoesNotContain(byNodeId(0), "not in the address book", Duration.ofMillis(250)),
+                assertHgcaaLogDoesNotContain(
+                        byNodeId(0), "node 666 which is not in the address book", Duration.ofSeconds(1)),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
                         .setNode("0.0.666")
                         .withSubmissionStrategy(usingVersion(SyntheticVersion.PRESENT))
                         .hasAnyStatusAtAll(),
-                assertHgcaaLogContains(byNodeId(0), "not in the address book", Duration.ofMillis(250)));
+                assertHgcaaLogContains(
+                        byNodeId(0), "node 666 which is not in the address book", Duration.ofSeconds(1)));
     }
 
     @HapiTest
