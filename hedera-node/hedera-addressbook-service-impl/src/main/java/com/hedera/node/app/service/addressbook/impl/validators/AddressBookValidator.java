@@ -41,7 +41,6 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.config.data.NodesConfig;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
@@ -151,7 +150,8 @@ public class AddressBookValidator {
      */
     public void validateAccountId(@Nullable AccountID accountId) throws PreCheckException {
         validateAccountID(accountId, INVALID_NODE_ACCOUNT_ID);
-        validateFalsePreCheck(!accountId.hasAccountNum() && accountId.hasAlias(), INVALID_NODE_ACCOUNT_ID);
+        validateFalsePreCheck(
+                !requireNonNull(accountId).hasAccountNum() && accountId.hasAlias(), INVALID_NODE_ACCOUNT_ID);
     }
 
     private void validateEndpoint(@NonNull final ServiceEndpoint endpoint, @NonNull final NodesConfig nodesConfig) {
@@ -159,23 +159,11 @@ public class AddressBookValidator {
         requireNonNull(nodesConfig);
 
         validateFalse(endpoint.port() == 0, INVALID_ENDPOINT);
+        final var addressLen = endpoint.ipAddressV4().length();
+        validateFalse(addressLen == 0 && endpoint.domainName().trim().isEmpty(), INVALID_ENDPOINT);
         validateFalse(
-                endpoint.ipAddressV4().length() == 0
-                        && endpoint.domainName().trim().isEmpty(),
-                INVALID_ENDPOINT);
-        validateFalse(
-                endpoint.ipAddressV4().length() != 0
-                        && !endpoint.domainName().trim().isEmpty(),
-                IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT);
+                addressLen != 0 && !endpoint.domainName().trim().isEmpty(), IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT);
         validateFalse(endpoint.domainName().trim().length() > nodesConfig.maxFqdnSize(), FQDN_SIZE_TOO_LARGE);
-        validateFalse(endpoint.ipAddressV4().length() != 0 && !isIPv4(endpoint.ipAddressV4()), INVALID_IPV4_ADDRESS);
-    }
-
-    private boolean isIPv4(@NonNull final Bytes ip) {
-        requireNonNull(ip);
-
-        final var part = "(\\d{1,2}|(0|1)\\d{2}|2[0-4]\\d|25[0-5])";
-        final var regex = part + "\\." + part + "\\." + part + "\\." + part;
-        return ip.asUtf8String().matches(regex);
+        validateFalse(addressLen != 0 && addressLen != 4, INVALID_IPV4_ADDRESS);
     }
 }

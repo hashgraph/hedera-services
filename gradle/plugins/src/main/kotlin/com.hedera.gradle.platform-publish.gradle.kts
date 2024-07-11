@@ -88,8 +88,19 @@ publishing.repositories {
 // Register one 'release*' task for each publishing repository
 publishing.repositories.all {
     val ucName = name.replaceFirstChar { it.titlecase() }
-    tasks.register("release$ucName") {
-        group = "release"
-        dependsOn(tasks.named("publishMavenPublicationTo${ucName}Repository"))
+    val taskName = "release$ucName"
+
+    // Register the task if it is not already registered
+    if (!tasks.names.contains(taskName)) {
+        tasks.register(taskName) {
+            group = "release"
+            dependsOn(tasks.named("publishMavenPublicationTo${ucName}Repository"))
+        }
+    } else {
+        // If the task is already registered, we just add the group & dependency
+        tasks.named(taskName) {
+            group = "release"
+            dependsOn(tasks.named("publishMavenPublicationTo${ucName}Repository"))
+        }
     }
 }

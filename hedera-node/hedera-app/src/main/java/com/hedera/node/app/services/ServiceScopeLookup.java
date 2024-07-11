@@ -57,8 +57,6 @@ public class ServiceScopeLookup {
     @NonNull
     public String getServiceName(@NonNull final TransactionBody txBody) {
         return switch (txBody.data().kind()) {
-            case NODE_CREATE, NODE_UPDATE, NODE_DELETE -> AddressBookService.NAME;
-
             case CONSENSUS_CREATE_TOPIC,
                     CONSENSUS_UPDATE_TOPIC,
                     CONSENSUS_DELETE_TOPIC,
@@ -118,6 +116,8 @@ public class ServiceScopeLookup {
                 case FILE_ID -> FileService.NAME;
                 default -> NON_EXISTING_SERVICE;
             };
+
+            case NODE_CREATE, NODE_DELETE, NODE_UPDATE -> AddressBookService.NAME;
 
             default -> NON_EXISTING_SERVICE;
         };

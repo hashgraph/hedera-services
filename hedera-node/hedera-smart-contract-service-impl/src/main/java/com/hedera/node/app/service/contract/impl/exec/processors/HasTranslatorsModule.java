@@ -19,6 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.processors;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.CallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarallowance.HbarAllowanceTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarapprove.HbarApproveTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.isauthorizedraw.IsAuthorizedRawTranslator;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
@@ -54,6 +55,14 @@ public interface HasTranslatorsModule {
     @IntoSet
     @Named("HasTranslators")
     static CallTranslator provideHbarApproveTranslator(@NonNull final HbarApproveTranslator translator) {
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @Named("HasTranslators")
+    static CallTranslator provideIsAuthorizedRawTranslator(@NonNull final IsAuthorizedRawTranslator translator) {
         return translator;
     }
 }

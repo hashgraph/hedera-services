@@ -102,9 +102,6 @@ public record TransactionHandlers(
         @NonNull FileSystemUndeleteHandler fileSystemUndeleteHandler,
         @NonNull FreezeHandler freezeHandler,
         @NonNull NetworkUncheckedSubmitHandler networkUncheckedSubmitHandler,
-        @NonNull NodeCreateHandler nodeCreateHandler,
-        @NonNull NodeDeleteHandler nodeDeleteHandler,
-        @NonNull NodeUpdateHandler nodeUpdateHandler,
         @NonNull ScheduleCreateHandler scheduleCreateHandler,
         @NonNull ScheduleSignHandler scheduleSignHandler,
         @NonNull ScheduleDeleteHandler scheduleDeleteHandler,
@@ -126,4 +123,7 @@ public record TransactionHandlers(
         @NonNull TokenUpdateNftsHandler tokenUpdateNftsHandler,
         @NonNull TokenAirdropHandler tokenAirdropHandler,
         @NonNull TokenRejectHandler tokenRejectHandler,
+        @NonNull NodeCreateHandler nodeCreateHandler,
+        @NonNull NodeUpdateHandler nodeUpdateHandler,
+        @NonNull NodeDeleteHandler nodeDeleteHandler,
         @NonNull UtilPrngHandler utilPrngHandler) {}

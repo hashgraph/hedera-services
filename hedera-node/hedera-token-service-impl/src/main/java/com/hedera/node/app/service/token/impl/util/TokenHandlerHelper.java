@@ -256,21 +256,6 @@ public class TokenHandlerHelper {
     }
 
     /**
-     * Enum to determine the type of validations to be performed on the token account relationship. If the token account
-     * relationship is allowed to be frozen or not
-     */
-    public enum TokenRelValidations {
-        /**
-         * Token account relationship should not be frozen
-         */
-        REQUIRE_NOT_FROZEN,
-        /**
-         * Token account relationship can be frozen
-         */
-        PERMIT_FROZEN
-    }
-
-    /**
      * Returns the token if it exists and is usable. A {@link HandleException} is thrown if the token is invalid
      * @param tokenId the ID of the token to get
      * @param tokenStore the {@link ReadableTokenStore} to use for token retrieval
@@ -321,15 +306,6 @@ public class TokenHandlerHelper {
             @NonNull final AccountID accountId,
             @NonNull final TokenID tokenId,
             @NonNull final ReadableTokenRelationStore tokenRelStore) {
-        return getIfUsable(accountId, tokenId, tokenRelStore, TokenRelValidations.REQUIRE_NOT_FROZEN);
-    }
-
-    @NonNull
-    public static TokenRelation getIfUsable(
-            @NonNull final AccountID accountId,
-            @NonNull final TokenID tokenId,
-            @NonNull final ReadableTokenRelationStore tokenRelStore,
-            @NonNull final TokenRelValidations tokenRelValidations) {
         requireNonNull(accountId);
         requireNonNull(tokenId);
         requireNonNull(tokenRelStore);
@@ -337,9 +313,7 @@ public class TokenHandlerHelper {
         final var tokenRel = tokenRelStore.get(accountId, tokenId);
 
         validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-        if (tokenRelValidations == TokenRelValidations.REQUIRE_NOT_FROZEN) {
-            validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
-        }
+        validateTrue(!tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
         return tokenRel;
     }
 

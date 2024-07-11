@@ -30,10 +30,8 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  * An operation that delegates to a {@link SnapshotModeOp} depending on whether the currently executing
  * {@link HapiSpec} has a record snapshot already saved.
  * <ul>
- *     <Li>If the snapshot already exists, inserts either a {@code snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS)}
- *     or {@code snapshotMode(FUZZY_MATCH_AGAINST_MONO_STREAMS)} depending on the given {@link AutoSnapshotRecordSource}.</Li>
- *     <Li>If the snapshot does not exist, inserts either a {@code snapshotMode(TAKE_FROM_HAPI_TEST_STREAMS)}
- *     or {@code snapshotMode(TAKE_FROM_MONO_STREAMS)} depending on the given {@link AutoSnapshotRecordSource}.</Li>
+ *     <Li>If the snapshot already exists, inserts a {@code snapshotMode(FUZZY_MATCH_AGAINST_HAPI_TEST_STREAMS)}.
+ *     <Li>If the snapshot does not exist, inserts a {@code snapshotMode(TAKE_FROM_HAPI_TEST_STREAMS)}.
  * </ul>
  */
 public class AutoSnapshotModeOp extends UtilOp implements SnapshotOp {

@@ -35,7 +35,7 @@ import com.hedera.node.app.hapi.utils.fee.CryptoFeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.FileFeeBuilder;
 import com.hedera.node.app.hapi.utils.fee.SmartContractFeeBuilder;
-import com.hedera.services.bdd.SpecOperation;
+import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -74,6 +74,10 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Implementation support for any {@link SpecOperation} sends a query or submits a transaction
+ * to the target {@link HederaNetwork}.
+ */
 public abstract class HapiSpecOperation implements SpecOperation {
     private static final Logger log = LogManager.getLogger(HapiSpecOperation.class);
 

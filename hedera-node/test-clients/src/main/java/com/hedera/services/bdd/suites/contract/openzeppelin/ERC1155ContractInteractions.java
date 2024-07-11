@@ -36,8 +36,8 @@ import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.ArrayList;

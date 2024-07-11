@@ -39,7 +39,7 @@ public interface HederaNode {
      *
      * @return the port number of the gRPC service
      */
-    int getPort();
+    int getGrpcPort();
 
     /**
      * Gets the node ID, such as 0, 1, 2, or 3.
@@ -90,6 +90,7 @@ public interface HederaNode {
 
     /**
      * Stops the node software forcibly.
+     * @return true if the node was stopped, false otherwise
      */
     boolean terminate();
 
@@ -102,6 +103,14 @@ public interface HederaNode {
      */
     CompletableFuture<Void> statusFuture(
             @NonNull PlatformStatus status, @Nullable Consumer<NodeStatus> nodeStatusObserver);
+
+    /**
+     * Returns a future that resolves when the node has written the specified <i>.mf</i> file.
+     *
+     * @param markerFile the marker file to wait for
+     * @return a future that resolves when the node has written the specified <i>.mf</i> file
+     */
+    CompletableFuture<Void> mfFuture(@NonNull MarkerFile markerFile);
 
     /**
      * Returns a future that resolves when the node has stopped.
@@ -123,6 +132,12 @@ public interface HederaNode {
      * @return this node's HAPI spec identifier
      */
     default String hapiSpecInfo() {
-        return getHost() + ":" + getPort() + ":0.0." + getAccountId().accountNumOrThrow();
+        return getHost() + ":" + getGrpcPort() + ":0.0." + getAccountId().accountNumOrThrow();
     }
+
+    /**
+     * Returns the metadata for this node.
+     * @return the metadata for this node
+     */
+    NodeMetadata metadata();
 }

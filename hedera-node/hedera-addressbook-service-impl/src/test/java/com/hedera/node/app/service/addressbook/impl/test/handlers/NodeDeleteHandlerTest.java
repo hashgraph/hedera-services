@@ -24,7 +24,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -51,6 +52,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
+import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -117,16 +119,18 @@ class NodeDeleteHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    @DisplayName("check that fees are free for delete node trx")
-    void testCalculateFeesInvocations() {
+    @DisplayName("check that fees are 1 for delete node trx")
+    void testCalculateFeesInvocations() throws IOException {
         final var feeCtx = mock(FeeContext.class);
-        final var feeCalcFactory = mock(FeeCalculatorFactory.class);
+        final var feeCalcFact = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);
-        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFactory);
-        given(feeCalcFactory.feeCalculator(notNull())).willReturn(feeCalc);
-        given(feeCalc.calculate()).willReturn(Fees.FREE);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFact);
+        given(feeCalcFact.feeCalculator(any())).willReturn(feeCalc);
 
-        assertThat(subject.calculateFees(feeCtx)).isEqualTo(Fees.FREE);
+        given(feeCalc.addVerificationsPerTransaction(anyLong())).willReturn(feeCalc);
+        given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));
+
+        assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(1, 0, 0));
     }
 
     @Test
