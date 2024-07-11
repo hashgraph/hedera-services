@@ -77,7 +77,7 @@ class RosterEntry {
     NodeId nodeId
     long weight
     X509Certificate gossipCaCertificate
-    PairingPublicKey tssEcPublicKey
+    PairingPublicKey tssEncryptionKey
     List~ServiceEndpoint~ gossipEndpoints
 }
 
@@ -96,6 +96,25 @@ RosterEntry "1" *-- "many" ServiceEndpoint
 
 The protobuf definition for the Roster will look as follows:
 
+```proto
+/**
+ * A single roster in the network state.
+ * <p>
+ * The roster SHALL be a list of `RosterEntry` objects.
+ */
+message Roster {
+
+    /**
+     * List of roster entries, one per consensus node.
+     * <p>
+     * This list SHALL contain roster entries in natural order of ascending node ids.
+     * This list SHALL NOT be empty.<br/>
+     */
+    repeated RosterEntry rosters = 1;
+}
+```
+
+A roster entry will look as follows:
 ```proto
 /**
  * A single roster in the network state.
@@ -118,7 +137,7 @@ message RosterEntry {
     /**
      * A consensus weight.
      * <p>
-     * Each node SHALL have a weight in consensus calculations.<br/>
+     * Each node SHALL have a weight of zero or more in consensus calculations.<br/>
      * The consensus weight of a node SHALL be calculated based on the amount
      * of HBAR staked to that node.<br/>
      * Consensus SHALL be calculated based on agreement of greater than `2/3`
@@ -137,14 +156,14 @@ message RosterEntry {
     bytes gossip_ca_certificate = 3;
 
     /**
-     * An elliptic curve public key.<br/>
+     * An elliptic curve public encryption key.<br/>
      * This contains the _long term_ public key for this node.
      * <p>
      * This value SHALL be the DER encoding of the presented elliptic curve
      * public key.<br/>
      * This field is REQUIRED and MUST NOT be empty.
      */
-    bytes tss_ec_public_key = 4;
+    bytes tss_encryption_key = 4;
 
     /**
      * A list of service endpoints for gossip.
@@ -166,24 +185,43 @@ message RosterEntry {
 }
 ```
 
-The map of rosters will be stored in the state as a PBJ map defined as follows:
-
+The map of rosters will be stored in the state as a virtual map of Key `Hash<Roster>` and value `Roster`.
+The `Hash` object(SHA_384), which is the key of the virtual map, will reuse an existing protobuf that looks as follows:
 ```proto
 /**
- * A map of roster hashes to roster entries.
- * The map will be stored in the state as a PBJ map.
+ * List of hash algorithms
  */
-message RosterMap {
+enum HashAlgorithm {
+  HASH_ALGORITHM_UNKNOWN = 0;
+  SHA_384 = 1;
+}
 
-    /**
-     * An underlying PBJ map.
-     * It will itself be managed as a Singleton state object.
-     */
-    map<string, RosterEntry> entries = 1;
+/**
+ * Encapsulates an object hash so that additional hash algorithms
+ * can be added in the future without requiring a breaking change.
+ */
+message HashObject {
+
+  /**
+   * Specifies the hashing algorithm
+   */
+  HashAlgorithm algorithm = 1;
+
+  /**
+   * Hash length
+   */
+  int32 length = 2;
+
+  /**
+   * Specifies the result of the hashing operation in bytes
+   */
+  bytes hash = 3;
 }
 ```
 
-The platform state protobuf will be updated to include the rosher hashes.
+The `Roster` value is modeled as previously shown.
+
+The platform state protobuf will be updated to include the roster hashes.
 
 ```proto
 /**
@@ -248,8 +286,9 @@ In simple terms, the following constitutes a valid roster:
 3. All RosterEntry/ies must have a valid X509Certificate.
 4. All RosterEntry/ies must have a valid PairingPublicKey.
 5. All RosterEntry/ies must have at least one gossip Endpoint.
-6. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
-7. The roster must have a unique NodeId for each RosterEntry.
+6. The RosterEntry/ies must be specified in order of ascending node id.
+7. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
+8. The roster must have a unique NodeId for each RosterEntry.
 
 Note that a roster can be valid, but not accepted by the platform.
 For example, if a new candidate roster is set via the API, but its hash evaluates to the hash of the existing
