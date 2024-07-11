@@ -105,8 +105,8 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.app.workflows.handle.stack.FirstSavePoint;
-import com.hedera.node.app.workflows.handle.stack.RecordSink;
+import com.hedera.node.app.workflows.handle.stack.BuilderSink;
+import com.hedera.node.app.workflows.handle.stack.FirstSavepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
@@ -649,7 +649,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         @Test
         void testDispatchPrecedingWithChangedDataDoesntFail() {
             final var context = createContext(txBody, HandleContext.TransactionCategory.USER);
-            given(stack.peek()).willReturn(new FirstSavePoint(new WrappedHederaState(baseState), 3, new RecordSink()));
+            given(stack.peek()).willReturn(new FirstSavepoint(new WrappedHederaState(baseState), 3, new BuilderSink()));
             when(stack.peek().state().getWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
             final Map<String, String> newData = new HashMap<>(BASE_DATA);
             newData.put(B_KEY, BLUEBERRY);
@@ -719,7 +719,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Test
     void testExchangeRateInfo() {
-        given(stack.peek()).willReturn(new FirstSavePoint(new WrappedHederaState(baseState), 3, new RecordSink()));
+        given(stack.peek()).willReturn(new FirstSavepoint(new WrappedHederaState(baseState), 3, new BuilderSink()));
         assertSame(exchangeRateInfo, subject.exchangeRateInfo());
     }
 
