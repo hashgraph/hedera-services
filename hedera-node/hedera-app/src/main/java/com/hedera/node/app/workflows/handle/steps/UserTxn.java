@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.workflows.handle.stack.AbstractSavepoint.SIMULATE_MONO;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -54,7 +53,6 @@ import com.hedera.node.app.workflows.handle.RecordDispatch;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
-import com.hedera.node.app.workflows.handle.stack.AbstractSavepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.ConfigProvider;
@@ -104,16 +102,11 @@ public record UserTxn(
         final var config = configProvider.getConfiguration();
         final SavepointStackImpl stack;
         final var isGenesis = lastHandledConsensusTime.equals(Instant.EPOCH);
-        if (SIMULATE_MONO) {
-            final var consensusConfig = config.getConfigData(ConsensusConfig.class);
-            AbstractSavepoint.maxBuildersAfterUserBuilder = (int) consensusConfig.handleMaxFollowingRecords();
-            final var maxPrecedingBuilders =
-                    isGenesis ? Integer.MAX_VALUE : (int) consensusConfig.handleMaxPrecedingRecords();
-            AbstractSavepoint.legacyMaxPrecedingRecords = maxPrecedingBuilders;
-            stack = SavepointStackImpl.newRootStack(state, maxPrecedingBuilders);
-        } else {
-            throw new AssertionError("Not implemented");
-        }
+
+        final var consensusConfig = config.getConfigData(ConsensusConfig.class);
+        final var maxPrecedingBuilders = isGenesis ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords();
+        final var maxFollowingBuilders = consensusConfig.handleMaxFollowingRecords();
+        stack = SavepointStackImpl.newRootStack(state, maxPrecedingBuilders, maxFollowingBuilders);
 
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var preHandleResult =

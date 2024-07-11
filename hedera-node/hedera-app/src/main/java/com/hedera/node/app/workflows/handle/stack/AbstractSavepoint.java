@@ -17,7 +17,6 @@
 package com.hedera.node.app.workflows.handle.stack;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
@@ -28,7 +27,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.WrappedHederaState;
@@ -44,21 +42,25 @@ import java.util.Objects;
  * in the current savepoint.
  */
 public abstract class AbstractSavepoint extends BuilderSink implements Savepoint {
-    // --- :: TEMPORARY :: ---
-    public static int maxBuildersAfterUserBuilder;
-    public static int totalPrecedingRecords = 0;
-    public static int legacyMaxPrecedingRecords;
-    public static final boolean SIMULATE_MONO = true;
-    // --- :: TEMPORARY :: ---
-
     private static final EnumSet<ResponseCodeEnum> SUCCESSES =
             EnumSet.of(OK, SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED, SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
 
-    private final WrappedHederaState state;
-
+    protected final WrappedHederaState state;
     protected final BuilderSink parentSink;
 
-    protected AbstractSavepoint(@NonNull final WrappedHederaState state, @NonNull final BuilderSink parentSink) {
+    protected AbstractSavepoint(
+            @NonNull final WrappedHederaState state,
+            @NonNull final BuilderSink parentSink,
+            int maxPreceding,
+            int maxFollowing) {
+        super(maxPreceding, maxFollowing);
+        this.state = requireNonNull(state);
+        this.parentSink = requireNonNull(parentSink);
+    }
+
+    protected AbstractSavepoint(
+            @NonNull final WrappedHederaState state, @NonNull final BuilderSink parentSink, int maxTotal) {
+        super(maxTotal);
         this.state = requireNonNull(state);
         this.parentSink = requireNonNull(parentSink);
     }
@@ -91,31 +93,20 @@ public abstract class AbstractSavepoint extends BuilderSink implements Savepoint
         requireNonNull(txnCategory);
         requireNonNull(customizer);
         final var builder = new SingleTransactionRecordBuilderImpl(reversingBehavior, customizer, txnCategory);
-        if (!canAddBuilder(builder)) {
-            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
-        }
         if (!customizer.shouldSuppressRecord()) {
             if (txnCategory == PRECEDING && !isBaseBuilder) {
-                precedingBuilders.add(builder);
+                addPrecedingOrThrow(builder);
             } else {
-                followingBuilders.add(builder);
+                addFollowingOrThrow(builder);
             }
         }
         return builder;
     }
 
-    public Savepoint createFollowingSavePoint() {
-        return new FollowingSavepoint(new WrappedHederaState(state), this);
-    }
-
     abstract void commitRecords();
 
-    abstract boolean canAddBuilder(SingleTransactionRecordBuilder builder);
-
-    abstract int numBuildersAfterUserBuilder();
-
     private void rollBackRecords(final List<SingleTransactionRecordBuilder> recordBuilders) {
-        boolean followingChildRemoved = false;
+        boolean didRemoveBuilder = false;
         for (int i = 0; i < recordBuilders.size(); i++) {
             final var recordBuilder = recordBuilders.get(i);
             if (recordBuilder.reversingBehavior() == REVERSIBLE) {
@@ -124,17 +115,19 @@ public abstract class AbstractSavepoint extends BuilderSink implements Savepoint
                     recordBuilder.status(ResponseCodeEnum.REVERTED_SUCCESS);
                 }
             } else if (recordBuilder.reversingBehavior() == REMOVABLE) {
-                if (SIMULATE_MONO && recordBuilder.category() == PRECEDING) {
-                    totalPrecedingRecords--;
-                }
                 // Remove it from the list by setting its location to null. Then, any subsequent children that are
                 // kept will be moved into this position.
                 recordBuilders.set(i, null);
-                followingChildRemoved = true;
+                didRemoveBuilder = true;
             }
         }
-        if (followingChildRemoved) {
+        if (didRemoveBuilder) {
             recordBuilders.removeIf(Objects::isNull);
         }
+    }
+
+    @Override
+    public Savepoint createFollowingSavePoint() {
+        return new FollowingSavepoint(new WrappedHederaState(state), this, followingCapacity());
     }
 }

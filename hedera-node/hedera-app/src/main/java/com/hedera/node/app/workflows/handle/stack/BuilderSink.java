@@ -16,8 +16,10 @@
 
 package com.hedera.node.app.workflows.handle.stack;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -33,6 +35,22 @@ import java.util.function.Consumer;
 public class BuilderSink {
     protected final List<SingleTransactionRecordBuilder> precedingBuilders = new ArrayList<>();
     protected final List<SingleTransactionRecordBuilder> followingBuilders = new ArrayList<>();
+
+    private final int maxPreceding;
+    private final int maxFollowing;
+    private final int maxTotal;
+
+    public BuilderSink(final int maxPreceding, final int maxFollowing) {
+        this.maxPreceding = maxPreceding;
+        this.maxFollowing = maxFollowing;
+        this.maxTotal = maxPreceding == Integer.MAX_VALUE ? Integer.MAX_VALUE : maxPreceding + maxFollowing;
+    }
+
+    public BuilderSink(int maxTotal) {
+        this.maxPreceding = maxTotal;
+        this.maxFollowing = maxTotal;
+        this.maxTotal = maxTotal;
+    }
 
     /**
      * Returns all the builders accumulated in this sink.
@@ -102,5 +120,53 @@ public class BuilderSink {
      */
     public int numBuilders() {
         return precedingBuilders.size() + followingBuilders.size();
+    }
+
+    public void flushInOrder(@NonNull final BuilderSink parentSink) {
+        requireNonNull(parentSink);
+        parentSink.precedingBuilders.addAll(precedingBuilders);
+        parentSink.followingBuilders.addAll(followingBuilders);
+    }
+
+    public void flushPreceding(@NonNull final BuilderSink parentSink) {
+        requireNonNull(parentSink);
+        parentSink.precedingBuilders.addAll(allBuilders());
+    }
+
+    public void flushFollowing(@NonNull final BuilderSink parentSink) {
+        requireNonNull(parentSink);
+        parentSink.followingBuilders.addAll(allBuilders());
+    }
+
+    public void addPrecedingOrThrow(@NonNull final SingleTransactionRecordBuilder builder) {
+        requireNonNull(builder);
+        if (precedingCapacity() == 0) {
+            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
+        }
+        precedingBuilders.add(builder);
+    }
+
+    public void addFollowingOrThrow(@NonNull final SingleTransactionRecordBuilder builder) {
+        requireNonNull(builder);
+        if (followingCapacity() == 0) {
+            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
+        }
+        followingBuilders.add(builder);
+    }
+
+    public int numPreceding() {
+        return precedingBuilders.size();
+    }
+
+    public int numFollowing() {
+        return followingBuilders.size();
+    }
+
+    public int precedingCapacity() {
+        return Math.min(maxPreceding - numPreceding(), maxTotal - numBuilders());
+    }
+
+    public int followingCapacity() {
+        return Math.min(maxFollowing - numFollowing(), maxTotal - numBuilders());
     }
 }

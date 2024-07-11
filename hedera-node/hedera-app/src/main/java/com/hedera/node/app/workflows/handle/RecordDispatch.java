@@ -37,7 +37,7 @@ import java.time.Instant;
 import java.util.Set;
 
 public record RecordDispatch(
-        @NonNull SingleTransactionRecordBuilder recordsBuilder,
+        @NonNull SingleTransactionRecordBuilder recordBuilder,
         @NonNull Configuration config,
         @NonNull Fees fees,
         @NonNull TransactionInfo txnInfo,

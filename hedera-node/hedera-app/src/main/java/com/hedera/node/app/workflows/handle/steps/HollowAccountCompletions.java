@@ -19,8 +19,6 @@ package com.hedera.node.app.workflows.handle.steps;
 import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.workflows.handle.stack.AbstractSavepoint.SIMULATE_MONO;
-import static com.hedera.node.app.workflows.handle.stack.AbstractSavepoint.totalPrecedingRecords;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -37,9 +35,7 @@ import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.config.data.ConsensusConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
@@ -89,12 +85,7 @@ public class HollowAccountCompletions {
             }
         }
         finalizeHollowAccounts(
-                dispatch.handleContext(),
-                userTxn.config(),
-                hollowAccounts,
-                dispatch.keyVerifier(),
-                maybeEthTxVerification,
-                userTxn);
+                dispatch.handleContext(), hollowAccounts, dispatch.keyVerifier(), maybeEthTxVerification, userTxn);
     }
 
     /**
@@ -134,29 +125,19 @@ public class HollowAccountCompletions {
      * for the alias.
      *
      * @param context the handle context
-     * @param configuration the configuration
      * @param accounts the set of hollow accounts that need to be finalized
      * @param verifier the key verifier
      * @param ethTxVerification the Ethereum transaction verification
      */
     private void finalizeHollowAccounts(
             @NonNull final HandleContext context,
-            @NonNull final Configuration configuration,
             @NonNull final Set<Account> accounts,
             @NonNull final AppKeyVerifier verifier,
             @Nullable SignatureVerification ethTxVerification,
             @NonNull final UserTxn userTxn) {
-        final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
-        final var maxPrecedingRecords = consensusConfig.handleMaxPrecedingRecords();
         for (final var hollowAccount : accounts) {
-            if (SIMULATE_MONO) {
-                if (totalPrecedingRecords == maxPrecedingRecords) {
-                    break;
-                }
-            } else {
-                if (!userTxn.stack().hasMoreSystemRecords()) {
-                    break;
-                }
+            if (!userTxn.stack().hasMoreSystemRecords()) {
+                break;
             }
 
             if (hollowAccount.accountIdOrElse(AccountID.DEFAULT).equals(AccountID.DEFAULT)) {

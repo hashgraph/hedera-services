@@ -23,13 +23,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A save point that contains the current state and the record builders created in the current savepoint.
  * Currently, recordBuilders is not used in the codebase. It will be used in future PRs
  */
-public class FollowingSavepoint extends AbstractFollowingSavepoint {
-    public FollowingSavepoint(@NonNull WrappedHederaState state, @NonNull AbstractSavepoint parent) {
-        super(state, parent);
+public class FollowingSavepoint extends AbstractSavepoint {
+    public FollowingSavepoint(@NonNull WrappedHederaState state, @NonNull AbstractSavepoint parent, int maxTotal) {
+        super(state, parent, maxTotal);
     }
 
     @Override
     void commitRecords() {
-        parentSink.followingBuilders.addAll(allBuilders());
+        flushFollowing(parentSink);
     }
 }

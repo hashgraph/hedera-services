@@ -16,27 +16,34 @@
 
 package com.hedera.node.app.workflows.handle.stack;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.state.WrappedHederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class BaseSavepoint extends AbstractFollowingSavepoint {
+public class BaseSavepoint extends AbstractSavepoint {
     private final HandleContext.TransactionCategory txnCategory;
 
     protected BaseSavepoint(
             @NonNull final WrappedHederaState state,
             @NonNull final Savepoint parent,
             @NonNull final HandleContext.TransactionCategory txnCategory) {
-        super(state, (AbstractSavepoint) parent);
+        super(
+                state,
+                (AbstractSavepoint) parent,
+                txnCategory == PRECEDING
+                        ? ((AbstractSavepoint) parent).precedingCapacity()
+                        : ((AbstractSavepoint) parent).followingCapacity());
         this.txnCategory = txnCategory;
     }
 
     @Override
     void commitRecords() {
-        if (txnCategory == HandleContext.TransactionCategory.PRECEDING) {
-            parentSink.precedingBuilders.addAll(allBuilders());
+        if (txnCategory == PRECEDING) {
+            flushPreceding(parentSink);
         } else {
-            parentSink.followingBuilders.addAll(allBuilders());
+            flushFollowing(parentSink);
         }
     }
 }
