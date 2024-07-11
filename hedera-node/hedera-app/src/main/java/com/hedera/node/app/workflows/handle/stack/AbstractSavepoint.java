@@ -72,6 +72,19 @@ public abstract class AbstractSavepoint extends BuilderSink implements Savepoint
     }
 
     @Override
+    public void commit() {
+        state.commit();
+        commitRecords();
+    }
+
+    @Override
+    public void rollback() {
+        rollBackRecords(precedingBuilders);
+        rollBackRecords(followingBuilders);
+        commitRecords();
+    }
+
+    @Override
     public SingleTransactionRecordBuilder createBuilder(
             @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
@@ -95,17 +108,6 @@ public abstract class AbstractSavepoint extends BuilderSink implements Savepoint
 
     public Savepoint createFollowingSavePoint() {
         return new FollowingSavepoint(new WrappedHederaState(state), this);
-    }
-
-    public void commit() {
-        state.commit();
-        commitRecords();
-    }
-
-    public void rollback() {
-        rollBackRecords(precedingBuilders);
-        rollBackRecords(followingBuilders);
-        commitRecords();
     }
 
     /**
