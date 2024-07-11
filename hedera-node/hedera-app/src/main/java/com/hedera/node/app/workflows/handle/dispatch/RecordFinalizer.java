@@ -25,8 +25,8 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
@@ -65,7 +65,9 @@ public class RecordFinalizer {
                     dispatch.finalizeContext(),
                     dispatch.txnInfo().functionality(),
                     extraRewardReceivers(
-                            dispatch.txnInfo().txBody(), dispatch.txnInfo().functionality(), dispatch.recordBuilder()),
+                            dispatch.txnInfo().txBody(),
+                            dispatch.txnInfo().functionality(),
+                            dispatch.streamItemsBuilder()),
                     dispatch.handleContext().dispatchPaidRewards());
             case CHILD, PRECEDING -> recordFinalizer.finalizeNonStakingRecord(
                     dispatch.finalizeContext(), dispatch.txnInfo().functionality());
@@ -98,7 +100,7 @@ public class RecordFinalizer {
     public Set<AccountID> extraRewardReceivers(
             @Nullable final TransactionBody body,
             @NonNull final HederaFunctionality function,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
+            @NonNull final SingleTransactionRecordBuilder recordBuilder) {
         if (body == null || recordBuilder.status() != SUCCESS) {
             return emptySet();
         }

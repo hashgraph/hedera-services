@@ -97,7 +97,7 @@ public class RecordFinalizerTest {
         subject = new RecordFinalizer(finalizeRecordHandler);
 
         lenient().when(dispatch.txnInfo()).thenReturn(TXN_INFO);
-        lenient().when(dispatch.recordBuilder()).thenReturn(recordBuilder);
+        lenient().when(dispatch.streamItemsBuilder()).thenReturn(recordBuilder);
         lenient().when(dispatch.finalizeContext()).thenReturn(finalizeContext);
         lenient().when(dispatch.handleContext()).thenReturn(handleContext);
     }

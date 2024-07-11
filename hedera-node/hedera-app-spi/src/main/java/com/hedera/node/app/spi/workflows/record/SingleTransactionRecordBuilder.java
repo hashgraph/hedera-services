@@ -18,19 +18,61 @@ package com.hedera.node.app.spi.workflows.record;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 
+import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
+import java.util.Set;
 
 /**
  * This interface contains methods to read general properties a transaction record builder.
  */
 public interface SingleTransactionRecordBuilder {
+    /**
+     * Sets the transaction for this stream item builder.
+     * @param transaction the transaction
+     * @return this builder
+     */
+    SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction);
+
+    /**
+     * Returns the transaction for this stream item builder.
+     * @return the transaction
+     */
+    Transaction transaction();
+
+    /**
+     * Returns any ids recorded as having explicit reward situations during the construction of this builder so far.
+     * @return the ids with explicit reward situations
+     */
+    Set<AccountID> explicitRewardSituationIds();
+
+    /**
+     * Returns any staking rewards recorded during the construction of this builder so far.
+     * @return the staking rewards paid so far
+     */
+    List<AccountAmount> getPaidStakingRewards();
+
+    /**
+     * Returns whether this builder has a contract result.
+     * @return true if the builder has a contract result; otherwise false
+     */
+    boolean hasContractResult();
+
+    /**
+     * Returns the gas used already set in construction of this builder.
+     * @return the gas used
+     */
+    long getGasUsedForContractTxn();
 
     /**
      * Returns the status that is currently set in the record builder.
@@ -87,6 +129,13 @@ public interface SingleTransactionRecordBuilder {
     SingleTransactionRecordBuilder syncBodyIdFromRecordId();
 
     /**
+     * Sets the memo of the record.
+     * @param memo the memo
+     * @return the builder
+     */
+    SingleTransactionRecordBuilder memo(@NonNull String memo);
+
+    /**
      * Sets the consensus timestamp of the record.
      * @param now the consensus timestamp
      * @return the builder
@@ -104,21 +153,28 @@ public interface SingleTransactionRecordBuilder {
      * @param transactionID the transaction ID
      * @return the builder
      */
-    SingleTransactionRecordBuilder transactionID(@NonNull final TransactionID transactionID);
+    SingleTransactionRecordBuilder transactionID(@NonNull TransactionID transactionID);
 
     /**
      * Sets the parent consensus timestamp of the record.
      * @param parentConsensus the parent consensus timestamp
      * @return the builder
      */
-    SingleTransactionRecordBuilder parentConsensus(@NonNull final Instant parentConsensus);
+    SingleTransactionRecordBuilder parentConsensus(@NonNull Instant parentConsensus);
 
     /**
-     * Returns whether the record is a base record builder. A base record builder is a record builder
-     * that is created when new stack is created.
-     * @return true if the record is a base record builder; otherwise false
+     * Sets the transaction bytes of this builder.
+     * @param transactionBytes the transaction bytes
+     * @return this builder
      */
-    boolean isBaseRecordBuilder();
+    SingleTransactionRecordBuilder transactionBytes(@NonNull Bytes transactionBytes);
+
+    /**
+     * Sets the exchange rate of this builder.
+     * @param exchangeRate the exchange rate
+     * @return this builder
+     */
+    SingleTransactionRecordBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate);
 
     /**
      * Convenience method to package as {@link TransactionBody} as a {@link Transaction} .

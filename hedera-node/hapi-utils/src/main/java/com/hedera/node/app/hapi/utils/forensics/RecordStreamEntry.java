@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -85,6 +86,10 @@ public record RecordStreamEntry(TransactionParts parts, TransactionRecord txnRec
 
     public TransactionRecord transactionRecord() {
         return txnRecord;
+    }
+
+    public TransactionID txnId() {
+        return txnRecord.getTransactionID();
     }
 
     @Override

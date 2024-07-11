@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.workflows.handle.stack.AbstractSavePoint.SIMULATE_MONO;
+import static com.hedera.node.app.workflows.handle.stack.AbstractSavepoint.SIMULATE_MONO;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -37,6 +37,7 @@ import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -53,7 +54,7 @@ import com.hedera.node.app.workflows.handle.RecordDispatch;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
-import com.hedera.node.app.workflows.handle.stack.AbstractSavePoint;
+import com.hedera.node.app.workflows.handle.stack.AbstractSavepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.config.ConfigProvider;
@@ -105,10 +106,10 @@ public record UserTxn(
         final var isGenesis = lastHandledConsensusTime.equals(Instant.EPOCH);
         if (SIMULATE_MONO) {
             final var consensusConfig = config.getConfigData(ConsensusConfig.class);
-            AbstractSavePoint.maxBuildersAfterUserBuilder = (int) consensusConfig.handleMaxFollowingRecords();
+            AbstractSavepoint.maxBuildersAfterUserBuilder = (int) consensusConfig.handleMaxFollowingRecords();
             final var maxPrecedingBuilders =
                     isGenesis ? Integer.MAX_VALUE : (int) consensusConfig.handleMaxPrecedingRecords();
-            AbstractSavePoint.legacyMaxPrecedingRecords = maxPrecedingBuilders;
+            AbstractSavepoint.legacyMaxPrecedingRecords = maxPrecedingBuilders;
             stack = SavepointStackImpl.newRootStack(state, maxPrecedingBuilders);
         } else {
             throw new AssertionError("Not implemented");
@@ -149,7 +150,7 @@ public record UserTxn(
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ChildDispatchFactory childDispatchFactory,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final SingleTransactionRecordBuilder builder,
             @NonNull final NetworkUtilizationManager networkUtilizationManager) {
         final var keyVerifier = new DefaultKeyVerifier(
                 txnInfo.signatureMap().sigPair().size(),
@@ -189,13 +190,14 @@ public record UserTxn(
                 dispatchProcessor,
                 new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack));
         return new RecordDispatch(
-                recordBuilder,
+                builder,
                 config,
                 dispatcher.dispatchComputeFees(dispatchHandleContext),
                 txnInfo,
                 requireNonNull(txnInfo.payerID()),
                 readableStoreFactory,
-                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), recordBuilder),
+                new FeeAccumulator(
+                        serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder),
                 keyVerifier,
                 creatorInfo,
                 consensusNow,

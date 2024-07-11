@@ -58,6 +58,7 @@ import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -197,7 +198,7 @@ public class ChildDispatchFactory {
 
     private RecordDispatch newChildDispatch(
             // @ChildDispatchScope
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
+            @NonNull final SingleTransactionRecordBuilder builder,
             @NonNull final TransactionInfo txnInfo,
             @NonNull final AccountID payerId,
             @NonNull final HandleContext.TransactionCategory category,
@@ -254,13 +255,14 @@ public class ChildDispatchFactory {
                 dispatchProcessor,
                 throttleAdviser);
         return new RecordDispatch(
-                recordBuilder,
+                builder,
                 config,
                 feesFrom(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo),
                 txnInfo,
                 payerId,
                 readableStoreFactory,
-                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), recordBuilder),
+                new FeeAccumulator(
+                        serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder),
                 keyVerifier,
                 creatorInfo,
                 consensusNow,
@@ -459,20 +461,19 @@ public class ChildDispatchFactory {
     }
 
     /**
-     * Initializes the user record with the transaction information.
-     * @param recordBuilder the record builder
+     * Initializes the user stream item builder with the transaction information.
+     * @param builder the stream item builder
      * @param txnInfo the transaction info
      */
-    private SingleTransactionRecordBuilderImpl initializedForChild(
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder, @NonNull final TransactionInfo txnInfo) {
-        recordBuilder
-                .transaction(txnInfo.transaction())
+    private SingleTransactionRecordBuilder initializedForChild(
+            @NonNull final SingleTransactionRecordBuilder builder, @NonNull final TransactionInfo txnInfo) {
+        builder.transaction(txnInfo.transaction())
                 .transactionBytes(txnInfo.signedBytes())
                 .memo(txnInfo.txBody().memo());
         final var transactionID = txnInfo.txBody().transactionID();
         if (transactionID != null) {
-            recordBuilder.transactionID(transactionID);
+            builder.transactionID(transactionID);
         }
-        return recordBuilder;
+        return builder;
     }
 }

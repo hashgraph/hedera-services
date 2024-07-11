@@ -16,9 +16,12 @@
 
 package com.hedera.node.app.service.token.impl.test.fixtures;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -26,6 +29,8 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
+import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -43,11 +48,40 @@ public class FakeCryptoCreateRecordBuilder {
      */
     public CryptoCreateRecordBuilder create() {
         return new CryptoCreateRecordBuilder() {
+            @Override
+            public Transaction transaction() {
+                return Transaction.DEFAULT;
+            }
 
-            private AccountID accountID;
-            private Bytes evmAddress;
-            private long transactionFee;
-            private String memo;
+            @Override
+            public Set<AccountID> explicitRewardSituationIds() {
+                return Set.of();
+            }
+
+            @Override
+            public List<AccountAmount> getPaidStakingRewards() {
+                return List.of();
+            }
+
+            @Override
+            public boolean hasContractResult() {
+                return false;
+            }
+
+            @Override
+            public long getGasUsedForContractTxn() {
+                return 0;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction) {
+                return this;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder transactionBytes(@NonNull Bytes transactionBytes) {
+                return this;
+            }
 
             @NonNull
             @Override
@@ -69,7 +103,6 @@ public class FakeCryptoCreateRecordBuilder {
             @NonNull
             @Override
             public CryptoCreateRecordBuilder accountID(@NonNull final AccountID accountID) {
-                this.accountID = accountID;
                 return this;
             }
 
@@ -116,29 +149,26 @@ public class FakeCryptoCreateRecordBuilder {
                 return null;
             }
 
-            @Override
-            public boolean isBaseRecordBuilder() {
-                return false;
-            }
-
             @NonNull
             @Override
             public CryptoCreateRecordBuilder evmAddress(@NonNull final Bytes evmAddress) {
-                this.evmAddress = evmAddress;
+                return this;
+            }
+
+            @Override
+            public CryptoCreateRecordBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
                 return this;
             }
 
             @NonNull
             @Override
             public CryptoCreateRecordBuilder transactionFee(@NonNull final long transactionFee) {
-                this.transactionFee = transactionFee;
                 return this;
             }
 
             @NonNull
             @Override
             public CryptoCreateRecordBuilder memo(@NonNull final String memo) {
-                this.memo = memo;
                 return this;
             }
         };

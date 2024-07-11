@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.records.RecordBuildersImpl.castBuilder;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
@@ -92,7 +93,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @Override
     public <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castRecordBuilder(stack.baseRecordBuilder(), recordBuilderClass);
+        return castBuilder(stack.baseRecordBuilder(), recordBuilderClass);
     }
 
     @Override
@@ -109,17 +110,8 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @NonNull
     @Override
     public <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = stack.peek().createRecord(IRREVERSIBLE, PRECEDING, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
-        return castRecordBuilder(result, recordBuilderClass);
-    }
-
-    static <T> T castRecordBuilder(
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder,
-            @NonNull final Class<T> recordBuilderClass) {
-        if (!recordBuilderClass.isInstance(recordBuilder)) {
-            throw new IllegalArgumentException("Not a valid record builder class");
-        }
-        return recordBuilderClass.cast(recordBuilder);
+        final var result = stack.peek().createBuilder(IRREVERSIBLE, PRECEDING, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        return castBuilder(result, recordBuilderClass);
     }
 
     @Override

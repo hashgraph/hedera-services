@@ -166,6 +166,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAsser
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion.SkipSynthItems;
 import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
@@ -1040,7 +1041,18 @@ public class UtilVerbs {
         requireNonNull(ref);
         requireNonNull(specTxnIds);
         return spec -> {
-            final var assertion = new VisibleItemsAssertion(spec, specTxnIds);
+            final var assertion = new VisibleItemsAssertion(spec, SkipSynthItems.NO, specTxnIds);
+            ref.set(assertion);
+            return assertion;
+        };
+    }
+
+    public static Function<HapiSpec, RecordStreamAssertion> visibleNonSyntheticItems(
+            @NonNull final AtomicReference<VisibleItemsAssertion> ref, @NonNull final String... specTxnIds) {
+        requireNonNull(ref);
+        requireNonNull(specTxnIds);
+        return spec -> {
+            final var assertion = new VisibleItemsAssertion(spec, SkipSynthItems.YES, specTxnIds);
             ref.set(assertion);
             return assertion;
         };

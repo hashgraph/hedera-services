@@ -24,6 +24,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXP
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -33,6 +34,7 @@ import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -44,50 +46,55 @@ import java.util.Objects;
  * An abstract base class for save point that contains the current state and the record builders created
  * in the current savepoint.
  */
-public abstract class AbstractSavePoint extends RecordSink {
-    private final WrappedHederaState state;
-
-    @NonNull
-    protected final RecordSink parentSink;
-
-    // For simulating mono
+public abstract class AbstractSavepoint extends BuilderSink implements Savepoint {
+    // --- :: TEMPORARY :: ---
     public static int maxBuildersAfterUserBuilder;
     public static int totalPrecedingRecords = 0;
     public static int legacyMaxPrecedingRecords;
     public static final boolean SIMULATE_MONO = true;
+    // --- :: TEMPORARY :: ---
 
-    public static final EnumSet<ResponseCodeEnum> SUCCESSES =
+    private static final EnumSet<ResponseCodeEnum> SUCCESSES =
             EnumSet.of(OK, SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED, SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
 
-    protected AbstractSavePoint(@NonNull WrappedHederaState state, @NonNull final RecordSink parentSink) {
-        this.state = state;
-        this.parentSink = parentSink;
+    private final WrappedHederaState state;
+
+    protected final BuilderSink parentSink;
+
+    protected AbstractSavepoint(@NonNull final WrappedHederaState state, @NonNull final BuilderSink parentSink) {
+        this.state = requireNonNull(state);
+        this.parentSink = requireNonNull(parentSink);
     }
 
-    public WrappedHederaState state() {
+    @Override
+    public HederaState state() {
         return state;
     }
 
-    public SingleTransactionRecordBuilderImpl createRecord(
+    @Override
+    public SingleTransactionRecordBuilder createBuilder(
             @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
-            @NonNull ExternalizedRecordCustomizer customizer) {
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(reversingBehavior, customizer, txnCategory);
-        if (!canAddRecord(recordBuilder)) {
+            @NonNull final ExternalizedRecordCustomizer customizer) {
+        requireNonNull(reversingBehavior);
+        requireNonNull(txnCategory);
+        requireNonNull(customizer);
+        final var builder = new SingleTransactionRecordBuilderImpl(reversingBehavior, customizer, txnCategory);
+        if (!canAddBuilder(builder)) {
             throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
         }
         if (!customizer.shouldSuppressRecord()) {
             if (txnCategory == PRECEDING) {
-                precedingBuilders.add(recordBuilder);
+                precedingBuilders.add(builder);
             } else {
-                followingBuilders.add(recordBuilder);
+                followingBuilders.add(builder);
             }
         }
-        return recordBuilder;
+        return builder;
     }
 
-    public FollowingSavePoint createFollowingSavePoint() {
-        return new FollowingSavePoint(new WrappedHederaState(state), this);
+    public Savepoint createFollowingSavePoint() {
+        return new FollowingSavepoint(new WrappedHederaState(state), this);
     }
 
     public void commit() {
@@ -121,7 +128,7 @@ public abstract class AbstractSavePoint extends RecordSink {
 
     abstract void commitRecords();
 
-    abstract boolean canAddRecord(SingleTransactionRecordBuilder recordBuilder);
+    abstract boolean canAddBuilder(SingleTransactionRecordBuilder builder);
 
     abstract int numBuildersAfterUserBuilder();
 

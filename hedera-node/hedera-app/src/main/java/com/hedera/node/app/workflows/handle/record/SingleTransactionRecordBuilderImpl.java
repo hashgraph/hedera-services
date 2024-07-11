@@ -845,6 +845,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
+    @Override
     public SingleTransactionRecordBuilderImpl exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
         requireNonNull(exchangeRate, "exchangeRate must not be null");
         this.exchangeRate = exchangeRate;
@@ -1192,10 +1193,6 @@ public class SingleTransactionRecordBuilderImpl
     @Override
     public TransactionCategory category() {
         return category;
-    }
-
-    public boolean isBaseRecordBuilder() {
-        return isBaseRecordBuilder;
     }
 
     public void setBaseRecordBuilder() {
