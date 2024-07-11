@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.node.app.hapi.utils.ethereum.EthTxSigs.signMessage;
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -124,6 +123,7 @@ import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
+import com.hedera.services.bdd.utils.Signing;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -310,7 +310,7 @@ public class ContractCreateSuite {
                                 .hasKnownStatus(INVALID_FILE_ID)
                                 .refusingEthConversion(),
                         explicitEthereumTransaction(neverToBe, (spec, b) -> {
-                                    final var signedEthTx = signMessage(
+                                    final var signedEthTx = Signing.signMessage(
                                             placeholderEthTx(),
                                             getEcdsaPrivateKeyFromSpec(spec, SECP_256K1_SOURCE_KEY));
                                     b.setCallData(systemFileId)

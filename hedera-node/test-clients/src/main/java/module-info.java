@@ -77,6 +77,7 @@ module com.hedera.node.test.clients {
     requires com.fasterxml.jackson.databind;
     requires com.github.docker.java.api;
     requires com.hedera.evm;
+    requires com.sun.jna;
     requires io.grpc.netty;
     requires io.grpc.stub;
     requires io.netty.handler;
@@ -87,6 +88,7 @@ module com.hedera.node.test.clients {
     requires org.bouncycastle.provider;
     requires org.hyperledger.besu.datatypes;
     requires org.hyperledger.besu.internal.crypto;
+    requires org.hyperledger.besu.nativelib.secp256k1;
     requires org.json;
     requires org.junit.platform.commons;
     requires org.opentest4j;
