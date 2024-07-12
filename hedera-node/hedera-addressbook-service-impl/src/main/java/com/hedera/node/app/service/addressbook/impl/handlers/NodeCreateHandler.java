@@ -25,6 +25,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_NODES_CREATED;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -73,7 +74,9 @@ public class NodeCreateHandler implements TransactionHandler {
         final var op = txn.nodeCreate();
         addressBookValidator.validateAccountId(op.accountId());
         validateFalsePreCheck(op.gossipEndpoint().isEmpty(), INVALID_GOSSIP_ENDPOINT);
+        validateTruePreCheck(op.gossipEndpoint().size() <= 10, INVALID_GOSSIP_ENDPOINT);
         validateFalsePreCheck(op.serviceEndpoint().isEmpty(), INVALID_SERVICE_ENDPOINT);
+        validateTruePreCheck(op.serviceEndpoint().size() <= 8, INVALID_SERVICE_ENDPOINT);
         validateFalsePreCheck(
                 op.gossipCaCertificate().length() == 0
                         || op.gossipCaCertificate().equals(Bytes.EMPTY),

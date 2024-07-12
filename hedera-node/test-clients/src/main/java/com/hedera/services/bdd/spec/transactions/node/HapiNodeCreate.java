@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -56,8 +55,8 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     private final String nodeName;
     private Optional<AccountID> accountId = Optional.empty();
     private Optional<String> description = Optional.empty();
-    private List<ServiceEndpoint> gossipEndpoints = Collections.emptyList();
-    private List<ServiceEndpoint> grpcEndpoints = Collections.emptyList();
+    private Optional<List<ServiceEndpoint>> gossipEndpoints = Optional.empty();
+    private Optional<List<ServiceEndpoint>> grpcEndpoints = Optional.empty();
     private Optional<byte[]> gossipCaCertificate = Optional.empty();
     private Optional<byte[]> grpcCertificateHash = Optional.empty();
     private Optional<LongConsumer> newNumObserver = Optional.empty();
@@ -116,12 +115,12 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     }
 
     public HapiNodeCreate gossipEndpoint(final List<ServiceEndpoint> gossipEndpoint) {
-        this.gossipEndpoints = gossipEndpoint;
+        this.gossipEndpoints = Optional.of(gossipEndpoint);
         return this;
     }
 
     public HapiNodeCreate serviceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
-        this.grpcEndpoints = serviceEndpoint;
+        this.grpcEndpoints = Optional.of(serviceEndpoint);
         return this;
     }
 
@@ -163,8 +162,8 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
             if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
                 throw new IllegalStateException("Target is not a SubProcessNetwork");
             }
-            gossipEndpoints = subProcessNetwork.gossipEndpointsForNextNodeId();
-            grpcEndpoints = List.of(subProcessNetwork.grpcEndpointForNextNodeId());
+            gossipEndpoints = Optional.of(subProcessNetwork.gossipEndpointsForNextNodeId());
+            grpcEndpoints = Optional.of(List.of(subProcessNetwork.grpcEndpointForNextNodeId()));
         }
         final NodeCreateTransactionBody opBody = spec.txns()
                 .<NodeCreateTransactionBody, NodeCreateTransactionBody.Builder>body(
@@ -172,12 +171,10 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
                             accountId.ifPresent(builder::setAccountId);
                             description.ifPresent(builder::setDescription);
                             builder.setAdminKey(adminKey);
-                            if (!gossipEndpoints.isEmpty()) {
-                                builder.clearGossipEndpoint().addAllGossipEndpoint(gossipEndpoints);
-                            }
-                            if (!grpcEndpoints.isEmpty()) {
-                                builder.clearServiceEndpoint().addAllServiceEndpoint(grpcEndpoints);
-                            }
+                            gossipEndpoints.ifPresent(serviceEndpoints ->
+                                    builder.clearGossipEndpoint().addAllGossipEndpoint(serviceEndpoints));
+                            grpcEndpoints.ifPresent(serviceEndpoints ->
+                                    builder.clearServiceEndpoint().addAllServiceEndpoint(serviceEndpoints));
                             gossipCaCertificate.ifPresent(s -> builder.setGossipCaCertificate(ByteString.copyFrom(s)));
                             grpcCertificateHash.ifPresent(s -> builder.setGrpcCertificateHash(ByteString.copyFrom(s)));
                         });

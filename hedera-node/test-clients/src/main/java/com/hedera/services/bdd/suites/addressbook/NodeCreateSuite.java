@@ -34,7 +34,10 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.STANDIN_CONTRACT_ID_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -121,6 +124,136 @@ public class NodeCreateSuite {
                         .signedBy("payer")
                         .hasPrecheck(OK)
                         .hasKnownStatus(INVALID_PAYER_SIGNATURE));
+    }
+
+    /**
+     * This test is to check if the node creation fails when the service endpoint is empty.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
+    @HapiTest
+    final Stream<DynamicTest> failOnInvalidServiceEndpoint() {
+
+        return hapiTest(nodeCreate("nodeCreate").serviceEndpoint(List.of()).hasPrecheck(INVALID_SERVICE_ENDPOINT));
+    }
+
+    /**
+     * This test is to check if the node creation fails when the gossip endpoint is empty.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
+    @HapiTest
+    final Stream<DynamicTest> failOnInvalidGossipEndpoint() {
+        return hapiTest(nodeCreate("nodeCreate").gossipEndpoint(List.of()).hasPrecheck(INVALID_GOSSIP_ENDPOINT));
+    }
+
+    /**
+     * This test is to check if the node creation fails when the gossip CA certificate is invalid.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
+    @HapiTest
+    final Stream<DynamicTest> failOnEmptyGossipCaCertificate() {
+        return hapiTest(
+                nodeCreate("nodeCreate").gossipCaCertificate(new byte[0]).hasPrecheck(INVALID_GOSSIP_CA_CERTIFICATE));
+    }
+
+    /**
+     * Check that node creation fails when more than 10 domain names are provided for gossip endpoints.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
+    @HapiTest
+    final Stream<DynamicTest> failOnTooManyGossipEndpoints() {
+        final List<ServiceEndpoint> gossipEndpoints = Arrays.asList(
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test2.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test3.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test4.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test5.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test6.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test7.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test8.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test9.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test10.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test11.com")
+                        .setPort(123)
+                        .build());
+        return hapiTest(nodeCreate("nodeCreate").gossipEndpoint(gossipEndpoints).hasPrecheck(INVALID_GOSSIP_ENDPOINT));
+    }
+
+    /**
+     * Check that node creation fails when more than 8 domain names are provided for service endpoints.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
+    @HapiTest
+    final Stream<DynamicTest> failOnTooManyServiceEndpoints() {
+        final List<ServiceEndpoint> serviceEndpoints = Arrays.asList(
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test2.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test3.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test4.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test5.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test6.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test7.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test8.com")
+                        .setPort(123)
+                        .build(),
+                ServiceEndpoint.newBuilder()
+                        .setDomainName("test9.com")
+                        .setPort(123)
+                        .build());
+        return hapiTest(
+                nodeCreate("nodeCreate").serviceEndpoint(serviceEndpoints).hasPrecheck(INVALID_SERVICE_ENDPOINT));
     }
 
     /**
