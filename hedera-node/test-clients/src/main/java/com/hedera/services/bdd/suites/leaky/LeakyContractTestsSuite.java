@@ -1674,7 +1674,7 @@ public class LeakyContractTestsSuite {
         final var lazyCreationProperty = "lazyCreation.enabled";
         final var contractsEvmVersionProperty = "contracts.evm.version";
         final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
-        final var maxPrecedingRecords = "consensus.handle.maxPrecedingRecords";
+        final var maxPrecedingRecords = "consensus.handle.maxFollowingRecords";
         final var depositAmount = 1000;
         return propertyPreservingHapiSpec(
                         "evmLazyCreateViaSolidityCallTooManyCreatesFails",
