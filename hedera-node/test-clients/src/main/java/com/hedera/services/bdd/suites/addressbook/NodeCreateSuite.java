@@ -34,6 +34,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.STANDIN_CONTRACT_ID_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
@@ -41,6 +42,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -207,7 +209,9 @@ public class NodeCreateSuite {
                         .setDomainName("test11.com")
                         .setPort(123)
                         .build());
-        return hapiTest(nodeCreate("nodeCreate").gossipEndpoint(gossipEndpoints).hasPrecheck(INVALID_GOSSIP_ENDPOINT));
+        return hapiTest(nodeCreate("nodeCreate")
+                .gossipEndpoint(gossipEndpoints)
+                .hasKnownStatus(GOSSIP_ENDPOINTS_EXCEEDED_LIMIT));
     }
 
     /**
@@ -253,8 +257,9 @@ public class NodeCreateSuite {
                         .setDomainName("test9.com")
                         .setPort(123)
                         .build());
-        return hapiTest(
-                nodeCreate("nodeCreate").serviceEndpoint(serviceEndpoints).hasPrecheck(INVALID_SERVICE_ENDPOINT));
+        return hapiTest(nodeCreate("nodeCreate")
+                .serviceEndpoint(serviceEndpoints)
+                .hasKnownStatus(SERVICE_ENDPOINTS_EXCEEDED_LIMIT));
     }
 
     /**
