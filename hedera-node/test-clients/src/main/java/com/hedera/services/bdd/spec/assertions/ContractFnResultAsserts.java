@@ -18,12 +18,14 @@ package com.hedera.services.bdd.spec.assertions;
 
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getContractInfo;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.dsl.contracts.TokenRedirectContract;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.contract.Utils;
@@ -55,6 +57,27 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
     private static final Random rand = new Random(704833L);
 
     public static ContractFnResultAsserts resultWith() {
+        return new ContractFnResultAsserts();
+    }
+
+    /**
+     * Returns a provider that asserts the result of a call to the given function of the given token redirect contract
+     * is the literal result provided.
+     *
+     * @param redirectContract the contract to call
+     * @param function the function to call
+     * @param values the expected result
+     * @return the provider
+     */
+    public static ContractFnResultAsserts redirectCallResult(
+            @NonNull final TokenRedirectContract redirectContract,
+            @NonNull final String function,
+            @NonNull final Object... values) {
+        final var abi = getABIFor(FUNCTION, function, redirectContract.abiResource());
+        return resultWith().resultThruAbi(abi, isLiteralResult(values));
+    }
+
+    public static ContractFnResultAsserts anyResult() {
         return new ContractFnResultAsserts();
     }
 
