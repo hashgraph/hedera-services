@@ -119,7 +119,6 @@ public class RandomSignedStateGenerator {
             stateInstance.setSwirldState(swirldState);
             PlatformState platformState = new PlatformState();
             platformState.setAddressBook(addressBookInstance);
-            platformState.setEpochHash(epoch);
             stateInstance.setPlatformState(platformState);
         } else {
             stateInstance = state;
