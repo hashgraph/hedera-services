@@ -132,7 +132,6 @@ public class SwirldStateManager implements FreezePeriodChecker {
                 state.getPlatformState().getUptimeData(),
                 state.getPlatformState().getAddressBook());
         transactionHandler.handleRound(round, state);
-        updateEpoch();
     }
 
     /**
@@ -202,13 +201,6 @@ public class SwirldStateManager implements FreezePeriodChecker {
         }
         immutableState.reserve();
         latestImmutableState.set(immutableState);
-    }
-
-    private void updateEpoch() {
-        final PlatformState platformState = stateRef.get().getPlatformState();
-        if (platformState != null) {
-            platformState.updateEpochHash();
-        }
     }
 
     /**
