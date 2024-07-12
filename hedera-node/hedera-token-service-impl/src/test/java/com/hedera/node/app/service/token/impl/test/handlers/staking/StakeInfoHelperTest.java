@@ -24,7 +24,7 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeInfoHelper;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;

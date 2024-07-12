@@ -29,6 +29,7 @@ import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -40,11 +41,11 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.LongConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,28 +57,21 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     private final String nodeName;
     private Optional<AccountID> accountId = Optional.empty();
     private Optional<String> description = Optional.empty();
-    private Optional<List<ServiceEndpoint>> gossipEndpoints = Optional.empty();
-    private Optional<List<ServiceEndpoint>> grpcEndpoints = Optional.empty();
+    private List<ServiceEndpoint> gossipEndpoints = Collections.emptyList();
+    private List<ServiceEndpoint> grpcEndpoints = Collections.emptyList();
     private Optional<byte[]> gossipCaCertificate = Optional.empty();
     private Optional<byte[]> grpcCertificateHash = Optional.empty();
-    private Optional<LongConsumer> newNumObserver = Optional.empty();
     private Optional<String> adminKeyName = Optional.empty();
+    private Optional<KeyShape> adminKeyShape = Optional.empty();
 
     @Nullable
     private Key adminKey;
 
+    @Nullable
+    private String keyName;
+
     public HapiNodeCreate(@NonNull final String nodeName) {
         this.nodeName = nodeName;
-    }
-
-    public HapiNodeCreate adminKeyName(final String s) {
-        adminKeyName = Optional.of(s);
-        return this;
-    }
-
-    public HapiNodeCreate adminKey(final Key k) {
-        adminKey = k;
-        return this;
     }
 
     @Override
@@ -88,11 +82,6 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.NodeCreate;
-    }
-
-    public HapiNodeCreate exposingNumTo(@NonNull final LongConsumer obs) {
-        newNumObserver = Optional.of(obs);
-        return this;
     }
 
     public HapiNodeCreate advertisingCreation() {
@@ -116,12 +105,12 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     }
 
     public HapiNodeCreate gossipEndpoint(final List<ServiceEndpoint> gossipEndpoint) {
-        this.gossipEndpoints = Optional.of(gossipEndpoint);
+        this.gossipEndpoints = gossipEndpoint;
         return this;
     }
 
     public HapiNodeCreate serviceEndpoint(final List<ServiceEndpoint> serviceEndpoint) {
-        this.grpcEndpoints = Optional.of(serviceEndpoint);
+        this.grpcEndpoints = serviceEndpoint;
         return this;
     }
 
@@ -133,6 +122,17 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     public HapiNodeCreate grpcCertificateHash(final byte[] grpcCertificateHash) {
         this.grpcCertificateHash = Optional.of(grpcCertificateHash);
         return this;
+    }
+
+    public HapiNodeCreate adminKeyName(final String s) {
+        adminKeyName = Optional.of(s);
+        return this;
+    }
+
+    private void genKeysFor(final HapiSpec spec) {
+        if (adminKeyName.isPresent() || adminKeyShape.isPresent()) {
+            adminKey = netOf(spec, adminKeyName, adminKeyShape);
+        }
     }
 
     @Override
@@ -154,24 +154,26 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
-        adminKey = adminKey != null ? adminKey : netOf(spec, adminKeyName);
+        genKeysFor(spec);
         if (useAvailableSubProcessPorts) {
             if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
                 throw new IllegalStateException("Target is not a SubProcessNetwork");
             }
-            gossipEndpoints = Optional.of(subProcessNetwork.gossipEndpointsForNextNodeId());
-            grpcEndpoints = Optional.of(List.of(subProcessNetwork.grpcEndpointForNextNodeId()));
+            gossipEndpoints = subProcessNetwork.gossipEndpointsForNextNodeId();
+            grpcEndpoints = List.of(subProcessNetwork.grpcEndpointForNextNodeId());
         }
         final NodeCreateTransactionBody opBody = spec.txns()
                 .<NodeCreateTransactionBody, NodeCreateTransactionBody.Builder>body(
                         NodeCreateTransactionBody.class, builder -> {
                             accountId.ifPresent(builder::setAccountId);
                             description.ifPresent(builder::setDescription);
-                            builder.setAdminKey(adminKey);
-                            gossipEndpoints.ifPresent(serviceEndpoints ->
-                                    builder.clearGossipEndpoint().addAllGossipEndpoint(serviceEndpoints));
-                            grpcEndpoints.ifPresent(serviceEndpoints ->
-                                    builder.clearServiceEndpoint().addAllServiceEndpoint(serviceEndpoints));
+                            if (adminKey != null) builder.setAdminKey(adminKey);
+                            if (!gossipEndpoints.isEmpty()) {
+                                builder.clearGossipEndpoint().addAllGossipEndpoint(gossipEndpoints);
+                            }
+                            if (!grpcEndpoints.isEmpty()) {
+                                builder.clearServiceEndpoint().addAllServiceEndpoint(grpcEndpoints);
+                            }
                             gossipCaCertificate.ifPresent(s -> builder.setGossipCaCertificate(ByteString.copyFrom(s)));
                             grpcCertificateHash.ifPresent(s -> builder.setGrpcCertificateHash(ByteString.copyFrom(s)));
                         });

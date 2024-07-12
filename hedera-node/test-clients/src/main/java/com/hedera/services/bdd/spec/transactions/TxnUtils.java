@@ -116,6 +116,7 @@ public class TxnUtils {
 
     private static final Pattern ID_LITERAL_PATTERN = Pattern.compile("\\d+[.]\\d+[.]\\d+");
     private static final Pattern NUMERIC_LITERAL_PATTERN = Pattern.compile("\\d+");
+    private static final Pattern POSNEG_NUMERIC_LITERAL_PATTERN = Pattern.compile("^-?\\d+");
     private static final int BANNER_WIDTH = 80;
     private static final int BANNER_BOUNDARY_THICKNESS = 2;
     // Wait just a bit longer than the 2-second block period to be certain we've ended the period
@@ -203,6 +204,10 @@ public class TxnUtils {
         return NUMERIC_LITERAL_PATTERN.matcher(s).matches();
     }
 
+    public static boolean isPosNegNumericLiteral(final String s) {
+        return POSNEG_NUMERIC_LITERAL_PATTERN.matcher(s).matches();
+    }
+
     public static AccountID asId(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s) ? asAccount(s) : lookupSpec.registry().getAccountID(s);
     }
@@ -249,6 +254,12 @@ public class TxnUtils {
 
     public static long asNodeIdLong(final String s, final HapiSpec lookupSpec) {
         return isNumericLiteral(s)
+                ? asEntityNumber(s).getNumber()
+                : lookupSpec.registry().getNodeId(s).getNumber();
+    }
+
+    public static long asPosNodeId(final String s, final HapiSpec lookupSpec) {
+        return isPosNegNumericLiteral(s)
                 ? asEntityNumber(s).getNumber()
                 : lookupSpec.registry().getNodeId(s).getNumber();
     }
