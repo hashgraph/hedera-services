@@ -82,7 +82,7 @@ public class IsAssociatedSystemContractTest {
     }
 
     /**
-     * Returns an operation asserting the contract {@code msg.sender} gets an expected {@code isAssociated()}
+     * Returns an operation asserting the EOA {@code msg.sender} gets an expected {@code isAssociated()}
      * result for both token types.
      * @param isAssociated the expected result
      * @return the operation
