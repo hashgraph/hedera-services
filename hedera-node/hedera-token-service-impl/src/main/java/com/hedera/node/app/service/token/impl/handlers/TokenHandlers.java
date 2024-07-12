@@ -64,6 +64,7 @@ public class TokenHandlers {
     private final TokenGetNftInfosHandler tokenGetNftInfosHandler;
     private final TokenUpdateNftsHandler tokenUpdateNftsHandler;
     private final TokenRejectHandler tokenRejectHandler;
+    private final TokenClaimAirdropHandler tokenClaimAirdropHandler;
 
     /**
      * Constructor for the TokenHandlers.
@@ -100,6 +101,7 @@ public class TokenHandlers {
      * @param tokenGetNftInfoHandler token get nft info handler
      * @param tokenGetNftInfosHandler token get nft infos handler
      * @param tokenUpdateNftsHandler token update nfts handler
+     * @param tokenClaimAirdropHandler token claim airdrop handler
      */
     @Inject
     public TokenHandlers(
@@ -136,7 +138,8 @@ public class TokenHandlers {
             @NonNull final TokenGetNftInfoHandler tokenGetNftInfoHandler,
             @NonNull final TokenGetNftInfosHandler tokenGetNftInfosHandler,
             @NonNull final TokenRejectHandler tokenRejectHandler,
-            @NonNull final TokenUpdateNftsHandler tokenUpdateNftsHandler) {
+            @NonNull final TokenUpdateNftsHandler tokenUpdateNftsHandler,
+            @NonNull final TokenClaimAirdropHandler tokenClaimAirdropHandler) {
         this.cryptoCreateHandler = Objects.requireNonNull(cryptoCreateHandler, "cryptoCreateHandler must not be null");
         this.cryptoUpdateHandler = Objects.requireNonNull(cryptoUpdateHandler, "cryptoUpdateHandler must not be null");
         this.cryptoTransferHandler =
@@ -193,6 +196,8 @@ public class TokenHandlers {
         this.tokenUpdateNftsHandler =
                 Objects.requireNonNull(tokenUpdateNftsHandler, "tokenUpdateNftsHandler must not be null");
         this.tokenRejectHandler = Objects.requireNonNull(tokenRejectHandler, "tokenRejectHandler must not be null");
+        this.tokenClaimAirdropHandler =
+                Objects.requireNonNull(tokenClaimAirdropHandler, "tokenClaimAirdropHandler must not be null");
     }
 
     /**
@@ -499,5 +504,13 @@ public class TokenHandlers {
      */
     public TokenRejectHandler tokenRejectHandler() {
         return tokenRejectHandler;
+    }
+    
+    /**
+     * Gets the tokenClaimAirdropHandler.
+     * @return the tokenClaimAirdropHandler
+     */
+    public TokenClaimAirdropHandler tokenClaimAirdropHandler() {
+        return tokenClaimAirdropHandler;
     }
 }
