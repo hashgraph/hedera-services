@@ -47,7 +47,6 @@ contract Assembly {
 ```
 5. This means that _any_ function can be redirected-to as long as the HTS precompile handles the redirect call [here](https://github.com/hashgraph/hedera-services/blob/a1ccc19042d577c84076e97ee8485f33e2c9e696/hedera-node/hedera-smart-contract-service-impl/src/main/java/com/hedera/node/app/service/contract/impl/exec/processors/CustomMessageCallProcessor.java#L121). 
 
-In particular, the mechanism described above will be extended to include calls to `associate`, `dissociate` and `isAssociated` functions in the HTSPrecompileContact class method which handles ABI_ID_REDIRECT_FOR_TOKEN function selector.
 
 The following table describes the function selector for the new `associate`, `dissociate` and `isAssociated` functions and the associated function signatures.
 
