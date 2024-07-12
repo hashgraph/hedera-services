@@ -21,11 +21,14 @@ import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 
 import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -52,6 +55,10 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                 HapiSpec.TARGET_NETWORK.set(targetNetwork);
             } else {
                 HapiSpec.TARGET_NETWORK.set(SHARED_NETWORK.get());
+                // If there are properties to preserve, bind that info to the thread before executing the test factory
+                Optional.ofNullable(method.getAnnotation(LeakyHapiTest.class))
+                        .map(LeakyHapiTest::overrides)
+                        .ifPresent(overrides -> HapiSpec.PROPERTIES_TO_PRESERVE.set(Arrays.asList(overrides)));
             }
         });
     }
@@ -59,5 +66,6 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
     @Override
     public void afterEach(@NonNull final ExtensionContext extensionContext) {
         HapiSpec.TARGET_NETWORK.remove();
+        HapiSpec.PROPERTIES_TO_PRESERVE.remove();
     }
 }

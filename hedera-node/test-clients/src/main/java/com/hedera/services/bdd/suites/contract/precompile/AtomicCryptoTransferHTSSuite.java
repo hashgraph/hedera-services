@@ -16,9 +16,9 @@
 
 package com.hedera.services.bdd.suites.contract.precompile;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -83,7 +83,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
@@ -1445,78 +1444,67 @@ public class AtomicCryptoTransferHTSSuite {
                 .then(childRecordsCheck(failedTransferFromTxn, CONTRACT_REVERT_EXECUTED));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> cryptoTransferSpecialAccounts() {
         final var cryptoTransferTxn = "cryptoTransferTxn";
+        return hapiTest(
+                cryptoCreate(RECEIVER).balance(1 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
+                getContractInfo(CONTRACT)
+                        .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+                        .logged(),
+                withOpContext((spec, opLog) -> {
+                    final var senderStaking = spec.setup().stakingRewardAccount();
+                    final var senderReward = spec.setup().nodeRewardAccount();
+                    final var receiver = spec.registry().getAccountID(RECEIVER);
+                    final var amountToBeSent = 50 * ONE_HBAR;
 
-        return propertyPreservingHapiSpec(
-                        "cryptoTransferEmptyKeyList",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
-                .given(
-                        overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
-                        cryptoCreate(RECEIVER).balance(1 * ONE_HUNDRED_HBARS).receiverSigRequired(true),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
-                        getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
-                                .logged())
-                .when(
-                        withOpContext((spec, opLog) -> {
-                            final var senderStaking = spec.setup().stakingRewardAccount();
-                            final var senderReward = spec.setup().nodeRewardAccount();
-                            final var receiver = spec.registry().getAccountID(RECEIVER);
-                            final var amountToBeSent = 50 * ONE_HBAR;
-
-                            allRunFor(
-                                    spec,
-                                    contractCall(
-                                                    CONTRACT,
-                                                    TRANSFER_MULTIPLE_TOKENS,
-                                                    transferList()
-                                                            .withAccountAmounts(
-                                                                    accountAmount(
-                                                                            senderStaking, -amountToBeSent, false),
-                                                                    accountAmount(receiver, amountToBeSent, false))
-                                                            .build(),
-                                                    EMPTY_TUPLE_ARRAY)
-                                            .payingWith(GENESIS)
-                                            .via(cryptoTransferTxn)
-                                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
-                                    contractCall(
-                                                    CONTRACT,
-                                                    TRANSFER_MULTIPLE_TOKENS,
-                                                    transferList()
-                                                            .withAccountAmounts(
-                                                                    accountAmount(senderReward, -amountToBeSent, false),
-                                                                    accountAmount(receiver, amountToBeSent, false))
-                                                            .build(),
-                                                    EMPTY_TUPLE_ARRAY)
-                                            .payingWith(GENESIS)
-                                            .via(cryptoTransferTxn)
-                                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
-                        }),
-                        getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged())
-                .then(
-                        getAccountBalance(RECEIVER).hasTinyBars(1 * ONE_HUNDRED_HBARS),
-                        childRecordsCheck(
-                                cryptoTransferTxn,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
-                        childRecordsCheck(
-                                cryptoTransferTxn,
-                                CONTRACT_REVERT_EXECUTED,
-                                recordWith()
-                                        .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            CONTRACT,
+                                            TRANSFER_MULTIPLE_TOKENS,
+                                            transferList()
+                                                    .withAccountAmounts(
+                                                            accountAmount(senderStaking, -amountToBeSent, false),
+                                                            accountAmount(receiver, amountToBeSent, false))
+                                                    .build(),
+                                            EMPTY_TUPLE_ARRAY)
+                                    .payingWith(GENESIS)
+                                    .via(cryptoTransferTxn)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                            contractCall(
+                                            CONTRACT,
+                                            TRANSFER_MULTIPLE_TOKENS,
+                                            transferList()
+                                                    .withAccountAmounts(
+                                                            accountAmount(senderReward, -amountToBeSent, false),
+                                                            accountAmount(receiver, amountToBeSent, false))
+                                                    .build(),
+                                            EMPTY_TUPLE_ARRAY)
+                                    .payingWith(GENESIS)
+                                    .via(cryptoTransferTxn)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                }),
+                getTxnRecord(cryptoTransferTxn).andAllChildRecords().logged(),
+                getAccountBalance(RECEIVER).hasTinyBars(1 * ONE_HUNDRED_HBARS),
+                childRecordsCheck(
+                        cryptoTransferTxn,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))),
+                childRecordsCheck(
+                        cryptoTransferTxn,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith()
+                                .status(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .withStatus(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE)))));
     }
 
     @HapiTest

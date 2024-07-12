@@ -27,6 +27,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexe
 import static com.hedera.services.bdd.spec.HapiPropertySource.explicitBytesOf;
 import static com.hedera.services.bdd.spec.HapiPropertySource.literalIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
@@ -75,7 +76,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_LOG_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
@@ -362,7 +362,7 @@ public class Create2OperationSuite {
     // https://github.com/hashgraph/hedera-services/issues/2867
     // https://github.com/hashgraph/hedera-services/issues/2868
     @SuppressWarnings("java:S5960")
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"contracts.evm.version"})
     final Stream<DynamicTest> create2FactoryWorksAsExpected() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
@@ -380,124 +380,108 @@ public class Create2OperationSuite {
         final AtomicReference<byte[]> bytecodeFromAlias = new AtomicReference<>();
         final AtomicReference<String> mirrorLiteralId = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
-                        "Create2FactoryWorksAsExpected",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_LOG_DATA)
-                .preserving("contracts.evm.version")
-                .given(
-                        overriding("contracts.evm.version", "v0.46"),
-                        newKeyNamed(adminKey),
-                        newKeyNamed(replAdminKey),
-                        uploadInitCode(contract),
-                        cryptoCreate(autoRenewAccountID).balance(ONE_HUNDRED_HBARS),
-                        contractCreate(contract)
-                                .payingWith(GENESIS)
-                                .adminKey(adminKey)
-                                .entityMemo(ENTITY_MEMO)
-                                .autoRenewSecs(customAutoRenew)
-                                .autoRenewAccountId(autoRenewAccountID)
-                                .via(CREATE_2_TXN)
-                                .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
-                        getContractInfo(contract)
-                                .has(contractWith().autoRenewAccountId(autoRenewAccountID))
-                                .logged())
-                .when(
-                        sourcing(() -> contractCallLocal(
-                                        contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
-                                .exposingTypedResultsTo(results -> {
-                                    final var tcInitcode = (byte[]) results[0];
-                                    testContractInitcode.set(tcInitcode);
-                                    LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
-                                })
-                                .payingWith(GENESIS)
-                                .nodePayment(ONE_HBAR)),
-                        sourcing(() -> setExpectedCreate2Address(
-                                contract, salt, expectedCreate2Address, testContractInitcode)),
-                        // https://github.com/hashgraph/hedera-services/issues/2867 - cannot
-                        // re-create same address
-                        sourcing(() -> contractCall(contract, "wronglyDeployTwice", testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .sending(tcValue)
-                                .hasKnownStatusFrom(INVALID_SOLIDITY_ADDRESS, CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> getContractInfo(expectedCreate2Address.get())
-                                .hasCostAnswerPrecheck(INVALID_CONTRACT_ID)),
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .sending(tcValue)),
-                        sourcing(() ->
-                                contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
-                        logIt(DELETED_CREATE_2_LOG),
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .sending(tcValue)
-                                .via(CREATE_2_TXN)),
-                        logIt("Re-deployed the CREATE2 contract"),
-                        sourcing(() -> childRecordsCheck(
-                                CREATE_2_TXN,
-                                SUCCESS,
-                                recordWith()
-                                        .contractCreateResult(
-                                                resultWith().hexedEvmAddress(expectedCreate2Address.get()))
-                                        .status(SUCCESS))),
-                        withOpContext((spec, opLog) -> {
-                            final var parentId = spec.registry().getContractId(contract);
-                            final var childId = ContractID.newBuilder()
-                                    .setContractNum(parentId.getContractNum() + 2L)
-                                    .build();
-                            mirrorLiteralId.set("0.0." + childId.getContractNum());
-                            expectedMirrorAddress.set(hex(asSolidityAddress(childId)));
-                        }),
-                        sourcing(() ->
-                                getContractBytecode(mirrorLiteralId.get()).exposingBytecodeTo(bytecodeFromMirror::set)),
-                        // https://github.com/hashgraph/hedera-services/issues/2874
-                        sourcing(() -> getContractBytecode(expectedCreate2Address.get())
-                                .exposingBytecodeTo(bytecodeFromAlias::set)),
-                        withOpContext((spec, opLog) -> assertArrayEquals(
-                                bytecodeFromAlias.get(),
-                                bytecodeFromMirror.get(),
-                                "Bytecode should be get-able using alias")),
-                        sourcing(() -> contractUpdate(expectedCreate2Address.get())
-                                .signedBy(DEFAULT_PAYER, adminKey, replAdminKey)
-                                .newKey(replAdminKey)))
-                .then(
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                /* Cannot repeat CREATE2 with same args without destroying the existing contract */
-                                .hasKnownStatusFrom(INVALID_SOLIDITY_ADDRESS, CONTRACT_REVERT_EXECUTED)),
-                        // https://github.com/hashgraph/hedera-services/issues/2874
-                        // autoRenewAccountID is inherited from the sender
-                        sourcing(() -> getContractInfo(expectedCreate2Address.get())
-                                .has(contractWith()
-                                        .addressOrAlias(expectedCreate2Address.get())
-                                        .autoRenewAccountId(autoRenewAccountID))
-                                .logged()),
-                        sourcing(() -> contractCallLocalWithFunctionAbi(
-                                        expectedCreate2Address.get(), getABIFor(FUNCTION, "getBalance", testContract))
-                                .payingWith(GENESIS)
-                                .has(resultWith()
-                                        .resultThruAbi(
-                                                getABIFor(FUNCTION, "getBalance", testContract),
-                                                isLiteralResult(new Object[] {BigInteger.valueOf(tcValue)})))),
-                        // autoRenewAccountID is inherited from the sender
-                        sourcing(() -> getContractInfo(expectedMirrorAddress.get())
-                                .has(contractWith()
-                                        .adminKey(replAdminKey)
-                                        .addressOrAlias(expectedCreate2Address.get())
-                                        .autoRenewAccountId(autoRenewAccountID))
-                                .logged()),
-                        sourcing(() -> contractCallWithFunctionAbi(
-                                        expectedCreate2Address.get(),
-                                        getABIFor(FUNCTION, "vacateAddress", testContract))
-                                .payingWith(GENESIS)),
-                        sourcing(() -> getContractInfo(expectedCreate2Address.get())
-                                .hasCostAnswerPrecheck(INVALID_CONTRACT_ID)));
+        return hapiTest(
+                overriding("contracts.evm.version", "v0.46"),
+                newKeyNamed(adminKey),
+                newKeyNamed(replAdminKey),
+                uploadInitCode(contract),
+                cryptoCreate(autoRenewAccountID).balance(ONE_HUNDRED_HBARS),
+                contractCreate(contract)
+                        .payingWith(GENESIS)
+                        .adminKey(adminKey)
+                        .entityMemo(ENTITY_MEMO)
+                        .autoRenewSecs(customAutoRenew)
+                        .autoRenewAccountId(autoRenewAccountID)
+                        .via(CREATE_2_TXN)
+                        .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num))),
+                getContractInfo(contract)
+                        .has(contractWith().autoRenewAccountId(autoRenewAccountID))
+                        .logged(),
+                sourcing(() -> contractCallLocal(
+                                contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
+                        .exposingTypedResultsTo(results -> {
+                            final var tcInitcode = (byte[]) results[0];
+                            testContractInitcode.set(tcInitcode);
+                            LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
+                        })
+                        .payingWith(GENESIS)
+                        .nodePayment(ONE_HBAR)),
+                sourcing(() -> setExpectedCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)),
+                // https://github.com/hashgraph/hedera-services/issues/2867 - cannot
+                // re-create same address
+                sourcing(() -> contractCall(contract, "wronglyDeployTwice", testContractInitcode.get(), salt)
+                        .payingWith(GENESIS)
+                        .gas(4_000_000L)
+                        .sending(tcValue)
+                        .hasKnownStatusFrom(INVALID_SOLIDITY_ADDRESS, CONTRACT_REVERT_EXECUTED)),
+                sourcing(
+                        () -> getContractInfo(expectedCreate2Address.get()).hasCostAnswerPrecheck(INVALID_CONTRACT_ID)),
+                sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                        .payingWith(GENESIS)
+                        .gas(4_000_000L)
+                        .sending(tcValue)),
+                sourcing(() -> contractDelete(expectedCreate2Address.get()).signedBy(DEFAULT_PAYER, adminKey)),
+                logIt(DELETED_CREATE_2_LOG),
+                sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                        .payingWith(GENESIS)
+                        .gas(4_000_000L)
+                        .sending(tcValue)
+                        .via(CREATE_2_TXN)),
+                logIt("Re-deployed the CREATE2 contract"),
+                sourcing(() -> childRecordsCheck(
+                        CREATE_2_TXN,
+                        SUCCESS,
+                        recordWith()
+                                .contractCreateResult(resultWith().hexedEvmAddress(expectedCreate2Address.get()))
+                                .status(SUCCESS))),
+                withOpContext((spec, opLog) -> {
+                    final var parentId = spec.registry().getContractId(contract);
+                    final var childId = ContractID.newBuilder()
+                            .setContractNum(parentId.getContractNum() + 2L)
+                            .build();
+                    mirrorLiteralId.set("0.0." + childId.getContractNum());
+                    expectedMirrorAddress.set(hex(asSolidityAddress(childId)));
+                }),
+                sourcing(() -> getContractBytecode(mirrorLiteralId.get()).exposingBytecodeTo(bytecodeFromMirror::set)),
+                // https://github.com/hashgraph/hedera-services/issues/2874
+                sourcing(() ->
+                        getContractBytecode(expectedCreate2Address.get()).exposingBytecodeTo(bytecodeFromAlias::set)),
+                withOpContext((spec, opLog) -> assertArrayEquals(
+                        bytecodeFromAlias.get(), bytecodeFromMirror.get(), "Bytecode should be get-able using alias")),
+                sourcing(() -> contractUpdate(expectedCreate2Address.get())
+                        .signedBy(DEFAULT_PAYER, adminKey, replAdminKey)
+                        .newKey(replAdminKey)),
+                sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
+                        .payingWith(GENESIS)
+                        .gas(4_000_000L)
+                        /* Cannot repeat CREATE2 with same args without destroying the existing contract */
+                        .hasKnownStatusFrom(INVALID_SOLIDITY_ADDRESS, CONTRACT_REVERT_EXECUTED)),
+                // https://github.com/hashgraph/hedera-services/issues/2874
+                // autoRenewAccountID is inherited from the sender
+                sourcing(() -> getContractInfo(expectedCreate2Address.get())
+                        .has(contractWith()
+                                .addressOrAlias(expectedCreate2Address.get())
+                                .autoRenewAccountId(autoRenewAccountID))
+                        .logged()),
+                sourcing(() -> contractCallLocalWithFunctionAbi(
+                                expectedCreate2Address.get(), getABIFor(FUNCTION, "getBalance", testContract))
+                        .payingWith(GENESIS)
+                        .has(resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, "getBalance", testContract),
+                                        isLiteralResult(new Object[] {BigInteger.valueOf(tcValue)})))),
+                // autoRenewAccountID is inherited from the sender
+                sourcing(() -> getContractInfo(expectedMirrorAddress.get())
+                        .has(contractWith()
+                                .adminKey(replAdminKey)
+                                .addressOrAlias(expectedCreate2Address.get())
+                                .autoRenewAccountId(autoRenewAccountID))
+                        .logged()),
+                sourcing(() -> contractCallWithFunctionAbi(
+                                expectedCreate2Address.get(), getABIFor(FUNCTION, "vacateAddress", testContract))
+                        .payingWith(GENESIS)),
+                sourcing(() ->
+                        getContractInfo(expectedCreate2Address.get()).hasCostAnswerPrecheck(INVALID_CONTRACT_ID)));
     }
 
     @SuppressWarnings("java:S5960")
@@ -743,7 +727,7 @@ public class Create2OperationSuite {
                         cryptoCreate("confirmingNoEntityIdCollision"));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"contracts.evm.version"})
     final Stream<DynamicTest> canCallFinalizedContractViaHapi() {
         final var contract = "FinalizedDestructible";
         final var salt = BigInteger.valueOf(1_234_567_890L);
@@ -752,34 +736,27 @@ public class Create2OperationSuite {
         final var vacateAddressAbi =
                 "{\"inputs\":[],\"name\":\"vacateAddress\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}";
 
-        return propertyPreservingHapiSpec(
-                        "CanCallFinalizedContractViaHapi",
-                        NONDETERMINISTIC_ETHEREUM_DATA,
-                        NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("contracts.evm.version")
-                .given(
-                        overriding("contracts.evm.version", "v0.46"),
-                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-                        uploadInitCode(contract),
-                        contractCreate(contract).payingWith(GENESIS).gas(500_000L),
-                        contractCallLocal(contract, "computeChildAddress", salt)
-                                .exposingTypedResultsTo(results -> childAddress.set((Address) results[0])),
-                        sourcing(() -> ethereumCryptoTransferToAddress(childAddress.get(), ONE_HBAR)
-                                .gasLimit(2_000_000)))
-                .when(
-                        sourcing(() -> getAliasedAccountInfo(ByteString.copyFrom(explicitBytesOf(childAddress.get())))
-                                .has(accountWith().balance(ONE_HBAR))),
-                        contractCall(contract, "deployDeterministicChild", salt)
-                                .sending(ONE_HBAR)
-                                .gas(2_000_000),
-                        sourcing(() -> getLiteralAliasContractInfo(asLiteralHexed(childAddress.get()))
-                                .exposingContractId(childId::set)
-                                .has(contractWith().balance(2 * ONE_HBAR))),
-                        sourcing(() ->
-                                contractCallWithFunctionAbi(asLiteralHexed(childAddress.get()), vacateAddressAbi)))
-                .then(sourcing(() -> getContractInfo("0.0." + childId.get().getContractNum())
+        return hapiTest(
+                overriding("contracts.evm.version", "v0.46"),
+                cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                uploadInitCode(contract),
+                contractCreate(contract).payingWith(GENESIS).gas(500_000L),
+                contractCallLocal(contract, "computeChildAddress", salt)
+                        .exposingTypedResultsTo(results -> childAddress.set((Address) results[0])),
+                sourcing(() -> ethereumCryptoTransferToAddress(childAddress.get(), ONE_HBAR)
+                        .gasLimit(2_000_000)),
+                sourcing(() -> getAliasedAccountInfo(ByteString.copyFrom(explicitBytesOf(childAddress.get())))
+                        .has(accountWith().balance(ONE_HBAR))),
+                contractCall(contract, "deployDeterministicChild", salt)
+                        .sending(ONE_HBAR)
+                        .gas(2_000_000),
+                sourcing(() -> getLiteralAliasContractInfo(asLiteralHexed(childAddress.get()))
+                        .exposingContractId(childId::set)
+                        .has(contractWith().balance(2 * ONE_HBAR))),
+                sourcing(() -> contractCallWithFunctionAbi(asLiteralHexed(childAddress.get()), vacateAddressAbi)),
+                sourcing(() -> getContractInfo("0.0." + childId.get().getContractNum())
                         .has(contractWith().isDeleted())));
     }
 

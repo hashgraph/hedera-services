@@ -68,6 +68,8 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -150,6 +152,13 @@ public class HapiSpec implements Runnable, Executable {
     private static final String AS_WRITTEN_DISPLAY_NAME = "as written";
 
     public static final ThreadLocal<HederaNetwork> TARGET_NETWORK = new ThreadLocal<>();
+    /**
+     * If set, a list of properties to preserve in construction of this thread's next {@link HapiSpec} instance.
+     * In general the {@link NetworkTargetingExtension} will bind this value to the thread prior to executing a
+     * test factory based on its {@link LeakyHapiTest#overrides()} attribute.
+     */
+    public static final ThreadLocal<List<String>> PROPERTIES_TO_PRESERVE = new ThreadLocal<>();
+
     public static final ThreadLocal<TestLifecycle> TEST_LIFECYCLE = new ThreadLocal<>();
     public static final ThreadLocal<String> SPEC_NAME = new ThreadLocal<>();
 
@@ -1167,7 +1176,27 @@ public class HapiSpec implements Runnable, Executable {
                         new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
     }
 
+    /**
+     * Creates dynamic tests derived from with the given operations, preserving any properties bound to the thread
+     * by a {@link LeakyHapiTest} test factory.
+     * @param ops the operations
+     * @return a {@link Stream} of {@link DynamicTest}s
+     */
     public static Stream<DynamicTest> hapiTest(@NonNull final SpecOperation... ops) {
+        return propertyPreservingHapiTest(
+                Optional.ofNullable(PROPERTIES_TO_PRESERVE.get()).orElse(emptyList()), ops);
+    }
+
+    /**
+     * Creates dynamic tests derived from with the given operations, ensuring the listed properties are
+     * restored to their original values after running the tests.
+     * @param propertiesToPreserve the properties to preserve
+     * @param ops the operations
+     * @return a {@link Stream} of {@link DynamicTest}s
+     */
+    public static Stream<DynamicTest> propertyPreservingHapiTest(
+            @NonNull final List<String> propertiesToPreserve, @NonNull final SpecOperation... ops) {
+        requireNonNull(propertiesToPreserve);
         return Stream.of(DynamicTest.dynamicTest(
                 AS_WRITTEN_DISPLAY_NAME,
                 targeted(new HapiSpec(
@@ -1177,7 +1206,7 @@ public class HapiSpec implements Runnable, Executable {
                         new SpecOperation[0],
                         new SpecOperation[0],
                         ops,
-                        List.of(),
+                        propertiesToPreserve,
                         new SnapshotMatchMode[0]))));
     }
 

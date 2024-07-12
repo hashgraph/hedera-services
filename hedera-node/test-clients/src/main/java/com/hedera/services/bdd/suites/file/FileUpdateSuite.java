@@ -113,7 +113,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.swirlds.common.utility.CommonUtils;
@@ -148,28 +147,21 @@ public class FileUpdateSuite {
                         .contents("DEF")));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> associateHasExpectedSemantics() {
-        return propertyPreservingHapiSpec("AssociateHasExpectedSemantics")
-                .preserving("tokens.maxRelsPerInfoQuery")
+        return defaultHapiSpec("AssociateHasExpectedSemantics")
                 .given(flattened((Object[]) TokenAssociationSpecs.basicKeysAndTokens()))
                 .when(
                         cryptoCreate("misc").balance(0L),
-                        TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT),
-                        TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
+                        tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT),
+                        tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_ON_BY_DEFAULT)
                                 .hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT),
                         tokenAssociate("misc", INVALID_ENTITY_ID).hasKnownStatus(INVALID_TOKEN_ID),
                         tokenAssociate("misc", INVALID_ENTITY_ID, INVALID_ENTITY_ID)
                                 .hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
                         tokenDissociate("misc", INVALID_ENTITY_ID, INVALID_ENTITY_ID)
                                 .hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("tokens.maxRelsPerInfoQuery", "" + 1)),
-                        fileUpdate(APP_PROPERTIES)
-                                .overridingProps(Map.of("tokens.maxRelsPerInfoQuery", "" + 1000))
-                                .payingWith(ADDRESS_BOOK_CONTROL),
-                        TxnVerbs.tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT),
+                        tokenAssociate("misc", TokenAssociationSpecs.FREEZABLE_TOKEN_OFF_BY_DEFAULT),
                         tokenAssociate(
                                 "misc", TokenAssociationSpecs.KNOWABLE_TOKEN, TokenAssociationSpecs.VANILLA_TOKEN))
                 .then(getAccountInfo("misc")

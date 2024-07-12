@@ -19,7 +19,7 @@ package com.hedera.services.bdd.suites.contract.hapi;
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isContractWith;
@@ -328,77 +328,71 @@ public class ContractCreateSuite {
                                 .logged());
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"ledger.maxAutoAssociations"})
     final Stream<DynamicTest> contractCreationsHaveValidAssociations() {
         final var initCreateContract = "ParentChildTransfer";
         final var slotUserContract = "SlotUser";
         final var multiPurpose = "Multipurpose";
         final var createContract = "CreateTrivial";
-        return propertyPreservingHapiSpec("contractCreationsHaveValidAssociations")
-                .preserving(LEDGER_MAX_AUTO_ASSOCIATIONS)
-                .given(
-                        overriding(LEDGER_MAX_AUTO_ASSOCIATIONS, "5000"),
-                        newKeyNamed(MULTI_KEY),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .initialSupply(1000)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .treasury(TOKEN_TREASURY),
-                        uploadInitCode(initCreateContract, createContract, multiPurpose, slotUserContract))
-                .when(
-                        contractCreate(initCreateContract)
-                                .refusingEthConversion()
-                                .via("constructorWithoutExplicitAssociations")
-                                .hasKnownStatus(SUCCESS),
-                        cryptoTransfer(moving(100, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, initCreateContract))
-                                .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                        contractCreate(createContract)
-                                .refusingEthConversion()
-                                .maxAutomaticTokenAssociations(0)
-                                .hasKnownStatus(SUCCESS),
-                        contractCreate(multiPurpose)
-                                .refusingEthConversion()
-                                .maxAutomaticTokenAssociations(3)
-                                .hasKnownStatus(SUCCESS),
-                        contractCreate(slotUserContract)
-                                .refusingEthConversion()
-                                .via("constructorCreate")
-                                .maxAutomaticTokenAssociations(5)
-                                .hasKnownStatus(SUCCESS),
-                        contractCall(createContract, "create")
-                                .via("createViaCall")
-                                .hasKnownStatus(SUCCESS),
-                        ethereumCall(createContract, "create")
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .via("ethereumCreate")
-                                .nonce(0)
-                                .maxFeePerGas(50L)
-                                .maxPriorityGas(2L)
-                                .gasLimit(1_000_000L)
-                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))
-                .then(
-                        getContractInfo(initCreateContract)
-                                .has(contractWith().maxAutoAssociations(0))
-                                .logged(),
-                        getContractInfo(multiPurpose)
-                                .has(contractWith().maxAutoAssociations(3))
-                                .logged(),
-                        getContractInfo(slotUserContract)
-                                .has(contractWith().maxAutoAssociations(5))
-                                .logged(),
-                        assertCreationMaxAssociations("constructorWithoutExplicitAssociations", 1, 0),
-                        assertCreationMaxAssociations("constructorCreate", 1, 5),
-                        assertCreationViaCallMaxAssociations("createViaCall", 0, 0),
-                        assertCreationViaCallMaxAssociations("ethereumCreate", 0, 0));
+        return hapiTest(
+                overriding("ledger.maxAutoAssociations", "5000"),
+                newKeyNamed(MULTI_KEY),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .initialSupply(1000)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY)
+                        .treasury(TOKEN_TREASURY),
+                uploadInitCode(initCreateContract, createContract, multiPurpose, slotUserContract),
+                contractCreate(initCreateContract)
+                        .refusingEthConversion()
+                        .via("constructorWithoutExplicitAssociations")
+                        .hasKnownStatus(SUCCESS),
+                cryptoTransfer(moving(100, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, initCreateContract))
+                        .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+                contractCreate(createContract)
+                        .refusingEthConversion()
+                        .maxAutomaticTokenAssociations(0)
+                        .hasKnownStatus(SUCCESS),
+                contractCreate(multiPurpose)
+                        .refusingEthConversion()
+                        .maxAutomaticTokenAssociations(3)
+                        .hasKnownStatus(SUCCESS),
+                contractCreate(slotUserContract)
+                        .refusingEthConversion()
+                        .via("constructorCreate")
+                        .maxAutomaticTokenAssociations(5)
+                        .hasKnownStatus(SUCCESS),
+                contractCall(createContract, "create").via("createViaCall").hasKnownStatus(SUCCESS),
+                ethereumCall(createContract, "create")
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .via("ethereumCreate")
+                        .nonce(0)
+                        .maxFeePerGas(50L)
+                        .maxPriorityGas(2L)
+                        .gasLimit(1_000_000L)
+                        .hasKnownStatus(ResponseCodeEnum.SUCCESS),
+                getContractInfo(initCreateContract)
+                        .has(contractWith().maxAutoAssociations(0))
+                        .logged(),
+                getContractInfo(multiPurpose)
+                        .has(contractWith().maxAutoAssociations(3))
+                        .logged(),
+                getContractInfo(slotUserContract)
+                        .has(contractWith().maxAutoAssociations(5))
+                        .logged(),
+                assertCreationMaxAssociations("constructorWithoutExplicitAssociations", 1, 0),
+                assertCreationMaxAssociations("constructorCreate", 1, 5),
+                assertCreationViaCallMaxAssociations("createViaCall", 0, 0),
+                assertCreationViaCallMaxAssociations("ethereumCreate", 0, 0));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"contracts.evm.version"})
     final Stream<DynamicTest> childCreationsHaveExpectedKeysWithOmittedAdminKey() {
         final AtomicLong firstStickId = new AtomicLong();
         final AtomicLong secondStickId = new AtomicLong();
@@ -406,41 +400,35 @@ public class ContractCreateSuite {
         final var txn = "creation";
         final var contract = "Fuse";
 
-        return propertyPreservingHapiSpec(
-                        "ChildCreationsHaveExpectedKeysWithOmittedAdminKey", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("contracts.evm.version")
-                .given(
-                        overriding("contracts.evm.version", "v0.46"),
-                        uploadInitCode(contract),
-                        contractCreate(contract).omitAdminKey().gas(600_000).via(txn),
-                        withOpContext((spec, opLog) -> {
-                            final var op = getTxnRecord(txn);
-                            allRunFor(spec, op);
-                            final var record = op.getResponseRecord();
-                            final var creationResult = record.getContractCreateResult();
-                            final var createdIds = creationResult.getCreatedContractIDsList();
-                            assertEquals(4, createdIds.size(), "Expected four creations but got " + createdIds);
-                            firstStickId.set(createdIds.get(1).getContractNum());
-                            secondStickId.set(createdIds.get(2).getContractNum());
-                            thirdStickId.set(createdIds.get(3).getContractNum());
-                        }))
-                .when(
-                        sourcing(() -> getContractInfo("0.0." + firstStickId.get())
-                                .has(contractWith().immutableContractKey("0.0." + firstStickId.get()))
-                                .logged()),
-                        sourcing(() -> getContractInfo("0.0." + secondStickId.get())
-                                .has(contractWith().immutableContractKey("0.0." + secondStickId.get()))
-                                .logged()),
-                        sourcing(() ->
-                                getContractInfo("0.0." + thirdStickId.get()).logged()),
-                        contractCall(contract, "light").via("lightTxn"))
-                .then(
-                        sourcing(() -> getContractInfo("0.0." + firstStickId.get())
-                                .has(contractWith().isDeleted())),
-                        sourcing(() -> getContractInfo("0.0." + secondStickId.get())
-                                .has(contractWith().isDeleted())),
-                        sourcing(() -> getContractInfo("0.0." + thirdStickId.get())
-                                .has(contractWith().isDeleted())));
+        return hapiTest(
+                overriding("contracts.evm.version", "v0.46"),
+                uploadInitCode(contract),
+                contractCreate(contract).omitAdminKey().gas(600_000).via(txn),
+                withOpContext((spec, opLog) -> {
+                    final var op = getTxnRecord(txn);
+                    allRunFor(spec, op);
+                    final var record = op.getResponseRecord();
+                    final var creationResult = record.getContractCreateResult();
+                    final var createdIds = creationResult.getCreatedContractIDsList();
+                    assertEquals(4, createdIds.size(), "Expected four creations but got " + createdIds);
+                    firstStickId.set(createdIds.get(1).getContractNum());
+                    secondStickId.set(createdIds.get(2).getContractNum());
+                    thirdStickId.set(createdIds.get(3).getContractNum());
+                }),
+                sourcing(() -> getContractInfo("0.0." + firstStickId.get())
+                        .has(contractWith().immutableContractKey("0.0." + firstStickId.get()))
+                        .logged()),
+                sourcing(() -> getContractInfo("0.0." + secondStickId.get())
+                        .has(contractWith().immutableContractKey("0.0." + secondStickId.get()))
+                        .logged()),
+                sourcing(() -> getContractInfo("0.0." + thirdStickId.get()).logged()),
+                contractCall(contract, "light").via("lightTxn"),
+                sourcing(() -> getContractInfo("0.0." + firstStickId.get())
+                        .has(contractWith().isDeleted())),
+                sourcing(() -> getContractInfo("0.0." + secondStickId.get())
+                        .has(contractWith().isDeleted())),
+                sourcing(() -> getContractInfo("0.0." + thirdStickId.get())
+                        .has(contractWith().isDeleted())));
     }
 
     @HapiTest

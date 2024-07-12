@@ -16,8 +16,7 @@
 
 package com.hedera.services.bdd.suites.issues;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -50,7 +49,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 
 public class Issue305Spec {
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(
+            overrides = {"fees.percentCongestionMultipliers", "fees.minCongestionPeriod", "contracts.maxGasPerSec"})
     final Stream<DynamicTest> congestionMultipliersRefreshOnPropertyUpdate() {
         final var civilian = "civilian";
         final var preCongestionTxn = "preCongestionTxn";
@@ -59,24 +59,22 @@ public class Issue305Spec {
         final var multipliedPrice = new AtomicLong();
         final List<TransactionID> submittedTxnIds = new ArrayList<>();
 
-        return propertyPreservingHapiSpec("CongestionMultipliersRefreshOnPropertyUpdate")
-                .preserving("fees.percentCongestionMultipliers", "fees.minCongestionPeriod", "contracts.maxGasPerSec")
-                .given(
-                        cryptoCreate(civilian).balance(10 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(multipurposeContract),
-                        contractCreate(multipurposeContract).payingWith(GENESIS).logging(),
-                        contractCall(multipurposeContract)
-                                .payingWith(civilian)
-                                .gas(200_000)
-                                .fee(10 * ONE_HBAR)
-                                .sending(ONE_HBAR)
-                                .via(preCongestionTxn),
-                        getTxnRecord(preCongestionTxn).providingFeeTo(normalPrice::set),
-                        overridingAllOf(Map.of(
-                                "contracts.maxGasPerSec", "3_000_000",
-                                "fees.percentCongestionMultipliers", "1,5x",
-                                "fees.minCongestionPeriod", "1")))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                cryptoCreate(civilian).balance(10 * ONE_HUNDRED_HBARS),
+                uploadInitCode(multipurposeContract),
+                contractCreate(multipurposeContract).payingWith(GENESIS).logging(),
+                contractCall(multipurposeContract)
+                        .payingWith(civilian)
+                        .gas(200_000)
+                        .fee(10 * ONE_HBAR)
+                        .sending(ONE_HBAR)
+                        .via(preCongestionTxn),
+                getTxnRecord(preCongestionTxn).providingFeeTo(normalPrice::set),
+                overridingAllOf(Map.of(
+                        "contracts.maxGasPerSec", "3_000_000",
+                        "fees.percentCongestionMultipliers", "1,5x",
+                        "fees.minCongestionPeriod", "1")),
+                withOpContext((spec, opLog) -> {
                     // We submit 2.5 seconds of transactions with a 1 second congestion period, so
                     // we should see a 5x multiplier in effect at some point here
                     for (int i = 0; i < 100; i++) {
@@ -96,8 +94,8 @@ public class Issue305Spec {
                                         .noLogging()
                                         .deferStatusResolution());
                     }
-                }))
-                .then(withOpContext((spec, opLog) -> {
+                }),
+                withOpContext((spec, opLog) -> {
                     final var congestionInEffect = new AtomicBoolean();
                     submittedTxnIds.reversed().forEach(id -> {
                         if (congestionInEffect.get()) {
