@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -494,7 +493,7 @@ public class CryptoUpdateSuite {
                 .then(cryptoUpdate(TEST_ACCOUNT).key(UPD_KEY).hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> updateMaxAutoAssociationsWorks() {
         final int maxAllowedAssociations = 5000;
         final int originalMax = 2;
@@ -511,52 +510,43 @@ public class CryptoUpdateSuite {
         final String CONTRACT = "Multipurpose";
         final String ADMIN_KEY = "adminKey";
 
-        return defaultHapiSpec("updateMaxAutoAssociationsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(originalMax),
-                        tokenCreate(tokenA)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(Long.MAX_VALUE)
-                                .treasury(treasury)
-                                .via(tokenACreate),
-                        getTxnRecord(tokenACreate).hasNewTokenAssociation(tokenA, treasury),
-                        tokenCreate(tokenB)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(Long.MAX_VALUE)
-                                .treasury(treasury)
-                                .via(tokenBCreate),
-                        getTxnRecord(tokenBCreate).hasNewTokenAssociation(tokenB, treasury),
-                        getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(originalMax))
-                                .logged())
-                .when(
-                        cryptoTransfer(moving(1, tokenA).between(treasury, CONTRACT))
-                                .via(transferAToC),
-                        getTxnRecord(transferAToC).hasNewTokenAssociation(tokenA, CONTRACT),
-                        cryptoTransfer(moving(1, tokenB).between(treasury, CONTRACT))
-                                .via(transferBToC),
-                        getTxnRecord(transferBToC).hasNewTokenAssociation(tokenB, CONTRACT))
-                .then(
-                        getContractInfo(CONTRACT)
-                                .payingWith(GENESIS)
-                                .has(contractWith()
-                                        .hasAlreadyUsedAutomaticAssociations(originalMax)
-                                        .maxAutoAssociations(originalMax)),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(newBadMax)
-                                .hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),
-                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(newGoodMax),
-                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(newGoodMax)),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(maxAllowedAssociations + 1)
-                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(-2)
-                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
-                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)));
+        return hapiTest(
+                cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
+                newKeyNamed(ADMIN_KEY),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(originalMax),
+                tokenCreate(tokenA)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(Long.MAX_VALUE)
+                        .treasury(treasury)
+                        .via(tokenACreate),
+                getTxnRecord(tokenACreate).hasNewTokenAssociation(tokenA, treasury),
+                tokenCreate(tokenB)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(Long.MAX_VALUE)
+                        .treasury(treasury)
+                        .via(tokenBCreate),
+                getTxnRecord(tokenBCreate).hasNewTokenAssociation(tokenB, treasury),
+                getContractInfo(CONTRACT).has(ContractInfoAsserts.contractWith().maxAutoAssociations(originalMax)),
+                cryptoTransfer(moving(1, tokenA).between(treasury, CONTRACT)).via(transferAToC),
+                getTxnRecord(transferAToC).hasNewTokenAssociation(tokenA, CONTRACT),
+                cryptoTransfer(moving(1, tokenB).between(treasury, CONTRACT)).via(transferBToC),
+                getTxnRecord(transferBToC).hasNewTokenAssociation(tokenB, CONTRACT),
+                getContractInfo(CONTRACT)
+                        .payingWith(GENESIS)
+                        .has(contractWith()
+                                .hasAlreadyUsedAutomaticAssociations(originalMax)
+                                .maxAutoAssociations(originalMax)),
+                contractUpdate(CONTRACT)
+                        .newMaxAutomaticAssociations(newBadMax)
+                        .hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(newGoodMax),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(newGoodMax)),
+                contractUpdate(CONTRACT)
+                        .newMaxAutomaticAssociations(maxAllowedAssociations + 1)
+                        .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(-2).hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)));
     }
 }

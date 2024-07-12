@@ -20,6 +20,7 @@ import static com.hedera.services.bdd.junit.ContextRequirement.PERMISSION_OVERRI
 import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.ContextRequirement.UPGRADE_FILE_CONTENT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -70,7 +71,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.API_PERMISSIONS;
-import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -113,7 +113,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.token.TokenAssociationSpecs;
 import com.swirlds.common.utility.CommonUtils;
 import java.math.BigInteger;
@@ -180,21 +179,18 @@ public class FileUpdateSuite {
                         .logged());
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"tokens.maxCustomFeesAllowed"})
     final Stream<DynamicTest> notTooManyFeeScheduleCanBeCreated() {
         final var denom = "fungible";
         final var token = "token";
-        return propertyPreservingHapiSpec("OnlyValidCustomFeeScheduleCanBeCreated")
-                .preserving("tokens.maxCustomFeesAllowed")
-                .given(overriding("tokens.maxCustomFeesAllowed", "1"))
-                .when(
-                        tokenCreate(denom),
-                        tokenCreate(token)
-                                .treasury(DEFAULT_PAYER)
-                                .withCustom(fixedHbarFee(1, DEFAULT_PAYER))
-                                .withCustom(fixedHtsFee(1, denom, DEFAULT_PAYER))
-                                .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG))
-                .then();
+        return hapiTest(
+                overriding("tokens.maxCustomFeesAllowed", "1"),
+                tokenCreate(denom),
+                tokenCreate(token)
+                        .treasury(DEFAULT_PAYER)
+                        .withCustom(fixedHbarFee(1, DEFAULT_PAYER))
+                        .withCustom(fixedHtsFee(1, denom, DEFAULT_PAYER))
+                        .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG));
     }
 
     @LeakyHapiTest(UPGRADE_FILE_CONTENT)
@@ -240,7 +236,7 @@ public class FileUpdateSuite {
                         tokenCreate("secondPoc").payingWith(civilian));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> updateFeesCompatibleWithCreates() {
         final long origLifetime = 7_200_000L;
         final long extension = 700_000L;
@@ -248,26 +244,17 @@ public class FileUpdateSuite {
         final byte[] new4k = randomUtf8Bytes(BYTES_4K);
         final byte[] new2k = randomUtf8Bytes(BYTES_4K / 2);
 
-        return defaultHapiSpec("UpdateFeesCompatibleWithCreates")
-                .given(fileCreate("test").contents(old2k).lifetime(origLifetime).via(CREATE_TXN))
-                .when(
-                        fileUpdate("test").contents(new4k).extendingExpiryBy(0).via("updateTo4"),
-                        fileUpdate("test").contents(new2k).extendingExpiryBy(0).via("updateTo2"),
-                        fileUpdate("test").extendingExpiryBy(extension).via("extend"),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("maxFileSize", "1025"))
-                                .via("special"),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("maxFileSize", "1024")))
-                .then(UtilVerbs.withOpContext((spec, opLog) -> {
+        return hapiTest(
+                fileCreate("test").contents(old2k).lifetime(origLifetime).via(CREATE_TXN),
+                fileUpdate("test").contents(new4k).extendingExpiryBy(0).via("updateTo4"),
+                fileUpdate("test").contents(new2k).extendingExpiryBy(0).via("updateTo2"),
+                fileUpdate("test").extendingExpiryBy(extension).via("extend"),
+                withOpContext((spec, opLog) -> {
                     final var createOp = getTxnRecord(CREATE_TXN);
                     final var to4kOp = getTxnRecord("updateTo4");
                     final var to2kOp = getTxnRecord("updateTo2");
                     final var extensionOp = getTxnRecord("extend");
-                    final var specialOp = getTxnRecord("special");
-                    allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp, specialOp);
+                    allRunFor(spec, createOp, to4kOp, to2kOp, extensionOp);
                     final var createFee = createOp.getResponseRecord().getTransactionFee();
                     opLog.info("Creation : {} ", createFee);
                     opLog.info(
@@ -282,7 +269,6 @@ public class FileUpdateSuite {
                             "Extension: {} ({})",
                             extensionOp.getResponseRecord().getTransactionFee(),
                             (extensionOp.getResponseRecord().getTransactionFee() - createFee));
-                    opLog.info("Special: {}", specialOp.getResponseRecord().getTransactionFee());
                 }));
     }
 

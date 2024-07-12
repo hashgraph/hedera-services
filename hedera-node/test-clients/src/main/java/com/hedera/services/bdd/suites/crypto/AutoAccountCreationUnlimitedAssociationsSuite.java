@@ -17,10 +17,8 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
-import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -212,28 +210,27 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                         .logged()));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> transferHbarsToEVMAddressAliasUnlimitedAssociations() {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
 
-        return defaultHapiSpec("transferHbarsToEVMAddressAliasUnlimitedAssociations")
-                .given(
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            assert addressBytes != null;
-                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            partyId.set(registry.getAccountID(PARTY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                            counterAlias.set(evmAddressBytes);
-                        }))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes != null;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    partyId.set(registry.getAccountID(PARTY));
+                    partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                    counterAlias.set(evmAddressBytes);
+                }),
+                withOpContext((spec, opLog) -> {
 
                     // account create with key than delete account
                     var accountCreate = cryptoCreate("testAccount")
@@ -310,50 +307,43 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                     .memo(LAZY_MEMO));
 
                     allRunFor(spec, completedAccount);
-                }))
-                .then(
-                        getTxnRecord(HBAR_XFER)
-                                .hasChildRecordCount(1)
-                                .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
-                        cryptoTransfer(tinyBarsFromToWithAlias(PARTY, SECP_256K1_SOURCE_KEY, ONE_HBAR))
-                                .hasKnownStatus(SUCCESS)
-                                .via(TRANSFER_TXN),
-                        getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
-                                .has(accountWith().maxAutoAssociations(-1)));
+                }),
+                getTxnRecord(HBAR_XFER)
+                        .hasChildRecordCount(1)
+                        .hasChildRecords(recordWith().status(SUCCESS).memo(LAZY_MEMO)),
+                cryptoTransfer(tinyBarsFromToWithAlias(PARTY, SECP_256K1_SOURCE_KEY, ONE_HBAR))
+                        .hasKnownStatus(SUCCESS)
+                        .via(TRANSFER_TXN),
+                getAliasedAccountInfo(SECP_256K1_SOURCE_KEY).has(accountWith().maxAutoAssociations(-1)));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> transferTokensToEVMAddressAliasUnlimitedAssociations() {
-        double v13PriceUsd = 0.05;
-        double autoAssocSlotPrice = 0.0018;
-        double v13PriceUsdOneAutoAssociation = v13PriceUsd + autoAssocSlotPrice;
-
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
 
-        return defaultHapiSpec("transferTokensToEVMAddressAliasUnlimitedAssociations")
-                .given(
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
-                        tokenCreate("vanilla")
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(PARTY)
-                                .initialSupply(1_000),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            assert addressBytes != null;
-                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            ftId.set(registry.getTokenID("vanilla"));
-                            partyId.set(registry.getAccountID(PARTY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                            counterAlias.set(evmAddressBytes);
-                        }))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                tokenCreate("vanilla")
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(PARTY)
+                        .initialSupply(1_000),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes != null;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    ftId.set(registry.getTokenID("vanilla"));
+                    partyId.set(registry.getAccountID(PARTY));
+                    partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                    counterAlias.set(evmAddressBytes);
+                }),
+                withOpContext((spec, opLog) -> {
 
                     // account create with key than delete account
                     var accountCreate = cryptoCreate("testAccount")
@@ -419,57 +409,46 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                             .has(accountWith().maxAutoAssociations(-1).memo(LAZY_MEMO));
 
                     allRunFor(spec, hollowAccountTransfer, completion, completed);
-                }))
-                .then(
-                        // verify fees of first transfer
-                        // add this assertion after transfer changes are integrated
-                        // validateChargedUsd(FT_XFER, v13PriceUsdOneAutoAssociation)
-                        );
+                }));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> transferNftToEVMAddressAliasUnlimitedAssociations() {
-        double v13PriceUsd = 0.05;
-        double autoAssocSlotPrice = 0.0018;
-        double v13PriceUsdOneAutoAssociation = v13PriceUsd + autoAssocSlotPrice;
-
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
         final AtomicReference<AccountID> treasuryId = new AtomicReference<>();
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
         final AtomicReference<TokenID> nftId = new AtomicReference<>();
 
-        return defaultHapiSpec("transferNftToEVMAddressAliasUnlimitedAssociations")
-                .given(
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
-                        newKeyNamed(MULTI_KEY),
-                        tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .via(NFT_CREATE),
-                        mintToken(
-                                NFT_INFINITE_SUPPLY_TOKEN,
-                                List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            assert addressBytes != null;
-                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            counterAlias.set(evmAddressBytes);
-                            nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
-                            partyId.set(registry.getAccountID(PARTY));
-                            treasuryId.set(registry.getAccountID(TOKEN_TREASURY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                        }))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(2),
+                newKeyNamed(MULTI_KEY),
+                tokenCreate(NFT_INFINITE_SUPPLY_TOKEN)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY)
+                        .supplyType(TokenSupplyType.INFINITE)
+                        .initialSupply(0)
+                        .treasury(TOKEN_TREASURY)
+                        .via(NFT_CREATE),
+                mintToken(
+                        NFT_INFINITE_SUPPLY_TOKEN, List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes != null;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    counterAlias.set(evmAddressBytes);
+                    nftId.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN));
+                    partyId.set(registry.getAccountID(PARTY));
+                    treasuryId.set(registry.getAccountID(TOKEN_TREASURY));
+                    partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                }),
+                withOpContext((spec, opLog) -> {
 
                     // account create with key than delete account
                     var accountCreate = cryptoCreate("testAccount")
@@ -537,11 +516,6 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                             .has(accountWith().maxAutoAssociations(-1).memo(LAZY_MEMO));
 
                     allRunFor(spec, hollowAccountTransfer, completion, completed);
-                }))
-                .then(
-                        // verify fees of first transfer
-                        // add this assertion after transfer changes are integrated
-                        // validateChargedUsd(NFT_XFER, v13PriceUsdOneAutoAssociation)
-                        );
+                }));
     }
 }

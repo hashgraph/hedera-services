@@ -35,7 +35,7 @@ import org.junit.jupiter.api.DynamicTest;
 
 public class Issue2143Spec {
     @LeakyHapiTest({PERMISSION_OVERRIDES})
-    final Stream<DynamicTest> account55ControlCanUpdatePropertiesAndPermissions() {
+    final Stream<DynamicTest> account55ControlCanUpdatePermissions() {
         return defaultHapiSpec("Account55ControlCanUpdatePropertiesAndPermissions")
                 .given(cryptoTransfer(tinyBarsFromTo(GENESIS, ADDRESS_BOOK_CONTROL, 1_000_000_000L)))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -51,16 +51,12 @@ public class Issue2143Spec {
         return defaultHapiSpec("Account57ControlCanUpdatePropertiesAndPermissions")
                 .given(cryptoTransfer(tinyBarsFromTo(GENESIS, EXCHANGE_RATE_CONTROL, 1_000_000_000L)))
                 .when(
-                        fileUpdate(APP_PROPERTIES)
-                                .overridingProps(Map.of("simpletransferTps", "100"))
-                                .payingWith(EXCHANGE_RATE_CONTROL),
+                        fileUpdate(APP_PROPERTIES).overridingProps(Map.of()).payingWith(EXCHANGE_RATE_CONTROL),
                         fileUpdate(API_PERMISSIONS)
                                 .overridingProps(Map.of("createFile", "0-100"))
                                 .payingWith(EXCHANGE_RATE_CONTROL))
                 .then(
-                        fileUpdate(APP_PROPERTIES)
-                                .overridingProps(Map.of("simpletransferTps", "0"))
-                                .payingWith(EXCHANGE_RATE_CONTROL),
+                        fileUpdate(APP_PROPERTIES).overridingProps(Map.of()).payingWith(EXCHANGE_RATE_CONTROL),
                         fileUpdate(API_PERMISSIONS)
                                 .overridingProps(Map.of("createFile", "0-*"))
                                 .payingWith(EXCHANGE_RATE_CONTROL));

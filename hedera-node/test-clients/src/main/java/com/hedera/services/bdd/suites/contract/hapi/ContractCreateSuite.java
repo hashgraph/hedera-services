@@ -16,7 +16,6 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -737,28 +736,27 @@ public class ContractCreateSuite {
                                         results -> log.info("Results were {}", CommonUtils.hex((byte[]) results[0]))));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> tryContractCreateWithMaxAutoAssoc() {
         final var contract = "CreateTrivial";
-        return defaultHapiSpec("tryContractCreateWithMaxAutoAssoc")
-                .given(uploadInitCode(contract))
-                .when(
-                        contractCreate(contract)
-                                .adminKey(THRESHOLD)
-                                .refusingEthConversion()
-                                .maxAutomaticTokenAssociations(-2)
-                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        contractCreate(contract)
-                                .adminKey(THRESHOLD)
-                                .refusingEthConversion()
-                                .maxAutomaticTokenAssociations(-200000)
-                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        contractCreate(contract)
-                                .adminKey(THRESHOLD)
-                                .refusingEthConversion()
-                                .maxAutomaticTokenAssociations(-1)
-                                .hasKnownStatus(SUCCESS))
-                .then(getContractInfo(contract)
+        return hapiTest(
+                uploadInitCode(contract),
+                contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .refusingEthConversion()
+                        .maxAutomaticTokenAssociations(-2)
+                        .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .refusingEthConversion()
+                        .maxAutomaticTokenAssociations(-200000)
+                        .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                contractCreate(contract)
+                        .adminKey(THRESHOLD)
+                        .refusingEthConversion()
+                        .maxAutomaticTokenAssociations(-1)
+                        .hasKnownStatus(SUCCESS),
+                getContractInfo(contract)
                         .has(contractWith().maxAutoAssociations(-1))
                         .logged());
     }

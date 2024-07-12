@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.accountIdFromHexedMirrorAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
@@ -26,7 +25,6 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asTopicString;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AutoAssocAsserts.accountTokenPairsInAnyOrder;
@@ -107,7 +105,6 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FUL
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_COLLECTOR;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -217,21 +214,21 @@ public class CryptoTransferSuite {
     private static final String PAYEE_SIG_REQ = "payeeSigReq";
     private static final String TOKENS_INVOLVED_LOG_MESSAGE =
             """
-0 tokens involved,
-  2 account adjustments: {} tb, ${}"
-1 tokens involved,
-  2 account adjustments: {} tb, ${} (~{}x pure crypto)
-  3 account adjustments: {} tb, ${} (~{}x pure crypto)
-  4 account adjustments: {} tb, ${} (~{}x pure crypto)
-  5 account adjustments: {} tb, ${} (~{}x pure crypto)
-  6 account adjustments: {} tb, ${} (~{}x pure crypto)
-2 tokens involved,
-  4 account adjustments: {} tb, ${} (~{}x pure crypto)
-  5 account adjustments: {} tb, ${} (~{}x pure crypto)
-                                          6 account adjustments: {} tb, ${} (~{}x pure crypto)
-                                        3 tokens involved,
-                                          6 account adjustments: {} tb, ${} (~{}x pure crypto)
-                                                                                                  """;
+                    0 tokens involved,
+                      2 account adjustments: {} tb, ${}"
+                    1 tokens involved,
+                      2 account adjustments: {} tb, ${} (~{}x pure crypto)
+                      3 account adjustments: {} tb, ${} (~{}x pure crypto)
+                      4 account adjustments: {} tb, ${} (~{}x pure crypto)
+                      5 account adjustments: {} tb, ${} (~{}x pure crypto)
+                      6 account adjustments: {} tb, ${} (~{}x pure crypto)
+                    2 tokens involved,
+                      4 account adjustments: {} tb, ${} (~{}x pure crypto)
+                      5 account adjustments: {} tb, ${} (~{}x pure crypto)
+                                                              6 account adjustments: {} tb, ${} (~{}x pure crypto)
+                                                            3 tokens involved,
+                                                              6 account adjustments: {} tb, ${} (~{}x pure crypto)
+                                                                                                                      """;
     public static final String HODL_XFER = "hodlXfer";
     public static final String PAYEE_NO_SIG_REQ = "payeeNoSigReq";
     private static final String HBAR_XFER = "hbarXfer";
@@ -2442,31 +2439,29 @@ public class CryptoTransferSuite {
                 .then(getAliasedAccountInfo(hollowAccountKey).has(accountWith().key(hollowAccountKey)));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"entities.unlimitedAutoAssociationsEnabled"})
     final Stream<DynamicTest> createHollowAccountOnDeletedAliasViaHBARTransferAndCompleteIt() {
         final var hollowAccountKey = "hollowAccountKey";
         final AtomicReference<ByteString> treasuryAlias = new AtomicReference<>();
         final AtomicReference<ByteString> hollowAccountAlias = new AtomicReference<>();
         final var transferHBARSToHollowAccountTxn = "transferHBARSToHollowAccountTxn";
-        return propertyPreservingHapiSpec("createHollowAccountWithHBARSTransferAndCompleteIt")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
-                .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
-                        newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var treasuryAccountId = registry.getAccountID(TREASURY);
-                            treasuryAlias.set(ByteString.copyFrom(asSolidityAddress(treasuryAccountId)));
-                            // Save the alias for the hollow account
-                            final var ecdsaKey = spec.registry()
-                                    .getKey(hollowAccountKey)
-                                    .getECDSASecp256K1()
-                                    .toByteArray();
-                            final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                            hollowAccountAlias.set(evmAddressBytes);
-                        }))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
+                newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
+                cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var treasuryAccountId = registry.getAccountID(TREASURY);
+                    treasuryAlias.set(ByteString.copyFrom(asSolidityAddress(treasuryAccountId)));
+                    // Save the alias for the hollow account
+                    final var ecdsaKey = spec.registry()
+                            .getKey(hollowAccountKey)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    hollowAccountAlias.set(evmAddressBytes);
+                }),
+                withOpContext((spec, opLog) -> {
                     // Create a hollow account
                     var hollowCreate = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
                                     .addAccountAmounts(aaWith(treasuryAlias.get(), -3 * ONE_HBAR))
@@ -2498,8 +2493,8 @@ public class CryptoTransferSuite {
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey))
                             .hasKnownStatus(SUCCESS);
                     allRunFor(spec, getInfo, delete);
-                }))
-                .then(withOpContext((spec, opLog) -> {
+                }),
+                withOpContext((spec, opLog) -> {
                     var changeFlag = overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE);
 
                     // Create hollow account with the deleted account alias
@@ -2533,37 +2528,35 @@ public class CryptoTransferSuite {
                 }));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"entities.unlimitedAutoAssociationsEnabled"})
     final Stream<DynamicTest> createHollowAccountOnDeletedAliasViaFtTransferAndCompleteIt() {
         final var hollowAccountKey = "hollowAccountKey";
         final AtomicReference<TokenID> fungibleTokenId = new AtomicReference<>();
         final AtomicReference<ByteString> treasuryAlias = new AtomicReference<>();
         final AtomicReference<ByteString> hollowAccountAlias = new AtomicReference<>();
         final var transferFtToHollowAccountTxn = "transferFtToHollowAccountTxn";
-        return propertyPreservingHapiSpec("createHollowAccountWithFtTransferAndCompleteIt")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
-                .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE),
-                        newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(10L)
-                                .treasury(TREASURY),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var treasuryAccountId = registry.getAccountID(TREASURY);
-                            treasuryAlias.set(ByteString.copyFrom(asSolidityAddress(treasuryAccountId)));
-                            // Save the alias for the hollow account
-                            final var ecdsaKey = spec.registry()
-                                    .getKey(hollowAccountKey)
-                                    .getECDSASecp256K1()
-                                    .toByteArray();
-                            final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
-                            hollowAccountAlias.set(evmAddressBytes);
-                            fungibleTokenId.set(registry.getTokenID(FUNGIBLE_TOKEN));
-                        }))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
+                newKeyNamed(hollowAccountKey).shape(SECP_256K1_SHAPE),
+                cryptoCreate(TREASURY).balance(10_000 * ONE_MILLION_HBARS),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(10L)
+                        .treasury(TREASURY),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var treasuryAccountId = registry.getAccountID(TREASURY);
+                    treasuryAlias.set(ByteString.copyFrom(asSolidityAddress(treasuryAccountId)));
+                    // Save the alias for the hollow account
+                    final var ecdsaKey = spec.registry()
+                            .getKey(hollowAccountKey)
+                            .getECDSASecp256K1()
+                            .toByteArray();
+                    final var evmAddressBytes = ByteString.copyFrom(recoverAddressFromPubKey(ecdsaKey));
+                    hollowAccountAlias.set(evmAddressBytes);
+                    fungibleTokenId.set(registry.getTokenID(FUNGIBLE_TOKEN));
+                }),
+                withOpContext((spec, opLog) -> {
                     // Create a hollow account
                     var hollowCreate = cryptoTransfer((s, b) -> b.setTransfers(TransferList.newBuilder()
                                     .addAccountAmounts(aaWith(treasuryAlias.get(), -3 * ONE_HBAR))
@@ -2595,8 +2588,8 @@ public class CryptoTransferSuite {
                             .sigMapPrefixes(uniqueWithFullPrefixesFor(hollowAccountKey))
                             .hasKnownStatus(SUCCESS);
                     allRunFor(spec, getInfo, delete);
-                }))
-                .then(withOpContext((spec, opLog) -> {
+                }),
+                withOpContext((spec, opLog) -> {
                     var changeFlag = overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE);
 
                     // Create hollow account with the deleted account alias
