@@ -64,8 +64,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
@@ -709,20 +707,13 @@ public class Create2OperationSuite {
                                 .via(CREATE_2_TXN)),
                         // mod-service externalizes internal creations in order of their initiation,
                         // while mono-service externalizes them in order of their completion
-                        ifHapiTest(captureChildCreate2MetaFor(
+                        captureChildCreate2MetaFor(
                                 3,
                                 0,
                                 "Merged deployed contract with hollow account",
                                 CREATE_2_TXN,
                                 mergedMirrorAddr,
-                                mergedAliasAddr)),
-                        ifNotHapiTest(captureChildCreate2MetaFor(
-                                3,
-                                2,
-                                "Merged deployed contract with hollow account",
-                                CREATE_2_TXN,
-                                mergedMirrorAddr,
-                                mergedAliasAddr)),
+                                mergedAliasAddr),
                         withOpContext((spec, opLog) -> {
                             final var opExpectedMergedNonce = getTxnRecord(CREATE_2_TXN)
                                     .andAllChildRecords()

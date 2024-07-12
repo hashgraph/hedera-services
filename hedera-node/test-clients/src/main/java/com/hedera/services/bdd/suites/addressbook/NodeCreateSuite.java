@@ -41,6 +41,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SERVIC
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -357,7 +358,6 @@ public class NodeCreateSuite {
                                 .payingWith("payer")
                                 .signedBy("payer")
                                 .setNode("0.0.4")
-                                .fee(ONE_HBAR)
                                 .hasKnownStatus(UNAUTHORIZED)
                                 .via("nodeCreationFailed"))
                 .when()
@@ -376,7 +376,6 @@ public class NodeCreateSuite {
                                 .payingWith("payer")
                                 .signedBy("payer", "randomAccount", "testKey")
                                 .setNode("0.0.4")
-                                .fee(ONE_HBAR)
                                 .hasKnownStatus(UNAUTHORIZED)
                                 .via("multipleSigsCreation"),
                         validateChargedUsdWithin("multipleSigsCreation", 0.0011276316, 3.0));
@@ -387,7 +386,46 @@ public class NodeCreateSuite {
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @HapiTest
-    final Stream<DynamicTest> failsAtIngestForUnauthorizedTxns() {
+    @Tag(EMBEDDED)
+    final Stream<DynamicTest> validateFeesInsufficientAmount() {
+        final String description = "His vorpal blade went snicker-snack!";
+        return defaultHapiSpec("validateFees")
+                .given(
+                        newKeyNamed("testKey"),
+                        newKeyNamed("randomAccount"),
+                        cryptoCreate("payer").balance(10_000_000_000L),
+                        // Submit to a different node so ingest check is skipped
+                        nodeCreate("ntb")
+                                .payingWith("payer")
+                                .signedBy("payer")
+                                .description(description)
+                                .setNode("0.0.4")
+                                .fee(1)
+                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                                .via("nodeCreationFailed"))
+                .when()
+                .then(
+                        getTxnRecord("nodeCreationFailed").logged(),
+                        nodeCreate("ntb").description(description).via("nodeCreation"),
+                        getTxnRecord("nodeCreation").logged(),
+                        // But, note that the fee will not be charged for privileged payer
+                        // The fee is charged here because the payer is not privileged
+                        validateChargedUsdWithin("nodeCreation", 0.0, 0.0),
+
+                        // Submit with several signatures and the price should increase
+                        nodeCreate("ntb")
+                                .payingWith("payer")
+                                .signedBy("payer", "randomAccount", "testKey")
+                                .description(description)
+                                .setNode("0.0.4")
+                                .fee(1)
+                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                                .via("multipleSigsCreation"));
+    }
+
+    @HapiTest
+    @Tag(EMBEDDED)
+    final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("failsAtIngestForUnAuthorizedTxns")
                 .given(

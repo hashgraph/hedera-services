@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.regression.system;
 
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
+import static com.hedera.services.bdd.junit.TestTags.NOT_EMBEDDED;
 import static com.hedera.services.bdd.junit.TestTags.UPGRADE;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.exceptNodeId;
@@ -44,7 +45,7 @@ import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.dsl.annotations.AccountSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.utilops.FakeNmt;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -83,21 +84,22 @@ import org.junit.jupiter.api.TestMethodOrder;
  * the config version is still zero.
  */
 @Tag(UPGRADE)
+@Tag(NOT_EMBEDDED)
 @Order(MAX_VALUE)
 @DisplayName("Upgrading with DAB enabled")
 @HapiTestLifecycle
 @OrderedInIsolation
 public class DabEnabledUpgradeTest implements LifecycleTest {
-    @AccountSpec(balance = ONE_BILLION_HBARS, stakedNodeId = 0)
+    @Account(balance = ONE_BILLION_HBARS, stakedNodeId = 0)
     static SpecAccount NODE0_STAKER;
 
-    @AccountSpec(balance = ONE_BILLION_HBARS, stakedNodeId = 1)
+    @Account(balance = ONE_BILLION_HBARS, stakedNodeId = 1)
     static SpecAccount NODE1_STAKER;
 
-    @AccountSpec(balance = ONE_BILLION_HBARS, stakedNodeId = 2)
+    @Account(balance = ONE_BILLION_HBARS, stakedNodeId = 2)
     static SpecAccount NODE2_STAKER;
 
-    @AccountSpec(balance = ONE_MILLION_HBARS, stakedNodeId = 3)
+    @Account(balance = ONE_MILLION_HBARS, stakedNodeId = 3)
     static SpecAccount NODE3_STAKER;
 
     @BeforeAll
@@ -120,8 +122,8 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     getVersionInfo().exposingServicesVersionTo(startVersion::set),
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(DabEnabledUpgradeTest::hasClassicAddressMetadata),
-                    upgradeToConfigVersion(1),
-                    assertVersion(startVersion::get, 1));
+                    upgradeToNextConfigVersion(),
+                    assertExpectedConfigVersion(startVersion::get));
         }
     }
 
@@ -143,7 +145,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     prepareFakeUpgrade(),
                     validateUpgradeAddressBooks(
                             addressBook -> assertThat(nodeIdsFrom(addressBook)).containsExactlyInAnyOrder(0L, 2L, 3L)),
-                    upgradeToConfigVersion(2, FakeNmt.removeNodeAndRefreshConfigTxt(byNodeId(1), DAB_GENERATED)),
+                    upgradeToNextConfigVersion(FakeNmt.removeNode(byNodeId(1), DAB_GENERATED)),
                     waitUntilStartOfNextStakingPeriod(1),
                     touchBalanceOf(NODE0_STAKER, NODE2_STAKER, NODE3_STAKER).andAssertStakingRewardCount(3),
                     touchBalanceOf(NODE1_STAKER).andAssertStakingRewardCount(0));
@@ -185,7 +187,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
                     // node4 was not active before this the upgrade, so it could not have written a config.txt
                     validateUpgradeAddressBooks(exceptNodeId(4L), addressBook -> assertThat(nodeIdsFrom(addressBook))
                             .contains(4L)),
-                    upgradeToConfigVersion(3, FakeNmt.addNodeAndRefreshConfigTxt(4L, DAB_GENERATED)));
+                    upgradeToNextConfigVersion(FakeNmt.addNode(4L, DAB_GENERATED)));
         }
     }
 

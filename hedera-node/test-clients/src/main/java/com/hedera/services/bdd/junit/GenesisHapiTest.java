@@ -14,40 +14,29 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.spec.dsl.annotations;
+package com.hedera.services.bdd.junit;
 
-import com.hedera.services.bdd.junit.extensions.SpecEntityExtension;
+import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+
+import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
+import com.hedera.services.bdd.junit.extensions.SpecNamingExtension;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
- * Describes a {@link com.hedera.services.bdd.spec.dsl.entities.SpecContract}.
+ * A variant of {@link HapiTest} that signals the {@link NetworkTargetingExtension} to create a separate
+ * embedded network for the test to ensure the test sees the genesis transaction. (No {@link ResourceLock}
+ * here because this embedded network is not shared with any other test.)
  */
+@Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD, ElementType.PARAMETER})
-@ExtendWith(SpecEntityExtension.class)
-public @interface ContractSpec {
-    /**
-     * If set, a different {@link com.hedera.services.bdd.spec.HapiSpec} name to use for the contract.
-     *
-     * @return the spec name of the contract
-     */
-    String name() default "";
-
-    /**
-     * The name of the contract; must refer to a contract in the classpath resources.
-     *
-     * @return the name of the contract
-     */
-    String contract();
-
-    /**
-     * The amount of gas to use when creating the contract.
-     *
-     * @return the amount of gas to use
-     */
-    long creationGas() default 100_000L;
-}
+@TestFactory
+@Tag(EMBEDDED)
+@ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
+public @interface GenesisHapiTest {}

@@ -32,7 +32,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -50,7 +50,7 @@ public class EvmValidationTest {
     @Nested
     @DisplayName("calling balanceOf")
     class BalanceOf {
-        @ContractSpec(contract = "BalanceChecker46Version", creationGas = 10_000_000L)
+        @Contract(contract = "BalanceChecker46Version", creationGas = 10_000_000L)
         static SpecContract balanceChecker46Version;
 
         @HapiTest

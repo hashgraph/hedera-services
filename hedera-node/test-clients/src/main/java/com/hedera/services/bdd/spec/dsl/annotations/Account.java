@@ -17,28 +17,37 @@
 package com.hedera.services.bdd.spec.dsl.annotations;
 
 import com.hedera.services.bdd.junit.extensions.SpecEntityExtension;
-import com.hedera.services.bdd.spec.dsl.entities.SpecKey;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+/**
+ * Describes a {@link com.hedera.services.bdd.spec.dsl.entities.SpecAccount}.
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.PARAMETER})
 @ExtendWith(SpecEntityExtension.class)
-public @interface KeySpec {
+public @interface Account {
     /**
-     * If set, a {@link com.hedera.services.bdd.spec.HapiSpec} name to use for the key.
+     * If set, a different {@link com.hedera.services.bdd.spec.HapiSpec} name to use for the account.
      *
-     * @return the spec name of the key
+     * @return the spec name of the account
      */
     String name() default "";
 
     /**
-     * The type of key to create.
+     * If set, the initial balance of the account.
      *
-     * @return the type of key to create
+     * @return the initial balance of the account
      */
-    SpecKey.Type type() default SpecKey.Type.ED25519;
+    long balance() default 0;
+
+    /**
+     * If set, the initial staked node id of the account.
+     *
+     * @return the initial staked node id of the account
+     */
+    long stakedNodeId() default -1;
 }

@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
-import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
 import static com.hedera.services.bdd.suites.crypto.LeakyCryptoTestsSuite.*;
 import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
 import static java.util.stream.Collectors.joining;
@@ -62,7 +61,10 @@ public class AddressAliasIdFuzzing {
         final Map<String, String> existingProps = new LinkedHashMap<>();
         return propertyPreservingHapiSpec("AddressAliasIdFuzzing")
                 .preserving(
-                        CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP, ATOMIC_CRYPTO_TRANSFER)
+                        "contracts.chainId",
+                        LAZY_CREATE_PROPERTY_NAME,
+                        CONTRACTS_EVM_VERSION_PROP,
+                        ATOMIC_CRYPTO_TRANSFER)
                 .given(
                         getFileContents(APP_PROPERTIES).addingConfigListTo(existingProps),
                         withOpContext((spec, opLog) -> log.info(

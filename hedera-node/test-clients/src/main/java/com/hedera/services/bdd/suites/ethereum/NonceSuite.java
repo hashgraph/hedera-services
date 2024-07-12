@@ -68,7 +68,6 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -591,8 +590,6 @@ public class NonceSuite {
         final String FUNGIBLE_TOKEN = "fungibleToken";
         final AtomicReference<String> treasuryMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        final var illegalNumChildren =
-                HapiSpecSetup.getDefaultNodeProps().getInteger("consensus.handle.maxFollowingRecords") + 1;
         return defaultHapiSpec(
                         "nonceUpdatedAfterEvmReversionDueMaxChildRecordsExceeded",
                         NONDETERMINISTIC_ETHEREUM_DATA,
@@ -619,7 +616,9 @@ public class NonceSuite {
                                         CHECK_BALANCE_REPEATEDLY_FUNCTION,
                                         asHeadlongAddress(tokenMirrorAddr.get()),
                                         asHeadlongAddress(treasuryMirrorAddr.get()),
-                                        BigInteger.valueOf(illegalNumChildren))
+                                        BigInteger.valueOf(spec.startupProperties()
+                                                        .getInteger("consensus.handle.maxFollowingRecords")
+                                                + 1))
                                 .type(EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)

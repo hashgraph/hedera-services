@@ -84,17 +84,6 @@ public interface HederaNode {
     HederaNode start();
 
     /**
-     * Stops the node software gracefully
-     */
-    boolean stop();
-
-    /**
-     * Stops the node software forcibly.
-     * @return true if the node was stopped, false otherwise
-     */
-    boolean terminate();
-
-    /**
      * Returns a future that resolves when the node has the given status.
      *
      * @param status the status to wait for
@@ -113,7 +102,7 @@ public interface HederaNode {
     CompletableFuture<Void> mfFuture(@NonNull MarkerFile markerFile);
 
     /**
-     * Returns a future that resolves when the node has stopped.
+     * Begins stopping the node, returning a future that resolves when this is done.
      *
      * @return a future that resolves when the node has stopped
      */

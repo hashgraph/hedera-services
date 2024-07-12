@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -72,15 +73,16 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.utilops.RunnableOp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -89,10 +91,7 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 public class ContractUpdateSuite {
-    private static final long DEFAULT_MAX_LIFETIME =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
     private static final long ONE_DAY = 60L * 60L * 24L;
-    private static final long ONE_MONTH = 30 * ONE_DAY;
     public static final String ADMIN_KEY = "adminKey";
     public static final String NEW_ADMIN_KEY = "newAdminKey";
     private static final String CONTRACT = "Multipurpose";
@@ -261,22 +260,26 @@ public class ContractUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updatingExpiryWorks() {
-        final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
+        final var someValidExpiry = new AtomicLong();
         return defaultHapiSpec("UpdatingExpiryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractUpdate(CONTRACT).newExpirySecs(newExpiry))
-                .then(getContractInfo(CONTRACT).has(contractWith().expiry(newExpiry)));
+                .given(
+                        new RunnableOp(() ->
+                                someValidExpiry.set(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 123L)),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
+                .when(sourcing(() -> contractUpdate(CONTRACT).newExpirySecs(someValidExpiry.get())))
+                .then(sourcing(
+                        () -> getContractInfo(CONTRACT).has(contractWith().expiry(someValidExpiry.get()))));
     }
 
     @HapiTest
     final Stream<DynamicTest> rejectsExpiryTooFarInTheFuture() {
-        final var smallBuffer = 12_345L;
-        final var excessiveExpiry = DEFAULT_MAX_LIFETIME + Instant.now().getEpochSecond() + smallBuffer;
-
         return defaultHapiSpec("RejectsExpiryTooFarInTheFuture", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
-                .then(contractUpdate(CONTRACT).newExpirySecs(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME));
+                .then(doWithStartupConfigNow("entities.maxLifetime", (value, now) -> contractUpdate(CONTRACT)
+                        .newExpirySecs(now.getEpochSecond() + Long.parseLong(value) + 12345L)
+                        .hasKnownStatus(INVALID_EXPIRATION_TIME)));
     }
 
     @HapiTest
@@ -387,8 +390,8 @@ public class ContractUpdateSuite {
     final Stream<DynamicTest> fridayThe13thSpec() {
         final var contract = "SimpleStorage";
         final var suffix = "Clone";
-        final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
-        final var betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 3;
+        final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() + 200;
+        final var betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() + 300;
         final var INITIAL_MEMO = "This is a memo string with only Ascii characters";
         final var NEW_MEMO = "Turning and turning in the widening gyre, the falcon cannot hear the falconer...";
         final var BETTER_MEMO = "This was Mr. Bleaney's room...";

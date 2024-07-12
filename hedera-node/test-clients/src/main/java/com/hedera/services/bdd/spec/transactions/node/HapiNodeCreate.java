@@ -24,12 +24,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -146,13 +147,9 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
-        // TODO issue #13670
-        // This is a placeholder implementation until the actual fee estimation is implemented.
-        return FeeData.newBuilder()
-                .setNodedata(FeeComponents.newBuilder().setBpr(0))
-                .setNetworkdata(FeeComponents.newBuilder().setBpr(0))
-                .setServicedata(FeeComponents.newBuilder().setBpr(0))
-                .build();
+        final UsageAccumulator accumulator = new UsageAccumulator();
+        accumulator.addVpt(Math.max(0, svo.getTotalSigCount() - 1));
+        return AdapterUtils.feeDataFrom(accumulator);
     }
 
     @Override

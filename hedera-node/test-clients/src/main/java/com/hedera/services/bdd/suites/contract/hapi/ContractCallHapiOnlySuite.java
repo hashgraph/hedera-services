@@ -28,7 +28,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
@@ -62,7 +61,7 @@ public class ContractCallHapiOnlySuite {
                                 .gas(1_000_000)
                                 .refusingEthConversion(),
                         cryptoCreate(payer).balance(ONE_MILLION_HBARS).payingWith(GENESIS))
-                .when(ifHapiTest(withOpContext((spec, ignore) -> {
+                .when(withOpContext((spec, ignore) -> {
                     final var subop1 = balanceSnapshot("balanceBefore0", payer);
                     final var subop2 = contractCall(PAY_RECEIVABLE_CONTRACT)
                             .via(PAY_TXN)
@@ -79,7 +78,7 @@ public class ContractCallHapiOnlySuite {
                     final var subop4 =
                             getAccountBalance(payer).hasTinyBars(changeFromSnapshot("balanceBefore0", -delta));
                     allRunFor(spec, subop4);
-                })))
+                }))
                 .then();
     }
 }

@@ -24,7 +24,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.suites.HapiSuite.CHAIN_ID_PROP;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -169,7 +168,7 @@ public class IdFuzzingProviderFactory {
             overriding(ATOMIC_CRYPTO_TRANSFER, "true"),
             /** override Ethereum network config */
             overridingThree(
-                    CHAIN_ID_PROP, "298", LAZY_CREATE_PROPERTY_NAME, "true", CONTRACTS_EVM_VERSION_PROP, V_0_34),
+                    "contracts.chainId", "298", LAZY_CREATE_PROPERTY_NAME, "true", CONTRACTS_EVM_VERSION_PROP, V_0_34),
             // common init
             newKeyNamed(KEY_FOR_INCONGRUENT_ALIAS).shape(SECP_256K1_SHAPE),
             newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
