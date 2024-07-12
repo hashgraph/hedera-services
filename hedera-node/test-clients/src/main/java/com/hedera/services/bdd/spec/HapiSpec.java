@@ -1052,11 +1052,6 @@ public class HapiSpec implements Runnable, Executable {
         return internalDefaultHapiSpec(name, emptyList(), snapshotMatchModes);
     }
 
-    public static Def.PropertyPreserving propertyPreservingHapiSpec(
-            final String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return (String... props) -> internalDefaultHapiSpec(name, Arrays.asList(props), snapshotMatchModes);
-    }
-
     private static Def.Given internalDefaultHapiSpec(
             final String name,
             final List<String> propertiesToPreserve,

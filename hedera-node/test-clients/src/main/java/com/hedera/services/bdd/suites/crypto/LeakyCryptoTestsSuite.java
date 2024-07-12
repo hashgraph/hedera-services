@@ -184,13 +184,10 @@ public class LeakyCryptoTestsSuite {
     private static final Logger log = LogManager.getLogger(LeakyCryptoTestsSuite.class);
 
     private static final String FACTORY_MIRROR_CONTRACT = "FactoryMirror";
-    public static final String LAZY_CREATE_PROPERTY_NAME = "lazyCreation.enabled";
-    public static final String CONTRACTS_EVM_VERSION_PROP = "contracts.evm.version";
     public static final String AUTO_ACCOUNT = "autoAccount";
     public static final String LAZY_ACCOUNT_RECIPIENT = "lazyAccountRecipient";
     public static final String PAY_TXN = "payTxn";
     public static final String CREATE_TX = "createTX";
-    public static final String V_0_34 = "v0.34";
     private static final String ERC20_ABI = "ERC20ABI";
 
     @Order(16)
@@ -202,6 +199,9 @@ public class LeakyCryptoTestsSuite {
         final var updateWithExpiredAccount = "updateWithExpiredAccount";
         final var baseFee = 0.000214;
         return hapiTest(
+                overridingTwo(
+                        "ledger.maxAutoAssociations", "100",
+                        "ledger.autoRenewPeriod.minDuration", "1"),
                 cryptoCreate(longLivedAutoAssocUser).balance(payerBalance).autoRenewSecs(THREE_MONTHS_IN_SECONDS),
                 cryptoCreate(shortLivedAutoAssocUser).balance(payerBalance).autoRenewSecs(1),
                 cryptoUpdate(longLivedAutoAssocUser)

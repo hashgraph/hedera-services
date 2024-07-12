@@ -16,9 +16,8 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
@@ -80,61 +79,51 @@ public class ScheduleExecutionSpecStateful {
                 .then();
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"tokens.nfts.areEnabled"})
     final Stream<DynamicTest> scheduledUniqueMintFailsWithNftsDisabled() {
-        return propertyPreservingHapiSpec("ScheduledUniqueMintFailsWithNftsDisabled")
-                .preserving("tokens.nfts.areEnabled")
-                .given(
-                        cryptoCreate(TREASURY),
-                        cryptoCreate(SCHEDULE_PAYER),
-                        newKeyNamed(SUPPLY_KEY),
-                        tokenCreate(A_TOKEN)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TREASURY)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0),
-                        scheduleCreate(VALID_SCHEDULE, mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("m1"))))
-                                .designatingPayer(SCHEDULE_PAYER)
-                                .via(FAILING_TXN),
-                        overriding("tokens.nfts.areEnabled", "false"))
-                .when(scheduleSign(VALID_SCHEDULE)
+        return hapiTest(
+                cryptoCreate(TREASURY),
+                cryptoCreate(SCHEDULE_PAYER),
+                newKeyNamed(SUPPLY_KEY),
+                tokenCreate(A_TOKEN)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TREASURY)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0),
+                scheduleCreate(VALID_SCHEDULE, mintToken(A_TOKEN, List.of(ByteString.copyFromUtf8("m1"))))
+                        .designatingPayer(SCHEDULE_PAYER)
+                        .via(FAILING_TXN),
+                overriding("tokens.nfts.areEnabled", "false"),
+                scheduleSign(VALID_SCHEDULE)
                         .alsoSigningWith(SUPPLY_KEY, SCHEDULE_PAYER, TREASURY)
-                        .hasKnownStatus(SUCCESS))
-                .then(
-                        getTxnRecord(FAILING_TXN)
-                                .scheduled()
-                                .hasPriority(recordWith().status(NOT_SUPPORTED)),
-                        getTokenInfo(A_TOKEN).hasTotalSupply(0));
+                        .hasKnownStatus(SUCCESS),
+                getTxnRecord(FAILING_TXN).scheduled().hasPriority(recordWith().status(NOT_SUPPORTED)),
+                getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"tokens.nfts.areEnabled"})
     final Stream<DynamicTest> scheduledUniqueBurnFailsWithNftsDisabled() {
-        return propertyPreservingHapiSpec("scheduledUniqueBurnFailsWithNftsDisabled")
-                .preserving("tokens.nfts.areEnabled")
-                .given(
-                        cryptoCreate(TREASURY),
-                        cryptoCreate(SCHEDULE_PAYER),
-                        newKeyNamed(SUPPLY_KEY),
-                        tokenCreate(A_TOKEN)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TREASURY)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0),
-                        scheduleCreate(VALID_SCHEDULE, burnToken(A_TOKEN, List.of(1L, 2L)))
-                                .designatingPayer(SCHEDULE_PAYER)
-                                .via(FAILING_TXN),
-                        overriding("tokens.nfts.areEnabled", "false"))
-                .when(scheduleSign(VALID_SCHEDULE)
+        return hapiTest(
+                cryptoCreate(TREASURY),
+                cryptoCreate(SCHEDULE_PAYER),
+                newKeyNamed(SUPPLY_KEY),
+                tokenCreate(A_TOKEN)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TREASURY)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0),
+                scheduleCreate(VALID_SCHEDULE, burnToken(A_TOKEN, List.of(1L, 2L)))
+                        .designatingPayer(SCHEDULE_PAYER)
+                        .via(FAILING_TXN),
+                overriding("tokens.nfts.areEnabled", "false"),
+                scheduleSign(VALID_SCHEDULE)
                         .alsoSigningWith(SUPPLY_KEY, SCHEDULE_PAYER, TREASURY)
-                        .hasKnownStatus(SUCCESS))
-                .then(
-                        getTxnRecord(FAILING_TXN)
-                                .scheduled()
-                                .hasPriority(recordWith().status(NOT_SUPPORTED)),
-                        getTokenInfo(A_TOKEN).hasTotalSupply(0));
+                        .hasKnownStatus(SUCCESS),
+                getTxnRecord(FAILING_TXN).scheduled().hasPriority(recordWith().status(NOT_SUPPORTED)),
+                getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"ledger.transfers.maxLen"})
     final Stream<DynamicTest> executionWithTransferListWrongSizedFails() {
         long transferAmount = 1L;
         long senderBalance = 1000L;
@@ -142,78 +131,67 @@ public class ScheduleExecutionSpecStateful {
         long noBalance = 0L;
         final var rejectedTxn = "rejectedTxn";
 
-        return propertyPreservingHapiSpec("ExecutionWithTransferListWrongSizedFails")
-                .preserving("ledger.transfers.maxLen")
-                .given(
-                        overriding("ledger.transfers.maxLen", "2"),
-                        cryptoCreate(PAYING_ACCOUNT).balance(payingAccountBalance),
-                        cryptoCreate(SENDER).balance(senderBalance),
-                        cryptoCreate(RECEIVER_A).balance(noBalance),
-                        cryptoCreate(RECEIVER_B).balance(noBalance),
-                        cryptoCreate(RECEIVER_C).balance(noBalance),
-                        scheduleCreate(
-                                        rejectedTxn,
-                                        cryptoTransfer(
-                                                        tinyBarsFromTo(SENDER, RECEIVER_A, transferAmount),
-                                                        tinyBarsFromTo(SENDER, RECEIVER_B, transferAmount),
-                                                        tinyBarsFromTo(SENDER, RECEIVER_C, transferAmount))
-                                                .memo(randomUppercase(100)))
-                                .designatingPayer(PAYING_ACCOUNT)
-                                .via("createTx"))
-                .when(scheduleSign(rejectedTxn)
+        return hapiTest(
+                cryptoCreate(PAYING_ACCOUNT).balance(payingAccountBalance),
+                cryptoCreate(SENDER).balance(senderBalance),
+                cryptoCreate(RECEIVER_A).balance(noBalance),
+                cryptoCreate(RECEIVER_B).balance(noBalance),
+                cryptoCreate(RECEIVER_C).balance(noBalance),
+                scheduleCreate(
+                                rejectedTxn,
+                                cryptoTransfer(
+                                                tinyBarsFromTo(SENDER, RECEIVER_A, transferAmount),
+                                                tinyBarsFromTo(SENDER, RECEIVER_B, transferAmount),
+                                                tinyBarsFromTo(SENDER, RECEIVER_C, transferAmount))
+                                        .memo(randomUppercase(100)))
+                        .designatingPayer(PAYING_ACCOUNT)
+                        .via("createTx"),
+                scheduleSign(rejectedTxn)
                         .alsoSigningWith(SENDER, PAYING_ACCOUNT)
                         .via("signTx")
-                        .hasKnownStatus(SUCCESS))
-                .then(
-                        getAccountBalance(SENDER).hasTinyBars(senderBalance),
-                        getAccountBalance(RECEIVER_A).hasTinyBars(noBalance),
-                        getAccountBalance(RECEIVER_B).hasTinyBars(noBalance),
-                        getAccountBalance(RECEIVER_C).hasTinyBars(noBalance),
-                        withOpContext((spec, opLog) -> {
-                            var triggeredTx = getTxnRecord("createTx").scheduled();
+                        .hasKnownStatus(SUCCESS),
+                getAccountBalance(SENDER).hasTinyBars(senderBalance),
+                getAccountBalance(RECEIVER_A).hasTinyBars(noBalance),
+                getAccountBalance(RECEIVER_B).hasTinyBars(noBalance),
+                getAccountBalance(RECEIVER_C).hasTinyBars(noBalance),
+                withOpContext((spec, opLog) -> {
+                    var triggeredTx = getTxnRecord("createTx").scheduled();
 
-                            allRunFor(spec, triggeredTx);
+                    allRunFor(spec, triggeredTx);
 
-                            Assertions.assertEquals(
-                                    TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
-                                    triggeredTx.getResponseRecord().getReceipt().getStatus(),
-                                    "Scheduled transaction should not be successful!");
-                        }));
+                    Assertions.assertEquals(
+                            TRANSFER_LIST_SIZE_LIMIT_EXCEEDED,
+                            triggeredTx.getResponseRecord().getReceipt().getStatus(),
+                            "Scheduled transaction should not be successful!");
+                }));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"ledger.tokenTransfers.maxLen"})
     final Stream<DynamicTest> executionWithTokenTransferListSizeExceedFails() {
         String xToken = "XXX";
         String invalidSchedule = "withMaxTokenTransfer";
         String schedulePayer = "somebody", xTreasury = "xt", civilianA = "xa", civilianB = "xb";
         String failedTxn = "bad";
 
-        return propertyPreservingHapiSpec("ExecutionWithTokenTransferListSizeExceedFails")
-                .preserving("ledger.tokenTransfers.maxLen")
-                .given(
-                        overriding("ledger.tokenTransfers.maxLen", "2"),
-                        newKeyNamed("admin"),
-                        cryptoCreate(schedulePayer),
-                        cryptoCreate(xTreasury),
-                        cryptoCreate(civilianA),
-                        cryptoCreate(civilianB),
-                        tokenCreate(xToken)
-                                .treasury(xTreasury)
-                                .initialSupply(100)
-                                .adminKey("admin"),
-                        tokenAssociate(civilianA, xToken),
-                        tokenAssociate(civilianB, xToken))
-                .when(scheduleCreate(
+        return hapiTest(
+                newKeyNamed("admin"),
+                cryptoCreate(schedulePayer),
+                cryptoCreate(xTreasury),
+                cryptoCreate(civilianA),
+                cryptoCreate(civilianB),
+                tokenCreate(xToken).treasury(xTreasury).initialSupply(100).adminKey("admin"),
+                tokenAssociate(civilianA, xToken),
+                tokenAssociate(civilianB, xToken),
+                scheduleCreate(
                                 invalidSchedule,
                                 cryptoTransfer(moving(2, xToken).distributing(xTreasury, civilianA, civilianB))
                                         .memo(randomUppercase(100)))
                         .via(failedTxn)
                         .alsoSigningWith(xTreasury, schedulePayer)
-                        .designatingPayer(schedulePayer))
-                .then(
-                        getTxnRecord(failedTxn)
-                                .scheduled()
-                                .hasPriority(recordWith().status(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED)),
-                        getAccountBalance(xTreasury).hasTokenBalance(xToken, 100));
+                        .designatingPayer(schedulePayer),
+                getTxnRecord(failedTxn)
+                        .scheduled()
+                        .hasPriority(recordWith().status(TOKEN_TRANSFER_LIST_SIZE_LIMIT_EXCEEDED)),
+                getAccountBalance(xTreasury).hasTokenBalance(xToken, 100));
     }
 }

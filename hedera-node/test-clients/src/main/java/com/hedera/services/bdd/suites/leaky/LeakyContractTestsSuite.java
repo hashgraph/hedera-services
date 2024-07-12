@@ -20,12 +20,12 @@ import static com.google.protobuf.ByteString.EMPTY;
 import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.ContextRequirement.FEE_SCHEDULE_OVERRIDES;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
@@ -86,11 +86,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_ETHEREUM_DATA;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
@@ -184,7 +180,6 @@ import com.hedera.services.bdd.spec.queries.contract.HapiContractCallLocal;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.utilops.CustomSpecAssert;
-import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.suites.contract.Utils;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
@@ -216,24 +211,19 @@ import org.junit.jupiter.api.Order;
 @SuppressWarnings("java:S1192") // "string literal should not be duplicated" - this rule makes test suites worse
 @OrderedInIsolation
 public class LeakyContractTestsSuite {
-    public static final String CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1 = "contracts.maxRefundPercentOfGasLimit";
     public static final String CREATE_TX = "createTX";
     public static final String CREATE_TX_REC = "createTXRec";
     public static final String FALSE = "false";
     public static final int GAS_TO_OFFER = 1_000_000;
     private static final Logger log = LogManager.getLogger(LeakyContractTestsSuite.class);
-    private static final String PAYER = "payer";
     public static final String SENDER = "yahcliSender";
     public static final String RECEIVER = "yahcliReceiver";
     private static final String CONTRACTS_NONCES_EXTERNALIZATION_ENABLED = "contracts.nonces.externalization.enabled";
     private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
             KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
-    private static final String TRANSFER_CONTRACT = "NonDelegateCryptoTransfer";
-    private static final String CONTRACTS_ALLOW_SYSTEM_USE_OF_HAPI_SIGS = "contracts.allowSystemUseOfHapiSigs";
     private static final String CRYPTO_TRANSFER = "CryptoTransfer";
     public static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
     public static final String TRANSFER_TOKEN_PUBLIC = "transferTokenPublic";
-    private static final String HEDERA_ALLOWANCES_IS_ENABLED = "hedera.allowances.isEnabled";
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
     private static final String MULTI_KEY = "purpose";
@@ -293,6 +283,7 @@ public class LeakyContractTestsSuite {
         final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
 
         return hapiTest(
+                overriding("contracts.evm.version", "v0.46"),
                 newKeyNamed(adminKey),
                 newKeyNamed(MULTI_KEY),
                 uploadInitCode(contract),
@@ -565,9 +556,8 @@ public class LeakyContractTestsSuite {
                 }));
     }
 
-    @HapiTest
-    @Order(13)
     @SuppressWarnings("java:S5960")
+    @LeakyHapiTest(overrides = {"ledger.autoRenewPeriod.maxDuration", "entities.maxLifetime"})
     final Stream<DynamicTest> contractCreationStoragePriceMatchesFinalExpiry() {
         final var toyMaker = "ToyMaker";
         final var createIndirectly = "CreateIndirectly";
@@ -578,65 +568,44 @@ public class LeakyContractTestsSuite {
         final AtomicLong longLivedPayerGasUsed = new AtomicLong();
         final AtomicReference<String> toyMakerMirror = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
-                        "ContractCreationStoragePriceMatchesFinalExpiry",
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving("ledger.autoRenewPeriod.maxDuration", "entities.maxLifetime")
-                .given(
-                        overridingTwo(
-                                "ledger.autoRenewPeriod.maxDuration", "" + longLifetime,
-                                "entities.maxLifetime", "" + longLifetime),
-                        cryptoCreate(normalPayer),
-                        cryptoCreate(longLivedPayer).autoRenewSecs(longLifetime - 12345),
-                        uploadInitCode(toyMaker, createIndirectly),
-                        contractCreate(toyMaker)
-                                .exposingNumTo(num -> toyMakerMirror.set(asHexedSolidityAddress(0, 0, num))),
-                        sourcing(() -> contractCreate(createIndirectly)
-                                .autoRenewSecs(longLifetime - 12345)
-                                .payingWith(GENESIS)))
-                .when(
-                        contractCall(toyMaker, "make")
-                                .payingWith(normalPayer)
-                                .exposingGasTo((status, gasUsed) -> normalPayerGasUsed.set(gasUsed)),
-                        contractCall(toyMaker, "make")
-                                .payingWith(longLivedPayer)
-                                .exposingGasTo((status, gasUsed) -> longLivedPayerGasUsed.set(gasUsed)),
-                        assertionsHold((spec, opLog) -> assertEquals(
-                                normalPayerGasUsed.get(),
-                                longLivedPayerGasUsed.get(),
-                                "Payer expiry should not affect create storage" + " cost")),
-                        // Verify that we are still charged a "typical" amount despite the payer and
-                        // the original sender contract having extremely long expiry dates
-                        sourcing(() -> contractCall(
-                                        createIndirectly, "makeOpaquely", asHeadlongAddress(toyMakerMirror.get()))
-                                .payingWith(longLivedPayer)))
-                .then();
+        return hapiTest(
+                overridingTwo(
+                        "ledger.autoRenewPeriod.maxDuration", "" + longLifetime,
+                        "entities.maxLifetime", "" + longLifetime),
+                cryptoCreate(normalPayer),
+                cryptoCreate(longLivedPayer).autoRenewSecs(longLifetime - 12345),
+                uploadInitCode(toyMaker, createIndirectly),
+                contractCreate(toyMaker).exposingNumTo(num -> toyMakerMirror.set(asHexedSolidityAddress(0, 0, num))),
+                sourcing(() -> contractCreate(createIndirectly)
+                        .autoRenewSecs(longLifetime - 12345)
+                        .payingWith(GENESIS)),
+                contractCall(toyMaker, "make")
+                        .payingWith(normalPayer)
+                        .exposingGasTo((status, gasUsed) -> normalPayerGasUsed.set(gasUsed)),
+                contractCall(toyMaker, "make")
+                        .payingWith(longLivedPayer)
+                        .exposingGasTo((status, gasUsed) -> longLivedPayerGasUsed.set(gasUsed)),
+                assertionsHold((spec, opLog) -> assertEquals(
+                        normalPayerGasUsed.get(),
+                        longLivedPayerGasUsed.get(),
+                        "Payer expiry should not affect create storage" + " cost")),
+                // Verify that we are still charged a "typical" amount despite the payer and
+                // the original sender contract having extremely long expiry dates
+                sourcing(() -> contractCall(createIndirectly, "makeOpaquely", asHeadlongAddress(toyMakerMirror.get()))
+                        .payingWith(longLivedPayer)));
     }
 
-    @HapiTest
-    @Order(10)
+    @LeakyHapiTest(overrides = {"contracts.maxGasPerSec"})
     final Stream<DynamicTest> gasLimitOverMaxGasLimitFailsPrecheck() {
-        return propertyPreservingHapiSpec(
-                        "GasLimitOverMaxGasLimitFailsPrecheck",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving("contracts.maxGasPerSec")
-                .given(
-                        uploadInitCode(SIMPLE_UPDATE_CONTRACT),
-                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
-                        contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
-                        overriding("contracts.maxGasPerSec", "100"))
-                .when()
-                .then(
-                        contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
-                                .gas(23_000L)
-                                .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
-                        contractCreate(EMPTY_CONSTRUCTOR_CONTRACT)
-                                .gas(1_000_000L)
-                                .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED));
+        return hapiTest(
+                uploadInitCode(SIMPLE_UPDATE_CONTRACT),
+                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                contractCreate(SIMPLE_UPDATE_CONTRACT).gas(300_000L),
+                overriding("contracts.maxGasPerSec", "100"),
+                contractCall(SIMPLE_UPDATE_CONTRACT, "set", BigInteger.valueOf(5), BigInteger.valueOf(42))
+                        .gas(23_000L)
+                        .hasPrecheck(MAX_GAS_LIMIT_EXCEEDED),
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(1_000_000L).hasPrecheck(MAX_GAS_LIMIT_EXCEEDED));
     }
 
     @HapiTest
@@ -683,8 +652,8 @@ public class LeakyContractTestsSuite {
                 }));
     }
 
-    @HapiTest
     @Order(1)
+    @LeakyHapiTest(overrides = {"contracts.maxRefundPercentOfGasLimit"})
     final Stream<DynamicTest> resultSizeAffectsFees() {
         final var contract = "VerboseDeposit";
         final var TRANSFER_AMOUNT = 1_000L;
@@ -700,21 +669,17 @@ public class LeakyContractTestsSuite {
             txnLog.info("  Literally :: {}", result);
         };
 
-        return propertyPreservingHapiSpec(
-                        "ResultSizeAffectsFees", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
-                .preserving(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT)
-                .given(
-                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT, "100"),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when(
-                        contractCall(contract, DEPOSIT, TRANSFER_AMOUNT, 0L, "So we out-danced thought...")
-                                .via("noLogsCallTxn")
-                                .sending(TRANSFER_AMOUNT),
-                        contractCall(contract, DEPOSIT, TRANSFER_AMOUNT, 5L, "So we out-danced thought...")
-                                .via("loggedCallTxn")
-                                .sending(TRANSFER_AMOUNT))
-                .then(assertionsHold((spec, assertLog) -> {
+        return hapiTest(
+                overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                uploadInitCode(contract),
+                contractCreate(contract),
+                contractCall(contract, DEPOSIT, TRANSFER_AMOUNT, 0L, "So we out-danced thought...")
+                        .via("noLogsCallTxn")
+                        .sending(TRANSFER_AMOUNT),
+                contractCall(contract, DEPOSIT, TRANSFER_AMOUNT, 5L, "So we out-danced thought...")
+                        .via("loggedCallTxn")
+                        .sending(TRANSFER_AMOUNT),
+                assertionsHold((spec, assertLog) -> {
                     HapiGetTxnRecord noLogsLookup =
                             QueryVerbs.getTxnRecord("noLogsCallTxn").loggedWith(resultSizeFormatter);
                     HapiGetTxnRecord logsLookup =
@@ -751,19 +716,14 @@ public class LeakyContractTestsSuite {
                                 .logged());
     }
 
-    @HapiTest
     @Order(16)
+    @LeakyHapiTest(overrides = {"contracts.maxRefundPercentOfGasLimit"})
     final Stream<DynamicTest> createMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller() {
-        return propertyPreservingHapiSpec(
-                        "CreateMaxRefundIsMaxGasRefundConfiguredWhenTXGasPriceIsSmaller",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1)
-                .given(
-                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "5"),
-                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via(CREATE_TX))
-                .then(withOpContext((spec, ignore) -> {
+        return hapiTest(
+                overriding("contracts.maxRefundPercentOfGasLimit", "5"),
+                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via(CREATE_TX),
+                withOpContext((spec, ignore) -> {
                     final var subop01 = getTxnRecord(CREATE_TX).saveTxnRecordToRegistry(CREATE_TX_REC);
                     allRunFor(spec, subop01);
 
@@ -775,19 +735,14 @@ public class LeakyContractTestsSuite {
                 }));
     }
 
-    @HapiTest
     @Order(11)
+    @LeakyHapiTest(overrides = {"contracts.maxRefundPercentOfGasLimit"})
     final Stream<DynamicTest> createMinChargeIsTXGasUsedByContractCreate() {
-        return propertyPreservingHapiSpec(
-                        "CreateMinChargeIsTXGasUsedByContractCreate",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1)
-                .given(
-                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "100"),
-                        uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT))
-                .when(contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via(CREATE_TX))
-                .then(withOpContext((spec, ignore) -> {
+        return hapiTest(
+                overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                uploadInitCode(EMPTY_CONSTRUCTOR_CONTRACT),
+                contractCreate(EMPTY_CONSTRUCTOR_CONTRACT).gas(300_000L).via(CREATE_TX),
+                withOpContext((spec, ignore) -> {
                     final var subop01 = getTxnRecord(CREATE_TX).saveTxnRecordToRegistry(CREATE_TX_REC);
                     allRunFor(spec, subop01);
 
@@ -882,23 +837,17 @@ public class LeakyContractTestsSuite {
                                 .has(contractWith().propertiesInheritedFrom(contract))));
     }
 
-    @HapiTest
-    @Order(4)
+    @LeakyHapiTest(overrides = {"contracts.maxRefundPercentOfGasLimit"})
     final Stream<DynamicTest> temporarySStoreRefundTest() {
         final var contract = "TemporarySStoreRefund";
-        return propertyPreservingHapiSpec(
-                        "TemporarySStoreRefundTest", NONDETERMINISTIC_TRANSACTION_FEES, NONDETERMINISTIC_NONCE)
-                .preserving(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1)
-                .given(
-                        overriding(CONTRACTS_MAX_REFUND_PERCENT_OF_GAS_LIMIT1, "100"),
-                        uploadInitCode(contract),
-                        contractCreate(contract).gas(500_000L))
-                .when(
-                        contractCall(contract, "holdTemporary", BigInteger.valueOf(10))
-                                .via("tempHoldTx"),
-                        contractCall(contract, "holdPermanently", BigInteger.valueOf(10))
-                                .via("permHoldTx"))
-                .then(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                uploadInitCode(contract),
+                contractCreate(contract).gas(500_000L),
+                contractCall(contract, "holdTemporary", BigInteger.valueOf(10)).via("tempHoldTx"),
+                contractCall(contract, "holdPermanently", BigInteger.valueOf(10))
+                        .via("permHoldTx"),
+                withOpContext((spec, opLog) -> {
                     final var subop01 = getTxnRecord("tempHoldTx")
                             .saveTxnRecordToRegistry("tempHoldTxRec")
                             .logged();
@@ -957,8 +906,7 @@ public class LeakyContractTestsSuite {
                         .via(callTxn)));
     }
 
-    @HapiTest
-    @Order(17)
+    @LeakyHapiTest(overrides = {"lazyCreation.enabled"})
     final Stream<DynamicTest> lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled() {
         final var CONTRACT = CRYPTO_TRANSFER;
         final var SENDER = "sender";
@@ -967,29 +915,23 @@ public class LeakyContractTestsSuite {
         final var NOT_SUPPORTED_TXN = "notSupportedTxn";
         final var TOTAL_SUPPLY = 1_000;
 
-        return propertyPreservingHapiSpec(
-                        "lazyCreateThroughPrecompileNotSupportedWhenFlagDisabled",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(LAZY_CREATION_ENABLED)
-                .given(
-                        UtilVerbs.overriding(LAZY_CREATION_ENABLED, FALSE),
-                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .initialSupply(TOTAL_SUPPLY)
-                                .treasury(TOKEN_TREASURY),
-                        tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
-                        getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
-                                .logged())
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                overriding("lazyCreation.enabled", "false"),
+                cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .initialSupply(TOTAL_SUPPLY)
+                        .treasury(TOKEN_TREASURY),
+                tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(moving(200, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).maxAutomaticTokenAssociations(1),
+                getContractInfo(CONTRACT)
+                        .has(ContractInfoAsserts.contractWith().maxAutoAssociations(1))
+                        .logged(),
+                withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
@@ -1021,43 +963,32 @@ public class LeakyContractTestsSuite {
                                     NOT_SUPPORTED_TXN,
                                     CONTRACT_REVERT_EXECUTED,
                                     recordWith().status(NOT_SUPPORTED)));
-                }))
-                .then();
+                }));
     }
 
-    @HapiTest
-    @Order(18)
+    @LeakyHapiTest(overrides = {"contracts.evm.version"})
     final Stream<DynamicTest> evmLazyCreateViaSolidityCall() {
         final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
         final var ECDSA_KEY = "ECDSAKey";
         final var callLazyCreateFunction = "nestedLazyCreateThenSendMore";
         final var revertingCallLazyCreateFunction = "nestedLazyCreateThenRevert";
-        final var lazyCreationProperty = "lazyCreation.enabled";
-        final var contractsEvmVersionProperty = "contracts.evm.version";
         final var depositAmount = 1000;
         final var mirrorTxn = "mirrorTxn";
         final var revertingTxn = "revertingTxn";
         final var payTxn = "payTxn";
         final var evmAddressOfChildContract = new AtomicReference<BytesValue>();
 
-        return propertyPreservingHapiSpec(
-                        "evmLazyCreateViaSolidityCall",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        ALLOW_SKIPPED_ENTITY_IDS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(lazyCreationProperty, contractsEvmVersionProperty)
-                .given(
-                        sidecarValidation(),
-                        overridingTwo(lazyCreationProperty, "true", contractsEvmVersionProperty, "v0.34"),
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        uploadInitCode(LAZY_CREATE_CONTRACT),
-                        contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
-                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged().exposingAllTo(records -> {
-                            final var lastChildResult = records.getLast().getContractCreateResult();
-                            evmAddressOfChildContract.set(lastChildResult.getEvmAddress());
-                        }))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                sidecarValidation(),
+                overriding("contracts.evm.version", "v0.34"),
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                uploadInitCode(LAZY_CREATE_CONTRACT),
+                contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
+                getTxnRecord(CALL_TX_REC).andAllChildRecords().logged().exposingAllTo(records -> {
+                    final var lastChildResult = records.getLast().getContractCreateResult();
+                    evmAddressOfChildContract.set(lastChildResult.getEvmAddress());
+                }),
+                withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var keyBytes = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var address = asHeadlongAddress(recoverAddressFromPubKey(keyBytes));
@@ -1101,8 +1032,8 @@ public class LeakyContractTestsSuite {
                                             .memo(LAZY_MEMO)
                                             .evmAddress(evmAddress)
                                             .balance(depositAmount)));
-                }))
-                .then(withOpContext((spec, opLog) -> {
+                }),
+                withOpContext((spec, opLog) -> {
                     final var getTxnRecord =
                             getTxnRecord(payTxn).andAllChildRecords().logged();
                     allRunFor(spec, getTxnRecord);
@@ -1138,37 +1069,21 @@ public class LeakyContractTestsSuite {
                 }));
     }
 
-    @HapiTest
-    @Order(19)
+    @LeakyHapiTest(overrides = {"consensus.handle.maxPrecedingRecords", "contracts.evm.version"})
     final Stream<DynamicTest> evmLazyCreateViaSolidityCallTooManyCreatesFails() {
         final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
         final var ECDSA_KEY = "ECDSAKey";
         final var ECDSA_KEY2 = "ECDSAKey2";
         final var createTooManyHollowAccounts = "createTooManyHollowAccounts";
-        final var lazyCreationProperty = "lazyCreation.enabled";
-        final var contractsEvmVersionProperty = "contracts.evm.version";
-        final var contractsEvmVersionDynamicProperty = "contracts.evm.version.dynamic";
-        final var maxPrecedingRecords = "consensus.handle.maxPrecedingRecords";
         final var depositAmount = 1000;
-        return propertyPreservingHapiSpec(
-                        "evmLazyCreateViaSolidityCallTooManyCreatesFails",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(
-                        lazyCreationProperty,
-                        maxPrecedingRecords,
-                        contractsEvmVersionProperty,
-                        contractsEvmVersionDynamicProperty)
-                .given(
-                        overridingTwo(lazyCreationProperty, "true", maxPrecedingRecords, "1"),
-                        overridingTwo(contractsEvmVersionProperty, "v0.34", contractsEvmVersionDynamicProperty, "true"),
-                        newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
-                        newKeyNamed(ECDSA_KEY2).shape(SECP_256K1_SHAPE),
-                        uploadInitCode(LAZY_CREATE_CONTRACT),
-                        contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
-                        getTxnRecord(CALL_TX_REC).andAllChildRecords().logged())
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                overridingTwo("consensus.handle.maxPrecedingRecords", "1", "contracts.evm.version", "v0.34"),
+                newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
+                newKeyNamed(ECDSA_KEY2).shape(SECP_256K1_SHAPE),
+                uploadInitCode(LAZY_CREATE_CONTRACT),
+                contractCreate(LAZY_CREATE_CONTRACT).via(CALL_TX_REC),
+                getTxnRecord(CALL_TX_REC).andAllChildRecords().logged(),
+                withOpContext((spec, opLog) -> {
                     final var ecdsaKey = spec.registry().getKey(ECDSA_KEY);
                     final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
                     final var addressBytes = recoverAddressFromPubKey(tmp);
@@ -1189,40 +1104,34 @@ public class LeakyContractTestsSuite {
                             getAliasedAccountInfo(ecdsaKey2.toByteString())
                                     .logged()
                                     .hasCostAnswerPrecheck(INVALID_ACCOUNT_ID));
-                }))
-                .then(emptyChildRecordsCheck(TRANSFER_TXN, MAX_CHILD_RECORDS_EXCEEDED));
+                }),
+                emptyChildRecordsCheck(TRANSFER_TXN, MAX_CHILD_RECORDS_EXCEEDED));
     }
 
-    @HapiTest
     @Order(20)
+    @LeakyHapiTest(overrides = {"hedera.allowances.isEnabled"})
     final Stream<DynamicTest> erc20TransferFromDoesNotWorkIfFlagIsDisabled() {
-        return propertyPreservingHapiSpec(
-                        "erc20TransferFromDoesNotWorkIfFlagIsDisabled",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(HEDERA_ALLOWANCES_IS_ENABLED)
-                .given(
-                        overriding(HEDERA_ALLOWANCES_IS_ENABLED, FALSE),
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(RECIPIENT),
-                        cryptoCreate(TOKEN_TREASURY),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .initialSupply(10L)
-                                .maxSupply(1000L)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        uploadInitCode(ERC_20_CONTRACT),
-                        contractCreate(ERC_20_CONTRACT),
-                        tokenAssociate(OWNER, FUNGIBLE_TOKEN),
-                        tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
-                        tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
-                        cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                overriding("hedera.allowances.isEnabled", "false"),
+                newKeyNamed(MULTI_KEY),
+                cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
+                cryptoCreate(RECIPIENT),
+                cryptoCreate(TOKEN_TREASURY),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .initialSupply(10L)
+                        .maxSupply(1000L)
+                        .treasury(TOKEN_TREASURY)
+                        .adminKey(MULTI_KEY)
+                        .supplyKey(MULTI_KEY),
+                uploadInitCode(ERC_20_CONTRACT),
+                contractCreate(ERC_20_CONTRACT),
+                tokenAssociate(OWNER, FUNGIBLE_TOKEN),
+                tokenAssociate(RECIPIENT, FUNGIBLE_TOKEN),
+                tokenAssociate(ERC_20_CONTRACT, FUNGIBLE_TOKEN),
+                cryptoTransfer(moving(10, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, OWNER)),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         contractCall(
                                         ERC_20_CONTRACT,
@@ -1236,69 +1145,58 @@ public class LeakyContractTestsSuite {
                                         BigInteger.TWO)
                                 .gas(500_000L)
                                 .via(TRANSFER_FROM_ACCOUNT_TXN)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))))
-                .then(getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).logged());
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED))),
+                getTxnRecord(TRANSFER_FROM_ACCOUNT_TXN).logged());
     }
 
-    @HapiTest
     @Order(22)
+    @LeakyHapiTest(overrides = {"contracts.permittedDelegateCallers"})
     final Stream<DynamicTest> whitelistPositiveCase() {
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
         final AtomicReference<String> attackerMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
-                        "WhitelistPositiveCase",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(PRETEND_ATTACKER)
-                                .exposingCreatedIdTo(id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .initialSupply(Long.MAX_VALUE)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
-                        uploadInitCode(PRETEND_PAIR),
-                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
-                        uploadInitCode(DELEGATE_PRECOMPILE_CALLEE),
-                        contractCreate(DELEGATE_PRECOMPILE_CALLEE)
-                                .adminKey(DEFAULT_PAYER)
-                                .exposingNumTo(num -> {
-                                    whitelistedCalleeMirrorNum.set(num);
-                                    whitelistedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
-                                }),
-                        tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
-                        tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
-                .when(
-                        sourcing(() -> overriding(
-                                CONTRACTS_PERMITTED_DELEGATE_CALLERS,
-                                String.valueOf(whitelistedCalleeMirrorNum.get()))),
-                        sourcing(() -> contractCall(
-                                        PRETEND_PAIR,
-                                        CALL_TO,
-                                        asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
-                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
-                                        asHeadlongAddress(attackerMirrorAddr.get()))
-                                .via(ATTACK_CALL)
-                                .gas(5_000_000L)
-                                .hasKnownStatus(SUCCESS)))
-                .then(
-                        // Because this callee is on the whitelist, the pair WILL have an allowance
-                        // here
-                        getAccountDetails(PRETEND_PAIR).has(accountDetailsWith().tokenAllowancesCount(1)),
-                        // Instead of the callee
-                        getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
-                                .has(accountDetailsWith().tokenAllowancesCount(0)));
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(PRETEND_ATTACKER)
+                        .exposingCreatedIdTo(id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .initialSupply(Long.MAX_VALUE)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
+                uploadInitCode(PRETEND_PAIR),
+                contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
+                uploadInitCode(DELEGATE_PRECOMPILE_CALLEE),
+                contractCreate(DELEGATE_PRECOMPILE_CALLEE)
+                        .adminKey(DEFAULT_PAYER)
+                        .exposingNumTo(num -> {
+                            whitelistedCalleeMirrorNum.set(num);
+                            whitelistedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
+                        }),
+                tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
+                tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN),
+                sourcing(() -> overriding(
+                        CONTRACTS_PERMITTED_DELEGATE_CALLERS, String.valueOf(whitelistedCalleeMirrorNum.get()))),
+                sourcing(() -> contractCall(
+                                PRETEND_PAIR,
+                                CALL_TO,
+                                asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
+                                asHeadlongAddress(asSolidityAddress(tokenID.get())),
+                                asHeadlongAddress(attackerMirrorAddr.get()))
+                        .via(ATTACK_CALL)
+                        .gas(5_000_000L)
+                        .hasKnownStatus(SUCCESS)),
+                // Because this callee is on the whitelist, the pair WILL have an allowance
+                // here
+                getAccountDetails(PRETEND_PAIR).has(accountDetailsWith().tokenAllowancesCount(1)),
+                // Instead of the callee
+                getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
+                        .has(accountDetailsWith().tokenAllowancesCount(0)));
     }
 
-    @HapiTest
-    @Order(23)
+    @LeakyHapiTest(overrides = {"contracts.permittedDelegateCallers"})
     final Stream<DynamicTest> whitelistNegativeCases() {
         final AtomicLong unlistedCalleeMirrorNum = new AtomicLong();
         final AtomicLong whitelistedCalleeMirrorNum = new AtomicLong();
@@ -1307,199 +1205,170 @@ public class LeakyContractTestsSuite {
         final AtomicReference<String> unListedCalleeMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> whitelistedCalleeMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
-                        "WhitelistNegativeCases",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(CONTRACTS_PERMITTED_DELEGATE_CALLERS)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoCreate(PRETEND_ATTACKER)
-                                .exposingCreatedIdTo(id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .initialSupply(Long.MAX_VALUE)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
-                        uploadInitCode(PRETEND_PAIR),
-                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
-                        uploadInitCode(DELEGATE_ERC_CALLEE),
-                        contractCreate(DELEGATE_ERC_CALLEE)
-                                .adminKey(DEFAULT_PAYER)
-                                .exposingNumTo(num -> {
-                                    whitelistedCalleeMirrorNum.set(num);
-                                    whitelistedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
-                                }),
-                        uploadInitCode(DELEGATE_PRECOMPILE_CALLEE),
-                        contractCreate(DELEGATE_PRECOMPILE_CALLEE)
-                                .adminKey(DEFAULT_PAYER)
-                                .exposingNumTo(num -> {
-                                    unlistedCalleeMirrorNum.set(num);
-                                    unListedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
-                                }),
-                        tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
-                        tokenAssociate(DELEGATE_ERC_CALLEE, FUNGIBLE_TOKEN),
-                        tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN))
-                .when(
-                        sourcing(() -> overriding(
-                                CONTRACTS_PERMITTED_DELEGATE_CALLERS,
-                                String.valueOf(whitelistedCalleeMirrorNum.get()))),
-                        sourcing(() -> contractCall(
-                                        PRETEND_PAIR,
-                                        CALL_TO,
-                                        asHeadlongAddress(unListedCalleeMirrorAddr.get()),
-                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
-                                        asHeadlongAddress(attackerMirrorAddr.get()))
-                                .gas(5_000_000L)
-                                .hasKnownStatus(SUCCESS)),
-                        // Because this callee isn't on the whitelist, the pair won't have an
-                        // allowance here
-                        getAccountDetails(PRETEND_PAIR).has(accountDetailsWith().tokenAllowancesCount(0)),
-                        // Instead nobody gets an allowance
-                        getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
-                                .has(accountDetailsWith().tokenAllowancesCount(0)),
-                        sourcing(() -> contractCall(
-                                        PRETEND_PAIR,
-                                        CALL_TO,
-                                        asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
-                                        asHeadlongAddress(asSolidityAddress(tokenID.get())),
-                                        asHeadlongAddress(attackerMirrorAddr.get()))
-                                .gas(5_000_000L)
-                                .hasKnownStatus(SUCCESS)))
-                .then(
-                        // Even though this is on the whitelist, b/c the whitelisted contract
-                        // is going through a delegatecall "chain" via the ERC-20 call, the pair
-                        // still won't have an allowance here
-                        getAccountDetails(PRETEND_PAIR).has(accountDetailsWith().tokenAllowancesCount(0)),
-                        // Instead of the callee
-                        getAccountDetails(DELEGATE_ERC_CALLEE)
-                                .has(accountDetailsWith().tokenAllowancesCount(0)));
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(PRETEND_ATTACKER)
+                        .exposingCreatedIdTo(id -> attackerMirrorAddr.set(asHexedSolidityAddress(id))),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .initialSupply(Long.MAX_VALUE)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
+                uploadInitCode(PRETEND_PAIR),
+                contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
+                uploadInitCode(DELEGATE_ERC_CALLEE),
+                contractCreate(DELEGATE_ERC_CALLEE).adminKey(DEFAULT_PAYER).exposingNumTo(num -> {
+                    whitelistedCalleeMirrorNum.set(num);
+                    whitelistedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
+                }),
+                uploadInitCode(DELEGATE_PRECOMPILE_CALLEE),
+                contractCreate(DELEGATE_PRECOMPILE_CALLEE)
+                        .adminKey(DEFAULT_PAYER)
+                        .exposingNumTo(num -> {
+                            unlistedCalleeMirrorNum.set(num);
+                            unListedCalleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num));
+                        }),
+                tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),
+                tokenAssociate(DELEGATE_ERC_CALLEE, FUNGIBLE_TOKEN),
+                tokenAssociate(DELEGATE_PRECOMPILE_CALLEE, FUNGIBLE_TOKEN),
+                sourcing(() -> overriding(
+                        CONTRACTS_PERMITTED_DELEGATE_CALLERS, String.valueOf(whitelistedCalleeMirrorNum.get()))),
+                sourcing(() -> contractCall(
+                                PRETEND_PAIR,
+                                CALL_TO,
+                                asHeadlongAddress(unListedCalleeMirrorAddr.get()),
+                                asHeadlongAddress(asSolidityAddress(tokenID.get())),
+                                asHeadlongAddress(attackerMirrorAddr.get()))
+                        .gas(5_000_000L)
+                        .hasKnownStatus(SUCCESS)),
+                // Because this callee isn't on the whitelist, the pair won't have an
+                // allowance here
+                getAccountDetails(PRETEND_PAIR).has(accountDetailsWith().tokenAllowancesCount(0)),
+                // Instead nobody gets an allowance
+                getAccountDetails(DELEGATE_PRECOMPILE_CALLEE)
+                        .has(accountDetailsWith().tokenAllowancesCount(0)),
+                sourcing(() -> contractCall(
+                                PRETEND_PAIR,
+                                CALL_TO,
+                                asHeadlongAddress(whitelistedCalleeMirrorAddr.get()),
+                                asHeadlongAddress(asSolidityAddress(tokenID.get())),
+                                asHeadlongAddress(attackerMirrorAddr.get()))
+                        .gas(5_000_000L)
+                        .hasKnownStatus(SUCCESS)),
+                // Even though this is on the whitelist, b/c the whitelisted contract
+                // is going through a delegatecall "chain" via the ERC-20 call, the pair
+                // still won't have an allowance here
+                getAccountDetails(PRETEND_PAIR).has(accountDetailsWith().tokenAllowancesCount(0)),
+                // Instead of the callee
+                getAccountDetails(DELEGATE_ERC_CALLEE).has(accountDetailsWith().tokenAllowancesCount(0)));
     }
 
-    @HapiTest
     @Order(30)
+    @LeakyHapiTest(overrides = {"contracts.nonces.externalization.enabled"})
     final Stream<DynamicTest> shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled() {
         final var contract = "NoncesExternalization";
         final var payer = "payer";
 
-        return propertyPreservingHapiSpec(
-                        "shouldReturnNullWhenContractsNoncesExternalizationFlagIsDisabled",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED)
-                .given(
-                        overriding(CONTRACTS_NONCES_EXTERNALIZATION_ENABLED, "false"),
-                        cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
-                        uploadInitCode(contract),
-                        contractCreate(contract).logged().gas(500_000L).via("txn"),
-                        withOpContext((spec, opLog) -> {
-                            HapiGetTxnRecord op = getTxnRecord("txn")
-                                    .logged()
-                                    .hasPriority(recordWith()
-                                            .contractCreateResult(resultWith()
-                                                    .contractWithNonce(
-                                                            spec.registry().getContractId(contract), null)));
-                            allRunFor(spec, op);
-                        }))
-                .when()
-                .then();
+        return hapiTest(
+                overriding("contracts.nonces.externalization.enabled", "false"),
+                cryptoCreate(payer).balance(10 * ONE_HUNDRED_HBARS),
+                uploadInitCode(contract),
+                contractCreate(contract).logged().gas(500_000L).via("txn"),
+                withOpContext((spec, opLog) -> {
+                    HapiGetTxnRecord op = getTxnRecord("txn")
+                            .logged()
+                            .hasPriority(recordWith()
+                                    .contractCreateResult(resultWith()
+                                            .contractWithNonce(spec.registry().getContractId(contract), null)));
+                    allRunFor(spec, op);
+                }));
     }
 
-    @HapiTest
     @Order(31)
+    @LeakyHapiTest(overrides = {"contracts.evm.version"})
     final Stream<DynamicTest> someErc721GetApprovedScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
-                        "someErc721GetApprovedScenariosPass",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(EVM_VERSION_PROPERTY)
-                .given(
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
-                        newKeyNamed(MULTI_KEY_NAME),
-                        cryptoCreate(A_CIVILIAN)
-                                .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
-                        uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
-                        tokenCreate(NF_TOKEN)
-                                .supplyKey(MULTI_KEY_NAME)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(SOME_ERC_721_SCENARIOS)
-                                .initialSupply(0)
-                                .exposingCreatedIdTo(idLit ->
-                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
-                        mintToken(
-                                NF_TOKEN,
-                                List.of(
-                                        // 1
-                                        ByteString.copyFromUtf8("A"),
-                                        // 2
-                                        ByteString.copyFromUtf8("B"))),
-                        tokenAssociate(A_CIVILIAN, NF_TOKEN))
-                .when(
-                        withOpContext((spec, opLog) -> {
-                            zCivilianMirrorAddr.set(asHexedSolidityAddress(AccountID.newBuilder()
-                                    .setAccountNum(666_666_666L)
-                                    .build()));
-                            zTokenMirrorAddr.set(asHexedSolidityAddress(
-                                    TokenID.newBuilder().setTokenNum(666_666L).build()));
-                        }),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_APPROVED,
-                                        asHeadlongAddress(zTokenMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .via(MISSING_TOKEN)
-                                .gas(1_000_000)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        DO_SPECIFIC_APPROVAL,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .gas(1_000_000)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_APPROVED,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.valueOf(55))
-                                .via("MISSING_SERIAL")
-                                .gas(1_000_000)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        getTokenNftInfo(NF_TOKEN, 1L).logged(),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_APPROVED,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.TWO)
-                                .via("MISSING_SPENDER")
-                                .gas(1_000_000)
-                                .hasKnownStatus(SUCCESS)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_APPROVED,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .via(WITH_SPENDER)
-                                .gas(1_000_000)
-                                .hasKnownStatus(SUCCESS)),
-                        getTxnRecord(WITH_SPENDER).andAllChildRecords().logged(),
-                        sourcing(() -> contractCallLocal(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_APPROVED,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .logged()
-                                .gas(1_000_000)
-                                .has(resultWith().contractCallResult(hexedAddress(aCivilianMirrorAddr.get())))))
-                .then(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                overriding("contracts.evm.version", "v0.38"),
+                newKeyNamed(MULTI_KEY_NAME),
+                cryptoCreate(A_CIVILIAN).exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+                uploadInitCode(SOME_ERC_721_SCENARIOS),
+                contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                tokenCreate(NF_TOKEN)
+                        .supplyKey(MULTI_KEY_NAME)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(SOME_ERC_721_SCENARIOS)
+                        .initialSupply(0)
+                        .exposingCreatedIdTo(idLit ->
+                                tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
+                mintToken(
+                        NF_TOKEN,
+                        List.of(
+                                // 1
+                                ByteString.copyFromUtf8("A"),
+                                // 2
+                                ByteString.copyFromUtf8("B"))),
+                tokenAssociate(A_CIVILIAN, NF_TOKEN),
+                withOpContext((spec, opLog) -> {
+                    zCivilianMirrorAddr.set(asHexedSolidityAddress(
+                            AccountID.newBuilder().setAccountNum(666_666_666L).build()));
+                    zTokenMirrorAddr.set(asHexedSolidityAddress(
+                            TokenID.newBuilder().setTokenNum(666_666L).build()));
+                }),
+                sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                GET_APPROVED,
+                                asHeadlongAddress(zTokenMirrorAddr.get()),
+                                BigInteger.ONE)
+                        .via(MISSING_TOKEN)
+                        .gas(1_000_000)
+                        .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                DO_SPECIFIC_APPROVAL,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()),
+                                BigInteger.ONE)
+                        .gas(1_000_000)),
+                sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                GET_APPROVED,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                BigInteger.valueOf(55))
+                        .via("MISSING_SERIAL")
+                        .gas(1_000_000)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                getTokenNftInfo(NF_TOKEN, 1L).logged(),
+                sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                GET_APPROVED,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                BigInteger.TWO)
+                        .via("MISSING_SPENDER")
+                        .gas(1_000_000)
+                        .hasKnownStatus(SUCCESS)),
+                sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                GET_APPROVED,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                BigInteger.ONE)
+                        .via(WITH_SPENDER)
+                        .gas(1_000_000)
+                        .hasKnownStatus(SUCCESS)),
+                getTxnRecord(WITH_SPENDER).andAllChildRecords().logged(),
+                sourcing(() -> contractCallLocal(
+                                SOME_ERC_721_SCENARIOS,
+                                GET_APPROVED,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                BigInteger.ONE)
+                        .logged()
+                        .gas(1_000_000)
+                        .has(resultWith().contractCallResult(hexedAddress(aCivilianMirrorAddr.get())))),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         childRecordsCheck(
                                 "MISSING_SPENDER",
@@ -1522,171 +1391,151 @@ public class LeakyContractTestsSuite {
                                                                 spec.registry().getAccountID(A_CIVILIAN)))))))));
     }
 
-    @HapiTest
     @Order(33)
+    @LeakyHapiTest(overrides = {"contracts.evm.version"})
     final Stream<DynamicTest> someErc721BalanceOfScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> bCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
-                        "someErc721BalanceOfScenariosPass",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(EVM_VERSION_PROPERTY)
-                .given(
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
-                        newKeyNamed(MULTI_KEY_NAME),
-                        cryptoCreate(A_CIVILIAN)
-                                .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
-                        cryptoCreate(B_CIVILIAN)
-                                .exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
-                        uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
-                        tokenCreate(NF_TOKEN)
-                                .supplyKey(MULTI_KEY_NAME)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(SOME_ERC_721_SCENARIOS)
-                                .initialSupply(0)
-                                .exposingCreatedIdTo(idLit ->
-                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
-                        mintToken(
-                                NF_TOKEN,
-                                List.of(
-                                        // 1
-                                        ByteString.copyFromUtf8("A"),
-                                        // 2
-                                        ByteString.copyFromUtf8("B"))),
-                        tokenAssociate(A_CIVILIAN, NF_TOKEN),
-                        cryptoTransfer(movingUnique(NF_TOKEN, 1L, 2L).between(SOME_ERC_721_SCENARIOS, A_CIVILIAN)))
-                .when(
-                        withOpContext((spec, opLog) -> zTokenMirrorAddr.set(asHexedSolidityAddress(
-                                TokenID.newBuilder().setTokenNum(666_666L).build()))),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_BALANCE_OF,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
-                                .via("BALANCE_OF")
-                                .gas(1_000_000)
-                                .hasKnownStatus(SUCCESS)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_BALANCE_OF,
-                                        asHeadlongAddress(zTokenMirrorAddr.get()),
-                                        asHeadlongAddress(aCivilianMirrorAddr.get()))
-                                .via(MISSING_TOKEN)
-                                .gas(1_000_000)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_BALANCE_OF,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        asHeadlongAddress(bCivilianMirrorAddr.get()))
-                                .via("NOT_ASSOCIATED")
-                                .gas(1_000_000)
-                                .hasKnownStatus(SUCCESS)))
-                .then(
-                        childRecordsCheck(
-                                "BALANCE_OF",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.ERC_BALANCE)
-                                                        .withBalance(2)))),
-                        childRecordsCheck(
-                                "NOT_ASSOCIATED",
-                                SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .contractCallResult(resultWith()
-                                                .contractCallResult(htsPrecompileResult()
-                                                        .forFunction(FunctionType.ERC_BALANCE)
-                                                        .withBalance(0)))));
+        return hapiTest(
+                overriding("contracts.evm.version", "v0.38"),
+                newKeyNamed(MULTI_KEY_NAME),
+                cryptoCreate(A_CIVILIAN).exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+                cryptoCreate(B_CIVILIAN).exposingCreatedIdTo(id -> bCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+                uploadInitCode(SOME_ERC_721_SCENARIOS),
+                contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                tokenCreate(NF_TOKEN)
+                        .supplyKey(MULTI_KEY_NAME)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(SOME_ERC_721_SCENARIOS)
+                        .initialSupply(0)
+                        .exposingCreatedIdTo(idLit ->
+                                tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
+                mintToken(
+                        NF_TOKEN,
+                        List.of(
+                                // 1
+                                ByteString.copyFromUtf8("A"),
+                                // 2
+                                ByteString.copyFromUtf8("B"))),
+                tokenAssociate(A_CIVILIAN, NF_TOKEN),
+                cryptoTransfer(movingUnique(NF_TOKEN, 1L, 2L).between(SOME_ERC_721_SCENARIOS, A_CIVILIAN)),
+                withOpContext((spec, opLog) -> zTokenMirrorAddr.set(asHexedSolidityAddress(
+                        TokenID.newBuilder().setTokenNum(666_666L).build()))),
+                sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                GET_BALANCE_OF,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()))
+                        .via("BALANCE_OF")
+                        .gas(1_000_000)
+                        .hasKnownStatus(SUCCESS)),
+                sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                GET_BALANCE_OF,
+                                asHeadlongAddress(zTokenMirrorAddr.get()),
+                                asHeadlongAddress(aCivilianMirrorAddr.get()))
+                        .via(MISSING_TOKEN)
+                        .gas(1_000_000)
+                        .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                GET_BALANCE_OF,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                asHeadlongAddress(bCivilianMirrorAddr.get()))
+                        .via("NOT_ASSOCIATED")
+                        .gas(1_000_000)
+                        .hasKnownStatus(SUCCESS)),
+                childRecordsCheck(
+                        "BALANCE_OF",
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .forFunction(FunctionType.ERC_BALANCE)
+                                                .withBalance(2)))),
+                childRecordsCheck(
+                        "NOT_ASSOCIATED",
+                        SUCCESS,
+                        recordWith()
+                                .status(SUCCESS)
+                                .contractCallResult(resultWith()
+                                        .contractCallResult(htsPrecompileResult()
+                                                .forFunction(FunctionType.ERC_BALANCE)
+                                                .withBalance(0)))));
     }
 
-    @HapiTest
     @Order(32)
+    @LeakyHapiTest(overrides = {"contracts.evm.version"})
     final Stream<DynamicTest> someErc721OwnerOfScenariosPass() {
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> aCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zCivilianMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> zTokenMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
-                        "someErc721OwnerOfScenariosPass",
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(EVM_VERSION_PROPERTY)
-                .given(
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
-                        newKeyNamed(MULTI_KEY_NAME),
-                        cryptoCreate(A_CIVILIAN)
-                                .exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
-                        uploadInitCode(SOME_ERC_721_SCENARIOS),
-                        contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
-                        tokenCreate(NF_TOKEN)
-                                .supplyKey(MULTI_KEY_NAME)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(SOME_ERC_721_SCENARIOS)
-                                .initialSupply(0)
-                                .exposingCreatedIdTo(idLit ->
-                                        tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
-                        mintToken(
-                                NF_TOKEN,
-                                List.of(
-                                        // 1
-                                        ByteString.copyFromUtf8("A"),
-                                        // 2
-                                        ByteString.copyFromUtf8("B"))),
-                        tokenAssociate(A_CIVILIAN, NF_TOKEN))
-                .when(
-                        withOpContext((spec, opLog) -> {
-                            zCivilianMirrorAddr.set(asHexedSolidityAddress(AccountID.newBuilder()
-                                    .setAccountNum(666_666_666L)
-                                    .build()));
-                            zTokenMirrorAddr.set(asHexedSolidityAddress(
-                                    TokenID.newBuilder().setTokenNum(666_666L).build()));
-                        }),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_OWNER_OF,
-                                        asHeadlongAddress(zTokenMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .via(MISSING_TOKEN)
-                                .gas(1_000_000)
-                                .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_OWNER_OF,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.valueOf(55))
-                                .gas(1_000_000)
-                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_OWNER_OF,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.TWO)
-                                .via("TREASURY_OWNER")
-                                .gas(1_000_000)
-                                .hasKnownStatus(SUCCESS)),
-                        cryptoTransfer(movingUnique(NF_TOKEN, 1L).between(SOME_ERC_721_SCENARIOS, A_CIVILIAN)),
-                        sourcing(() -> contractCall(
-                                        SOME_ERC_721_SCENARIOS,
-                                        GET_OWNER_OF,
-                                        asHeadlongAddress(tokenMirrorAddr.get()),
-                                        BigInteger.ONE)
-                                .via("CIVILIAN_OWNER")
-                                .gas(1_000_000)
-                                .hasKnownStatus(SUCCESS)))
-                .then(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                overriding("contracts.evm.version", "v0.38"),
+                newKeyNamed(MULTI_KEY_NAME),
+                cryptoCreate(A_CIVILIAN).exposingCreatedIdTo(id -> aCivilianMirrorAddr.set(asHexedSolidityAddress(id))),
+                uploadInitCode(SOME_ERC_721_SCENARIOS),
+                contractCreate(SOME_ERC_721_SCENARIOS).adminKey(MULTI_KEY_NAME),
+                tokenCreate(NF_TOKEN)
+                        .supplyKey(MULTI_KEY_NAME)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(SOME_ERC_721_SCENARIOS)
+                        .initialSupply(0)
+                        .exposingCreatedIdTo(idLit ->
+                                tokenMirrorAddr.set(asHexedSolidityAddress(HapiPropertySource.asToken(idLit)))),
+                mintToken(
+                        NF_TOKEN,
+                        List.of(
+                                // 1
+                                ByteString.copyFromUtf8("A"),
+                                // 2
+                                ByteString.copyFromUtf8("B"))),
+                tokenAssociate(A_CIVILIAN, NF_TOKEN),
+                withOpContext((spec, opLog) -> {
+                    zCivilianMirrorAddr.set(asHexedSolidityAddress(
+                            AccountID.newBuilder().setAccountNum(666_666_666L).build()));
+                    zTokenMirrorAddr.set(asHexedSolidityAddress(
+                            TokenID.newBuilder().setTokenNum(666_666L).build()));
+                }),
+                sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                GET_OWNER_OF,
+                                asHeadlongAddress(zTokenMirrorAddr.get()),
+                                BigInteger.ONE)
+                        .via(MISSING_TOKEN)
+                        .gas(1_000_000)
+                        .hasKnownStatus(INVALID_SOLIDITY_ADDRESS)),
+                sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                GET_OWNER_OF,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                BigInteger.valueOf(55))
+                        .gas(1_000_000)
+                        .hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
+                sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                GET_OWNER_OF,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                BigInteger.TWO)
+                        .via("TREASURY_OWNER")
+                        .gas(1_000_000)
+                        .hasKnownStatus(SUCCESS)),
+                cryptoTransfer(movingUnique(NF_TOKEN, 1L).between(SOME_ERC_721_SCENARIOS, A_CIVILIAN)),
+                sourcing(() -> contractCall(
+                                SOME_ERC_721_SCENARIOS,
+                                GET_OWNER_OF,
+                                asHeadlongAddress(tokenMirrorAddr.get()),
+                                BigInteger.ONE)
+                        .via("CIVILIAN_OWNER")
+                        .gas(1_000_000)
+                        .hasKnownStatus(SUCCESS)),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         childRecordsCheck(
                                 "TREASURY_OWNER",
@@ -1696,8 +1545,9 @@ public class LeakyContractTestsSuite {
                                         .contractCallResult(resultWith()
                                                 .contractCallResult(htsPrecompileResult()
                                                         .forFunction(FunctionType.ERC_OWNER)
-                                                        .withOwner(asAddress(spec.registry()
-                                                                .getAccountID(SOME_ERC_721_SCENARIOS)))))),
+                                                        .withOwner(asAddress(
+                                                                spec.registry()
+                                                                        .getAccountID(SOME_ERC_721_SCENARIOS)))))),
                         childRecordsCheck(
                                 "CIVILIAN_OWNER",
                                 SUCCESS,
@@ -1710,24 +1560,18 @@ public class LeakyContractTestsSuite {
                                                                 spec.registry().getAccountID(A_CIVILIAN)))))))));
     }
 
-    @HapiTest
     @Order(34)
+    @LeakyHapiTest(overrides = {"contracts.evm.version"})
     final Stream<DynamicTest> callToNonExistingContractFailsGracefullyInV038() {
-        return propertyPreservingHapiSpec(
-                        "callToNonExistingContractFailsGracefullyInV038",
-                        NONDETERMINISTIC_ETHEREUM_DATA,
-                        NONDETERMINISTIC_NONCE,
-                        EXPECT_STREAMLINED_INGEST_RECORDS)
-                .preserving(EVM_VERSION_PROPERTY)
-                .given(
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
-                        withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoCreate(TOKEN_TREASURY),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-                        withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)))
-                .when(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                overriding("contracts.evm.version", "v0.38"),
+                withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("1.1.1"))),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                withOpContext((spec, opLog) -> updateSpecFor(spec, SECP_256K1_SOURCE_KEY)),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         ethereumCallWithFunctionAbi(
                                         false,
@@ -1740,64 +1584,54 @@ public class LeakyContractTestsSuite {
                                 .nonce(0)
                                 .gasPrice(0L)
                                 .gasLimit(1_000_000L)
-                                .hasPrecheck(INVALID_CONTRACT_ID))))
-                .then();
+                                .hasPrecheck(INVALID_CONTRACT_ID))));
     }
 
     @Order(36)
-    @HapiTest
+    @LeakyHapiTest(
+            value = {PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES},
+            overrides = {"contracts.evm.version"})
     final Stream<DynamicTest> relayerFeeAsExpectedIfSenderCoversGas() {
         final var canonicalTxn = "canonical";
         final long depositAmount = 20_000L;
 
-        return propertyPreservingHapiSpec(
-                        "relayerFeeAsExpectedIfSenderCoversGas",
-                        NONDETERMINISTIC_TRANSACTION_FEES,
-                        NONDETERMINISTIC_ETHEREUM_DATA,
-                        NONDETERMINISTIC_NONCE)
-                .preserving(EVM_VERSION_PROPERTY, "contracts.chainId")
-                .given(
-                        overridingTwo(EVM_VERSION_PROPERTY, EVM_VERSION_038, "contracts.chainId", "298"),
-                        uploadDefaultFeeSchedules(GENESIS),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
-                .when(
-                        // The cost to the relayer to transmit a simple call with sufficient gas
-                        // allowance is ≈ $0.0001
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
-                                .type(EthTxData.EthTransactionType.EIP1559)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .via(canonicalTxn)
-                                .nonce(0)
-                                .gasPrice(100L)
-                                .maxFeePerGas(100L)
-                                .maxPriorityGas(2_000_000L)
-                                .gasLimit(1_000_000L)
-                                .sending(depositAmount))
-                .then(getAccountInfo(RELAYER)
+        return hapiTest(
+                overriding("contracts.evm.version", "v0.38"),
+                uploadDefaultFeeSchedules(GENESIS),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(ONE_HUNDRED_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        .via("autoAccount"),
+                getTxnRecord("autoAccount").andAllChildRecords(),
+                uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
+                // The cost to the relayer to transmit a simple call with sufficient gas
+                // allowance is ≈ $0.0001
+                ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .via(canonicalTxn)
+                        .nonce(0)
+                        .gasPrice(100L)
+                        .maxFeePerGas(100L)
+                        .maxPriorityGas(2_000_000L)
+                        .gasLimit(1_000_000L)
+                        .sending(depositAmount),
+                getAccountInfo(RELAYER)
                         .has(accountWith().expectedBalanceWithChargedUsd(ONE_HUNDRED_HBARS, 0.0001, 0.5))
                         .logged());
     }
 
-    @HapiTest
     @Order(38)
+    @LeakyHapiTest
     final Stream<DynamicTest> invalidContractCallFailsInV038() {
         final var function = getABIFor(FUNCTION, "getIndirect", "CreateTrivial");
 
-        return propertyPreservingHapiSpec("InvalidContract")
-                .preserving(EVM_VERSION_PROPERTY)
-                .given(
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038),
-                        withOpContext((spec, ctxLog) ->
-                                spec.registry().saveContractId("invalid", asContract("0.0.100000001"))))
-                .when(contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID))
-                .then();
+        return hapiTest(
+                overriding("contracts.evm.version", "v0.38"),
+                withOpContext((spec, ctxLog) -> spec.registry().saveContractId("invalid", asContract("0.0.100000001"))),
+                contractCallWithFunctionAbi("invalid", function).hasKnownStatus(INVALID_CONTRACT_ID));
     }
 
     private HapiContractCallLocal setExpectedCreate2Address(
