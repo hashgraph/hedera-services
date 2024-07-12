@@ -28,6 +28,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_DESCRIPTIO
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.IP_FQDN_CANNOT_BE_SET_FOR_SAME_ENDPOINT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.KEY_REQUIRED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
@@ -124,7 +125,7 @@ public class AddressBookValidator {
         requireNonNull(nodesConfig);
 
         validateFalse(endpointList == null || endpointList.isEmpty(), INVALID_SERVICE_ENDPOINT);
-        validateFalse(endpointList.size() > nodesConfig.maxServiceEndpoint(), INVALID_SERVICE_ENDPOINT);
+        validateFalse(endpointList.size() > nodesConfig.maxServiceEndpoint(), SERVICE_ENDPOINTS_EXCEEDED_LIMIT);
         for (final var endpoint : endpointList) {
             validateEndpoint(endpoint, nodesConfig);
         }

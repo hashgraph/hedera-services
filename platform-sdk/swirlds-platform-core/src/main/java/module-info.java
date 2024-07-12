@@ -85,8 +85,6 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.iss.internal to
             com.swirlds.platform.test;
-    exports com.swirlds.platform.reconnect.emergency to
-            com.swirlds.platform.test;
     exports com.swirlds.platform.recovery.internal to
             com.swirlds.platform.test;
     exports com.swirlds.platform.uptime to

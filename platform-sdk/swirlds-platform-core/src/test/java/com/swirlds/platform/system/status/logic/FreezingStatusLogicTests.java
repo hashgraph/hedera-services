@@ -24,7 +24,6 @@ import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.platform.system.status.PlatformStatus;
 import com.swirlds.platform.system.status.actions.CatastrophicFailureAction;
 import com.swirlds.platform.system.status.actions.DoneReplayingEventsAction;
-import com.swirlds.platform.system.status.actions.EmergencyReconnectStartedAction;
 import com.swirlds.platform.system.status.actions.FallenBehindAction;
 import com.swirlds.platform.system.status.actions.FreezePeriodEnteredAction;
 import com.swirlds.platform.system.status.actions.ReconnectCompleteAction;
@@ -90,10 +89,6 @@ class FreezingStatusLogicTests {
                 logic::processStartedReplayingEventsAction, new StartedReplayingEventsAction(), logic.getStatus());
         triggerActionAndAssertException(
                 logic::processDoneReplayingEventsAction, new DoneReplayingEventsAction(time.now()), logic.getStatus());
-        triggerActionAndAssertException(
-                logic::processEmergencyReconnectStartedAction,
-                new EmergencyReconnectStartedAction(),
-                logic.getStatus());
         triggerActionAndAssertException(
                 logic::processFreezePeriodEnteredAction, new FreezePeriodEnteredAction(0), logic.getStatus());
         triggerActionAndAssertException(
