@@ -27,6 +27,8 @@ import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.metrics.api.Metrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@link LearningSynchronizer} with simulated latency.
@@ -37,6 +39,7 @@ public class LaggingLearningSynchronizer extends LearningSynchronizer {
 
     /**
      * Create a new learning synchronizer with simulated latency.
+     * @param metrics a Metrics object
      */
     public LaggingLearningSynchronizer(
             final MerkleDataInputStream in,
@@ -44,8 +47,9 @@ public class LaggingLearningSynchronizer extends LearningSynchronizer {
             final MerkleNode root,
             final int latencyMilliseconds,
             final Runnable breakConnection,
-            final ReconnectConfig reconnectConfig) {
-        super(getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig);
+            final ReconnectConfig reconnectConfig,
+            @NonNull final Metrics metrics) {
+        super(getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig, metrics);
 
         this.latencyMilliseconds = latencyMilliseconds;
     }

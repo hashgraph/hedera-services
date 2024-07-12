@@ -230,7 +230,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      *
      */
     public static String createInfoString(int hashDepth, PlatformState platformState, Hash rootHash, MerkleNode state) {
-        final Hash epochHash = platformState.getNextEpochHash();
         final Hash hashEventsCons = platformState.getLegacyRunningEventHash();
 
         final ConsensusSnapshot snapshot = platformState.getSnapshot();
@@ -247,8 +246,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
                 .addRow("Legacy running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
                 .addRow("Rounds non-ancient:", platformState.getRoundsNonAncient())
                 .addRow("Creation version:", platformState.getCreationSoftwareVersion())
-                .addRow("Epoch mnemonic:", epochHash == null ? "null" : epochHash.toMnemonic())
-                .addRow("Epoch hash:", epochHash)
                 .addRow("Minimum judge hash code:", minimumJudgeInfo == null ? "null" : minimumJudgeInfo.hashCode())
                 .addRow("Root hash:", rootHash)
                 .addRow("First BR Version:", platformState.getFirstVersionInBirthRoundMode())
