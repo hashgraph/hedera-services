@@ -619,6 +619,18 @@ public class HapiSpec implements Runnable, Executable {
         if (targetNetwork == null) {
             targetNetwork = RemoteNetwork.newRemoteNetwork(hapiSetup.nodes(), clientsFor(hapiSetup));
         }
+        if (!propertiesToPreserve.isEmpty()) {
+            final var missingProperties = propertiesToPreserve.stream()
+                    .filter(p -> !startupProperties().has(p))
+                    .collect(joining(", "));
+            if (!missingProperties.isEmpty()) {
+                status = ERROR;
+                failure = new Failure(
+                        new IllegalStateException("Cannot preserve missing properties: '" + missingProperties + "'"),
+                        "Initialization");
+                return false;
+            }
+        }
         try {
             hapiRegistry = new HapiSpecRegistry(hapiSetup);
             if (sharedStates != null) {
@@ -1121,8 +1133,7 @@ public class HapiSpec implements Runnable, Executable {
             String name, List<String> propertiesToPreserve, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return setup -> given -> when -> then -> Stream.of(DynamicTest.dynamicTest(
                 name + " " + AS_WRITTEN_DISPLAY_NAME,
-                targeted(new HapiSpec(
-                        name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
+                targeted(new HapiSpec(name, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
     }
 
     /**
@@ -1150,7 +1161,6 @@ public class HapiSpec implements Runnable, Executable {
                 AS_WRITTEN_DISPLAY_NAME,
                 targeted(new HapiSpec(
                         SPEC_NAME.get(),
-                        false,
                         HapiSpecSetup.setupFrom(HapiSpecSetup.getDefaultPropertySource()),
                         new SpecOperation[0],
                         new SpecOperation[0],
@@ -1164,7 +1174,6 @@ public class HapiSpec implements Runnable, Executable {
                 name,
                 targeted(new HapiSpec(
                         name,
-                        false,
                         HapiSpecSetup.setupFrom(HapiSpecSetup.getDefaultPropertySource()),
                         new SpecOperation[0],
                         new SpecOperation[0],
@@ -1221,7 +1230,6 @@ public class HapiSpec implements Runnable, Executable {
     public HapiSpec(String name, SpecOperation[] ops) {
         this(
                 name,
-                false,
                 setupFrom(HapiSpecSetup.getDefaultPropertySource()),
                 new SpecOperation[0],
                 new SpecOperation[0],
@@ -1234,7 +1242,6 @@ public class HapiSpec implements Runnable, Executable {
     @SuppressWarnings("java:S107")
     public HapiSpec(
             String name,
-            boolean onlySpecToRunInSuite,
             HapiSpecSetup hapiSetup,
             SpecOperation[] given,
             SpecOperation[] when,

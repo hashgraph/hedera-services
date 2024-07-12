@@ -38,10 +38,10 @@ import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -78,7 +78,7 @@ public class Issue305Spec {
                     // We submit 2.5 seconds of transactions with a 1 second congestion period, so
                     // we should see a 5x multiplier in effect at some point here
                     for (int i = 0; i < 100; i++) {
-                        TimeUnit.MILLISECONDS.sleep(25);
+                        spec.sleepConsensusTime(Duration.ofMillis(25));
                         allRunFor(
                                 spec,
                                 contractCall(multipurposeContract)

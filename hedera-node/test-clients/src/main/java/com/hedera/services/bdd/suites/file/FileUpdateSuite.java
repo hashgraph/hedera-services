@@ -311,7 +311,7 @@ public class FileUpdateSuite {
                         .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)));
     }
 
-    @LeakyHapiTest(overrides = {"maxRefundPercentOfGasLimit"})
+    @LeakyHapiTest(overrides = {"contracts.maxRefundPercentOfGasLimit"})
     final Stream<DynamicTest> maxRefundIsEnforced() {
         return hapiTest(
                 overriding("contracts.maxRefundPercentOfGasLimit", "5"),
