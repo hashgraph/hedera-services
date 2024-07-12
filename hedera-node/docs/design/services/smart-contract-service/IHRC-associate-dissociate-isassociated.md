@@ -89,10 +89,6 @@ Create `IsAssociatedTranslator` and `IsAssociatedCall` for the `isAssociated` fu
 The `IsAssociatedTranslator` will handle the new function selector.  
 The `IsAssociatedCall` will override `resultOfViewingToken` method and return the result of the `isAssociated` function.
 
-## Open Questions
-
-Does a feature gate need to be added to control the accessibility to this functionality?
-
 ## Acceptance Tests
 
 ### Positive Tests
