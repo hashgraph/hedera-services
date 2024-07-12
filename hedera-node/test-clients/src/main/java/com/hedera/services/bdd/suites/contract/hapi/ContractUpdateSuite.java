@@ -398,8 +398,8 @@ public class ContractUpdateSuite {
     final Stream<DynamicTest> fridayThe13thSpec() {
         final var contract = "SimpleStorage";
         final var suffix = "Clone";
-        final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
-        final var betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 3;
+        final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() + 200;
+        final var betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() + 300;
         final var INITIAL_MEMO = "This is a memo string with only Ascii characters";
         final var NEW_MEMO = "Turning and turning in the widening gyre, the falcon cannot hear the falconer...";
         final var BETTER_MEMO = "This was Mr. Bleaney's room...";
