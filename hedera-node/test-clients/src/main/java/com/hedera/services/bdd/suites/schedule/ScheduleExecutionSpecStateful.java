@@ -130,8 +130,8 @@ public class ScheduleExecutionSpecStateful {
         long payingAccountBalance = 1_000_000L;
         long noBalance = 0L;
         final var rejectedTxn = "rejectedTxn";
-
         return hapiTest(
+                overriding("ledger.transfers.maxLen", "2"),
                 cryptoCreate(PAYING_ACCOUNT).balance(payingAccountBalance),
                 cryptoCreate(SENDER).balance(senderBalance),
                 cryptoCreate(RECEIVER_A).balance(noBalance),
@@ -174,6 +174,7 @@ public class ScheduleExecutionSpecStateful {
         String failedTxn = "bad";
 
         return hapiTest(
+                overriding("ledger.tokenTransfers.maxLen", "2"),
                 newKeyNamed("admin"),
                 cryptoCreate(schedulePayer),
                 cryptoCreate(xTreasury),
