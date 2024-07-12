@@ -89,7 +89,6 @@ public class IsAssociatedSystemContractTest {
      */
     private SpecOperation assertEoaGetsResultForBothTokens(final boolean isAssociated) {
         return blockingOrder(
-                // Assert the expected result for EOA msg.sender and both token types
                 fungibleToken
                         .call(HRC, "isAssociated")
                         .payingWith(senderAccount)
@@ -110,7 +109,6 @@ public class IsAssociatedSystemContractTest {
      */
     private SpecOperation assertContractGetsResultForBothTokens(final boolean isAssociated) {
         return blockingOrder(
-                // Assert the expected result for contract msg.sender and both token types
                 senderContract
                         .call("isAssociated", fungibleToken)
                         .andAssert(txn ->
