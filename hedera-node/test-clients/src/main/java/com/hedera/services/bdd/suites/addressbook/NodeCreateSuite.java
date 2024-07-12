@@ -267,6 +267,7 @@ public class NodeCreateSuite {
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @HapiTest
+    @Tag(EMBEDDED)
     final Stream<DynamicTest> allFieldsSetHappyCaseForDomains() {
         return hapiTest(
                 newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
@@ -341,6 +342,7 @@ public class NodeCreateSuite {
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @HapiTest
+    @Tag(EMBEDDED)
     final Stream<DynamicTest> minimumFieldsSetHappyCase() {
         return hapiTest(
                 nodeCreate("ntb"),
