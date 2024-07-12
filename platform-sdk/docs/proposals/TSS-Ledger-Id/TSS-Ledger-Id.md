@@ -702,59 +702,6 @@ Input Invariants
     4. If the count of yes votes is greater than or equal to the threshold in the candidate roster, then send the
        vote vector as a system transaction and exit the validation process.
 
-#### TSS Signing Manager
-
-The TSS Signing Manager is responsible for computing a node's private shares from the TSS Messages and for
-generating ledger signatures by submitting a node's share signature to be gossiped to the rest of the network and
-accumulating a threshold number of share signatures to recover the ledger signatures. Each recovered ledger
-signature is published to interested parties through the `PlatformPublisher`.
-
-Public API:
-
-1. State API: void sign(byte[] message) throws NotReadyException
-2. `PlatformPublisher` provides a consumer for ledger signatures
-
-Internal Elements:
-
-1. Map<RosterHash, Roster> rosters
-2. Map<RosterHash, List<TssMessage>> tssMessages
-3. Map<RosterHash, Pair<List<Private Share Keys>, List<Public Share Keys>>> shares
-4. Map<MessageHash, RosterHash> messageRosterMap
-5. Map<MessageHash, List<PairingSignature>> messageSignatures
-6. activeRosterHash
-7. current round
-
-Inputs:
-
-1. Rosters in state (Constructor)
-2. TssMessages in state (Constructor)
-3. Active Roster (Constructor)
-4. Share Signatures in state (Constructor)
-5. TssShareSignature (Wire)
-6. message (Wire)
-7. EventWindow (Wire)
-
-Input Invariants:
-
-1. TssShareSignature received must be for previous signMessage(byte[] message) calls.
-
-`On Message`:
-
-1. Use the private shares of the active roster to create TssShareSignatures from the node and gossip them out.
-2. Construct an empy list of PairingSignatures for the message.
-
-`On TssShareSignature`:
-
-1. get the hash of the message the signature is for.
-2. get the roster that signed the message.
-3. validate the share signature
-4. Add the signature to the collection for the message.
-5. If a threshold number have been collected, compute the ledger signature and publish it on the output wire.
-
-`On EventWindow`:
-
-1. Update the current round.
-2. cleanup the message signatures for any collections that are older than the configured number of rounds.
 
 ### Configuration
 
