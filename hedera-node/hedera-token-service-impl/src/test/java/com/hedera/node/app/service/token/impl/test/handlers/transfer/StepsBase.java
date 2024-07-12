@@ -237,18 +237,25 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     }
 
     protected void givenAirdropTxn() {
+        givenAirdropTxn(false);
+    }
+
+    protected void givenAirdropTxn(boolean isReceiverAssociated) {
+        var receiver = tokenReceiverNoAssociationId;
+        if (isReceiverAssociated) {
+            receiver = tokenReceiverId;
+        }
         airdropBody = TokenAirdropTransactionBody.newBuilder()
                 .tokenTransfers(
                         TokenTransferList.newBuilder()
                                 .token(fungibleTokenId)
                                 .expectedDecimals(1000)
-                                .transfers(
-                                        List.of(aaWith(ownerId, -1_000), aaWith(tokenReceiverNoAssociationId, +1_000)))
+                                .transfers(List.of(aaWith(ownerId, -1_000), aaWith(receiver, +1_000)))
                                 .build(),
                         TokenTransferList.newBuilder()
                                 .token(nonFungibleTokenId)
                                 .expectedDecimals(1000)
-                                .nftTransfers(nftTransferWith(ownerId, tokenReceiverNoAssociationId, 1))
+                                .nftTransfers(nftTransferWith(ownerId, receiver, 1))
                                 .build())
                 .build();
         givenAirdropTxn(airdropBody, payerId);

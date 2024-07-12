@@ -474,6 +474,21 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
         stakingNodeInfoMap.put(1L, node1Info);
     }
 
+    protected void givenAssociatedReceiver(AccountID accountID, TokenID tokenID) {
+        EntityIDPair pair =
+                EntityIDPair.newBuilder().accountId(accountID).tokenId(tokenID).build();
+        TokenRelation rel = TokenRelation.newBuilder()
+                .tokenId(tokenID)
+                .accountId(accountID)
+                .balance(0L)
+                .frozen(false)
+                .kycGranted(true)
+                .automaticAssociation(true)
+                .build();
+
+        tokenRelsMap.put(pair, rel);
+    }
+
     protected void basicMetaAssertions(final PreHandleContext context, final int keysSize) {
         assertThat(context.requiredNonPayerKeys()).hasSize(keysSize);
     }

@@ -315,7 +315,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
-    void airdropMultipleTokensCreatesList() {
+    void handleAirdropMultipleTokensToPendingState() {
         givenStoresAndConfig(handleContext);
         tokenAirdropHandler = new TokenAirdropHandler(validator);
         given(recordBuilders.getOrCreate(TokenAirdropRecordBuilder.class)).willReturn(tokenAirdropRecordBuilder);
@@ -355,6 +355,40 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         assertThat(Objects.requireNonNull(nextAirdrop).hasNextAirdrop()).isFalse();
         assertThat(nextAirdrop.hasPreviousAirdrop()).isTrue();
         assertThat(nextAirdrop.previousAirdrop()).isEqualTo(headPendingAirdropId);
+    }
+
+    @Test
+    void handleAirdropMultipleTokensTransfers() {
+        // setup all states
+        handlerTestBaseInternalSetUp(true);
+
+        // setup airdrop states
+        givenAssociatedReceiver(tokenReceiverId, nonFungibleTokenId);
+        givenAssociatedReceiver(tokenReceiverId, fungibleTokenId);
+        refreshReadableStores();
+        refreshWritableStores();
+        givenStoresAndConfig(handleContext);
+
+        // mock record builder
+        tokenAirdropHandler = new TokenAirdropHandler(validator);
+        var tokenWithNoCustomFees =
+                fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
+        writableTokenStore.put(tokenWithNoCustomFees);
+        given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
+        given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
+
+        // set up transaction and context
+        givenAirdropTxn(true);
+        given(handleContext.expiryValidator()).willReturn(expiryValidator);
+        given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+
+        tokenAirdropHandler.handle(handleContext);
+
+        assertThat(writableAccountStore.get(tokenReceiverId)).isNotNull();
+        var relationToFungible = Objects.requireNonNull(writableTokenRelStore.get(tokenReceiverId, fungibleTokenId));
+        var relationToNFT = Objects.requireNonNull(writableTokenRelStore.get(tokenReceiverId, nonFungibleTokenId));
+        assertThat(relationToNFT.balance()).isEqualTo(1);
+        assertThat(relationToFungible.balance()).isEqualTo(1000L);
     }
 
     @Test
