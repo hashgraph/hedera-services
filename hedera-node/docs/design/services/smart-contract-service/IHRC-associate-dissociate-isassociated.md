@@ -22,8 +22,8 @@ if it is an HTS token address and if so we redirect the request to the proxy con
 
 More specifically the algorithm by which we get from (a) the call to the token address to (b) the precompiled contract is a follows:
 1. The EVM encounters a call such as this `tokenAddress.<functionName>(<params>);`
-2. The EVM calls [HederaStackedWorldStateUpdater.get()](https://github.com/hashgraph/hedera-services/blob/29e49604eff059c6bc0c0a4dd2a738f194b32c04/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/HederaStackedWorldStateUpdater.java#L202) and loads the code stored on `tokenAddress`
-3. In [HederaStackedWorldStateUpdater.get()](https://github.com/hashgraph/hedera-services/blob/29e49604eff059c6bc0c0a4dd2a738f194b32c04/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/HederaStackedWorldStateUpdater.java#L202), we intercept the loading of the account code, check if this is actually a contract address, and, if yes, we return an instance of `HederaEvmWorldStateTokenAccount` which wraps the _redirect token bytecode_
+2. The EVM calls [TokenEvmAccount.getEvmCode()](https://github.com/hashgraph/hedera-services/blob/f82b34132707755f7aa87e09e2de85ba9d5bfcd2/hedera-node/hedera-smart-contract-service-impl/src/main/java/com/hedera/node/app/service/contract/impl/state/TokenEvmAccount.java#L79) and loads the code stored on `tokenAddress`
+3. In [TokenEvmAccount.getEvmCode()](https://github.com/hashgraph/hedera-services/blob/f82b34132707755f7aa87e09e2de85ba9d5bfcd2/hedera-node/hedera-smart-contract-service-impl/src/main/java/com/hedera/node/app/service/contract/impl/state/TokenEvmAccount.java#L79), we intercept the loading of the account code, check if this is actually a contract address, and we return the redirect bytecode for the token with the given address
 4. The redirect bytecode is obtained by compiling the following contract, which accepts all the inputs the user provided (including function selector and function arguments), precedes the argument list with the token address, and _delegatecalls_ the HTS precompile:
 ```
 // SPDX-License-Identifier: Apache-2.0
@@ -45,7 +45,7 @@ contract Assembly {
 	}
 }
 ```
-5. This means that _any_ function can be redirected-to as long as the HTS precompile handles the redirect call [here](https://github.com/hashgraph/hedera-services/blob/29e49604eff059c6bc0c0a4dd2a738f194b32c04/hedera-node/hedera-mono-service/src/main/java/com/hedera/node/app/service/mono/store/contracts/precompile/HTSPrecompiledContract.java#L557). 
+5. This means that _any_ function can be redirected-to as long as the HTS precompile handles the redirect call [here](https://github.com/hashgraph/hedera-services/blob/a1ccc19042d577c84076e97ee8485f33e2c9e696/hedera-node/hedera-smart-contract-service-impl/src/main/java/com/hedera/node/app/service/contract/impl/exec/processors/CustomMessageCallProcessor.java#L121). 
 
 In particular, the mechanism described above will be extended to include calls to `associate`, `dissociate` and `isAssociated` functions in the HTSPrecompileContact class method which handles ABI_ID_REDIRECT_FOR_TOKEN function selector.
 
@@ -81,16 +81,13 @@ interface IHRC {
 
 ## Implementation
 
-Override the existing `AbstractAssociatePrecompile` and `AbstractDissociatePrecompile` classes to handle this new use case
-of being called via the proxy contract.  The new overwritten classes will differ from the existing classes in that they will
-be passed the token id and the sender address as constructor arguments and construct the associate and dissociate operator 
-classes from these arguments.  It will also need to send a value into the constructor of the parent class to signal that
-signature checking will not be required. 
+Extend `AssociationsTranslator` and `AssociationsDecoder` with this new use case of being called via the proxy contract.  
+In `AssociationsTranslator` class `matches` and `callFrom` methods will need to be updated to handle the new function selectors for `associate` and `dissociate` functions.  
+In `AssociationsDecoder`, methods decodes the given `HtsCallAttempt` into a `TransactionBody` for an HRC association and dissociation call.
 
-The `getGasRequirement` method can be moved to the parent class as the functionality will be
-common to both the existing and new classes. 
-
-The class `RedirectViewExecutor` will also be updated to include the cost to perform the `associate` and `dissociate` functions.
+Create `IsAssociatedTranslator` and `IsAssociatedCall` for the `isAssociated` function.  
+The `IsAssociatedTranslator` will handle the new function selector.  
+The `IsAssociatedCall` will override `resultOfViewingToken` method and return the result of the `isAssociated` function.
 
 ## Open Questions
 
