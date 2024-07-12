@@ -235,7 +235,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     private void pushSavepoint(final HandleContext.TransactionCategory category) {
         if (root instanceof SavepointStackImpl parentStack) {
             final var parentSavepoint = parentStack.peek();
-            stack.push(new BaseSavepoint(new WrappedHederaState(root), parentSavepoint, category));
+            stack.push(new BaseSavepoint(new WrappedHederaState(root), parentSavepoint.asSink(), category));
         } else {
             requireNonNull(builderSink);
             stack.push(new FirstSavepoint(
@@ -264,7 +264,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     public List<SingleTransactionRecordBuilder> getChildRecords() {
         final var childRecords = new ArrayList<SingleTransactionRecordBuilder>();
         for (var savePoint : stack) {
-            for (var recordBuilder : ((AbstractSavepoint) savePoint).followingBuilders) {
+            for (var recordBuilder : savePoint.followingBuilders()) {
                 if (recordBuilder.category() == CHILD) {
                     childRecords.add(recordBuilder);
                 }

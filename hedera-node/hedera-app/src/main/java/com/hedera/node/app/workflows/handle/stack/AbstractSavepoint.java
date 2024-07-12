@@ -130,4 +130,9 @@ public abstract class AbstractSavepoint extends BuilderSink implements Savepoint
     public Savepoint createFollowingSavePoint() {
         return new FollowingSavepoint(new WrappedHederaState(state), this, followingCapacity());
     }
+
+    @Override
+    public BuilderSink asSink() {
+        return this;
+    }
 }

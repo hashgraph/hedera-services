@@ -22,6 +22,7 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -96,4 +97,16 @@ public interface Savepoint {
             @NonNull Consumer<T> consumer,
             @NonNull Class<T> builderType,
             @NonNull SingleTransactionRecordBuilder baseBuilder);
+
+    /**
+     * Returns the following builders in the savepoint.
+     * @return the following builders in the savepoint
+     */
+    List<SingleTransactionRecordBuilder> followingBuilders();
+
+    /**
+     * Returns each savepoint as a BuilderSink
+     * @return the savepoint as a BuilderSink
+     */
+    BuilderSink asSink();
 }

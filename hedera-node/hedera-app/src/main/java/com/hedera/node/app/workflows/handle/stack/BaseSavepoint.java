@@ -27,14 +27,9 @@ public class BaseSavepoint extends AbstractSavepoint {
 
     protected BaseSavepoint(
             @NonNull final WrappedHederaState state,
-            @NonNull final Savepoint parent,
+            @NonNull final BuilderSink parent,
             @NonNull final HandleContext.TransactionCategory txnCategory) {
-        super(
-                state,
-                (AbstractSavepoint) parent,
-                txnCategory == PRECEDING
-                        ? ((AbstractSavepoint) parent).precedingCapacity()
-                        : ((AbstractSavepoint) parent).followingCapacity());
+        super(state, parent, txnCategory == PRECEDING ? parent.precedingCapacity() : parent.followingCapacity());
         this.txnCategory = txnCategory;
     }
 
