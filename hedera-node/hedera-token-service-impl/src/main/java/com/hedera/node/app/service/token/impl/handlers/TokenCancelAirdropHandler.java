@@ -58,6 +58,11 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         var tokensConfig = feeContext.configuration().getConfigData(TokensConfig.class);
         validateTrue(tokensConfig.cancelTokenAirdropEnabled(), NOT_SUPPORTED);
-        return feeContext.feeCalculatorFactory().feeCalculator(SubType.DEFAULT).calculate();
+
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1))
+                .calculate();
     }
 }
