@@ -21,9 +21,9 @@ goal is that users could write EVM smart contracts that can verify the block sig
 
 ## Purpose and Context
 
-The purpose of this proposal is to integrate a BLS based Threshold Signature Schemes (TSS) into consensus nodes to
-give a network a ledger id and create a way of signing messages such that the signatures can be verified by the
-ledger id.
+The purpose of this proposal is to integrate a [BLS](https://en.wikipedia.org/wiki/BLS_digital_signature)  based
+Threshold Signature Schemes (TSS) into consensus nodes to give a network a ledger id and create a way of signing
+messages such that the signatures can be verified by the ledger id.
 
 In this BLS based TSS, the network is assigned a durable BLS private/public key pair where the public key is the ledger
 id and the private key is a secret that no one knows. Each node in the network is given a number of shares  
@@ -81,7 +81,6 @@ Dependencies on the TSS-Library
 
 Dependencies on the TSS-Roster
 
-* At minimum, the `Roster` API is defined with an AddressBook wrapper for initial development and testing.
 * Delivery of TSS-Ledger-ID will require that the TSS-Roster proposal is delivered in a prior release.
 
 Impacts of TSS-Ledger-ID to Services Team
@@ -99,6 +98,13 @@ Impacts to DevOps Team
     * EC Key generation will have to happen before a node can join the network.
 * A new node added to an existing network will need to be given a state from an existing node after the network has
   adopted the address book containing the new node.
+* If a node is added, removed, or updated in the address book and the candidate roster is not adopted in the next
+  software upgrade, the change is not applied.
+    * New nodes will not be added until the candidate roster containing them is adopted.
+    * Removed nodes will show up as down nodes until the candidate roster containing them is adopted.
+    * Updated nodes will not have their changes applied until the candidate roster containing them is adopted.
+* config only software upgrades can be used to trigger the adoption of a candidate roster, if the candidate roster
+  has received enough yes votes.
 
 Implications Of Completion
 
@@ -846,16 +852,12 @@ Apart from the obvious unit testing of methods and classes, the following scenar
 * Failure Scenarios
     * Bad TssMessages
     * Failure to reach threshold number of votes
-    * Bad TssShareSignatures
 * HAPI Tests
-    * A down node during pre-genesis needing to reconnect to get the key material.
-    * Reconnect
+    * A down node during pre-genesis needing to get the key material from post-genesis node.
     * Down nodes during bootstrap and re-keying
-    * Multi-release migration
+    * Multi-release migrations
 
 ### Integration Tests
-
-If Turtle is not available, then the turtle tests will become integration tests.
 
 Additional Integration Tests:
 
@@ -868,14 +870,26 @@ Additional Integration Tests:
 The following need performance profiles:
 
 1. How long does it take to generate the key material for a new candidate roster as a function of roster size?
-2. How long does it take to generate the ledger signatures?
-3. How much space is being used in the state for all TSS related data structures?
+2. How much space is being used in the state for all TSS related data structures?
 
 ---
 
 ## Implementation and Delivery Plan
 
-How should the proposal be implemented? Is there a necessary order to implementation? What are the stages or phases
-needed for the delivery of capabilities? What configuration flags will be used to manage deployment of capability?
+### Implementation
+
+1. The protobufs for the new system transactions and state data structures.
+2. The TSS Message Creator and TSS Message Validator Components (pre-wiring), dependent on (1)
+3. The TSS State Manager Component (wired to 2), dependent on (1,2), disabled by feature flag
+4. The RosterInitializer Component, dependent on (3), behavior determined by feature flag.
+5. Any Services Implementation, dependent on (4)
+6. HAPI Tests, dependent on (5)
+7. Integration Tests, dependent on (5)
+
+### Delivery
+
+1. The TSS-Roster proposal must be delivered in total.
+2. The release containing the `tssEncryptionKey` set in the Roster may be delivered with (1).
+3. The release containing the TSS Bootstrap Process must be delivered after (2).
 
 ---
