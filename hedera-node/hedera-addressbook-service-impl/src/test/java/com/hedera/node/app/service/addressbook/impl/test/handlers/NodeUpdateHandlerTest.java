@@ -115,7 +115,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    @DisplayName("pureChecks fail when gossipCaCertificate empty")
+    @DisplayName("invalid adminKey fail")
     void adminKeyInvalid() {
         txn = new NodeUpdateBuilder()
                 .withNodeId(1)
