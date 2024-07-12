@@ -16,7 +16,10 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -26,6 +29,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Singleton;
 
@@ -47,6 +51,9 @@ public class TokenClaimAirdropHandler implements TransactionHandler {
 
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
+        var tokensConfig = feeContext.configuration().getConfigData(TokensConfig.class);
+        validateTrue(tokensConfig.airdropsClaimEnabled(), ResponseCodeEnum.NOT_SUPPORTED);
+
         return feeContext
                 .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
