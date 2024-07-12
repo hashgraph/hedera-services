@@ -86,7 +86,7 @@ public class NodeUpdateSuite {
     final Stream<DynamicTest> updateDeletedNodeFail() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeDelete("testNode"),
                 nodeUpdate("testNode").hasPrecheck(INVALID_NODE_ID));
     }
@@ -95,7 +95,7 @@ public class NodeUpdateSuite {
     final Stream<DynamicTest> validateAdminKey() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode").adminKey(NONSENSE_KEY).hasPrecheck(KEY_REQUIRED),
                 nodeUpdate("testNode")
                         .adminKey(ALL_ZEROS_INVALID_KEY)
@@ -107,7 +107,7 @@ public class NodeUpdateSuite {
     final Stream<DynamicTest> updateEmptyGossipCaCertificateFail() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode").gossipCaCertificate("").hasPrecheck(INVALID_GOSSIP_CA_CERTIFICATE));
     }
 
@@ -115,7 +115,7 @@ public class NodeUpdateSuite {
     final Stream<DynamicTest> updateAccountIdNotAllowed() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode").accountId("0.0.100").hasPrecheck(UPDATE_NODE_ACCOUNT_NOT_ALLOWED));
     }
 
@@ -127,7 +127,7 @@ public class NodeUpdateSuite {
                 .given(
                         overriding(changedProperty, TRUE_VALUE),
                         newKeyNamed("adminKey"),
-                        nodeCreate("testNode").adminKeyName("adminKey"))
+                        nodeCreate("testNode").adminKey("adminKey"))
                 .when()
                 .then(nodeUpdate("testNode").accountId("").hasPrecheck(INVALID_NODE_ACCOUNT_ID));
     }
@@ -140,7 +140,7 @@ public class NodeUpdateSuite {
                 .given(
                         overriding(changedProperty, TRUE_VALUE),
                         newKeyNamed("adminKey"),
-                        nodeCreate("testNode").adminKeyName("adminKey"))
+                        nodeCreate("testNode").adminKey("adminKey"))
                 .when()
                 .then(nodeUpdate("testNode").aliasAccountId("alias").hasPrecheck(INVALID_NODE_ACCOUNT_ID));
     }
@@ -153,7 +153,7 @@ public class NodeUpdateSuite {
                 .given(
                         overriding(changedProperty, "3"),
                         newKeyNamed("adminKey"),
-                        nodeCreate("testNode").adminKeyName("adminKey"))
+                        nodeCreate("testNode").adminKey("adminKey"))
                 .when()
                 .then(nodeUpdate("testNode")
                         .adminKey("adminKey")
@@ -165,7 +165,7 @@ public class NodeUpdateSuite {
     final Stream<DynamicTest> validateGossipEndpoint() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .gossipEndpoint(List.of(asServiceEndpoint("127.0.0.1:80")))
@@ -198,7 +198,7 @@ public class NodeUpdateSuite {
                 .given(
                         overriding(changedProperty, "2"),
                         newKeyNamed("adminKey"),
-                        nodeCreate("testNode").adminKeyName("adminKey"))
+                        nodeCreate("testNode").adminKey("adminKey"))
                 .when()
                 .then(nodeUpdate("testNode")
                         .adminKey("adminKey")
@@ -213,7 +213,7 @@ public class NodeUpdateSuite {
     final Stream<DynamicTest> validateServiceEndpoint() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .serviceEndpoint(List.of(
@@ -233,7 +233,7 @@ public class NodeUpdateSuite {
                 .given(
                         overriding(changedProperty, "2"),
                         newKeyNamed("adminKey"),
-                        nodeCreate("testNode").adminKeyName("adminKey"))
+                        nodeCreate("testNode").adminKey("adminKey"))
                 .when()
                 .then(nodeUpdate("testNode")
                         .adminKey("adminKey")
@@ -249,7 +249,7 @@ public class NodeUpdateSuite {
         return hapiTest(
                 newKeyNamed("adminKey"),
                 newKeyNamed("adminKey2"),
-                nodeCreate("testNode").description("description to be changed").adminKeyName("adminKey"),
+                nodeCreate("testNode").description("description to be changed").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .description("updated description")
@@ -292,7 +292,7 @@ public class NodeUpdateSuite {
                 .given(
                         overriding(changedProperty, TRUE_VALUE),
                         newKeyNamed("adminKey"),
-                        nodeCreate("testNode").adminKeyName("adminKey"),
+                        nodeCreate("testNode").adminKey("adminKey"),
                         nodeUpdate("testNode").adminKey("adminKey").accountId("0.0.1000"))
                 .when()
                 .then(viewNode(
@@ -315,7 +315,7 @@ public class NodeUpdateSuite {
                         newKeyNamed("randomAccount"),
                         cryptoCreate("payer").balance(10_000_000_000L),
                         nodeCreate("node100")
-                                .adminKeyName("testKey")
+                                .adminKey("testKey")
                                 .description(description)
                                 .fee(ONE_HBAR),
                         // Submit to a different node so ingest check is skipped
@@ -359,7 +359,7 @@ public class NodeUpdateSuite {
                         newKeyNamed("adminKey"),
                         cryptoCreate("payer").balance(10_000_000_000L),
                         nodeCreate("ntb")
-                                .adminKeyName("adminKey")
+                                .adminKey("adminKey")
                                 .description(description)
                                 .fee(ONE_HBAR)
                                 .via("nodeCreation"),

@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.ALL_ZEROS_INVALID_KEY;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
@@ -31,14 +32,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
-import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.HapiSuite.STANDIN_CONTRACT_ID_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_GOSSIP_ENDPOINT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SERVICE_ENDPOINT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -73,60 +72,37 @@ public class NodeCreateSuite {
     public static List<ServiceEndpoint> SERVICES_ENDPOINTS_IPS = Arrays.asList(endpointFor("192.168.1.205", 234));
 
     /**
-     * This test is to check if the node creation fails during ingest when the admin key is invalid.
+     * This test is to check if the node creation fails during ingest when the admin key is missing.
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @HapiTest
-    final Stream<DynamicTest> adminKeyIsInvalidOnIngest() {
-        return hapiTest(nodeCreate("nodeCreate")
-                .adminKeyName(NONSENSE_KEY)
-                .signedBy(GENESIS)
-                .hasPrecheck(KEY_REQUIRED)); // on ingest level before all the events on the handlers happens);
-        // expected status to reach consensus and this is the status */);
+    final Stream<DynamicTest> adminKeyIsMissing() {
+        return hapiTest(nodeCreate("testNode").adminKey(NONSENSE_KEY).hasPrecheck(KEY_REQUIRED));
     }
 
     /**
-     * This test is to check if the node creation fails during pureCheck when the admin key is invalid.
+     * This test is to check if the node creation fails during pureCheck when the admin key is missing.
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @HapiTest
     @Tag(EMBEDDED)
-    final Stream<DynamicTest> adminKeyIsInvalidEmbedded() { // skipping ingest but purecheck still throw the same
+    final Stream<DynamicTest> adminKeyIsMissingEmbedded() { // skipping ingest but purecheck still throw the same
         return hapiTest(nodeCreate("nodeCreate")
                 .setNode("0.0.4") // exclude 0.0.3
-                .adminKeyName(NONSENSE_KEY)
-                .signedBy(GENESIS)
-                .hasKnownStatus(KEY_REQUIRED));
-    }
-
-    /**
-     * This test is to check if the node creation fails when the admin key is empty.
-     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
-     */
-    @HapiTest
-    final Stream<DynamicTest> adminKeyIsEmpty() {
-        return hapiTest(nodeCreate("nodeCreate")
-                .adminKey(STANDIN_CONTRACT_ID_KEY)
-                .signedBy(GENESIS)
+                .adminKey(NONSENSE_KEY)
                 .hasPrecheck(KEY_REQUIRED));
     }
 
     /**
-     * This test is to check if the node creation fails when the admin key is not signed by the payer.
+     * This test is to check if the node creation fails when admin key is invalid.
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @HapiTest
-    @Tag(EMBEDDED)
-    final Stream<DynamicTest> adminKeyIsInvalidSigPayer() {
-        return hapiTest(
-                newKeyNamed("adminKey"),
-                cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
-                nodeCreate("nodeCreate")
-                        .setNode("0.0.4")
-                        .adminKeyName("adminKey")
-                        .signedBy("payer")
-                        .hasPrecheck(OK)
-                        .hasKnownStatus(INVALID_PAYER_SIGNATURE));
+    final Stream<DynamicTest> validateAdminKey() {
+        return hapiTest(nodeCreate("nodeCreate")
+                .adminKey(ALL_ZEROS_INVALID_KEY)
+                .signedBy(GENESIS)
+                .hasPrecheck(INVALID_ADMIN_KEY));
     }
 
     /**
@@ -145,7 +121,12 @@ public class NodeCreateSuite {
      */
     @HapiTest
     final Stream<DynamicTest> failOnInvalidGossipEndpoint() {
-        return hapiTest(nodeCreate("nodeCreate").gossipEndpoint(List.of()).hasPrecheck(INVALID_GOSSIP_ENDPOINT));
+        return hapiTest(
+                newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
+                nodeCreate("nodeCreate")
+                        .adminKey(ED_25519_KEY)
+                        .gossipEndpoint(List.of())
+                        .hasPrecheck(INVALID_GOSSIP_ENDPOINT));
     }
 
     /**
@@ -155,7 +136,11 @@ public class NodeCreateSuite {
     @HapiTest
     final Stream<DynamicTest> failOnEmptyGossipCaCertificate() {
         return hapiTest(
-                nodeCreate("nodeCreate").gossipCaCertificate(new byte[0]).hasPrecheck(INVALID_GOSSIP_CA_CERTIFICATE));
+                newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
+                nodeCreate("nodeCreate")
+                        .adminKey(ED_25519_KEY)
+                        .gossipCaCertificate(new byte[0])
+                        .hasPrecheck(INVALID_GOSSIP_CA_CERTIFICATE));
     }
 
     /**
@@ -209,9 +194,12 @@ public class NodeCreateSuite {
                         .setDomainName("test11.com")
                         .setPort(123)
                         .build());
-        return hapiTest(nodeCreate("nodeCreate")
-                .gossipEndpoint(gossipEndpoints)
-                .hasKnownStatus(GOSSIP_ENDPOINTS_EXCEEDED_LIMIT));
+        return hapiTest(
+                newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
+                nodeCreate("nodeCreate")
+                        .adminKey(ED_25519_KEY)
+                        .gossipEndpoint(gossipEndpoints)
+                        .hasKnownStatus(GOSSIP_ENDPOINTS_EXCEEDED_LIMIT));
     }
 
     /**
@@ -257,9 +245,12 @@ public class NodeCreateSuite {
                         .setDomainName("test9.com")
                         .setPort(123)
                         .build());
-        return hapiTest(nodeCreate("nodeCreate")
-                .serviceEndpoint(serviceEndpoints)
-                .hasKnownStatus(SERVICE_ENDPOINTS_EXCEEDED_LIMIT));
+        return hapiTest(
+                newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
+                nodeCreate("nodeCreate")
+                        .adminKey(ED_25519_KEY)
+                        .serviceEndpoint(serviceEndpoints)
+                        .hasKnownStatus(SERVICE_ENDPOINTS_EXCEEDED_LIMIT));
     }
 
     /**
@@ -279,7 +270,7 @@ public class NodeCreateSuite {
                         .accountId(asAccount("0.0.100"))
                         .gossipEndpoint(GOSSIP_ENDPOINTS)
                         .serviceEndpoint(SERVICES_ENDPOINTS)
-                        .adminKeyName(ED_25519_KEY)
+                        .adminKey(ED_25519_KEY)
                         .hasPrecheck(OK)
                         .hasKnownStatus(SUCCESS),
                 viewNode("nodeCreate", node -> {
@@ -317,7 +308,7 @@ public class NodeCreateSuite {
                         .accountId(asAccount("0.0.100"))
                         .gossipEndpoint(GOSSIP_ENDPOINTS_IPS)
                         .serviceEndpoint(SERVICES_ENDPOINTS_IPS)
-                        .adminKeyName(ED_25519_KEY)
+                        .adminKey(ED_25519_KEY)
                         .hasPrecheck(OK)
                         .hasKnownStatus(SUCCESS),
                 viewNode("nodeCreate", node -> {
@@ -345,7 +336,8 @@ public class NodeCreateSuite {
     @Tag(EMBEDDED)
     final Stream<DynamicTest> minimumFieldsSetHappyCase() {
         return hapiTest(
-                nodeCreate("ntb"),
+                newKeyNamed("adminKey"),
+                nodeCreate("ntb").adminKey("adminKey"),
                 viewNode("ntb", node -> assertEquals("", node.description(), "Node was created successfully")));
     }
 
@@ -357,11 +349,13 @@ public class NodeCreateSuite {
     final Stream<DynamicTest> validateFees() {
         return defaultHapiSpec("validateFees")
                 .given(
+                        newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
                         newKeyNamed("testKey"),
                         newKeyNamed("randomAccount"),
                         cryptoCreate("payer").balance(10_000_000_000L),
                         // Submit to a different node so ingest check is skipped
                         nodeCreate("ntb")
+                                .adminKey(ED_25519_KEY)
                                 .payingWith("payer")
                                 .signedBy("payer")
                                 .setNode("0.0.4")
@@ -372,7 +366,7 @@ public class NodeCreateSuite {
                         getTxnRecord("nodeCreationFailed").logged(),
                         // Validate that the failed transaction charges the correct fees.
                         validateChargedUsdWithin("nodeCreationFailed", 0.001, 3),
-                        nodeCreate("ntb").fee(ONE_HBAR).via("nodeCreation"),
+                        nodeCreate("ntb").adminKey(ED_25519_KEY).fee(ONE_HBAR).via("nodeCreation"),
                         getTxnRecord("nodeCreation").logged(),
                         // But, note that the fee will not be charged for privileged payer
                         // The fee is charged here because the payer is not privileged
@@ -380,6 +374,7 @@ public class NodeCreateSuite {
 
                         // Submit with several signatures and the price should increase
                         nodeCreate("ntb")
+                                .adminKey(ED_25519_KEY)
                                 .payingWith("payer")
                                 .signedBy("payer", "randomAccount", "testKey")
                                 .setNode("0.0.4")
@@ -398,11 +393,13 @@ public class NodeCreateSuite {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("validateFees")
                 .given(
+                        newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
                         newKeyNamed("testKey"),
                         newKeyNamed("randomAccount"),
                         cryptoCreate("payer").balance(10_000_000_000L),
                         // Submit to a different node so ingest check is skipped
                         nodeCreate("ntb")
+                                .adminKey(ED_25519_KEY)
                                 .payingWith("payer")
                                 .signedBy("payer")
                                 .description(description)
@@ -413,7 +410,10 @@ public class NodeCreateSuite {
                 .when()
                 .then(
                         getTxnRecord("nodeCreationFailed").logged(),
-                        nodeCreate("ntb").description(description).via("nodeCreation"),
+                        nodeCreate("ntb")
+                                .adminKey(ED_25519_KEY)
+                                .description(description)
+                                .via("nodeCreation"),
                         getTxnRecord("nodeCreation").logged(),
                         // But, note that the fee will not be charged for privileged payer
                         // The fee is charged here because the payer is not privileged
@@ -421,6 +421,7 @@ public class NodeCreateSuite {
 
                         // Submit with several signatures and the price should increase
                         nodeCreate("ntb")
+                                .adminKey(ED_25519_KEY)
                                 .payingWith("payer")
                                 .signedBy("payer", "randomAccount", "testKey")
                                 .description(description)
