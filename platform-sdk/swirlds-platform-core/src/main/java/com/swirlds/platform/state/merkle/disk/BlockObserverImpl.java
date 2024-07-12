@@ -117,10 +117,10 @@ public class BlockObserverImpl implements BlockObserver {
      * @param sink the sink to flush the end-of-round state changes to.
      */
     private void flushEndOfRoundStateChanges(
-            @NonNull final StateChangesSink sink, @NonNull final StateChangesCause cause) {
+            @NonNull final StateChangesSink sink) {
         final var sc = StateChanges.newBuilder()
                 .stateChanges(endOfRoundStateChanges)
-                .cause(cause)
+                .cause(StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM)
                 // TODO(nickpoorman): I'm not sure consensusTimestamp makes sense on StateChanges anymore. Not all state
                 //  changes occur because of a consensus timestamp and we delay some to the end of the block to reduce
                 //  the amount of data written.
@@ -148,7 +148,7 @@ public class BlockObserverImpl implements BlockObserver {
             // We flush state changes at the end of each round being processed.
             if (hasRecordedStateChanges()) flushStateChanges(sink, StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
             if (hasRecordedEndOfRoundStateChanges())
-                flushEndOfRoundStateChanges(sink, StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
+                flushEndOfRoundStateChanges(sink);
             roundOpen = false;
         }
     }
@@ -230,6 +230,9 @@ public class BlockObserverImpl implements BlockObserver {
     public void recordUserChildTransactionStateChanges(@NonNull final Runnable fn) {
         // TODO(nickpoorman): We need to implement this so that SmartContract failed calls is written to the block
         //  stream. We either need to get this from the RecordListBuilder or we need to somehow record it here.
+
+        // Q: this will require protobuf enhancement to state_changes.proto or
+        // new proto to support smart contract failures
         fn.run();
     }
 
