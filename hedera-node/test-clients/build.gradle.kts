@@ -64,13 +64,13 @@ val prCheckTags =
     )
 val prCheckStartPorts =
     mapOf(
-        "hapiTestCrypto" to "30000",
-        "hapiTestToken" to "31000",
-        "hapiTestRestart" to "32000",
-        "hapiTestSmartContract" to "33000",
-        "hapiTestNDReconnect" to "34000",
-        "hapiTestTimeConsuming" to "35000",
-        "hapiTestMisc" to "36000"
+        "hapiTestCrypto" to "26000",
+        "hapiTestToken" to "27000",
+        "hapiTestRestart" to "28000",
+        "hapiTestSmartContract" to "29000",
+        "hapiTestNDReconnect" to "30000",
+        "hapiTestTimeConsuming" to "31000",
+        "hapiTestMisc" to "32000"
     )
 
 tasks { prCheckTags.forEach { (taskName, _) -> register(taskName) { dependsOn("test") } } }
