@@ -53,6 +53,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenAccountWipeHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenAssociateToAccountHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenBurnHandler;
+import com.hedera.node.app.service.token.impl.handlers.TokenClaimAirdropHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenCreateHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDeleteHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenDissociateFromAccountHandler;
@@ -126,4 +127,5 @@ public record TransactionHandlers(
         @NonNull TokenUpdateNftsHandler tokenUpdateNftsHandler,
         @NonNull TokenAirdropHandler tokenAirdropHandler,
         @NonNull TokenRejectHandler tokenRejectHandler,
+        @NonNull TokenClaimAirdropHandler tokenClaimAirdropHandler,
         @NonNull UtilPrngHandler utilPrngHandler) {}

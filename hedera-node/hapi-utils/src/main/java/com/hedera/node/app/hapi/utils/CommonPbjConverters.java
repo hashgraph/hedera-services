@@ -326,6 +326,7 @@ public class CommonPbjConverters {
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
             case TokenAirdrop -> HederaFunctionality.TOKEN_AIRDROP;
             case TokenCancelAirdrop -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
+            case TokenClaimAirdrop -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
         };
     }

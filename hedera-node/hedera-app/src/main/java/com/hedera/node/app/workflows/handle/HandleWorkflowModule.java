@@ -132,6 +132,7 @@ public interface HandleWorkflowModule {
                 tokenHandlers.tokenUpdateNftsHandler(),
                 tokenHandlers.tokenAirdropsHandler(),
                 tokenHandlers.tokenRejectHandler(),
+                tokenHandlers.tokenClaimAirdropHandler(),
                 utilHandlers.prngHandler());
     }
 }
