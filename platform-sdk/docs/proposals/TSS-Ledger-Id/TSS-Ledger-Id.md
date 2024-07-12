@@ -221,7 +221,7 @@ weight. The cost of re-keying the network in an address book change is quadratic
 picture of TssMessages above.) This forces us to pick a number of total shares with a max value in the thousands.
 This modeling of weight uses small integer precision.
 
-##### Calculating Number of Shares from Weight
+##### Calculating Number of Shares from Weight and Recovery Threshold
 
 Given that we have a low resolution for modeling weight, the number of shares assigned to each node will be
 calculated as follows:
@@ -232,18 +232,44 @@ calculated as follows:
 * Let `numShares[i]` be the number of shares assigned to node `i`.
 * then `numShares[i] = (N * weight[i] + maxWeight - 1) / maxWeight`
 
-##### Threshold for recovery of Signatures and Ledger Id.
+###### Threshold for recovery of Signatures and Ledger Id.
 
 The network must be able to tolerate up to 1/3 of the stake assigned to malicious nodes. The breaking up the weight
-into `N + 1` values (`0`, `1`, `2`, ... `N`) introduces a potential error in the modeling of weight. For each node
-we could be underrepresenting the weight by up to `1` share. We can create a safe lower bound on possible
-thresholds by adding 1 share to the total for each node with shares. Safe thresholds are strictly greater than
+into `N + 1` values (`0`, `1`, `2`, ... `N`) introduces a potential error in the modeling of weight. To account for
+this error, we need a guaranteed safe threshold for the number of shares that must be used to recover the ledger id.
 
-1. `(TS + X) / 3` where `TS` is the total number of shares and `X` is the number of nodes with shares. (malicious
-   stake threshold)
+A threshold of `(TS + 2) / 2` has been proven safe under the following conditions:
 
-The integer threshold we will use is `(TS + 2) / 2`. This value is strictly greater than 1/2 the total number of
-shares.
+* Let `minWeight` be the minimum non-zero weight assigned to any node.
+* Let `maxWeight` be the maximum weight assigned to any node.
+* Let `R = maxWeight / minWeight` be the real number ratio of maximum weight to the minimum.
+* Let `N>0` be the max number of shares that any node can have.
+* If `R <= 2*N` then the threshold of `(TS + 2) / 2` is safe.
+
+Required Theorems:
+
+- SECURITY: If the nodes in a set together have at least 1/2 of the shares, then they have at least 1/3 of the weight.
+- LIVENESS: If the nodes in a set together have more than 2/3 of the weight, then they have more than 1/2 of the shares.
+
+Proof Sketch by Dr. Leemon Baird:
+
+* Assume WLOG that the weights are real numbers. Further assume WLOG that the largest weight held by any node is exactly
+  N, and that all nodes have positive weight (none have zero).
+* For any given node, you can calculate its weight per share (wps). That's its weight divided by how many shares it
+  gets. It gets the shares from the ceiling of the ratio. It's easy to show that if we assume R=2N, then this guarantees
+  a wps in the range [1/2, 1] inclusive, for every share. Imagine each of its shares as a card with that wps number
+  written on it. In other words, that card is a single share, and it by itself constitutes that much weight. We are
+  basically dividing up a given node's weight equally among all its shares.
+* Then, ignore how the shares are distributed among the nodes. Look solely at them as an arbitrary set of shares with
+  a wps value assigned to each one, without worrying about how many shares get each value, or how many shares each node
+  gets. We only know they are all in the range [1/2, 1].
+* If you want to collect 1/3 weight and have as large a fraction of the shares as possible, then that happens when
+  all your shares have wps of 1/2, and all the ones you don't collect have a wps of 1. Which means you'll have 1/2 the
+  shares.
+* Conversely, if you want to collect more than 2/3 the weight while holding as few shares as possible, that happens when
+  you collect only shares with wps of 1, and all the rest are 1/2. And again, that means you have more than 1/2 the
+  shares.
+* So both theorems are proved.
 
 ##### TSS Algorithm - Alternatives Considered
 
@@ -353,11 +379,8 @@ The changes are presented in the following order:
 
 The public API changes consist of the following:
 
-* The Ledger Signature API
 * System Transactions
 * State Data Structures
-
-* `PlatformBuilder::withLedgerSignatureCallback(Consumer<PairingSignature> ledgerSignatureConsumer)`
 
 #### System Transactions
 
@@ -702,7 +725,6 @@ Input Invariants
     4. If the count of yes votes is greater than or equal to the threshold in the candidate roster, then send the
        vote vector as a system transaction and exit the validation process.
 
-
 ### Configuration
 
 The following are new configuration:
@@ -773,7 +795,3 @@ How should the proposal be implemented? Is there a necessary order to implementa
 needed for the delivery of capabilities? What configuration flags will be used to manage deployment of capability?
 
 ---
-
-## Open Questions
-
-1. De we need to complete ledger signature collection before freeze and restart?
