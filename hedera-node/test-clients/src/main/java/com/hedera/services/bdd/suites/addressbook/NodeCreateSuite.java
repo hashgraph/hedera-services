@@ -40,7 +40,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
@@ -130,11 +132,28 @@ public class NodeCreateSuite {
                         .serviceEndpoint(SERVICES_ENDPOINTS)
                         .adminKeyName(ED_25519_KEY)
                         .hasPrecheck(OK)
-                        .hasKnownStatus(SUCCESS));
+                        .hasKnownStatus(SUCCESS),
+                viewNode("nodeCreate", node -> {
+                    assertEquals("hello", node.description(), "Description invalid");
+                    assertEquals(
+                            ByteString.copyFrom("gossip".getBytes()),
+                            ByteString.copyFrom(node.gossipCaCertificate().toByteArray()),
+                            "Gossip CA invalid");
+                    assertEquals(
+                            ByteString.copyFrom("hash".getBytes()),
+                            ByteString.copyFrom(node.grpcCertificateHash().toByteArray()),
+                            "GRPC hash invalid");
+                    assertEquals(100, node.accountId().accountNum(), "Account ID invalid");
+                    assertEqualServiceEndpoints(GOSSIP_ENDPOINTS, node.gossipEndpoint());
+                    assertEqualServiceEndpoints(SERVICES_ENDPOINTS, node.serviceEndpoint());
+                    assertNotNull(node.adminKey(), "Admin key invalid");
+                }));
     }
 
     @HapiTest
+    @Tag(EMBEDDED)
     final Stream<DynamicTest> allFieldsSetHappyCaseForIps() {
+
         return hapiTest(
                 newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
                 overriding("nodes.gossipFqdnRestricted", "false"),
@@ -150,12 +169,18 @@ public class NodeCreateSuite {
                         .hasKnownStatus(SUCCESS),
                 viewNode("nodeCreate", node -> {
                     assertEquals("hello", node.description(), "Description invalid");
-                    //                    assertEquals("gossip".getBytes(), node.gossipCaCertificate(), "Gossip CA invalid");
-                    //                    assertEquals("hash".getBytes(), node.grpcCertificateHash(), "GRPC hash invalid");
-                    //                    assertEquals(asAccount("0.0.100"), node.accountId(), "Account ID invalid");
-                    //                    assertEquals(GOSSIP_ENDPOINTS_IPS, node.gossipEndpoint(), "Gossip endpoints invalid");
-                    //                    assertEquals(SERVICES_ENDPOINTS_IPS, node.serviceEndpoint(), "Service endpoints invalid");
-                    //                    assertEquals(ED_25519_KEY, node.adminKey(), "Admin key invalid");
+                    assertEquals(
+                            ByteString.copyFrom("gossip".getBytes()),
+                            ByteString.copyFrom(node.gossipCaCertificate().toByteArray()),
+                            "Gossip CA invalid");
+                    assertEquals(
+                            ByteString.copyFrom("hash".getBytes()),
+                            ByteString.copyFrom(node.grpcCertificateHash().toByteArray()),
+                            "GRPC hash invalid");
+                    assertEquals(100, node.accountId().accountNum(), "Account ID invalid");
+                    assertEqualServiceEndpoints(GOSSIP_ENDPOINTS_IPS, node.gossipEndpoint());
+                    assertEqualServiceEndpoints(SERVICES_ENDPOINTS_IPS, node.serviceEndpoint());
+                    assertNotNull(node.adminKey(), "Admin key invalid");
                 }));
     }
 
@@ -219,5 +244,22 @@ public class NodeCreateSuite {
                                 .via("nodeCreation"))
                 .when()
                 .then();
+    }
+
+    private static void assertEqualServiceEndpoints(
+            List<com.hederahashgraph.api.proto.java.ServiceEndpoint> expected,
+            List<com.hedera.hapi.node.base.ServiceEndpoint> actual) {
+        assertEquals(expected.size(), actual.size(), "Service endpoints size invalid");
+        for (int i = 0; i < expected.size(); i++) {
+            assertEquals(
+                    ByteString.copyFrom(expected.get(i).getIpAddressV4().toByteArray()),
+                    ByteString.copyFrom(actual.get(i).ipAddressV4().toByteArray()),
+                    "Service endpoint IP address invalid");
+            assertEquals(
+                    expected.get(i).getDomainName(),
+                    actual.get(i).domainName(),
+                    "Service endpoint domain name invalid");
+            assertEquals(expected.get(i).getPort(), actual.get(i).port(), "Service endpoint port invalid");
+        }
     }
 }
