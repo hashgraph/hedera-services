@@ -66,6 +66,10 @@ public class NodeCreateSuite {
             Arrays.asList(endpointFor("192.168.1.200", 123), endpointFor("192.168.1.201", 123));
     public static List<ServiceEndpoint> SERVICES_ENDPOINTS_IPS = Arrays.asList(endpointFor("192.168.1.205", 234));
 
+    /**
+     * This test is to check if the node creation fails during ingest when the admin key is invalid.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
     @HapiTest
     final Stream<DynamicTest> adminKeyIsInvalidOnIngest() {
         return hapiTest(nodeCreate("nodeCreate")
@@ -75,6 +79,10 @@ public class NodeCreateSuite {
         // expected status to reach consensus and this is the status */);
     }
 
+    /**
+     * This test is to check if the node creation fails during pureCheck when the admin key is invalid.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
     @HapiTest
     @Tag(EMBEDDED)
     final Stream<DynamicTest> adminKeyIsInvalidEmbedded() { // skipping ingest but purecheck still throw the same
@@ -85,6 +93,10 @@ public class NodeCreateSuite {
                 .hasKnownStatus(KEY_REQUIRED));
     }
 
+    /**
+     * This test is to check if the node creation fails when the admin key is empty.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
     @HapiTest
     final Stream<DynamicTest> adminKeyIsEmpty() {
         return hapiTest(nodeCreate("nodeCreate")
@@ -93,6 +105,10 @@ public class NodeCreateSuite {
                 .hasPrecheck(KEY_REQUIRED));
     }
 
+    /**
+     * This test is to check if the node creation fails when the admin key is not signed by the payer.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
     @HapiTest
     @Tag(EMBEDDED)
     final Stream<DynamicTest> adminKeyIsInvalidSigPayer() {
@@ -107,17 +123,10 @@ public class NodeCreateSuite {
                         .hasKnownStatus(INVALID_PAYER_SIGNATURE));
     }
 
-    @HapiTest
-    final Stream<DynamicTest> adminKeyIsValid() {
-        return hapiTest(
-                newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
-                cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
-                nodeCreate("nodeCreate")
-                        .adminKeyName(ED_25519_KEY)
-                        .hasPrecheck(OK)
-                        .hasKnownStatus(SUCCESS));
-    }
-
+    /**
+     * Check that node creation succeeds with gossip and service endpoints using domain names and all optional fields are recorded.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
     @HapiTest
     final Stream<DynamicTest> allFieldsSetHappyCaseForDomains() {
         return hapiTest(
@@ -150,6 +159,10 @@ public class NodeCreateSuite {
                 }));
     }
 
+    /**
+     * Check that node creation succeeds with gossip and service endpoints using IPs and all optional fields are recorded.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
     @HapiTest
     @Tag(EMBEDDED)
     final Stream<DynamicTest> allFieldsSetHappyCaseForIps() {
@@ -184,6 +197,10 @@ public class NodeCreateSuite {
                 }));
     }
 
+    /**
+     * Check that node creation succeeds with minimum required fields set.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
     @HapiTest
     final Stream<DynamicTest> minimumFieldsSetHappyCase() {
         return hapiTest(
@@ -191,6 +208,9 @@ public class NodeCreateSuite {
                 viewNode("ntb", node -> assertEquals("", node.description(), "Node was created successfully")));
     }
 
+    /**
+     * Check that appropriate fees are charged during node creation.
+     */
     @HapiTest
     @Tag(EMBEDDED)
     final Stream<DynamicTest> validateFees() {
@@ -229,6 +249,10 @@ public class NodeCreateSuite {
                         validateChargedUsdWithin("multipleSigsCreation", 0.0011276316, 3.0));
     }
 
+    /**
+     * Check that node creation fails during ingest when the transaction is unauthorized.
+     * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
+     */
     @HapiTest
     final Stream<DynamicTest> failsAtIngestForUnauthorizedTxns() {
         final String description = "His vorpal blade went snicker-snack!";
