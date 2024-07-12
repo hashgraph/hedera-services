@@ -200,11 +200,6 @@ public class HapiSpec implements Runnable, Executable {
 
     private final Map<String, Long> privateKeyToNonce = new HashMap<>();
 
-    public boolean isOnlySpecToRunInSuite() {
-        return onlySpecToRunInSuite;
-    }
-
-    private final boolean onlySpecToRunInSuite;
     private final List<String> propertiesToPreserve;
     private final HapiSpecSetup hapiSetup;
     private final SpecOperation[] given;
@@ -1054,26 +1049,20 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     public static Def.Given defaultHapiSpec(String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return internalDefaultHapiSpec(name, false, emptyList(), snapshotMatchModes);
+        return internalDefaultHapiSpec(name, emptyList(), snapshotMatchModes);
     }
 
     public static Def.PropertyPreserving propertyPreservingHapiSpec(
             final String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return (String... props) -> internalDefaultHapiSpec(name, false, Arrays.asList(props), snapshotMatchModes);
-    }
-
-    public static Def.Given onlyDefaultHapiSpec(
-            final String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return internalDefaultHapiSpec(name, true, List.of(), snapshotMatchModes);
+        return (String... props) -> internalDefaultHapiSpec(name, Arrays.asList(props), snapshotMatchModes);
     }
 
     private static Def.Given internalDefaultHapiSpec(
             final String name,
-            final boolean isOnly,
             final List<String> propertiesToPreserve,
             @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         final Stream<Map<String, String>> prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
-        return customizedHapiSpec(isOnly, name, prioritySource, propertiesToPreserve, snapshotMatchModes)
+        return customizedHapiSpec(name, prioritySource, propertiesToPreserve, snapshotMatchModes)
                 .withProperties();
     }
 
@@ -1108,36 +1097,17 @@ public class HapiSpec implements Runnable, Executable {
         return ciPropsSource;
     }
 
-    public static Def.Given defaultFailingHapiSpec(
-            String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        final Stream<Map<String, String>> prioritySource = Stream.of(
-                runningInCi ? ciPropOverrides() : Collections.emptyMap(), Map.of("expected.final.status", "FAILED"));
-        return customizedHapiSpec(false, name, prioritySource, snapshotMatchModes)
-                .withProperties();
-    }
-
     public static Def.Sourced customHapiSpec(String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         final Stream<Map<String, String>> prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
-        return customizedHapiSpec(false, name, prioritySource, snapshotMatchModes);
-    }
-
-    public static Def.Sourced customFailingHapiSpec(
-            String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        final Stream<Map<String, String>> prioritySource =
-                runningInCi ? Stream.of(ciPropOverrides(), Map.of("expected.final.status", "FAILED")) : Stream.empty();
-        return customizedHapiSpec(false, name, prioritySource, snapshotMatchModes);
+        return customizedHapiSpec(name, prioritySource, snapshotMatchModes);
     }
 
     private static <T> Def.Sourced customizedHapiSpec(
-            final boolean isOnly,
-            final String name,
-            final Stream<T> prioritySource,
-            @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return customizedHapiSpec(isOnly, name, prioritySource, emptyList(), snapshotMatchModes);
+            final String name, final Stream<T> prioritySource, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
+        return customizedHapiSpec(name, prioritySource, emptyList(), snapshotMatchModes);
     }
 
     private static <T> Def.Sourced customizedHapiSpec(
-            final boolean isOnly,
             final String name,
             final Stream<T> prioritySource,
             final List<String> propertiesToPreserve,
@@ -1147,9 +1117,7 @@ public class HapiSpec implements Runnable, Executable {
                             prioritySource, Stream.of(sources), Stream.of(HapiSpecSetup.getDefaultPropertySource()))
                     .flatMap(Function.identity())
                     .toArray();
-            return (isOnly
-                            ? onlyHapiSpec(name, propertiesToPreserve, snapshotMatchModes)
-                            : hapiSpec(name, propertiesToPreserve, snapshotMatchModes))
+            return hapiSpec(name, propertiesToPreserve, snapshotMatchModes)
                     .withSetup(HapiSpecSetup.setupFrom(allSources));
         };
     }
@@ -1160,16 +1128,6 @@ public class HapiSpec implements Runnable, Executable {
                 name + " " + AS_WRITTEN_DISPLAY_NAME,
                 targeted(new HapiSpec(
                         name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
-    }
-
-    public static Def.Setup onlyHapiSpec(
-            final String name,
-            final List<String> propertiesToPreserve,
-            @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return setup -> given -> when -> then -> Stream.of(DynamicTest.dynamicTest(
-                AS_WRITTEN_DISPLAY_NAME,
-                targeted(
-                        new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
     }
 
     /**
@@ -1295,7 +1253,6 @@ public class HapiSpec implements Runnable, Executable {
         this.given = given;
         this.when = when;
         this.then = then;
-        this.onlySpecToRunInSuite = onlySpecToRunInSuite;
         this.propertiesToPreserve = propertiesToPreserve;
         final var quiet = System.getProperty(QUIET_MODE_SYSTEM_PROPERTY);
         final var isCiCheck = System.getProperty(CI_CHECK_NAME_SYSTEM_PROPERTY) != null;

@@ -57,7 +57,7 @@ import org.junit.jupiter.api.DynamicTest;
  * Tests expected behavior when the {@code "entities.unlimitedAutoAssociationsEnabled"} feature flag is toggled
  * from off to on for <a href="https://hips.hedera.com/hip/hip-904">HIP-904, "Frictionless Airdrops"</a>.
  */
-public class Hip904FeatureFlagTest {
+public class AirdropsFeatureFlagTest {
     @LeakyHapiTest(
             value = PROPERTY_OVERRIDES,
             overrides = {"entities.unlimitedAutoAssociationsEnabled"})

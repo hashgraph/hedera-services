@@ -232,7 +232,7 @@ public class CryptoCreateSuite {
                         .entityMemo("")
                         .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                         .payingWith(CIVILIAN)
-                        .feeUsd(expectedPriceUsd - 0.01)
+                        .feeUsd(0.01)
                         .hasPrecheck(INSUFFICIENT_TX_FEE),
                 getAccountBalance(CIVILIAN).hasTinyBars(5 * ONE_HUNDRED_HBARS),
                 cryptoCreate(noAutoAssocSlots)

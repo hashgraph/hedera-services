@@ -249,10 +249,6 @@ public abstract class HapiSuite {
             if (!overrides.isEmpty()) {
                 spec.addOverrideProperties(overrides);
             }
-            if (spec.isOnlySpecToRunInSuite()) {
-                specs = List.of(spec);
-                break;
-            }
         }
         if (autoSnapshotManagementOn) {
             // Coerce to sequential spec runner if auto-snapshot management is on for any spec
