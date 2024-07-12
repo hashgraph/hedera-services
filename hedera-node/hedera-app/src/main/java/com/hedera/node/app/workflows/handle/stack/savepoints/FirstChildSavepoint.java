@@ -14,18 +14,31 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.stack;
+package com.hedera.node.app.workflows.handle.stack.savepoints;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public class BaseSavepoint extends AbstractSavepoint {
+/**
+ * Represents the first save point of a child stack. When the save point is committed, the records are
+ * flushed into either the preceding or following list of the parent sink based on the category of the
+ * child dispatch. Therefore, this sink has a total capacity equal to either the parent's preceding
+ * or following capacity.
+ */
+public class FirstChildSavepoint extends AbstractSavepoint {
     private final HandleContext.TransactionCategory txnCategory;
 
-    protected BaseSavepoint(
+    /**
+     * Constructs a {@link FirstChildSavepoint} instance.
+     * @param state the current state
+     * @param parent the parent sink
+     * @param txnCategory the transaction category
+     */
+    public FirstChildSavepoint(
             @NonNull final WrappedHederaState state,
             @NonNull final BuilderSink parent,
             @NonNull final HandleContext.TransactionCategory txnCategory) {

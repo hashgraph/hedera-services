@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.stack;
+package com.hedera.node.app.workflows.handle.stack.savepoints;
 
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A save point that contains the current state and the record builders created in the current savepoint.
- * Currently, recordBuilders is not used in the codebase. It will be used in future PRs
+ * Represents the first save point of a root stack created to handle a user dispatch.
+ * When the save point is committed, the preceding builders are flushed into the parent's preceding list,
+ * and the following builders are flushed into the parent's following list.
+ * Therefore, this sink has total capacity of both the preceding and following capacity of the
+ * parent sink although the capacity is limited in both directions.
  */
-public class FirstSavepoint extends AbstractSavepoint {
-    public FirstSavepoint(
-            @NonNull WrappedHederaState state, int maxPreceding, int maxFollowing, @NonNull BuilderSink builderSink) {
-        super(state, builderSink, maxPreceding, maxFollowing);
+public class FirstRootSavepoint extends AbstractSavepoint {
+    public FirstRootSavepoint(@NonNull WrappedHederaState state, BuilderSink parent) {
+        super(state, parent, parent.precedingCapacity(), parent.followingCapacity());
     }
 
     @Override

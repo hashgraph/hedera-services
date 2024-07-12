@@ -353,8 +353,7 @@ public class HandleWorkflow {
      */
     private void skip(@NonNull final UserTxn userTxn) {
         final TransactionInfo txnInfo = userTxn.txnInfo();
-        final SingleTransactionRecordBuilder builder =
-                userTxn.stack().createBuilder(REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        final SingleTransactionRecordBuilder builder = userTxn.stack().createUserBuilder();
         builder.transaction(txnInfo.transaction())
                 .transactionBytes(txnInfo.signedBytes())
                 .transactionID(txnInfo.txBody().transactionIDOrElse(TransactionID.DEFAULT))

@@ -88,6 +88,10 @@ public record RecordStreamEntry(TransactionParts parts, TransactionRecord txnRec
         return txnRecord;
     }
 
+    /**
+     * Returns the transaction ID of the transaction.
+     * @return the transaction ID
+     */
     public TransactionID txnId() {
         return txnRecord.getTransactionID();
     }

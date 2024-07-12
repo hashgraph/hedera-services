@@ -34,7 +34,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * This interface contains methods to read general properties a transaction record builder.
+ * Defines API for constructing stream items of a single transaction dispatch.
+ * The implementation may produce only records or could produce block items
  */
 public interface SingleTransactionRecordBuilder {
     /**

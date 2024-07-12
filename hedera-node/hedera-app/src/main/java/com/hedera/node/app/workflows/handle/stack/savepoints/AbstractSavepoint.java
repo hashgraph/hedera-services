@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle.stack;
+package com.hedera.node.app.workflows.handle.stack.savepoints;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
@@ -31,6 +31,8 @@ import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.stack.BuilderSink;
+import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
@@ -38,8 +40,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * An abstract base class for save point that contains the current state and the record builders created
- * in the current savepoint.
+ * This class manges the transactional state changes of builders and state changes
  */
 public abstract class AbstractSavepoint extends BuilderSink implements Savepoint {
     private static final EnumSet<ResponseCodeEnum> SUCCESSES =
@@ -128,7 +129,7 @@ public abstract class AbstractSavepoint extends BuilderSink implements Savepoint
 
     @Override
     public Savepoint createFollowingSavePoint() {
-        return new FollowingSavepoint(new WrappedHederaState(state), this, followingCapacity());
+        return new FollowingSavepoint(new WrappedHederaState(state), this);
     }
 
     @Override

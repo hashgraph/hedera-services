@@ -16,10 +16,6 @@
 
 package com.hedera.node.app.records;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.records.RecordBuilders;
@@ -47,14 +43,14 @@ public class RecordBuildersImpl implements RecordBuilders {
     @NonNull
     @Override
     public <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = stack.createBuilder(REVERSIBLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        final var result = stack.createChildBuilder();
         return castBuilder(result, recordBuilderClass);
     }
 
     @NonNull
     @Override
     public <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = stack.createBuilder(REMOVABLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        final var result = stack.createRemovableChildBuilder();
         return castBuilder(result, recordBuilderClass);
     }
 

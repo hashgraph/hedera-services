@@ -17,10 +17,7 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.node.app.records.RecordBuildersImpl.castBuilder;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.records.BlockRecordManager;
@@ -110,7 +107,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @NonNull
     @Override
     public <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = stack.createBuilder(IRREVERSIBLE, PRECEDING, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+        final var result = stack.createPrecedingBuilder();
         return castBuilder(result, recordBuilderClass);
     }
 
