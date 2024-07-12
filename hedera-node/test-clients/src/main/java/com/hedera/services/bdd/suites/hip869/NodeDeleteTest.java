@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.addressbook;
+package com.hedera.services.bdd.suites.hip869;
 
 import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-public class NodeDeleteSuite {
+public class NodeDeleteTest {
     @HapiTest
     @Tag(EMBEDDED)
     final Stream<DynamicTest> deleteNodeWorks() {
@@ -94,31 +94,29 @@ public class NodeDeleteSuite {
     @Tag(EMBEDDED)
     final Stream<DynamicTest> validateFeesInsufficientAmount() {
         final String description = "His vorpal blade went snicker-snack!";
-        return defaultHapiSpec("validateFees")
-                .given(
-                        newKeyNamed("testKey"),
-                        newKeyNamed("randomAccount"),
-                        cryptoCreate("payer").balance(10_000_000_000L),
-                        nodeCreate("node100").description(description).fee(ONE_HBAR),
-                        // Submit to a different node so ingest check is skipped
-                        nodeDelete("node100")
-                                .setNode("0.0.5")
-                                .fee(1)
-                                .payingWith("payer")
-                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
-                                .via("failedDeletion"))
-                .when()
-                .then(
-                        getTxnRecord("failedDeletion").logged(),
-                        // Submit with several signatures and the price should increase
-                        nodeDelete("node100")
-                                .setNode("0.0.5")
-                                .payingWith("payer")
-                                .signedBy("payer", "randomAccount", "testKey")
-                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
-                                .via("multipleSigsDeletion"),
-                        nodeDelete("node100").via("deleteNode"),
-                        getTxnRecord("deleteNode").logged());
+        return hapiTest(
+                newKeyNamed("testKey"),
+                newKeyNamed("randomAccount"),
+                cryptoCreate("payer").balance(10_000_000_000L),
+                nodeCreate("node100").description(description).fee(ONE_HBAR),
+                // Submit to a different node so ingest check is skipped
+                nodeDelete("node100")
+                        .setNode("0.0.5")
+                        .fee(1)
+                        .payingWith("payer")
+                        .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                        .via("failedDeletion"),
+                getTxnRecord("failedDeletion").logged(),
+                // Submit with several signatures and the price should increase
+                nodeDelete("node100")
+                        .setNode("0.0.5")
+                        .fee(ONE_HBAR)
+                        .payingWith("payer")
+                        .signedBy("payer", "randomAccount", "testKey")
+                        .hasKnownStatus(UNAUTHORIZED)
+                        .via("multipleSigsDeletion"),
+                nodeDelete("node100").via("deleteNode"),
+                getTxnRecord("deleteNode").logged());
     }
 
     @HapiTest
@@ -128,7 +126,7 @@ public class NodeDeleteSuite {
         return defaultHapiSpec("failsAtIngestForUnAuthorizedTxns")
                 .given(
                         cryptoCreate("payer").balance(10_000_000_000L),
-                        nodeCreate("ntb").description(description).fee(ONE_HBAR).via("nodeCreation"),
+                        nodeCreate("ntb").description(description).fee(ONE_HBAR),
                         nodeDelete("ntb")
                                 .payingWith("payer")
                                 .fee(ONE_HBAR)
@@ -159,7 +157,7 @@ public class NodeDeleteSuite {
 
     @HapiTest
     @Tag(EMBEDDED)
-    final Stream<DynamicTest> handleCanBeExecutedJustWithPrivilagedAccount() {
+    final Stream<DynamicTest> handleCanBeExecutedJustWithPrivilegedAccount() {
         long PAYER_BALANCE = 1_999_999_999L;
         final String nodeName = "mytestnode";
 
