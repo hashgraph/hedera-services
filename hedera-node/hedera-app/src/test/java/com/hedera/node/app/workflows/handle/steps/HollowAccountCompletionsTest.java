@@ -54,6 +54,7 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
@@ -95,6 +96,9 @@ public class HollowAccountCompletionsTest {
     @Mock
     private UserTxn userTxn;
 
+    @Mock
+    private SavepointStackImpl stack;
+
     public static final Instant consensusTime = Instant.ofEpochSecond(1_234_567L);
     private static final AccountID payerId =
             AccountID.newBuilder().accountNum(1_234L).build();
@@ -133,7 +137,6 @@ public class HollowAccountCompletionsTest {
     @Test
     void completeHollowAccountsNoHollowAccounts() {
         when(userTxn.preHandleResult().getHollowAccounts()).thenReturn(Collections.emptySet());
-        when(userTxn.config()).thenReturn(DEFAULT_CONFIG);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
 
@@ -143,7 +146,6 @@ public class HollowAccountCompletionsTest {
 
     @Test
     void doesntCompleteHollowAccountsWithNoImmutabilitySentinelKey() {
-        when(userTxn.config()).thenReturn(DEFAULT_CONFIG);
         final var hollowAccount = Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(1).build())
                 .key(Key.DEFAULT)
@@ -154,6 +156,8 @@ public class HollowAccountCompletionsTest {
                 new SignatureVerificationImpl(Key.DEFAULT, Bytes.wrap(new byte[] {1, 2, 3}), true);
         when(keyVerifier.verificationFor(Bytes.wrap(new byte[] {1, 2, 3}))).thenReturn(verification);
         when(userTxn.preHandleResult().getHollowAccounts()).thenReturn(Set.of(hollowAccount));
+        when(userTxn.stack()).thenReturn(stack);
+        when(stack.hasMoreSystemRecords()).thenReturn(true);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
 
@@ -165,7 +169,6 @@ public class HollowAccountCompletionsTest {
 
     @Test
     void completeHollowAccountsWithHollowAccounts() {
-        when(userTxn.config()).thenReturn(DEFAULT_CONFIG);
         final var hollowAccount = Account.newBuilder()
                 .accountId(AccountID.newBuilder().accountNum(1).build())
                 .key(IMMUTABILITY_SENTINEL_KEY)
@@ -176,6 +179,8 @@ public class HollowAccountCompletionsTest {
                 new SignatureVerificationImpl(Key.DEFAULT, Bytes.wrap(new byte[] {1, 2, 3}), true);
         when(keyVerifier.verificationFor(Bytes.wrap(new byte[] {1, 2, 3}))).thenReturn(verification);
         when(userTxn.preHandleResult().getHollowAccounts()).thenReturn(Set.of(hollowAccount));
+        when(userTxn.stack()).thenReturn(stack);
+        when(stack.hasMoreSystemRecords()).thenReturn(true);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
 
@@ -186,7 +191,6 @@ public class HollowAccountCompletionsTest {
 
     @Test
     void skipDummyHollowAccountsFromCryptoCreateHandler() {
-        when(userTxn.config()).thenReturn(DEFAULT_CONFIG);
         final var hollowAccount = Account.newBuilder()
                 .accountId(AccountID.DEFAULT)
                 .key(IMMUTABILITY_SENTINEL_KEY)
@@ -194,6 +198,8 @@ public class HollowAccountCompletionsTest {
                 .build();
         when(userTxn.preHandleResult().getHollowAccounts()).thenReturn(Collections.singleton(hollowAccount));
         when(userTxn.preHandleResult().getHollowAccounts()).thenReturn(Set.of(hollowAccount));
+        when(userTxn.stack()).thenReturn(stack);
+        when(stack.hasMoreSystemRecords()).thenReturn(true);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
 
@@ -231,6 +237,8 @@ public class HollowAccountCompletionsTest {
                 .thenReturn(accountStore);
         when(userTxn.config()).thenReturn(DEFAULT_CONFIG);
         when(userTxn.txnInfo()).thenReturn(txnInfo);
+        when(userTxn.stack()).thenReturn(stack);
+        when(stack.hasMoreSystemRecords()).thenReturn(true);
 
         hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
 

@@ -200,8 +200,6 @@ public class SingleTransactionRecordBuilderImpl
     private TokenID tokenID;
     private TokenType tokenType;
 
-    private boolean isBaseRecordBuilder;
-
     /**
      * Creates new transaction record builder where reversion will leave its record in the stream
      * with either a failure status or {@link ResponseCodeEnum#REVERTED_SUCCESS}.
@@ -1192,9 +1190,5 @@ public class SingleTransactionRecordBuilderImpl
     @Override
     public TransactionCategory category() {
         return category;
-    }
-
-    public void setBaseRecordBuilder() {
-        isBaseRecordBuilder = true;
     }
 }
