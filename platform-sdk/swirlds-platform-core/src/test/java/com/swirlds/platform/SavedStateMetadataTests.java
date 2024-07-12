@@ -19,7 +19,6 @@ package com.swirlds.platform;
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
-import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.EPOCH_HASH;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.HASH;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.HASH_MNEMONIC;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH;
@@ -575,11 +574,5 @@ class SavedStateMetadataTests {
         testMalformedFile(
                 random, (s, m) -> s.replace(SIGNING_WEIGHT_SUM.name(), "notARealKey"), Set.of(SIGNING_WEIGHT_SUM));
         testMalformedFile(random, (s, m) -> s.replace(TOTAL_WEIGHT.name(), "notARealKey"), Set.of(TOTAL_WEIGHT));
-        testMalformedFile(
-                random, (s, m) -> s.replace("\n" + EPOCH_HASH.name() + ":", "\nnotARealKey:"), Set.of(EPOCH_HASH));
-        testMalformedFile(
-                random,
-                (s, m) -> s.replace(SavedStateMetadataField.EPOCH_HASH_MNEMONIC.name(), "notARealKey"),
-                Set.of(SavedStateMetadataField.EPOCH_HASH_MNEMONIC));
     }
 }
