@@ -162,7 +162,9 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 public class Create2OperationSuite {
+    private static final Logger LOG = LogManager.getLogger(Create2OperationSuite.class);
 
+    private static final String DELETED_CREATE_2_LOG = "Deleted the deployed CREATE2 contract using HAPI";
     public static final String GET_BYTECODE = "getBytecode";
     public static final String DEPLOY = "deploy";
     public static final String SALT = "aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011aabbccddeeff0011";
@@ -171,16 +173,12 @@ public class Create2OperationSuite {
     public static final String CONTRACT_REPORTED_ADDRESS_MESSAGE = "Contract reported address results {}";
     public static final String EXPECTED_CREATE2_ADDRESS_MESSAGE = "  --> Expected CREATE2 address is {}";
     public static final String GET_ADDRESS = "getAddress";
-    private static final Logger LOG = LogManager.getLogger(Create2OperationSuite.class);
-    private static final String CREATION = "creation";
-    private static final String CREATE_2_TXN = "create2Txn";
+    public static final String CREATION = "creation";
+    public static final String CREATE_2_TXN = "create2Txn";
     private static final String SWISS = "swiss";
     private static final String RETURNER = "Returner";
-    private static final String CALL_RETURNER = "callReturner";
     private static final String ADMIN_KEY = "adminKey";
-    private static final String ENTITY_MEMO = "JUST DO IT";
-    private static final String DELETED_CREATE_2_LOG = "Deleted the deployed CREATE2 contract using HAPI";
-    private static final String HBAR_XFER = "hbarXfer";
+    public static final String ENTITY_MEMO = "JUST DO IT";
 
     @SuppressWarnings("java:S5669")
     @LeakyHapiTest(NO_CONCURRENT_CREATIONS)
@@ -1775,128 +1773,6 @@ public class Create2OperationSuite {
                 sourcing(() -> assertCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)));
     }
 
-    @LeakyHapiTest(overrides = {"entities.unlimitedAutoAssociationsEnabled"})
-    final Stream<DynamicTest> canMergeCreate2ChildWithHollowAccountFungibleTransfersUnlimitedAssociations() {
-        final var tcValue = 1_234L;
-        final var contract = "Create2Factory";
-
-        final var creation = CREATION;
-        final var salt = BigInteger.valueOf(42);
-        final var adminKey = ADMIN_KEY;
-        final AtomicReference<String> factoryEvmAddress = new AtomicReference<>();
-        final AtomicReference<String> expectedCreate2Address = new AtomicReference<>();
-        final AtomicReference<String> hollowCreationAddress = new AtomicReference<>();
-        final AtomicReference<String> mergedAliasAddr = new AtomicReference<>();
-        final AtomicReference<String> mergedMirrorAddr = new AtomicReference<>();
-        final AtomicReference<byte[]> testContractInitcode = new AtomicReference<>();
-
-        final var initialTokenSupply = 1000;
-
-        final int fungibleTransfersSize = 5;
-        final AtomicReference<TokenID>[] ftIds = new AtomicReference[fungibleTransfersSize];
-        for (int i = 0; i < ftIds.length; i++) {
-            ftIds[i] = new AtomicReference<>();
-        }
-
-        final AtomicReference<AccountID> partyId = new AtomicReference<>();
-        final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
-
-        final int givenOpsSize = 6;
-        HapiSpecOperation[] givenOps = new HapiSpecOperation[givenOpsSize + (fungibleTransfersSize * 2)];
-        givenOps[0] = newKeyNamed(adminKey);
-        givenOps[1] = newKeyNamed(MULTI_KEY);
-        givenOps[2] = uploadInitCode(contract);
-        givenOps[3] = contractCreate(contract)
-                .payingWith(GENESIS)
-                .adminKey(adminKey)
-                .entityMemo(ENTITY_MEMO)
-                .via(CREATE_2_TXN)
-                .exposingNumTo(num -> factoryEvmAddress.set(asHexedSolidityAddress(0, 0, num)));
-        givenOps[4] = cryptoCreate(PARTY).maxAutomaticTokenAssociations(2);
-        givenOps[5] = setIdentifiers(Optional.empty(), Optional.empty(), Optional.of(partyId), Optional.of(partyAlias));
-
-        int j = 0;
-        for (int i = givenOpsSize; i < fungibleTransfersSize + givenOpsSize; i++) {
-            givenOps[i] = tokenCreate(A_TOKEN + j)
-                    .tokenType(FUNGIBLE_COMMON)
-                    .supplyType(FINITE)
-                    .initialSupply(initialTokenSupply)
-                    .maxSupply(10L * initialTokenSupply)
-                    .treasury(PARTY)
-                    .via(TOKEN_A_CREATE + j);
-            j++;
-        }
-
-        int j1 = 0;
-        for (int i = fungibleTransfersSize + givenOpsSize; i < (fungibleTransfersSize * 2) + givenOpsSize; i++) {
-            givenOps[i] = setIdentifierToken(Optional.of(ftIds[j1]), A_TOKEN + j1);
-            j1++;
-        }
-
-        return defaultHapiSpec("canMergeCreate2ChildWithHollowAccountFungibleTransfersUnlimitedAssociations")
-                .given(givenOps)
-                .when(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
-                        // GET BYTECODE OF THE CREATE2 CONTRACT
-                        sourcing(() -> contractCallLocal(
-                                        contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
-                                .exposingTypedResultsTo(results -> {
-                                    final var tcInitcode = (byte[]) results[0];
-                                    testContractInitcode.set(tcInitcode);
-                                    LOG.info(CONTRACT_REPORTED_LOG_MESSAGE, tcInitcode.length);
-                                })
-                                .payingWith(GENESIS)
-                                .nodePayment(ONE_HBAR)),
-                        // GET THE ADDRESS WHERE THE CONTRACT WILL BE DEPLOYED
-                        sourcing(() -> setExpectedCreate2Address(
-                                contract, salt, expectedCreate2Address, testContractInitcode)),
-
-                        // Now create a hollow account at the desired address
-                        lazyCreateAccountWithFungibleTransfers(creation, expectedCreate2Address, ftIds, partyAlias),
-                        getTxnRecord(creation)
-                                .andAllChildRecords()
-                                .logged()
-                                .exposingCreationsTo(l -> hollowCreationAddress.set(l.get(0))),
-                        sourcing(() -> getAccountInfo(hollowCreationAddress.get())
-                                .hasAlreadyUsedAutomaticAssociations(fungibleTransfersSize)
-                                .logged()))
-                .then(
-                        // deploy create2
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                .sending(tcValue)
-                                .via("TEST2")),
-                        getTxnRecord("TEST2").andAllChildRecords().logged(),
-                        captureOneChildCreate2MetaFor(
-                                "Merged deployed contract with hollow account",
-                                "TEST2",
-                                mergedMirrorAddr,
-                                mergedAliasAddr),
-
-                        // check failure when trying to deploy again
-                        sourcing(() -> contractCall(contract, DEPLOY, testContractInitcode.get(), salt)
-                                .payingWith(GENESIS)
-                                .gas(4_000_000L)
-                                /* Cannot repeat CREATE2
-                                with same args without destroying the existing contract */
-                                .hasKnownStatusFrom(INVALID_SOLIDITY_ADDRESS, CONTRACT_REVERT_EXECUTED)),
-
-                        // check created contract
-                        sourcing(() -> getContractInfo(mergedAliasAddr.get())
-                                .has(contractWith()
-                                        .hasStandinContractKey()
-                                        .maxAutoAssociations(fungibleTransfersSize)
-                                        .hasAlreadyUsedAutomaticAssociations(fungibleTransfersSize)
-                                        .memo(LAZY_MEMO)
-                                        .balance(tcValue))
-                                .logged()),
-                        sourcing(
-                                () -> getContractBytecode(mergedAliasAddr.get()).isNonEmpty()),
-                        sourcing(() ->
-                                assertCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)));
-    }
-
     @SuppressWarnings("java:S5669")
     public static HapiContractCallLocal setExpectedCreate2Address(
             String contract,
@@ -1913,6 +1789,94 @@ public class Create2OperationSuite {
                     expectedCreate2Address.set(hexedAddress);
                 })
                 .payingWith(GENESIS);
+    }
+
+    /**
+     * Returns a {@link HapiContractCallLocal} that asserts the address returned by a contract call
+     * matches the expected create2 address.
+     *
+     * @param contract The contract to call
+     * @param salt The salt to use in the create2 address calculation
+     * @param expectedCreate2Address The expected create2 address
+     * @param testContractInitcode The initcode of the contract deployed via create2
+     * @return The {@link HapiContractCallLocal} that asserts the address returned by a contract call
+     */
+    public static HapiContractCallLocal assertCreate2Address(
+            String contract,
+            BigInteger salt,
+            AtomicReference<String> expectedCreate2Address,
+            AtomicReference<byte[]> testContractInitcode) {
+        return contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
+                .exposingTypedResultsTo(results -> {
+                    LOG.info(CONTRACT_REPORTED_ADDRESS_MESSAGE, results);
+                    final var addrBytes = (Address) results[0];
+                    final var hexedAddress =
+                            hex(Bytes.fromHexString(addrBytes.toString()).toArray());
+                    LOG.info(EXPECTED_CREATE2_ADDRESS_MESSAGE, hexedAddress);
+
+                    assertEquals(expectedCreate2Address.get(), hexedAddress);
+                })
+                .payingWith(GENESIS);
+    }
+
+    /**
+     * Returns an operation that sets the identifiers for the fungible token, non-fungible token, party ID, and
+     * party alias from the spec registry.
+     *
+     * @param ftId the fungible token id
+     * @param nftId the non-fungible token id
+     * @param partyId the party id
+     * @param partyAlias the party alias
+     * @return the operation that sets the identifiers
+     */
+    public static CustomSpecAssert setIdentifiers(
+            Optional<AtomicReference<TokenID>> ftId,
+            Optional<AtomicReference<TokenID>> nftId,
+            Optional<AtomicReference<AccountID>> partyId,
+            Optional<AtomicReference<ByteString>> partyAlias) {
+        return withOpContext((spec, opLog) -> {
+            final var registry = spec.registry();
+            ftId.ifPresent(id -> id.set(registry.getTokenID(A_TOKEN)));
+            nftId.ifPresent(id -> id.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN)));
+            partyId.ifPresent(id -> id.set(registry.getAccountID(PARTY)));
+            partyAlias.ifPresent(
+                    alias -> partyId.ifPresent(id -> alias.set(ByteString.copyFrom(asSolidityAddress(id.get())))));
+        });
+    }
+
+    private String asLiteralHexed(final Address address) {
+        return address.toString().substring(2);
+    }
+
+    private Iterable<NftTransfer> buildNftTransfers(
+            final int nftTransfersSize,
+            AtomicReference<ByteString> partyAlias,
+            AtomicReference<String> expectedCreate2Address) {
+        NftTransfer[] nftTransfers = new NftTransfer[nftTransfersSize];
+        for (int i = 0; i < nftTransfersSize; i++) {
+            nftTransfers[i] = ocWith(
+                    accountId(partyAlias.get()),
+                    accountId(ByteString.copyFrom(CommonUtils.unhex(expectedCreate2Address.get()))),
+                    i + 1);
+        }
+        return Arrays.asList(nftTransfers);
+    }
+
+    private HapiCryptoTransfer lazyCreateAccountWithFungibleTransfer(
+            String creation,
+            AtomicReference<String> expectedCreate2Address,
+            AtomicReference<TokenID> ftId,
+            AtomicReference<ByteString> partyAlias) {
+        return cryptoTransfer((spec, b) -> {
+                    b.addTokenTransfers(TokenTransferList.newBuilder()
+                            .setToken(ftId.get())
+                            .addTransfers(aaWith(partyAlias.get(), -500))
+                            .addTransfers(aaWith(
+                                    ByteString.copyFrom(CommonUtils.unhex(expectedCreate2Address.get())), +500)));
+                })
+                .signedBy(DEFAULT_PAYER, PARTY)
+                .fee(ONE_HBAR)
+                .via(creation);
     }
 
     private HapiCryptoTransfer lazyCreateAccount(
@@ -1946,99 +1910,5 @@ public class Create2OperationSuite {
                 .signedBy(DEFAULT_PAYER, PARTY)
                 .fee(ONE_HBAR)
                 .via(creation);
-    }
-
-    private HapiCryptoTransfer lazyCreateAccountWithFungibleTransfer(
-            String creation,
-            AtomicReference<String> expectedCreate2Address,
-            AtomicReference<TokenID> ftId,
-            AtomicReference<ByteString> partyAlias) {
-        return cryptoTransfer((spec, b) -> {
-                    b.addTokenTransfers(TokenTransferList.newBuilder()
-                            .setToken(ftId.get())
-                            .addTransfers(aaWith(partyAlias.get(), -500))
-                            .addTransfers(aaWith(
-                                    ByteString.copyFrom(CommonUtils.unhex(expectedCreate2Address.get())), +500)));
-                })
-                .signedBy(DEFAULT_PAYER, PARTY)
-                .fee(ONE_HBAR)
-                .via(creation);
-    }
-
-    private HapiCryptoTransfer lazyCreateAccountWithFungibleTransfers(
-            String creation,
-            AtomicReference<String> expectedCreate2Address,
-            AtomicReference<TokenID> ftIds[],
-            AtomicReference<ByteString> partyAlias) {
-        return cryptoTransfer((spec, b) -> {
-                    for (AtomicReference<TokenID> ftId : ftIds) {
-                        b.addTokenTransfers(TokenTransferList.newBuilder()
-                                .setToken(ftId.get())
-                                .addTransfers(aaWith(partyAlias.get(), -500))
-                                .addTransfers(aaWith(
-                                        ByteString.copyFrom(CommonUtils.unhex(expectedCreate2Address.get())), +500)));
-                    }
-                })
-                .signedBy(DEFAULT_PAYER, PARTY)
-                .fee(ONE_HBAR)
-                .via(creation);
-    }
-
-    private Iterable<NftTransfer> buildNftTransfers(
-            final int nftTransfersSize,
-            AtomicReference<ByteString> partyAlias,
-            AtomicReference<String> expectedCreate2Address) {
-        NftTransfer[] nftTransfers = new NftTransfer[nftTransfersSize];
-        for (int i = 0; i < nftTransfersSize; i++) {
-            nftTransfers[i] = ocWith(
-                    accountId(partyAlias.get()),
-                    accountId(ByteString.copyFrom(CommonUtils.unhex(expectedCreate2Address.get()))),
-                    i + 1);
-        }
-        return Arrays.asList(nftTransfers);
-    }
-
-    private HapiContractCallLocal assertCreate2Address(
-            String contract,
-            BigInteger salt,
-            AtomicReference<String> expectedCreate2Address,
-            AtomicReference<byte[]> testContractInitcode) {
-        return contractCallLocal(contract, GET_ADDRESS, testContractInitcode.get(), salt)
-                .exposingTypedResultsTo(results -> {
-                    LOG.info(CONTRACT_REPORTED_ADDRESS_MESSAGE, results);
-                    final var addrBytes = (Address) results[0];
-                    final var hexedAddress =
-                            hex(Bytes.fromHexString(addrBytes.toString()).toArray());
-                    LOG.info(EXPECTED_CREATE2_ADDRESS_MESSAGE, hexedAddress);
-
-                    assertEquals(expectedCreate2Address.get(), hexedAddress);
-                })
-                .payingWith(GENESIS);
-    }
-
-    private CustomSpecAssert setIdentifiers(
-            Optional<AtomicReference<TokenID>> ftId,
-            Optional<AtomicReference<TokenID>> nftId,
-            Optional<AtomicReference<AccountID>> partyId,
-            Optional<AtomicReference<ByteString>> partyAlias) {
-        return withOpContext((spec, opLog) -> {
-            final var registry = spec.registry();
-            ftId.ifPresent(id -> id.set(registry.getTokenID(A_TOKEN)));
-            nftId.ifPresent(id -> id.set(registry.getTokenID(NFT_INFINITE_SUPPLY_TOKEN)));
-            partyId.ifPresent(id -> id.set(registry.getAccountID(PARTY)));
-            partyAlias.ifPresent(
-                    alias -> partyId.ifPresent(id -> alias.set(ByteString.copyFrom(asSolidityAddress(id.get())))));
-        });
-    }
-
-    private CustomSpecAssert setIdentifierToken(final Optional<AtomicReference<TokenID>> ftId, final String token) {
-        return withOpContext((spec, opLog) -> {
-            final var registry = spec.registry();
-            ftId.ifPresent(id -> id.set(registry.getTokenID(token)));
-        });
-    }
-
-    private String asLiteralHexed(final Address address) {
-        return address.toString().substring(2);
     }
 }
