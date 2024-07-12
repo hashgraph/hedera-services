@@ -1973,6 +1973,52 @@
       },
       {
         "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenClaimAirdrop",
+          "fees": [
+            {
+              "subType": "DEFAULT",
+              "nodedata": {
+                "constant": 4714279388,
+                "bpt": 7536720,
+                "vpt": 18841800049,
+                "rbh": 5024,
+                "sbh": 377,
+                "gas": 50245,
+                "bpr": 7536720,
+                "sbpr": 188418,
+                "min": 0,
+                "max": 1000000000000000
+              },
+              "networkdata": {
+                "constant": 75428470213,
+                "bpt": 120587520,
+                "vpt": 301468800784,
+                "rbh": 80392,
+                "sbh": 6029,
+                "gas": 803917,
+                "bpr": 120587520,
+                "sbpr": 3014688,
+                "min": 0,
+                "max": 1000000000000000
+              },
+              "servicedata": {
+                "constant": 75428470213,
+                "bpt": 120587520,
+                "vpt": 301468800784,
+                "rbh": 80392,
+                "sbh": 6029,
+                "gas": 803917,
+                "bpr": 120587520,
+                "sbpr": 3014688,
+                "min": 0,
+                "max": 1000000000000000
+              }
+            }
+          ]
+        }
+      },
+      {
+        "transactionFeeSchedule": {
           "hederaFunctionality": "TokenGrantKycToAccount",
           "fees": [
             {
@@ -5600,6 +5646,52 @@
       {
         "transactionFeeSchedule": {
           "hederaFunctionality": "TokenDissociateFromAccount",
+          "fees": [
+            {
+              "subType": "DEFAULT",
+              "nodedata": {
+                "constant": 4714279388,
+                "bpt": 7536720,
+                "vpt": 18841800049,
+                "rbh": 5024,
+                "sbh": 377,
+                "gas": 50245,
+                "bpr": 7536720,
+                "sbpr": 188418,
+                "min": 0,
+                "max": 1000000000000000
+              },
+              "networkdata": {
+                "constant": 75428470213,
+                "bpt": 120587520,
+                "vpt": 301468800784,
+                "rbh": 80392,
+                "sbh": 6029,
+                "gas": 803917,
+                "bpr": 120587520,
+                "sbpr": 3014688,
+                "min": 0,
+                "max": 1000000000000000
+              },
+              "servicedata": {
+                "constant": 75428470213,
+                "bpt": 120587520,
+                "vpt": 301468800784,
+                "rbh": 80392,
+                "sbh": 6029,
+                "gas": 803917,
+                "bpr": 120587520,
+                "sbpr": 3014688,
+                "min": 0,
+                "max": 1000000000000000
+              }
+            }
+          ]
+        }
+      },
+      {
+        "transactionFeeSchedule": {
+          "hederaFunctionality": "TokenClaimAirdrop",
           "fees": [
             {
               "subType": "DEFAULT",

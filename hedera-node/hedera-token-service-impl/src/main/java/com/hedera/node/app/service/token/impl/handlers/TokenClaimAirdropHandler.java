@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.token.impl.handlers;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
@@ -46,6 +47,10 @@ public class TokenClaimAirdropHandler implements TransactionHandler {
 
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
-        return TransactionHandler.super.calculateFees(feeContext);
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .addVerificationsPerTransaction(Math.max(0, feeContext.numTxnSignatures() - 1))
+                .calculate();
     }
 }
