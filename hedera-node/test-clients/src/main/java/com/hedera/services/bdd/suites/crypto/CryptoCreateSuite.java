@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
+import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_OUTCOMES;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_PRECHECKS;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
@@ -44,13 +45,11 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewAccount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
-import static com.hedera.services.bdd.suites.HapiSuite.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
 import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -59,7 +58,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
-import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ALIAS_ALREADY_ASSIGNED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AUTORENEW_DURATION_NOT_IN_RANGE;
@@ -874,7 +872,6 @@ public class CryptoCreateSuite {
 
         return defaultHapiSpec("createAnAccountWithNoMaxAutoAssocAndBalance")
                 .given(
-                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_KEY).shape(ED25519),
                         cryptoCreate(ED_KEY).balance(ONE_HUNDRED_HBARS),
@@ -944,7 +941,6 @@ public class CryptoCreateSuite {
     final Stream<DynamicTest> createAnAccountWithInvalidNegativeMaxAutoAssoc() {
         return defaultHapiSpec("createAnAccountWithInvalidNegativeMaxAutoAssoc")
                 .given(
-                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_KEY).shape(ED25519),
                         cryptoCreate(ED_KEY).balance(ONE_HUNDRED_HBARS),
@@ -982,7 +978,6 @@ public class CryptoCreateSuite {
 
         return defaultHapiSpec("createAnAccountWithZeroMaxAssoc")
                 .given(
-                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_KEY).shape(ED25519),
                         cryptoCreate(ED_KEY).balance(ONE_HUNDRED_HBARS),
@@ -1044,7 +1039,6 @@ public class CryptoCreateSuite {
 
         return defaultHapiSpec("createAnAccountWith1001MaxAssoc")
                 .given(
-                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS))
                 .when(withOpContext((spec, opLog) -> {
@@ -1061,5 +1055,73 @@ public class CryptoCreateSuite {
                     allRunFor(spec, op);
                 }))
                 .then(operations1001);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createAnAccountWithEVMAddressAliasAndECKey() {
+        return hapiTest(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE), withOpContext((spec, opLog) -> {
+            final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+            final var addressBytes = recoverAddressFromPubKey(tmp);
+            assert addressBytes.length > 0;
+            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+            final var op = cryptoCreate(ACCOUNT)
+                    .key(SECP_256K1_SOURCE_KEY)
+                    .alias(evmAddressBytes)
+                    .balance(100 * ONE_HBAR)
+                    .via("createTxn");
+            final var op2 = cryptoCreate(ACCOUNT)
+                    .alias(ecdsaKey.toByteString())
+                    .hasPrecheck(INVALID_ALIAS_KEY)
+                    .balance(100 * ONE_HBAR);
+            final var op3 = cryptoCreate(ACCOUNT)
+                    .alias(evmAddressBytes)
+                    .hasPrecheck(INVALID_ALIAS_KEY)
+                    .balance(100 * ONE_HBAR);
+            final var op4 =
+                    cryptoCreate(ANOTHER_ACCOUNT).key(SECP_256K1_SOURCE_KEY).balance(100 * ONE_HBAR);
+            final var op5 = cryptoCreate(ACCOUNT)
+                    .key(SECP_256K1_SOURCE_KEY)
+                    .alias(ByteString.copyFromUtf8("Invalid alias"))
+                    .hasPrecheck(INVALID_ALIAS_KEY)
+                    .balance(100 * ONE_HBAR);
+            final var op6 = cryptoCreate(ACCOUNT)
+                    .key(SECP_256K1_SOURCE_KEY)
+                    .alias(evmAddressBytes)
+                    .balance(100 * ONE_HBAR)
+                    .hasPrecheck(ALIAS_ALREADY_ASSIGNED);
+
+            allRunFor(spec, op, op2, op3, op4, op5, op6);
+            var hapiGetAccountInfo = getAliasedAccountInfo(evmAddressBytes)
+                    .has(accountWith()
+                            .key(SECP_256K1_SOURCE_KEY)
+                            .autoRenew(THREE_MONTHS_IN_SECONDS)
+                            .receiverSigReq(false));
+            var hapiGetAnotherAccountInfo = getAccountInfo(ANOTHER_ACCOUNT)
+                    .has(accountWith()
+                            .key(SECP_256K1_SOURCE_KEY)
+                            .noAlias()
+                            .autoRenew(THREE_MONTHS_IN_SECONDS)
+                            .receiverSigReq(false));
+            final var getTxnRecord =
+                    getTxnRecord("createTxn").hasPriority(recordWith().hasNoAlias());
+            allRunFor(spec, hapiGetAccountInfo, hapiGetAnotherAccountInfo, getTxnRecord);
+        }));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> createAnAccountWithEVMAddress() {
+        return hapiTest(newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE), withOpContext((spec, opLog) -> {
+            final var ecdsaKey = spec.registry().getKey(SECP_256K1_SOURCE_KEY);
+            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+            final var addressBytes = recoverAddressFromPubKey(tmp);
+            assert addressBytes.length > 0;
+            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+            final var op = cryptoCreate(ACCOUNT)
+                    .alias(evmAddressBytes)
+                    .balance(100 * ONE_HBAR)
+                    .hasPrecheck(INVALID_ALIAS_KEY);
+            allRunFor(spec, op);
+        }));
     }
 }

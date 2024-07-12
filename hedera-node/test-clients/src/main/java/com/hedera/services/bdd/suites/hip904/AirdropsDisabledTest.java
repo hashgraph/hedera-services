@@ -107,7 +107,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
 
 /**
- * Tests expected behavior when the {@code "entities.unlimitedAutoAssociationsEnabled"} feature flag is off for
+ * Tests expected behavior when the {@code entities.unlimitedAutoAssociationsEnabled} feature flag is off for
  * <a href="https://hips.hedera.com/hip/hip-904">HIP-904, "Frictionless Airdrops"</a>.
  */
 @HapiTestLifecycle

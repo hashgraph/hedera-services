@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.leaky;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractIdWithEvmAddress;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.THRESHOLD;
@@ -82,41 +83,34 @@ public class LeakyEthereumTestsSuite {
     // in this case the passed chainId = 0 so ETX is before EIP155
     // and so `v` is calculated -> v = {0,1} + 27
     // source: https://eips.ethereum.org/EIPS/eip-155
-    @LeakyHapiTest
+    @LeakyHapiTest(overrides = {"contracts.chainId"})
     final Stream<DynamicTest> legacyUnprotectedEtxBeforeEIP155() {
         final String DEPOSIT = "deposit";
         final long depositAmount = 20_000L;
         final Integer chainId = 0;
 
-        return propertyPreservingHapiSpec(
-                        "legacyUnprotectedEtxBeforeEIP155",
-                        NONDETERMINISTIC_ETHEREUM_DATA,
-                        NONDETERMINISTIC_CONTRACT_CALL_RESULTS)
-                .preserving("contracts.chainId")
-                .given(
-                        overriding("contracts.chainId", "" + chainId),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
-                                .via("autoAccount"),
-                        getTxnRecord("autoAccount").andAllChildRecords(),
-                        uploadInitCode(PAY_RECEIVABLE_CONTRACT),
-                        contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD))
-                .when(
-                        overriding("contracts.chainId", "" + chainId),
-                        ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
-                                .type(EthTransactionType.LEGACY_ETHEREUM)
-                                .signingWith(SECP_256K1_SOURCE_KEY)
-                                .payingWith(RELAYER)
-                                .via("legacyBeforeEIP155")
-                                .nonce(0)
-                                .chainId(chainId)
-                                .gasPrice(50L)
-                                .maxPriorityGas(2L)
-                                .gasLimit(1_000_000L)
-                                .sending(depositAmount)
-                                .hasKnownStatus(ResponseCodeEnum.SUCCESS))
-                .then(withOpContext((spec, opLog) -> allRunFor(
+        return hapiTest(
+                overriding("contracts.chainId", "" + chainId),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS))
+                        .via("autoAccount"),
+                getTxnRecord("autoAccount").andAllChildRecords(),
+                uploadInitCode(PAY_RECEIVABLE_CONTRACT),
+                contractCreate(PAY_RECEIVABLE_CONTRACT).adminKey(THRESHOLD),
+                ethereumCall(PAY_RECEIVABLE_CONTRACT, DEPOSIT, BigInteger.valueOf(depositAmount))
+                        .type(EthTransactionType.LEGACY_ETHEREUM)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .via("legacyBeforeEIP155")
+                        .nonce(0)
+                        .chainId(chainId)
+                        .gasPrice(50L)
+                        .maxPriorityGas(2L)
+                        .gasLimit(1_000_000L)
+                        .sending(depositAmount)
+                        .hasKnownStatus(ResponseCodeEnum.SUCCESS),
+                withOpContext((spec, opLog) -> allRunFor(
                         spec,
                         getTxnRecord("legacyBeforeEIP155")
                                 .logged()

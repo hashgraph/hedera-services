@@ -119,7 +119,6 @@ public abstract class HapiSuite {
     public static final long ONE_BILLION_HBARS = 1_000 * ONE_MILLION_HBARS;
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
-    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final Integer CHAIN_ID = 298;
     public static final String ETH_HASH_KEY = "EthHash";
     public static final String ETH_SENDER_ADDRESS = "EthSenderAddress";
