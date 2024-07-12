@@ -23,10 +23,10 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
-import com.swirlds.platform.test.fixtures.state.StateTestBase;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
+import com.swirlds.state.test.fixtures.StateTestBase;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
