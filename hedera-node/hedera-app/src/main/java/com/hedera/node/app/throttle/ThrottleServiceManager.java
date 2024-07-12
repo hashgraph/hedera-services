@@ -19,8 +19,6 @@ package com.hedera.node.app.throttle;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
-import static com.hedera.node.app.util.FileUtilities.createFileID;
-import static com.hedera.node.app.util.FileUtilities.getFileContent;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
@@ -38,7 +36,6 @@ import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.data.FilesConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -87,16 +84,17 @@ public class ThrottleServiceManager {
      * is actually necessary to avoid NPEs and other issues.
      *
      * @param state the state to use
+     * @param throttleDefinitions the serialized throttle definitions
      */
-    public void initFrom(@NonNull final HederaState state) {
+    public void init(@NonNull final HederaState state, @NonNull final Bytes throttleDefinitions) {
         requireNonNull(state);
         // Apply configuration for gas throttles
         applyGasConfig();
         // Create backend/frontend throttles from the configured system file
-        rebuildFromThrottleDefinitions(state);
+        rebuildThrottlesFrom(throttleDefinitions);
         // Reset multiplier expectations
         congestionMultipliers.resetExpectations();
-        // Rehydrate the internal state of the throttling service (if not at genesis)
+        // Rehydrate the internal state of the throttling service (no-op if at genesis)
         final var serviceStates = state.getReadableStates(CongestionThrottleService.NAME);
         resetThrottlesFromUsageSnapshots(serviceStates);
         syncFromCongestionLevelStarts(serviceStates);
@@ -180,13 +178,6 @@ public class ThrottleServiceManager {
         congestionLevelStarts.put(new CongestionLevelStarts(
                 translateToList(congestionMultipliers.entityUtilizationCongestionStarts()),
                 translateToList(congestionMultipliers.gasThrottleMultiplierCongestionStarts())));
-    }
-
-    private void rebuildFromThrottleDefinitions(HederaState state) {
-        final var config = configProvider.getConfiguration();
-        final var filesConfig = config.getConfigData(FilesConfig.class);
-        final var throttleDefinitionsId = createFileID(filesConfig.throttleDefinitions(), config);
-        rebuildThrottlesFrom(getFileContent(state, throttleDefinitionsId));
     }
 
     private @NonNull ThrottleParser.ValidatedThrottles rebuildThrottlesFrom(@NonNull Bytes encoded) {

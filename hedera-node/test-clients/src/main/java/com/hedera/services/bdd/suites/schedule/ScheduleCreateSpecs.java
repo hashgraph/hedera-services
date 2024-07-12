@@ -22,16 +22,8 @@ import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
-import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
-import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
-import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
-import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
-import static com.hedera.services.bdd.spec.keys.KeyShape.threshOf;
-import static com.hedera.services.bdd.spec.keys.SigControl.OFF;
-import static com.hedera.services.bdd.spec.keys.SigControl.ON;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getScheduleInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -40,8 +32,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoUpdate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreateFunctionless;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleSign;
@@ -49,7 +39,6 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromToWithAlias;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
@@ -78,7 +67,6 @@ import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ONLY_BODY_AN
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.ORIGINAL;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.RECEIVER;
-import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SCHEDULING_WHITELIST;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SECOND_PAYER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.SENDER;
 import static com.hedera.services.bdd.suites.schedule.ScheduleUtils.VALID_SCHEDULE;
@@ -98,9 +86,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_R
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
-import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.keys.OverlappingKeyGenerator;
-import com.hedera.services.bdd.spec.keys.SigControl;
 import java.security.SecureRandom;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -416,40 +402,6 @@ public class ScheduleCreateSpecs {
                         .logged());
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
-    final Stream<DynamicTest> preservesRevocationServiceSemanticsForFileDelete() {
-        KeyShape waclShape = listOf(SIMPLE, threshOf(2, 3));
-        SigControl adequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, ON, OFF)));
-        SigControl inadequateSigs = waclShape.signedWith(sigs(OFF, sigs(ON, OFF, OFF)));
-        SigControl compensatorySigs = waclShape.signedWith(sigs(OFF, sigs(OFF, OFF, ON)));
-
-        String shouldBeInstaDeleted = "tbd";
-        String shouldBeDeletedEventually = "tbdl";
-
-        return propertyPreservingHapiSpec("PreservesRevocationServiceSemanticsForFileDelete")
-                .preserving(SCHEDULING_WHITELIST)
-                .given(
-                        overriding(SCHEDULING_WHITELIST, "FileDelete"),
-                        fileCreate(shouldBeInstaDeleted).waclShape(waclShape),
-                        fileCreate(shouldBeDeletedEventually).waclShape(waclShape))
-                .when(
-                        scheduleCreate("validRevocation", fileDelete(shouldBeInstaDeleted))
-                                .alsoSigningWith(shouldBeInstaDeleted)
-                                .sigControl(forKey(shouldBeInstaDeleted, adequateSigs)),
-                        sleepFor(1_000L),
-                        getFileInfo(shouldBeInstaDeleted).hasDeleted(true))
-                .then(
-                        scheduleCreate("notYetValidRevocation", fileDelete(shouldBeDeletedEventually))
-                                .alsoSigningWith(shouldBeDeletedEventually)
-                                .sigControl(forKey(shouldBeDeletedEventually, inadequateSigs)),
-                        getFileInfo(shouldBeDeletedEventually).hasDeleted(false),
-                        scheduleSign("notYetValidRevocation")
-                                .alsoSigningWith(shouldBeDeletedEventually)
-                                .sigControl(forKey(shouldBeDeletedEventually, compensatorySigs)),
-                        sleepFor(1_000L),
-                        getFileInfo(shouldBeDeletedEventually).hasDeleted(true));
-    }
-
     @HapiTest
     @Tag(NOT_REPEATABLE)
     final Stream<DynamicTest> detectsKeysChangedBetweenExpandSigsAndHandleTxn() {
@@ -584,10 +536,10 @@ public class ScheduleCreateSpecs {
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> whitelistWorks() {
         return propertyPreservingHapiSpec("whitelistWorks")
-                .preserving(SCHEDULING_WHITELIST)
+                .preserving("scheduling.whitelist")
                 .given(scheduleCreate("nope", createTopic(NEVER_TO_BE))
                         .hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST))
-                .when(overriding(SCHEDULING_WHITELIST, "ConsensusCreateTopic"))
+                .when(overriding("scheduling.whitelist", "ConsensusCreateTopic"))
                 .then(scheduleCreate("ok", createTopic(NEVER_TO_BE))
                         // prevent multiple runs of this test causing duplicates
                         .withEntityMemo("" + new SecureRandom().nextLong()));

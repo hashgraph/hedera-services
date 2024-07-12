@@ -51,8 +51,13 @@ public class SharedNetworkLauncherSessionListener implements LauncherSessionList
             isEmbedded = embeddedModeRequested() || repeatableModeRequested();
             final HederaNetwork targetNetwork;
             if (isEmbedded) {
-                targetNetwork = EmbeddedNetwork.newEmbeddedNetwork();
+                targetNetwork = EmbeddedNetwork.newSharedNetwork();
             } else {
+                final var initialPortProperty = System.getProperty("hapi.spec.initial.port");
+                if (!initialPortProperty.isBlank()) {
+                    final var initialPort = Integer.parseInt(initialPortProperty);
+                    SubProcessNetwork.initializeNextPortsForNetwork(CLASSIC_HAPI_TEST_NETWORK_SIZE, initialPort);
+                }
                 targetNetwork = SubProcessNetwork.newSharedNetwork(CLASSIC_HAPI_TEST_NETWORK_SIZE);
             }
             targetNetwork.start();

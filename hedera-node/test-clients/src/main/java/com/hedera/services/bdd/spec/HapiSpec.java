@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImp
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
+import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.ERROR;
@@ -264,7 +265,7 @@ public class HapiSpec implements Runnable, Executable {
      *
      * @param props A map of new properties
      */
-    public void addOverrideProperties(final Map<String, Object> props) {
+    public void addOverrideProperties(@NonNull final Map<String, String> props) {
         hapiSetup.addOverrides(props);
     }
 
@@ -408,6 +409,14 @@ public class HapiSpec implements Runnable, Executable {
      */
     public @NonNull HederaNetwork targetNetworkOrThrow() {
         return requireNonNull(targetNetwork);
+    }
+
+    /**
+     * Returns the best-effort representation of the properties in effect on startup of the target network.
+     * @return the startup properties
+     */
+    public @NonNull HapiPropertySource startupProperties() {
+        return targetNetworkOrThrow().startupProperties();
     }
 
     /**
@@ -637,6 +646,10 @@ public class HapiSpec implements Runnable, Executable {
         }
         if (sidecarWatcher != null) {
             sidecarWatcher.ensureUnsubscribed();
+        }
+        // Also terminate any embedded network not being shared by multiple specs
+        if (targetNetwork instanceof EmbeddedNetwork embeddedNetwork && embeddedNetwork != SHARED_NETWORK.get()) {
+            embeddedNetwork.terminate();
         }
     }
 
@@ -1210,7 +1223,7 @@ public class HapiSpec implements Runnable, Executable {
         spec.addOverrideProperties(Map.of("nodes", specNodes));
 
         if (targetNetwork instanceof EmbeddedNetwork embeddedNetwork) {
-            final Map<String, Object> overrides;
+            final Map<String, String> overrides;
             if (repeatableModeRequested()) {
                 // Statuses are immediately available in repeatable mode because ingest is synchronous;
                 // ECDSA signatures are inherently random, so use only ED25519 in repeatable mode
