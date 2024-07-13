@@ -16,7 +16,8 @@
 
 package com.hedera.services.bdd.junit;
 
-import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE;
+import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ;
 
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.extensions.SpecNamingExtension;
@@ -24,34 +25,25 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
- * Annotation for a {@link HapiTest} that "leaks" side effects into the test context (or
- * is permeable to such side effects itself). The {@link ContextRequirement} annotation
- * enumerates common types of leakage and permeability.
- * <p>
- * If set, the {@link LeakyHapiTest#overrides()} field lists the names of properties that
- * the test overrides and needs automatically restored to their original values after the test completes.
+ * Annotation for a {@link HapiTest} that can only be run in embedded mode. The {@link EmbeddedReason} annotation
+ * enumerates common reasons a test has to run in embedded mode.
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @TestFactory
 @ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
-@ResourceLock(value = "NETWORK", mode = READ_WRITE)
-public @interface LeakyHapiTest {
+@ResourceLock(value = "NETWORK", mode = READ)
+@Tag(EMBEDDED)
+public @interface EmbeddedHapiTest {
     /**
-     * If set, the types of context requirements that the test is subject to.
-     * @return the context requirements
+     * The reasons the test has to run in embedded mode.
+     * @return the reasons the test has to run in embedded mode
      */
-    ContextRequirement[] requirement() default {};
-
-    /**
-     * If set, the names of properties this test overrides and needs automatically
-     * restored to their original values after the test completes.
-     * @return the names of properties this test overrides
-     */
-    String[] overrides() default {};
+    EmbeddedReason[] value();
 }

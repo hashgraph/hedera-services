@@ -60,7 +60,7 @@ public class ContractRecordsSanityCheckSuite {
     public static final String PAYABLE_CONTRACT = "PayReceivable";
     public static final String ALTRUISTIC_TXN = "altruisticTxn";
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> contractDeleteRecordSanityChecks() {
         return defaultHapiSpec("ContractDeleteRecordSanityChecks")
                 .given(flattened(
@@ -77,7 +77,7 @@ public class ContractRecordsSanityCheckSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> contractCreateRecordSanityChecks() {
         return defaultHapiSpec("ContractCreateRecordSanityChecks")
                 .given(flattened(
@@ -91,7 +91,7 @@ public class ContractRecordsSanityCheckSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> contractCallWithSendRecordSanityChecks() {
         return defaultHapiSpec("ContractCallWithSendRecordSanityChecks")
                 .given(flattened(
@@ -109,7 +109,7 @@ public class ContractRecordsSanityCheckSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> circularTransfersRecordSanityChecks() {
         final var contractName = "CircularTransfers";
         int numAltruists = 3;
@@ -184,7 +184,7 @@ public class ContractRecordsSanityCheckSuite {
                         }));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> contractUpdateRecordSanityChecks() {
         return defaultHapiSpec("ContractUpdateRecordSanityChecks")
                 .given(flattened(

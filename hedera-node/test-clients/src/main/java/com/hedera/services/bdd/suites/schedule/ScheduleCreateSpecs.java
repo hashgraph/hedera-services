@@ -16,11 +16,10 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAliasedAccountInfo;
@@ -533,14 +532,12 @@ public class ScheduleCreateSpecs {
                         scheduleCreateFunctionless("unknown").hasPrecheck(BUSY).payingWith(SENDER));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"scheduling.whitelist"})
     final Stream<DynamicTest> whitelistWorks() {
-        return propertyPreservingHapiSpec("whitelistWorks")
-                .preserving("scheduling.whitelist")
-                .given(scheduleCreate("nope", createTopic(NEVER_TO_BE))
-                        .hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST))
-                .when(overriding("scheduling.whitelist", "ConsensusCreateTopic"))
-                .then(scheduleCreate("ok", createTopic(NEVER_TO_BE))
+        return hapiTest(
+                scheduleCreate("nope", createTopic(NEVER_TO_BE)).hasKnownStatus(SCHEDULED_TRANSACTION_NOT_IN_WHITELIST),
+                overriding("scheduling.whitelist", "ConsensusCreateTopic"),
+                scheduleCreate("ok", createTopic(NEVER_TO_BE))
                         // prevent multiple runs of this test causing duplicates
                         .withEntityMemo("" + new SecureRandom().nextLong()));
     }

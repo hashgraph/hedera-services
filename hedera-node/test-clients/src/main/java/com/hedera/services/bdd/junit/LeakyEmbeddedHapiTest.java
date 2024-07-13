@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.junit;
 
+import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
 import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE;
 
 import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
@@ -24,34 +25,31 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
- * Annotation for a {@link HapiTest} that "leaks" side effects into the test context (or
- * is permeable to such side effects itself). The {@link ContextRequirement} annotation
- * enumerates common types of leakage and permeability.
- * <p>
- * If set, the {@link LeakyHapiTest#overrides()} field lists the names of properties that
- * the test overrides and needs automatically restored to their original values after the test completes.
+ * Annotation for a {@link HapiTest} that can only be run in embedded mode, and not concurrently with other embedded
+ * tests. The {@link EmbeddedReason} attribute gives the reasons the test has to run in embedded mode. The
+ * {@link ContextRequirement} attribute gives the reasons the test cannot run concurrently.
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @TestFactory
 @ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
 @ResourceLock(value = "NETWORK", mode = READ_WRITE)
-public @interface LeakyHapiTest {
+@Tag(EMBEDDED)
+public @interface LeakyEmbeddedHapiTest {
     /**
-     * If set, the types of context requirements that the test is subject to.
-     * @return the context requirements
+     * The reasons the test has to run in embedded mode.
+     * @return the reasons the test has to run in embedded mode
+     */
+    EmbeddedReason[] reason();
+    /**
+     * The requirements preventing the test from running concurrently with other tests.
+     * @return the reasons the test cannot run concurrently with other tests
      */
     ContextRequirement[] requirement() default {};
-
-    /**
-     * If set, the names of properties this test overrides and needs automatically
-     * restored to their original values after the test completes.
-     * @return the names of properties this test overrides
-     */
-    String[] overrides() default {};
 }
