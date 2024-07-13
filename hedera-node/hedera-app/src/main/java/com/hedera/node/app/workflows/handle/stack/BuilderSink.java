@@ -16,92 +16,68 @@
 
 package com.hedera.node.app.workflows.handle.stack;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
-import static java.util.Objects.requireNonNull;
-
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * The {@link BuilderSink} supports accumulating stream item builders that are either preceding or
- * following an implicit "base builder". It supports traversing and coalescing its builders.
- * Client code is free to designate any builder as the base builder; this class is agnostic about
- * the base builder's identity.
+ * A {@link BuilderSink} accumulates stream builders that are either preceding or following an implicit "base builder".
+ * It enforces capacity limits as client code attempts to add builders, but also provides {@link #precedingCapacity()}
+ * and {@link #followingCapacity()} capacity information.
+ * <p>
+ * Besides accumulating a controlled number of builders within its capacity, it supports traversing and coalescing
+ * its builders, or flushing them to a provided parent sink.
+ * <p>
+ * Client code is free to designate any builder as the base builder; this type is agnostic about which builder
+ * is the base builder, or if a base builder even exists.
  */
-public class BuilderSink {
-    protected final List<SingleTransactionRecordBuilder> precedingBuilders = new ArrayList<>();
-    protected final List<SingleTransactionRecordBuilder> followingBuilders = new ArrayList<>();
-
-    private final int maxPreceding;
-    private final int maxFollowing;
-    private final int maxTotal;
+public interface BuilderSink {
+    /**
+     * Adds a builder to the preceding builders of this sink. Throws a {@link HandleException} if the
+     * maximum number of preceding builders has been exceeded.
+     * @param builder the builder to add
+     */
+    void addPrecedingOrThrow(@NonNull SingleTransactionRecordBuilder builder);
 
     /**
-     * Constructs a {@link BuilderSink} with the given maximum number of preceding and following builders.
-     * Only the {@link com.hedera.node.app.workflows.handle.stack.savepoints.FirstRootSavepoint} uses this
-     * constructor, since other savepoints are limited by just a total capacity that doesn't discriminate
-     * between preceding and following builders.
-     * @param maxPreceding the maximum number of preceding builders
-     * @param maxFollowing the maximum number of following builders
+     * Adds a builder to the following builders of this sink. Throws a {@link HandleException} if the
+     * maximum number of following builders has been exceeded.
+     * @param builder the builder to add
      */
-    public BuilderSink(final int maxPreceding, final int maxFollowing) {
-        this.maxPreceding = maxPreceding;
-        this.maxFollowing = maxFollowing;
-        this.maxTotal = maxPreceding == Integer.MAX_VALUE ? Integer.MAX_VALUE : maxPreceding + maxFollowing;
-    }
+    void addFollowingOrThrow(@NonNull SingleTransactionRecordBuilder builder);
 
     /**
-     * Constructs a {@link BuilderSink} with the given maximum number of total builders that can be constructed
-     * in the savepoint. Used for any savepoint other than the first root savepoint.
-     * @param maxTotal the maximum number of total builders
+     * Returns the number of preceding builders that can be added to this sink, as controlled by both the total
+     * and preceding builder limits.
+     * @return the number of preceding builders that can be added to this sink
      */
-    public BuilderSink(final int maxTotal) {
-        this.maxPreceding = maxTotal;
-        this.maxFollowing = maxTotal;
-        this.maxTotal = maxTotal;
-    }
+    int precedingCapacity();
+
+    /**
+     * Returns the number of following builders that can be added to this sink, as controlled by both the total
+     * and following builder limits.
+     * @return the number of following builders that can be added to this sink
+     */
+    int followingCapacity();
 
     /**
      * Returns all the builders accumulated in this sink, with the preceding builders coming before the following
      * builders, in the order they were added.
      * @return all accumulated builders
      */
-    public List<SingleTransactionRecordBuilder> allBuilders() {
-        if (precedingBuilders.isEmpty()) {
-            return followingBuilders;
-        } else {
-            final List<SingleTransactionRecordBuilder> allBuilders = new ArrayList<>(precedingBuilders);
-            allBuilders.addAll(followingBuilders);
-            return allBuilders;
-        }
-    }
+    List<SingleTransactionRecordBuilder> allBuilders();
 
     /**
-     * Returns whether this sink has accumulated any builders other than the designated base builder.
+     * Returns whether this savepoint has accumulated any builders other than the designated base builder.
      * @param baseBuilder the base builder
-     * @return whether this sink has any builders other than the base builder
+     * @return whether this savepoint has any builders other than the base builder
      */
-    public boolean hasBuilderOtherThan(@NonNull final SingleTransactionRecordBuilder baseBuilder) {
-        requireNonNull(baseBuilder);
-        for (final var builder : precedingBuilders) {
-            if (builder != baseBuilder) {
-                return true;
-            }
-        }
-        for (final var builder : followingBuilders) {
-            if (builder != baseBuilder) {
-                return true;
-            }
-        }
-        return false;
-    }
+    boolean hasBuilderOtherThan(@NonNull SingleTransactionRecordBuilder baseBuilder);
 
     /**
-     * For each builder in this sink other than the designated base builder, invokes the given consumer
+     * For each builder in this savepoint other than the designated base builder, invokes the given consumer
      * with the builder cast to the given type.
      *
      * @param consumer the consumer to invoke
@@ -109,24 +85,10 @@ public class BuilderSink {
      * @param baseBuilder the base builder
      * @param <T> the type to cast the builders to
      */
-    public <T> void forEachOtherBuilder(
-            @NonNull final Consumer<T> consumer,
-            @NonNull final Class<T> builderType,
-            @NonNull final SingleTransactionRecordBuilder baseBuilder) {
-        requireNonNull(builderType);
-        requireNonNull(consumer);
-        requireNonNull(baseBuilder);
-        for (final var builder : followingBuilders) {
-            if (builder != baseBuilder) {
-                consumer.accept(builderType.cast(builder));
-            }
-        }
-        for (final var builder : precedingBuilders) {
-            if (builder != baseBuilder) {
-                consumer.accept(builderType.cast(builder));
-            }
-        }
-    }
+    <T> void forEachOtherBuilder(
+            @NonNull Consumer<T> consumer,
+            @NonNull Class<T> builderType,
+            @NonNull SingleTransactionRecordBuilder baseBuilder);
 
     /**
      * Flushes any stream item builders accumulated in this sink to the parent sink, preserving their ordering relative
@@ -134,73 +96,19 @@ public class BuilderSink {
      * then all following builders to the following builders of the parent.
      * @param parentSink the parent sink to flush to
      */
-    public void flushInOrder(@NonNull final BuilderSink parentSink) {
-        requireNonNull(parentSink);
-        parentSink.precedingBuilders.addAll(precedingBuilders);
-        parentSink.followingBuilders.addAll(followingBuilders);
-    }
+    void flushInOrder(@NonNull BuilderSink parentSink);
 
     /**
      * Flushes all builders to the preceding builders of the parent sink.
      * @param parentSink the parent sink to flush to
      */
-    public void flushPreceding(@NonNull final BuilderSink parentSink) {
-        requireNonNull(parentSink);
-        parentSink.precedingBuilders.addAll(allBuilders());
-    }
+    void flushPreceding(@NonNull BuilderSink parentSink);
 
     /**
      * Flushes all builders to the following builders of the parent sink.
      * @param parentSink the parent sink to flush to
      */
-    public void flushFollowing(@NonNull final BuilderSink parentSink) {
-        requireNonNull(parentSink);
-        parentSink.followingBuilders.addAll(allBuilders());
-    }
-
-    /**
-     * Adds a builder to the preceding builders of this sink. Throws a {@link HandleException} if the
-     * maximum number of preceding builders has been exceeded.
-     * @param builder the builder to add
-     */
-    public void addPrecedingOrThrow(@NonNull final SingleTransactionRecordBuilder builder) {
-        requireNonNull(builder);
-        if (precedingCapacity() == 0) {
-            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
-        }
-        precedingBuilders.add(builder);
-    }
-
-    /**
-     * Adds a builder to the following builders of this sink. Throws a {@link HandleException} if the
-     * maximum number of following builders has been exceeded.
-     * @param builder the builder to add
-     */
-    public void addFollowingOrThrow(@NonNull final SingleTransactionRecordBuilder builder) {
-        requireNonNull(builder);
-        if (followingCapacity() == 0) {
-            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
-        }
-        followingBuilders.add(builder);
-    }
-
-    /**
-     * Returns the number of preceding builders that can be added to this sink, as controlled by both the total
-     * and preceding builder limits.
-     * @return the number of preceding builders that can be added to this sink
-     */
-    public int precedingCapacity() {
-        return Math.min(maxPreceding - precedingBuilders.size(), maxTotal - numBuilders());
-    }
-
-    /**
-     * Returns the number of following builders that can be added to this sink, as controlled by both the total
-     * and following builder limits.
-     * @return the number of following builders that can be added to this sink
-     */
-    public int followingCapacity() {
-        return Math.min(maxFollowing - followingBuilders.size(), maxTotal - numBuilders());
-    }
+    void flushFollowing(@NonNull BuilderSink parentSink);
 
     /**
      * A temporary method to support {@link SavepointStackImpl#getChildBuilders()} until we switch
@@ -208,11 +116,5 @@ public class BuilderSink {
      * @return the following builders in the sink
      */
     @Deprecated
-    public List<SingleTransactionRecordBuilder> followingBuilders() {
-        return followingBuilders;
-    }
-
-    private int numBuilders() {
-        return precedingBuilders.size() + followingBuilders.size();
-    }
+    List<SingleTransactionRecordBuilder> followingBuilders();
 }

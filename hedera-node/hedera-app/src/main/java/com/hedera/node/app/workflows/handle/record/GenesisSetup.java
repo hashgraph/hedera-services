@@ -244,7 +244,7 @@ public class GenesisSetup {
             @Nullable final String recordMemo,
             @Nullable final Long overrideAutoRenewPeriod) {
         for (final Account account : accts) {
-            // Since this is only called at genesis, the active savepoint's preceding record capacity with be
+            // Since this is only called at genesis, the active savepoint's preceding record capacity will be
             // Integer.MAX_VALUE and this will never fail with MAX_CHILD_RECORDS_EXCEEDED (c.f., HandleWorkflow)
             final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
             recordBuilder.accountID(account.accountId());

@@ -35,19 +35,22 @@ public class FirstChildSavepoint extends AbstractSavepoint {
     /**
      * Constructs a {@link FirstChildSavepoint} instance.
      * @param state the current state
-     * @param parent the parent sink
+     * @param parentSink the parent sink
      * @param txnCategory the transaction category
      */
     public FirstChildSavepoint(
             @NonNull final WrappedHederaState state,
-            @NonNull final BuilderSink parent,
+            @NonNull final BuilderSink parentSink,
             @NonNull final HandleContext.TransactionCategory txnCategory) {
-        super(state, parent, txnCategory == PRECEDING ? parent.precedingCapacity() : parent.followingCapacity());
+        super(
+                state,
+                parentSink,
+                txnCategory == PRECEDING ? parentSink.precedingCapacity() : parentSink.followingCapacity());
         this.txnCategory = txnCategory;
     }
 
     @Override
-    void commitRecords() {
+    void commitBuilders() {
         if (txnCategory == PRECEDING) {
             flushPreceding(parentSink);
         } else {

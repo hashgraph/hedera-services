@@ -17,7 +17,7 @@
 package com.hedera.node.app.spi.workflows;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -444,7 +444,7 @@ public interface HandleContext {
                 recordBuilderClass,
                 callback,
                 txBody.transactionIDOrThrow().accountIDOrThrow(),
-                NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+                NOOP_RECORD_CUSTOMIZER);
     }
 
     /**

@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.stack.savepoints;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
@@ -40,27 +41,44 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * This class manges the transactional state changes of builders and state changes
+ * Implementation support for a {@link Savepoint}. The sole abstract method is {@link #commitBuilders()}, which
+ * subclasses must override to choose the strategy used to flush any accumulated builders to the parent sink.
+ * <p>
+ * When adopting block streams we will add more extension points to this class in the form of abstract methods
+ * that determine how each type of savepoint constructs state change block items.
  */
-public abstract class AbstractSavepoint extends BuilderSink implements Savepoint {
+public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savepoint {
     private static final EnumSet<ResponseCodeEnum> SUCCESSES =
             EnumSet.of(OK, SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED, SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
 
-    protected final WrappedHederaState state;
     protected final BuilderSink parentSink;
+    protected final WrappedHederaState state;
 
+    /**
+     * Constructs a savepoint with limits that discriminate between the number of preceding and following builders.
+     * @param state the current state
+     * @param parentSink the parent sink
+     * @param maxPreceding the maximum number of preceding builders
+     * @param maxFollowing the maximum number of following builders
+     */
     protected AbstractSavepoint(
             @NonNull final WrappedHederaState state,
             @NonNull final BuilderSink parentSink,
-            int maxPreceding,
-            int maxFollowing) {
+            final int maxPreceding,
+            final int maxFollowing) {
         super(maxPreceding, maxFollowing);
         this.state = requireNonNull(state);
         this.parentSink = requireNonNull(parentSink);
     }
 
+    /**
+     * Constructs a savepoint with a total limit on the number of builders that can be accumulated.
+     * @param state the current state
+     * @param parentSink the parent sink
+     * @param maxTotal the maximum number of total builders
+     */
     protected AbstractSavepoint(
-            @NonNull final WrappedHederaState state, @NonNull final BuilderSink parentSink, int maxTotal) {
+            @NonNull final WrappedHederaState state, @NonNull final BuilderSink parentSink, final int maxTotal) {
         super(maxTotal);
         this.state = requireNonNull(state);
         this.parentSink = requireNonNull(parentSink);
@@ -74,14 +92,19 @@ public abstract class AbstractSavepoint extends BuilderSink implements Savepoint
     @Override
     public void commit() {
         state.commit();
-        commitRecords();
+        commitBuilders();
     }
 
     @Override
     public void rollback() {
-        rollBackRecords(precedingBuilders);
-        rollBackRecords(followingBuilders);
-        commitRecords();
+        rollback(precedingBuilders);
+        rollback(followingBuilders);
+        commitBuilders();
+    }
+
+    @Override
+    public Savepoint createFollowingSavePoint() {
+        return new FollowingSavepoint(new WrappedHederaState(state), this);
     }
 
     @Override
@@ -104,36 +127,27 @@ public abstract class AbstractSavepoint extends BuilderSink implements Savepoint
         return builder;
     }
 
-    abstract void commitRecords();
+    /**
+     * Commits the builders accumulated in this savepoint to the parent sink.
+     */
+    abstract void commitBuilders();
 
-    private void rollBackRecords(final List<SingleTransactionRecordBuilder> recordBuilders) {
-        boolean didRemoveBuilder = false;
-        for (int i = 0; i < recordBuilders.size(); i++) {
-            final var recordBuilder = recordBuilders.get(i);
-            if (recordBuilder.reversingBehavior() == REVERSIBLE) {
-                recordBuilder.nullOutSideEffectFields();
-                if (SUCCESSES.contains(recordBuilder.status())) {
-                    recordBuilder.status(ResponseCodeEnum.REVERTED_SUCCESS);
+    private void rollback(final List<SingleTransactionRecordBuilder> streamBuilders) {
+        var removedBuilder = false;
+        for (int i = 0; i < streamBuilders.size(); i++) {
+            final var builder = streamBuilders.get(i);
+            if (builder.reversingBehavior() == REVERSIBLE) {
+                builder.nullOutSideEffectFields();
+                if (SUCCESSES.contains(builder.status())) {
+                    builder.status(REVERTED_SUCCESS);
                 }
-            } else if (recordBuilder.reversingBehavior() == REMOVABLE) {
-                // Remove it from the list by setting its location to null. Then, any subsequent children that are
-                // kept will be moved into this position.
-                recordBuilders.set(i, null);
-                didRemoveBuilder = true;
+            } else if (builder.reversingBehavior() == REMOVABLE) {
+                streamBuilders.set(i, null);
+                removedBuilder = true;
             }
         }
-        if (didRemoveBuilder) {
-            recordBuilders.removeIf(Objects::isNull);
+        if (removedBuilder) {
+            streamBuilders.removeIf(Objects::isNull);
         }
-    }
-
-    @Override
-    public Savepoint createFollowingSavePoint() {
-        return new FollowingSavepoint(new WrappedHederaState(state), this);
-    }
-
-    @Override
-    public BuilderSink asSink() {
-        return this;
     }
 }

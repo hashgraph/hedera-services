@@ -22,35 +22,32 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * A transactional unit that buffers all changes to a wrapped Hedera state, along with any stream item builders
  * whose lifecycle is tied to that of the state changes. May be committed or rolled back.
  */
-public interface Savepoint {
+public interface Savepoint extends BuilderSink {
     /**
-     * Returns the state that this savepoint is buffering changes for, including all modifications made so far.
+     * The that this savepoint is buffering changes for, including all modifications made so far.
      *
      * @return the state
      */
     HederaState state();
 
     /**
-     * Rolls back all changes made in this savepoint, and makes any necessary changes to the stream item builders
+     * Rolls back all changes made in this savepoint, making any necessary changes to the stream item builders
      * this savepoint is managing.
      * <p>
      * <b>Important:</b> Unlike transactional management of state changes, which simply discards everything,
      * management of stream item builders includes flushing builders not of type {@link ReversingBehavior#REMOVABLE}
-     * to the parent of this savepoint. (Or to the top-level sink of all builders being accumulated for a user
-     * transaction.)
+     * to the parent sink of the savepoint.
      */
     void rollback();
 
     /**
      * Commits all changes made in this savepoint and flushes any stream item builders accumulated in this savepoint
-     * to the parent savepoint. (Or to the top-level sink of all builders being accumulated for a user transaction.)
+     * to the parent sink of the savepoint.
      */
     void commit();
 
@@ -68,45 +65,12 @@ public interface Savepoint {
      * @param reversingBehavior the reversing behavior to apply to the builder on rollback
      * @param txnCategory       the category of transaction initiating the new builder
      * @param customizer        the customizer to apply when externalizing the builder
-     * @param isBaseBuilder     whether the builder is the base builder for the stack
+     * @param isBaseBuilder     whether the builder is the base builder for a stack
      * @return the new builder
      */
     SingleTransactionRecordBuilder createBuilder(
             @NonNull ReversingBehavior reversingBehavior,
             @NonNull HandleContext.TransactionCategory txnCategory,
             @NonNull ExternalizedRecordCustomizer customizer,
-            final boolean isBaseBuilder);
-
-    /**
-     * Returns whether this savepoint has accumulated any builders other than the designated base builder.
-     * @param baseBuilder the base builder
-     * @return whether this savepoint has any builders other than the base builder
-     */
-    boolean hasBuilderOtherThan(@NonNull SingleTransactionRecordBuilder baseBuilder);
-
-    /**
-     * For each builder in this savepoint other than the designated base builder, invokes the given consumer
-     * with the builder cast to the given type.
-     *
-     * @param consumer the consumer to invoke
-     * @param builderType the type to cast the builders to
-     * @param baseBuilder the base builder
-     * @param <T> the type to cast the builders to
-     */
-    <T> void forEachOtherBuilder(
-            @NonNull Consumer<T> consumer,
-            @NonNull Class<T> builderType,
-            @NonNull SingleTransactionRecordBuilder baseBuilder);
-
-    /**
-     * Returns the following builders in the savepoint.
-     * @return the following builders in the savepoint
-     */
-    List<SingleTransactionRecordBuilder> followingBuilders();
-
-    /**
-     * Returns each savepoint as a BuilderSink
-     * @return the savepoint as a BuilderSink
-     */
-    BuilderSink asSink();
+            boolean isBaseBuilder);
 }

@@ -31,7 +31,7 @@ public class FollowingSavepoint extends AbstractSavepoint {
     }
 
     @Override
-    void commitRecords() {
+    void commitBuilders() {
         flushFollowing(parentSink);
     }
 }

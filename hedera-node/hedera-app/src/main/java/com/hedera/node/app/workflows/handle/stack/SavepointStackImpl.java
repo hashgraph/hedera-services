@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.handle.stack;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
@@ -31,6 +31,7 @@ import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.workflows.handle.stack.savepoints.BuilderSinkImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstChildSavepoint;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstRootSavepoint;
 import com.swirlds.state.HederaState;
@@ -102,9 +103,9 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     private SavepointStackImpl(
             @NonNull final HederaState root, final int maxBuildersBeforeUser, final int maxBuildersAfterUser) {
         this.root = requireNonNull(root);
-        builderSink = new BuilderSink(maxBuildersBeforeUser, maxBuildersAfterUser + 1);
+        builderSink = new BuilderSinkImpl(maxBuildersBeforeUser, maxBuildersAfterUser + 1);
         pushSavepoint(USER);
-        baseStreamBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, true);
+        baseStreamBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, true);
     }
 
     /**
@@ -272,19 +273,19 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     }
 
     public SingleTransactionRecordBuilder createRemovableChildBuilder() {
-        return peek().createBuilder(REMOVABLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, false);
+        return peek().createBuilder(REMOVABLE, CHILD, NOOP_RECORD_CUSTOMIZER, false);
     }
 
     public SingleTransactionRecordBuilder createChildBuilder() {
-        return peek().createBuilder(REVERSIBLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, false);
+        return peek().createBuilder(REVERSIBLE, CHILD, NOOP_RECORD_CUSTOMIZER, false);
     }
 
     public SingleTransactionRecordBuilder createUserBuilder() {
-        return peek().createBuilder(REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, false);
+        return peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, false);
     }
 
     public SingleTransactionRecordBuilder createPrecedingBuilder() {
-        return peek().createBuilder(IRREVERSIBLE, PRECEDING, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, false);
+        return peek().createBuilder(IRREVERSIBLE, PRECEDING, NOOP_RECORD_CUSTOMIZER, false);
     }
 
     /**
@@ -324,8 +325,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     private void pushSavepoint(final HandleContext.TransactionCategory category) {
         if (root instanceof SavepointStackImpl parent) {
-            stack.push(new FirstChildSavepoint(
-                    new WrappedHederaState(root), parent.peek().asSink(), category));
+            stack.push(new FirstChildSavepoint(new WrappedHederaState(root), parent.peek(), category));
         } else {
             stack.push(new FirstRootSavepoint(new WrappedHederaState(root), requireNonNull(builderSink)));
         }
