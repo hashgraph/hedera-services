@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
@@ -28,6 +27,7 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartR
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
+import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
@@ -181,12 +181,20 @@ public class HandleWorkflow {
         for (final var event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
-                // We were given an event for a node that *does not exist in the address book*. This will be logged as
-                // a warning, as this should never happen, and we will skip the event. The platform should guarantee
-                // that we never receive an event that isn't associated with the address book, and every node in the
-                // address book must have an account ID, since you cannot delete an account belonging to a node, and
-                // you cannot change the address book non-deterministically.
-                logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
+                if (!isSoOrdered(event.getSoftwareVersion(), version)) {
+                    // We were given an event for a node that *does not exist in the address book* and was not from a
+                    // strictly earlier software upgrade. This will be logged as a warning, as this should never happen,
+                    // and we will skip the event. The platform should guarantee that we never receive an event that
+                    // isn't associated with the address book, and every node in the address book must have an account
+                    // ID, since you cannot delete an account belonging to a node, and you cannot change the address
+                    // book
+                    // non-deterministically.
+                    logger.warn(
+                            "Received event (version {} vs current {}) from node {} which is not in the address book",
+                            com.hedera.hapi.util.HapiUtils.toString(event.getSoftwareVersion()),
+                            com.hedera.hapi.util.HapiUtils.toString(version),
+                            event.getCreatorId());
+                }
                 return;
             }
             // log start of event to transaction state log
@@ -237,12 +245,14 @@ public class HandleWorkflow {
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn) {
         final var handleStart = System.nanoTime();
-        final var consensusNow = txn.getConsensusTimestamp();
 
+        // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
+        final var consensusNow = txn.getConsensusTimestamp();
         final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
+
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var recordStream = execute(userTxn);
-        blockRecordManager.endUserTransaction(recordStream, state);
+        final var streamItems = execute(userTxn);
+        blockRecordManager.endUserTransaction(streamItems, state);
 
         handleWorkflowMetrics.updateTransactionDuration(
                 userTxn.functionality(), (int) (System.nanoTime() - handleStart));
