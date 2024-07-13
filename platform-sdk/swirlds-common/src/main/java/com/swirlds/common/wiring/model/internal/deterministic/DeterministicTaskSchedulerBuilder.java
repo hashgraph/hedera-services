@@ -16,6 +16,7 @@
 
 package com.swirlds.common.wiring.model.internal.deterministic;
 
+import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
 
@@ -66,6 +67,10 @@ public class DeterministicTaskSchedulerBuilder<OUT> extends AbstractTaskSchedule
     @NonNull
     @Override
     public TaskScheduler<OUT> build() {
+        // Check to ensure unhandled task capacity is not set for direct schedulers
+        if ((type == DIRECT || type == DIRECT_THREADSAFE) && unhandledTaskCapacity != 1) {
+            throw new IllegalArgumentException("Direct schedulers cannot have an unhandled task capacity.");
+        }
 
         final boolean insertionIsBlocking = unhandledTaskCapacity != UNLIMITED_CAPACITY || externalBackPressure;
 

@@ -136,6 +136,9 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
     @Override
     @NonNull
     public AbstractTaskSchedulerBuilder<OUT> withType(@NonNull final TaskSchedulerType type) {
+        if ((type == DIRECT || type == DIRECT_THREADSAFE) && unhandledTaskCapacity != 1) {
+            throw new IllegalArgumentException("Direct schedulers cannot have an unhandled task capacity.");
+        }
         this.type = Objects.requireNonNull(type);
         return this;
     }
@@ -146,6 +149,9 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
     @Override
     @NonNull
     public AbstractTaskSchedulerBuilder<OUT> withUnhandledTaskCapacity(final long unhandledTaskCapacity) {
+        if (type == DIRECT || type == DIRECT_THREADSAFE) {
+            throw new IllegalArgumentException("Cannot set unhandled task capacity for direct schedulers.");
+        }
         this.unhandledTaskCapacity = unhandledTaskCapacity;
         return this;
     }
