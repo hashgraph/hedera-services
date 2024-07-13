@@ -37,7 +37,7 @@ public class RecordBuildersImpl implements RecordBuilders {
     @Override
     public <T> T getOrCreate(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castBuilder(stack.baseRecordBuilder(), recordBuilderClass);
+        return castBuilder(stack.baseStreamBuilder(), recordBuilderClass);
     }
 
     @NonNull

@@ -90,12 +90,12 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @Override
     public <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castBuilder(stack.baseRecordBuilder(), recordBuilderClass);
+        return castBuilder(stack.baseStreamBuilder(), recordBuilderClass);
     }
 
     @Override
     public boolean hasChildOrPrecedingRecords() {
-        return stack.hasChildOrPrecedingRecords();
+        return stack.hasChildOrPrecedingBuilders();
     }
 
     @Override

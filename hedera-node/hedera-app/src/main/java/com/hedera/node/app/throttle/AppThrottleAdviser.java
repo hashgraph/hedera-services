@@ -62,7 +62,7 @@ public class AppThrottleAdviser implements ThrottleAdviser {
     @Override
     public boolean hasThrottleCapacityForChildTransactions() {
         var isAllowed = true;
-        final var childRecords = stack.getChildRecords();
+        final var childRecords = stack.getChildBuilders();
         @Nullable List<ThrottleUsageSnapshot> snapshotsIfNeeded = null;
 
         for (int i = 0, n = childRecords.size(); i < n && isAllowed; i++) {

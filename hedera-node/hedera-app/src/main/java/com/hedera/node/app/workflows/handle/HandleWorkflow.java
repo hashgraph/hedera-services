@@ -20,7 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
@@ -334,10 +334,10 @@ public class HandleWorkflow {
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
             }
-            return finalRecordStream(userTxn);
+            return finalizedStreamItems(userTxn, userTxn.stack().streamBuilders());
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
-            return failInvalidRecordStream(userTxn);
+            return failInvalidStreamItems(userTxn);
         }
     }
 
@@ -347,13 +347,12 @@ public class HandleWorkflow {
      *
      * @return the failure record
      */
-    private Stream<SingleTransactionRecord> failInvalidRecordStream(@NonNull final UserTxn userTxn) {
-        final var recordBuilder =
-                new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, USER);
-        initializeUserBuilder(recordBuilder, userTxn.txnInfo());
-        recordBuilder.status(FAIL_INVALID);
+    private Stream<SingleTransactionRecord> failInvalidStreamItems(@NonNull final UserTxn userTxn) {
+        final var builder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+        initializeUserBuilder(builder, userTxn.txnInfo());
+        builder.status(FAIL_INVALID);
         userTxn.stack().rollbackFullStack();
-        return recordStream(userTxn, List.of(recordBuilder));
+        return finalizedStreamItems(userTxn, List.of(builder));
     }
 
     /**
@@ -397,17 +396,6 @@ public class HandleWorkflow {
     }
 
     /**
-     * Returns a stream of records for the given user transaction with
-     * its in-scope records.
-     *
-     * @param userTxn the user transaction
-     * @return the stream of records
-     */
-    private Stream<SingleTransactionRecord> finalRecordStream(@NonNull final UserTxn userTxn) {
-        return recordStream(userTxn, userTxn.stack().recordBuilders());
-    }
-
-    /**
      * Builds and caches the result of the user transaction with
      * the explicitly provided records.
      *
@@ -415,7 +403,7 @@ public class HandleWorkflow {
      * @param builders the explicit record builders
      * @return the stream of records
      */
-    private Stream<SingleTransactionRecord> recordStream(
+    private Stream<SingleTransactionRecord> finalizedStreamItems(
             @NonNull final UserTxn userTxn, @NonNull final List<SingleTransactionRecordBuilder> builders) {
         final List<SingleTransactionRecord> records = new ArrayList<>();
         TransactionID.Builder idBuilder = null;
@@ -483,7 +471,7 @@ public class HandleWorkflow {
      * @param userTxn the user transaction whose record should be initialized
      */
     private SingleTransactionRecordBuilder initializeUserBuilder(@NonNull final UserTxn userTxn) {
-        final var userRecord = userTxn.stack().baseRecordBuilder();
+        final var userRecord = userTxn.stack().baseStreamBuilder();
         return initializeUserBuilder(userRecord, userTxn.txnInfo());
     }
 

@@ -169,7 +169,7 @@ public class ChildDispatchFactory {
         final var childTxnInfo = getTxnInfoFrom(txBody);
         // The limiting factor on adding builders to child
         final var childStack = SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer);
-        final var recordBuilder = initializedForChild(childStack.baseRecordBuilder(), childTxnInfo);
+        final var recordBuilder = initializedForChild(childStack.baseStreamBuilder(), childTxnInfo);
         return newChildDispatch(
                 recordBuilder,
                 childTxnInfo,

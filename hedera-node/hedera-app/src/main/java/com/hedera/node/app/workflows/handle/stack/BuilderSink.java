@@ -83,7 +83,7 @@ public class BuilderSink {
      * @param baseBuilder the base builder
      * @return whether this sink has any builders other than the base builder
      */
-    public boolean hasOther(@NonNull final SingleTransactionRecordBuilder baseBuilder) {
+    public boolean hasBuilderOtherThan(@NonNull final SingleTransactionRecordBuilder baseBuilder) {
         requireNonNull(baseBuilder);
         for (final var builder : precedingBuilders) {
             if (builder != baseBuilder) {
