@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
-import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -42,7 +41,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewAccount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -72,8 +70,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_STAKIN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.KEY_REQUIRED;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -113,21 +109,6 @@ public class CryptoCreateSuite {
                 .when()
                 .then(submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoCreate("account")
                         .stakedAccountId("0.0.3")));
-    }
-
-    @HapiTest
-    @Tag(EMBEDDED)
-    final Stream<DynamicTest> verifyCreatedAccountAsExpected() {
-        return hapiTest(
-                cryptoCreate("civilianWORewardStakingNode")
-                        .balance(ONE_HUNDRED_HBARS)
-                        .declinedReward(true)
-                        .stakedNodeId(0),
-                viewAccount("civilianWORewardStakingNode", account -> {
-                    assertEquals(ONE_HUNDRED_HBARS, account.tinybarBalance());
-                    assertTrue(account.declineReward());
-                    assertEquals(0, account.stakedNodeIdOrThrow());
-                }));
     }
 
     @HapiTest

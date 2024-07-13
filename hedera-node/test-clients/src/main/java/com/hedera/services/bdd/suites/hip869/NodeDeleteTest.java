@@ -16,7 +16,8 @@
 
 package com.hedera.services.bdd.suites.hip869;
 
-import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
+import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -30,20 +31,19 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
 public class NodeDeleteTest {
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
     final Stream<DynamicTest> deleteNodeWorks() {
         final String nodeName = "mytestnode";
 
@@ -54,8 +54,7 @@ public class NodeDeleteTest {
                 viewNode(nodeName, node -> assertTrue(node.deleted(), "Node should be deleted")));
     }
 
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> validateFees() {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("validateFees")
@@ -90,8 +89,7 @@ public class NodeDeleteTest {
                         validateChargedUsdWithin("deleteNode", 0.0, 3.0));
     }
 
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> validateFeesInsufficientAmount() {
         final String description = "His vorpal blade went snicker-snack!";
         return hapiTest(
@@ -120,7 +118,6 @@ public class NodeDeleteTest {
     }
 
     @HapiTest
-    @Tag(EMBEDDED)
     final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("failsAtIngestForUnAuthorizedTxns")
@@ -137,26 +134,21 @@ public class NodeDeleteTest {
     }
 
     @HapiTest
-    @Tag(EMBEDDED)
     final Stream<DynamicTest> handleNodeNotExist() {
         final String nodeName = "33";
-
-        return hapiTest(nodeDelete(nodeName).hasKnownStatus(ResponseCodeEnum.INVALID_NODE_ID));
+        return hapiTest(nodeDelete(nodeName).hasKnownStatus(INVALID_NODE_ID));
     }
 
     @HapiTest
-    @Tag(EMBEDDED)
     final Stream<DynamicTest> handleNodeAlreadyDeleted() {
         final String nodeName = "mytestnode";
-
         return hapiTest(
                 nodeCreate(nodeName),
                 nodeDelete(nodeName),
-                nodeDelete(nodeName).signedBy(GENESIS).hasKnownStatus(ResponseCodeEnum.NODE_DELETED));
+                nodeDelete(nodeName).signedBy(GENESIS).hasKnownStatus(NODE_DELETED));
     }
 
     @HapiTest
-    @Tag(EMBEDDED)
     final Stream<DynamicTest> handleCanBeExecutedJustWithPrivilegedAccount() {
         long PAYER_BALANCE = 1_999_999_999L;
         final String nodeName = "mytestnode";
@@ -170,6 +162,6 @@ public class NodeDeleteTest {
                         .payingWith("payer")
                         .signedBy("payer", "wrongKey")
                         .hasPrecheck(BUSY),
-                nodeDelete(nodeName).hasKnownStatus(SUCCESS));
+                nodeDelete(nodeName));
     }
 }

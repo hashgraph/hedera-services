@@ -392,7 +392,7 @@ public class LeakyContractTestsSuite {
     }
 
     @Order(35)
-    @LeakyHapiTest(FEE_SCHEDULE_OVERRIDES)
+    @LeakyHapiTest(requirement = FEE_SCHEDULE_OVERRIDES)
     final Stream<DynamicTest> getErc20TokenNameExceedingLimits() {
         final var REDUCED_NETWORK_FEE = 1L;
         final var REDUCED_NODE_FEE = 1L;
@@ -1589,7 +1589,7 @@ public class LeakyContractTestsSuite {
 
     @Order(36)
     @LeakyHapiTest(
-            value = {PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES},
+            requirement = {PROPERTY_OVERRIDES, FEE_SCHEDULE_OVERRIDES},
             overrides = {"contracts.evm.version"})
     final Stream<DynamicTest> relayerFeeAsExpectedIfSenderCoversGas() {
         final var canonicalTxn = "canonical";

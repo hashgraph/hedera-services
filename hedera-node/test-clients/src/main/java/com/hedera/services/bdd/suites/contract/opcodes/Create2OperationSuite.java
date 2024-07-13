@@ -178,7 +178,7 @@ public class Create2OperationSuite {
     public static final String ENTITY_MEMO = "JUST DO IT";
 
     @SuppressWarnings("java:S5669")
-    @LeakyHapiTest(NO_CONCURRENT_CREATIONS)
+    @LeakyHapiTest(requirement = NO_CONCURRENT_CREATIONS)
     final Stream<DynamicTest> allLogOpcodesResolveExpectedContractId() {
         final var contract = "OuterCreator";
 
@@ -212,7 +212,7 @@ public class Create2OperationSuite {
     }
 
     // https://github.com/hashgraph/hedera-services/issues/2868
-    @LeakyHapiTest(NO_CONCURRENT_CREATIONS)
+    @LeakyHapiTest(requirement = NO_CONCURRENT_CREATIONS)
     final Stream<DynamicTest> inlineCreate2CanFailSafely() {
         final var tcValue = 1_234L;
         final var contract = "RevertingCreateFactory";
@@ -260,7 +260,7 @@ public class Create2OperationSuite {
     }
 
     @SuppressWarnings("java:S5669")
-    @LeakyHapiTest(NO_CONCURRENT_CREATIONS)
+    @LeakyHapiTest(requirement = NO_CONCURRENT_CREATIONS)
     final Stream<DynamicTest> inlineCreateCanFailSafely() {
         final var tcValue = 1_234L;
         final var creation = CREATION;

@@ -59,7 +59,7 @@ import org.junit.jupiter.api.DynamicTest;
  */
 public class AirdropsFeatureFlagTest {
     @LeakyHapiTest(
-            value = PROPERTY_OVERRIDES,
+            requirement = PROPERTY_OVERRIDES,
             overrides = {"entities.unlimitedAutoAssociationsEnabled"})
     final Stream<DynamicTest> createHollowAccountOnDeletedAliasViaHBARTransferAndCompleteIt() {
         final var hollowAccountKey = "hollowAccountKey";
@@ -150,7 +150,7 @@ public class AirdropsFeatureFlagTest {
     }
 
     @LeakyHapiTest(
-            value = PROPERTY_OVERRIDES,
+            requirement = PROPERTY_OVERRIDES,
             overrides = {"entities.unlimitedAutoAssociationsEnabled"})
     final Stream<DynamicTest> createHollowAccountOnDeletedAliasViaFtTransferAndCompleteIt() {
         final var hollowAccountKey = "hollowAccountKey";

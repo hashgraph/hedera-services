@@ -498,7 +498,7 @@ public class LeakyCryptoTestsSuite {
                 }));
     }
 
-    @LeakyHapiTest(FEE_SCHEDULE_OVERRIDES)
+    @LeakyHapiTest(requirement = FEE_SCHEDULE_OVERRIDES)
     final Stream<DynamicTest> hollowAccountCreationChargesExpectedFees() {
         final long REDUCED_NODE_FEE = 2L;
         final long REDUCED_NETWORK_FEE = 3L;

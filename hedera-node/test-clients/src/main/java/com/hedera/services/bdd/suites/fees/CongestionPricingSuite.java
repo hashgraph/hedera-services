@@ -62,7 +62,7 @@ public class CongestionPricingSuite {
     private static final String FEE_MONITOR_ACCOUNT = "feeMonitor";
 
     @LeakyHapiTest(
-            value = {PROPERTY_OVERRIDES, THROTTLE_OVERRIDES},
+            requirement = {PROPERTY_OVERRIDES, THROTTLE_OVERRIDES},
             overrides = {"contracts.maxGasPerSec", "fees.percentCongestionMultipliers", "fees.minCongestionPeriod"})
     final Stream<DynamicTest> canUpdateMultipliersDynamically() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");
@@ -141,7 +141,7 @@ public class CongestionPricingSuite {
     }
 
     @LeakyHapiTest(
-            value = {PROPERTY_OVERRIDES, THROTTLE_OVERRIDES},
+            requirement = {PROPERTY_OVERRIDES, THROTTLE_OVERRIDES},
             overrides = {"fees.percentCongestionMultipliers", "fees.minCongestionPeriod"})
     final Stream<DynamicTest> canUpdateMultipliersDynamically2() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits-congestion.json");

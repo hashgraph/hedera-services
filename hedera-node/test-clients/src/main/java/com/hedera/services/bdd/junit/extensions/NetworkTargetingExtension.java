@@ -27,8 +27,7 @@ import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.keys.RepeatableKeyGenerator;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Arrays;
-import java.util.Optional;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -56,9 +55,10 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
             } else {
                 HapiSpec.TARGET_NETWORK.set(SHARED_NETWORK.get());
                 // If there are properties to preserve, bind that info to the thread before executing the test factory
-                Optional.ofNullable(method.getAnnotation(LeakyHapiTest.class))
-                        .map(LeakyHapiTest::overrides)
-                        .ifPresent(overrides -> HapiSpec.PROPERTIES_TO_PRESERVE.set(Arrays.asList(overrides)));
+                if (isAnnotated(method, LeakyHapiTest.class)) {
+                    HapiSpec.PROPERTIES_TO_PRESERVE.set(
+                            List.of(method.getAnnotation(LeakyHapiTest.class).overrides()));
+                }
             }
         });
     }

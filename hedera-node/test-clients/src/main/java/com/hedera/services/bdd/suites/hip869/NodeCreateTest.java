@@ -16,7 +16,8 @@
 
 package com.hedera.services.bdd.suites.hip869;
 
-import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
+import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -32,14 +33,13 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
 public class NodeCreateTest {
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
     final Stream<DynamicTest> createNodeWorks() {
         final String description = "His vorpal blade went snicker-snack!";
         return hapiTest(
@@ -48,8 +48,7 @@ public class NodeCreateTest {
                         "ntb", node -> assertEquals(description, node.description(), "Node was created successfully")));
     }
 
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> validateFees() {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("validateFees")
@@ -87,8 +86,7 @@ public class NodeCreateTest {
                         validateChargedUsdWithin("multipleSigsCreation", 0.0011276316, 3.0));
     }
 
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> validateFeesInsufficientAmount() {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("validateFees")

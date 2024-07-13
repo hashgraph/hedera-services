@@ -16,7 +16,8 @@
 
 package com.hedera.services.bdd.suites.hip869;
 
-import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
+import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -31,6 +32,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNAT
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
@@ -39,7 +41,6 @@ import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
 /**
  * Tests expected behavior when the {@code nodes.updateAccountIdAllowed} feature flag is on for
@@ -68,8 +69,7 @@ public class UpdateAccountEnabledTest {
                 nodeUpdate("testNode").aliasAccountId("alias").hasPrecheck(INVALID_NODE_ACCOUNT_ID));
     }
 
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> validateFees() {
         final String description = "His vorpal blade went snicker-snack!";
         return hapiTest(
@@ -111,8 +111,7 @@ public class UpdateAccountEnabledTest {
                 validateChargedUsdWithin("failedUpdateMultipleSigs", 0.0011276316, 3.0));
     }
 
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
     final Stream<DynamicTest> updateAccountIdWork() {
         return hapiTest(
                 newKeyNamed("adminKey"),

@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.hip869;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
+import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -48,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
@@ -153,7 +155,7 @@ public class NodeUpdateTest {
                         .hasKnownStatus(INVALID_IPV4_ADDRESS));
     }
 
-    @HapiTest
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
     final Stream<DynamicTest> updateMultipleFieldsWork() {
         return hapiTest(
                 newKeyNamed("adminKey"),

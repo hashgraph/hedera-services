@@ -49,7 +49,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 public class TargetNetworkPrep {
-    @LeakyHapiTest({SYSTEM_ACCOUNT_BALANCES})
+    @LeakyHapiTest(requirement = {SYSTEM_ACCOUNT_BALANCES})
     final Stream<DynamicTest> ensureSystemStateAsExpectedWithSystemDefaultFiles() {
         final var emptyKey =
                 Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();

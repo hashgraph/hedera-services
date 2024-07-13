@@ -106,7 +106,7 @@ public class FutureSchedulableOpsTest {
                 "scheduling.whitelist", "ContractCall,CryptoCreate,CryptoTransfer,FileDelete,FileUpdate,SystemDelete"));
     }
 
-    @LeakyHapiTest(FEE_SCHEDULE_OVERRIDES)
+    @LeakyHapiTest(requirement = FEE_SCHEDULE_OVERRIDES)
     final Stream<DynamicTest> canonicalScheduleOpsHaveExpectedUsdFees() {
         final AtomicReference<byte[]> originalFeeSchedules = new AtomicReference<>();
         return defaultHapiSpec("CanonicalScheduleOpsHaveExpectedUsdFees")

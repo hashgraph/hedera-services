@@ -182,7 +182,7 @@ public class FileUpdateSuite {
                         .hasKnownStatus(CUSTOM_FEES_LIST_TOO_LONG));
     }
 
-    @LeakyHapiTest(UPGRADE_FILE_CONTENT)
+    @LeakyHapiTest(requirement = UPGRADE_FILE_CONTENT)
     final Stream<DynamicTest> optimisticSpecialFileUpdate() {
         final var appendsPerBurst = 128;
         final var specialFile = "0.0.159";
@@ -200,7 +200,7 @@ public class FileUpdateSuite {
                 .then(getFileInfo(specialFile).hasMemo(CommonUtils.hex(expectedHash)));
     }
 
-    @LeakyHapiTest(PERMISSION_OVERRIDES)
+    @LeakyHapiTest(requirement = PERMISSION_OVERRIDES)
     final Stream<DynamicTest> apiPermissionsChangeDynamically() {
         final var civilian = CIVILIAN;
         return defaultHapiSpec("ApiPermissionsChangeDynamically")
