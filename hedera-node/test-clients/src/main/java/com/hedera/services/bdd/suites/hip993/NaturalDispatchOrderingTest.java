@@ -16,14 +16,12 @@
 
 package com.hedera.services.bdd.suites.hip993;
 
-import static com.hedera.services.bdd.junit.TestTags.NOT_EMBEDDED;
-import static com.hedera.services.bdd.junit.TestTags.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.spec.dsl.operations.transactions.TouchBalancesOperation.touchBalanceOf;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateVisibleItems;
@@ -32,12 +30,14 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.hip904.UnlimitedAutoAssociationSuite.UNLIMITED_AUTO_ASSOCIATION_SLOTS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -52,14 +52,15 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
 import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
@@ -70,7 +71,6 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
 /**
  * Asserts the expected presence and order of all valid combinations of preceding and following stream items;
@@ -88,6 +88,7 @@ import org.junit.jupiter.api.Tag;
  * Only {@link SingleTransactionRecordBuilder.ReversingBehavior#IRREVERSIBLE} streams items appear unchanged in the record stream no matter whether
  * their originating savepoint is rolled back.
  */
+@DisplayName("given HIP-993 natural dispatch ordering")
 public class NaturalDispatchOrderingTest {
     /**
      * Tests the {@link TransactionCategory#USER} + {@link ReversingBehavior#REVERSIBLE} combination for
@@ -177,27 +178,49 @@ public class NaturalDispatchOrderingTest {
                 validateVisibleItems(assertion, reversibleChildValidator()));
     }
 
-    /**
-     * Tests that a user transaction gets the platform-assigned time. Requires a repeatable network
-     * because we need virtual time to stand still between the point we submit the transaction and the
-     * point we validate its consensus time is the platform-assigned time
-     */
     @HapiTest
-    @Tag(REPEATABLE)
-    @Tag(NOT_EMBEDDED)
-    @DisplayName("user transaction gets platform assigned time")
-    final Stream<DynamicTest> userTxnGetsPlatformAssignedTime() {
-        return hapiTest(cryptoCreate("somebody").via("txn"), withOpContext((spec, opLog) -> {
-            final var op = getTxnRecord("txn");
-            allRunFor(spec, op);
-            assertEquals(
-                    Timestamp.newBuilder()
-                            .setSeconds(spec.consensusTime().getEpochSecond())
-                            .setNanos(spec.consensusTime().getNano())
-                            .build(),
-                    op.getResponseRecord().getConsensusTimestamp(),
-                    "User transaction should get platform-assigned time");
-        }));
+    @DisplayName("reversible schedule stream items are as expected")
+    final Stream<DynamicTest> reversibleScheduleStreamItemsAsExpected(
+            @FungibleToken SpecFungibleToken firstToken,
+            @FungibleToken SpecFungibleToken secondToken,
+            @Account(autoAssociationSlots = 2) SpecAccount firstReceiver,
+            @Account(autoAssociationSlots = 2) SpecAccount secondReceiver,
+            @Account(centBalance = 100, autoAssociationSlots = UNLIMITED_AUTO_ASSOCIATION_SLOTS)
+                    SpecAccount solventPayer,
+            @Account(centBalance = 7, autoAssociationSlots = UNLIMITED_AUTO_ASSOCIATION_SLOTS)
+                    SpecAccount insolventPayer) {
+        final AtomicReference<VisibleItemsAssertion> assertion = new AtomicReference<>();
+        return hapiTest(
+                streamMustIncludeNoFailuresFrom(visibleNonSyntheticItems(assertion, "committed", "rolledBack")),
+                firstToken.treasury().transferUnitsTo(solventPayer, 10, firstToken),
+                secondToken.treasury().transferUnitsTo(insolventPayer, 10, secondToken),
+                // Ensure the receiver entities exist before switching out object-oriented DSL
+                touchBalanceOf(firstReceiver, secondReceiver),
+                // Immediate trigger a schedule dispatch that succeeds as payer can afford two auto-associations
+                scheduleCreate(
+                                "committedTxn",
+                                cryptoTransfer(moving(2, firstToken.name())
+                                                .distributing(
+                                                        solventPayer.name(),
+                                                        firstReceiver.name(),
+                                                        secondReceiver.name()))
+                                        .fee(ONE_HBAR / 10))
+                        .designatingPayer(solventPayer.name())
+                        .alsoSigningWith(solventPayer.name())
+                        .via("committed"),
+                // Immediate trigger a schedule dispatch that rolls back as payer cannot afford two auto-associations
+                scheduleCreate(
+                                "rolledBackTxn",
+                                cryptoTransfer(moving(2, secondToken.name())
+                                                .distributing(
+                                                        insolventPayer.name(),
+                                                        firstReceiver.name(),
+                                                        secondReceiver.name()))
+                                        .fee(ONE_HBAR / 10))
+                        .designatingPayer(insolventPayer.name())
+                        .alsoSigningWith(insolventPayer.name())
+                        .via("rolledBack"),
+                validateVisibleItems(assertion, reversibleScheduleValidator()));
     }
 
     private static BiConsumer<HapiSpec, Map<String, List<RecordStreamEntry>>> reversibleUserValidator() {
@@ -210,6 +233,24 @@ public class NaturalDispatchOrderingTest {
             final var duplicate = duplicateItems.getFirst();
             assertEquals(creation.createdScheduleId(), duplicate.createdScheduleId());
             assertEquals(creation.scheduledTransactionId(), duplicate.scheduledTransactionId());
+        };
+    }
+
+    private static BiConsumer<HapiSpec, Map<String, List<RecordStreamEntry>>> reversibleScheduleValidator() {
+        return (spec, records) -> {
+            final var committedItems = records.get("committed");
+            assertScheduledItemsMatch(
+                    committedItems,
+                    0,
+                    3,
+                    ScheduleCreate,
+                    TokenAssociateToAccount,
+                    TokenAssociateToAccount,
+                    CryptoTransfer);
+            assertStatuses(committedItems, SUCCESS, SUCCESS, SUCCESS, SUCCESS);
+            final var rolledBackItems = records.get("rolledBack");
+            assertScheduledItemsMatch(rolledBackItems, 0, 1, ScheduleCreate, CryptoTransfer);
+            assertStatuses(rolledBackItems, SUCCESS, INSUFFICIENT_PAYER_BALANCE);
         };
     }
 

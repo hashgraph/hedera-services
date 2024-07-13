@@ -17,12 +17,11 @@
 package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asHexedSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asToken;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -51,7 +50,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.FULLY_NONDETERMINISTIC;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_NONCE;
@@ -141,55 +139,47 @@ public class LazyCreateThroughPrecompileSuite {
     private static final String NOT_ENOUGH_GAS_TXN = "NOT_ENOUGH_GAS_TXN";
     private static final String ECDSA_KEY = "abcdECDSAkey";
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"consensus.handle.maxFollowingRecords"})
     final Stream<DynamicTest> resourceLimitExceededRevertsAllRecords() {
-        final var n = 4; // preceding child record limit is 3
+        final var n = 4;
         final var nft = "nft";
         final var nftKey = NFT_KEY;
         final var creationAttempt = CREATION_ATTEMPT;
         final AtomicLong civilianId = new AtomicLong();
         final AtomicReference<String> nftMirrorAddr = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("ResourceLimitExceededRevertsAllRecords", FULLY_NONDETERMINISTIC)
-                .preserving("consensus.handle.maxFollowingRecords")
-                .given(
-                        overriding("consensus.handle.maxFollowingRecords", "3"),
-                        newKeyNamed(nftKey),
-                        uploadInitCode(AUTO_CREATION_MODES),
-                        contractCreate(AUTO_CREATION_MODES),
-                        cryptoCreate(CIVILIAN)
-                                .keyShape(ED25519)
-                                .exposingCreatedIdTo(id -> civilianId.set(id.getAccountNum())),
-                        tokenCreate(nft)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .supplyKey(nftKey)
-                                .initialSupply(0)
-                                .treasury(CIVILIAN)
-                                .exposingCreatedIdTo(
-                                        idLit -> nftMirrorAddr.set(asHexedSolidityAddress(asToken(idLit)))),
-                        mintToken(
-                                nft,
-                                IntStream.range(0, n)
-                                        .mapToObj(i -> ByteString.copyFromUtf8(ONE_TIME + i))
-                                        .toList()))
-                .when(
-                        cryptoApproveAllowance()
-                                .payingWith(CIVILIAN)
-                                .addNftAllowance(CIVILIAN, nft, AUTO_CREATION_MODES, true, List.of()),
-                        sourcing(() -> contractCall(
-                                        AUTO_CREATION_MODES,
-                                        "createSeveralDirectly",
-                                        headlongFromHexed(nftMirrorAddr.get()),
-                                        nCopiesOfSender(n, mirrorAddrWith(civilianId.get())),
-                                        nNonMirrorAddressFrom(n, civilianId.get() + 3_050_000),
-                                        LongStream.iterate(1L, l -> l + 1)
-                                                .limit(n)
-                                                .toArray())
-                                .via(creationAttempt)
-                                .gas(GAS_TO_OFFER)
-                                .alsoSigningWithFullPrefix(CIVILIAN)
-                                .hasKnownStatusFrom(MAX_CHILD_RECORDS_EXCEEDED, CONTRACT_REVERT_EXECUTED)))
-                .then(childRecordsCheck(
+        return hapiTest(
+                overriding("consensus.handle.maxFollowingRecords", "" + (n - 1)),
+                newKeyNamed(nftKey),
+                uploadInitCode(AUTO_CREATION_MODES),
+                contractCreate(AUTO_CREATION_MODES),
+                cryptoCreate(CIVILIAN).keyShape(ED25519).exposingCreatedIdTo(id -> civilianId.set(id.getAccountNum())),
+                tokenCreate(nft)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .supplyKey(nftKey)
+                        .initialSupply(0)
+                        .treasury(CIVILIAN)
+                        .exposingCreatedIdTo(idLit -> nftMirrorAddr.set(asHexedSolidityAddress(asToken(idLit)))),
+                mintToken(
+                        nft,
+                        IntStream.range(0, n)
+                                .mapToObj(i -> ByteString.copyFromUtf8(ONE_TIME + i))
+                                .toList()),
+                cryptoApproveAllowance()
+                        .payingWith(CIVILIAN)
+                        .addNftAllowance(CIVILIAN, nft, AUTO_CREATION_MODES, true, List.of()),
+                sourcing(() -> contractCall(
+                                AUTO_CREATION_MODES,
+                                "createSeveralDirectly",
+                                headlongFromHexed(nftMirrorAddr.get()),
+                                nCopiesOfSender(n, mirrorAddrWith(civilianId.get())),
+                                nNonMirrorAddressFrom(n, civilianId.get() + 3_050_000),
+                                LongStream.iterate(1L, l -> l + 1).limit(n).toArray())
+                        .via(creationAttempt)
+                        .gas(GAS_TO_OFFER)
+                        .alsoSigningWithFullPrefix(CIVILIAN)
+                        .hasKnownStatusFrom(MAX_CHILD_RECORDS_EXCEEDED, CONTRACT_REVERT_EXECUTED)),
+                childRecordsCheck(
                         creationAttempt, CONTRACT_REVERT_EXECUTED, recordWith().status(MAX_CHILD_RECORDS_EXCEEDED)));
     }
 
