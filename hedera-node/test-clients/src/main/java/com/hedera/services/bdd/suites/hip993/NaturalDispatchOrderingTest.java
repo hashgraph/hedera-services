@@ -122,21 +122,22 @@ public class NaturalDispatchOrderingTest {
     }
 
     /**
-     * Tests the {@link TransactionCategory#CHILD} + {@link ReversingBehavior#REVERSIBLE} combination for
+     * Tests the {@link TransactionCategory#CHILD} + {@link ReversingBehavior#REVERSIBLE} combination as
+     * well as the {@link TransactionCategory#PRECEDING} + {@link ReversingBehavior#REMOVABLE} combination for
      * both commit and rollback via,
      * <ol>
-     *     <Li>Successfully calling a transfer system contract in a frame that doesn't revert, within
-     *     an EVM transaction that doesn't revert.</Li>
-     *     <Li>Calling a transfer system contract in a frame that reverts, within an EVM transaction
-     *     that doesn't revert.</Li>
-     *     <Li>Calling a transfer system contract in a frame that succeeds, but within an EVM transaction
-     *     that reverts.</Li>
+     *     <Li>Successfully calling a transfer system contract that does an auto-association in a frame that doesn't
+     *     revert, within an EVM transaction that doesn't revert.</Li>
+     *     <Li>Calling a transfer system contract that does an auto-association in a frame that reverts, within an
+     *     EVM transaction that doesn't revert.</Li>
+     *     <Li>Calling a transfer system contract that does an auto-association in a frame that succeeds, but within
+     *     an EVM transaction that reverts.</Li>
      * </ol>
      * @return the test
      */
     @HapiTest
-    @DisplayName("reversible child stream items are as expected")
-    final Stream<DynamicTest> reversibleChildStreamItemsAsExpected(
+    @DisplayName("reversible child and removable preceding stream items are as expected")
+    final Stream<DynamicTest> reversibleChildAndRemovablePrecedingStreamItemsAsExpected(
             @NonFungibleToken(numPreMints = 2) SpecNonFungibleToken nonFungibleToken,
             @Account(autoAssociationSlots = 1) SpecAccount beneficiary,
             @Contract(contract = "PrecompileAliasXfer", creationGas = 2_000_000) SpecContract transferContract,
@@ -178,9 +179,23 @@ public class NaturalDispatchOrderingTest {
                 validateVisibleItems(assertion, reversibleChildValidator()));
     }
 
+    /**
+     * Tests the {@link TransactionCategory#SCHEDULED} + {@link ReversingBehavior#REVERSIBLE} combination as
+     * well as the {@link TransactionCategory#PRECEDING} + {@link ReversingBehavior#REMOVABLE} combination for
+     * both commit and rollback via,
+     * <ol>
+     *     <Li>Successfully creating an immediately triggered transfer that does two auto-associations with
+     *     a payer that can afford all the fees.</Li>
+     *     <Li>Successfully creating an immediately triggered transfer that does two auto-associations with
+     *     a payer that cannot afford all the fees, and hence rolls back its first preceding child due to
+     *     a {@link ResponseCodeEnum#INSUFFICIENT_PAYER_BALANCE} result on the second auto-association.</Li>
+     * </ol>
+     * @return the test
+     */
     @HapiTest
-    @DisplayName("reversible schedule stream items are as expected")
-    final Stream<DynamicTest> reversibleScheduleStreamItemsAsExpected(
+    @DisplayName(
+            "reversible schedule stream items and removable preceding stream items are as expected are as expected")
+    final Stream<DynamicTest> reversibleScheduleStreamAndRemovablePrecedingItemsAsExpected(
             @FungibleToken SpecFungibleToken firstToken,
             @FungibleToken SpecFungibleToken secondToken,
             @Account(autoAssociationSlots = 2) SpecAccount firstReceiver,

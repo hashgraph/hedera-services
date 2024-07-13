@@ -382,7 +382,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 recordBuilderClass,
                 childCallback,
                 childSyntheticPayerId,
-                ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
+                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
                 SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE,
                 true);
@@ -400,7 +400,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 recordBuilderClass,
                 childCallback,
                 childSyntheticPayer,
-                ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
+                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
                 SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
                 false);
@@ -424,7 +424,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 recordBuilderClass,
                 childCallback,
                 childSyntheticPayerId,
-                ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
+                ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER,
                 childCategory,
                 SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE,
                 false);

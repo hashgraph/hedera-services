@@ -138,7 +138,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, spenderId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl();
+                    return new SingleTransactionRecordBuilderImpl().status(ResponseCodeEnum.SUCCESS);
                 });
     }
 

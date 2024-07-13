@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Collections.emptySet;
@@ -207,7 +207,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @VisibleForTesting
     public SingleTransactionRecordBuilderImpl() {
-        this(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+        this(REVERSIBLE, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, USER);
     }
 
     public SingleTransactionRecordBuilderImpl(
@@ -226,7 +226,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the transaction record
      */
     public SingleTransactionRecord build() {
-        if (customizer != NOOP_RECORD_CUSTOMIZER) {
+        if (customizer != NOOP_EXTERNALIZED_RECORD_CUSTOMIZER) {
             transaction = customizer.apply(transaction);
             transactionBytes = transaction.signedTransactionBytes();
         }

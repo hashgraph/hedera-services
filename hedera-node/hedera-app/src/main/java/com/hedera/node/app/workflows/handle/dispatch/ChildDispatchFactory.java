@@ -164,20 +164,19 @@ public class ChildDispatchFactory {
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final ThrottleAdviser throttleAdviser,
             final Instant consensusNow) {
-        final var preHandleResult =
-                dispatchPreHandleForChildTxn(txBody, syntheticPayerId, config, readableStoreFactory);
+        final var preHandleResult = preHandleChild(txBody, syntheticPayerId, config, readableStoreFactory);
+        final var childVerifier = getKeyVerifier(callback);
         final var childTxnInfo = getTxnInfoFrom(txBody);
-        // The limiting factor on adding builders to child
         final var childStack = SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer);
-        final var recordBuilder = initializedForChild(childStack.baseStreamBuilder(), childTxnInfo);
+        final var streamBuilder = initializedForChild(childStack.baseStreamBuilder(), childTxnInfo);
         return newChildDispatch(
-                recordBuilder,
+                streamBuilder,
                 childTxnInfo,
                 syntheticPayerId,
                 category,
                 childStack,
                 preHandleResult,
-                getKeyVerifier(callback),
+                childVerifier,
                 consensusNow,
                 creatorInfo,
                 config,
@@ -227,6 +226,13 @@ public class ChildDispatchFactory {
         final var writableStoreFactory = new WritableStoreFactory(
                 childStack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
         final var serviceApiFactory = new ServiceApiFactory(childStack, config, storeMetricsService);
+        final var priceCalculator =
+                new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory);
+        final var storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
+        final var entityNumGenerator = new EntityNumGeneratorImpl(
+                new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
+                        .getStore(WritableEntityIdStore.class));
+        final var recordBuilders = new RecordBuildersImpl(childStack);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,
@@ -234,9 +240,9 @@ public class ChildDispatchFactory {
                 config,
                 authorizer,
                 blockRecordManager,
-                new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory),
+                priceCalculator,
                 feeManager,
-                new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory),
+                storeFactory,
                 payerId,
                 keyVerifier,
                 platformState,
@@ -244,25 +250,27 @@ public class ChildDispatchFactory {
                 Key.DEFAULT,
                 exchangeRateManager,
                 childStack,
-                new EntityNumGeneratorImpl(
-                        new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
-                                .getStore(WritableEntityIdStore.class)),
+                entityNumGenerator,
                 dispatcher,
                 recordCache,
                 networkInfo,
-                new RecordBuildersImpl(childStack),
+                recordBuilders,
                 this,
                 dispatchProcessor,
                 throttleAdviser);
+        final var childFees = computeChildFees(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
+        final var childFeeAccumulator = new FeeAccumulator(
+                serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder);
+        final var childTokenContext =
+                new TokenContextImpl(config, storeMetricsService, childStack, blockRecordManager, consensusNow);
         return new RecordDispatch(
                 builder,
                 config,
-                feesFrom(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo),
+                childFees,
                 txnInfo,
                 payerId,
                 readableStoreFactory,
-                new FeeAccumulator(
-                        serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder),
+                childFeeAccumulator,
                 keyVerifier,
                 creatorInfo,
                 consensusNow,
@@ -271,12 +279,12 @@ public class ChildDispatchFactory {
                 dispatchHandleContext,
                 childStack,
                 category,
-                new TokenContextImpl(config, storeMetricsService, childStack, blockRecordManager, consensusNow),
+                childTokenContext,
                 platformState,
                 preHandleResult);
     }
 
-    private static Fees feesFrom(
+    private static Fees computeChildFees(
             @NonNull final FeeContext feeContext,
             @NonNull final HandleContext.TransactionCategory childCategory,
             @NonNull final TransactionDispatcher dispatcher,
@@ -306,7 +314,7 @@ public class ChildDispatchFactory {
      * @param readableStoreFactory the readable store factory
      * @return the pre-handle result
      */
-    private PreHandleResult dispatchPreHandleForChildTxn(
+    private PreHandleResult preHandleChild(
             @NonNull final TransactionBody txBody,
             @NonNull final AccountID syntheticPayerId,
             @NonNull final Configuration config,

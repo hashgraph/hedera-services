@@ -93,7 +93,7 @@ public interface Savepoint {
      * @param baseBuilder the base builder
      * @param <T> the type to cast the builders to
      */
-    <T> void forEachOther(
+    <T> void forEachOtherBuilder(
             @NonNull Consumer<T> consumer,
             @NonNull Class<T> builderType,
             @NonNull SingleTransactionRecordBuilder baseBuilder);

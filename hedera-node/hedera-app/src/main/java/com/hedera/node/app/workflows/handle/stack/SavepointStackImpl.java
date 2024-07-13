@@ -19,7 +19,7 @@ package com.hedera.node.app.workflows.handle.stack;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
@@ -104,7 +104,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         this.root = requireNonNull(root);
         builderSink = new BuilderSink(maxBuildersBeforeUser, maxBuildersAfterUser + 1);
         pushSavepoint(USER);
-        baseStreamBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, true);
+        baseStreamBuilder = peek().createBuilder(REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, true);
     }
 
     /**
@@ -260,10 +260,10 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
         if (builderSink != null) {
-            builderSink.forEachOther(consumer, recordBuilderClass, baseStreamBuilder);
+            builderSink.forEachOtherBuilder(consumer, recordBuilderClass, baseStreamBuilder);
         }
         for (var savepoint : stack) {
-            savepoint.forEachOther(consumer, recordBuilderClass, baseStreamBuilder);
+            savepoint.forEachOtherBuilder(consumer, recordBuilderClass, baseStreamBuilder);
         }
     }
 
@@ -272,19 +272,19 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     }
 
     public SingleTransactionRecordBuilder createRemovableChildBuilder() {
-        return peek().createBuilder(REMOVABLE, CHILD, NOOP_RECORD_CUSTOMIZER, false);
+        return peek().createBuilder(REMOVABLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, false);
     }
 
     public SingleTransactionRecordBuilder createChildBuilder() {
-        return peek().createBuilder(REVERSIBLE, CHILD, NOOP_RECORD_CUSTOMIZER, false);
+        return peek().createBuilder(REVERSIBLE, CHILD, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, false);
     }
 
     public SingleTransactionRecordBuilder createUserBuilder() {
-        return peek().createBuilder(REVERSIBLE, USER, NOOP_RECORD_CUSTOMIZER, false);
+        return peek().createBuilder(REVERSIBLE, USER, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, false);
     }
 
     public SingleTransactionRecordBuilder createPrecedingBuilder() {
-        return peek().createBuilder(IRREVERSIBLE, PRECEDING, NOOP_RECORD_CUSTOMIZER, false);
+        return peek().createBuilder(IRREVERSIBLE, PRECEDING, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, false);
     }
 
     /**

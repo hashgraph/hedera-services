@@ -1069,7 +1069,7 @@ public class LeakyContractTestsSuite {
                 }));
     }
 
-    @LeakyHapiTest(overrides = {"consensus.handle.maxPrecedingRecords", "contracts.evm.version"})
+    @LeakyHapiTest(overrides = {"consensus.handle.maxFollowingRecords", "contracts.evm.version"})
     final Stream<DynamicTest> evmLazyCreateViaSolidityCallTooManyCreatesFails() {
         final var LAZY_CREATE_CONTRACT = "NestedLazyCreateContract";
         final var ECDSA_KEY = "ECDSAKey";
@@ -1077,7 +1077,7 @@ public class LeakyContractTestsSuite {
         final var createTooManyHollowAccounts = "createTooManyHollowAccounts";
         final var depositAmount = 1000;
         return hapiTest(
-                overridingTwo("consensus.handle.maxPrecedingRecords", "1", "contracts.evm.version", "v0.34"),
+                overridingTwo("consensus.handle.maxFollowingRecords", "1", "contracts.evm.version", "v0.34"),
                 newKeyNamed(ECDSA_KEY).shape(SECP_256K1_SHAPE),
                 newKeyNamed(ECDSA_KEY2).shape(SECP_256K1_SHAPE),
                 uploadInitCode(LAZY_CREATE_CONTRACT),
