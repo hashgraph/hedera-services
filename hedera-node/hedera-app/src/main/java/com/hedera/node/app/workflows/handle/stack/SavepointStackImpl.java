@@ -251,7 +251,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
             return true;
         }
         for (var savepoint : stack) {
-            if (savepoint.hasOther(baseStreamBuilder)) {
+            if (savepoint.hasBuilderOtherThan(baseStreamBuilder)) {
                 return true;
             }
         }

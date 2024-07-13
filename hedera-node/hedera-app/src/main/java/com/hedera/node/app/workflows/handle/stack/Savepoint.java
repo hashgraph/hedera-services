@@ -82,7 +82,7 @@ public interface Savepoint {
      * @param baseBuilder the base builder
      * @return whether this savepoint has any builders other than the base builder
      */
-    boolean hasOther(@NonNull SingleTransactionRecordBuilder baseBuilder);
+    boolean hasBuilderOtherThan(@NonNull SingleTransactionRecordBuilder baseBuilder);
 
     /**
      * For each builder in this savepoint other than the designated base builder, invokes the given consumer
