@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
@@ -431,7 +432,7 @@ public class HandleWorkflow {
             }
             final var consensusNow = userTxn.consensusNow().plusNanos((long) i - indexOfUserRecord);
             builder.consensusTimestamp(consensusNow);
-            if (builder.category() == CHILD) {
+            if (i > indexOfUserRecord && builder.category() != SCHEDULED) {
                 builder.parentConsensus(userTxn.consensusNow());
             }
             records.add(((SingleTransactionRecordBuilderImpl) builder).build());

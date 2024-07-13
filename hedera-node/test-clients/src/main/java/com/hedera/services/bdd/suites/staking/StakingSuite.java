@@ -424,7 +424,7 @@ public class StakingSuite {
                                 .hasPaidStakingRewards(List.of(Pair.of(ALICE, 100 * SUITE_PER_HBAR_REWARD_RATE))));
     }
 
-    @LeakyHapiTest(NO_CONCURRENT_STAKE_PERIOD_BOUNDARY_CROSSINGS)
+    @LeakyHapiTest(requirement = NO_CONCURRENT_STAKE_PERIOD_BOUNDARY_CROSSINGS)
     final Stream<DynamicTest> endOfStakingPeriodRecTest() {
         return hapiTest(
                 waitUntilStartOfNextStakingPeriod(STAKING_PERIOD_MINS),

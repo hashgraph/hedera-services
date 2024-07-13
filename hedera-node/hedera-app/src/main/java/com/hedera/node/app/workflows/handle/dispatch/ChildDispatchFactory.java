@@ -146,7 +146,7 @@ public class ChildDispatchFactory {
      * @param creatorInfo          the node info of the creator
      * @param platformState        the platform state
      * @param topLevelFunction     the top level functionality
-     * @param consensusNow
+     * @param consensusNow         the consensus time
      * @return the child dispatch
      */
     public Dispatch createChildDispatch(

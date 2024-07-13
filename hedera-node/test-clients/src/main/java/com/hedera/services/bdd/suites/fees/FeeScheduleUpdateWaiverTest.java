@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 public class FeeScheduleUpdateWaiverTest {
-    @LeakyHapiTest(ContextRequirement.NO_CONCURRENT_CREATIONS)
+    @LeakyHapiTest(requirement = ContextRequirement.NO_CONCURRENT_CREATIONS)
     final Stream<DynamicTest> feeScheduleControlAccountIsntCharged() {
         ResponseCodeEnum[] acceptable = {SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED};
 

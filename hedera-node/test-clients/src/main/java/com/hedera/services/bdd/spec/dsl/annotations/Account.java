@@ -50,4 +50,11 @@ public @interface Account {
      * @return the initial staked node id of the account
      */
     long stakedNodeId() default -1;
+
+    /**
+     * If set, the initial auto association slots for the account.
+     *
+     * @return the initial number of auto-association slots for the account
+     */
+    int autoAssociationSlots() default 0;
 }

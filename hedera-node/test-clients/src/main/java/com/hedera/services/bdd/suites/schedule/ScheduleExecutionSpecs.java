@@ -16,10 +16,8 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
@@ -405,41 +403,36 @@ public class ScheduleExecutionSpecs {
                         getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"tokens.nfts.maxBatchSizeMint"})
     final Stream<DynamicTest> scheduledUniqueMintFailsWithInvalidBatchSize() {
-        return propertyPreservingHapiSpec("ScheduledUniqueMintFailsWithInvalidBatchSize")
-                .preserving("tokens.nfts.maxBatchSizeMint")
-                .given(
-                        overriding("tokens.nfts.maxBatchSizeMint", "5"),
-                        cryptoCreate(TREASURY),
-                        cryptoCreate(SCHEDULE_PAYER),
-                        newKeyNamed(SUPPLY_KEY),
-                        tokenCreate(A_TOKEN)
-                                .supplyKey(SUPPLY_KEY)
-                                .treasury(TREASURY)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .initialSupply(0),
-                        scheduleCreate(
-                                        A_SCHEDULE,
-                                        mintToken(
-                                                A_TOKEN,
-                                                List.of(
-                                                        ByteString.copyFromUtf8("m1"),
-                                                        ByteString.copyFromUtf8("m2"),
-                                                        ByteString.copyFromUtf8("m3"),
-                                                        ByteString.copyFromUtf8("m4"),
-                                                        ByteString.copyFromUtf8("m5"),
-                                                        ByteString.copyFromUtf8("m6"))))
-                                .designatingPayer(SCHEDULE_PAYER)
-                                .via(FAILING_TXN))
-                .when(scheduleSign(A_SCHEDULE)
+        return hapiTest(
+                overriding("tokens.nfts.maxBatchSizeMint", "5"),
+                cryptoCreate(TREASURY),
+                cryptoCreate(SCHEDULE_PAYER),
+                newKeyNamed(SUPPLY_KEY),
+                tokenCreate(A_TOKEN)
+                        .supplyKey(SUPPLY_KEY)
+                        .treasury(TREASURY)
+                        .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                        .initialSupply(0),
+                scheduleCreate(
+                                A_SCHEDULE,
+                                mintToken(
+                                        A_TOKEN,
+                                        List.of(
+                                                ByteString.copyFromUtf8("m1"),
+                                                ByteString.copyFromUtf8("m2"),
+                                                ByteString.copyFromUtf8("m3"),
+                                                ByteString.copyFromUtf8("m4"),
+                                                ByteString.copyFromUtf8("m5"),
+                                                ByteString.copyFromUtf8("m6"))))
+                        .designatingPayer(SCHEDULE_PAYER)
+                        .via(FAILING_TXN),
+                scheduleSign(A_SCHEDULE)
                         .alsoSigningWith(SUPPLY_KEY, SCHEDULE_PAYER, TREASURY)
-                        .hasKnownStatus(SUCCESS))
-                .then(
-                        getTxnRecord(FAILING_TXN)
-                                .scheduled()
-                                .hasPriority(recordWith().status(BATCH_SIZE_LIMIT_EXCEEDED)),
-                        getTokenInfo(A_TOKEN).hasTotalSupply(0));
+                        .hasKnownStatus(SUCCESS),
+                getTxnRecord(FAILING_TXN).scheduled().hasPriority(recordWith().status(BATCH_SIZE_LIMIT_EXCEEDED)),
+                getTokenInfo(A_TOKEN).hasTotalSupply(0));
     }
 
     @HapiTest
