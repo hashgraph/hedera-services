@@ -21,8 +21,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Represents any save point that is not first in the stack. When the save point is committed, the records are
- * flushed into  the following list of the parent sink.
- * Therefore, this sink has a total capacity equal to the parent's following capacity.
+ * flushed into the following list of the parent sink. So this sink has a total capacity equal to the parent's
+ * following capacity.
  */
 public class FollowingSavepoint extends AbstractSavepoint {
 

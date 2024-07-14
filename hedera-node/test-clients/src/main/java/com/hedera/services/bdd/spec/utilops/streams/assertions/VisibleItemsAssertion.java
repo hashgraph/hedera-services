@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.utilops.streams.assertions;
 
 import static com.hedera.services.bdd.spec.utilops.streams.assertions.BaseIdScreenedAssertion.baseFieldsMatch;
+import static com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItems.newVisibleItems;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -27,7 +28,6 @@ import com.hedera.services.stream.proto.RecordStreamItem;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,7 +47,7 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
     private final HapiSpec spec;
     private final Set<String> unseenIds;
     private final CountDownLatch latch;
-    private final Map<String, List<RecordStreamEntry>> entries = new HashMap<>();
+    private final Map<String, VisibleItems> items = new HashMap<>();
     private final boolean withLogging = true;
 
     @Nullable
@@ -74,7 +74,7 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
         latch = new CountDownLatch(unseenIds.size());
     }
 
-    public CompletableFuture<Map<String, List<RecordStreamEntry>>> entriesWithin(@NonNull final Duration timeout) {
+    public CompletableFuture<Map<String, VisibleItems>> itemsWithin(@NonNull final Duration timeout) {
         requireNonNull(timeout);
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -83,8 +83,8 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Interrupted while waiting for all expected items!");
             }
-            entries.values().forEach(entries -> entries.sort(Comparator.naturalOrder()));
-            return entries;
+            items.values().forEach(vi -> vi.entries().sort(Comparator.naturalOrder()));
+            return items;
         });
     }
 
@@ -99,19 +99,24 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
                 .ifPresentOrElse(
                         seenId -> {
                             final var entry = RecordStreamEntry.from(item);
-                            if (skipSynthItems == SkipSynthItems.NO || !isSynthItem(entry)) {
+                            final var isSynthItem = isSynthItem(entry);
+                            if (skipSynthItems == SkipSynthItems.NO || !isSynthItem) {
                                 if (withLogging) {
                                     log.info(
                                             "Saw {} as {}",
                                             seenId,
                                             item.getRecord().getTransactionID());
                                 }
-                                entries.computeIfAbsent(seenId, ignore -> new ArrayList<>())
+                                items.computeIfAbsent(seenId, ignore -> newVisibleItems())
+                                        .entries()
                                         .add(entry);
                                 if (!seenId.equals(lastSeenId)) {
                                     maybeFinishLastSeen();
                                 }
                                 lastSeenId = seenId;
+                            } else {
+                                items.computeIfAbsent(seenId, ignore -> newVisibleItems())
+                                        .trackSkippedSynthItem();
                             }
                         },
                         this::maybeFinishLastSeen);

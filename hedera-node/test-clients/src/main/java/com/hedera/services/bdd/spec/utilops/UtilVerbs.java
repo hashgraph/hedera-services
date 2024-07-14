@@ -93,7 +93,6 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
@@ -165,6 +164,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStr
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItems;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion.SkipSynthItems;
 import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
@@ -979,13 +979,13 @@ public class UtilVerbs {
      */
     public static SpecOperation validateVisibleItems(
             @NonNull final AtomicReference<VisibleItemsAssertion> assertion,
-            @NonNull final BiConsumer<HapiSpec, Map<String, List<RecordStreamEntry>>> validator) {
+            @NonNull final BiConsumer<HapiSpec, Map<String, VisibleItems>> validator) {
         requireNonNull(assertion);
         requireNonNull(validator);
         return withOpContext((spec, opLog) -> {
             triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
             final var entries =
-                    assertion.get().entriesWithin(Duration.ofSeconds(2)).join();
+                    assertion.get().itemsWithin(Duration.ofSeconds(2)).join();
             validator.accept(spec, entries);
         });
     }

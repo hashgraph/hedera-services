@@ -40,11 +40,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.Function;
-import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior;
@@ -58,13 +58,13 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItems;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -238,11 +238,11 @@ public class NaturalDispatchOrderingTest {
                 validateVisibleItems(assertion, reversibleScheduleValidator()));
     }
 
-    private static BiConsumer<HapiSpec, Map<String, List<RecordStreamEntry>>> reversibleUserValidator() {
+    private static BiConsumer<HapiSpec, Map<String, VisibleItems>> reversibleUserValidator() {
         return (spec, records) -> {
-            final var successItems = records.get("firstCreation");
+            final var successItems = requireNonNull(records.get("firstCreation"), "firstCreation not found");
             assertScheduledItemsMatch(successItems, 0, 1, ScheduleCreate, CryptoTransfer);
-            final var duplicateItems = records.get("duplicateCreation");
+            final var duplicateItems = requireNonNull(records.get("duplicateCreation"), "duplicateCreation not found");
             assertScheduledItemsMatch(duplicateItems, 0, -1, ScheduleCreate);
             final var creation = successItems.getFirst();
             final var duplicate = duplicateItems.getFirst();
@@ -251,9 +251,9 @@ public class NaturalDispatchOrderingTest {
         };
     }
 
-    private static BiConsumer<HapiSpec, Map<String, List<RecordStreamEntry>>> reversibleScheduleValidator() {
+    private static BiConsumer<HapiSpec, Map<String, VisibleItems>> reversibleScheduleValidator() {
         return (spec, records) -> {
-            final var committedItems = records.get("committed");
+            final var committedItems = requireNonNull(records.get("committed"), "committed not found");
             assertScheduledItemsMatch(
                     committedItems,
                     0,
@@ -263,55 +263,47 @@ public class NaturalDispatchOrderingTest {
                     TokenAssociateToAccount,
                     CryptoTransfer);
             assertStatuses(committedItems, SUCCESS, SUCCESS, SUCCESS, SUCCESS);
-            final var rolledBackItems = records.get("rolledBack");
+            final var rolledBackItems = requireNonNull(records.get("rolledBack"), "rolledBack not found");
             assertScheduledItemsMatch(rolledBackItems, 0, 1, ScheduleCreate, CryptoTransfer);
             assertStatuses(rolledBackItems, SUCCESS, INSUFFICIENT_PAYER_BALANCE);
         };
     }
 
-    private static BiConsumer<HapiSpec, Map<String, List<RecordStreamEntry>>> reversibleChildValidator() {
+    private static BiConsumer<HapiSpec, Map<String, VisibleItems>> reversibleChildValidator() {
         return (spec, records) -> {
-            final var successItems = records.get("fullSuccess");
+            final var successItems = requireNonNull(records.get("fullSuccess"), "fullSuccess not found");
             assertItemsMatch(successItems, 0, ContractCall, TokenAssociateToAccount, CryptoTransfer);
             assertStatuses(successItems, SUCCESS, SUCCESS, SUCCESS);
-            final var containedRevert = records.get("containedRevert");
-            System.out.println(containedRevert);
+            final var containedRevert = requireNonNull(records.get("containedRevert"), "containedRevert not found");
             assertItemsMatch(containedRevert, 0, ContractCall, CryptoTransfer);
             assertStatuses(containedRevert, SUCCESS, REVERTED_SUCCESS);
-            final var fullRevert = records.get("fullRevert");
+            final var fullRevert = requireNonNull(records.get("fullRevert"), "fullRevert not found");
             assertItemsMatch(fullRevert, 0, ContractCall, CryptoTransfer);
             assertStatuses(fullRevert, CONTRACT_REVERT_EXECUTED, REVERTED_SUCCESS);
         };
     }
 
     private static void assertScheduledItemsMatch(
-            @NonNull final List<RecordStreamEntry> items,
+            @NonNull final VisibleItems items,
             final int userTxnIndex,
             final int triggeredTxnIndex,
             @NonNull final HederaFunctionality... functions) {
-        assertEquals(
-                functions.length, items.size(), "Expected " + functions.length + " items, but got " + items.size());
-        assertArrayEquals(
-                items.stream().map(RecordStreamEntry::function).toArray(HederaFunctionality[]::new), functions);
+        assertArrayEquals(functions, items.functions());
         assertParentChildStructure(items, userTxnIndex, triggeredTxnIndex);
     }
 
     private static void assertItemsMatch(
-            @NonNull final List<RecordStreamEntry> items,
+            @NonNull final VisibleItems items,
             final int userTxnIndex,
             @NonNull final HederaFunctionality... functions) {
-        assertEquals(
-                functions.length, items.size(), "Expected " + functions.length + " items, but got " + items.size());
-        assertArrayEquals(
-                items.stream().map(RecordStreamEntry::function).toArray(HederaFunctionality[]::new), functions);
+        assertArrayEquals(functions, items.functions());
         assertParentChildStructure(items, userTxnIndex, -1);
     }
 
     private static void assertStatuses(
-            @NonNull final List<RecordStreamEntry> items,
+            @NonNull final VisibleItems items,
             @NonNull final com.hederahashgraph.api.proto.java.ResponseCodeEnum... expected) {
-        final var actual = items.stream().map(RecordStreamEntry::finalStatus).toArray(ResponseCodeEnum[]::new);
-        assertArrayEquals(expected, actual);
+        assertArrayEquals(expected, items.statuses());
     }
 
     /**
@@ -326,13 +318,13 @@ public class NaturalDispatchOrderingTest {
      * @param triggeredTxnIndex if not -1, the index of the triggered transaction
      */
     private static void assertParentChildStructure(
-            @NonNull final List<RecordStreamEntry> items, final int numPrecedingChildren, final int triggeredTxnIndex) {
+            @NonNull final VisibleItems items, final int numPrecedingChildren, final int triggeredTxnIndex) {
         final var userConsensusTime = items.get(numPrecedingChildren).consensusTime();
         final var userTransactionID = items.get(numPrecedingChildren).txnId();
-        int nextExpectedNonce = 1;
+        int nextExpectedNonce = items.firstExpectedUserNonce();
         for (int i = 0; i < numPrecedingChildren; i++) {
             final var preceding = items.get(i);
-            assertEquals(userConsensusTime.minusNanos(i), preceding.consensusTime());
+            assertEquals(userConsensusTime.minusNanos((numPrecedingChildren - i)), preceding.consensusTime());
             assertEquals(withNonce(userTransactionID, nextExpectedNonce++), preceding.txnId());
         }
         int postTriggeredOffset = 0;

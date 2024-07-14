@@ -32,14 +32,13 @@ import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.grouping.SysFileLookups;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItems;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -69,24 +68,24 @@ public class GenesisSystemFileExportsTest {
                         "First user entity num doesn't match config")));
     }
 
-    private static BiConsumer<HapiSpec, Map<String, List<RecordStreamEntry>>> validatorFor(
+    private static BiConsumer<HapiSpec, Map<String, VisibleItems>> validatorFor(
             @NonNull final AtomicReference<Map<FileID, Bytes>> preGenesisContents) {
         return (spec, records) -> validateSystemFileExports(spec, records, preGenesisContents.get());
     }
 
     private static void validateSystemFileExports(
             @NonNull final HapiSpec spec,
-            @NonNull final Map<String, List<RecordStreamEntry>> genesisRecords,
+            @NonNull final Map<String, VisibleItems> genesisRecords,
             @NonNull final Map<FileID, Bytes> preGenesisContents) {
         final var items = requireNonNull(genesisRecords.get("genesisTxn"));
-        final var histogram = statusHistograms(items);
+        final var histogram = statusHistograms(items.entries());
         final var systemFileNums =
                 SysFileLookups.allSystemFileNums(spec).boxed().toList();
         assertEquals(Map.of(SUCCESS, systemFileNums.size()), histogram.get(FileCreate));
         // Also check we export a node stake update at genesis
         assertEquals(Map.of(SUCCESS, 1), histogram.get(NodeStakeUpdate));
         final var postGenesisContents = SysFileLookups.getSystemFileContents(spec, fileNum -> true);
-        items.stream().filter(item -> item.function() == FileCreate).forEach(item -> {
+        items.entries().stream().filter(item -> item.function() == FileCreate).forEach(item -> {
             final var preContents = requireNonNull(
                     preGenesisContents.get(item.createdFileId()),
                     "No pre-genesis contents for " + item.createdFileId());
