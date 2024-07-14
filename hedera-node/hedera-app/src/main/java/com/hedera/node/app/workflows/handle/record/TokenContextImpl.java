@@ -95,19 +95,19 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
 
     @Override
     public boolean hasChildOrPrecedingRecords() {
-        return stack.hasChildOrPrecedingBuilders();
+        return stack.hasNonBaseStreamBuilder();
     }
 
     @Override
     public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
         requireNonNull(consumer, "consumer must not be null");
-        stack.forEachChildRecord(recordBuilderClass, consumer);
+        stack.forEachNonBaseBuilder(recordBuilderClass, consumer);
     }
 
     @NonNull
     @Override
     public <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = stack.createPrecedingBuilder();
+        final var result = stack.createIrreversiblePrecedingBuilder();
         return castBuilder(result, recordBuilderClass);
     }
 

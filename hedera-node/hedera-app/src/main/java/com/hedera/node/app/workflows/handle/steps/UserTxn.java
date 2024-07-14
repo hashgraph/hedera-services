@@ -99,19 +99,20 @@ public record UserTxn(
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final HandleWorkflow handleWorkflow) {
-        final var config = configProvider.getConfiguration();
-        final SavepointStackImpl stack;
+
         final var isGenesis = lastHandledConsensusTime.equals(Instant.EPOCH);
-
+        final var config = configProvider.getConfiguration();
         final var consensusConfig = config.getConfigData(ConsensusConfig.class);
-        final var maxPrecedingBuilders = isGenesis ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords();
-        final var maxFollowingBuilders = consensusConfig.handleMaxFollowingRecords();
-        stack = SavepointStackImpl.newRootStack(state, maxPrecedingBuilders, maxFollowingBuilders);
-
+        final var stack = SavepointStackImpl.newRootStack(
+                state,
+                isGenesis ? Integer.MAX_VALUE : consensusConfig.handleMaxPrecedingRecords(),
+                consensusConfig.handleMaxFollowingRecords());
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var preHandleResult =
                 handleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
+        final var tokenContext =
+                new TokenContextImpl(config, storeMetricsService, stack, blockRecordManager, consensusNow);
         return new UserTxn(
                 isGenesis,
                 txnInfo.functionality(),
@@ -121,7 +122,7 @@ public record UserTxn(
                 event,
                 platformTxn,
                 txnInfo,
-                new TokenContextImpl(config, storeMetricsService, stack, blockRecordManager, consensusNow),
+                tokenContext,
                 stack,
                 preHandleResult,
                 readableStoreFactory,
@@ -130,7 +131,25 @@ public record UserTxn(
                 creatorInfo);
     }
 
-    public Dispatch dispatch(
+    /**
+     * Creates a new {@link Dispatch} instance for this user transaction in the given context.
+     *
+     * @param authorizer the authorizer to use
+     * @param networkInfo the network information
+     * @param feeManager the fee manager
+     * @param recordCache the record cache
+     * @param dispatchProcessor the dispatch processor
+     * @param blockRecordManager the block record manager
+     * @param serviceScopeLookup the service scope lookup
+     * @param storeMetricsService the store metrics service
+     * @param exchangeRateManager the exchange rate manager
+     * @param childDispatchFactory the child dispatch factory
+     * @param dispatcher the transaction dispatcher
+     * @param networkUtilizationManager the network utilization manager
+     * @param baseBuilder the base record builder
+     * @return the new dispatch instance
+     */
+    public Dispatch newDispatch(
             // @Singleton
             @NonNull final Authorizer authorizer,
             @NonNull final NetworkInfo networkInfo,
@@ -143,18 +162,25 @@ public record UserTxn(
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final ChildDispatchFactory childDispatchFactory,
             @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final SingleTransactionRecordBuilder builder,
-            @NonNull final NetworkUtilizationManager networkUtilizationManager) {
+            @NonNull final NetworkUtilizationManager networkUtilizationManager,
+            // @UserTxnScope
+            @NonNull final SingleTransactionRecordBuilder baseBuilder) {
         final var keyVerifier = new DefaultKeyVerifier(
                 txnInfo.signatureMap().sigPair().size(),
                 config.getConfigData(HederaConfig.class),
                 preHandleResult.getVerificationResults());
-
         final var readableStoreFactory = new ReadableStoreFactory(stack);
         final var writableStoreFactory = new WritableStoreFactory(
                 stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
         final var serviceApiFactory = new ServiceApiFactory(stack, config, storeMetricsService);
-
+        final var priceCalculator =
+                new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory);
+        final var storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
+        final var entityNumGenerator = new EntityNumGeneratorImpl(
+                new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
+                        .getStore(WritableEntityIdStore.class));
+        final var recordBuilders = new RecordBuildersImpl(stack);
+        final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,
@@ -162,9 +188,9 @@ public record UserTxn(
                 config,
                 authorizer,
                 blockRecordManager,
-                new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory),
+                priceCalculator,
                 feeManager,
-                new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory),
+                storeFactory,
                 requireNonNull(txnInfo.payerID()),
                 keyVerifier,
                 platformState,
@@ -172,25 +198,25 @@ public record UserTxn(
                 preHandleResult.payerKey() == null ? Key.DEFAULT : preHandleResult.payerKey(),
                 exchangeRateManager,
                 stack,
-                new EntityNumGeneratorImpl(
-                        new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
-                                .getStore(WritableEntityIdStore.class)),
+                entityNumGenerator,
                 dispatcher,
                 recordCache,
                 networkInfo,
-                new RecordBuildersImpl(stack),
+                recordBuilders,
                 childDispatchFactory,
                 dispatchProcessor,
-                new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack));
+                throttleAdvisor);
+        final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
+        final var feeAccumulator = new FeeAccumulator(
+                serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) baseBuilder);
         return new RecordDispatch(
-                builder,
+                baseBuilder,
                 config,
-                dispatcher.dispatchComputeFees(dispatchHandleContext),
+                fees,
                 txnInfo,
                 requireNonNull(txnInfo.payerID()),
                 readableStoreFactory,
-                new FeeAccumulator(
-                        serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder),
+                feeAccumulator,
                 keyVerifier,
                 creatorInfo,
                 consensusNow,
@@ -202,5 +228,13 @@ public record UserTxn(
                 tokenContextImpl,
                 platformState,
                 preHandleResult);
+    }
+
+    /**
+     * Returns the base stream builder for this user transaction.
+     * @return the base stream builder
+     */
+    public SingleTransactionRecordBuilder baseBuilder() {
+        return stack.baseStreamBuilder();
     }
 }

@@ -63,7 +63,7 @@ class RecordBuildersImplTest {
     @Test
     void testAddChildRecordBuilder() {
         final var childRecordBuilder = mock(SingleTransactionRecordBuilderImpl.class);
-        given(stack.createChildBuilder()).willReturn(childRecordBuilder);
+        given(stack.createReversibleChildBuilder()).willReturn(childRecordBuilder);
 
         final var actual = subject.addChildRecordBuilder(CryptoCreateRecordBuilder.class);
 

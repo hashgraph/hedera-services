@@ -316,7 +316,9 @@ public class HandleWorkflow {
     private Stream<SingleTransactionRecord> execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
-                skip(userTxn);
+                initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo()).status(BUSY);
+                // Flushes the BUSY builder to the stream, no other side effects
+                userTxn.stack().commitFullStack();
             } else {
                 if (userTxn.isGenesisTxn()) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
@@ -334,7 +336,7 @@ public class HandleWorkflow {
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
             }
-            return finalizedStreamItems(userTxn, userTxn.stack().streamBuilders());
+            return finalizedStreamItems(userTxn, userTxn.stack().allStreamBuilders());
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
             return failInvalidStreamItems(userTxn);
@@ -348,28 +350,10 @@ public class HandleWorkflow {
      * @return the failure record
      */
     private Stream<SingleTransactionRecord> failInvalidStreamItems(@NonNull final UserTxn userTxn) {
-        final var builder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
-        initializeUserBuilder(builder, userTxn.txnInfo());
-        builder.status(FAIL_INVALID);
         userTxn.stack().rollbackFullStack();
-        return finalizedStreamItems(userTxn, List.of(builder));
-    }
-
-    /**
-     * Has the side effect of adding a {@link ResponseCodeEnum#BUSY} record to
-     * the transaction's record stream, but skips any other execution.
-     *
-     * @param userTxn the user transaction to skip
-     */
-    private void skip(@NonNull final UserTxn userTxn) {
-        final TransactionInfo txnInfo = userTxn.txnInfo();
-        final SingleTransactionRecordBuilder builder = userTxn.stack().createUserBuilder();
-        builder.transaction(txnInfo.transaction())
-                .transactionBytes(txnInfo.signedBytes())
-                .transactionID(txnInfo.txBody().transactionIDOrElse(TransactionID.DEFAULT))
-                .exchangeRate(exchangeRateManager.exchangeRates())
-                .memo(txnInfo.txBody().memo())
-                .status(BUSY);
+        final var failInvalidBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+        initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo()).status(FAIL_INVALID);
+        return finalizedStreamItems(userTxn, List.of(failInvalidBuilder));
     }
 
     /**
@@ -447,7 +431,8 @@ public class HandleWorkflow {
      * @return the user dispatch
      */
     private Dispatch dispatchFor(@NonNull final UserTxn userTxn) {
-        return userTxn.dispatch(
+        final var baseBuilder = initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo());
+        return userTxn.newDispatch(
                 authorizer,
                 networkInfo,
                 feeManager,
@@ -459,31 +444,20 @@ public class HandleWorkflow {
                 exchangeRateManager,
                 childDispatchFactory,
                 dispatcher,
-                initializeUserBuilder(userTxn),
-                networkUtilizationManager);
+                networkUtilizationManager,
+                baseBuilder);
     }
 
     /**
-     * Initializes the user record with the transaction information. The record builder
-     * list is initialized with the transaction, transaction bytes, transaction ID,
+     * Returns the initializes the base builder of the given user transaction initialized with its transaction
+     * information. The record builder list is initialized with the transaction, transaction bytes, transaction ID,
      * exchange rate, and memo.
      *
-     * @param userTxn the user transaction whose record should be initialized
+     * @param builder the base builder
+     * @param txnInfo the transaction information
+     * @return the initialized base builder
      */
-    private SingleTransactionRecordBuilder initializeUserBuilder(@NonNull final UserTxn userTxn) {
-        final var userRecord = userTxn.stack().baseStreamBuilder();
-        return initializeUserBuilder(userRecord, userTxn.txnInfo());
-    }
-
-    /**
-     * Initializes the user record with the transaction information. The record builder
-     * list is initialized with the transaction, transaction bytes, transaction ID,
-     * exchange rate, and memo.
-     *
-     * @param builder the record builder
-     * @param txnInfo the transaction info
-     */
-    private SingleTransactionRecordBuilder initializeUserBuilder(
+    private SingleTransactionRecordBuilder initializeBuilderInfo(
             @NonNull final SingleTransactionRecordBuilder builder, @NonNull final TransactionInfo txnInfo) {
         final var transaction = txnInfo.transaction();
         // If the transaction uses the legacy body bytes field instead of explicitly

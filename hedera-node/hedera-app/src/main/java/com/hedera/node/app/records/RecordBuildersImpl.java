@@ -43,7 +43,7 @@ public class RecordBuildersImpl implements RecordBuilders {
     @NonNull
     @Override
     public <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
-        final var result = stack.createChildBuilder();
+        final var result = stack.createReversibleChildBuilder();
         return castBuilder(result, recordBuilderClass);
     }
 
