@@ -27,7 +27,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.Test;
 
-public class IsAssociatedCallTest extends CallTestBase {
+class IsAssociatedCallTest extends CallTestBase {
 
     IsAssociatedCall subject;
 
