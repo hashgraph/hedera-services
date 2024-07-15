@@ -248,9 +248,10 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
                 .setGas(gas.orElse(spec.setup().defaultCallGas()))
                 .setMaxResultSize(maxResultSize.orElse(spec.setup().defaultMaxLocalCallRetBytes()));
 
-        if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
+        final var effContract = contract.startsWith("0x") ? contract.substring(2) : contract;
+        if (effContract.length() == HEXED_EVM_ADDRESS_LEN) {
             opBuilder.setContractID(
-                    ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
+                    ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(effContract))));
         } else {
             opBuilder.setContractID(TxnUtils.asContractId(contract, spec));
         }
@@ -258,7 +259,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     }
 
     @Override
-    protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
+    protected long costOnlyNodePayment(HapiSpec spec) {
         return spec.fees().forOp(HederaFunctionality.ContractCallLocal, FeeBuilder.getCostForQueryByIdOnly());
     }
 

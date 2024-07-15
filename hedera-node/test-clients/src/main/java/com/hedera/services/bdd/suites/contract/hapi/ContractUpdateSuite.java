@@ -98,7 +98,6 @@ public class ContractUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateMaxAutomaticAssociationsAndRequireKey() {
-        final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
         return defaultHapiSpec("updateMaxAutomaticAssociationsAndRequireKey")
                 .given(
                         newKeyNamed(ADMIN_KEY),
@@ -106,15 +105,12 @@ public class ContractUpdateSuite {
                         contractCreate(CONTRACT).adminKey(ADMIN_KEY))
                 .when(
                         contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).signedBy(DEFAULT_PAYER, ADMIN_KEY),
-                        contractUpdate(CONTRACT)
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).signedBy(DEFAULT_PAYER, ADMIN_KEY),
+                        doWithStartupConfigNow("entities.maxLifetime", (value, now) -> contractUpdate(CONTRACT)
                                 .newMaxAutomaticAssociations(20)
-                                .newExpirySecs(newExpiry)
-                                .signedBy(DEFAULT_PAYER, ADMIN_KEY),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(20)
-                                .newExpirySecs(newExpiry + 1)
+                                .newExpirySecs(now.getEpochSecond() + Long.parseLong(value) - 12345L)
                                 .signedBy(DEFAULT_PAYER)
-                                .hasKnownStatus(INVALID_SIGNATURE))
+                                .hasKnownStatus(INVALID_SIGNATURE)))
                 .then(getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(20)));
     }
 
