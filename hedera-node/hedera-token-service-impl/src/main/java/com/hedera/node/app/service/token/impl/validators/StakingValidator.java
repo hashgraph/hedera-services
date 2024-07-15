@@ -55,7 +55,7 @@ public class StakingValidator {
      * @param accountStore           readable account store
      * @param networkInfo            network info
      */
-    public void validateStakedIdForCreation(
+    public static void validateStakedIdForCreation(
             final boolean isStakingEnabled,
             final boolean hasDeclineRewardChange,
             @NonNull final String stakedIdKind,
@@ -89,7 +89,7 @@ public class StakingValidator {
      * @param accountStore           readable account store
      * @param networkInfo            network info
      */
-    public void validateStakedIdForUpdate(
+    public static void validateStakedIdForUpdate(
             final boolean isStakingEnabled,
             final boolean hasDeclineRewardChange,
             @NonNull final String stakedIdKind,
@@ -121,7 +121,7 @@ public class StakingValidator {
      * @param stakedNodeIdInOp       staked node id
      * @param accountStore           readable account store
      */
-    private void validateStakedId(
+    private static void validateStakedId(
             @NonNull final String stakedIdKind,
             @Nullable final AccountID stakedAccountIdInOp,
             @Nullable final Long stakedNodeIdInOp,
@@ -146,7 +146,7 @@ public class StakingValidator {
      * @param stakedNodeId staked node id
      * @return true if staked id is a sentinel value
      */
-    private boolean isValidStakingSentinel(
+    private static boolean isValidStakingSentinel(
             @NonNull String stakedIdKind, @Nullable AccountID stakedAccountId, @Nullable Long stakedNodeId) {
         if (stakedIdKind.equals("STAKED_ACCOUNT_ID")) {
             // current checking only account num since shard and realm are 0.0
@@ -158,7 +158,7 @@ public class StakingValidator {
         }
     }
 
-    private boolean isValidStakingIdForCreation(
+    private static boolean isValidStakingIdForCreation(
             final String stakedIdKind, final AccountID stakedAccountId, final Long stakedNodeId) {
         if (stakedIdKind.equals("STAKED_ACCOUNT_ID")) {
             // current checking only account num since shard and realm are 0.0
