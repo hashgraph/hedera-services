@@ -28,6 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * detail, and are happy with just the API provided by this interface.
  */
 public interface HederaState {
+
     /**
      * Returns a {@link ReadableStates} for the given named service. If such a service doesn't
      * exist, an empty {@link ReadableStates} is returned.

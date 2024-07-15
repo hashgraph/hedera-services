@@ -16,7 +16,9 @@
 
 package com.hedera.services.bdd.suites.records;
 
-import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+import static com.hedera.services.bdd.junit.ContextRequirement.SYSTEM_ACCOUNT_BALANCES;
+import static com.hedera.services.bdd.junit.EmbeddedReason.MANIPULATES_EVENT_VERSION;
+import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
 import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -30,14 +32,13 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.getNonFeeDeduction;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uncheckedSubmit;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.mutateAccount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertHgcaaLogContains;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertHgcaaLogDoesNotContain;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.freezeOnly;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
@@ -57,18 +58,19 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
 import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
 public class DuplicateManagementTest {
     private static final String REPEATED = "repeated";
-    private static final String TXN_ID = "txnId";
+    public static final String TXN_ID = "txnId";
     private static final String TO = "0.0.3";
     private static final String CIVILIAN = "civilian";
     private static final long MS_TO_WAIT_FOR_CONSENSUS = 6_000L;
@@ -134,8 +136,7 @@ public class DuplicateManagementTest {
                         }));
     }
 
-    @HapiTest
-    @Tag(EMBEDDED)
+    @LeakyEmbeddedHapiTest(reason = MUST_SKIP_INGEST, requirement = SYSTEM_ACCOUNT_BALANCES)
     @DisplayName("if a node submits an authorized transaction without payer signature, it is charged the network fee")
     final Stream<DynamicTest> chargesNetworkFeeToNodeThatSubmitsAuthorizedTransactionWithoutPayerSignature() {
         final var submittingNodeAccountId = "0.0.4";
@@ -144,21 +145,17 @@ public class DuplicateManagementTest {
                 cryptoTransfer(tinyBarsFromTo(GENESIS, submittingNodeAccountId, ONE_HBAR)),
                 // Take a snapshot of the node's balance before submitting
                 balanceSnapshot("preConsensus", submittingNodeAccountId),
-                // Bypass ingest using a non-default node to submit a freeze that claims
+                // Bypass ingest using a non-default node to submit a privileged transaction that claims
                 // 0.0.2 as the payer, but signs with the wrong key
-                freezeOnly()
-                        .startingIn(1)
-                        .seconds()
-                        .setNode(submittingNodeAccountId)
+                nodeCreate("newNode")
                         .signedBy("notTreasuryKey")
+                        .setNode(submittingNodeAccountId)
                         .hasKnownStatus(INVALID_PAYER_SIGNATURE),
                 // And verify that the node is charged the network fee for submitting this transaction
-                mutateAccount("0.0.4", account -> account.tinybarBalance(0L)),
                 getAccountBalance(submittingNodeAccountId).hasTinyBars(reducedFromSnapshot("preConsensus")));
     }
 
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(MANIPULATES_EVENT_VERSION)
     @DisplayName("only warns of missing creator if event version is current")
     final Stream<DynamicTest> onlyWarnsOfMissingCreatorIfCurrentVersion() {
         return hapiTest(
@@ -166,16 +163,17 @@ public class DuplicateManagementTest {
                         .setNode("0.0.666")
                         .withSubmissionStrategy(usingVersion(SyntheticVersion.PAST))
                         .hasAnyStatusAtAll(),
-                assertHgcaaLogDoesNotContain(byNodeId(0), "not in the address book", Duration.ofMillis(250)),
+                assertHgcaaLogDoesNotContain(
+                        byNodeId(0), "node 666 which is not in the address book", Duration.ofSeconds(1)),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, ONE_HBAR))
                         .setNode("0.0.666")
                         .withSubmissionStrategy(usingVersion(SyntheticVersion.PRESENT))
                         .hasAnyStatusAtAll(),
-                assertHgcaaLogContains(byNodeId(0), "not in the address book", Duration.ofMillis(250)));
+                assertHgcaaLogContains(
+                        byNodeId(0), "node 666 which is not in the address book", Duration.ofSeconds(1)));
     }
 
-    @HapiTest
-    @Tag(EMBEDDED)
+    @LeakyEmbeddedHapiTest(reason = MUST_SKIP_INGEST, requirement = SYSTEM_ACCOUNT_BALANCES)
     @DisplayName("if a node submits an authorized transaction without payer signature, it is charged the network fee")
     final Stream<DynamicTest> payerSolvencyStillCheckedEvenForDuplicateTransaction() {
         final var submittingNodeAccountId = "0.0.4";

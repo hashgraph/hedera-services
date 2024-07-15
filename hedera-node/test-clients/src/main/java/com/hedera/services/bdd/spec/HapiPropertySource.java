@@ -24,6 +24,8 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.node.config.converter.LongPairConverter;
+import com.hedera.node.config.types.LongPair;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
@@ -142,6 +144,15 @@ public interface HapiPropertySource {
         return Long.parseLong(get(property));
     }
 
+    /**
+     * Returns a {@link LongPair} from the given property.
+     * @param property the property to get the value from
+     * @return the {@link LongPair} value
+     */
+    default LongPair getLongPair(@NonNull final String property) {
+        return new LongPairConverter().convert(get(property));
+    }
+
     default HapiSpecSetup.TlsConfig getTlsConfig(String property) {
         return HapiSpecSetup.TlsConfig.valueOf(get(property).toUpperCase());
     }
@@ -187,7 +198,7 @@ public interface HapiPropertySource {
                 .map(s -> (s instanceof HapiPropertySource)
                         ? s
                         : ((s instanceof Map) ? new MapPropertySource((Map) s) : new JutilPropertySource((String) s)))
-                .toArray(n -> new HapiPropertySource[n]);
+                .toArray(HapiPropertySource[]::new);
     }
 
     static TokenID asToken(String v) {

@@ -20,7 +20,6 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.PENDING;
 import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.REACHED;
-import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.UNREACHABLE;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen.NO;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen.YES;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.DOWN;
@@ -39,6 +38,7 @@ import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
 import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen;
+import com.hedera.services.bdd.suites.regression.system.LifecycleTest;
 import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -52,11 +52,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A node running in its own OS process as a subprocess of the JUnit test runner.
  */
 public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements HederaNode {
+    private static final Logger log = LogManager.getLogger(SubProcessNode.class);
+
     /**
      * How many milliseconds to wait between retries when scanning the application log for
      * the node status.
@@ -71,7 +75,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
      * before resorting to scanning the application log. (Empirically, if Prometheus is not up
      * within a minute or so, it's not going to be; and we should fall back to log scanning.)
      */
-    private static final int MAX_PROMETHEUS_RETRIES = 666;
+    private static final int MAX_PROMETHEUS_RETRIES = 1000;
     /**
      * How many retries to make between checking if a bind exception has been thrown in the logs.
      */
@@ -107,17 +111,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
 
     @Override
     public SubProcessNode start() {
-        return startWithConfigVersion(0);
-    }
-
-    @Override
-    public boolean stop() {
-        return stopWith(ProcessHandle::destroy);
-    }
-
-    @Override
-    public boolean terminate() {
-        return stopWith(ProcessHandle::destroyForcibly);
+        return startWithConfigVersion(LifecycleTest.CURRENT_CONFIG_VERSION.get());
     }
 
     @Override
@@ -156,18 +150,23 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
                         nodeStatusObserver.accept(new NodeStatus(
                                 lookupAttempt, grpcStatus, bindExceptionSeen, retryCount.getAndIncrement()));
                     }
-                    if (statusReached) {
-                        return REACHED;
-                    } else {
-                        return bindExceptionSeen == YES ? UNREACHABLE : PENDING;
-                    }
+                    return statusReached ? REACHED : PENDING;
                 },
                 () -> retryCount.get() > MAX_PROMETHEUS_RETRIES ? LOG_SCAN_BACKOFF_MS : PROMETHEUS_BACKOFF_MS);
     }
 
     @Override
     public CompletableFuture<Void> stopFuture() {
-        return conditionFuture(() -> processHandle == null);
+        if (processHandle == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        if (!processHandle.destroy()) {
+            log.warn("May have failed to stop node '{}' with PID '{}'", metadata.nodeId(), processHandle.pid());
+        }
+        return processHandle.onExit().thenAccept(handle -> {
+            log.info("Destroyed PID {}", handle.pid());
+            this.processHandle = null;
+        });
     }
 
     @Override

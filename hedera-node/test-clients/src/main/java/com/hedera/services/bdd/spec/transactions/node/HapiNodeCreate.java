@@ -24,12 +24,14 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
@@ -44,7 +46,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.LongConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,10 +61,11 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     private List<ServiceEndpoint> grpcEndpoints = Collections.emptyList();
     private Optional<byte[]> gossipCaCertificate = Optional.empty();
     private Optional<byte[]> grpcCertificateHash = Optional.empty();
-    private Optional<LongConsumer> newNumObserver = Optional.empty();
+    private Optional<String> adminKeyName = Optional.empty();
+    private Optional<KeyShape> adminKeyShape = Optional.empty();
 
     @Nullable
-    private Key key;
+    private Key adminKey;
 
     @Nullable
     private String keyName;
@@ -74,17 +76,12 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected Key lookupKey(final HapiSpec spec, final String name) {
-        return name.equals(nodeName) ? key : spec.registry().getKey(name);
+        return name.equals(nodeName) ? adminKey : spec.registry().getKey(name);
     }
 
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.NodeCreate;
-    }
-
-    public HapiNodeCreate exposingNumTo(@NonNull final LongConsumer obs) {
-        newNumObserver = Optional.of(obs);
-        return this;
     }
 
     public HapiNodeCreate advertisingCreation() {
@@ -127,6 +124,15 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         return this;
     }
 
+    public HapiNodeCreate adminKeyName(final String s) {
+        adminKeyName = Optional.of(s);
+        return this;
+    }
+
+    private void genKeysFor(final HapiSpec spec) {
+        adminKey = netOf(spec, adminKeyName, adminKeyShape);
+    }
+
     @Override
     protected HapiNodeCreate self() {
         return this;
@@ -139,18 +145,14 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     }
 
     private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
-        // TODO issue #13670
-        // This is a placeholder implementation until the actual fee estimation is implemented.
-        return FeeData.newBuilder()
-                .setNodedata(FeeComponents.newBuilder().setBpr(0))
-                .setNetworkdata(FeeComponents.newBuilder().setBpr(0))
-                .setServicedata(FeeComponents.newBuilder().setBpr(0))
-                .build();
+        final UsageAccumulator accumulator = new UsageAccumulator();
+        accumulator.addVpt(Math.max(0, svo.getTotalSigCount() - 1));
+        return AdapterUtils.feeDataFrom(accumulator);
     }
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
-        key = key != null ? key : netOf(spec, Optional.ofNullable(keyName));
+        genKeysFor(spec);
         if (useAvailableSubProcessPorts) {
             if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
                 throw new IllegalStateException("Target is not a SubProcessNetwork");
@@ -163,7 +165,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
                         NodeCreateTransactionBody.class, builder -> {
                             accountId.ifPresent(builder::setAccountId);
                             description.ifPresent(builder::setDescription);
-                            builder.setAdminKey(key);
+                            if (adminKey != null) builder.setAdminKey(adminKey);
                             if (!gossipEndpoints.isEmpty()) {
                                 builder.clearGossipEndpoint().addAllGossipEndpoint(gossipEndpoints);
                             }
@@ -178,7 +180,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> key);
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> adminKey);
     }
 
     @Override

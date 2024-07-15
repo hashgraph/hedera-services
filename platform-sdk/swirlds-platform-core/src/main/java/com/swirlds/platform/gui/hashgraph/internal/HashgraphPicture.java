@@ -52,6 +52,7 @@ public class HashgraphPicture extends JPanel {
     private static final Logger logger = LogManager.getLogger(HashgraphPicture.class);
     private final HashgraphGuiSource hashgraphSource;
     private final HashgraphPictureOptions options;
+    private final EventSelector selector;
     private PictureMetadata pictureMetadata;
     /** used to store an image when the freeze checkbox is checked */
     private BufferedImage image = null;
@@ -62,6 +63,8 @@ public class HashgraphPicture extends JPanel {
     public HashgraphPicture(final HashgraphGuiSource hashgraphSource, final HashgraphPictureOptions options) {
         this.hashgraphSource = hashgraphSource;
         this.options = options;
+        this.selector = new EventSelector();
+        this.addMouseListener(selector);
         createMetadata();
     }
 
@@ -93,7 +96,7 @@ public class HashgraphPicture extends JPanel {
             List<EventImpl> events;
             if (options.displayLatestEvents()) {
                 final long startGen = Math.max(
-                        hashgraphSource.getMaxGeneration() - options.getNumGenerationsDisplay(),
+                        hashgraphSource.getMaxGeneration() - options.getNumGenerationsDisplay() + 1,
                         GraphGenerations.FIRST_GENERATION);
                 options.setStartGeneration(startGen);
                 events = hashgraphSource.getEvents(startGen, options.getNumGenerationsDisplay());
@@ -111,10 +114,13 @@ public class HashgraphPicture extends JPanel {
 
             pictureMetadata = new PictureMetadata(fm, this.getSize(), currentMetadata, events);
 
+            selector.setMetadata(pictureMetadata);
+            selector.setEventsInPicture(events);
+
             g.setColor(Color.BLACK);
 
             for (int i = 0; i < currentMetadata.getNumColumns(); i++) {
-                final String name = currentMetadata.getName(i);
+                final String name = currentMetadata.getLabel(i);
 
                 // gap between columns
                 final int betweenGap = pictureMetadata.getGapBetweenColumns();
@@ -127,7 +133,7 @@ public class HashgraphPicture extends JPanel {
                         name, (int) (x - rect.getWidth() / 2), (int) (pictureMetadata.getYmax() + rect.getHeight()));
             }
 
-            final int d = (int) (2 * pictureMetadata.getR());
+            final int d = pictureMetadata.getD();
 
             // for each event, draw 2 downward lines to its parents
             for (final EventImpl event : events) {
@@ -182,9 +188,20 @@ public class HashgraphPicture extends JPanel {
                                 .contains(event.getOtherParent().getCreatorId())
                 ? event.getOtherParent()
                 : null;
-        final Color color = HashgraphGuiUtils.eventColor(event, options);
+        final Color color;
+        if (selector.isSelected(event)) {
+            color = Color.MAGENTA;
+        } else if (selector.isStronglySeen(event)) {
+            color = Color.CYAN;
+        } else {
+            color = HashgraphGuiUtils.eventColor(event, options);
+        }
         g.setColor(color);
-        g.fillOval(pictureMetadata.xpos(e2, event) - d / 2, pictureMetadata.ypos(event) - d / 2, d, d);
+
+        final int xPos = pictureMetadata.xpos(e2, event) - d / 2;
+        final int yPos = pictureMetadata.ypos(event) - d / 2;
+
+        g.fillOval(xPos, yPos, d, d);
         g.setFont(g.getFont().deriveFont(Font.BOLD));
 
         String s = "";

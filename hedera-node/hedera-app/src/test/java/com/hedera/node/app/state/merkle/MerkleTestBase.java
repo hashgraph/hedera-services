@@ -22,12 +22,12 @@ import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDb;
-import com.swirlds.platform.state.merkle.disk.OnDiskKey;
-import com.swirlds.platform.state.merkle.disk.OnDiskValue;
-import com.swirlds.platform.state.merkle.memory.InMemoryKey;
-import com.swirlds.platform.state.merkle.memory.InMemoryValue;
-import com.swirlds.platform.test.fixtures.state.StateTestBase;
+import com.swirlds.state.merkle.disk.OnDiskKey;
+import com.swirlds.state.merkle.disk.OnDiskValue;
+import com.swirlds.state.merkle.memory.InMemoryKey;
+import com.swirlds.state.merkle.memory.InMemoryValue;
 import com.swirlds.state.spi.StateDefinition;
+import com.swirlds.state.test.fixtures.StateTestBase;
 import com.swirlds.virtualmap.VirtualMap;
 import org.junit.jupiter.api.AfterEach;
 
@@ -53,7 +53,7 @@ import org.junit.jupiter.api.AfterEach;
  * complexity, and also requires a storage directory, so rather than creating these for every test
  * even if they don't need it, I just use it for virtual map specific tests).
  */
-public class MerkleTestBase extends com.swirlds.platform.test.fixtures.state.merkle.MerkleTestBase {
+public class MerkleTestBase extends com.swirlds.state.test.fixtures.merkle.MerkleTestBase {
 
     protected StateMetadata<String, String> fruitMetadata;
     protected StateMetadata<String, String> fruitVirtualMetadata;

@@ -46,8 +46,8 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.test.fixtures.state.MapReadableStates;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.test.fixtures.MapReadableStates;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.HashMap;
 import java.util.Map;
 

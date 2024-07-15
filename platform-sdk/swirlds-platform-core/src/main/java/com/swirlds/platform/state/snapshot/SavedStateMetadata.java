@@ -20,8 +20,6 @@ import static com.swirlds.common.formatting.StringFormattingUtils.formattedList;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static com.swirlds.logging.legacy.LogMarker.STARTUP;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.CONSENSUS_TIMESTAMP;
-import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.EPOCH_HASH;
-import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.EPOCH_HASH_MNEMONIC;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.HASH;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.HASH_MNEMONIC;
 import static com.swirlds.platform.state.snapshot.SavedStateMetadataField.LEGACY_RUNNING_EVENT_HASH;
@@ -93,8 +91,6 @@ import org.apache.logging.log4j.Logger;
  *                                       {@link SavedStateMetadataField#SIGNING_WEIGHT_SUM}
  * @param totalWeight                    the total weight of all nodes in the network, corresponds to
  *                                       {@link SavedStateMetadataField#TOTAL_WEIGHT}
- * @param epochHash                      the epoch hash of the state, used by emergency recovery protocols
- * @param epochHashMnemonic              the mnemonic for the {@link #epochHash}, or "null" if the epoch hash is null
  */
 public record SavedStateMetadata(
         long round,
@@ -110,9 +106,7 @@ public record SavedStateMetadata(
         @NonNull NodeId nodeId,
         @NonNull List<NodeId> signingNodes,
         long signingWeightSum,
-        long totalWeight,
-        @Nullable Hash epochHash,
-        @Nullable String epochHashMnemonic) {
+        long totalWeight) {
 
     // A note to engineers maintaining this code:
     //
@@ -156,9 +150,7 @@ public record SavedStateMetadata(
                 new NodeId(parsePrimitiveLong(data, NODE_ID)),
                 parseNodeIdList(data, SIGNING_NODES),
                 parsePrimitiveLong(data, SIGNING_WEIGHT_SUM),
-                parsePrimitiveLong(data, TOTAL_WEIGHT),
-                parseHash(data, EPOCH_HASH),
-                parseString(data, EPOCH_HASH_MNEMONIC));
+                parsePrimitiveLong(data, TOTAL_WEIGHT));
     }
 
     /**
@@ -180,8 +172,6 @@ public record SavedStateMetadata(
         final List<NodeId> signingNodes = signedState.getSigSet().getSigningNodes();
         Collections.sort(signingNodes);
 
-        final Hash epochHash = platformState.getEpochHash();
-
         return new SavedStateMetadata(
                 signedState.getRound(),
                 signedState.getState().getHash(),
@@ -198,9 +188,7 @@ public record SavedStateMetadata(
                 signedState.getSigningWeight(),
                 platformState.getAddressBook() == null
                         ? 0
-                        : platformState.getAddressBook().getTotalWeight(),
-                epochHash,
-                epochHash == null ? "null" : epochHash.toMnemonic());
+                        : platformState.getAddressBook().getTotalWeight());
     }
 
     /**
@@ -626,8 +614,6 @@ public record SavedStateMetadata(
         putRequireNonNull(map, SIGNING_NODES, formattedList(signingNodes.iterator()));
         putRequireNonNull(map, SIGNING_WEIGHT_SUM, signingWeightSum);
         putRequireNonNull(map, TOTAL_WEIGHT, totalWeight);
-        putPossiblyNullObject(map, EPOCH_HASH, epochHash);
-        putRequireNonNull(map, EPOCH_HASH_MNEMONIC, epochHashMnemonic);
 
         return map;
     }
