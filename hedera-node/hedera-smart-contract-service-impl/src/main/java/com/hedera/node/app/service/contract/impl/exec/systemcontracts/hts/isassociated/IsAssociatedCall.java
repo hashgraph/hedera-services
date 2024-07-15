@@ -43,7 +43,7 @@ public class IsAssociatedCall extends AbstractRevertibleTokenViewCall {
 
     @NonNull
     @Override
-    protected PricedResult resultOfViewingToken(@NonNull Token token) {
+    protected PricedResult resultOfViewingToken(@NonNull final Token token) {
         requireNonNull(token);
         var tokenRel = nativeOperations()
                 .getTokenRelation(sender.accountNum(), token.tokenIdOrThrow().tokenNum());

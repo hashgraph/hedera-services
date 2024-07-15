@@ -28,6 +28,8 @@ import com.hedera.services.bdd.junit.hedera.AbstractNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
+import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -46,9 +48,9 @@ import org.apache.logging.log4j.Logger;
 public class EmbeddedNetwork extends AbstractNetwork {
     private static final Logger log = LogManager.getLogger(EmbeddedNetwork.class);
 
-    private static final String WORKING_DIR_SCOPE = "embedded";
+    private static final String DEFAULT_WORKING_DIR = "embedded";
     private static final String EMBEDDED_HOST = "127.0.0.1";
-    private static final String EMBEDDED_NETWORK_NAME = WORKING_DIR_SCOPE.toUpperCase();
+    private static final String DEFAULT_NAME = DEFAULT_WORKING_DIR.toUpperCase();
 
     private final String configTxt;
     private final EmbeddedNode embeddedNode;
@@ -57,19 +59,16 @@ public class EmbeddedNetwork extends AbstractNetwork {
     private EmbeddedHedera embeddedHedera;
 
     /**
-     * Creates an embedded "network" of with the given size.
+     * Creates an embedded "network" with default name and scope to be shared by many tests.
      *
      * @return the embedded network
      */
-    public static synchronized HederaNetwork newEmbeddedNetwork() {
-        return new EmbeddedNetwork();
+    public static HederaNetwork newSharedNetwork() {
+        return new EmbeddedNetwork(DEFAULT_NAME, DEFAULT_WORKING_DIR);
     }
 
-    public EmbeddedNetwork() {
-        super(
-                EMBEDDED_NETWORK_NAME,
-                List.of(new EmbeddedNode(
-                        classicMetadataFor(0, EMBEDDED_NETWORK_NAME, EMBEDDED_HOST, WORKING_DIR_SCOPE, 0, 0, 0, 0))));
+    public EmbeddedNetwork(@NonNull final String name, @NonNull final String workingDir) {
+        super(name, List.of(new EmbeddedNode(classicMetadataFor(0, name, EMBEDDED_HOST, workingDir, 0, 0, 0, 0))));
         this.embeddedNode = (EmbeddedNode) nodes().getFirst();
         // Even though we are only embedding node0, we generate an address book
         // for a "classic" HapiTest network with 4 nodes so that tests can still
@@ -78,8 +77,8 @@ public class EmbeddedNetwork extends AbstractNetwork {
         this.configTxt = configTxtForLocal(
                 name(),
                 IntStream.range(0, CLASSIC_HAPI_TEST_NETWORK_SIZE)
-                        .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(classicMetadataFor(
-                                nodeId, EMBEDDED_NETWORK_NAME, EMBEDDED_HOST, WORKING_DIR_SCOPE, 0, 0, 0, 0)))
+                        .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(
+                                classicMetadataFor(nodeId, name, EMBEDDED_HOST, workingDir, 0, 0, 0, 0)))
                         .toList(),
                 0,
                 0);
@@ -148,5 +147,10 @@ public class EmbeddedNetwork extends AbstractNetwork {
 
     public @NonNull EmbeddedHedera embeddedHederaOrThrow() {
         return requireNonNull(embeddedHedera);
+    }
+
+    @Override
+    protected HapiPropertySource networkOverrides() {
+        return WorkingDirUtils.hapiTestStartupProperties();
     }
 }

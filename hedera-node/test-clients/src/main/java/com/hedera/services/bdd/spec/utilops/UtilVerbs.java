@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
-import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -37,6 +36,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.timeUntilNextPeriod;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -90,6 +90,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
@@ -97,9 +98,7 @@ import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.SpecOperation;
-import com.hedera.services.bdd.spec.TargetNetworkType;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -133,7 +132,6 @@ import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
-import com.hedera.services.bdd.spec.utilops.inventory.RecordSystemProperty;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromEcdsaFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
@@ -164,6 +162,7 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStr
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
 import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
@@ -217,13 +216,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.ObjIntConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Logger;
@@ -246,9 +249,6 @@ public class UtilVerbs {
                                             .build()))
                     .toList())
             .build();
-
-    private static final EnumSet<TargetNetworkType> HAPI_TEST_NETWORK_TYPES =
-            EnumSet.of(SUBPROCESS_NETWORK, EMBEDDED_NETWORK);
 
     public static final int DEFAULT_COLLISION_AVOIDANCE_FACTOR = 2;
 
@@ -286,6 +286,69 @@ public class UtilVerbs {
                         "staking.startThreshold", "" + 0,
                         "staking.rewardBalanceThreshold", "" + 0),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)));
+    }
+
+    /**
+     * Returns an operation that, when executed, will compute a delegate operation by calling the given factory
+     * with the startup value of the given property on the target network; and execute its delegate.
+     *
+     * @param property the property whose startup value is needed for the delegate operation
+     * @param factory the factory for the delegate operation
+     * @return the operation that will execute the delegate created from the target network's startup value
+     */
+    public static SpecOperation doWithStartupConfig(
+            @NonNull final String property, @NonNull final Function<String, SpecOperation> factory) {
+        return doSeveralWithStartupConfig(property, startupValue -> new SpecOperation[] {factory.apply(startupValue)});
+    }
+
+    /**
+     * Returns an operation that, when executed, will compute a delegate operation by calling the given factory
+     * with the startup value of the given property on the target network and its current consensus time; and
+     * execute its delegate.
+     *
+     * @param property the property whose startup value is needed for the delegate operation
+     * @param factory the factory for the delegate operation
+     * @return the operation that will execute the delegate created from the target network's startup value
+     */
+    public static SpecOperation doWithStartupConfigNow(
+            @NonNull final String property, @NonNull final BiFunction<String, Instant, SpecOperation> factory) {
+        return doSeveralWithStartupConfigNow(property, (startupValue, consensusTime) ->
+                new SpecOperation[] {factory.apply(startupValue, consensusTime)});
+    }
+
+    /**
+     * Returns an operation that, when executed, will compute a sequence of delegate operation by calling the
+     * given factory with the startup value of the given property on the target network and its current consensus time;
+     * and execute the delegates in order.
+     *
+     * @param property the property whose startup value is needed for the delegate operation
+     * @param factory the factory for the delegate operations
+     * @return the operation that will execute the delegate created from the target network's startup value
+     */
+    public static SpecOperation doSeveralWithStartupConfigNow(
+            @NonNull final String property, @NonNull final BiFunction<String, Instant, SpecOperation[]> factory) {
+        return withOpContext((spec, opLog) -> {
+            final var startupValue =
+                    spec.targetNetworkOrThrow().startupProperties().get(property);
+            allRunFor(spec, factory.apply(startupValue, spec.consensusTime()));
+        });
+    }
+
+    /**
+     * Returns an operation that, when executed, will compute a delegate operation by calling the given factory
+     * with the startup value of the given property on the target network; and execute its delegate.
+     *
+     * @param property the property whose startup value is needed for the delegate operation
+     * @param factory the factory for the delegate operation
+     * @return the operation that will execute the delegate created from the target network's startup value
+     */
+    public static SpecOperation doSeveralWithStartupConfig(
+            @NonNull final String property, @NonNull final Function<String, SpecOperation[]> factory) {
+        return withOpContext((spec, opLog) -> {
+            final var startupValue =
+                    spec.targetNetworkOrThrow().startupProperties().get(property);
+            allRunFor(spec, factory.apply(startupValue));
+        });
     }
 
     public static HapiFreeze freezeOnly() {
@@ -360,19 +423,6 @@ public class UtilVerbs {
     /* Some fairly simple utility ops */
     public static InBlockingOrder blockingOrder(SpecOperation... ops) {
         return new InBlockingOrder(ops);
-    }
-
-    public static <T> RecordSystemProperty<T> recordSystemProperty(
-            String property, Function<String, T> converter, Consumer<T> historian) {
-        return new RecordSystemProperty<>(property, converter, historian);
-    }
-
-    public static NetworkTypeFilterOp ifHapiTest(@NonNull final HapiSpecOperation... ops) {
-        return new NetworkTypeFilterOp(HAPI_TEST_NETWORK_TYPES, ops);
-    }
-
-    public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final SpecOperation... ops) {
-        return new NetworkTypeFilterOp(EnumSet.complementOf(HAPI_TEST_NETWORK_TYPES), ops);
     }
 
     public static NetworkTypeFilterOp ifNotEmbeddedTest(@NonNull final HapiSpecOperation... ops) {
@@ -797,14 +847,13 @@ public class UtilVerbs {
         return overridingAllOf(Map.of(property, value));
     }
 
-    public static HapiSpecOperation resetToDefault(String... properties) {
-        var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
-        final Map<String, String> defaultValues = new HashMap<>();
-        for (final var prop : properties) {
-            final var defaultValue = defaultNodeProps.get(prop);
-            defaultValues.put(prop, defaultValue);
-        }
-        return overridingAllOf(defaultValues);
+    /**
+     * Returns an operation that restores the given property to its startup value on the target network.
+     * @param property the property to restore
+     * @return the operation that restores the property
+     */
+    public static SpecOperation restoreDefault(@NonNull final String property) {
+        return doWithStartupConfig(property, value -> overriding(property, value));
     }
 
     /**
@@ -878,7 +927,6 @@ public class UtilVerbs {
     }
 
     public static HapiSpecOperation remembering(final Map<String, String> props, final List<String> ofInterest) {
-        final var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
         final Predicate<String> filter = new HashSet<>(ofInterest)::contains;
         return blockingOrder(
                 getFileContents(APP_PROPERTIES)
@@ -886,9 +934,10 @@ public class UtilVerbs {
                         .nodePayment(ONE_HBAR)
                         .fee(ONE_HBAR)
                         .addingFilteredConfigListTo(props, filter),
-                sourcing(() -> {
-                    ofInterest.forEach(prop -> props.computeIfAbsent(prop, defaultNodeProps::get));
-                    return logIt("Remembered props: " + props);
+                withOpContext((spec, opLog) -> {
+                    final var defaultProperties = spec.targetNetworkOrThrow().startupProperties();
+                    ofInterest.forEach(prop -> props.computeIfAbsent(prop, defaultProperties::get));
+                    allRunFor(spec, logIt("Remembered props: " + props));
                 }));
     }
 
@@ -900,6 +949,52 @@ public class UtilVerbs {
     public static EventualAssertion streamMustIncludeNoFailuresFrom(
             final Function<HapiSpec, RecordStreamAssertion> assertion) {
         return EventualRecordStreamAssertion.eventuallyAssertingNoFailures(assertion);
+    }
+
+    /**
+     * Returns an operation that validates the visible items captured by the given assertion with
+     * the given validator.
+     *
+     * @param assertion the assertion that captures the visible items
+     * @param validator the validator to use
+     * @return the operation that validates the visible items
+     */
+    public static SpecOperation validateVisibleItems(
+            @NonNull final AtomicReference<VisibleItemsAssertion> assertion,
+            @NonNull final BiConsumer<HapiSpec, Map<String, List<RecordStreamEntry>>> validator) {
+        requireNonNull(assertion);
+        requireNonNull(validator);
+        return withOpContext((spec, opLog) -> {
+            triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
+            final var entries =
+                    assertion.get().entriesWithin(Duration.ofSeconds(2)).join();
+            validator.accept(spec, entries);
+        });
+    }
+
+    public static RunnableOp verify(@NonNull final Runnable runnable) {
+        return new RunnableOp(runnable);
+    }
+
+    public static RunnableOp given(@NonNull final Runnable runnable) {
+        return new RunnableOp(runnable);
+    }
+
+    public static RunnableOp doAdhoc(@NonNull final Runnable runnable) {
+        return new RunnableOp(runnable);
+    }
+
+    public static HapiSpecOperation[] nOps(final int n, @NonNull final IntFunction<HapiSpecOperation> source) {
+        return IntStream.range(0, n).mapToObj(source).toArray(HapiSpecOperation[]::new);
+    }
+
+    /**
+     * Returns the given varags as a {@link SpecOperation} array.
+     * @param ops the varargs to return as an array
+     * @return the array of varargs
+     */
+    public static SpecOperation[] specOps(@NonNull final SpecOperation... ops) {
+        return requireNonNull(ops);
     }
 
     /**
@@ -921,6 +1016,17 @@ public class UtilVerbs {
 
     public static Function<HapiSpec, RecordStreamAssertion> sidecarIdValidator() {
         return spec -> new ValidContractIdsAssertion();
+    }
+
+    public static Function<HapiSpec, RecordStreamAssertion> visibleItems(
+            @NonNull final AtomicReference<VisibleItemsAssertion> ref, @NonNull final String... specTxnIds) {
+        requireNonNull(ref);
+        requireNonNull(specTxnIds);
+        return spec -> {
+            final var assertion = new VisibleItemsAssertion(spec, specTxnIds);
+            ref.set(assertion);
+            return assertion;
+        };
     }
 
     public static Function<HapiSpec, RecordStreamAssertion> recordedChildBodyWithId(
@@ -1861,11 +1967,6 @@ public class UtilVerbs {
             return this;
         }
 
-        public TokenTransferListBuilder forTokenAddress(final Address token) {
-            this.token = token;
-            return this;
-        }
-
         public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
             this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[] {});
             return this;
@@ -1898,10 +1999,6 @@ public class UtilVerbs {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount);
     }
 
-    public static Tuple addressedAccountAmount(final Address address, final Long amount) {
-        return Tuple.of(address, amount);
-    }
-
     public static Tuple accountAmount(final AccountID account, final Long amount, final boolean isApproval) {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount, isApproval);
     }
@@ -1920,22 +2017,6 @@ public class UtilVerbs {
                 HapiParserUtil.asHeadlongAddress(asAddress(sender)),
                 HapiParserUtil.asHeadlongAddress(asAddress(receiver)),
                 serialNumber);
-    }
-
-    public static Tuple nftTransferToAlias(final AccountID sender, final byte[] alias, final Long serialNumber) {
-        return Tuple.of(
-                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
-                HapiParserUtil.asHeadlongAddress(alias),
-                serialNumber);
-    }
-
-    public static Tuple nftTransferToAlias(
-            final AccountID sender, final byte[] alias, final Long serialNumber, final boolean isApproval) {
-        return Tuple.of(
-                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
-                HapiParserUtil.asHeadlongAddress(alias),
-                serialNumber,
-                isApproval);
     }
 
     public static Tuple nftTransfer(

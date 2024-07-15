@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class IsAssociatedTranslatorTest {
+class IsAssociatedTranslatorTest {
 
     @Mock
     private HtsCallAttempt mockAttempt;
@@ -49,12 +49,12 @@ public class IsAssociatedTranslatorTest {
     private IsAssociatedTranslator translator;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         translator = new IsAssociatedTranslator();
     }
 
     @Test
-    public void matchesWithCorrectSelectorAndTokenRedirectReturnsTrue() {
+    void matchesWithCorrectSelectorAndTokenRedirectReturnsTrue() {
         when(mockAttempt.isTokenRedirect()).thenReturn(true);
         when(mockAttempt.selector()).thenReturn(IsAssociatedTranslator.IS_ASSOCIATED.selector());
 
@@ -62,7 +62,7 @@ public class IsAssociatedTranslatorTest {
     }
 
     @Test
-    public void matchesWithIncorrectSelectorReturnsFalse() {
+    void matchesWithIncorrectSelectorReturnsFalse() {
         when(mockAttempt.isTokenRedirect()).thenReturn(true);
         byte[] incorrectSelector = new byte[] {1, 2, 3, 4};
         when(mockAttempt.selector()).thenReturn(incorrectSelector);
@@ -71,13 +71,13 @@ public class IsAssociatedTranslatorTest {
     }
 
     @Test
-    public void matchesWithTokenRedirectFalseReturnsFalse() {
+    void matchesWithTokenRedirectFalseReturnsFalse() {
         when(mockAttempt.isTokenRedirect()).thenReturn(false);
         assertFalse(translator.matches(mockAttempt));
     }
 
     @Test
-    public void callFromWithValidAttemptReturnsIsAssociatedCall() {
+    void callFromWithValidAttemptReturnsIsAssociatedCall() {
         when(mockAttempt.systemContractGasCalculator()).thenReturn(gasCalculator);
         when(mockAttempt.enhancement()).thenReturn(enhancement);
         when(mockAttempt.senderId()).thenReturn(AccountID.DEFAULT);

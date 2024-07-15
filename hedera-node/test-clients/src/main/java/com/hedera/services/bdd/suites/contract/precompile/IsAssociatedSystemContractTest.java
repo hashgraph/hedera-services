@@ -26,10 +26,10 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.SpecOperation;
-import com.hedera.services.bdd.spec.dsl.annotations.AccountSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.FungibleTokenSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleTokenSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
@@ -47,16 +47,16 @@ import org.junit.jupiter.api.Tag;
 @DisplayName("isAssociated")
 @SuppressWarnings("java:S1192")
 public class IsAssociatedSystemContractTest {
-    @FungibleTokenSpec(name = "fungibleToken")
+    @FungibleToken(name = "fungibleToken")
     static SpecFungibleToken fungibleToken;
 
-    @NonFungibleTokenSpec(name = "nonFungibleToken")
+    @NonFungibleToken(name = "nonFungibleToken")
     static SpecNonFungibleToken nonFungibleToken;
 
-    @ContractSpec(contract = "HRCContract", creationGas = 4_000_000L)
+    @Contract(contract = "HRCContract", creationGas = 4_000_000L)
     static SpecContract senderContract;
 
-    @AccountSpec(name = "senderAccount", balance = ONE_HUNDRED_HBARS)
+    @Account(name = "senderAccount", balance = ONE_HUNDRED_HBARS)
     static SpecAccount senderAccount;
 
     @HapiTest

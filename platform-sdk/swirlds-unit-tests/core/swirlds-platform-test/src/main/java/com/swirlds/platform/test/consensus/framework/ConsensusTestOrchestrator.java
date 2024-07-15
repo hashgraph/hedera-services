@@ -23,6 +23,7 @@ import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.test.consensus.framework.validation.ConsensusOutputValidation;
 import com.swirlds.platform.test.consensus.framework.validation.Validations;
 import com.swirlds.platform.test.fixtures.event.generator.GraphGenerator;
+import com.swirlds.platform.test.gui.GeneratorEventProvider;
 import com.swirlds.platform.test.gui.TestGuiSource;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
@@ -69,7 +70,10 @@ public class ConsensusTestOrchestrator {
         final AddressBook addressBook =
                 node.getEventEmitter().getGraphGenerator().getAddressBook();
 
-        new TestGuiSource(platformContext, addressBook, node.getEventEmitter().getGraphGenerator(), node.getIntake())
+        new TestGuiSource(
+                        platformContext,
+                        addressBook,
+                        new GeneratorEventProvider(node.getEventEmitter().getGraphGenerator()))
                 .runGui();
     }
 

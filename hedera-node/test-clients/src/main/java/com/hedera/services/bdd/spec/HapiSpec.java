@@ -20,6 +20,7 @@ import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImp
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;
+import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.SHARED_NETWORK;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.SpecStatus.ERROR;
@@ -67,6 +68,8 @@ import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
+import com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
@@ -149,6 +152,13 @@ public class HapiSpec implements Runnable, Executable {
     private static final String AS_WRITTEN_DISPLAY_NAME = "as written";
 
     public static final ThreadLocal<HederaNetwork> TARGET_NETWORK = new ThreadLocal<>();
+    /**
+     * If set, a list of properties to preserve in construction of this thread's next {@link HapiSpec} instance.
+     * In general the {@link NetworkTargetingExtension} will bind this value to the thread prior to executing a
+     * test factory based on its {@link LeakyHapiTest#overrides()} attribute.
+     */
+    public static final ThreadLocal<List<String>> PROPERTIES_TO_PRESERVE = new ThreadLocal<>();
+
     public static final ThreadLocal<TestLifecycle> TEST_LIFECYCLE = new ThreadLocal<>();
     public static final ThreadLocal<String> SPEC_NAME = new ThreadLocal<>();
 
@@ -190,11 +200,6 @@ public class HapiSpec implements Runnable, Executable {
 
     private final Map<String, Long> privateKeyToNonce = new HashMap<>();
 
-    public boolean isOnlySpecToRunInSuite() {
-        return onlySpecToRunInSuite;
-    }
-
-    private final boolean onlySpecToRunInSuite;
     private final List<String> propertiesToPreserve;
     private final HapiSpecSetup hapiSetup;
     private final SpecOperation[] given;
@@ -264,7 +269,7 @@ public class HapiSpec implements Runnable, Executable {
      *
      * @param props A map of new properties
      */
-    public void addOverrideProperties(final Map<String, Object> props) {
+    public void addOverrideProperties(@NonNull final Map<String, String> props) {
         hapiSetup.addOverrides(props);
     }
 
@@ -408,6 +413,14 @@ public class HapiSpec implements Runnable, Executable {
      */
     public @NonNull HederaNetwork targetNetworkOrThrow() {
         return requireNonNull(targetNetwork);
+    }
+
+    /**
+     * Returns the best-effort representation of the properties in effect on startup of the target network.
+     * @return the startup properties
+     */
+    public @NonNull HapiPropertySource startupProperties() {
+        return targetNetworkOrThrow().startupProperties();
     }
 
     /**
@@ -606,6 +619,18 @@ public class HapiSpec implements Runnable, Executable {
         if (targetNetwork == null) {
             targetNetwork = RemoteNetwork.newRemoteNetwork(hapiSetup.nodes(), clientsFor(hapiSetup));
         }
+        if (!propertiesToPreserve.isEmpty()) {
+            final var missingProperties = propertiesToPreserve.stream()
+                    .filter(p -> !startupProperties().has(p))
+                    .collect(joining(", "));
+            if (!missingProperties.isEmpty()) {
+                status = ERROR;
+                failure = new Failure(
+                        new IllegalStateException("Cannot preserve missing properties: '" + missingProperties + "'"),
+                        "Initialization");
+                return false;
+            }
+        }
         try {
             hapiRegistry = new HapiSpecRegistry(hapiSetup);
             if (sharedStates != null) {
@@ -637,6 +662,10 @@ public class HapiSpec implements Runnable, Executable {
         }
         if (sidecarWatcher != null) {
             sidecarWatcher.ensureUnsubscribed();
+        }
+        // Also terminate any embedded network not being shared by multiple specs
+        if (targetNetwork instanceof EmbeddedNetwork embeddedNetwork && embeddedNetwork != SHARED_NETWORK.get()) {
+            embeddedNetwork.terminate();
         }
     }
 
@@ -1032,30 +1061,15 @@ public class HapiSpec implements Runnable, Executable {
     }
 
     public static Def.Given defaultHapiSpec(String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return internalDefaultHapiSpec(name, false, emptyList(), snapshotMatchModes);
-    }
-
-    public static Def.PropertyPreserving propertyPreservingHapiSpec(
-            final String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return (String... props) -> internalDefaultHapiSpec(name, false, Arrays.asList(props), snapshotMatchModes);
-    }
-
-    public static Def.PropertyPreserving onlyPropertyPreservingHapiSpec(final String name) {
-        return (String... props) -> internalDefaultHapiSpec(name, true, Arrays.asList(props));
-    }
-
-    public static Def.Given onlyDefaultHapiSpec(
-            final String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return internalDefaultHapiSpec(name, true, List.of(), snapshotMatchModes);
+        return internalDefaultHapiSpec(name, emptyList(), snapshotMatchModes);
     }
 
     private static Def.Given internalDefaultHapiSpec(
             final String name,
-            final boolean isOnly,
             final List<String> propertiesToPreserve,
             @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         final Stream<Map<String, String>> prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
-        return customizedHapiSpec(isOnly, name, prioritySource, propertiesToPreserve, snapshotMatchModes)
+        return customizedHapiSpec(name, prioritySource, propertiesToPreserve, snapshotMatchModes)
                 .withProperties();
     }
 
@@ -1090,36 +1104,17 @@ public class HapiSpec implements Runnable, Executable {
         return ciPropsSource;
     }
 
-    public static Def.Given defaultFailingHapiSpec(
-            String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        final Stream<Map<String, String>> prioritySource = Stream.of(
-                runningInCi ? ciPropOverrides() : Collections.emptyMap(), Map.of("expected.final.status", "FAILED"));
-        return customizedHapiSpec(false, name, prioritySource, snapshotMatchModes)
-                .withProperties();
-    }
-
     public static Def.Sourced customHapiSpec(String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         final Stream<Map<String, String>> prioritySource = runningInCi ? Stream.of(ciPropOverrides()) : Stream.empty();
-        return customizedHapiSpec(false, name, prioritySource, snapshotMatchModes);
-    }
-
-    public static Def.Sourced customFailingHapiSpec(
-            String name, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        final Stream<Map<String, String>> prioritySource =
-                runningInCi ? Stream.of(ciPropOverrides(), Map.of("expected.final.status", "FAILED")) : Stream.empty();
-        return customizedHapiSpec(false, name, prioritySource, snapshotMatchModes);
+        return customizedHapiSpec(name, prioritySource, snapshotMatchModes);
     }
 
     private static <T> Def.Sourced customizedHapiSpec(
-            final boolean isOnly,
-            final String name,
-            final Stream<T> prioritySource,
-            @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return customizedHapiSpec(isOnly, name, prioritySource, emptyList(), snapshotMatchModes);
+            final String name, final Stream<T> prioritySource, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
+        return customizedHapiSpec(name, prioritySource, emptyList(), snapshotMatchModes);
     }
 
     private static <T> Def.Sourced customizedHapiSpec(
-            final boolean isOnly,
             final String name,
             final Stream<T> prioritySource,
             final List<String> propertiesToPreserve,
@@ -1129,9 +1124,7 @@ public class HapiSpec implements Runnable, Executable {
                             prioritySource, Stream.of(sources), Stream.of(HapiSpecSetup.getDefaultPropertySource()))
                     .flatMap(Function.identity())
                     .toArray();
-            return (isOnly
-                            ? onlyHapiSpec(name, propertiesToPreserve, snapshotMatchModes)
-                            : hapiSpec(name, propertiesToPreserve, snapshotMatchModes))
+            return hapiSpec(name, propertiesToPreserve, snapshotMatchModes)
                     .withSetup(HapiSpecSetup.setupFrom(allSources));
         };
     }
@@ -1140,31 +1133,39 @@ public class HapiSpec implements Runnable, Executable {
             String name, List<String> propertiesToPreserve, @NonNull final SnapshotMatchMode... snapshotMatchModes) {
         return setup -> given -> when -> then -> Stream.of(DynamicTest.dynamicTest(
                 name + " " + AS_WRITTEN_DISPLAY_NAME,
-                targeted(new HapiSpec(
-                        name, false, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
+                targeted(new HapiSpec(name, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
     }
 
-    public static Def.Setup onlyHapiSpec(
-            final String name,
-            final List<String> propertiesToPreserve,
-            @NonNull final SnapshotMatchMode... snapshotMatchModes) {
-        return setup -> given -> when -> then -> Stream.of(DynamicTest.dynamicTest(
-                AS_WRITTEN_DISPLAY_NAME,
-                targeted(
-                        new HapiSpec(name, true, setup, given, when, then, propertiesToPreserve, snapshotMatchModes))));
-    }
-
+    /**
+     * Creates dynamic tests derived from with the given operations, preserving any properties bound to the thread
+     * by a {@link LeakyHapiTest} test factory.
+     * @param ops the operations
+     * @return a {@link Stream} of {@link DynamicTest}s
+     */
     public static Stream<DynamicTest> hapiTest(@NonNull final SpecOperation... ops) {
+        return propertyPreservingHapiTest(
+                Optional.ofNullable(PROPERTIES_TO_PRESERVE.get()).orElse(emptyList()), ops);
+    }
+
+    /**
+     * Creates dynamic tests derived from with the given operations, ensuring the listed properties are
+     * restored to their original values after running the tests.
+     * @param propertiesToPreserve the properties to preserve
+     * @param ops the operations
+     * @return a {@link Stream} of {@link DynamicTest}s
+     */
+    public static Stream<DynamicTest> propertyPreservingHapiTest(
+            @NonNull final List<String> propertiesToPreserve, @NonNull final SpecOperation... ops) {
+        requireNonNull(propertiesToPreserve);
         return Stream.of(DynamicTest.dynamicTest(
                 AS_WRITTEN_DISPLAY_NAME,
                 targeted(new HapiSpec(
                         SPEC_NAME.get(),
-                        false,
                         HapiSpecSetup.setupFrom(HapiSpecSetup.getDefaultPropertySource()),
                         new SpecOperation[0],
                         new SpecOperation[0],
                         ops,
-                        List.of(),
+                        propertiesToPreserve,
                         new SnapshotMatchMode[0]))));
     }
 
@@ -1173,7 +1174,6 @@ public class HapiSpec implements Runnable, Executable {
                 name,
                 targeted(new HapiSpec(
                         name,
-                        false,
                         HapiSpecSetup.setupFrom(HapiSpecSetup.getDefaultPropertySource()),
                         new SpecOperation[0],
                         new SpecOperation[0],
@@ -1210,7 +1210,7 @@ public class HapiSpec implements Runnable, Executable {
         spec.addOverrideProperties(Map.of("nodes", specNodes));
 
         if (targetNetwork instanceof EmbeddedNetwork embeddedNetwork) {
-            final Map<String, Object> overrides;
+            final Map<String, String> overrides;
             if (repeatableModeRequested()) {
                 // Statuses are immediately available in repeatable mode because ingest is synchronous;
                 // ECDSA signatures are inherently random, so use only ED25519 in repeatable mode
@@ -1230,7 +1230,6 @@ public class HapiSpec implements Runnable, Executable {
     public HapiSpec(String name, SpecOperation[] ops) {
         this(
                 name,
-                false,
                 setupFrom(HapiSpecSetup.getDefaultPropertySource()),
                 new SpecOperation[0],
                 new SpecOperation[0],
@@ -1243,7 +1242,6 @@ public class HapiSpec implements Runnable, Executable {
     @SuppressWarnings("java:S107")
     public HapiSpec(
             String name,
-            boolean onlySpecToRunInSuite,
             HapiSpecSetup hapiSetup,
             SpecOperation[] given,
             SpecOperation[] when,
@@ -1257,7 +1255,6 @@ public class HapiSpec implements Runnable, Executable {
         this.given = given;
         this.when = when;
         this.then = then;
-        this.onlySpecToRunInSuite = onlySpecToRunInSuite;
         this.propertiesToPreserve = propertiesToPreserve;
         final var quiet = System.getProperty(QUIET_MODE_SYSTEM_PROPERTY);
         final var isCiCheck = System.getProperty(CI_CHECK_NAME_SYSTEM_PROPERTY) != null;

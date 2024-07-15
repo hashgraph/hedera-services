@@ -39,12 +39,12 @@ public class IsAssociatedTranslator extends AbstractCallTranslator<HtsCallAttemp
     }
 
     @Override
-    public final boolean matches(@NonNull HtsCallAttempt attempt) {
+    public final boolean matches(@NonNull final HtsCallAttempt attempt) {
         return (attempt.isTokenRedirect() && matchesHrcSelector(attempt.selector()));
     }
 
     @Override
-    public final Call callFrom(@NonNull HtsCallAttempt attempt) {
+    public final Call callFrom(@NonNull final HtsCallAttempt attempt) {
         requireNonNull(attempt);
         return new IsAssociatedCall(
                 attempt.systemContractGasCalculator(),

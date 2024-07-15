@@ -309,13 +309,17 @@ public class HandleWorkflow {
                 skip(userTxn);
             } else {
                 if (userTxn.isGenesisTxn()) {
-                    genesisSetup.setupIn(userTxn.tokenContextImpl());
+                    // (FUTURE) Once all genesis setup is done via dispatch, remove this method
+                    genesisSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
                 }
                 updateNodeStakes(userTxn);
                 blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);
+                if (userTxn.isGenesisTxn()) {
+                    genesisSetup.createSystemEntities(dispatch);
+                }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
@@ -472,7 +476,7 @@ public class HandleWorkflow {
 
     private void updateNodeStakes(@NonNull final UserTxn userTxn) {
         try {
-            nodeStakeUpdates.process(userTxn.stack(), userTxn.tokenContextImpl());
+            nodeStakeUpdates.process(userTxn.stack(), userTxn.tokenContextImpl(), userTxn.isGenesisTxn());
         } catch (final Exception e) {
             // We don't propagate a failure here to avoid a catastrophic scenario
             // where we are "stuck" trying to process node stake updates and never
