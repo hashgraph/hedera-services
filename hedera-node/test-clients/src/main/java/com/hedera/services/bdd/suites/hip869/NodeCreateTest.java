@@ -18,7 +18,6 @@ package com.hedera.services.bdd.suites.hip869;
 
 import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
 import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
-import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.endpointFor;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
@@ -50,8 +49,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
@@ -60,7 +59,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
-public class NodeCreateSuite {
+public class NodeCreateTest {
 
     public static final String ED_25519_KEY = "ed25519Alias";
     public static List<ServiceEndpoint> GOSSIP_ENDPOINTS = Arrays.asList(
@@ -87,8 +86,7 @@ public class NodeCreateSuite {
      * This test is to check if the node creation fails during pureCheck when the admin key is missing.
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> adminKeyIsMissingEmbedded() { // skipping ingest but purecheck still throw the same
         return hapiTest(nodeCreate("nodeCreate")
                 .setNode("0.0.4") // exclude 0.0.3
@@ -260,8 +258,7 @@ public class NodeCreateSuite {
      * Check that node creation succeeds with gossip and service endpoints using domain names and all optional fields are recorded.
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
     final Stream<DynamicTest> allFieldsSetHappyCaseForDomains() {
         return hapiTest(
                 newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
@@ -336,6 +333,7 @@ public class NodeCreateSuite {
      */
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
     final Stream<DynamicTest> minimumFieldsSetHappyCase() {
+        final String description = "His vorpal blade went snicker-snack!";
         return hapiTest(
                 nodeCreate("ntb").description(description),
                 viewNode(

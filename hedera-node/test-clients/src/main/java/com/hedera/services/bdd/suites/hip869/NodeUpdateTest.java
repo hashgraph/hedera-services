@@ -222,7 +222,7 @@ public class NodeUpdateTest {
         return hapiTest(
                 overriding("nodes.maxServiceEndpoint", "2"),
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .serviceEndpoint(List.of(
@@ -237,7 +237,7 @@ public class NodeUpdateTest {
         return hapiTest(
                 overriding("nodes.maxGossipEndpoint", "2"),
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .gossipEndpoint(List.of(
@@ -252,12 +252,10 @@ public class NodeUpdateTest {
         return hapiTest(
                 overriding("nodes.nodeMaxDescriptionUtf8Bytes", "3"),
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .description("toolarge")
                         .hasKnownStatus(INVALID_NODE_DESCRIPTION));
     }
-
-
 }
