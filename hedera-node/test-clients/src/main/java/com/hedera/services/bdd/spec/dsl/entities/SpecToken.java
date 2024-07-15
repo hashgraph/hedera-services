@@ -32,6 +32,7 @@ import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.contracts.TokenRedirectContract;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetTokenInfoOperation;
+import com.hedera.services.bdd.spec.dsl.operations.queries.StaticCallTokenOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.CallTokenOperation;
 import com.hedera.services.bdd.spec.keys.SigControl;
@@ -82,6 +83,13 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
             @NonNull final String function,
             @NonNull final Object... parameters) {
         return new CallTokenOperation(this, redirectContract, function, parameters);
+    }
+
+    public StaticCallTokenOperation staticCall(
+            @NonNull final TokenRedirectContract redirectContract,
+            @NonNull final String function,
+            @NonNull final Object... parameters) {
+        return new StaticCallTokenOperation(this, redirectContract, function, parameters);
     }
 
     /**

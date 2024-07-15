@@ -102,6 +102,17 @@ public class IsAssociatedSystemContractTest {
                 assertContractGetsResultForBothTokensStatic(false));
     }
 
+        @HapiTest
+        @DisplayName("returns true for EOA msg.sender exactly when associated static call")
+        public Stream<DynamicTest> returnsTrueIffEoaMsgSenderIsAssociatedStatic() {
+            return hapiTest(
+                    assertEoaGetsResultForBothTokensStatic(false),
+                    senderAccount.associateTokens(fungibleTokenForStatic, nonFungibleTokenForStatic),
+                    assertEoaGetsResultForBothTokensStatic(true),
+                    senderAccount.dissociateTokens(fungibleTokenForStatic, nonFungibleTokenForStatic),
+                    assertEoaGetsResultForBothTokensStatic(false));
+        }
+
     /**
      * Returns an operation asserting the EOA {@code msg.sender} gets an expected {@code isAssociated()}
      * result for both token types.
@@ -121,6 +132,30 @@ public class IsAssociatedSystemContractTest {
                         .andAssert(txn ->
                                 txn.hasResults(anyResult(), redirectCallResult(HRC, "isAssociated", isAssociated))));
     }
+
+        /**
+         * Returns an operation asserting the EOA {@code msg.sender} gets an expected {@code isAssociated()}
+         * result for both token types.
+         * @param isAssociated the expected result
+         * @return the operation
+         */
+        private SpecOperation assertEoaGetsResultForBothTokensStatic(final boolean isAssociated) {
+            return blockingOrder(
+                    fungibleTokenForStatic
+                            .staticCall(HRC, "isAssociated")
+                            .payingWith(senderAccount)
+                            .andAssert(query -> query.has(ContractFnResultAsserts.resultWith()
+                                    .resultThruAbi(
+                                            getABIFor(FUNCTION, "isAssociated", "HRC"),
+                                            isLiteralResult(new Object[] {isAssociated})))),
+                    nonFungibleTokenForStatic
+                            .staticCall(HRC, "isAssociated")
+                            .payingWith(senderAccount)
+                            .andAssert(query -> query.has(ContractFnResultAsserts.resultWith()
+                                    .resultThruAbi(
+                                            getABIFor(FUNCTION, "isAssociated", "HRC"),
+                                            isLiteralResult(new Object[] {isAssociated})))));
+        }
 
     /**
      * Returns an operation asserting the contract {@code msg.sender} gets an expected {@code isAssociated()}
