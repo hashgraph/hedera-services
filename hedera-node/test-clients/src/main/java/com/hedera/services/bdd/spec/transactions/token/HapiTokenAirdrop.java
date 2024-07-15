@@ -28,6 +28,7 @@ import com.hedera.services.bdd.spec.fees.FeeCalculator;
 import com.hedera.services.bdd.spec.queries.contract.HapiGetContractInfo;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountInfo;
 import com.hedera.services.bdd.spec.transactions.HapiBaseTransfer;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.TokenAirdropTransactionBody;
@@ -110,10 +111,15 @@ public class HapiTokenAirdrop extends HapiBaseTransfer<HapiTokenAirdrop> {
         long totalFee = 0;
         for (var movement : tokenAwareProviders) {
             for (var receiver : movement.getAccountsWithMissingRelations(spec)) {
+                // if account is not existing, we use default account id to estimate the new association
+                var accountId = AccountID.getDefaultInstance();
+                if (spec.registry().hasAccountId(receiver)) {
+                    accountId = spec.registry().getKeyAlias(receiver);
+                }
                 // create token associate transaction for each missing association
                 var tokenAssociateTransactionBody = TokenAssociateTransactionBody.newBuilder()
                         .addTokens(spec.registry().getTokenID(movement.getToken()))
-                        .setAccount(spec.registry().getKeyAlias(receiver))
+                        .setAccount(accountId)
                         .build();
                 Consumer<TransactionBody.Builder> associateTxnConsumer =
                         (b) -> b.setTokenAssociate(tokenAssociateTransactionBody);

@@ -26,6 +26,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
@@ -223,6 +224,8 @@ public class TokenAirdropHandler implements TransactionHandler {
                             tokenId, item.serialNumber(), item.senderAccountID(), item.receiverAccountID());
                     AccountAirdrop newAccountAirdrop = getNewAccountAirdropAndUpdateStores(
                             senderAccount, pendingId, null, accountStore, pendingStore);
+                    // check for existence
+                    validateTrue(!pendingStore.exists(pendingId), PENDING_NFT_AIRDROP_ALREADY_EXISTS);
                     pendingStore.put(pendingId, newAccountAirdrop);
                     var record = createPendingAirdropRecord(pendingId, newAccountAirdrop.pendingAirdropValue());
                     recordBuilder.addPendingAirdrop(record);

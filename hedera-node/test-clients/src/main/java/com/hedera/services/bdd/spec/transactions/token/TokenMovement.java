@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
 import com.hederahashgraph.api.proto.java.PendingAirdropValue;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.swirlds.common.utility.CommonUtils;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -162,7 +163,7 @@ public class TokenMovement {
 
     /**
      *  Try to identify any Token -> Receiver in this movement that has no relations.
-     *  It is used when we try to estimate airdrops fee, that should be prepaid by the sender.
+     *  It is used when we try to estimate association fees, that should be prepaid while sending airdrop transactions.
      *
      * @return map Token to list of receivers accounts
      */
@@ -176,6 +177,11 @@ public class TokenMovement {
                 accountsWithoutRel.add(receiver);
             }
         }));
+        // check if receiver is evm address
+        if (accountsWithoutRel.isEmpty() && evmAddressReceiver.isPresent()) {
+            accountsWithoutRel.add(CommonUtils.hex(evmAddressReceiver.get().toByteArray()));
+        }
+
         return accountsWithoutRel;
     }
 
@@ -301,10 +307,8 @@ public class TokenMovement {
                             .setTokenID(tokenId)
                             .setSerialNumber(tokenXfer.getNftTransfers(0).getSerialNumber()))
                     .build();
-            var pendingAirdropValue = PendingAirdropValue.newBuilder().build();
             var pendingAirdropRecord = PendingAirdropRecord.newBuilder()
                     .setPendingAirdropId(pendingAirdropId)
-                    .setPendingAirdropValue(pendingAirdropValue)
                     .build();
 
             records.add(pendingAirdropRecord);
