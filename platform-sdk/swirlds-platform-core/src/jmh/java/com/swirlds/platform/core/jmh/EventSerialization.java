@@ -64,7 +64,10 @@ public class EventSerialization {
     public void setup() throws IOException, ConstructableRegistryException {
         final Random random = new Random(seed);
 
-        event = new TestingEventBuilder(random).setAppTransactionCount(20).setSystemTransactionCount(10).build();
+        event = new TestingEventBuilder(random)
+                .setAppTransactionCount(20)
+                .setSystemTransactionCount(10)
+                .build();
         StaticSoftwareVersion.setSoftwareVersion(
                 new BasicSoftwareVersion(event.getSoftwareVersion().major()));
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.platform.system");
