@@ -44,6 +44,7 @@ The mechanism for doing so is detailed below.
   platform to manage the lifecycle of submitted rosters.
 - Components update: Platform components that currently rely on the use of the Address book (such as Reconnect, Network,
   Event Validation etc.) must be adapted to use rosters instead.
+    -
 - Address book paradigm discontinued within the platform codebase, only use rosters instead
 
 ### Architecture and/or Components
@@ -299,11 +300,9 @@ candidate roster, the new roster will be discarded. The operation has no effect.
 - Roster Creation: App will create a Candidate Roster from the Candidate Address Book (CAB).
 - Roster Submission: App will trigger roster submission by setting the `candidateRosterHash` field in the PlatformState.
 - Roster Adoption: The platform will vote to adopt the last submitted Candidate Roster when it is ready, based on
-  specifications
-  outlined in the TSS Ledger ID Proposal (referenced under related Proposals).
+  specifications outlined in the TSS Ledger ID Proposal (referenced under related Proposals).
 - Roster Replacement: If a new candidate roster is submitted before the previous one is adopted, the corresponding new
-  Candidate
-  Roster will replace the old one.
+  Candidate Roster will replace the old one.
 
 
 ### Configuration
@@ -380,9 +379,35 @@ void startPlatform(final State state) {
 
 ### Roster changes needed for Components
 
-- Reconnect. Reconnect logic currently exchanges and validates address book between the learner and teacher nodes. The
+#### Block Proof
+
+In a fully Dynamic Address Book (DAB) where, say, the roster for round 101 might be different from the roster for round
+102, there is a need to track what roster is used for each non-ancient round.
+We propose the introduction of a queue of active roster hashes in the state, where the index of a roster hash determines
+what round the roster is active for as shown.
+![](TSS%20Roster%20Lifecycle-Roster%20and%20Rounds.drawio.svg)
+The size of this queue would be ancient round window + roster offset (where roster offset is the number of rounds in
+advance that we declare what a round's roster will be).
+When each round is handled, we will pop off the active roster hash for the round that just became ancient, and add a new
+active roster hash for a new future round.
+
+Before full DAB (DAB Phase 2.5), we propose to store the current and previous active rosters in this newly introduced
+queue of hashes.
+In the initial implementation of this proposal, the queue would contain only 2 hashes, with the first hash representing
+the previous active roster, and the second hash representing the current active roster.
+At upgrade boundaries, we will pop off the previous active roster, and add a new roster to the end of the queue, which
+is the new active roster.
+
+This approach provides the benefit of introducing the necessary data structure for full DAB, while also providing a
+mechanism for tracking the active roster for each round in the interim.
+
+#### Reconnect
+
+Reconnect. Reconnect logic currently exchanges and validates the address book between the learner and teacher nodes. The
   learner node uses the address book to select the teacher node, as well as remove all invalid signatures from the
   state. Both of these will need to be updated to use rosters instead.
+
+#### Others
 - Networking. Most parts of the network code have been abstracted away from the address book as part of the Dynamic
   Address Book effort, so there should be minimal work left there.
 - Event Validation. The event validation logic uses the address book to determine whether a given event has a valid
