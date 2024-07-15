@@ -138,7 +138,7 @@ public class HollowAccountCompletionsTest {
     void completeHollowAccountsNoHollowAccounts() {
         when(userTxn.preHandleResult().getHollowAccounts()).thenReturn(Collections.emptySet());
 
-        hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
+        hollowAccountCompletions.completeHollowAccounts(userTxn, () -> dispatch);
 
         verifyNoInteractions(keyVerifier);
         verifyNoInteractions(handleContext);
@@ -159,7 +159,7 @@ public class HollowAccountCompletionsTest {
         when(userTxn.stack()).thenReturn(stack);
         when(stack.hasMoreSystemRecords()).thenReturn(true);
 
-        hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
+        hollowAccountCompletions.completeHollowAccounts(userTxn, () -> dispatch);
 
         verify(keyVerifier).verificationFor(Bytes.wrap(new byte[] {1, 2, 3}));
         verify(handleContext, never())
@@ -182,7 +182,7 @@ public class HollowAccountCompletionsTest {
         when(userTxn.stack()).thenReturn(stack);
         when(stack.hasMoreSystemRecords()).thenReturn(true);
 
-        hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
+        hollowAccountCompletions.completeHollowAccounts(userTxn, () -> dispatch);
 
         verify(keyVerifier).verificationFor(Bytes.wrap(new byte[] {1, 2, 3}));
         verify(handleContext).dispatchPrecedingTransaction(any(), any(), any(), any());
@@ -201,7 +201,7 @@ public class HollowAccountCompletionsTest {
         when(userTxn.stack()).thenReturn(stack);
         when(stack.hasMoreSystemRecords()).thenReturn(true);
 
-        hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
+        hollowAccountCompletions.completeHollowAccounts(userTxn, () -> dispatch);
 
         verify(handleContext, never()).dispatchPrecedingTransaction(any(), any(), any(), any());
     }
@@ -240,7 +240,7 @@ public class HollowAccountCompletionsTest {
         when(userTxn.stack()).thenReturn(stack);
         when(stack.hasMoreSystemRecords()).thenReturn(true);
 
-        hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
+        hollowAccountCompletions.completeHollowAccounts(userTxn, () -> dispatch);
 
         verify(handleContext).dispatchPrecedingTransaction(any(), any(), any(), any());
         verify(recordBuilder).accountID(hollowId);
@@ -265,7 +265,7 @@ public class HollowAccountCompletionsTest {
                 ETHEREUM_TRANSACTION);
         when(userTxn.txnInfo()).thenReturn(txnInfo);
 
-        hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
+        hollowAccountCompletions.completeHollowAccounts(userTxn, () -> dispatch);
 
         verify(handleContext, never()).dispatchPrecedingTransaction(any(), any(), any(), any());
     }

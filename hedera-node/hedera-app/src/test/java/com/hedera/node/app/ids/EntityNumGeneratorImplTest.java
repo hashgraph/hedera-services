@@ -17,10 +17,12 @@
 package com.hedera.node.app.ids;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.store.WritableStoreFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,15 +35,19 @@ class EntityNumGeneratorImplTest {
     @Mock
     private WritableEntityIdStore entityIdStore;
 
+    @Mock
+    private WritableStoreFactory factory;
+
     private EntityNumGeneratorImpl subject;
 
     @BeforeEach
     void setup() {
-        subject = new EntityNumGeneratorImpl(entityIdStore);
+        subject = new EntityNumGeneratorImpl(factory);
     }
 
     @Test
     void testNewEntityNumWithInitialState() {
+        given(factory.getStore(WritableEntityIdStore.class)).willReturn(entityIdStore);
         when(entityIdStore.incrementAndGet()).thenReturn(1L);
         final var actual = subject.newEntityNum();
 
@@ -51,6 +57,7 @@ class EntityNumGeneratorImplTest {
 
     @Test
     void testPeekingAtNewEntityNumWithInitialState() {
+        given(factory.getStore(WritableEntityIdStore.class)).willReturn(entityIdStore);
         when(entityIdStore.peekAtNextNumber()).thenReturn(1L);
         final var actual = subject.peekAtNewEntityNum();
 
@@ -61,6 +68,7 @@ class EntityNumGeneratorImplTest {
 
     @Test
     void testNewEntityNum() {
+        given(factory.getStore(WritableEntityIdStore.class)).willReturn(entityIdStore);
         when(entityIdStore.incrementAndGet()).thenReturn(43L);
 
         final var actual = subject.newEntityNum();
@@ -72,6 +80,7 @@ class EntityNumGeneratorImplTest {
 
     @Test
     void testPeekingAtNewEntityNum() {
+        given(factory.getStore(WritableEntityIdStore.class)).willReturn(entityIdStore);
         when(entityIdStore.peekAtNextNumber()).thenReturn(43L);
 
         final var actual = subject.peekAtNewEntityNum();

@@ -315,8 +315,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     }
 
     /**
-     * Returns the top savepoint without removing it from the stack. Used only by the {@link WritableStatesStack},
-     * not part of the public API.
+     * Returns the top savepoint without removing it from the stack.
      *
      * @return the top savepoint
      * @throws IllegalStateException if the stack has been committed already
