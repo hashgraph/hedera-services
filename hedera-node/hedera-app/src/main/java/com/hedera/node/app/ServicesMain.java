@@ -28,7 +28,6 @@ import static com.swirlds.platform.util.BootstrapUtils.checkNodesToRun;
 import static com.swirlds.platform.util.BootstrapUtils.getNodesToRun;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.config.IsEmbeddedTest;
 import com.hedera.node.app.services.OrderedServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistryImpl;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
@@ -58,6 +57,7 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.util.BootstrapUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Set;
 import org.apache.logging.log4j.LogManager;
@@ -303,6 +303,6 @@ public class ServicesMain implements SwirldMain {
                 ConstructableRegistry.getInstance(),
                 ServicesRegistryImpl::new,
                 new OrderedServiceMigrator(),
-                IsEmbeddedTest.NO);
+                InstantSource.system());
     }
 }

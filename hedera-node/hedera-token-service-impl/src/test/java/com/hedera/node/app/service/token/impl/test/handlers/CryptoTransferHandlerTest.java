@@ -52,6 +52,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -59,6 +60,7 @@ import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
+import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
@@ -69,9 +71,11 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.WarmupContext;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
-import com.hedera.node.app.workflows.handle.WarmupContextImpl;
-import com.hedera.node.app.workflows.handle.flow.DispatchHandleContext;
+import com.hedera.node.app.workflows.handle.DispatchHandleContext;
+import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
@@ -114,7 +118,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         TransactionBody txn = newCryptoTransfer(ACCT_3333_MINUS_10, ACCT_4444_PLUS_10);
 
-        WarmupContext warmupContext = new WarmupContextImpl(txn, storeFactory);
+        WarmupContext warmupContext = new CacheWarmer.WarmupContextImpl(txn, storeFactory);
         when(storeFactory.getStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
 
         subject.warm(warmupContext);
@@ -141,7 +145,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                         .build())
                 .build());
 
-        WarmupContext warmupContext = new WarmupContextImpl(txn, storeFactory);
+        WarmupContext warmupContext = new CacheWarmer.WarmupContextImpl(txn, storeFactory);
         when(storeFactory.getStore(ReadableAccountStore.class)).thenReturn(readableAccountStore);
         when(storeFactory.getStore(ReadableTokenStore.class)).thenReturn(readableTokenStore);
         when(storeFactory.getStore(ReadableNftStore.class)).thenReturn(readableNftStore);
@@ -512,7 +516,19 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             .build());
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
+        given(handleContext.dispatchRemovablePrecedingTransaction(
+                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
+                .will((invocation) -> {
+                    final var relation =
+                            new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
+                    final var relation1 =
+                            new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
+                    writableTokenRelStore.put(relation);
+                    writableTokenRelStore.put(relation1);
+                    return new SingleTransactionRecordBuilderImpl(consensusInstant);
+                });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
 
         final var initialSenderBalance = writableAccountStore.get(ownerId).tinybarBalance();
         final var initialFeeCollectorBalance =

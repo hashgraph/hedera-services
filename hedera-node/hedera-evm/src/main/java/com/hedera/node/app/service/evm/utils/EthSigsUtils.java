@@ -29,6 +29,18 @@ public final class EthSigsUtils {
 
     private EthSigsUtils() {}
 
+    public static byte[] recoverAddressFromPrivateKey(byte[] privateKeyBytes) {
+        // Create public key from private key
+        // Return address from public key
+        LibSecp256k1.secp256k1_pubkey pubKey = new LibSecp256k1.secp256k1_pubkey();
+        var parseResult = LibSecp256k1.secp256k1_ec_pubkey_create(CONTEXT, pubKey, privateKeyBytes);
+        if (parseResult == 1) {
+            return recoverAddressFromPubKey(pubKey);
+        } else {
+            return new byte[0];
+        }
+    }
+
     public static byte[] recoverAddressFromPubKey(byte[] pubKeyBytes) {
         LibSecp256k1.secp256k1_pubkey pubKey = new LibSecp256k1.secp256k1_pubkey();
         var parseResult = LibSecp256k1.secp256k1_ec_pubkey_parse(CONTEXT, pubKey, pubKeyBytes, pubKeyBytes.length);

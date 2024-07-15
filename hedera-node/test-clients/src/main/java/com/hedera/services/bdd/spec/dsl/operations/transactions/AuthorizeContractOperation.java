@@ -17,7 +17,6 @@
 package com.hedera.services.bdd.spec.dsl.operations.transactions;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
-import static com.hedera.services.bdd.spec.keys.DefaultKeyGen.DEFAULT_KEY_GEN;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
 import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -27,8 +26,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
@@ -70,7 +69,7 @@ public class AuthorizeContractOperation extends AbstractSpecOperation implements
     @Override
     protected SpecOperation computeDelegate(@NonNull final HapiSpec spec) {
         final var controller = managedKeyShape().signedWith(sigControl());
-        final var key = spec.keys().generateSubjectTo(spec, controller, DEFAULT_KEY_GEN);
+        final var key = spec.keys().generateSubjectTo(spec, controller);
         spec.registry().saveKey(managedKeyName, key);
         return switch (target) {
             case SpecAccount account -> cryptoUpdate(account.name()).key(managedKeyName);

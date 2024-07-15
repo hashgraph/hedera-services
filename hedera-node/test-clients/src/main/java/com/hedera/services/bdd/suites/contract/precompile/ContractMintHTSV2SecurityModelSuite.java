@@ -39,7 +39,6 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -47,8 +46,6 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THOUSAND_HBAR;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
-import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
@@ -127,7 +124,6 @@ public class ContractMintHTSV2SecurityModelSuite {
 
         return defaultHapiSpec("V2Security002FungibleTokenMintPositive")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(SIGNER2),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
@@ -259,7 +255,6 @@ public class ContractMintHTSV2SecurityModelSuite {
 
         return defaultHapiSpec("V2Security003NonFungibleTokenMintPositive")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(SIGNER2),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
@@ -396,7 +391,6 @@ public class ContractMintHTSV2SecurityModelSuite {
 
         return defaultHapiSpec("V2Security002FungibleTokenMintNegative")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -511,7 +505,6 @@ public class ContractMintHTSV2SecurityModelSuite {
 
         return defaultHapiSpec("V2Security003NonFungibleTokenMintNegative")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
                         tokenCreate(NON_FUNGIBLE_TOKEN)
@@ -624,7 +617,6 @@ public class ContractMintHTSV2SecurityModelSuite {
     final Stream<DynamicTest> V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecall() {
         return defaultHapiSpec("V2Security035TokenWithDelegateContractKeyCanNotMintFromDelegatecal")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -776,7 +768,6 @@ public class ContractMintHTSV2SecurityModelSuite {
 
         return defaultHapiSpec("V2Security040TokenWithDelegateContractKeyCanNotMintFromStaticcall")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
                         cryptoCreate(SIGNER).balance(ONE_MILLION_HBARS),
                         tokenCreate(FUNGIBLE_TOKEN)
@@ -861,7 +852,6 @@ public class ContractMintHTSV2SecurityModelSuite {
 
         return defaultHapiSpec("V2Security040TokenWithDelegateContractKeyCanNotMintFromCallcode")
                 .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
                         newKeyNamed(THRESHOLD_KEY),
                         cryptoCreate(TOKEN_TREASURY).key(THRESHOLD_KEY).balance(THOUSAND_HBAR),
                         cryptoCreate(RECEIVER),

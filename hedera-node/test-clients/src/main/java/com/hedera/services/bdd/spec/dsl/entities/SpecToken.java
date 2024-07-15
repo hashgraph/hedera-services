@@ -19,7 +19,6 @@ package com.hedera.services.bdd.spec.dsl.entities;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
-import static com.hedera.services.bdd.spec.keys.KeyFactory.KeyType.SIMPLE;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static java.util.Objects.requireNonNull;
 
@@ -33,6 +32,7 @@ import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetTokenInfoOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContractOperation;
+import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -144,6 +144,15 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
     }
 
     /**
+     * Gets the auto-renew account.
+     *
+     * @return the auto-renew account
+     */
+    public SpecAccount autoRenewAccount() {
+        return autoRenewAccount;
+    }
+
+    /**
      * Returns an operation to authorize the given contracts to act on behalf of this token.
      *
      * @param contracts the contracts to authorize
@@ -232,7 +241,7 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
 
     private void generateKeyInContext(
             @NonNull final SpecTokenKey tokenKey, @NonNull final HapiSpec spec, @NonNull final HapiTokenCreate op) {
-        final var key = spec.keys().generate(spec, SIMPLE);
+        final var key = spec.keys().generateSubjectTo(spec, SigControl.ON);
         final var keyName = name + "_" + tokenKey;
         spec.registry().saveKey(keyName, key);
         switch (tokenKey) {

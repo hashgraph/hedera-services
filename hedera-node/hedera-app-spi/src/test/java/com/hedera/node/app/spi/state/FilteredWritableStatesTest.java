@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.swirlds.platform.test.fixtures.state.StateTestBase;
 import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.StateTestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashSet;

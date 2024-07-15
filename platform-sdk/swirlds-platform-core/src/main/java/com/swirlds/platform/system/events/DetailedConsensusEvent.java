@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.system.events;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.util.HapiUtils;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -29,11 +30,9 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.stream.StreamAligned;
 import com.swirlds.common.stream.Timestamped;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Iterator;
@@ -174,9 +173,9 @@ public class DetailedConsensusEvent extends AbstractSerializableHashable
         return platformEvent.getCreatorId();
     }
 
-    @Nullable
+    @NonNull
     @Override
-    public SoftwareVersion getSoftwareVersion() {
+    public SemanticVersion getSoftwareVersion() {
         return platformEvent.getSoftwareVersion();
     }
 

@@ -21,17 +21,17 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.hedera.node.app.spi.state.EmptyWritableStates;
-import com.swirlds.platform.state.spi.ReadableSingletonStateBase;
-import com.swirlds.platform.state.spi.WritableSingletonStateBase;
-import com.swirlds.platform.test.fixtures.state.ListReadableQueueState;
-import com.swirlds.platform.test.fixtures.state.ListWritableQueueState;
-import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
-import com.swirlds.platform.test.fixtures.state.MapReadableStates;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.ListReadableQueueState;
+import com.swirlds.state.test.fixtures.ListWritableQueueState;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapReadableStates;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.Queue;
@@ -53,6 +53,10 @@ public class FakeHederaState implements HederaState {
     public FakeHederaState addService(@NonNull final String serviceName, @NonNull final Map<String, ?> dataSources) {
         final var serviceStates = this.states.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>());
         serviceStates.putAll(dataSources);
+        // Purge any readable or writable states whose state definitions are now stale,
+        // since they don't include the new data sources we just added
+        readableStates.remove(serviceName);
+        writableStates.remove(serviceName);
         return this;
     }
 

@@ -18,19 +18,24 @@ package com.hedera.node.app.service.addressbook.impl.test;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.asBytes;
 import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
+import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase;
-import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import java.util.Set;
+import org.assertj.core.util.Streams;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -82,5 +87,24 @@ class ReadableNodeStoreImplTest extends AddressBookTestBase {
     void getSizeOfState() {
         final var store = new ReadableNodeStoreImpl(readableStates);
         assertEquals(readableStates.get(NODES_KEY).size(), store.sizeOfState());
+    }
+
+    @Test
+    void keysWorks() {
+        final var stateBuilder = emptyReadableNodeStateBuilder();
+        stateBuilder
+                .value(new EntityNumber(2), mock(Node.class))
+                .value(new EntityNumber(4), mock(Node.class))
+                .value(new EntityNumber(5), mock(Node.class))
+                .value(new EntityNumber(1), mock(Node.class));
+        readableNodeState = stateBuilder.build();
+        given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
+        subject = new ReadableNodeStoreImpl(readableStates);
+        final var keys = subject.keys();
+
+        assertTrue(keys.hasNext());
+        final var keySet = Streams.stream(keys).collect(toSet());
+        assertEquals(
+                keySet, Set.of(new EntityNumber(1), new EntityNumber(2), new EntityNumber(4), new EntityNumber(5)));
     }
 }

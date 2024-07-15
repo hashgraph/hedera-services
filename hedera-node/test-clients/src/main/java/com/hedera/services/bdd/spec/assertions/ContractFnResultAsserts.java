@@ -101,6 +101,23 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
         };
     }
 
+    public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isEqualOrGreaterThan(
+            BigInteger expected) {
+        return ignore -> actualObjs -> {
+            try {
+                if (actualObjs[0] instanceof BigInteger actual) {
+                    assertTrue(
+                            actual.compareTo(expected) >= 0,
+                            "Expected " + actual + " to be equal or greater than" + expected);
+                    assertEquals(1, actualObjs.length, "Expected a single object");
+                }
+            } catch (Exception e) {
+                return Optional.of(e);
+            }
+            return Optional.empty();
+        };
+    }
+
     public static Function<HapiSpec, Function<Object[], Optional<Throwable>>> isRandomResult(Object[] objs) {
         return ignore -> actualObjs -> validateRandomResult(objs, actualObjs);
     }
@@ -253,6 +270,27 @@ public class ContractFnResultAsserts extends BaseErroringAssertsProvider<Contrac
         registerProvider((spec, o) -> {
             ContractFunctionResult result = (ContractFunctionResult) o;
             assertEquals(gasUsed, result.getGasUsed(), "Wrong amount of Gas was used!");
+        });
+        return this;
+    }
+
+    /**
+     * Check that the gas used is in a given range
+     * @param lowerBoundInclusive if present (not null), is the lowest acceptable value for gas used
+     * @param upperBoundExclusive if present (not null), is the highest acceptable value for gas used
+     */
+    public ContractFnResultAsserts gasUsedIsInRange(final Long lowerBoundInclusive, final Long upperBoundExclusive) {
+        registerProvider((spec, o) -> {
+            ContractFunctionResult result = (ContractFunctionResult) o;
+            long gasUsed = result.getGasUsed();
+            if (lowerBoundInclusive != null)
+                assertTrue(
+                        gasUsed >= lowerBoundInclusive,
+                        "gas, %d, is less than %d".formatted(gasUsed, lowerBoundInclusive));
+            if (upperBoundExclusive != null)
+                assertTrue(
+                        gasUsed <= upperBoundExclusive,
+                        "gas, %d, is more than %d".formatted(gasUsed, upperBoundExclusive));
         });
         return this;
     }

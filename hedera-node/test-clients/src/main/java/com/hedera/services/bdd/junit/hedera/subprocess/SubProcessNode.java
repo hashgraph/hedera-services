@@ -17,6 +17,11 @@
 package com.hedera.services.bdd.junit.hedera.subprocess;
 
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.SWIRLDS_LOG;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.PENDING;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ConditionStatus.REACHED;
+import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen.NO;
+import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen.YES;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.DOWN;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.NA;
 import static com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.GrpcStatus.UP;
@@ -32,11 +37,14 @@ import com.hedera.node.app.Hedera;
 import com.hedera.services.bdd.junit.hedera.AbstractLocalNode;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.hedera.services.bdd.junit.hedera.subprocess.NodeStatus.BindExceptionSeen;
+import com.hedera.services.bdd.suites.regression.system.LifecycleTest;
 import com.swirlds.base.function.BooleanFunction;
 import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,11 +52,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A node running in its own OS process as a subprocess of the JUnit test runner.
  */
 public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements HederaNode {
+    private static final Logger log = LogManager.getLogger(SubProcessNode.class);
+
     /**
      * How many milliseconds to wait between retries when scanning the application log for
      * the node status.
@@ -63,7 +75,11 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
      * before resorting to scanning the application log. (Empirically, if Prometheus is not up
      * within a minute or so, it's not going to be; and we should fall back to log scanning.)
      */
-    private static final int MAX_PROMETHEUS_RETRIES = 666;
+    private static final int MAX_PROMETHEUS_RETRIES = 1000;
+    /**
+     * How many retries to make between checking if a bind exception has been thrown in the logs.
+     */
+    private static final int BINDING_CHECK_INTERVAL = 10;
 
     private final Pattern statusPattern;
     private final GrpcPinger grpcPinger;
@@ -95,21 +111,7 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
 
     @Override
     public SubProcessNode start() {
-        assertStopped();
-        assertWorkingDirInitialized();
-        destroyAnySubProcessNodeWithId(metadata.nodeId());
-        processHandle = startSubProcessNodeFrom(metadata);
-        return this;
-    }
-
-    @Override
-    public boolean stop() {
-        return stopWith(ProcessHandle::destroy);
-    }
-
-    @Override
-    public boolean terminate() {
-        return stopWith(ProcessHandle::destroyForcibly);
+        return startWithConfigVersion(LifecycleTest.CURRENT_CONFIG_VERSION.get());
     }
 
     @Override
@@ -119,7 +121,8 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
         final var retryCount = new AtomicInteger();
         return conditionFuture(
                 () -> {
-                    final var lookupAttempt = retryCount.get() <= MAX_PROMETHEUS_RETRIES
+                    final var nominalSoFar = retryCount.get() <= MAX_PROMETHEUS_RETRIES;
+                    final var lookupAttempt = nominalSoFar
                             ? prometheusClient.statusFromLocalEndpoint(metadata.prometheusPort())
                             : statusFromLog();
                     var grpcStatus = NA;
@@ -128,18 +131,42 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
                         grpcStatus = grpcPinger.isLive(metadata.grpcPort()) ? UP : DOWN;
                         statusReached = grpcStatus == UP;
                     }
-                    if (nodeStatusObserver != null) {
-                        nodeStatusObserver.accept(
-                                new NodeStatus(lookupAttempt, grpcStatus, retryCount.getAndIncrement()));
+                    var bindExceptionSeen = BindExceptionSeen.NA;
+                    // This extra logic just barely justifies its existence by giving up
+                    // immediately when a bind exception is seen in the logs, since in
+                    // practice these are never transient; it also lets us try reassigning
+                    // ports when first starting the network to maybe salvage the run
+                    if (!statusReached
+                            && status == ACTIVE
+                            && !nominalSoFar
+                            && retryCount.get() % BINDING_CHECK_INTERVAL == 0) {
+                        if (swirldsLogContains("java.net.BindException")) {
+                            bindExceptionSeen = YES;
+                        } else {
+                            bindExceptionSeen = NO;
+                        }
                     }
-                    return statusReached;
+                    if (nodeStatusObserver != null) {
+                        nodeStatusObserver.accept(new NodeStatus(
+                                lookupAttempt, grpcStatus, bindExceptionSeen, retryCount.getAndIncrement()));
+                    }
+                    return statusReached ? REACHED : PENDING;
                 },
                 () -> retryCount.get() > MAX_PROMETHEUS_RETRIES ? LOG_SCAN_BACKOFF_MS : PROMETHEUS_BACKOFF_MS);
     }
 
     @Override
     public CompletableFuture<Void> stopFuture() {
-        return conditionFuture(() -> processHandle == null);
+        if (processHandle == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        if (!processHandle.destroy()) {
+            log.warn("May have failed to stop node '{}' with PID '{}'", metadata.nodeId(), processHandle.pid());
+        }
+        return processHandle.onExit().thenAccept(handle -> {
+            log.info("Destroyed PID {}", handle.pid());
+            this.processHandle = null;
+        });
     }
 
     @Override
@@ -150,6 +177,35 @@ public class SubProcessNode extends AbstractLocalNode<SubProcessNode> implements
     @Override
     protected SubProcessNode self() {
         return this;
+    }
+
+    public SubProcessNode startWithConfigVersion(final int configVersion) {
+        assertStopped();
+        assertWorkingDirInitialized();
+        destroyAnySubProcessNodeWithId(metadata.nodeId());
+        processHandle = startSubProcessNodeFrom(metadata, configVersion);
+        return this;
+    }
+
+    /**
+     * Reassigns the ports used by this node.
+     *
+     * @param grpcPort the new gRPC port
+     * @param gossipPort the new gossip port
+     * @param tlsGossipPort the new TLS gossip port
+     * @param prometheusPort the new Prometheus port
+     */
+    public void reassignPorts(
+            final int grpcPort, final int gossipPort, final int tlsGossipPort, final int prometheusPort) {
+        metadata = metadata.withNewPorts(grpcPort, gossipPort, tlsGossipPort, prometheusPort);
+    }
+
+    private boolean swirldsLogContains(@NonNull final String text) {
+        try (var lines = Files.lines(getExternalPath(SWIRLDS_LOG))) {
+            return lines.anyMatch(line -> line.contains(text));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private boolean stopWith(@NonNull final BooleanFunction<ProcessHandle> stop) {

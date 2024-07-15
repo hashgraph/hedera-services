@@ -16,9 +16,6 @@
 
 package com.hedera.services.bdd.spec.queries;
 
-import static com.hedera.services.bdd.spec.HapiSpec.CostSnapshotMode.OFF;
-import static com.hedera.services.bdd.spec.fees.Payment.Reason.ANSWER_ONLY_QUERY_COST;
-import static com.hedera.services.bdd.spec.fees.Payment.Reason.COST_ANSWER_QUERY_COST;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForCost;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.reflectForPrecheck;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransferList;
@@ -37,7 +34,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryCheckStateException;
 import com.hedera.services.bdd.spec.exceptions.HapiQueryPrecheckStateException;
-import com.hedera.services.bdd.spec.fees.Payment;
 import com.hedera.services.bdd.spec.keys.ControlForKey;
 import com.hedera.services.bdd.spec.keys.SigMapGenerator;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
@@ -290,12 +286,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
             if (expectedCostAnswerPrecheck() != OK) {
                 return Transaction.getDefaultInstance();
             }
-            if (spec.setup().costSnapshotMode() != OFF) {
-                spec.recordPayment(
-                        new Payment(initNodePayment, self().getClass().getSimpleName(), COST_ANSWER_QUERY_COST));
-                spec.recordPayment(
-                        new Payment(realNodePayment, self().getClass().getSimpleName(), ANSWER_ONLY_QUERY_COST));
-            }
             txnSubmitted = payment;
             if (!loggingOff) {
                 final String message = String.format(
@@ -417,11 +407,6 @@ public abstract class HapiQueryOp<T extends HapiQueryOp<T>> extends HapiSpecOper
 
     public T logging() {
         loggingOff = false;
-        return self();
-    }
-
-    public T noYahcliLogging() {
-        yahcliLogger = false;
         return self();
     }
 

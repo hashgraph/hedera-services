@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.workflows.handle.flow.txn.UserTxnScope;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl.ReversingBehavior;
 import com.hedera.node.config.data.ConsensusConfig;
 import com.swirlds.config.api.Configuration;
@@ -40,7 +39,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
-import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,7 +67,6 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>As with all classes intended to be used within the handle-workflow, this class is <em>not</em> thread-safe.
  */
-@UserTxnScope
 public final class RecordListBuilder {
     private static final Logger logger = LogManager.getLogger(RecordListBuilder.class);
 
@@ -79,6 +76,16 @@ public final class RecordListBuilder {
             ResponseCodeEnum.SUCCESS,
             ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED,
             ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+
+    /**
+     * Indicates whether this builder is for the genesis transaction. If so, we ignore the normal limits on the
+     * number of preceding child dispatches and fully externalize creation of system accounts and files.
+     */
+    public enum IsGenesisTxn {
+        YES,
+        NO
+    }
+
     /**
      * The record builder for the user transaction.
      */
@@ -100,16 +107,23 @@ public final class RecordListBuilder {
      */
     private boolean followingChildRemoved = false;
 
+    private final boolean isGenesisTxn;
+
+    public RecordListBuilder(@NonNull final Instant consensusTimestamp) {
+        this(consensusTimestamp, IsGenesisTxn.NO);
+    }
+
     /**
      * Creates a new instance with the given user transaction consensus timestamp.
      *
      * @param consensusTimestamp The consensus timestamp of the user transaction
+     * @param isGenesisTxn Whether this is the genesis transaction
      * @throws NullPointerException if {@code recordBuilder} is {@code null}
      */
-    @Inject
-    public RecordListBuilder(@NonNull final Instant consensusTimestamp) {
-        this.userTxnRecordBuilder = new SingleTransactionRecordBuilderImpl(
-                requireNonNull(consensusTimestamp, "recordBuilder must not be null"));
+    public RecordListBuilder(@NonNull final Instant consensusTimestamp, @NonNull final IsGenesisTxn isGenesisTxn) {
+        requireNonNull(consensusTimestamp);
+        this.isGenesisTxn = requireNonNull(isGenesisTxn) == IsGenesisTxn.YES;
+        this.userTxnRecordBuilder = new SingleTransactionRecordBuilderImpl(consensusTimestamp);
     }
 
     /**
@@ -188,7 +202,9 @@ public final class RecordListBuilder {
         // On genesis start we create almost 700 preceding child records for creating system accounts.
         // Also, we should not be failing for stake update transaction records that happen every midnight.
         // In these two cases need to allow for this, but we don't want to allow for this on every handle call.
-        if (precedingTxnRecordBuilders.size() >= maxRecords && (precedingTxnCategory != UNLIMITED_CHILD_RECORDS)) {
+        if (precedingTxnRecordBuilders.size() >= maxRecords
+                && !isGenesisTxn
+                && (precedingTxnCategory != UNLIMITED_CHILD_RECORDS)) {
             // We do not have a MAX_PRECEDING_RECORDS_EXCEEDED error, so use this.
             throw new HandleException(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
         }
@@ -197,7 +213,8 @@ public final class RecordListBuilder {
         // user transaction. The second item is T-2, and so on.
         final var parentConsensusTimestamp = userTxnRecordBuilder.consensusNow();
         final var consensusNow = parentConsensusTimestamp.minusNanos(precedingCount + 1L);
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, TransactionCategory.PRECEDING);
         precedingTxnRecordBuilders.add(recordBuilder);
         return recordBuilder;
     }
@@ -295,7 +312,8 @@ public final class RecordListBuilder {
                 childCategory == TransactionCategory.SCHEDULED ? consensusConfig.handleMaxPrecedingRecords() + 1 : 1L;
         final Instant consensusNow = prevConsensusNow.plusNanos(nextRecordOffset);
         // Note we do not repeat exchange rates for child transactions
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer);
+        final var recordBuilder =
+                new SingleTransactionRecordBuilderImpl(consensusNow, reversingBehavior, customizer, childCategory);
         // Only set parent consensus timestamp for child records if one is not provided
         if (!childCategory.equals(HandleContext.TransactionCategory.SCHEDULED)) {
             recordBuilder.parentConsensus(parentConsensusTimestamp);

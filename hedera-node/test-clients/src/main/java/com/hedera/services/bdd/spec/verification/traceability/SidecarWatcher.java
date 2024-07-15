@@ -16,9 +16,9 @@
 
 package com.hedera.services.bdd.spec.verification.traceability;
 
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.guaranteedExtant;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.guaranteedExtantDir;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
-import static com.hedera.services.bdd.spec.utilops.streams.RecordAssertions.triggerAndCloseAtLeastOneFileIfNotInterrupted;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -71,7 +71,7 @@ public class SidecarWatcher {
     private record ConstructionDetails(String creatingThread, String stackTrace) {}
 
     public SidecarWatcher(@NonNull final Path path) {
-        this.unsubscribe = RECORD_STREAM_ACCESS.subscribe(guaranteedExtant(path), new StreamDataListener() {
+        this.unsubscribe = RECORD_STREAM_ACCESS.subscribe(guaranteedExtantDir(path), new StreamDataListener() {
             @Override
             public void onNewSidecar(@NonNull final TransactionSidecarRecord sidecar) {
                 actualSidecars.add(sidecar);

@@ -36,11 +36,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
-import static com.hedera.services.bdd.suites.HapiSuite.EVM_VERSION_050;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -61,7 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -69,6 +67,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -76,7 +75,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.Hash;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DynamicTest;
@@ -86,8 +84,6 @@ import org.junit.jupiter.api.Tag;
 @HapiTestLifecycle
 public class Evm38ValidationSuite {
     private static final Logger LOG = LogManager.getLogger(Evm38ValidationSuite.class);
-    private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
-    private static final String EVM_VERSION_038 = "v0.38";
     private static final String CREATE_TRIVIAL = "CreateTrivial";
     private static final String BALANCE_OF = "balanceOf";
     private static final String CREATE_2_TXN = "create2Txn";
@@ -99,13 +95,8 @@ public class Evm38ValidationSuite {
     private static final String SIMPLE_UPDATE_CONTRACT = "SimpleUpdate";
 
     @BeforeAll
-    static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
-        specManager.setup(overriding(EVM_VERSION_PROPERTY, EVM_VERSION_038));
-    }
-
-    @AfterAll
-    static void afterAll(@NonNull final SpecManager specManager) throws Throwable {
-        specManager.teardown(overriding(EVM_VERSION_PROPERTY, EVM_VERSION_050));
+    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+        testLifecycle.overrideInClass(Map.of("contracts.evm.version", "v0.38"));
     }
 
     @HapiTest

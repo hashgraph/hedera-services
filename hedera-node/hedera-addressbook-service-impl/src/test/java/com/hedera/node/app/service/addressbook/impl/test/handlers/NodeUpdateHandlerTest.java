@@ -16,36 +16,52 @@
 
 package com.hedera.node.app.service.addressbook.impl.test.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_GOSSIP_CA_CERTIFICATE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NODE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
+import static com.hedera.node.app.spi.fixtures.Assertions.assertThrowsPreCheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.mock;
 
 import com.hedera.hapi.node.addressbook.NodeUpdateTransactionBody;
 import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.WritableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
 import com.hedera.node.app.service.addressbook.impl.validators.AddressBookValidator;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
+import com.hedera.node.app.spi.fees.FeeContext;
+import com.hedera.node.app.spi.fees.Fees;
+import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.store.StoreFactory;
+import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -66,6 +82,9 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     @Mock
     private ReadableAccountStore accountStore;
 
+    @Mock
+    private AttributeValidator validator;
+
     private TransactionBody txn;
     private NodeUpdateHandler subject;
 
@@ -84,25 +103,6 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    @DisplayName("pureChecks fail when accountId not set")
-    void accountIdNeedSet() {
-        txn = new NodeUpdateBuilder()
-                .withNodeId(1)
-                .withAccountId(AccountID.DEFAULT)
-                .build();
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
-    }
-
-    @Test
-    @DisplayName("pureChecks fail when accountId is alias")
-    void accountIdCannotAlias() {
-        txn = new NodeUpdateBuilder().withNodeId(1).withAccountId(alias).build();
-        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
-        assertThat(msg.responseCode()).isEqualTo(INVALID_NODE_ACCOUNT_ID);
-    }
-
-    @Test
     @DisplayName("pureChecks fail when gossipCaCertificate empty")
     void gossipCaCertificateCannotEmpty() {
         txn = new NodeUpdateBuilder()
@@ -115,12 +115,26 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
+    @DisplayName("invalid adminKey fail")
+    void adminKeyInvalid() {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(1)
+                .withAccountId(accountId)
+                .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withAdminKey(invalidKey)
+                .build();
+        final var msg = assertThrows(PreCheckException.class, () -> subject.pureChecks(txn));
+        assertThat(msg.responseCode()).isEqualTo(INVALID_ADMIN_KEY);
+    }
+
+    @Test
     @DisplayName("pureChecks succeeds when expected attributes are specified")
     void pureCheckPass() {
         txn = new NodeUpdateBuilder()
                 .withNodeId(1)
                 .withAccountId(accountId)
                 .withGossipCaCertificate(Bytes.wrap("cert"))
+                .withAdminKey(key)
                 .build();
         assertDoesNotThrow(() -> subject.pureChecks(txn));
     }
@@ -277,7 +291,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
         given(handleContext.configuration()).willReturn(config);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_SERVICE_ENDPOINT, msg.getStatus());
+        assertEquals(ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT, msg.getStatus());
     }
 
     @Test
@@ -331,6 +345,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 .withServiceEndpoint(List.of(endpoint1, endpoint3))
                 .withGossipCaCertificate(Bytes.wrap("cert"))
                 .withGrpcCertificateHash(Bytes.wrap("hash"))
+                .withAdminKey(key)
                 .build();
         given(handleContext.body()).willReturn(txn);
         refreshStoresWithMoreNodeInWritable();
@@ -344,6 +359,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
         given(storeFactory.writableStore(WritableNodeStore.class)).willReturn(writableStore);
         given(accountStore.contains(accountId)).willReturn(true);
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
+        given(handleContext.attributeValidator()).willReturn(validator);
 
         assertDoesNotThrow(() -> subject.handle(handleContext));
         final var updatedNode = writableStore.get(1L);
@@ -358,6 +374,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
                 updatedNode.serviceEndpoint().toArray());
         assertArrayEquals("cert".getBytes(), updatedNode.gossipCaCertificate().toByteArray());
         assertArrayEquals("hash".getBytes(), updatedNode.grpcCertificateHash().toByteArray());
+        assertEquals(key, updatedNode.adminKey());
     }
 
     @Test
@@ -378,8 +395,101 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    void preHandleDoesNothing() {
-        assertDoesNotThrow(() -> subject.preHandle(mock(PreHandleContext.class)));
+    void preHandleWorksWhenAdminKeyValid() throws PreCheckException {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(nodeId.number())
+                .withAccountId(asAccount(53))
+                .withAdminKey(key)
+                .build();
+        final var context = setupPreHandle(true, txn);
+
+        subject.preHandle(context);
+        assertThat(txn).isEqualTo(context.body());
+        assertThat(context.payerKey()).isEqualTo(anotherKey);
+        assertThat(context.requiredNonPayerKeys()).contains(key);
+    }
+
+    @Test
+    void preHandleFailedWhenAdminKeyInValid() throws PreCheckException {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(nodeId.number())
+                .withAdminKey(invalidKey)
+                .build();
+        final var context = setupPreHandle(true, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ADMIN_KEY);
+    }
+
+    @Test
+    void preHandleFailedWhenNodeNotExist() throws PreCheckException {
+        txn = new NodeUpdateBuilder().withNodeId(2).build();
+        final var context = setupPreHandle(true, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_NODE_ID);
+    }
+
+    @Test
+    void preHandleFailedWhenNodeDeleted() throws PreCheckException {
+        givenValidNode(true);
+        refreshStoresWithCurrentNodeInReadable();
+        txn = new NodeUpdateBuilder().withNodeId(nodeId.number()).build();
+        final var context = setupPreHandle(true, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_NODE_ID);
+    }
+
+    @Test
+    void preHandleFailedWhenOldAdminKeyInValid() throws PreCheckException {
+        givenValidNodeWithAdminKey(invalidKey);
+        refreshStoresWithCurrentNodeInReadable();
+        txn = new NodeUpdateBuilder().withNodeId(nodeId.number()).build();
+        final var context = setupPreHandle(true, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_ADMIN_KEY);
+    }
+
+    @Test
+    void preHandleWorksFailWhenAccountIdNotGood() throws PreCheckException {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(nodeId.number())
+                .withAdminKey(key)
+                .withAccountId(AccountID.DEFAULT)
+                .build();
+        final var context = setupPreHandle(true, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_NODE_ACCOUNT_ID);
+    }
+
+    @Test
+    void preHandleWorksFailWhenAccountIdIsAlias() throws PreCheckException {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(nodeId.number())
+                .withAdminKey(key)
+                .withAccountId(alias)
+                .build();
+        final var context = setupPreHandle(true, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), INVALID_NODE_ACCOUNT_ID);
+    }
+
+    @Test
+    void preHandleWorksFailWhenUpdateAccountIdNotAllowed() throws PreCheckException {
+        txn = new NodeUpdateBuilder()
+                .withNodeId(nodeId.number())
+                .withAdminKey(key)
+                .withAccountId(asAccount(53))
+                .build();
+        final var context = setupPreHandle(false, txn);
+        assertThrowsPreCheck(() -> subject.preHandle(context), UPDATE_NODE_ACCOUNT_NOT_ALLOWED);
+    }
+
+    @Test
+    @DisplayName("check that fees are 1 for delete node trx")
+    void testCalculateFeesInvocations() throws IOException {
+        final var feeCtx = mock(FeeContext.class);
+        final var feeCalcFact = mock(FeeCalculatorFactory.class);
+        final var feeCalc = mock(FeeCalculator.class);
+        given(feeCtx.feeCalculatorFactory()).willReturn(feeCalcFact);
+        given(feeCalcFact.feeCalculator(any())).willReturn(feeCalc);
+
+        given(feeCalc.addVerificationsPerTransaction(anyLong())).willReturn(feeCalc);
+        given(feeCalc.calculate()).willReturn(new Fees(1, 0, 0));
+
+        assertThat(subject.calculateFees(feeCtx)).isEqualTo(new Fees(1, 0, 0));
     }
 
     private void setupHandle() {
@@ -395,6 +505,24 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(accountStore);
     }
 
+    private PreHandleContext setupPreHandle(boolean updateAccountIdAllowed, TransactionBody txn)
+            throws PreCheckException {
+        final var config = HederaTestConfigBuilder.create()
+                .withValue("nodes.updateAccountIdAllowed", updateAccountIdAllowed)
+                .getOrCreateConfig();
+        mockPayerLookup(anotherKey);
+        final var context = new FakePreHandleContext(accountStore, txn, config);
+        context.registerStore(ReadableNodeStore.class, readableStore);
+        return context;
+    }
+
+    private Key mockPayerLookup(Key key) {
+        final var account = mock(Account.class);
+        given(account.key()).willReturn(key);
+        given(accountStore.getAccountById(payerId)).willReturn(account);
+        return key;
+    }
+
     private class NodeUpdateBuilder {
         private long nodeId = -1L;
         private AccountID accountId = null;
@@ -406,6 +534,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
         private Bytes gossipCaCertificate = null;
 
         private Bytes grpcCertificateHash = null;
+        private Key adminKey = null;
 
         private NodeUpdateBuilder() {}
 
@@ -430,6 +559,9 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
             }
             if (grpcCertificateHash != null) {
                 txnBody.grpcCertificateHash(grpcCertificateHash);
+            }
+            if (adminKey != null) {
+                txnBody.adminKey(adminKey);
             }
 
             return TransactionBody.newBuilder()
@@ -470,6 +602,11 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
 
         public NodeUpdateBuilder withGrpcCertificateHash(final Bytes grpcCertificateHash) {
             this.grpcCertificateHash = grpcCertificateHash;
+            return this;
+        }
+
+        public NodeUpdateBuilder withAdminKey(final Key adminKey) {
+            this.adminKey = adminKey;
             return this;
         }
     }

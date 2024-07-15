@@ -16,6 +16,9 @@
 
 package com.hedera.services.bdd.junit;
 
+/**
+ * Enumerates reasons a {@link LeakyHapiTest} cannot be run concurrently with other tests.
+ */
 public enum ContextRequirement {
     /**
      * The test expects a predictable relationship between its created entity numbers,
