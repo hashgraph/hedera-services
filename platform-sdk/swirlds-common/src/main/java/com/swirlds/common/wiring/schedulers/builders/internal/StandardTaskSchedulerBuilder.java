@@ -16,7 +16,6 @@
 
 package com.swirlds.common.wiring.schedulers.builders.internal;
 
-import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.DIRECT_THREADSAFE;
 import static com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType.NO_OP;
 
@@ -121,10 +120,7 @@ public class StandardTaskSchedulerBuilder<OUT> extends AbstractTaskSchedulerBuil
     @NonNull
     public TaskScheduler<OUT> build() {
         // Check to ensure unhandled task capacity is not set for direct schedulers
-        if ((type == DIRECT || type == DIRECT_THREADSAFE) && unhandledTaskCapacity != 1) {
-            throw new IllegalArgumentException(
-                    "Direct schedulers cannot have an unhandled task capacity other than the default.");
-        }
+        validateDirectScheduler(type, unhandledTaskCapacity);
         final Counters counters = buildCounters();
         final FractionalTimer busyFractionTimer = buildBusyTimer();
 

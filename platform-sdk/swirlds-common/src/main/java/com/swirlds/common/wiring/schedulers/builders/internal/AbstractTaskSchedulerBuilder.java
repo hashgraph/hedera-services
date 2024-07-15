@@ -131,14 +131,29 @@ public abstract class AbstractTaskSchedulerBuilder<OUT> implements TaskScheduler
     }
 
     /**
+     * Ensures that direct schedulers do not have an unhandled task capacity set.
+     *
+     * <p>If the scheduler type is {@link TaskSchedulerType#DIRECT} or {@link TaskSchedulerType#DIRECT_THREADSAFE}
+     * and the unhandled task capacity is not 1, an {@link IllegalArgumentException} is thrown.
+     *
+     * @param type the type of the task scheduler
+     * @param unhandledTaskCapacity the unhandled task capacity
+     * @throws IllegalArgumentException if the type is direct or direct threadsafe and the unhandled task capacity is not 1
+     */
+    public static void validateDirectScheduler(TaskSchedulerType type, long unhandledTaskCapacity) {
+        if ((type == TaskSchedulerType.DIRECT || type == TaskSchedulerType.DIRECT_THREADSAFE)
+                && unhandledTaskCapacity != 1) {
+            throw new IllegalArgumentException("Direct schedulers cannot have an unhandled task capacity.");
+        }
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     @NonNull
     public AbstractTaskSchedulerBuilder<OUT> withType(@NonNull final TaskSchedulerType type) {
-        if ((type == DIRECT || type == DIRECT_THREADSAFE) && unhandledTaskCapacity != 1) {
-            throw new IllegalArgumentException("Direct schedulers cannot have an unhandled task capacity.");
-        }
+        validateDirectScheduler(type, unhandledTaskCapacity);
         this.type = Objects.requireNonNull(type);
         return this;
     }
