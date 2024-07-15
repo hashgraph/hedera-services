@@ -128,7 +128,7 @@ public class TxnUtils {
             Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build();
     public static Key EMPTY_KEY_LIST =
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
-    public static Key ALL_ZEROS_INVALID_KEY = Key.newBuilder()
+    public static Key WRONG_LENGTH_EDDSA_KEY = Key.newBuilder()
             .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000"))
             .build();
 

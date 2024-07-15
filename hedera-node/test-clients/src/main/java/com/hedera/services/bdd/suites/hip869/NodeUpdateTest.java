@@ -21,7 +21,7 @@ import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.ALL_ZEROS_INVALID_KEY;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.WRONG_LENGTH_EDDSA_KEY;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
@@ -89,7 +89,7 @@ public class NodeUpdateTest {
                 nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode").adminKey(NONSENSE_KEY).hasPrecheck(KEY_REQUIRED),
                 nodeUpdate("testNode")
-                        .adminKey(ALL_ZEROS_INVALID_KEY)
+                        .adminKey(WRONG_LENGTH_EDDSA_KEY)
                         .signedBy(GENESIS)
                         .hasPrecheck(INVALID_ADMIN_KEY));
     }
