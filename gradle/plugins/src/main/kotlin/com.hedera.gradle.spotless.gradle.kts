@@ -21,17 +21,11 @@ spotless {
     isEnforceCheck = false
 
     // optional: limit format enforcement to just the files changed by this feature branch
-        ratchetFrom("origin/develop")
+    ratchetFrom("origin/develop")
 
     format("misc") {
         // define the files to apply `misc` to
-        target(
-            "docs/*.md",
-            "/*.md",
-            "*.md",
-            "test-clients/*.md",
-            ".gitignore"
-        )
+        target("docs/*.md", "/*.md", "*.md", "test-clients/*.md", ".gitignore")
         prettier() // Override the default prettier config to limit column width to 100 characters
             .config(
                 mapOf(
