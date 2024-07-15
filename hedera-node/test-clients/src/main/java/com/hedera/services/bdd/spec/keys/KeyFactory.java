@@ -150,6 +150,16 @@ public class KeyFactory {
     }
 
     /**
+     * Returns the ECDSA private key associated with the given hexed public key.
+     *
+     * @param pubKeyHex the hexed public key
+     * @return the ECDSA private key
+     */
+    public PrivateKey getEd25519PrivateKey(@NonNull final String pubKeyHex) {
+        return pkMap.get(pubKeyHex);
+    }
+
+    /**
      * Exports the Ed25519 private key associated with the given name to the given PEM location
      * using the default passphrase.
      *

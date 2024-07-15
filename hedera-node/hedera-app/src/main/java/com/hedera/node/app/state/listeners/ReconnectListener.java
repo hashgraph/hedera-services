@@ -83,6 +83,8 @@ public class ReconnectListener implements ReconnectCompleteListener {
                     upgradeNodeStore,
                     upgradeStakingInfoStore);
             upgradeActions.catchUpOnMissedSideEffects(platformStateAccessor.getPlatformState());
+        } catch (Exception e) {
+            log.error("Unable to catch up on missed upgrade side effects after reconnect", e);
         }
     }
 }

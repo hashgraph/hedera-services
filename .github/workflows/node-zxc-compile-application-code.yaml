@@ -156,7 +156,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@29c0906b64b8fc82467890bfb7a0a7ef34bda89e # v3.1.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
         with:
           cache-read-only: false
 
@@ -204,7 +204,7 @@ jobs:
 
       - name: Compile
         id: gradle-build
-        run: ${GRADLE_EXEC} assemble --scan
+        run: ${GRADLE_EXEC} assemble :test-clients:yahCliJar --scan
 
       - name: Spotless Check
         if: ${{ inputs.enable-spotless-check && !cancelled() }}
@@ -478,7 +478,7 @@ jobs:
 
       - name: Publish To Codecov
         if: ${{ inputs.enable-unit-tests && !cancelled() }}
-        uses: codecov/codecov-action@54bcd8715eee62d40e33596ef5e8f0f48dbbccab # v4.1.0
+        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
         env:
           CODECOV_TOKEN: ${{ secrets.codecov-token }}
         with:

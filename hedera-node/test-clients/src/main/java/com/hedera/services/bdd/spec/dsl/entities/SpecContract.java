@@ -29,11 +29,12 @@ import static com.hedera.services.bdd.suites.contract.Utils.getInitcodeOf;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetContractInfoOperation;
@@ -43,6 +44,7 @@ import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.bouncycastle.util.encoders.Hex;
 
 /**
  * Represents a Hedera account that may exist on one or more target networks and be
@@ -148,7 +150,10 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
         final SpecOperation op;
         constructorArgs = withSubstitutedTypes(spec.targetNetworkOrThrow(), constructorArgs);
         if (initcode.size() < MAX_INLINE_INITCODE_SIZE) {
-            op = contractCreate(name, constructorArgs).inlineInitCode(initcode);
+            final var unhexedBytecode = Hex.decode(initcode.toByteArray());
+            op = contractCreate(name, constructorArgs)
+                    .gas(creationGas)
+                    .inlineInitCode(ByteString.copyFrom(unhexedBytecode));
         } else {
             op = blockingOrder(
                     createLargeFile(GENESIS, contractName, initcode),

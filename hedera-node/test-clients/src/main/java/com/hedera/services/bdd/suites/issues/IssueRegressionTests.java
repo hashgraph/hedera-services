@@ -107,7 +107,7 @@ public class IssueRegressionTests {
                 cryptoCreate("irrelevant").balance(0L).payingWith("payer"));
     }
 
-    @LeakyHapiTest(NO_CONCURRENT_CREATIONS)
+    @LeakyHapiTest(requirement = NO_CONCURRENT_CREATIONS)
     final Stream<DynamicTest> createDeleteInSameRoundWorks() {
         final var key = "tbdKey";
         AtomicReference<String> nextFileId = new AtomicReference<>();

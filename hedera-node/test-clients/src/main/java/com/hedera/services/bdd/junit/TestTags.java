@@ -40,6 +40,11 @@ public class TestTags {
      */
     public static final String NOT_EMBEDDED = "NOT_EMBEDDED";
     /**
+     * Tags a test that would generally be run in repeatable mode because it depends on
+     * virtual time to complete in a reasonable period.
+     */
+    public static final String REPEATABLE = "REPEATABLE";
+    /**
      * Tags a test that <b>cannot</b> be run with the {@code testRepeatable} task for
      * some reason; e.g., it does not use fake time; or uses randomness or parallelism
      * that repeatable mode does not (yet) automatically toggle off.

@@ -39,6 +39,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getAccountNftInfosNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getBySolidityIdNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getClaimNotSupported;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getExecutionTimeNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getFastRecordNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getStakersNotSupported;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.getTokenNftInfosNotSupported;
@@ -93,6 +94,7 @@ public class MiscCryptoSuite {
                         getStakersNotSupported(),
                         getFastRecordNotSupported(),
                         getBySolidityIdNotSupported(),
+                        getExecutionTimeNotSupported(),
                         getTokenNftInfosNotSupported(),
                         getAccountNftInfosNotSupported());
     }

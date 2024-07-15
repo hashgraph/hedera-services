@@ -35,7 +35,6 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
-import com.hederahashgraph.api.proto.java.Key;
 import java.math.BigInteger;
 import java.util.Optional;
 
@@ -44,9 +43,9 @@ public class RandomERC20TransferLazyCreate implements OpProvider {
     private static final long GAS_TO_OFFER = 5_000_000L;
     private static final String TRANSFER = "transfer";
     private static final String TRANSFER_TXN = "transferTxn";
-    private final EntityNameProvider<Key> keys;
+    private final EntityNameProvider keys;
 
-    public RandomERC20TransferLazyCreate(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
+    public RandomERC20TransferLazyCreate(HapiSpecRegistry registry, EntityNameProvider keys) {
         this.registry = registry;
         this.keys = keys;
     }
