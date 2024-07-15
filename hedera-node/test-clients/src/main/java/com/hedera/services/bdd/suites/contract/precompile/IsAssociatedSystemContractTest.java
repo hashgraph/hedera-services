@@ -43,9 +43,9 @@ import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
-import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.FungibleTokenSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleTokenSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
@@ -69,13 +69,13 @@ public class IsAssociatedSystemContractTest {
     @Nested
     @DisplayName("static call")
     class StaticCall {
-        @FungibleTokenSpec(name = "immutableToken")
+        @FungibleToken(name = "immutableToken")
         static SpecFungibleToken immutableToken;
 
-        @NonFungibleTokenSpec(name = "immutableNft")
+        @NonFungibleToken(name = "immutableNft")
         static SpecNonFungibleToken immutableNft;
 
-        @ContractSpec(contract = "HRCContract", creationGas = 4_000_000L)
+        @Contract(contract = "HRCContract", creationGas = 4_000_000L)
         static SpecContract hrcContract;
 
         @HapiTest
