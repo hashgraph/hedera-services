@@ -25,7 +25,24 @@ spotless {
 
     format("misc") {
         // define the files to apply `misc` to
-        target("*.md", ".gitignore")
+        target(
+            "docs/*.md",
+            "/*.md",
+            "*.md",
+            "test-clients/*.md",
+            "docs/design/*.md",
+            "docs/design/app/*.md",
+            ".gitignore"
+        )
+        prettier() // Override the default prettier config to limit column width to 100 characters
+            .config(
+                mapOf(
+                    "parser" to "markdown",
+                    "tabWidth" to 4,
+                    "printWidth" to 100,
+                    "proseWrap" to "always"
+                )
+            )
 
         // define the steps to apply to those files
         trimTrailingWhitespace()
