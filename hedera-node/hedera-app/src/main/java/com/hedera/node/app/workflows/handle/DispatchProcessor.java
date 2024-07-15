@@ -265,7 +265,7 @@ public class DispatchProcessor {
 
     /**
      * Checks if the transaction has already failed due to an error that can be identified before even performing
-     * the dispatch. If it has, it will set the status of the dispatch's record buidler and return true.
+     * the dispatch. If it has, it will set the status of the dispatch's record builder and return true.
      * Otherwise, it will return false.
      *
      * @param dispatch the dispatch to be processed

@@ -1,90 +1,68 @@
-# SavePointStack
-A new `SavePointStack` is created once for user transaction and each time a child transaction is dispatched. 
+# `SavepointStackImpl`
+A new `SavepointStackImpl` is created once for user transaction and each time a child transaction is dispatched. 
 
-The `SavePointStack` manages a stack of `AbstractSavePoint` objects.  It also has
-  - the root `HederaState` used to create the stack
-  - `RecordSink` that is only created for the root stack created with user transaction. It will be updated with all records created in that savepoint when the savepoint is committed
-  - `BaseRecordBuilder` that is created for the transaction that created the savepoint
+The `SavepointStackImpl` manages a stack of `Savepoint` objects.  It also has,
+  - The root `HederaState` used to create the stack.
+  - For the user transaction, the final `BuilderSink` that accumulates all builders created while handling the user 
+  transaction, including builders for any system or scheduled work. 
+  - A base `SingleTransactionRecordBuilder` that corresponds to the transaction that triggered the dispatch.
 
-The `AbstractSavePoint` has 
-- the `HederaState` used to create the savepoint which captures all the state changes
-- the parent `RecordSink` that will be updated with all records created in that savepoint when the savepoint is committed
+Note that `AbstractSavepoint` which extends `BuilderSinkImpl` implements almost the entire `Savepoint` interface. The 
+only abstract method in `AbstractSavepoint` is `commitBuilders()` which determines how builders are flushed to a parent
+sink when the savepoint is committed or rolled back.
+
+There are three concrete `Savepoint` implementations, which differ in how they enforce limits on the number of 
+preceding and following builders that can be added to the savepoint; and how they flush builders to a parent sink.
+  - `FirstRootSavepoint` - The very first savepoint in the stack, constructed once stack is created; flushes 
+  preceding/following builders in order around the user transaction builder and has separate preceding/following 
+  limits based on configuration.
+  - `FirstChildSavepoint` - The first savepoint in any child stack created via dispatch; flushes all builders to 
+  parent's preceding/following builders list depending on dispatch category.
+  - `FollowingSavepoint` - Created for all other savepoints; flushes all builders to its parent's following builders.
 
 The initial save point in a stack is created when constructing the stack. The following save points are created
 everytime a new message frame is created in EVM stack while handling user transaction.
 
-There are three types of SavePoint implementations which have different implementation for committing records. 
+At construction, a `SavepointStackImpl` creates an initial save point and an appropriate base stream builder, depending
+on whether it is constructed by the `newRootStack()` or the `newChildStack()` factory. For a root stack for a user 
+transaction, the first savepoint is a `FirstRootSavepoint`. For a child transaction, the first savepoint is a 
+`FirstChildSavepoint`. There might be `FollowingSavepoint` created after the initial savepoint in the stack, if the 
+transaction being handled is for a contract operation and if there are any new message frames created in the EVM stack. 
+Each message frame creates a new `FollowingSavepoint` in the stack.
 
-`AbstractSavePoint` is the base class for all the savePoints. 
-`AbstractFollowingSavePoint` is the base class for savePoints that are created after the initial savepoint.
+### `commit()`
+When commit is called by `HandleWorkflow` on the `SavepointStackImpl`, all the state changes of that particular stack 
+are committed to the parent stack. The record builders are also pushed to a `BuilderSink` based on the type of savepoint. 
+- If the savepoint is of type `FirstRootSavepoint` all the final record builders are stored in the `BuilderSink` of user 
+  `SavepointStackImpl`, since there is no parent stack for the user stack. The stream items are exactly what is produced 
+  by these builders in order.
+- If the savepoint is of type `FirstChildSavepoint`, the builders are flushed to either the preceding or following
+  builder list of the savepoint at the top of the parent stack. The choice of list depends on the type of transaction
+  dispatched, whether its category is `PRECEDING` or `CHILD`/`SCHEDULED`.
+- And If the savepoint is of type `FollowingSavepoint`, all the builders are flushed to the parent savepoint's following 
+  builders list.
 
-1. `FirstSavePoint`- This is the initial save point in the first stack that is created for the user transaction. 
-                     This is extended from `AbstractSavePoint`.
-2. `BaseSavePoint`- It serves as the initial save point for any child stack, which is created by dispatching 
-                    a preceding or child transaction. It is extended from `AbstractFollowingSavePoint`.
-3. `FollowingSavePoint`- All the subsequent savePoints created after the initial savepoint in any stack. This is 
-                         extended from `AbstractFollowingSavePoint`.
-Each time `commitFullStack` is called, all the savePoints in the stack are committed.
+### `commitFullStack()`
+When `commitFullStack()` is called by `HandleWorkflow` on the `SavepointStackImpl`, commit is called on all the 
+savepoints. All the state changes of all the stacks are committed to root state. If the stack is the root stack, this 
+is when stream builders are also pushed to `BuilderSink` that contains the final stream items produced by the user
+transaction. At the end of `commitFullStack()` a new first savepoint is created as appropriate.
 
+![Committing a SavepointStack](images/savepoint-stack.png)
 
-Each Stack starts by creating the initial save point and the base record builder for the transaction that created the stack.
-For the user transaction, the user stack starts by creating a `FirstSavePoint`and a base record builder for the user transaction.
-For a child transaction, the stack starts by creating a `BaseSavePoint` and a base record builder for the child transaction.
-There might be `FollowingSavePoint` created after the initial savepoint in the stack, if the transaction being handled 
-is for a contract operation and if there are any new message frames created in the EVM stack. Each message frame creates
-a new `FollowingSavePoint` in the stack.
+### `rollback()`
 
-### Adding records to SavePoint
-When a record needs to be added to a savePoint, based on teh type of the record and type of SavePoint it is added to,
-some checks are done.
-- **AbstractFollowingSavePoint** 
-   - **Preceding Record** - Checks if the total number of preceding records already added in all savePoiunts is less than
-     allowed max preceding records. 
-   - **Child Record** - Checks if the total number of child records added after userRecordBuilder added in all savePoints
-     is less than allowed max child records. 
+When rollback is called by the contract service, all the state changes of the top `Savepoint` are rolled back. But
+unless they are `REMOVABLE`, the record builders are not deleted from the savepoint. They will be "reversed" instead
+and flushed to the parent sink based on the type of savepoint as above. 
+- Any successful record builders will have their side effects cleared and status set to `REVERTED_SUCCESS`; with the
+  single exception that a failure of type `IDENTICAL_SCHEDULE_ALREADY_CREATED` will keep information in its receipt
+  about the schedule that already existed.
+- Any failed record builders will have their status untouched.
 
-- **FirstSavePoint** 
-   - **Preceding Record** Checks if the sum of the total number of preceding records already committed to the `RecordSink` in the `SavePointStack`
-     (if commitFullStack was already called) and current preceding records in save point is less than allowed max preceding records
-   - **Child Record** Checks if the sum of the total number of following records already committed to the `RecordSink` in the `SavePointStack`
-     (if commitFullStack was already called) and current following records in save point is less than allowed max child records
+### `rollbackFullStack()`
 
-If the conditions satisfy, the record is added to the records list of the savepoint. Otherwise, an exception is thrown.
-
-### Commit
-When commit is called by `HandleWorkflow` on the `SavePointStack`, all the state changes of that particular stack 
-are committed to the parent stack. The record builders are also pushed to a `RecordSink` based on the type of savepoint. 
-- If the savepoint is of type `FirstSavePoint` all the final record builders are stored in the `RecordSink` of user `SavePointStack`.
-Since there is no parent stack for the user stack. All these record builders will then be streamed out to the record file in the 
-same order.
-- If the savepoint is of type `BaseSavePoint`, based on the type of transaction that is dispatched to create this save point
-we add record builders differently to parent stack. If the transaction dispatched is a preceding transaction, all the record 
-builders are added to the parent stack's preceding records list. Otherwise, all are added to the parent stack's following records.
-- If the savepoint is of type `FollowingSavePoint`, all the record builders are added to the parent save point's following records.
-
-### CommitFullStack
-When `commitFullStack` is called by `HandleWorkflow` on the `SavePointStack`, commit is called on all the stacks.
-All the state changes of all the stacks are committed to root state. 
-All record builders are also pushed to a `RecordSink` of the root SavePointStack and a new FirstSavePoint is 
-created for the user stack with a state that has all the previous changes committed and creates the User transaction
-base record builder.
-
-![Committing a SavePointStack](images/savepoint-stack.png)
-
-### Rollback
-
-When rollback is called by `HandleWorkflow` on the `SavePointStack`, all the state changes of that particular stack
-are rolled back. RecordBuilders will not be deleted from any save points. But based on the reversingBehavior of 
-the recordBuilder, the records will be reversed in the builderSink.
-- If the recordBuilder is `REVERSIBLE`, all the side effects are removed on the record. if it is a `SUCCESS` record, 
-a `REVERTED_SUCCESS` status is set on the record
-- If the recordBuilder is `REMOVABLE`, the record is removed from the list of recordBuilders.
-After these changes the records are pushed to the parent stack's builderSink based on the type of savepoint similar 
-to commit.
-
-### RollbackFullStack
-
-When `rollbackFullStack` is called by `HandleWorkflow` on the `SavePointStack`, rollback is called on
-all the stacks.
+When `rollbackFullStack` is called by `HandleWorkflow` on the `SavepointStackImpl`, rollback is called on all savepoints
+in the stack and a new first savepoint created as appropriate.
 
 **NEXT: [Signatures](signatures.md)**

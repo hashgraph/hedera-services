@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
@@ -313,7 +314,7 @@ public class SingleTransactionRecordBuilderImpl
         transactionReceiptBuilder.contractID((ContractID) null);
         transactionReceiptBuilder.fileID((FileID) null);
         transactionReceiptBuilder.tokenID((TokenID) null);
-        if (status != ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED) {
+        if (status != IDENTICAL_SCHEDULE_ALREADY_CREATED) {
             transactionReceiptBuilder.scheduleID((ScheduleID) null);
             transactionReceiptBuilder.scheduledTransactionID((TransactionID) null);
         }

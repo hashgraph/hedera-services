@@ -103,7 +103,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
     }
 
     @Override
-    public Savepoint createFollowingSavePoint() {
+    public Savepoint createFollowingSavepoint() {
         return new FollowingSavepoint(new WrappedHederaState(state), this);
     }
 
@@ -132,22 +132,22 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
      */
     abstract void commitBuilders();
 
-    private void rollback(final List<SingleTransactionRecordBuilder> streamBuilders) {
+    private void rollback(@NonNull final List<SingleTransactionRecordBuilder> builders) {
         var removedBuilder = false;
-        for (int i = 0; i < streamBuilders.size(); i++) {
-            final var builder = streamBuilders.get(i);
+        for (int i = 0; i < builders.size(); i++) {
+            final var builder = builders.get(i);
             if (builder.reversingBehavior() == REVERSIBLE) {
                 builder.nullOutSideEffectFields();
                 if (SUCCESSES.contains(builder.status())) {
                     builder.status(REVERTED_SUCCESS);
                 }
             } else if (builder.reversingBehavior() == REMOVABLE) {
-                streamBuilders.set(i, null);
+                builders.set(i, null);
                 removedBuilder = true;
             }
         }
         if (removedBuilder) {
-            streamBuilders.removeIf(Objects::isNull);
+            builders.removeIf(Objects::isNull);
         }
     }
 }

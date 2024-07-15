@@ -56,7 +56,7 @@ public interface Savepoint extends BuilderSink {
      * modifications to state.
      * @return the new savepoint
      */
-    Savepoint createFollowingSavePoint();
+    Savepoint createFollowingSavepoint();
 
     /**
      * Creates and returns a new stream item builder whose lifecycle will be scoped to the state changes made

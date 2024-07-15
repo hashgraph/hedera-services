@@ -135,7 +135,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
 
     @Override
     public void createSavepoint() {
-        stack.push(peek().createFollowingSavePoint());
+        stack.push(peek().createFollowingSavepoint());
     }
 
     @Override
