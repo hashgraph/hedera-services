@@ -25,13 +25,13 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.updateLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
-import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hedera.services.bdd.suites.HapiSuite.*;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.CONSTRUCTOR;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.extractByteCode;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getResourcePath;
+import static java.util.stream.Collectors.toCollection;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -90,6 +90,8 @@ import com.hedera.services.bdd.spec.transactions.token.HapiTokenUpdateNfts;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenWipe;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.transactions.util.HapiUtilPrng;
+import com.hedera.services.bdd.suites.hip796.operations.TokenDefOperation;
+import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
@@ -99,15 +101,14 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransferList;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class TxnVerbs {
     /* CRYPTO */
@@ -686,5 +687,40 @@ public class TxnVerbs {
 
     public static HapiPartitionDelete deletePartitionDefinitions(String token) {
         return new HapiPartitionDelete(token);
+    }
+
+
+    public static TokenDefOperation fungibleTokenWithFeatures(@NonNull final TokenFeature... features) {
+        return fungibleTokenWithFeatures(TOKEN_UNDER_TEST, features);
+    }
+
+    public static TokenDefOperation fungibleTokenWithFeatures(
+            @NonNull final String token, @NonNull final TokenFeature... features) {
+        return tokenWithFeatures(token, com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON, features);
+    }
+
+    public static TokenDefOperation nonFungibleTokenWithFeatures(@NonNull final TokenFeature... features) {
+        return nonFungibleTokenWithFeatures(TOKEN_UNDER_TEST, features);
+    }
+
+    public static TokenDefOperation nonFungibleTokenWithFeatures(
+            @NonNull final String token, @NonNull final TokenFeature... features) {
+        // It never makes sense to create a non-fungible token without a supply key
+        final var featuresWithSupplyKey = Stream.concat(
+                        Stream.of(TokenFeature.SUPPLY_MANAGEMENT), Arrays.stream(features))
+                .collect(toCollection(() -> EnumSet.noneOf(TokenFeature.class)))
+                .toArray(TokenFeature[]::new);
+        return tokenWithFeatures(token, com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE, featuresWithSupplyKey);
+    }
+
+    private static TokenDefOperation tokenWithFeatures(
+            @NonNull final String token,
+            @NonNull final com.hedera.hapi.node.base.TokenType type,
+            @NonNull final TokenFeature... features) {
+        final var def = new TokenDefOperation(token, type, features);
+        if (type == com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON) {
+            def.initialSupply(FUNGIBLE_INITIAL_SUPPLY);
+        }
+        return def;
     }
 }
