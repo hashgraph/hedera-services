@@ -27,9 +27,9 @@ platform module since it does not depend on the platform module's `nodeId` anymo
 - Migrate the `nodeId` information to a label
 - Make the metrics module independent of the platform module
 - Provide a public API to define labels for metrics
-- Add labels to the snapshot API
-- The output of the snapshot API should contain the labels
-- The output of the snapshot API must be compatible with the current output (no breaking changes)
+- Add labels to the metrics snapshot API
+- The output of the metrics snapshot API should contain the labels
+- The output of the metrics snapshot API must be compatible with the current output (no breaking changes)
 - Create better and more dynamic dashboards in Grafana by using labels
 
 ## Non-Goals
@@ -45,20 +45,20 @@ This chapter describes the changes that are needed to add labels to the metrics 
 ### About labels
 
 Before we start with the implementation we need to define what labels are.
+Labels allow for additional dimensions within a metric.
 Labels are key-value pairs that are used to define, filter and group metrics.
 Labels are used by monitoring systems like Grafana to create more dynamic dashboards.
-By adding labels to the metrics module a single metric is now uniquely defined by its name and the labels.
-For example, metrics that counts the number of requests can have a label called `method` that defines if the request was a `GET` or `POST` request.
-That metrics are defined by the name "api_http_requests_total" and the label `method`.
-By doing so the monitoring system can create a dashboard that shows the number of requests per method.
-In the given example we would have 2 metric instances: one for `GET` and one for `POST`:
 
-- Metric 1: `api_http_requests_total{method="GET"}`
-- Metric 2: `api_http_requests_total{method="POST"}`
+In addition to having a unique name, a metric can also have labels. Labels allow for differentiation within a metric.
+For example, a metric measuring incoming connections can distinguish between GET and POST requests using labels.
 
-While today the name of a metric is the unique identifier of a metric, the unique identifier will become the name and the labels once labels are added.
-By doing so both metrics can use the same name but are still unique as long as the labels are different.
-We will store measurements individually for each metric.
+Consider the following example metrics:
+
+- Metric 1: api_http_requests_total{method="GET"}
+- Metric 2: api_http_requests_total{method="POST"}
+
+When creating a metric, the label keys must be specified upfront, while the label values are assigned when setting a value for the metric.
+
 If you later want to know the combined measurement of all metrics with the name `api_http_requests_total` you can use the prometheus query language to sum up the values of all metrics with that name.
 See https://prometheus.io/docs/prometheus/latest/querying/basics/#time-series-selectors for more information.
 
@@ -84,7 +84,7 @@ A label is a key-value pair that can be defined as a `record`:
 record Label(@NonNull String key, @NonNull String value) {}
 ``` 
 
-The `Metric` interface will be extended by a new method called `getLabels()` that returns a list of labels:
+The `Metric` interface will be extended by several methpds that allow to define label values to a metric:
 
 ```java
 interface Metric {
@@ -92,15 +92,34 @@ interface Metric {
     //...
     
     @NonNull
+    Metric withLabel(@NonNull String key, @NonNull String value);
+    
+    @NonNull
+    Metric withLabel(@NonNull Label label);
+    
+    @NonNull
+    Metric withLabels(@NonNull Label... labels);
+    
+    @NonNull
     Set<Label> getLabels();
     
-    @Nullable
-    Optional<String> label(@NonNull String key);
+    @NonNull
+    Set<String> getLabelKeys();
 }
 ```
 
-Like the name or category, the labels are defined when a metric is created and cannot be changed later.
-Based on that the MetricConfig class will be extended by a new method called `withLabels`:
+By doing so the api can be used like this:
+
+```java
+    metric.withLabel("label1", "123")
+        .withLabel("label2", "456")
+        .inc(); 
+```
+
+The shown code would throw an exception if the metric does not support the labels `label1` and `label2`.
+
+Like the name or category, the label keys are defined when a metric is created and cannot be changed later.
+Based on that the MetricConfig class will be extended as shown:
 
 ```java
 abstract class MetricConfig {
@@ -108,50 +127,85 @@ abstract class MetricConfig {
     //...
     
     /**
-    * Returns a config with the given labels next to the already defined labels.
+    * Returns a config with the given label keys next to the already defined labels.
     */
     @NonNull
-    MetricConfig withLabels(@NonNull Label... labels) {...}
+    MetricConfig withLabels(@NonNull String... labelKeys) {...}
     
     /**
-    * Returns a config with the given labels next to the already defined labels.
+    * Returns a config with the given label keys next to the already defined labels.
     */
     @NonNull
-    MetricConfig withLabels(@NonNull Set<Label> labels) {...}
+    MetricConfig withLabels(@NonNull Set<String> labelKeys) {...}
     
     /**
-    * Returns a config with the given label next to the already defined labels.
+    * Returns a config with the given predefined label next to the already defined labels.
     */
     @NonNull
-    MetricConfig withLabel(@NonNull String key, @NonNull String value) {...}
+    MetricConfig withPredefinedLabel(@NonNull String key, @NonNull String value) {...}
     
     /**
-    * Returns a config with the given label next to the already defined labels.
+    * Returns a config with the given predefined label next to the already defined labels.
     */
     @NonNull
-    MetricConfig withLabel(@NonNull Label label) {...}
+    MetricConfig withPredefinedLabel(@NonNull Label label) {...}
+    
+    /**
+    * Returns a set of all supported label keys.
+    */
+    @NonNull 
+    Set<String> getLabelKeys();
+    
+    /**
+    * Returns a set of all predefined labels.
+    */
+    @NonNull 
+    Set<Label> getPredefinedLabels();
 }
 ```
 
-By adding labels the unique identifier of a metric is the name and the labels.
-Based on that we need to modify the `Metrics` interface to use the labels as the unique identifier of a metric:
+Next on that we need to modify the `Metrics` interface to support labels:
 
 ```java
 
 interface Metrics {
     
-    // old methods:
+    // old methods that will be removed:
     // Object getValue(@NonNull String category, @NonNull String name);
-    // void remove(@NonNull String category, @NonNull String name);
     
     @Nullable
     Object getValue(@NonNull String category, @NonNull String name, @NonNull Set<Label> labels);
-    
-    void remove(@NonNull String category, @NonNull String name, @NonNull Set<Label> labels);
 }
 ```
 
-Since the old methods are only used in tests or demos today we can do that change easily.
+Since the old method is only used in tests or demos today we can do that change easily.
+
+The `Metrics` interface contains some methods to remove metrics. Here different variants of the method could make sense
+when adding metrics. Since the methods are not used at all we will not add any additional methods to remove metrics.
+If we see that additional methods are needed we can add them later.
+The methods to remove metrics will have an extended JavaDoc and will be defined like this:
+
+```java
+interface Metrics {
+    
+    //...
+    
+    /**
+    * Removes all metrics with the given category and name. Labels will be ignored.
+    */
+    void remove(@NonNull String category, @NonNull String name);
+    
+    /**
+    * Removes all metrics that have the same category and name as the given metric. Labels will be ignored.
+    */ 
+    void remove(@NonNull Metric metric);
+    
+    /**
+    * Removes all metrics that have the same category and name as the given metric configs. Labels will be ignored.
+    */ 
+    void remove(final @NonNull MetricConfig<?, ?> config);
+}
+```
 
 > [!NOTE]  
 Since most of the filter methods that the `Metrics` interface defines today are not used we will not introduce any additional filter methods in this proposal.
@@ -187,12 +241,12 @@ Here are some examples how to define a metric with labels:
 
 ```java
 final Label transactionTypeLabel = new Label("transactionType", "fileUpload");
-final Counter.Config config = new Counter.Config("transactionsCategory", "transactionCount").withLabels(transactionTypeLabel);
+final Counter.Config config = new Counter.Config("transactionsCategory", "transactionCount").withLabels("transactionType");
 
 final Metrics metrics = ...;
 final Counter counter = metrics.getOrCreate(config);
 
-counter.increment();
+counter.withLabel(transactionTypeLabel).increment();
 ```
 
 In prometheus the metric will be defined like this:
@@ -213,7 +267,7 @@ of the snapshot API to the public API.
 
 Next to extending the public API we need to migrate the current metrics to the new concept.
 
-#### Migration of the `category`, `name`, and `nodeId`
+#### Migration of the `nodeId`
 
 The `nodeId` information of a metric will be migrated to labels.
 Today we create a prometheus label out of the `nodeId` internally in our prometheus endpoint implementation.
@@ -297,99 +351,6 @@ Since the class does not make any sense outside the consensus node (like in bloc
 Another option would be to change the type of the `nodeId` to a `String` but that would end in an ugly API for any
 system next to the platform that uses the metrics module since `null` or any other default must always be used as the `nodeId`.
 Next to that all that ideas will end in having a hardcoded `nodeId` label in the metrics that will be forwarded to the monitoring system.
-
-### Definition of Label at measurement time
-
-In the given concept the labels are defined when a metric is created.
-This is how several other libraries handle labels.
-Another option would be to define the labels at the time when a metric is measured.
-Both variants have their pros and cons.
-Since this proposal introduces a new concept to the metrics module we should start with the simplest solution.
-This does not mean that we cannot add the second option later by extending the public API.
-
-Let's have a look at the pros and cons of both options to understand the differences:
-
-The following sample creates a metric with labels at creation time:
-
-```java
-final Label transactionServiceLabel = new Label("service", "fileService");
-final Counter.Config config = new Counter.Config("transactionsCategory", "transactionCount").withLabels(transactionServiceLabel);
-final Counter counter = metrics.getOrCreate(config);
-
-counter.increment();
-```
-
-Let's see how that metric can be used in a filter that filter transactions and counts the number of transactions of type `fileUpload`:
-
-```java
-class TransactionFilter {
-    
-    private final static Counter.Config config = new Counter.Config("transactionsCategory", "transactionCount");
-
-    private final Metrics metrics;
-    
-    TransactionFilter(Metrics metrics) {
-        this.metrics = metrics;
-    }
-
-    void handle(Transaction transaction) {
-        if(transaction.getType().equals("fileUploadTransaction")) {
-            Counter.Config configWithLabel = config.withLabels(new Label("service", "fileService"));
-            Counter counter = metrics.getOrCreate(config);
-            counter.increment();
-        } else if(transaction.getType().equals("tokenCreateTransaction")) {
-            Counter.Config configWithLabel = config.withLabels(new Label("service", "tokenService"));
-            Counter counter = metrics.getOrCreate(config);
-            counter.increment();
-        }
-    }
-}
-```
-
-As you can see the value of the `service` label depends on a runtime value.
-Based on that the config of the metric must be created at runtime.
-Today we often create metrics in constructors or static blocks.
-This will not be possible if a label needs to be defined at measurement time.
-
-The Open Telemetry library uses the second approach. 
-Here the labels are defined at measurement time and the code would look like this:
-
-```java
-class TransactionFilter {
-    
-    private final static Counter.Config config = new Counter.Config("transactionsCategory", "transactionCount");
-
-    private final Counter counter;
-    
-    TransactionFilter(Metrics metrics) {
-        counter = metrics.getOrCreate(config);
-    }
-
-    void handle(Transaction transaction) {
-        if(transaction.getType().equals("fileUploadTransaction")) {
-            counter.increment(new Label("service", "fileService"));
-        } else if(transaction.getType().equals("tokenCreateTransaction")) {
-            counter.increment(new Label("service", "tokenService"));
-        }
-    }
-}
-```
-
-Since we have seen the 2 different approaches we can discuss the pros and cons of both.
-While the second approach might be more flexible when labels are defined at measurement time it is not good useable when labels could already be defined at creation time.
-Here you do not want to add the same label multiple times to a metric.
-Based on that option 2 would need an additional api that allows you to add labels already at creation time.
-This will make the API more complex and harder to understand.
-Next to that different values for labels always end in a new metric and in a new time series in the monitoring system.
-Based on that labels should not be overused and never used with unknown / dynamic values.
-You can find some general best practices at https://prometheus.io/docs/practices/instrumentation/#things-to-watch-out-for
-
-Based on that we should start with the first approach and add the second approach later if needed.
-The first approach is simpler and easier to understand.
-Next to that it will make it harder to create labels with a dynamic value.
-
-Once the api and usage of labels is clear we can think about adding the second approach.
-Here the api can be extended by a new method that allows to add labels at measurement time. 
 
 ## Future Work
 
