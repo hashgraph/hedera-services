@@ -16,10 +16,9 @@
 
 package com.hedera.services.bdd.suites.crypto;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountDetailsAsserts.accountDetailsWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
@@ -227,7 +226,7 @@ public class CryptoUpdateSuite {
                                         .isDeclinedReward(true)));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"entities.maxLifetime", "ledger.maxAutoAssociations"})
     final Stream<DynamicTest> usdFeeAsExpectedCryptoUpdate() {
         double baseFee = 0.000214;
         double baseFeeWithExpiry = 0.00022;
@@ -242,91 +241,85 @@ public class CryptoUpdateSuite {
         final var allowedPercentDiff = 1.5;
 
         AtomicLong expiration = new AtomicLong();
-        return propertyPreservingHapiSpec("usdFeeAsExpectedCryptoUpdate", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.maxLifetime", "ledger.maxAutoAssociations")
-                .given(
-                        overridingTwo(
-                                "ledger.maxAutoAssociations", "5000",
-                                "entities.maxLifetime", "3153600000"),
-                        newKeyNamed("key").shape(SIMPLE),
-                        cryptoCreate("payer").key("key").balance(1_000 * ONE_HBAR),
-                        cryptoCreate("canonicalAccount")
-                                .key("key")
-                                .balance(100 * ONE_HBAR)
-                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                                .blankMemo()
-                                .payingWith("payer"),
-                        cryptoCreate("autoAssocTarget")
-                                .key("key")
-                                .balance(100 * ONE_HBAR)
-                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                                .blankMemo()
-                                .payingWith("payer"),
-                        getAccountInfo("canonicalAccount").exposingExpiry(expiration::set))
-                .when(
-                        sourcing(() -> cryptoUpdate("canonicalAccount")
-                                .payingWith("canonicalAccount")
-                                .expiring(expiration.get() + THREE_MONTHS_IN_SECONDS)
-                                .blankMemo()
-                                .via(baseTxn)),
-                        getAccountInfo("canonicalAccount")
-                                .hasMaxAutomaticAssociations(0)
-                                .logged(),
-                        cryptoUpdate("autoAssocTarget")
-                                .payingWith("autoAssocTarget")
-                                .blankMemo()
-                                .maxAutomaticAssociations(1)
-                                .via(plusOneTxn),
-                        getAccountInfo("autoAssocTarget")
-                                .hasMaxAutomaticAssociations(1)
-                                .logged(),
-                        cryptoUpdate("autoAssocTarget")
-                                .payingWith("autoAssocTarget")
-                                .blankMemo()
-                                .maxAutomaticAssociations(11)
-                                .via(plusTenTxn),
-                        getAccountInfo("autoAssocTarget")
-                                .hasMaxAutomaticAssociations(11)
-                                .logged(),
-                        cryptoUpdate("autoAssocTarget")
-                                .payingWith("autoAssocTarget")
-                                .blankMemo()
-                                .maxAutomaticAssociations(5000)
-                                .via(plusFiveKTxn),
-                        getAccountInfo("autoAssocTarget")
-                                .hasMaxAutomaticAssociations(5000)
-                                .logged(),
-                        cryptoUpdate("autoAssocTarget")
-                                .payingWith("autoAssocTarget")
-                                .blankMemo()
-                                .maxAutomaticAssociations(-1000)
-                                .via(invalidNegativeTxn)
-                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        cryptoUpdate("autoAssocTarget")
-                                .payingWith("autoAssocTarget")
-                                .blankMemo()
-                                .maxAutomaticAssociations(5001)
-                                .via(plusFiveKAndOneTxn)
-                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-                        cryptoUpdate("autoAssocTarget")
-                                .payingWith("autoAssocTarget")
-                                .blankMemo()
-                                .maxAutomaticAssociations(-1)
-                                .via(validNegativeTxn),
-                        getAccountInfo("autoAssocTarget")
-                                .hasMaxAutomaticAssociations(-1)
-                                .logged())
-                .then(
-                        validateChargedUsd(baseTxn, baseFeeWithExpiry, allowedPercentDiff)
-                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                        validateChargedUsd(plusOneTxn, baseFee, allowedPercentDiff)
-                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                        validateChargedUsd(plusTenTxn, baseFee, allowedPercentDiff)
-                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                        validateChargedUsd(plusFiveKTxn, baseFee, allowedPercentDiff)
-                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
-                        validateChargedUsd(validNegativeTxn, baseFee, allowedPercentDiff)
-                                .skippedIfAutoScheduling(Set.of(CryptoUpdate)));
+        return hapiTest(
+                overridingTwo(
+                        "ledger.maxAutoAssociations", "5000",
+                        "entities.maxLifetime", "3153600000"),
+                newKeyNamed("key").shape(SIMPLE),
+                cryptoCreate("payer").key("key").balance(1_000 * ONE_HBAR),
+                cryptoCreate("canonicalAccount")
+                        .key("key")
+                        .balance(100 * ONE_HBAR)
+                        .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+                        .blankMemo()
+                        .payingWith("payer"),
+                cryptoCreate("autoAssocTarget")
+                        .key("key")
+                        .balance(100 * ONE_HBAR)
+                        .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
+                        .blankMemo()
+                        .payingWith("payer"),
+                getAccountInfo("canonicalAccount").exposingExpiry(expiration::set),
+                sourcing(() -> cryptoUpdate("canonicalAccount")
+                        .payingWith("canonicalAccount")
+                        .expiring(expiration.get() + THREE_MONTHS_IN_SECONDS)
+                        .blankMemo()
+                        .via(baseTxn)),
+                getAccountInfo("canonicalAccount")
+                        .hasMaxAutomaticAssociations(0)
+                        .logged(),
+                cryptoUpdate("autoAssocTarget")
+                        .payingWith("autoAssocTarget")
+                        .blankMemo()
+                        .maxAutomaticAssociations(1)
+                        .via(plusOneTxn),
+                getAccountInfo("autoAssocTarget").hasMaxAutomaticAssociations(1).logged(),
+                cryptoUpdate("autoAssocTarget")
+                        .payingWith("autoAssocTarget")
+                        .blankMemo()
+                        .maxAutomaticAssociations(11)
+                        .via(plusTenTxn),
+                getAccountInfo("autoAssocTarget")
+                        .hasMaxAutomaticAssociations(11)
+                        .logged(),
+                cryptoUpdate("autoAssocTarget")
+                        .payingWith("autoAssocTarget")
+                        .blankMemo()
+                        .maxAutomaticAssociations(5000)
+                        .via(plusFiveKTxn),
+                getAccountInfo("autoAssocTarget")
+                        .hasMaxAutomaticAssociations(5000)
+                        .logged(),
+                cryptoUpdate("autoAssocTarget")
+                        .payingWith("autoAssocTarget")
+                        .blankMemo()
+                        .maxAutomaticAssociations(-1000)
+                        .via(invalidNegativeTxn)
+                        .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                cryptoUpdate("autoAssocTarget")
+                        .payingWith("autoAssocTarget")
+                        .blankMemo()
+                        .maxAutomaticAssociations(5001)
+                        .via(plusFiveKAndOneTxn)
+                        .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                cryptoUpdate("autoAssocTarget")
+                        .payingWith("autoAssocTarget")
+                        .blankMemo()
+                        .maxAutomaticAssociations(-1)
+                        .via(validNegativeTxn),
+                getAccountInfo("autoAssocTarget")
+                        .hasMaxAutomaticAssociations(-1)
+                        .logged(),
+                validateChargedUsd(baseTxn, baseFeeWithExpiry, allowedPercentDiff)
+                        .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                validateChargedUsd(plusOneTxn, baseFee, allowedPercentDiff)
+                        .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                validateChargedUsd(plusTenTxn, baseFee, allowedPercentDiff)
+                        .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                validateChargedUsd(plusFiveKTxn, baseFee, allowedPercentDiff)
+                        .skippedIfAutoScheduling(Set.of(CryptoUpdate)),
+                validateChargedUsd(validNegativeTxn, baseFee, allowedPercentDiff)
+                        .skippedIfAutoScheduling(Set.of(CryptoUpdate)));
     }
 
     @HapiTest
@@ -500,7 +493,7 @@ public class CryptoUpdateSuite {
                 .then(cryptoUpdate(TEST_ACCOUNT).key(UPD_KEY).hasPrecheck(INVALID_ADMIN_KEY));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> updateMaxAutoAssociationsWorks() {
         final int maxAllowedAssociations = 5000;
         final int originalMax = 2;
@@ -517,52 +510,43 @@ public class CryptoUpdateSuite {
         final String CONTRACT = "Multipurpose";
         final String ADMIN_KEY = "adminKey";
 
-        return defaultHapiSpec("updateMaxAutoAssociationsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(originalMax),
-                        tokenCreate(tokenA)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(Long.MAX_VALUE)
-                                .treasury(treasury)
-                                .via(tokenACreate),
-                        getTxnRecord(tokenACreate).hasNewTokenAssociation(tokenA, treasury),
-                        tokenCreate(tokenB)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .initialSupply(Long.MAX_VALUE)
-                                .treasury(treasury)
-                                .via(tokenBCreate),
-                        getTxnRecord(tokenBCreate).hasNewTokenAssociation(tokenB, treasury),
-                        getContractInfo(CONTRACT)
-                                .has(ContractInfoAsserts.contractWith().maxAutoAssociations(originalMax))
-                                .logged())
-                .when(
-                        cryptoTransfer(moving(1, tokenA).between(treasury, CONTRACT))
-                                .via(transferAToC),
-                        getTxnRecord(transferAToC).hasNewTokenAssociation(tokenA, CONTRACT),
-                        cryptoTransfer(moving(1, tokenB).between(treasury, CONTRACT))
-                                .via(transferBToC),
-                        getTxnRecord(transferBToC).hasNewTokenAssociation(tokenB, CONTRACT))
-                .then(
-                        getContractInfo(CONTRACT)
-                                .payingWith(GENESIS)
-                                .has(contractWith()
-                                        .hasAlreadyUsedAutomaticAssociations(originalMax)
-                                        .maxAutoAssociations(originalMax)),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(newBadMax)
-                                .hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),
-                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(newGoodMax),
-                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(newGoodMax)),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(maxAllowedAssociations + 1)
-                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(-2)
-                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
-                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)));
+        return hapiTest(
+                cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
+                newKeyNamed(ADMIN_KEY),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).adminKey(ADMIN_KEY).maxAutomaticTokenAssociations(originalMax),
+                tokenCreate(tokenA)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(Long.MAX_VALUE)
+                        .treasury(treasury)
+                        .via(tokenACreate),
+                getTxnRecord(tokenACreate).hasNewTokenAssociation(tokenA, treasury),
+                tokenCreate(tokenB)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .initialSupply(Long.MAX_VALUE)
+                        .treasury(treasury)
+                        .via(tokenBCreate),
+                getTxnRecord(tokenBCreate).hasNewTokenAssociation(tokenB, treasury),
+                getContractInfo(CONTRACT).has(ContractInfoAsserts.contractWith().maxAutoAssociations(originalMax)),
+                cryptoTransfer(moving(1, tokenA).between(treasury, CONTRACT)).via(transferAToC),
+                getTxnRecord(transferAToC).hasNewTokenAssociation(tokenA, CONTRACT),
+                cryptoTransfer(moving(1, tokenB).between(treasury, CONTRACT)).via(transferBToC),
+                getTxnRecord(transferBToC).hasNewTokenAssociation(tokenB, CONTRACT),
+                getContractInfo(CONTRACT)
+                        .payingWith(GENESIS)
+                        .has(contractWith()
+                                .hasAlreadyUsedAutomaticAssociations(originalMax)
+                                .maxAutoAssociations(originalMax)),
+                contractUpdate(CONTRACT)
+                        .newMaxAutomaticAssociations(newBadMax)
+                        .hasKnownStatus(EXISTING_AUTOMATIC_ASSOCIATIONS_EXCEED_GIVEN_LIMIT),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(newGoodMax),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(newGoodMax)),
+                contractUpdate(CONTRACT)
+                        .newMaxAutomaticAssociations(maxAllowedAssociations + 1)
+                        .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(-2).hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)));
     }
 }

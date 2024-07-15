@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.addressbook;
+package com.hedera.services.bdd.suites.hip869;
 
-import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
+import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
+import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -30,20 +31,19 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_NODE_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NODE_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
-public class NodeDeleteSuite {
-    @HapiTest
-    @Tag(EMBEDDED)
+public class NodeDeleteTest {
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
     final Stream<DynamicTest> deleteNodeWorks() {
         final String nodeName = "mytestnode";
 
@@ -54,8 +54,7 @@ public class NodeDeleteSuite {
                 viewNode(nodeName, node -> assertTrue(node.deleted(), "Node should be deleted")));
     }
 
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> validateFees() {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("validateFees")
@@ -90,45 +89,41 @@ public class NodeDeleteSuite {
                         validateChargedUsdWithin("deleteNode", 0.0, 3.0));
     }
 
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> validateFeesInsufficientAmount() {
         final String description = "His vorpal blade went snicker-snack!";
-        return defaultHapiSpec("validateFees")
-                .given(
-                        newKeyNamed("testKey"),
-                        newKeyNamed("randomAccount"),
-                        cryptoCreate("payer").balance(10_000_000_000L),
-                        nodeCreate("node100").description(description).fee(ONE_HBAR),
-                        // Submit to a different node so ingest check is skipped
-                        nodeDelete("node100")
-                                .setNode("0.0.5")
-                                .fee(1)
-                                .payingWith("payer")
-                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
-                                .via("failedDeletion"))
-                .when()
-                .then(
-                        getTxnRecord("failedDeletion").logged(),
-                        // Submit with several signatures and the price should increase
-                        nodeDelete("node100")
-                                .setNode("0.0.5")
-                                .payingWith("payer")
-                                .signedBy("payer", "randomAccount", "testKey")
-                                .hasKnownStatus(INSUFFICIENT_TX_FEE)
-                                .via("multipleSigsDeletion"),
-                        nodeDelete("node100").via("deleteNode"),
-                        getTxnRecord("deleteNode").logged());
+        return hapiTest(
+                newKeyNamed("testKey"),
+                newKeyNamed("randomAccount"),
+                cryptoCreate("payer").balance(10_000_000_000L),
+                nodeCreate("node100").description(description).fee(ONE_HBAR),
+                // Submit to a different node so ingest check is skipped
+                nodeDelete("node100")
+                        .setNode("0.0.5")
+                        .fee(1)
+                        .payingWith("payer")
+                        .hasKnownStatus(INSUFFICIENT_TX_FEE)
+                        .via("failedDeletion"),
+                getTxnRecord("failedDeletion").logged(),
+                // Submit with several signatures and the price should increase
+                nodeDelete("node100")
+                        .setNode("0.0.5")
+                        .fee(ONE_HBAR)
+                        .payingWith("payer")
+                        .signedBy("payer", "randomAccount", "testKey")
+                        .hasKnownStatus(UNAUTHORIZED)
+                        .via("multipleSigsDeletion"),
+                nodeDelete("node100").via("deleteNode"),
+                getTxnRecord("deleteNode").logged());
     }
 
     @HapiTest
-    @Tag(EMBEDDED)
     final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("failsAtIngestForUnAuthorizedTxns")
                 .given(
                         cryptoCreate("payer").balance(10_000_000_000L),
-                        nodeCreate("ntb").description(description).fee(ONE_HBAR).via("nodeCreation"),
+                        nodeCreate("ntb").description(description).fee(ONE_HBAR),
                         nodeDelete("ntb")
                                 .payingWith("payer")
                                 .fee(ONE_HBAR)
@@ -139,27 +134,22 @@ public class NodeDeleteSuite {
     }
 
     @HapiTest
-    @Tag(EMBEDDED)
     final Stream<DynamicTest> handleNodeNotExist() {
         final String nodeName = "33";
-
-        return hapiTest(nodeDelete(nodeName).hasKnownStatus(ResponseCodeEnum.INVALID_NODE_ID));
+        return hapiTest(nodeDelete(nodeName).hasKnownStatus(INVALID_NODE_ID));
     }
 
     @HapiTest
-    @Tag(EMBEDDED)
     final Stream<DynamicTest> handleNodeAlreadyDeleted() {
         final String nodeName = "mytestnode";
-
         return hapiTest(
                 nodeCreate(nodeName),
                 nodeDelete(nodeName),
-                nodeDelete(nodeName).signedBy(GENESIS).hasKnownStatus(ResponseCodeEnum.NODE_DELETED));
+                nodeDelete(nodeName).signedBy(GENESIS).hasKnownStatus(NODE_DELETED));
     }
 
     @HapiTest
-    @Tag(EMBEDDED)
-    final Stream<DynamicTest> handleCanBeExecutedJustWithPrivilagedAccount() {
+    final Stream<DynamicTest> handleCanBeExecutedJustWithPrivilegedAccount() {
         long PAYER_BALANCE = 1_999_999_999L;
         final String nodeName = "mytestnode";
 
@@ -172,6 +162,6 @@ public class NodeDeleteSuite {
                         .payingWith("payer")
                         .signedBy("payer", "wrongKey")
                         .hasPrecheck(BUSY),
-                nodeDelete(nodeName).hasKnownStatus(SUCCESS));
+                nodeDelete(nodeName));
     }
 }

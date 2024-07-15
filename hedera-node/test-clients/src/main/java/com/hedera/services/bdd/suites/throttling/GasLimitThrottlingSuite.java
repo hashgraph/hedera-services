@@ -16,8 +16,7 @@
 
 package com.hedera.services.bdd.suites.throttling;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -36,17 +35,15 @@ public class GasLimitThrottlingSuite {
     private static final String CONTRACT = "Benchmark";
     public static final String PAYER_ACCOUNT = "payerAccount";
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"contracts.maxGasPerSec"})
     final Stream<DynamicTest> txOverGasLimitThrottled() {
         final var MAX_GAS_PER_SECOND = 1_000_001L;
-        return propertyPreservingHapiSpec("TXOverGasLimitThrottled")
-                .preserving("contracts.maxGasPerSec")
-                .given(overriding("contracts.maxGasPerSec", String.valueOf(MAX_GAS_PER_SECOND)))
-                .when(
-                        cryptoCreate(PAYER_ACCOUNT).balance(ONE_MILLION_HBARS),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT))
-                .then(contractCall(
+        return hapiTest(
+                overriding("contracts.maxGasPerSec", String.valueOf(MAX_GAS_PER_SECOND)),
+                cryptoCreate(PAYER_ACCOUNT).balance(ONE_MILLION_HBARS),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT),
+                contractCall(
                                 CONTRACT,
                                 "twoSSTOREs",
                                 Bytes.fromHexString(

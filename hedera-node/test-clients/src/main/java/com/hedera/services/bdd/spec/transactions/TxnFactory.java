@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.getUniqueTimest
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.BytesValue;
 import com.google.protobuf.Message;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -339,16 +338,7 @@ public class TxnFactory {
     }
 
     public Consumer<NodeUpdateTransactionBody.Builder> defaultDefNodeUpdateTransactionBody() {
-        return builder -> {
-            var gossipCaCertificateValue = BytesValue.newBuilder()
-                    .setValue(ByteString.copyFrom(setup.defaultGossipCaCertificate()))
-                    .build();
-            builder.setAccountId(setup.defaultPayer())
-                    .addGossipEndpoint(setup.defaultGossipEndpointInternal())
-                    .addGossipEndpoint(setup.defaultGossipEndpointExternal())
-                    .addServiceEndpoint(setup.defaultServiceEndpoint())
-                    .setGossipCaCertificate(gossipCaCertificateValue);
-        };
+        return builder -> {};
     }
 
     public Consumer<NodeDeleteTransactionBody.Builder> defaultDefNodeDeleteTransactionBody() {

@@ -31,6 +31,14 @@ if (
     apply(plugin = "com.google.cloud.artifactregistry.gradle-plugin")
 }
 
+// Publishing tasks are only enabled if we publish to the matching group.
+// Otherwise, Nexus configuration and credentials do not fit.
+val publishingPackageGroup = providers.gradleProperty("publishingPackageGroup").getOrElse("")
+
+tasks.withType<PublishToMavenRepository>().configureEach {
+    enabled = publishingPackageGroup == "com.swirlds"
+}
+
 publishing.publications.named<MavenPublication>("maven") {
     pom.description =
         "Swirlds is a software platform designed to build fully-distributed " +
@@ -88,19 +96,8 @@ publishing.repositories {
 // Register one 'release*' task for each publishing repository
 publishing.repositories.all {
     val ucName = name.replaceFirstChar { it.titlecase() }
-    val taskName = "release$ucName"
-
-    // Register the task if it is not already registered
-    if (!tasks.names.contains(taskName)) {
-        tasks.register(taskName) {
-            group = "release"
-            dependsOn(tasks.named("publishMavenPublicationTo${ucName}Repository"))
-        }
-    } else {
-        // If the task is already registered, we just add the group & dependency
-        tasks.named(taskName) {
-            group = "release"
-            dependsOn(tasks.named("publishMavenPublicationTo${ucName}Repository"))
-        }
+    tasks.register("release$ucName") {
+        group = "release"
+        dependsOn(tasks.named("publishMavenPublicationTo${ucName}Repository"))
     }
 }

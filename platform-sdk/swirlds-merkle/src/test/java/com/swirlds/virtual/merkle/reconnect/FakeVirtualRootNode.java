@@ -21,6 +21,7 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.merkle.synchronization.views.TeacherTreeView;
@@ -67,7 +68,8 @@ public class FakeVirtualRootNode extends PartialBinaryMerkleInternal
     }
 
     @Override
-    public LearnerTreeView<Long> buildLearnerView(final ReconnectConfig reconnectConfig) {
+    public LearnerTreeView<Long> buildLearnerView(
+            final ReconnectConfig reconnectConfig, final ReconnectMapStats mapStats) {
         throw new UnsupportedOperationException();
     }
 

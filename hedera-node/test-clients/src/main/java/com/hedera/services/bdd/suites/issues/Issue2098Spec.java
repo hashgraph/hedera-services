@@ -42,7 +42,7 @@ public class Issue2098Spec {
     private static final String CRYPTO_TRANSFER = "cryptoTransfer";
     private static final String GET_TOPIC_INFO = "getTopicInfo";
 
-    @LeakyHapiTest(PERMISSION_OVERRIDES)
+    @LeakyHapiTest(requirement = PERMISSION_OVERRIDES)
     final Stream<DynamicTest> txnApiPermissionsChangeImmediately() {
         return defaultHapiSpec("TxnApiPermissionsChangeImmediately")
                 .given(cryptoCreate(CIVILIAN))
@@ -60,7 +60,7 @@ public class Issue2098Spec {
                         cryptoTransfer(tinyBarsFromTo(CIVILIAN, FUNDING, 1L)).payingWith(CIVILIAN));
     }
 
-    @LeakyHapiTest(PERMISSION_OVERRIDES)
+    @LeakyHapiTest(requirement = PERMISSION_OVERRIDES)
     final Stream<DynamicTest> queryApiPermissionsChangeImmediately() {
         return defaultHapiSpec("QueryApiPermissionsChangeImmediately")
                 .given(cryptoCreate(CIVILIAN), createTopic("misc"))
@@ -75,7 +75,7 @@ public class Issue2098Spec {
                         getTopicInfo("misc").payingWith(CIVILIAN));
     }
 
-    @LeakyHapiTest(PERMISSION_OVERRIDES)
+    @LeakyHapiTest(requirement = PERMISSION_OVERRIDES)
     final Stream<DynamicTest> adminsCanQueryNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanQueryNoMatterPermissions")
                 .given(cryptoCreate(CIVILIAN), createTopic("misc"))
@@ -90,7 +90,7 @@ public class Issue2098Spec {
                                 .overridingProps(Map.of(GET_TOPIC_INFO, "0-*")));
     }
 
-    @LeakyHapiTest(PERMISSION_OVERRIDES)
+    @LeakyHapiTest(requirement = PERMISSION_OVERRIDES)
     final Stream<DynamicTest> adminsCanTransactNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanTransactNoMatterPermissions")
                 .given(cryptoCreate(CIVILIAN))
