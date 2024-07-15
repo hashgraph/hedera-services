@@ -569,7 +569,7 @@ class DispatchProcessorTest {
 
     private void assertFinished() {
         verify(recordFinalizer).finalizeRecord(dispatch);
-        verify(stack).commitFullStack();
+        verify(stack).commitTo(any());
     }
 
     private void verifyTrackedFeePayments() {

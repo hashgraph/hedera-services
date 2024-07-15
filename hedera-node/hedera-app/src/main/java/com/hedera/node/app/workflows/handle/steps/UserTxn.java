@@ -29,7 +29,6 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.RecordBuildersImpl;
-import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -214,8 +213,8 @@ public record UserTxn(
                 dispatchProcessor,
                 throttleAdvisor);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
-        final var feeAccumulator = new FeeAccumulator(
-                serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) baseBuilder);
+        final var feeAccumulator =
+                new FeeAccumulator(serviceApiFactory, (SingleTransactionRecordBuilderImpl) baseBuilder);
         final var savepoint = stack.userSavepoint();
         return new RecordDispatch(
                 savepoint,

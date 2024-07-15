@@ -41,7 +41,6 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.RecordBuildersImpl;
-import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.signature.DelegateKeyVerifier;
@@ -55,6 +54,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
@@ -167,8 +167,14 @@ public class ChildDispatchFactory {
         final var childVerifier = getKeyVerifier(callback);
         final var childTxnInfo = getTxnInfoFrom(txBody);
         final var savepoint = stack.createDispatchSavepoint(category);
-        final var baseBuilder =
-                initializedForChild(childTxnInfo, savepoint.createBaseBuilder(reversingBehavior, category, customizer));
+        final SingleTransactionRecordBuilder baseBuilder;
+        try {
+            baseBuilder = initializedForChild(
+                    childTxnInfo, savepoint.createBaseBuilder(reversingBehavior, category, customizer));
+        } catch (HandleException e) {
+            stack.rollback();
+            throw e;
+        }
         return newChildDispatch(
                 savepoint,
                 baseBuilder,
@@ -260,8 +266,8 @@ public class ChildDispatchFactory {
                 dispatchProcessor,
                 throttleAdviser);
         final var childFees = computeChildFees(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
-        final var childFeeAccumulator = new FeeAccumulator(
-                serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) baseBuilder);
+        final var childFeeAccumulator =
+                new FeeAccumulator(serviceApiFactory, (SingleTransactionRecordBuilderImpl) baseBuilder);
         return new RecordDispatch(
                 savepoint,
                 baseBuilder,

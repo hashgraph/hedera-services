@@ -195,7 +195,6 @@ public class TransactionProcessor {
         try {
             updater.commit();
         } catch (ResourceExhaustedException e) {
-
             // Behind the scenes there is only one savepoint stack; so we need to revert the root updater
             // before creating a new fees-only updater (even though from a Besu perspective, these two
             // updaters appear independent, they are not)

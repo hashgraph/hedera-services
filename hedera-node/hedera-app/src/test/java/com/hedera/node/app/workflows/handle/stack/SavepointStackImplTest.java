@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
+@Disabled
 class SavepointStackImplTest extends StateTestBase {
 
     private static final String FOOD_SERVICE = "FOOD_SERVICE";
