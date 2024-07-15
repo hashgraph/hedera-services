@@ -21,6 +21,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Iterator;
@@ -56,18 +57,7 @@ public class StreamedRound implements Round {
     @Override
     @NonNull
     public Iterator<ConsensusEvent> iterator() {
-        final Iterator<DetailedConsensusEvent> iterator = events.iterator();
-        return new Iterator<>() {
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public ConsensusEvent next() {
-                return iterator.next().getPlatformEvent();
-            }
-        };
+        return new TypedIterator<>(events.iterator());
     }
 
     public @NonNull List<DetailedConsensusEvent> getEvents() {

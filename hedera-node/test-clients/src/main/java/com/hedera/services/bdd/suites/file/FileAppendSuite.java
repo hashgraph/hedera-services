@@ -16,9 +16,8 @@
 
 package com.hedera.services.bdd.suites.file;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
@@ -117,19 +116,17 @@ public class FileAppendSuite {
                 .then(getFileContents("test").hasContents(ignore -> all8k));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"files.maxSizeKb"})
     final Stream<DynamicTest> handleRejectsOversized() {
         byte[] BYTES_3K_MINUS1 = new byte[3 * 1024 - 1];
         Arrays.fill(BYTES_3K_MINUS1, (byte) 0xAB);
         byte[] BYTES_1 = new byte[] {(byte) 0xAB};
 
-        return propertyPreservingHapiSpec("handleRejectsMissingWacl")
-                .preserving("files.maxSizeKb")
-                .given(overriding("files.maxSizeKb", "3"))
-                .when(
-                        fileCreate("file").contents(BYTES_3K_MINUS1),
-                        fileAppend("file").content(BYTES_1))
-                .then(fileAppend("file").content(BYTES_1).hasKnownStatus(MAX_FILE_SIZE_EXCEEDED));
+        return hapiTest(
+                overriding("files.maxSizeKb", "3"),
+                fileCreate("file").contents(BYTES_3K_MINUS1),
+                fileAppend("file").content(BYTES_1),
+                fileAppend("file").content(BYTES_1).hasKnownStatus(MAX_FILE_SIZE_EXCEEDED));
     }
 
     private final int BYTES_4K = 4 * (1 << 10);

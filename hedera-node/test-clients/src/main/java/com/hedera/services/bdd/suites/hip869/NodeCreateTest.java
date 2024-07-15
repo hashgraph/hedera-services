@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.addressbook;
+package com.hedera.services.bdd.suites.hip869;
 
+import static com.hedera.services.bdd.junit.EmbeddedReason.MUST_SKIP_INGEST;
+import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.endpointFor;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
@@ -32,6 +34,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdW
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.GOSSIP_ENDPOINTS_EXCEEDED_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -47,6 +50,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
@@ -55,7 +59,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
-import org.junit.jupiter.api.Tag;
 
 public class NodeCreateSuite {
 
@@ -295,7 +298,6 @@ public class NodeCreateSuite {
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @HapiTest
-    @Tag(EMBEDDED)
     final Stream<DynamicTest> allFieldsSetHappyCaseForIps() {
 
         return hapiTest(
@@ -332,20 +334,18 @@ public class NodeCreateSuite {
      * Check that node creation succeeds with minimum required fields set.
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
     final Stream<DynamicTest> minimumFieldsSetHappyCase() {
         return hapiTest(
-                newKeyNamed("adminKey"),
-                nodeCreate("ntb").adminKey("adminKey"),
-                viewNode("ntb", node -> assertEquals("", node.description(), "Node was created successfully")));
+                nodeCreate("ntb").description(description),
+                viewNode(
+                        "ntb", node -> assertEquals(description, node.description(), "Node was created successfully")));
     }
 
     /**
      * Check that appropriate fees are charged during node creation.
      */
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> validateFees() {
         return defaultHapiSpec("validateFees")
                 .given(
@@ -387,8 +387,7 @@ public class NodeCreateSuite {
      * Check that node creation fails during ingest when the transaction is unauthorized.
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
-    @HapiTest
-    @Tag(EMBEDDED)
+    @EmbeddedHapiTest(MUST_SKIP_INGEST)
     final Stream<DynamicTest> validateFeesInsufficientAmount() {
         final String description = "His vorpal blade went snicker-snack!";
         return defaultHapiSpec("validateFees")
@@ -432,21 +431,16 @@ public class NodeCreateSuite {
     }
 
     @HapiTest
-    @Tag(EMBEDDED)
     final Stream<DynamicTest> failsAtIngestForUnAuthorizedTxns() {
         final String description = "His vorpal blade went snicker-snack!";
-        return defaultHapiSpec("failsAtIngestForUnAuthorizedTxns")
-                .given(
-                        cryptoCreate("payer").balance(10_000_000_000L),
-                        nodeCreate("ntb")
-                                .payingWith("payer")
-                                .signedBy("payer")
-                                .description(description)
-                                .fee(ONE_HBAR)
-                                .hasPrecheck(BUSY)
-                                .via("nodeCreation"))
-                .when()
-                .then();
+        return hapiTest(
+                cryptoCreate("payer").balance(ONE_HUNDRED_HBARS),
+                nodeCreate("ntb")
+                        .payingWith("payer")
+                        .description(description)
+                        .fee(ONE_HBAR)
+                        .hasPrecheck(BUSY)
+                        .via("nodeCreation"));
     }
 
     private static void assertEqualServiceEndpoints(

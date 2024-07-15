@@ -135,9 +135,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     }
 
     private void genKeysFor(final HapiSpec spec) {
-        if (adminKeyName.isPresent() || adminKeyShape.isPresent()) {
-            adminKey = netOf(spec, adminKeyName, adminKeyShape);
-        }
+        adminKey = netOf(spec, adminKeyName, adminKeyShape);
     }
 
     @Override
