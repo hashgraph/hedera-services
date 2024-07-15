@@ -16,15 +16,12 @@
 
 package com.hedera.services.bdd.suites.contract.evm;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -35,32 +32,21 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 public class Evm50ValidationSuite {
-    private static final String EVM_VERSION_PROPERTY = "contracts.evm.version";
-    private static final String DYNAMIC_EVM_PROPERTY = "contracts.evm.version.dynamic";
-    private static final String EVM_VERSION_046 = "v0.46";
     private static final String Module05OpcodesExist_CONTRACT = "Module050OpcodesExist";
     private static final long A_BUNCH_OF_GAS = 500_000L;
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"contracts.evm.version"})
     final Stream<DynamicTest> verifiesNonExistenceForV50OpcodesInV46() {
         final var contract = Module05OpcodesExist_CONTRACT;
-
-        return propertyPreservingHapiSpec("verifiesNonExistenceForV50OpcodesInV46", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving(EVM_VERSION_PROPERTY, DYNAMIC_EVM_PROPERTY)
-                .given(
-                        overriding(DYNAMIC_EVM_PROPERTY, "true"),
-                        overriding(EVM_VERSION_PROPERTY, EVM_VERSION_046),
-                        uploadInitCode(contract),
-                        contractCreate(contract))
-                .when()
-                .then(
-                        contractCall(contract, "try_transient_storage")
-                                .gas(A_BUNCH_OF_GAS)
-                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
-                        contractCall(contract, "try_mcopy")
-                                .gas(A_BUNCH_OF_GAS)
-                                .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
-                        contractCall(contract, "try_kzg_precompile").hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
+        return hapiTest(
+                overriding("contracts.evm.version", "v0.46"),
+                uploadInitCode(contract),
+                contractCreate(contract),
+                contractCall(contract, "try_transient_storage")
+                        .gas(A_BUNCH_OF_GAS)
+                        .hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
+                contractCall(contract, "try_mcopy").gas(A_BUNCH_OF_GAS).hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION),
+                contractCall(contract, "try_kzg_precompile").hasKnownStatus(CONTRACT_EXECUTION_EXCEPTION));
     }
 
     @HapiTest
