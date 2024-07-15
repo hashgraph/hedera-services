@@ -138,7 +138,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         if (savepoint == userSavepoint) {
             setupFirstSavepoint();
         } else {
-            stack.push(new FirstChildSavepoint(new WrappedHederaState(root), peek(), savepoint.category()));
+            stack.push(new FirstChildSavepoint(new WrappedHederaState(peek().state()), peek(), savepoint.category()));
             savepoint.replace(peek());
         }
     }
