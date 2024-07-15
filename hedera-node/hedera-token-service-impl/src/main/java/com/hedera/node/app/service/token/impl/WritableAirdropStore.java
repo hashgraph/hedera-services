@@ -78,13 +78,13 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
         }
 
         if (airdropId.hasFungibleTokenType()) {
-            var existingAccountAirdrop = requireNonNull(airdropState.get(airdropId));
-            var existingAirdropValue =
+            final var existingAccountAirdrop = requireNonNull(airdropState.get(airdropId));
+            final var existingAirdropValue =
                     requireNonNull(airdropState.get(airdropId)).pendingAirdropValue();
             requireNonNull(existingAirdropValue);
             requireNonNull(accountAirdrop.pendingAirdropValue());
-            var newValue = accountAirdrop.pendingAirdropValue().amount() + existingAirdropValue.amount();
-            var newAccountAirdrop = existingAccountAirdrop
+            final var newValue = accountAirdrop.pendingAirdropValue().amount() + existingAirdropValue.amount();
+            final var newAccountAirdrop = existingAccountAirdrop
                     .copyBuilder()
                     .pendingAirdropValue(
                             PendingAirdropValue.newBuilder().amount(newValue).build())

@@ -117,7 +117,6 @@ public class TokenAirdropHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        pureChecks(context.body());
 
         final var op = context.body().tokenAirdropOrThrow();
         final var accountStore = context.createStore(ReadableAccountStore.class);
@@ -125,7 +124,7 @@ public class TokenAirdropHandler implements TransactionHandler {
 
         for (final var transfers : op.tokenTransfers()) {
             final var tokenID = transfers.tokenOrThrow();
-            final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
+            final var tokenMeta = tokenStore.getTokenMeta(tokenID);
             validateTruePreCheck(tokenMeta != null, INVALID_TOKEN_ID);
             checkFungibleTokenTransfers(tokenID, transfers.transfers(), context, accountStore);
             checkNftTransfers(tokenID, transfers.nftTransfers(), context, tokenMeta, accountStore);
@@ -147,7 +146,7 @@ public class TokenAirdropHandler implements TransactionHandler {
         final var pendingStore = context.storeFactory().writableStore(WritableAirdropStore.class);
         final var accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         var recordBuilder = context.recordBuilders().getOrCreate(TokenAirdropRecordBuilder.class);
-        List<TokenTransferList> tokenTransferListList = new ArrayList<>();
+        List<TokenTransferList> tokenTransferList = new ArrayList<>();
 
         // charge custom fees in advance
         var convertedOp = CryptoTransferTransactionBody.newBuilder()
@@ -238,15 +237,15 @@ public class TokenAirdropHandler implements TransactionHandler {
                 }
             }
 
-            // build transfer list and add it to tokenTransferListList
+            // build transfer list and add it to tokenTransferList
             if (shouldExecuteCryptoTransfer) {
-                tokenTransferListList.add(transferListBuilder.build());
+                tokenTransferList.add(transferListBuilder.build());
             }
         }
 
         // transfer tokens, that are not in pending state, if any...
-        if (!tokenTransferListList.isEmpty()) {
-            executeCryptoTransfer(context, tokenTransferListList, recordBuilder);
+        if (!tokenTransferList.isEmpty()) {
+            executeCryptoTransfer(context, tokenTransferList, recordBuilder);
         }
     }
 
@@ -545,7 +544,7 @@ public class TokenAirdropHandler implements TransactionHandler {
     }
 
     private boolean tokenHasNoCustomFeesPaidByReceiver(TokenID tokenId, ReadableTokenStore tokenStore) {
-        final var token = getIfUsable(tokenId, tokenStore, PERMIT_PAUSED);
+        final var token = getIfUsable(tokenId, tokenStore);
         final var feeMeta = customFeeMetaFrom(token);
         if (feeMeta.tokenType().equals(TokenType.FUNGIBLE_COMMON)) {
             for (var fee : feeMeta.customFees()) {
