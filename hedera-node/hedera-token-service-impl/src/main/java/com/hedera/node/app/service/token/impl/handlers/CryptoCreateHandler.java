@@ -374,7 +374,7 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
 
         // Validate the staking information included in this account creation.
         if (op.hasStakedAccountId() || op.hasStakedNodeId()) {
-            stakingValidator.validateStakedIdForCreation(
+            StakingValidator.validateStakedIdForCreation(
                     context.configuration().getConfigData(StakingConfig.class).isEnabled(),
                     op.declineReward(),
                     op.stakedId().kind().name(),
