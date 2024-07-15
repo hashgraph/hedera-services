@@ -69,6 +69,11 @@ The following are not goals of this proposal:
 
 1. Achieving a fully dynamic address book life-cycle.
 2. Public API for signing blocks.
+3. Removing or replacing the use of the RSA key in
+   1. Signing and verifying events. 
+   2. Signing and verifying the state. 
+   3. ISS detection.
+4. Modifying how reconnect works. 
 
 ### Dependencies, Interactions, and Implications
 
@@ -76,7 +81,7 @@ Dependencies on the TSS-Library
 
 * At minimum, the top-level API in the TSS-Library is defined and can be mocked for initial development.
 * The complete implementation of the TSS-Library is required for the TSS-Ledger-ID proposal to be fully implemented.
-* Consensus nodes must have their `elGamelKey` generated with the private key stored on disk and the public key
+* Consensus nodes must have their `tssEncryptionKey` generated with the private key stored on disk and the public key
   stored in the roster prior to the TSS-Ledger-ID proposal being delivered.
 
 Dependencies on the TSS-Roster
@@ -89,7 +94,7 @@ Impacts of TSS-Ledger-ID to Services Team
   roster to have key material generated.
 * Services will need to know or detect when the candidate roster fails to be adopted due to not having enough key
   material generated.
-* All nodes' public `tssEncryptionKeys` will need to be added to the address book.
+* More than half and preferably all the nodes' public `tssEncryptionKeys` will need to be added to the address book.
     * This requires modification of the HAPI transactions that manage the address book.
 
 Impacts to DevOps Team
@@ -101,7 +106,7 @@ Impacts to DevOps Team
 * If a node is added, removed, or updated in the address book and the candidate roster is not adopted in the next
   software upgrade, the change is not applied.
     * New nodes will not be added until the candidate roster containing them is adopted.
-    * Removed nodes will show up as down nodes until the candidate roster containing them is adopted.
+    * Removed nodes will will not be removed until the candidate roster containing them is adopted.
     * Updated nodes will not have their changes applied until the candidate roster containing them is adopted.
 * config only software upgrades can be used to trigger the adoption of a candidate roster, if the candidate roster
   has received enough yes votes.
@@ -111,6 +116,8 @@ Implications Of Completion
 * The network will have a public ledger id that can verify ledger signatures.
 * The active consensus nodes can transfer the ability to sign messages to the next set of consensus nodes.
 * TSS-Block-Signing proposal becomes unblocked for development.
+* It may be possible to replace functions of the RSA key with the `tssEncryptionKey` in the future.  This includes
+  signing and verifying events, signing and verifying the state, and ISS detection.
 
 ### Requirements
 
@@ -508,18 +515,18 @@ message LedgerId {
 
 ##### TSS Data Maps
 
-There are two maps of tss related data stored in the state through the public state APi.
+There are two maps of tss related data stored in the state through the public state API.
 
 1. `TssMessageMap` - A map of TssMessageTransactions that have come to consensus for a roster.
 2. `TssVoteMap` - A map of TssVoteTransactions that have come to consensus for a roster.
 
-The keys in both maps have the same structure:
+Keys in the `TssMessageMap` have the following structure:
 
 ```protobuf
 /**
   * A key for use in the TssDataMaps. 
   */
-message TssDataMapKey {
+message TssMessageMapKey {
 
   /** 
    * The roster hash is the hash of the target roster that the value in the tss data map is related to.
@@ -536,8 +543,23 @@ message TssDataMapKey {
 The values in the `TssMessageMap` are of type `TssMessageTransaction` where the `target_roster_hash` in the value is
 the `roster_hash` in the key.
 
+Keys in the `TssVoteMap` have the following structure:
+
+```protobuf
+/**
+  * A key for use in the TssDataMaps. 
+  */
+message TssMessageMapKey {
+
+  /** 
+   * The roster hash is the hash of the target roster that the value in the tss data map is related to.
+   */
+  bytes roster_hash = 1;
+}
+```
+
 The values in the `TssVoteMap` are of type `TssVoteTransaction` where the `target_roster_hash` in the value is the
-`roster_hash` in the key.
+`roster_hash` in the key. The order in which votes come to consensus is not important.
 
 Lifecycle Invariants
 
@@ -564,7 +586,7 @@ The following startup sequence on new networks is modified from existing practic
    roster. If there is a mismatch, a critical error is logged and the node shuts down.
 4. The platform copies the genesis state and starts gossiping with peers in a pre-genesis mode with the following
    behavior:
-    1. User transactions are not accepted from the app.
+    1. User transactions are not accepted from the app and events containing user transactions are ignored. 
     2. A node in pre-genesis mode can only gossip with other peers in pre-genesis mode.
     3. If a pre-genesis node encounters a peer that is post-genesis, the pre-genesis node requests the address book
        and key material from the post-genesis node and restarts itself after successfully validating the key material.
@@ -594,8 +616,7 @@ The release supporting the addition of the `tssEncryptionKey` to the roster also
 transactions for updating the address book with a node's `tssEncryptionKey`. Until the next software upgrade, only
 the candidate roster will have the `tssEncryptionKey` possibly set in roster entries.
 
-While the candidate roster is not adopted until a software upgrade occurs. The following startup sequence change is
-included in this software release:
+The following startup sequence change is included in this software release:
 
 1. The app reads the state and cryptography from disk (including support for reading the private `tssEncryptionKey`)
 2. The app hands the state and private keys to the platform.
@@ -619,13 +640,14 @@ unless the startup sequence is modified by subsequent releases.)
 3. The platform validates that its private `tssEncryptionKey`  matches its public `tssEncryptionKey` in the active
    roster. If there is a mismatch, a critical error is logged and the node shuts down.
 4. If a software upgrade is detected,
-    1. If the existing active roster and candidate roster do not have key material. Adopt the candidate roster
+    1. If the existing active roster and candidate roster do not have key material, adopt the candidate roster
        immediately.
-    2. If the candidate roster exists, has key material, the number of yes votes passes the threshold for
-       adoption, and the key material passes validation, then the candidate roster is adopted.
-        1. Part of passing validation is that if the state already has a ledger id set, the ledger id recovered from
-           the key material must match the ledger id in the state. If there is no ledger id in the state, the ledger
-           id recovered from the key material is set in the state as the new ledger id.
+    2. If the candidate roster exists, has key material, and the number of yes votes passes the threshold for
+       adoption, then the candidate roster is adopted.
+       1. Validation Check: if the state already has a ledger id set, the ledger id recovered from the key material 
+          must match the ledger id in the state. 
+       2. If there is no ledger id in the state and the previously active roster has no key material, the ledger
+          id recovered from the candidate roster key material is set in the state as the new ledger id. 
     3. In all other cases the existing active roster remains the active roster.
 5. The platform goes through its normal startup sequence.
 6. When the platform is (`ACTIVE`) and a candidate roster is set, the platform will start or continue the TSS bootstrap
@@ -664,21 +686,26 @@ Responsibilities:
 
 1. Handle `TssMessage` system transactions
     - handled in consensus order
-    - insert into the TSS data map if it is legal to do so
-        - don’t insert multiple messages for the same node
+    - Verify the signature on the `TssMessageTransaction` is valid.
+    - insert into the `TssMessageMap` if it is legal to do so
+        - don’t insert multiple messages for the same share
         - don’t insert any messages if voting window has closed
     - if inserted into the TSS data map, ensure that the message is forwarded to the TSS Message Validator
     - if it is a self TSS message, forward the message to the TSS Message creator.
 2. Handle `TssVote` system transactions
     - handled in consensus order
-    - insert into TSS data map if it is legal to do so
-        - don’t insert multiple votes for the same node
-        - don’t insert once voting is closed
-    - after insertion, re-tally votes and decide if voting is now closed
-    - if voting is closed as the result of a new vote,
-        - if the “no” votes win, then the candidate roster will never be adopted
+    - Verify the signature on the `TssVoteTransaction` is valid.
+    - Count the number of yes votes for the candidate roster, if the threshold is met, do nothing. 
+    - If the threshold is not met: 
+      - If there already exists a vote from the node in the state, do nothing. 
+      - Otherwise,add the vote to the `TssVoteMap` and forward the vote to the TSS Message Validator.
+    - If the total of yes votes is equal to the threshold, notify the TSS Message Validator that voting is closed.
+    - If the number of `TssVoteTransactions` in the `TssVoteMap` is equal to the number of shares in the candidate
+      roster, notify the TSS Message Validator that voting is closed.
+    - When voting is closed as the result of a new vote,
         - if the “yes” votes win, the candidate roster is now officially confirmed, and will be adopted at the next
           upgrade boundary
+        - If there are not a threshold number of yes votes, the candidate roster will never be adopted. 
 3. When a new candidate roster is set.
     - inform the TSS message creator that there is a new candidate roster
     - inform the TSS message validator that there is a new candidate roster
