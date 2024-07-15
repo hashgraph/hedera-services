@@ -19,13 +19,17 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.anyResult;
+import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.redirectCallResult;
 import static com.hedera.services.bdd.spec.dsl.contracts.TokenRedirectContract.HRC;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.SpecOperation;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
@@ -53,6 +57,12 @@ public class IsAssociatedSystemContractTest {
     @NonFungibleToken(name = "nonFungibleToken")
     static SpecNonFungibleToken nonFungibleToken;
 
+    @FungibleToken(name = "fungibleTokenForStatic")
+    static SpecFungibleToken fungibleTokenForStatic;
+
+    @NonFungibleToken(name = "nonFungibleTokenForStatic")
+    static SpecNonFungibleToken nonFungibleTokenForStatic;
+
     @Contract(contract = "HRCContract", creationGas = 4_000_000L)
     static SpecContract senderContract;
 
@@ -79,6 +89,17 @@ public class IsAssociatedSystemContractTest {
                 assertContractGetsResultForBothTokens(true),
                 senderContract.dissociateTokens(fungibleToken, nonFungibleToken),
                 assertContractGetsResultForBothTokens(false));
+    }
+
+    @HapiTest
+    @DisplayName("returns true for contract msg.sender exactly when associated static call")
+    public Stream<DynamicTest> returnsTrueIffContractMsgSenderIsAssociatedStatic() {
+        return hapiTest(
+                assertContractGetsResultForBothTokensStatic(false),
+                senderContract.associateTokens(fungibleTokenForStatic, nonFungibleTokenForStatic),
+                assertContractGetsResultForBothTokensStatic(true),
+                senderContract.dissociateTokens(fungibleTokenForStatic, nonFungibleTokenForStatic),
+                assertContractGetsResultForBothTokensStatic(false));
     }
 
     /**
@@ -117,5 +138,27 @@ public class IsAssociatedSystemContractTest {
                         .call("isAssociated", nonFungibleToken)
                         .andAssert(txn ->
                                 txn.hasResults(anyResult(), redirectCallResult(HRC, "isAssociated", isAssociated))));
+    }
+
+    /**
+     * Returns an operation asserting the contract {@code msg.sender} gets an expected {@code isAssociated()}
+     * result for both token types.
+     * @param isAssociated the expected result
+     * @return the operation
+     */
+    private SpecOperation assertContractGetsResultForBothTokensStatic(final boolean isAssociated) {
+        return blockingOrder(
+                senderContract
+                        .staticCall("isAssociated", fungibleTokenForStatic)
+                        .andAssert(query -> query.has(ContractFnResultAsserts.resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, "isAssociated", "HRC"),
+                                        isLiteralResult(new Object[] {isAssociated})))),
+                senderContract
+                        .staticCall("isAssociated", nonFungibleTokenForStatic)
+                        .andAssert(query -> query.has(ContractFnResultAsserts.resultWith()
+                                .resultThruAbi(
+                                        getABIFor(FUNCTION, "isAssociated", "HRC"),
+                                        isLiteralResult(new Object[] {isAssociated})))));
     }
 }
