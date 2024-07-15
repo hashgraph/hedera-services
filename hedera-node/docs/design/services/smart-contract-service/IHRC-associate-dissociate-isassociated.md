@@ -20,7 +20,7 @@ but not ERC tokens.
 The method in which the redirection to proxy contract is implemented is that during the execution of an EVM request, we examine the contract address to see
 if it is an HTS token address and if so we redirect the request to the proxy contract.  
 
-More specifically the algorithm by which we get from (a) the call to the token address to (b) the precompiled contract is a follows:
+More specifically the algorithm by which we get from (a) the call to the token address to (b) the precompiled contract is as follows:
 1. The EVM encounters a call such as this `tokenAddress.<functionName>(<params>);`
 2. The EVM calls [TokenEvmAccount.getEvmCode()](https://github.com/hashgraph/hedera-services/blob/f82b34132707755f7aa87e09e2de85ba9d5bfcd2/hedera-node/hedera-smart-contract-service-impl/src/main/java/com/hedera/node/app/service/contract/impl/state/TokenEvmAccount.java#L79) and loads the code stored on `tokenAddress`
 3. In [TokenEvmAccount.getEvmCode()](https://github.com/hashgraph/hedera-services/blob/f82b34132707755f7aa87e09e2de85ba9d5bfcd2/hedera-node/hedera-smart-contract-service-impl/src/main/java/com/hedera/node/app/service/contract/impl/state/TokenEvmAccount.java#L79), we intercept the loading of the account code, check if this is actually a contract address, and we return the redirect bytecode for the token with the given address
@@ -45,7 +45,7 @@ contract Assembly {
 	}
 }
 ```
-5. This means that _any_ function can be redirected-to as long as the HTS precompile handles the redirect call [here](https://github.com/hashgraph/hedera-services/blob/a1ccc19042d577c84076e97ee8485f33e2c9e696/hedera-node/hedera-smart-contract-service-impl/src/main/java/com/hedera/node/app/service/contract/impl/exec/processors/CustomMessageCallProcessor.java#L121). 
+5. This means that _any_ function can be redirected to as long as the HTS precompile handles the redirect call [here](https://github.com/hashgraph/hedera-services/blob/a1ccc19042d577c84076e97ee8485f33e2c9e696/hedera-node/hedera-smart-contract-service-impl/src/main/java/com/hedera/node/app/service/contract/impl/exec/processors/CustomMessageCallProcessor.java#L121). 
 
 
 The following table describes the function selector for the new `associate`, `dissociate` and `isAssociated` functions and the associated function signatures.
@@ -95,7 +95,7 @@ The `IsAssociatedCall` will override `resultOfViewingToken` method and return th
 - Create a contract that performs the `associate`, `dissociate` and `isAssociated` functions on an NFT and ensure that the functions can be called successfully by an EOA.
 - Create a contract that performs the `associate`, `dissociate` and `isAssociated` functions on a fungible token and ensure that the functions can be called successfully by a contract.
 - Create a contract that performs the `associate`, `dissociate` and `isAssociated` functions on an NFT and ensure that the functions can be called successfully by a contract.
-- Ensure that the `associate` and `dissociate` functions disregards the signature when called via the token facade.
+- Ensure that the `associate` and `dissociate` functions disregard the signature when called via the token facade.
 
 ### Negative Tests
 - Ensure that the `associate` fails if one tries to associate beyond `tokens.maxPerAccount` on a single account
