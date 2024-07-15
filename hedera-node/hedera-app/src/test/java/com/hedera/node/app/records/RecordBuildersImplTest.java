@@ -35,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class RecordBuildersImplTest {
 
     @Mock
-    private SingleTransactionRecordBuilderImpl recordBuilder;
+    private SingleTransactionRecordBuilderImpl baseBuilder;
 
     @Mock
     private SavepointStackImpl stack;
@@ -44,7 +44,7 @@ class RecordBuildersImplTest {
 
     @BeforeEach
     void setup() {
-        subject = new RecordBuildersImpl(stack);
+        subject = new RecordBuildersImpl(stack, baseBuilder);
     }
 
     @SuppressWarnings("ConstantConditions")

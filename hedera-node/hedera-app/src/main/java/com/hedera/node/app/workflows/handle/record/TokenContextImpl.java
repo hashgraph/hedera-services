@@ -26,8 +26,10 @@ import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.stack.DispatchSavepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -42,17 +44,25 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final BlockRecordManager blockRecordManager;
     private final Instant consensusTime;
     private final SavepointStackImpl stack;
+    private final DispatchSavepoint savepoint;
+    private final SingleTransactionRecordBuilder baseBuilder;
 
     public TokenContextImpl(
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final SavepointStackImpl stack,
             @NonNull final BlockRecordManager blockRecordManager,
-            @NonNull final Instant consensusTime) {
-        this.stack = stack;
-        requireNonNull(stack, "stack must not be null");
+            @NonNull final Instant consensusTime,
+            @NonNull final DispatchSavepoint savepoint,
+            @NonNull final SingleTransactionRecordBuilder baseBuilder) {
+        this.stack = requireNonNull(stack);
+        this.savepoint = requireNonNull(savepoint);
         this.configuration = requireNonNull(configuration, "configuration must not be null");
         this.blockRecordManager = requireNonNull(blockRecordManager, "blockRecordManager must not be null");
+        this.baseBuilder = requireNonNull(baseBuilder);
+        if (stack.peek() != savepoint.current()) {
+            throw new IllegalArgumentException("Stack must be at the savepoint");
+        }
 
         this.readableStoreFactory = new ReadableStoreFactory(stack);
         this.writableStoreFactory =
@@ -90,18 +100,18 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @Override
     public <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castBuilder(stack.baseStreamBuilder(), recordBuilderClass);
+        return castBuilder(baseBuilder, recordBuilderClass);
     }
 
     @Override
     public boolean hasChildOrPrecedingRecords() {
-        return stack.hasNonBaseStreamBuilder();
+        return savepoint.current().hasBuilderOtherThan(baseBuilder);
     }
 
     @Override
     public <T> void forEachChildRecord(@NonNull Class<T> recordBuilderClass, @NonNull Consumer<T> consumer) {
         requireNonNull(consumer, "consumer must not be null");
-        stack.forEachNonBaseBuilder(recordBuilderClass, consumer);
+        savepoint.current().forEachOtherBuilder(consumer, recordBuilderClass, baseBuilder);
     }
 
     @NonNull
@@ -113,7 +123,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
 
     @Override
     public boolean isScheduleDispatch() {
-        return stack.txnCategory() == SCHEDULED;
+        return savepoint.category() == SCHEDULED;
     }
 
     @Override

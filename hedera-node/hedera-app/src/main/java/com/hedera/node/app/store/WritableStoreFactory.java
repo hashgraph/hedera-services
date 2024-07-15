@@ -106,7 +106,7 @@ public class WritableStoreFactory {
     }
 
     private final String serviceName;
-    private final WritableStates states;
+    private final HederaState state;
     private final Configuration configuration;
     private final StoreMetricsService storeMetricsService;
 
@@ -130,7 +130,7 @@ public class WritableStoreFactory {
         this.configuration = requireNonNull(configuration, "The argument 'configuration' cannot be null!");
         this.storeMetricsService =
                 requireNonNull(storeMetricsService, "The argument 'storeMetricsService' cannot be null!");
-        this.states = state.getWritableStates(serviceName);
+        this.state = requireNonNull(state);
     }
 
     /**
@@ -147,7 +147,8 @@ public class WritableStoreFactory {
         requireNonNull(storeInterface, "The supplied argument 'storeInterface' cannot be null!");
         final var entry = STORE_FACTORY.get(storeInterface);
         if (entry != null && serviceName.equals(entry.name())) {
-            final var store = entry.factory().create(states, configuration, storeMetricsService);
+            final var store =
+                    entry.factory().create(state.getWritableStates(serviceName), configuration, storeMetricsService);
             if (!storeInterface.isInstance(store)) {
                 throw new IllegalArgumentException("No instance " + storeInterface
                         + " is available"); // This needs to be ensured while stores are registered

@@ -56,7 +56,15 @@ public interface Savepoint extends BuilderSink {
      * modifications to state.
      * @return the new savepoint
      */
-    Savepoint createFollowingSavePoint();
+    Savepoint createFollowingSavepoint();
+
+    /**
+     * Creates and returns a new savepoint that will serve as the root savepoint for a dispatch based
+     * on this savepoint's modifications to state.
+     * @param category the category of transaction initiating the new dispatch
+     * @return the new savepoint
+     */
+    Savepoint createDispatchSavepoint(@NonNull HandleContext.TransactionCategory category);
 
     /**
      * Creates and returns a new stream item builder whose lifecycle will be scoped to the state changes made

@@ -42,6 +42,7 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.DispatchValidator;
 import com.hedera.node.app.workflows.handle.dispatch.RecordFinalizer;
 import com.hedera.node.app.workflows.handle.dispatch.ValidationResult;
+import com.hedera.node.app.workflows.handle.stack.DispatchSavepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.steps.PlatformStateUpdates;
 import com.hedera.node.app.workflows.handle.steps.SystemFileUpdates;
@@ -117,7 +118,7 @@ public class DispatchProcessor {
         }
         dispatchUsageManager.trackUsage(dispatch, workDone);
         recordFinalizer.finalizeRecord(dispatch);
-        dispatch.stack().commitFullStack();
+        dispatch.stack().commitTo(dispatch.savepoint());
     }
 
     /**
@@ -144,7 +145,12 @@ public class DispatchProcessor {
             return USER_TRANSACTION;
         } catch (HandleException e) {
             // In case of a ContractCall when it reverts, the gas charged should not be rolled back
-            rollback(e.shouldRollbackStack(), e.getStatus(), dispatch.stack(), dispatch.recordBuilder());
+            rollback(
+                    e.shouldRollbackStack(),
+                    e.getStatus(),
+                    dispatch.stack(),
+                    dispatch.savepoint(),
+                    dispatch.recordBuilder());
             if (e.shouldRollbackStack()) {
                 chargePayer(dispatch, validationResult);
             }
@@ -194,7 +200,7 @@ public class DispatchProcessor {
             @NonNull final Dispatch dispatch,
             @NonNull final ValidationResult validationResult,
             @NonNull final ResponseCodeEnum status) {
-        rollback(true, status, dispatch.stack(), dispatch.recordBuilder());
+        rollback(true, status, dispatch.stack(), dispatch.savepoint(), dispatch.recordBuilder());
         chargePayer(dispatch, validationResult.withoutServiceFee());
         return FEES_ONLY;
     }
@@ -256,10 +262,11 @@ public class DispatchProcessor {
             final boolean rollbackStack,
             @NonNull final ResponseCodeEnum status,
             @NonNull final SavepointStackImpl stack,
+            @NonNull final DispatchSavepoint savepoint,
             @NonNull final SingleTransactionRecordBuilder builder) {
         builder.status(status);
         if (rollbackStack) {
-            stack.rollbackFullStack();
+            stack.rollbackTo(savepoint);
         }
     }
 

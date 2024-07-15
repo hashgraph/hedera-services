@@ -20,13 +20,13 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fees.FeeAccumulator;
-import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.hedera.node.app.workflows.handle.stack.DispatchSavepoint;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.swirlds.config.api.Configuration;
@@ -37,6 +37,7 @@ import java.time.Instant;
 import java.util.Set;
 
 public record RecordDispatch(
+        @NonNull DispatchSavepoint savepoint,
         @NonNull SingleTransactionRecordBuilder recordBuilder,
         @NonNull Configuration config,
         @NonNull Fees fees,
@@ -52,7 +53,6 @@ public record RecordDispatch(
         @NonNull HandleContext handleContext,
         @NonNull SavepointStackImpl stack,
         @NonNull HandleContext.TransactionCategory txnCategory,
-        @NonNull FinalizeContext finalizeContext,
         @NonNull PlatformState platformState,
         @NonNull PreHandleResult preHandleResult)
         implements Dispatch {}

@@ -40,6 +40,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -67,11 +68,10 @@ public class HollowAccountCompletions {
      * The hollow accounts that need to be finalized are determined by the set of hollow accounts that are returned
      * by the pre-handle result.
      * @param userTxn the user transaction component
-     * @param dispatch the dispatch
      */
-    public void completeHollowAccounts(@NonNull final UserTxn userTxn, @NonNull final Dispatch dispatch) {
+    public void completeHollowAccounts(
+            @NonNull final UserTxn userTxn, @NonNull final Supplier<Dispatch> dispatchFactory) {
         requireNonNull(userTxn);
-        requireNonNull(dispatch);
         // Any hollow accounts that must sign to have all needed signatures, need to be finalized
         // as a result of transaction being handled.
         Set<Account> hollowAccounts = userTxn.preHandleResult().getHollowAccounts();
@@ -84,8 +84,11 @@ public class HollowAccountCompletions {
                 maybeEthTxVerification = ethFinalization.ethVerification();
             }
         }
-        finalizeHollowAccounts(
-                dispatch.handleContext(), hollowAccounts, dispatch.keyVerifier(), maybeEthTxVerification, userTxn);
+        if (!hollowAccounts.isEmpty()) {
+            final var dispatch = dispatchFactory.get();
+            finalizeHollowAccounts(
+                    dispatch.handleContext(), hollowAccounts, dispatch.keyVerifier(), maybeEthTxVerification, userTxn);
+        }
     }
 
     /**

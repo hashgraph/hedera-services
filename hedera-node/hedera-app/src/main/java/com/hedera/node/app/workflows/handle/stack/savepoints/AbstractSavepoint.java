@@ -103,8 +103,13 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
     }
 
     @Override
-    public Savepoint createFollowingSavePoint() {
+    public Savepoint createFollowingSavepoint() {
         return new FollowingSavepoint(new WrappedHederaState(state), this);
+    }
+
+    @Override
+    public Savepoint createDispatchSavepoint(@NonNull final HandleContext.TransactionCategory category) {
+        return new FirstChildSavepoint(new WrappedHederaState(state), this, category);
     }
 
     @Override

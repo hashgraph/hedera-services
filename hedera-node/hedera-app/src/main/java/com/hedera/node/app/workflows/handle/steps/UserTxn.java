@@ -27,7 +27,6 @@ import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
-import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
@@ -77,7 +76,6 @@ public record UserTxn(
         @NonNull ConsensusEvent event,
         @NonNull ConsensusTransaction platformTxn,
         @NonNull TransactionInfo txnInfo,
-        @NonNull TokenContextImpl tokenContextImpl,
         @NonNull SavepointStackImpl stack,
         @NonNull PreHandleResult preHandleResult,
         @NonNull ReadableStoreFactory readableStoreFactory,
@@ -111,8 +109,6 @@ public record UserTxn(
         final var preHandleResult =
                 handleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
-        final var tokenContext =
-                new TokenContextImpl(config, storeMetricsService, stack, blockRecordManager, consensusNow);
         return new UserTxn(
                 isGenesis,
                 txnInfo.functionality(),
@@ -122,13 +118,25 @@ public record UserTxn(
                 event,
                 platformTxn,
                 txnInfo,
-                tokenContext,
                 stack,
                 preHandleResult,
                 readableStoreFactory,
                 config,
                 lastHandledConsensusTime,
                 creatorInfo);
+    }
+
+    public TokenContextImpl newTokenContext(
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final BlockRecordManager blockRecordManager) {
+        return new TokenContextImpl(
+                config,
+                storeMetricsService,
+                stack,
+                blockRecordManager,
+                consensusNow,
+                stack.userSavepoint(),
+                stack.baseBuilder());
     }
 
     /**
@@ -177,9 +185,8 @@ public record UserTxn(
                 new ResourcePriceCalculatorImpl(consensusNow, txnInfo, feeManager, readableStoreFactory);
         final var storeFactory = new StoreFactoryImpl(readableStoreFactory, writableStoreFactory, serviceApiFactory);
         final var entityNumGenerator = new EntityNumGeneratorImpl(
-                new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
-                        .getStore(WritableEntityIdStore.class));
-        final var recordBuilders = new RecordBuildersImpl(stack);
+                new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService));
+        final var recordBuilders = new RecordBuildersImpl(stack, stack.baseBuilder());
         final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
@@ -209,7 +216,9 @@ public record UserTxn(
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
         final var feeAccumulator = new FeeAccumulator(
                 serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) baseBuilder);
+        final var savepoint = stack.userSavepoint();
         return new RecordDispatch(
+                savepoint,
                 baseBuilder,
                 config,
                 fees,
@@ -225,7 +234,6 @@ public record UserTxn(
                 dispatchHandleContext,
                 stack,
                 USER,
-                tokenContextImpl,
                 platformState,
                 preHandleResult);
     }
@@ -235,6 +243,6 @@ public record UserTxn(
      * @return the base stream builder
      */
     public SingleTransactionRecordBuilder baseBuilder() {
-        return stack.baseStreamBuilder();
+        return stack.baseBuilder();
     }
 }

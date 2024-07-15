@@ -28,16 +28,19 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class RecordBuildersImpl implements RecordBuilders {
     private final SavepointStackImpl stack;
+    private final SingleTransactionRecordBuilder baseBuilder;
 
-    public RecordBuildersImpl(final SavepointStackImpl stack) {
+    public RecordBuildersImpl(
+            @NonNull final SavepointStackImpl stack, @NonNull final SingleTransactionRecordBuilder baseBuilder) {
         this.stack = stack;
+        this.baseBuilder = baseBuilder;
     }
 
     @NonNull
     @Override
     public <T> T getOrCreate(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castBuilder(stack.baseStreamBuilder(), recordBuilderClass);
+        return castBuilder(baseBuilder, recordBuilderClass);
     }
 
     @NonNull

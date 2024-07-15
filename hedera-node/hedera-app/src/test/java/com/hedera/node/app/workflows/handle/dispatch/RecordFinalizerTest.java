@@ -33,8 +33,10 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
 import com.hedera.node.app.service.token.records.FinalizeContext;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
@@ -52,6 +54,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class RecordFinalizerTest {
     private static final Instant CONSENSUS_NOW = Instant.ofEpochSecond(1_234_567L, 890);
+
+    @Mock
+    private BlockRecordManager blockRecordManager;
+
+    @Mock
+    private StoreMetricsService storeMetricsService;
 
     @Mock
     private FinalizeRecordHandler finalizeRecordHandler;
@@ -94,11 +102,10 @@ public class RecordFinalizerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new RecordFinalizer(finalizeRecordHandler);
+        subject = new RecordFinalizer(blockRecordManager, storeMetricsService, finalizeRecordHandler);
 
         lenient().when(dispatch.txnInfo()).thenReturn(TXN_INFO);
         lenient().when(dispatch.recordBuilder()).thenReturn(recordBuilder);
-        lenient().when(dispatch.finalizeContext()).thenReturn(finalizeContext);
         lenient().when(dispatch.handleContext()).thenReturn(handleContext);
     }
 

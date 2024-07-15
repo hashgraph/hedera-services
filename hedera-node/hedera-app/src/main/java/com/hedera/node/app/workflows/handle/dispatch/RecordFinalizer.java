@@ -18,15 +18,19 @@ package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static java.util.Collections.emptySet;
+import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.Dispatch;
+import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
@@ -42,6 +46,8 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class RecordFinalizer {
+    private final BlockRecordManager blockRecordManager;
+    private final StoreMetricsService storeMetricsService;
     private final FinalizeRecordHandler recordFinalizer;
 
     /**
@@ -49,8 +55,13 @@ public class RecordFinalizer {
      * @param recordFinalizer the parent record finalizer
      */
     @Inject
-    public RecordFinalizer(final FinalizeRecordHandler recordFinalizer) {
-        this.recordFinalizer = recordFinalizer;
+    public RecordFinalizer(
+            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final FinalizeRecordHandler recordFinalizer) {
+        this.blockRecordManager = requireNonNull(blockRecordManager);
+        this.storeMetricsService = requireNonNull(storeMetricsService);
+        this.recordFinalizer = requireNonNull(recordFinalizer);
     }
 
     /**
@@ -60,15 +71,23 @@ public class RecordFinalizer {
      * @param dispatch the dispatch
      */
     public void finalizeRecord(final Dispatch dispatch) {
+        final var finalizeContext = new TokenContextImpl(
+                dispatch.config(),
+                storeMetricsService,
+                dispatch.stack(),
+                blockRecordManager,
+                dispatch.consensusNow(),
+                dispatch.savepoint(),
+                dispatch.recordBuilder());
         switch (dispatch.txnCategory()) {
             case USER, SCHEDULED -> recordFinalizer.finalizeStakingRecord(
-                    dispatch.finalizeContext(),
+                    finalizeContext,
                     dispatch.txnInfo().functionality(),
                     extraRewardReceivers(
                             dispatch.txnInfo().txBody(), dispatch.txnInfo().functionality(), dispatch.recordBuilder()),
                     dispatch.handleContext().dispatchPaidRewards());
             case CHILD, PRECEDING -> recordFinalizer.finalizeNonStakingRecord(
-                    dispatch.finalizeContext(), dispatch.txnInfo().functionality());
+                    finalizeContext, dispatch.txnInfo().functionality());
         }
     }
 

@@ -19,28 +19,27 @@ package com.hedera.node.app.ids;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
+import com.hedera.node.app.store.WritableStoreFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
 
 /**
  * Default implementation of {@link EntityNumGenerator}.
  */
 public class EntityNumGeneratorImpl implements EntityNumGenerator {
 
-    private final WritableEntityIdStore entityIdStore;
+    private final WritableStoreFactory factory;
 
-    @Inject
-    public EntityNumGeneratorImpl(@NonNull final WritableEntityIdStore entityIdStore) {
-        this.entityIdStore = requireNonNull(entityIdStore);
+    public EntityNumGeneratorImpl(@NonNull final WritableStoreFactory factory) {
+        this.factory = requireNonNull(factory);
     }
 
     @Override
     public long newEntityNum() {
-        return entityIdStore.incrementAndGet();
+        return factory.getStore(WritableEntityIdStore.class).incrementAndGet();
     }
 
     @Override
     public long peekAtNewEntityNum() {
-        return entityIdStore.peekAtNextNumber();
+        return factory.getStore(WritableEntityIdStore.class).peekAtNextNumber();
     }
 }

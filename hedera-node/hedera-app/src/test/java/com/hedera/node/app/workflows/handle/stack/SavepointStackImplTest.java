@@ -75,7 +75,6 @@ class SavepointStackImplTest extends StateTestBase {
         assertThat(stack.depth()).isEqualTo(1);
         assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-        assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
     }
@@ -104,7 +103,6 @@ class SavepointStackImplTest extends StateTestBase {
         newData.put(B_KEY, BLUEBERRY);
         assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-        assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
         assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
         assertThat(stack.getWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
         assertThat(readableStatesStack).has(content(newData));
@@ -130,7 +128,6 @@ class SavepointStackImplTest extends StateTestBase {
             assertThat(stack.depth()).isEqualTo(2);
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
             assertThat(readableStatesStack).has(content(BASE_DATA));
@@ -162,7 +159,6 @@ class SavepointStackImplTest extends StateTestBase {
             newData.put(D_KEY, DRAGONFRUIT);
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
             assertThat(readableStatesStack).has(content(newData));
@@ -199,7 +195,6 @@ class SavepointStackImplTest extends StateTestBase {
             newData.put(F_KEY, FEIJOA);
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
             assertThat(readableStatesStack).has(content(newData));
@@ -230,7 +225,6 @@ class SavepointStackImplTest extends StateTestBase {
             newData.put(B_KEY, BLUEBERRY);
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
             assertThat(readableStatesStack).has(content(newData));
@@ -263,7 +257,6 @@ class SavepointStackImplTest extends StateTestBase {
             newData.put(D_KEY, DRAGONFRUIT);
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
             assertThat(readableStatesStack).has(content(newData));
@@ -297,7 +290,6 @@ class SavepointStackImplTest extends StateTestBase {
             newData.put(D_KEY, DRAGONFRUIT);
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
             assertThat(readableStatesStack).has(content(newData));
@@ -337,7 +329,6 @@ class SavepointStackImplTest extends StateTestBase {
             newData.put(F_KEY, FEIJOA);
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
             assertThat(readableStatesStack).has(content(newData));
@@ -389,7 +380,6 @@ class SavepointStackImplTest extends StateTestBase {
             assertThat(stack.depth()).isEqualTo(1);
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
             assertThat(readableStatesStack).has(content(BASE_DATA));
@@ -420,7 +410,6 @@ class SavepointStackImplTest extends StateTestBase {
             newData.put(D_KEY, DRAGONFRUIT);
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
             assertThat(readableStatesStack).has(content(newData));
@@ -452,7 +441,6 @@ class SavepointStackImplTest extends StateTestBase {
             newData.put(D_KEY, DRAGONFRUIT);
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
             assertThat(readableStatesStack).has(content(newData));
@@ -488,7 +476,6 @@ class SavepointStackImplTest extends StateTestBase {
             newData.put(B_KEY, BLUEBERRY);
             assertThat(baseState.getReadableStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(baseState.getWritableStates(FOOD_SERVICE)).has(content(BASE_DATA));
-            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(BASE_DATA));
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).isSameAs(writableStatesStack);
             assertThat(readableStatesStack).has(content(newData));
@@ -618,7 +605,6 @@ class SavepointStackImplTest extends StateTestBase {
             // then
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).has(content(newData));
-            assertThat(stack.rootStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getReadableStates(FOOD_SERVICE)).has(content(newData));
             assertThat(stack.getWritableStates(FOOD_SERVICE)).has(content(newData));
         }
