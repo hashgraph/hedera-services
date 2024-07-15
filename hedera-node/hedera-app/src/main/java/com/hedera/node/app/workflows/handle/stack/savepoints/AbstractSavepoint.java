@@ -1,0 +1,153 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.node.app.workflows.handle.stack.savepoints;
+
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static java.util.Objects.requireNonNull;
+
+import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.stack.BuilderSink;
+import com.hedera.node.app.workflows.handle.stack.Savepoint;
+import com.swirlds.state.HederaState;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Implementation support for a {@link Savepoint}. The sole abstract method is {@link #commitBuilders()}, which
+ * subclasses must override to choose the strategy used to flush any accumulated builders to the parent sink.
+ * <p>
+ * When adopting block streams we will add more extension points to this class in the form of abstract methods
+ * that determine how each type of savepoint constructs state change block items.
+ */
+public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savepoint {
+    private static final EnumSet<ResponseCodeEnum> SUCCESSES =
+            EnumSet.of(OK, SUCCESS, FEE_SCHEDULE_FILE_PART_UPLOADED, SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+
+    protected final BuilderSink parentSink;
+    protected final WrappedHederaState state;
+
+    /**
+     * Constructs a savepoint with limits that discriminate between the number of preceding and following builders.
+     * @param state the current state
+     * @param parentSink the parent sink
+     * @param maxPreceding the maximum number of preceding builders
+     * @param maxFollowing the maximum number of following builders
+     */
+    protected AbstractSavepoint(
+            @NonNull final WrappedHederaState state,
+            @NonNull final BuilderSink parentSink,
+            final int maxPreceding,
+            final int maxFollowing) {
+        super(maxPreceding, maxFollowing);
+        this.state = requireNonNull(state);
+        this.parentSink = requireNonNull(parentSink);
+    }
+
+    /**
+     * Constructs a savepoint with a total limit on the number of builders that can be accumulated.
+     * @param state the current state
+     * @param parentSink the parent sink
+     * @param maxTotal the maximum number of total builders
+     */
+    protected AbstractSavepoint(
+            @NonNull final WrappedHederaState state, @NonNull final BuilderSink parentSink, final int maxTotal) {
+        super(maxTotal);
+        this.state = requireNonNull(state);
+        this.parentSink = requireNonNull(parentSink);
+    }
+
+    @Override
+    public HederaState state() {
+        return state;
+    }
+
+    @Override
+    public void commit() {
+        state.commit();
+        commitBuilders();
+    }
+
+    @Override
+    public void rollback() {
+        rollback(precedingBuilders);
+        rollback(followingBuilders);
+        commitBuilders();
+    }
+
+    @Override
+    public Savepoint createFollowingSavepoint() {
+        return new FollowingSavepoint(new WrappedHederaState(state), this);
+    }
+
+    @Override
+    public SingleTransactionRecordBuilder createBuilder(
+            @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
+            @NonNull final HandleContext.TransactionCategory txnCategory,
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            final boolean isBaseBuilder) {
+        requireNonNull(reversingBehavior);
+        requireNonNull(txnCategory);
+        requireNonNull(customizer);
+        final var builder = new SingleTransactionRecordBuilderImpl(reversingBehavior, customizer, txnCategory);
+        if (!customizer.shouldSuppressRecord()) {
+            if (txnCategory == PRECEDING && !isBaseBuilder) {
+                addPrecedingOrThrow(builder);
+            } else {
+                addFollowingOrThrow(builder);
+            }
+        }
+        return builder;
+    }
+
+    /**
+     * Commits the builders accumulated in this savepoint to the parent sink.
+     */
+    abstract void commitBuilders();
+
+    private void rollback(@NonNull final List<SingleTransactionRecordBuilder> builders) {
+        var removedBuilder = false;
+        for (int i = 0; i < builders.size(); i++) {
+            final var builder = builders.get(i);
+            if (builder.reversingBehavior() == REVERSIBLE) {
+                builder.nullOutSideEffectFields();
+                if (SUCCESSES.contains(builder.status())) {
+                    builder.status(REVERTED_SUCCESS);
+                }
+            } else if (builder.reversingBehavior() == REMOVABLE) {
+                builders.set(i, null);
+                removedBuilder = true;
+            }
+        }
+        if (removedBuilder) {
+            builders.removeIf(Objects::isNull);
+        }
+    }
+}

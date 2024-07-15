@@ -34,7 +34,6 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.util;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
-    requires com.swirlds.fcqueue;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
@@ -51,7 +50,8 @@ module com.hedera.node.app {
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires static java.compiler; // javax.annotation.processing.Generated
+    requires static java.compiler;
+    // javax.annotation.processing.Generated
 
     exports com.hedera.node.app to
             com.hedera.node.test.clients;

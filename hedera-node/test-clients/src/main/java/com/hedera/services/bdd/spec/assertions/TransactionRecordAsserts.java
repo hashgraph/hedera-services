@@ -124,7 +124,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
-    public TransactionRecordAsserts consensusTimeImpliedByNonce(final Timestamp parentTime, final int nonce) {
+    public TransactionRecordAsserts consensusTimeImpliedByOffset(final Timestamp parentTime, final int nonce) {
         this.<Timestamp>registerTypedProvider("consensusTimestamp", spec -> actualTime -> {
             try {
                 final var expectedTime = parentTime.toBuilder()
@@ -355,6 +355,19 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
 
     public TransactionRecordAsserts autoAssociated(ErroringAssertsProvider<List<TokenAssociation>> provider) {
         registerTypedProvider("automaticTokenAssociationsList", provider);
+        return this;
+    }
+
+    public TransactionRecordAsserts autoAssociationCount(int autoAssociations) {
+        this.<List<TokenAssociation>>registerTypedProvider("automaticTokenAssociationsList", spec -> associations -> {
+            try {
+                assertEquals(
+                        autoAssociations, associations.size(), "Wrong # of automatic associations: " + associations);
+            } catch (Throwable t) {
+                return List.of(t);
+            }
+            return EMPTY_LIST;
+        });
         return this;
     }
 

@@ -248,10 +248,9 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "2-50") PermissionedAccountsRange getAccountDetails,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenReject,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange createNode,
+        @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange createNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
-        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange getNodeInfo) {
+        @ConfigProperty(defaultValue = "2-55") PermissionedAccountsRange deleteNode) {
 
     private static final EnumMap<HederaFunctionality, Function<ApiPermissionConfig, PermissionedAccountsRange>>
             permissionKeys = new EnumMap<>(HederaFunctionality.class);

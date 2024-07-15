@@ -184,12 +184,12 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
                         any(Predicate.class),
                         any(AccountID.class),
                         any(TransactionCategory.class)))
-                .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
+                .willReturn(new SingleTransactionRecordBuilderImpl());
 
         final var mockRecordBuilders = mock(RecordBuilders.class);
         given(mockContext.recordBuilders()).willReturn(mockRecordBuilders);
         given(mockRecordBuilders.getOrCreate(ScheduleRecordBuilder.class))
-                .willReturn(new SingleTransactionRecordBuilderImpl(testConsensusTime));
+                .willReturn(new SingleTransactionRecordBuilderImpl());
     }
 
     private static TransactionKeys createChildKeys(

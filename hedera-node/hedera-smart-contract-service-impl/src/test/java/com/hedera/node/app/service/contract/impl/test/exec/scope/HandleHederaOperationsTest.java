@@ -76,7 +76,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.UncheckedParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -236,22 +235,6 @@ class HandleHederaOperationsTest {
         given(context.entityNumGenerator()).willReturn(entityNumGenerator);
         given(entityNumGenerator.newEntityNum()).willReturn(123L);
         assertEquals(123L, subject.useNextEntityNumber());
-    }
-
-    @Test
-    void createRecordListCheckPointUsesContext() {
-        var recordListCheckPoint = new RecordListCheckPoint(null, null);
-        given(context.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.createRecordListCheckPoint()).willReturn(recordListCheckPoint);
-        assertEquals(recordListCheckPoint, subject.createRecordListCheckPoint());
-    }
-
-    @Test
-    void revertRecordsFromUsesContext() {
-        var recordListCheckPoint = new RecordListCheckPoint(null, null);
-        given(context.recordBuilders()).willReturn(recordBuilders);
-        subject.revertRecordsFrom(recordListCheckPoint);
-        verify(recordBuilders).revertRecordsFrom(recordListCheckPoint);
     }
 
     @Test

@@ -44,12 +44,14 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 
+import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenType;
+import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
@@ -57,6 +59,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenBurnTransactionBody;
 import com.hedera.hapi.node.token.TokenWipeAccountTransactionBody;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -77,9 +80,14 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.time.Instant;
+import java.util.List;
+import java.util.Set;
 import org.assertj.core.api.Assertions;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -106,7 +114,51 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 .getOrCreateConfig();
         recordBuilder = new TokenAccountWipeRecordBuilder() {
             private long newTotalSupply;
-            private TokenType tokenType;
+
+            @Override
+            public Transaction transaction() {
+                return Transaction.DEFAULT;
+            }
+
+            @Override
+            public Set<AccountID> explicitRewardSituationIds() {
+                return Set.of();
+            }
+
+            @Override
+            public List<AccountAmount> getPaidStakingRewards() {
+                return List.of();
+            }
+
+            @Override
+            public boolean hasContractResult() {
+                return false;
+            }
+
+            @Override
+            public long getGasUsedForContractTxn() {
+                return 0;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder memo(@NonNull String memo) {
+                return this;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction) {
+                return this;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder transactionBytes(@NonNull Bytes transactionBytes) {
+                return this;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
+                return this;
+            }
 
             @NonNull
             @Override
@@ -129,6 +181,44 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 return this;
             }
 
+            @Override
+            public HandleContext.TransactionCategory category() {
+                return HandleContext.TransactionCategory.USER;
+            }
+
+            @Override
+            public ReversingBehavior reversingBehavior() {
+                return null;
+            }
+
+            @Override
+            public void nullOutSideEffectFields() {}
+
+            @Override
+            public SingleTransactionRecordBuilder syncBodyIdFromRecordId() {
+                return null;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder consensusTimestamp(@NotNull final Instant now) {
+                return null;
+            }
+
+            @Override
+            public TransactionID transactionID() {
+                return null;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder transactionID(@NotNull final TransactionID transactionID) {
+                return null;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder parentConsensus(@NotNull final Instant parentConsensus) {
+                return null;
+            }
+
             @NonNull
             @Override
             public TokenAccountWipeRecordBuilder newTotalSupply(final long supply) {
@@ -139,7 +229,6 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             @NonNull
             @Override
             public TokenBaseRecordBuilder tokenType(final @NonNull TokenType tokenType) {
-                this.tokenType = tokenType;
                 return this;
             }
 

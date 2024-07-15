@@ -25,7 +25,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
-import static com.hedera.services.bdd.suites.staking.StakingSuite.STAKING_REWARD_RATE;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -152,7 +151,7 @@ public class StartStaking extends HapiSuite {
                         "default.payer.pemKeyLoc", PAYER_PEM_LOC,
                         "default.payer.pemKeyPassphrase", PAYER_PEM_PASSPHRASE))
                 .given(
-                        overriding(STAKING_REWARD_RATE, "" + CANONICAL_REWARD_RATE),
+                        overriding("staking.perHbarRewardRate", "" + CANONICAL_REWARD_RATE),
                         cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, STAKING_REWARD, REWARD_START_BALANCE)))
                 .when(
                         inParallel(IntStream.range(0, NUM_TARGET_NODES)

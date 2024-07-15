@@ -76,8 +76,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
-import java.time.Instant;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,7 +89,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenBurnHandlerTest extends ParityTestBase {
     private static final AccountID ACCOUNT_1339 = BaseCryptoHandler.asAccount(1339);
     private static final TokenID TOKEN_123 = BaseTokenHandler.asToken(123);
-    private static final Instant SOMETIME = Instant.ofEpochSecond(1_234_567, 890);
     private TokenSupplyChangeOpsValidator validator = new TokenSupplyChangeOpsValidator();
     private final TokenBurnHandler subject = new TokenBurnHandler(validator);
     private Configuration configuration;
@@ -388,7 +386,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
+            final var recordBuilder = new SingleTransactionRecordBuilderImpl();
             given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
@@ -428,7 +426,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
+            final var recordBuilder = new SingleTransactionRecordBuilderImpl();
             given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
@@ -709,7 +707,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
+            final var recordBuilder = new SingleTransactionRecordBuilderImpl();
             given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
@@ -772,7 +770,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
+            final var recordBuilder = new SingleTransactionRecordBuilderImpl();
             given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
@@ -836,7 +834,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L, 1L, 2L, 3L, 3L, 1L, 1L, 2L);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(SOMETIME);
+            final var recordBuilder = new SingleTransactionRecordBuilderImpl();
             given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 

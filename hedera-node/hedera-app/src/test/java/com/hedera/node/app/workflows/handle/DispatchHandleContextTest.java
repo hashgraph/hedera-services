@@ -27,8 +27,8 @@ import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBL
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactoryTest.asTxn;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -96,7 +96,6 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -104,7 +103,6 @@ import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
@@ -113,15 +111,15 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
-import com.swirlds.platform.test.fixtures.state.MapReadableStates;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
-import com.swirlds.platform.test.fixtures.state.StateTestBase;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapReadableStates;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
+import com.swirlds.state.test.fixtures.StateTestBase;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.Arrays;
@@ -229,9 +227,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Mock
     private DispatchProcessor dispatchProcessor;
 
-    @Mock
-    private RecordListBuilder recordListBuilder;
-
     @Mock(strictness = LENIENT)
     private HederaState baseState;
 
@@ -277,10 +272,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .build();
     private static final TransactionBody txBody = asTxn(transferBody, payerId, CONSENSUS_NOW);
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
-    private SingleTransactionRecordBuilderImpl parentRecordBuilder =
-            new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
-    private SingleTransactionRecordBuilderImpl childRecordBuilder =
-            new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
+    private SingleTransactionRecordBuilderImpl childRecordBuilder = new SingleTransactionRecordBuilderImpl();
     private final TransactionBody txnBodyWithoutId = TransactionBody.newBuilder()
             .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
             .build();
@@ -392,7 +384,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             recordBuilders,
             childDispatchFactory,
             dispatchProcessor,
-            recordListBuilder,
             throttleAdviser
         };
 
@@ -571,7 +562,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                         final var childContext = invocation.getArgument(0, HandleContext.class);
                         final var childStack = (SavepointStackImpl) childContext.savepointStack();
                         childStack
-                                .peek()
                                 .getWritableStates(FOOD_SERVICE)
                                 .get(FRUIT_STATE_KEY)
                                 .put(A_KEY, ACAI);
@@ -601,10 +591,10 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                             SingleTransactionRecordBuilder.class,
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT,
-                            NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
+                            NOOP_RECORD_CUSTOMIZER))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
-                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER))
+                            txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, NOOP_RECORD_CUSTOMIZER))
                     .isInstanceOf(NullPointerException.class);
         }
 
@@ -647,7 +637,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             assertThatNoException()
                     .isThrownBy(() -> context.dispatchPrecedingTransaction(
                             txBody, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT));
-            verify(recordListBuilder, never()).addRemovablePreceding(any());
             verify(dispatcher, never()).dispatchHandle(any());
             verify(stack).commitFullStack();
         }
@@ -655,8 +644,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         @Test
         void testDispatchPrecedingWithChangedDataDoesntFail() {
             final var context = createContext(txBody, HandleContext.TransactionCategory.USER);
-            when(stack.peek()).thenReturn(new WrappedHederaState(baseState));
-            when(stack.peek().getWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
             final Map<String, String> newData = new HashMap<>(BASE_DATA);
             newData.put(B_KEY, BLUEBERRY);
 
@@ -781,7 +768,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 recordBuilders,
                 childDispatchFactory,
                 dispatchProcessor,
-                recordListBuilder,
                 throttleAdviser);
     }
 
@@ -791,7 +777,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                         any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
                         any()))
                 .thenReturn(childDispatch);
-        lenient().when(childDispatch.recordListBuilder()).thenReturn(recordListBuilder);
         lenient().when(childDispatch.recordBuilder()).thenReturn(childRecordBuilder);
         lenient()
                 .when(stack.getWritableStates(TokenService.NAME))

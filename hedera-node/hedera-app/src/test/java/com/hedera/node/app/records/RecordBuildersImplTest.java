@@ -18,17 +18,12 @@ package com.hedera.node.app.records;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,15 +38,13 @@ class RecordBuildersImplTest {
     private SingleTransactionRecordBuilderImpl recordBuilder;
 
     @Mock
-    private RecordListBuilder recordListBuilder;
+    private SavepointStackImpl stack;
 
     private RecordBuildersImpl subject;
 
     @BeforeEach
     void setup() {
-        final var configuration = HederaTestConfigBuilder.createConfig();
-
-        subject = new RecordBuildersImpl(recordBuilder, recordListBuilder, configuration);
+        subject = new RecordBuildersImpl(stack);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -68,15 +61,9 @@ class RecordBuildersImplTest {
     }
 
     @Test
-    void testGetRecordBuilder() {
-        final var actual = subject.getOrCreate(CryptoCreateRecordBuilder.class);
-        assertThat(actual).isEqualTo(recordBuilder);
-    }
-
-    @Test
     void testAddChildRecordBuilder() {
         final var childRecordBuilder = mock(SingleTransactionRecordBuilderImpl.class);
-        when(recordListBuilder.addChild(any(), any())).thenReturn(childRecordBuilder);
+        given(stack.createReversibleChildBuilder()).willReturn(childRecordBuilder);
 
         final var actual = subject.addChildRecordBuilder(CryptoCreateRecordBuilder.class);
 
@@ -86,50 +73,10 @@ class RecordBuildersImplTest {
     @Test
     void testAddRemovableChildRecordBuilder() {
         final var childRecordBuilder = mock(SingleTransactionRecordBuilderImpl.class);
-        when(recordListBuilder.addRemovableChild(any())).thenReturn(childRecordBuilder);
+        given(stack.createRemovableChildBuilder()).willReturn(childRecordBuilder);
 
         final var actual = subject.addRemovableChildRecordBuilder(CryptoCreateRecordBuilder.class);
 
         assertThat(actual).isEqualTo(childRecordBuilder);
-    }
-
-    @Test
-    void successCreateRecordListCheckPoint() {
-        var precedingRecord = mock(SingleTransactionRecordBuilderImpl.class);
-        var childRecord = mock(SingleTransactionRecordBuilderImpl.class);
-        given(recordListBuilder.precedingRecordBuilders()).willReturn(List.of(precedingRecord));
-        given(recordListBuilder.childRecordBuilders()).willReturn(List.of(childRecord));
-
-        final var actual = subject.createRecordListCheckPoint();
-
-        assertThat(actual).isEqualTo(new RecordListCheckPoint(precedingRecord, childRecord));
-    }
-
-    @Test
-    void successCreateRecordListCheckPoint_MultipleRecords() {
-        var precedingRecord = mock(SingleTransactionRecordBuilderImpl.class);
-        var precedingRecord1 = mock(SingleTransactionRecordBuilderImpl.class);
-        var childRecord = mock(SingleTransactionRecordBuilderImpl.class);
-        var childRecord1 = mock(SingleTransactionRecordBuilderImpl.class);
-
-        given(recordListBuilder.precedingRecordBuilders()).willReturn(List.of(precedingRecord, precedingRecord1));
-        given(recordListBuilder.childRecordBuilders()).willReturn(List.of(childRecord, childRecord1));
-
-        final var actual = subject.createRecordListCheckPoint();
-
-        assertThat(actual).isEqualTo(new RecordListCheckPoint(precedingRecord1, childRecord1));
-    }
-
-    @Test
-    void success_createRecordListCheckPoint_null_values() {
-        final var actual = subject.createRecordListCheckPoint();
-        assertThat(actual).isEqualTo(new RecordListCheckPoint(null, null));
-    }
-
-    @Test
-    void revertsAsExpected() {
-        final var checkpoint = new RecordListCheckPoint(null, null);
-        subject.revertRecordsFrom(checkpoint);
-        verify(recordListBuilder).revertChildrenFrom(checkpoint);
     }
 }

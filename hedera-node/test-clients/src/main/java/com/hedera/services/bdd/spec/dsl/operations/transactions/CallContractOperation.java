@@ -21,8 +21,8 @@ import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.withSubstitutedTyp
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
 import edu.umd.cs.findbugs.annotations.NonNull;

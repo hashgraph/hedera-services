@@ -18,9 +18,9 @@ package com.swirlds.platform.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.swirlds.platform.test.fixtures.state.ListReadableQueueState;
-import com.swirlds.platform.test.fixtures.state.ListWritableQueueState;
-import com.swirlds.platform.test.fixtures.state.StateTestBase;
+import com.swirlds.state.test.fixtures.ListReadableQueueState;
+import com.swirlds.state.test.fixtures.ListWritableQueueState;
+import com.swirlds.state.test.fixtures.StateTestBase;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
 

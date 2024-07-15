@@ -44,15 +44,6 @@ public class PerfUtilOps {
         });
     }
 
-    public static HapiSpecOperation mgmtOfLongProp(AtomicLong value, String prop) {
-        return withOpContext((spec, opLog) -> {
-            var ciProps = spec.setup().ciPropertiesMap();
-            if (ciProps.has(prop)) {
-                value.set(ciProps.getLong(prop));
-            }
-        });
-    }
-
     public static HapiSpecOperation stdMgmtOf(
             AtomicLong duration, AtomicReference<TimeUnit> unit, AtomicInteger maxOpsPerSec) {
         return stdMgmtOf(duration, unit, maxOpsPerSec, "");

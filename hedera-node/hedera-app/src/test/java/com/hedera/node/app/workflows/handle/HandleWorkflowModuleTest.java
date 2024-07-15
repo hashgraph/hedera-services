@@ -106,7 +106,7 @@ class HandleWorkflowModuleTest {
     private UtilHandlers utilHandlers;
 
     @Mock
-    AddressBookHandlers addressBookHandlers;
+    private AddressBookHandlers addressBookHandlers;
 
     @Mock
     private ConsensusCreateTopicHandler consensusCreateTopicHandler;
@@ -244,16 +244,16 @@ class HandleWorkflowModuleTest {
     private TokenUnpauseHandler tokenUnpauseHandler;
 
     @Mock
-    private UtilPrngHandler utilPrngHandler;
+    private NodeCreateHandler nodeCreateHandler;
 
     @Mock
-    private NodeCreateHandler nodeCreateHandler;
+    private NodeUpdateHandler nodeUpdateHandler;
 
     @Mock
     private NodeDeleteHandler nodeDeleteHandler;
 
     @Mock
-    private NodeUpdateHandler nodeUpdateHandler;
+    private UtilPrngHandler utilPrngHandler;
 
     @Test
     void usesComponentsToGetHandlers() {

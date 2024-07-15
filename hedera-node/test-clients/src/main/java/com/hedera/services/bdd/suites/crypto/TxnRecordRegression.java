@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
+import static com.hedera.services.bdd.junit.TestTags.REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getReceipt;
@@ -26,7 +27,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifHapiTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ifNotEmbeddedTest;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.usableTxnIdNamed;
@@ -53,7 +53,7 @@ import org.junit.jupiter.api.Tag;
  * ! WARNING - Requires a RecordCache TTL of 3s to pass !
  *
  * <p>Even with a 3s TTL, a number of these tests fail. FUTURE: revisit
- * */
+ */
 @Tag(CRYPTO)
 public class TxnRecordRegression {
     @HapiTest
@@ -116,20 +116,15 @@ public class TxnRecordRegression {
         return hapiTest(getReceipt("").useDefaultTxnId().hasAnswerOnlyPrecheck(INVALID_TRANSACTION_ID));
     }
 
-    // (FUTURE) Re-enable once we have a way to manipulate time in the test network
+    @HapiTest
+    @Tag(REPEATABLE)
     final Stream<DynamicTest> receiptUnavailableAfterCacheTtl() {
-        return defaultHapiSpec("ReceiptUnavailableAfterCacheTtl")
-                .given()
-                .when()
-                .then(
-                        // This extra three minutes isn't worth adding to mono-service checks, but
-                        // especially as it fails now against mod-service, is worthwhile as HapiTest
-                        ifHapiTest(
-                                cryptoCreate("misc").via("success").balance(1_000L),
-                                sleepFor(181_000L),
-                                // Run a transaction to give receipt expiration a chance to occur
-                                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
-                                getReceipt("success").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND)));
+        return hapiTest(
+                cryptoCreate("misc").via("success").balance(1_000L),
+                sleepFor(181_000L),
+                // Run a transaction to give receipt expiration a chance to occur
+                cryptoTransfer(tinyBarsFromTo(GENESIS, FUNDING, 1L)),
+                getReceipt("success").hasAnswerOnlyPrecheck(RECEIPT_NOT_FOUND));
     }
 
     @HapiTest

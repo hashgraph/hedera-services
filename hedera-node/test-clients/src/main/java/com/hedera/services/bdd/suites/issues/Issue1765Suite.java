@@ -49,7 +49,7 @@ public class Issue1765Suite {
     private static final String IMAGINARY = "imaginary";
     private static final String MEMO_IS = "Turning and turning in the widening gyre";
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> recordOfInvalidContractUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_CONTRACT = IMAGINARY;
@@ -72,7 +72,7 @@ public class Issue1765Suite {
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> recordOfInvalidFileUpdateSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_FILE = IMAGINARY;
@@ -95,7 +95,7 @@ public class Issue1765Suite {
                                 .hasPriority(recordWith().memo(THE_MEMO_IS)));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> recordOfInvalidFileAppendSanityChecks() {
         final long ADEQUATE_FEE = 100_000_000L;
         final String INVALID_FILE = IMAGINARY;

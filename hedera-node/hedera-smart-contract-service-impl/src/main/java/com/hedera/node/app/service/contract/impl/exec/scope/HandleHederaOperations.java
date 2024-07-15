@@ -47,7 +47,6 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
@@ -128,14 +127,6 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public void revert() {
         context.savepointStack().rollback();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void revertRecordsFrom(RecordListCheckPoint checkpoint) {
-        context.recordBuilders().revertRecordsFrom(checkpoint);
     }
 
     /**
@@ -354,11 +345,6 @@ public class HandleHederaOperations implements HederaOperations {
     @Override
     public ContractID shardAndRealmValidated(@NonNull final ContractID contractId) {
         return configValidated(contractId, hederaConfig);
-    }
-
-    @Override
-    public RecordListCheckPoint createRecordListCheckPoint() {
-        return context.recordBuilders().createRecordListCheckPoint();
     }
 
     private enum ExternalizeInitcodeOnSuccess {

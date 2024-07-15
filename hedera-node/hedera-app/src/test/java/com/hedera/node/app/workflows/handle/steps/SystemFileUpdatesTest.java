@@ -129,7 +129,7 @@ class SystemFileUpdatesTest implements TransactionFactory {
         final var txBody = TransactionBody.newBuilder()
                 .cryptoTransfer(CryptoTransferTransactionBody.DEFAULT)
                 .build();
-        final var recordBuilder = new SingleTransactionRecordBuilderImpl(CONSENSUS_NOW);
+        final var recordBuilder = new SingleTransactionRecordBuilderImpl();
 
         // then
         assertThatCode(() -> subject.handleTxBody(state, txBody)).doesNotThrowAnyException();

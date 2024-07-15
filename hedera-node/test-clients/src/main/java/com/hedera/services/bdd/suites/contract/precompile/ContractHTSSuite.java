@@ -19,8 +19,11 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.google.protobuf.ByteString.copyFromUtf8;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
+import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoApproveAllowance;
@@ -46,7 +49,14 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
+import static com.hedera.services.bdd.suites.contract.hapi.ContractCallSuite.RECEIVER_2;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.TOKEN_TRANSFER_CONTRACT;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.TRANSFER_TOKEN_PUBLIC;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.KNOWABLE_TOKEN;
+import static com.hedera.services.bdd.suites.token.TokenAssociationSpecs.VANILLA_TOKEN;
+import static com.hedera.services.bdd.suites.token.TokenTransactSpecs.SUPPLY_KEY;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
@@ -56,13 +66,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -91,6 +105,186 @@ public class ContractHTSSuite {
     private static final String SECOND_RECEIVER = "second_receiver";
 
     private static final String UNIVERSAL_KEY = "multipurpose";
+
+    @HapiTest
+    final Stream<DynamicTest> transferDontWorkWithoutTopLevelSignatures() {
+        final var transferTokenTxn = "transferTokenTxn";
+        final var transferTokensTxn = "transferTokensTxn";
+        final var transferNFTTxn = "transferNFTTxn";
+        final var transferNFTsTxn = "transferNFTsTxn";
+        final var contract = TOKEN_TRANSFER_CONTRACT;
+
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaNftID = new AtomicReference<>();
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(RECEIVER),
+                cryptoCreate(RECEIVER_2),
+                tokenCreate(VANILLA_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .supplyKey(SUPPLY_KEY)
+                        .initialSupply(1_000)
+                        .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                tokenCreate(KNOWABLE_TOKEN)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .supplyKey(SUPPLY_KEY)
+                        .initialSupply(0)
+                        .exposingCreatedIdTo(id -> vanillaNftID.set(asToken(id))),
+                tokenAssociate(ACCOUNT, VANILLA_TOKEN, KNOWABLE_TOKEN),
+                tokenAssociate(RECEIVER, VANILLA_TOKEN, KNOWABLE_TOKEN),
+                tokenAssociate(RECEIVER_2, VANILLA_TOKEN, KNOWABLE_TOKEN),
+                mintToken(
+                        KNOWABLE_TOKEN,
+                        List.of(
+                                copyFromUtf8("dark"),
+                                copyFromUtf8("matter"),
+                                copyFromUtf8("dark1"),
+                                copyFromUtf8("matter1"))),
+                cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+                cryptoTransfer(movingUnique(KNOWABLE_TOKEN, 1, 2, 3, 4).between(TOKEN_TREASURY, ACCOUNT)),
+                uploadInitCode(contract),
+                contractCreate(contract).gas(500_000L),
+                // Do transfers by calling contract from EOA, and should be failing with
+                // CONTRACT_REVERT_EXECUTED
+                withOpContext((spec, opLog) -> {
+                    final var receiver1 =
+                            asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
+                    final var receiver2 =
+                            asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER_2)));
+                    final var sender =
+                            asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT)));
+                    final var amount = 5L;
+
+                    final var accounts = new Address[] {sender, receiver1, receiver2};
+                    final var amounts = new long[] {-10L, 5L, 5L};
+                    final var serials = new long[] {2L, 3L};
+                    final var serial = 1L;
+                    allRunFor(
+                            spec,
+                            contractCall(
+                                            contract,
+                                            TRANSFER_TOKEN_PUBLIC,
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
+                                            sender,
+                                            receiver1,
+                                            amount)
+                                    .payingWith(ACCOUNT)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                    .gas(GAS_TO_OFFER)
+                                    .via(transferTokenTxn),
+                            contractCall(
+                                            contract,
+                                            "transferTokensPublic",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
+                                            accounts,
+                                            amounts)
+                                    .payingWith(ACCOUNT)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                    .gas(GAS_TO_OFFER)
+                                    .via(transferTokensTxn),
+                            contractCall(
+                                            contract,
+                                            "transferNFTPublic",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(KNOWABLE_TOKEN))),
+                                            sender,
+                                            receiver1,
+                                            serial)
+                                    .payingWith(ACCOUNT)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                    .gas(GAS_TO_OFFER)
+                                    .via(transferNFTTxn),
+                            contractCall(
+                                            contract,
+                                            "transferNFTsPublic",
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(KNOWABLE_TOKEN))),
+                                            new Address[] {sender, sender},
+                                            new Address[] {receiver2, receiver2},
+                                            serials)
+                                    .payingWith(ACCOUNT)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                    .gas(GAS_TO_OFFER)
+                                    .via(transferNFTsTxn));
+                }),
+                // Confirm the transactions fails with no top level signatures enabled
+                childRecordsCheck(
+                        transferTokenTxn,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
+                childRecordsCheck(
+                        transferTokensTxn,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
+                childRecordsCheck(
+                        transferNFTTxn, CONTRACT_REVERT_EXECUTED, recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
+                childRecordsCheck(
+                        transferNFTsTxn,
+                        CONTRACT_REVERT_EXECUTED,
+                        recordWith().status(SPENDER_DOES_NOT_HAVE_ALLOWANCE)),
+                // Confirm the balances are correct
+                getAccountInfo(RECEIVER).hasOwnedNfts(0),
+                getAccountBalance(RECEIVER).hasTokenBalance(VANILLA_TOKEN, 0),
+                getAccountInfo(RECEIVER_2).hasOwnedNfts(0),
+                getAccountBalance(RECEIVER_2).hasTokenBalance(VANILLA_TOKEN, 0),
+                getAccountInfo(ACCOUNT).hasOwnedNfts(4),
+                getAccountBalance(ACCOUNT).hasTokenBalance(VANILLA_TOKEN, 500L));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> transferFailsWithIncorrectAmounts() {
+        final var transferTokenWithNegativeAmountTxn = "transferTokenWithNegativeAmountTxn";
+        final var contract = TOKEN_TRANSFER_CONTRACT;
+
+        final AtomicReference<AccountID> accountID = new AtomicReference<>();
+        final AtomicReference<TokenID> vanillaTokenID = new AtomicReference<>();
+        return hapiTest(
+                newKeyNamed(SUPPLY_KEY),
+                cryptoCreate(ACCOUNT).exposingCreatedIdTo(accountID::set),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(RECEIVER),
+                tokenCreate(VANILLA_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .supplyKey(SUPPLY_KEY)
+                        .initialSupply(1_000)
+                        .exposingCreatedIdTo(id -> vanillaTokenID.set(asToken(id))),
+                tokenAssociate(ACCOUNT, VANILLA_TOKEN),
+                tokenAssociate(RECEIVER, VANILLA_TOKEN),
+                cryptoTransfer(moving(500, VANILLA_TOKEN).between(TOKEN_TREASURY, ACCOUNT)),
+                uploadInitCode(contract),
+                contractCreate(contract).gas(500_000L),
+                withOpContext((spec, opLog) -> {
+                    final var receiver1 =
+                            asHeadlongAddress(asAddress(spec.registry().getAccountID(RECEIVER)));
+                    final var sender =
+                            asHeadlongAddress(asAddress(spec.registry().getAccountID(ACCOUNT)));
+
+                    allRunFor(
+                            spec,
+                            // Call tokenTransfer with a negative amount
+                            contractCall(
+                                            contract,
+                                            TRANSFER_TOKEN_PUBLIC,
+                                            HapiParserUtil.asHeadlongAddress(
+                                                    asAddress(spec.registry().getTokenID(VANILLA_TOKEN))),
+                                            sender,
+                                            receiver1,
+                                            -1L)
+                                    .payingWith(ACCOUNT)
+                                    .gas(GAS_TO_OFFER)
+                                    .via(transferTokenWithNegativeAmountTxn)
+                                    .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+                }),
+                childRecordsCheck(transferTokenWithNegativeAmountTxn, CONTRACT_REVERT_EXECUTED));
+    }
 
     @HapiTest
     final Stream<DynamicTest> nonZeroTransfersFail() {

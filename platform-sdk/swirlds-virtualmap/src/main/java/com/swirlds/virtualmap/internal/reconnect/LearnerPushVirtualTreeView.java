@@ -30,6 +30,7 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
@@ -42,9 +43,11 @@ import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Queue;
@@ -112,6 +115,8 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     private final RecordAccessor<K, V> originalRecords;
 
+    private final ReconnectMapStats mapStats;
+
     /**
      * True until we have handled our first leaf
      */
@@ -132,6 +137,8 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      * 		A {@link VirtualStateAccessor} for accessing state (first and last paths) from the
      * 		modified <strong>reconnect</strong> tree. We only use first and last leaf path from this state.
      * 		Cannot be null.
+     * @param mapStats
+     *      A ReconnectMapStats object to collect reconnect metrics
      */
     public LearnerPushVirtualTreeView(
             final ReconnectConfig reconnectConfig,
@@ -139,11 +146,13 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
             final RecordAccessor<K, V> originalRecords,
             final VirtualStateAccessor originalState,
             final VirtualStateAccessor reconnectState,
-            final ReconnectNodeRemover<K, V> nodeRemover) {
+            final ReconnectNodeRemover<K, V> nodeRemover,
+            @NonNull final ReconnectMapStats mapStats) {
         super(root, originalState, reconnectState);
         this.reconnectConfig = reconnectConfig;
         this.originalRecords = Objects.requireNonNull(originalRecords);
         this.nodeRemover = nodeRemover;
+        this.mapStats = mapStats;
     }
 
     @Override
@@ -160,7 +169,7 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
         out.start();
 
         final LearnerPushTask<Long> learnerThread = new LearnerPushTask<>(
-                workGroup, in, out, rootsToReceive, reconstructedRoot, this, learningSynchronizer);
+                workGroup, in, out, rootsToReceive, reconstructedRoot, this, learningSynchronizer, mapStats);
         learnerThread.start();
     }
 
@@ -337,5 +346,26 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
     @Override
     public Long convertMerkleRootToViewType(final MerkleNode node) {
         throw new UnsupportedOperationException("Nested virtual maps not supported");
+    }
+
+    private boolean isLeaf(final long path) {
+        return path >= reconnectState.getFirstLeafPath() && path <= reconnectState.getLastLeafPath();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void recordHashStats(
+            @NonNull final ReconnectMapStats mapStats,
+            @NonNull final Long parent,
+            final int childIndex,
+            final boolean nodeAlreadyPresent) {
+        final long childPath = Path.getChildPath(parent, childIndex);
+        if (isLeaf(childPath)) {
+            mapStats.incrementLeafHashes(1, nodeAlreadyPresent ? 1 : 0);
+        } else {
+            mapStats.incrementInternalHashes(1, nodeAlreadyPresent ? 1 : 0);
+        }
     }
 }

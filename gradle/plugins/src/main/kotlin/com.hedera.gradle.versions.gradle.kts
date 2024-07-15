@@ -24,5 +24,3 @@ plugins {
 group = "com.hedera.hashgraph"
 
 javaPlatform { allowDependencies() }
-
-tasks.register("releaseMavenCentral")

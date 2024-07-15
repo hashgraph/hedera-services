@@ -16,10 +16,9 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -39,9 +38,9 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -52,17 +51,14 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_CONTRACT_SENDER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PROPS;
-import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.THREE_MONTHS_IN_SECONDS;
-import static com.hedera.services.bdd.suites.HapiSuite.TRUE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.captureChildCreate2MetaFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
-import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.EXPIRATION_REDUCTION_NOT_ALLOWED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ADMIN_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
@@ -70,22 +66,22 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_MAX_AU
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ZERO_BYTE_IN_STRING;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
+import com.hedera.services.bdd.spec.utilops.RunnableOp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -94,10 +90,7 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 public class ContractUpdateSuite {
-    private static final long DEFAULT_MAX_LIFETIME =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
     private static final long ONE_DAY = 60L * 60L * 24L;
-    private static final long ONE_MONTH = 30 * ONE_DAY;
     public static final String ADMIN_KEY = "adminKey";
     public static final String NEW_ADMIN_KEY = "newAdminKey";
     private static final String CONTRACT = "Multipurpose";
@@ -266,22 +259,26 @@ public class ContractUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updatingExpiryWorks() {
-        final var newExpiry = Instant.now().getEpochSecond() + 5 * ONE_MONTH;
+        final var someValidExpiry = new AtomicLong();
         return defaultHapiSpec("UpdatingExpiryWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
-                .when(contractUpdate(CONTRACT).newExpirySecs(newExpiry))
-                .then(getContractInfo(CONTRACT).has(contractWith().expiry(newExpiry)));
+                .given(
+                        new RunnableOp(() ->
+                                someValidExpiry.set(Instant.now().getEpochSecond() + THREE_MONTHS_IN_SECONDS + 123L)),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT))
+                .when(sourcing(() -> contractUpdate(CONTRACT).newExpirySecs(someValidExpiry.get())))
+                .then(sourcing(
+                        () -> getContractInfo(CONTRACT).has(contractWith().expiry(someValidExpiry.get()))));
     }
 
     @HapiTest
     final Stream<DynamicTest> rejectsExpiryTooFarInTheFuture() {
-        final var smallBuffer = 12_345L;
-        final var excessiveExpiry = DEFAULT_MAX_LIFETIME + Instant.now().getEpochSecond() + smallBuffer;
-
         return defaultHapiSpec("RejectsExpiryTooFarInTheFuture", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(uploadInitCode(CONTRACT), contractCreate(CONTRACT))
                 .when()
-                .then(contractUpdate(CONTRACT).newExpirySecs(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME));
+                .then(doWithStartupConfigNow("entities.maxLifetime", (value, now) -> contractUpdate(CONTRACT)
+                        .newExpirySecs(now.getEpochSecond() + Long.parseLong(value) + 12345L)
+                        .hasKnownStatus(INVALID_EXPIRATION_TIME)));
     }
 
     @HapiTest
@@ -392,8 +389,8 @@ public class ContractUpdateSuite {
     final Stream<DynamicTest> fridayThe13thSpec() {
         final var contract = "SimpleStorage";
         final var suffix = "Clone";
-        final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
-        final var betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 3;
+        final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() + 200;
+        final var betterExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() + 300;
         final var INITIAL_MEMO = "This is a memo string with only Ascii characters";
         final var NEW_MEMO = "Turning and turning in the widening gyre, the falcon cannot hear the falconer...";
         final var BETTER_MEMO = "This was Mr. Bleaney's room...";
@@ -504,57 +501,27 @@ public class ContractUpdateSuite {
                 }));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
-    final Stream<DynamicTest> cannotUpdateMaxAutomaticAssociations() {
-        return propertyPreservingHapiSpec("cannotUpdateMaxAutomaticAssociations")
-                .preserving("contracts.allowAutoAssociations")
-                .given(
-                        overriding("contracts.allowAutoAssociations", FALSE_VALUE),
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
-                .when()
-                .then(contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).hasKnownStatus(NOT_SUPPORTED));
-    }
-
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"ledger.maxAutoAssociations"})
     final Stream<DynamicTest> tryContractUpdateWithMaxAutoAssociations() {
-        return propertyPreservingHapiSpec("tryContractUpdateWithMaxAutoAssociations")
-                .preserving(
-                        "contracts.allowAutoAssociations",
-                        "ledger.maxAutoAssociations",
-                        UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
-                .given(
-                        overridingThree(
-                                UNLIMITED_AUTO_ASSOCIATIONS_ENABLED,
-                                TRUE_VALUE,
-                                "contracts.allowAutoAssociations",
-                                TRUE_VALUE,
-                                "ledger.maxAutoAssociations",
-                                "5000"),
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
-                .when()
-                .then(
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(-2)
-                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(-200)
-                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(5001)
-                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
-                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
-                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)),
-                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(0).hasKnownStatus(SUCCESS),
-                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(5000)
-                                .hasKnownStatus(SUCCESS),
-                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(5000)));
+        return hapiTest(
+                overriding("ledger.maxAutoAssociations", "5000"),
+                newKeyNamed(ADMIN_KEY),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).adminKey(ADMIN_KEY),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(-2).hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                contractUpdate(CONTRACT)
+                        .newMaxAutomaticAssociations(-200)
+                        .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                contractUpdate(CONTRACT)
+                        .newMaxAutomaticAssociations(5001)
+                        .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(0).hasKnownStatus(SUCCESS),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(5000).hasKnownStatus(SUCCESS),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(5000)));
     }
 
     @HapiTest
