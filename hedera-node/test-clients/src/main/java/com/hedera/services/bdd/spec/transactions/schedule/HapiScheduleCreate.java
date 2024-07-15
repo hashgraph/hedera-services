@@ -58,9 +58,6 @@ import org.apache.logging.log4j.Logger;
 public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiScheduleCreate<T>> {
     private static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
 
-    private static final int defaultScheduleTxnExpiry =
-            HapiSpecSetup.getDefaultNodeProps().getInteger("ledger.schedule.txExpiryTimeSecs");
-
     private boolean advertiseCreation = false;
     private boolean recordScheduledTxn = false;
     private boolean skipRegistryUpdate = false;
@@ -242,8 +239,10 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
     @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+        final var defaultExpiry =
+                spec.targetNetworkOrThrow().startupProperties().getInteger("ledger.schedule.txExpiryTimeSecs");
         FeeCalculator.ActivityMetrics metricsCalc =
-                (_txn, svo) -> scheduleOpsUsage.scheduleCreateUsage(_txn, suFrom(svo), defaultScheduleTxnExpiry);
+                (_txn, svo) -> scheduleOpsUsage.scheduleCreateUsage(_txn, suFrom(svo), defaultExpiry);
 
         return spec.fees().forActivityBasedOp(HederaFunctionality.ScheduleCreate, metricsCalc, txn, numPayerKeys);
     }

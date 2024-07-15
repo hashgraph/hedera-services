@@ -65,7 +65,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;

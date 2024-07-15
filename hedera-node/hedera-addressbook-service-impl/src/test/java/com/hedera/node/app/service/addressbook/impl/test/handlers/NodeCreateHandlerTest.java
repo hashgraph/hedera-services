@@ -405,7 +405,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
         given(handleContext.configuration()).willReturn(config);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_SERVICE_ENDPOINT, msg.getStatus());
+        assertEquals(ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT, msg.getStatus());
     }
 
     @Test
@@ -564,7 +564,7 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
 
     @Test
     @DisplayName("check that fees are 1 for delete node trx")
-    public void testCalculateFeesInvocations() {
+    void testCalculateFeesInvocations() {
         final var feeCtx = mock(FeeContext.class);
         final var feeCalcFact = mock(FeeCalculatorFactory.class);
         final var feeCalc = mock(FeeCalculator.class);

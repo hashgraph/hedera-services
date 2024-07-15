@@ -34,7 +34,6 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.util;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
-    requires com.swirlds.fcqueue;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;

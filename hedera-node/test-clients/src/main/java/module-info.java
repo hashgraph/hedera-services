@@ -3,7 +3,6 @@ module com.hedera.node.test.clients {
     exports com.hedera.services.bdd.spec.utilops.inventory;
     exports com.hedera.services.bdd.suites;
     exports com.hedera.services.bdd.suites.utils.sysfiles.serdes;
-    exports com.hedera.services.bdd;
     exports com.hedera.services.bdd.spec;
     exports com.hedera.services.bdd.spec.infrastructure;
     exports com.hedera.services.bdd.spec.props;
@@ -42,6 +41,7 @@ module com.hedera.node.test.clients {
     requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.test.fixtures;
     requires transitive com.hedera.node.app;
+    requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.platform.core;
@@ -63,7 +63,6 @@ module com.hedera.node.test.clients {
     requires com.hedera.node.app.service.token.impl;
     requires com.hedera.node.app.service.token;
     requires com.hedera.node.app.spi.test.fixtures;
-    requires com.hedera.node.config;
     requires com.swirlds.base.test.fixtures;
     requires com.swirlds.base;
     requires com.swirlds.config.api;

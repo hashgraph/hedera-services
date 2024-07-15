@@ -384,7 +384,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionBody childTxnBody,
             @NonNull final Class<T> recordBuilderClass,
             @Nullable final Predicate<Key> childCallback,
-            final AccountID childSyntheticPayerId) {
+            @NonNull final AccountID childSyntheticPayerId) {
         requireNonNull(childTxnBody, "childTxnBody must not be null");
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         requireNonNull(childSyntheticPayerId, "childSyntheticPayerId must not be null");

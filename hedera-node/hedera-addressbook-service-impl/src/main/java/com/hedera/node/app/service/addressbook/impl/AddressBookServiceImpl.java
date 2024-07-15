@@ -18,7 +18,7 @@ package com.hedera.node.app.service.addressbook.impl;
 
 import com.hedera.node.app.service.addressbook.AddressBookService;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
-import com.hedera.node.app.service.addressbook.impl.schemas.V052AddressBookSchema;
+import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.spi.RpcService;
 import com.hedera.node.app.spi.store.ReadableStoreDefinition;
 import com.hedera.node.app.spi.store.WritableStoreDefinition;
@@ -34,7 +34,7 @@ public final class AddressBookServiceImpl implements AddressBookService {
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new V052AddressBookSchema());
+        registry.register(new V053AddressBookSchema());
     }
 
     @Override

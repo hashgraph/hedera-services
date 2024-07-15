@@ -23,8 +23,7 @@ import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.hadCo
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
-import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.rm;
-import static com.hedera.services.bdd.suites.TargetNetworkType.SUBPROCESS_NETWORK;
+import static com.hedera.services.bdd.spec.TargetNetworkType.SUBPROCESS_NETWORK;
 import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
 import static com.swirlds.common.io.utility.FileUtils.rethrowIO;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
@@ -38,8 +37,10 @@ import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.TargetNetworkType;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
-import com.hedera.services.bdd.suites.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
@@ -53,6 +54,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -139,7 +141,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
      */
     @Override
     public void terminate() {
-        nodes.forEach(HederaNode::terminate);
+        nodes.forEach(HederaNode::stopFuture);
     }
 
     /**
@@ -154,10 +156,14 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
                 var bindException = false;
                 do {
                     if (bindException) {
+                        log.warn("Bind exception detected, retrying network initialization");
                         // Completely rebuild the network and try again
-                        nodes.forEach(hederaNode -> {
-                            hederaNode.terminate();
-                            rm(hederaNode.metadata().workingDirOrThrow());
+                        nodes.forEach(node -> {
+                            node.stopFuture()
+                                    .orTimeout(ProcessUtils.STOP_TIMEOUT.getSeconds(), TimeUnit.SECONDS)
+                                    .join();
+                            // Begins by deleting the working directory
+                            node.initWorkingDir(configTxt);
                         });
                         assignNewPorts();
                         clients = null;
@@ -220,7 +226,7 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         requireNonNull(selector);
         requireNonNull(upgradeConfigTxt);
         final var node = getRequiredNode(selector);
-        node.terminate();
+        node.stopFuture();
         nodes.remove(node);
         configTxt = switch (upgradeConfigTxt) {
             case IMPLIED_BY_NETWORK_NODES -> configTxtForLocal(networkName, nodes, nextGossipPort, nextGossipTlsPort);
@@ -287,6 +293,11 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
     public ServiceEndpoint grpcEndpointForNextNodeId() {
         final var nextNodeId = maxNodeId + 1;
         return endpointFor(nextGrpcPort + (int) nextNodeId * 2);
+    }
+
+    @Override
+    protected HapiPropertySource networkOverrides() {
+        return WorkingDirUtils.hapiTestStartupProperties();
     }
 
     /**
@@ -368,7 +379,13 @@ public class SubProcessNetwork extends AbstractGrpcNetwork implements HederaNetw
         initializeNextPortsForNetwork(size, randomPortAfter(FIRST_CANDIDATE_PORT, size * PORTS_PER_NODE));
     }
 
-    private static void initializeNextPortsForNetwork(final int size, final int firstGrpcPort) {
+    /**
+     * Initializes the next ports for the network with the given size and first gRPC port.
+     *
+     * @param size the number of nodes in the network
+     * @param firstGrpcPort the first gRPC port
+     */
+    public static void initializeNextPortsForNetwork(final int size, final int firstGrpcPort) {
         // Suppose firstGrpcPort is 10000 with 4 nodes in the network, then:
         //   - nextGrpcPort = 10000
         //   - nextGossipPort = 10008

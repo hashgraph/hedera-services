@@ -17,6 +17,8 @@
 package com.hedera.node.app.workflows.handle.steps;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.workflows.handle.record.RecordListBuilder.IsGenesisTxn.NO;
+import static com.hedera.node.app.workflows.handle.record.RecordListBuilder.IsGenesisTxn.YES;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
@@ -108,9 +110,10 @@ public record UserTxn(
         final var preHandleResult =
                 handleWorkflow.getCurrentPreHandleResult(creatorInfo, platformTxn, readableStoreFactory);
         final var txnInfo = requireNonNull(preHandleResult.txInfo());
-        final var recordListBuilder = new RecordListBuilder(consensusNow);
+        final var isGenesisTxn = lastHandledConsensusTime.equals(Instant.EPOCH);
+        final var recordListBuilder = new RecordListBuilder(consensusNow, isGenesisTxn ? YES : NO);
         return new UserTxn(
-                lastHandledConsensusTime.equals(Instant.EPOCH),
+                isGenesisTxn,
                 txnInfo.functionality(),
                 consensusNow,
                 state,

@@ -47,9 +47,9 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
@@ -116,6 +116,7 @@ public class TxnUtils {
 
     private static final Pattern ID_LITERAL_PATTERN = Pattern.compile("\\d+[.]\\d+[.]\\d+");
     private static final Pattern NUMERIC_LITERAL_PATTERN = Pattern.compile("\\d+");
+    private static final Pattern POSNEG_NUMERIC_LITERAL_PATTERN = Pattern.compile("^-?\\d+");
     private static final int BANNER_WIDTH = 80;
     private static final int BANNER_BOUNDARY_THICKNESS = 2;
     // Wait just a bit longer than the 2-second block period to be certain we've ended the period
@@ -203,6 +204,10 @@ public class TxnUtils {
         return NUMERIC_LITERAL_PATTERN.matcher(s).matches();
     }
 
+    public static boolean isPosNegNumericLiteral(final String s) {
+        return POSNEG_NUMERIC_LITERAL_PATTERN.matcher(s).matches();
+    }
+
     public static AccountID asId(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s) ? asAccount(s) : lookupSpec.registry().getAccountID(s);
     }
@@ -249,6 +254,12 @@ public class TxnUtils {
 
     public static long asNodeIdLong(final String s, final HapiSpec lookupSpec) {
         return isNumericLiteral(s)
+                ? asEntityNumber(s).getNumber()
+                : lookupSpec.registry().getNodeId(s).getNumber();
+    }
+
+    public static long asPosNodeId(final String s, final HapiSpec lookupSpec) {
+        return isPosNegNumericLiteral(s)
                 ? asEntityNumber(s).getNumber()
                 : lookupSpec.registry().getNodeId(s).getNumber();
     }
@@ -682,7 +693,7 @@ public class TxnUtils {
     }
 
     public static void triggerAndCloseAtLeastOneFile(@NonNull final HapiSpec spec) throws InterruptedException {
-        Thread.sleep(END_OF_BLOCK_PERIOD_SLEEP_PERIOD.toMillis());
+        spec.sleepConsensusTime(END_OF_BLOCK_PERIOD_SLEEP_PERIOD);
         // Should trigger a new record to be written if we have crossed a 2-second boundary
         final var triggerOp = TxnVerbs.cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
                 .deferStatusResolution()
@@ -695,7 +706,7 @@ public class TxnUtils {
         doIfNotInterrupted(() -> {
             triggerAndCloseAtLeastOneFile(spec);
             log.info("Sleeping a bit to give the record stream a chance to close");
-            Thread.sleep(BLOCK_CREATION_SLEEP_PERIOD.toMillis());
+            spec.sleepConsensusTime(BLOCK_CREATION_SLEEP_PERIOD);
         });
     }
 

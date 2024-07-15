@@ -108,8 +108,11 @@ public class PictureMetadata {
         return (event == null) ? -100 : (int) (ymax - r * (1 + 2 * (event.getGeneration() - minGen)));
     }
 
-    public double getR() {
-        return r;
+    /**
+     * @return the diameter of a circle representing an event
+     */
+    public int getD() {
+        return (int) (2 * r);
     }
 
     public int getYmax() {

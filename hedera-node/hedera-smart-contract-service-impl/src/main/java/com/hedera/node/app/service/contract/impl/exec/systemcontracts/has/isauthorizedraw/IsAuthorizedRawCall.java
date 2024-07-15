@@ -109,7 +109,7 @@ public class IsAuthorizedRawCall extends AbstractCall {
                 };
 
         // Prepare the short-circuit error status returns
-        final Function<ResponseCodeEnum, PricedResult> bail = rce -> reversionWith(rce, gasRequirement);
+        final Function<ResponseCodeEnum, PricedResult> bail = rce -> reversionWith(rce, frame.getRemainingGas());
 
         // Must have a valid signature type to continue
         if (signatureType == SignatureType.INVALID)
