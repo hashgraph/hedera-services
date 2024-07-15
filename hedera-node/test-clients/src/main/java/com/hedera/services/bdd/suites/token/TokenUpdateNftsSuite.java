@@ -90,8 +90,8 @@ public class TokenUpdateNftsSuite {
      * @return the dynamic test
      */
     @HapiTest
-    final Stream<DynamicTest> failsIfNoMetadataKeyOrSupplyKey() {
-        return defaultHapiSpec("failsIfNoMetadataKeyOrSupplyKey")
+    final Stream<DynamicTest> failsIfNoMetadataKeyOrSupplyKeySigns() {
+        return defaultHapiSpec("failsIfNoMetadataKeyOrSupplyKeySigns")
                 .given(
                         newKeyNamed(SUPPLY_KEY),
                         newKeyNamed(METADATA_KEY),
