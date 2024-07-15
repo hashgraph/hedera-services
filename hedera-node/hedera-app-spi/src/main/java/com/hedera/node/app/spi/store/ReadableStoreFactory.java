@@ -16,11 +16,10 @@
 
 package com.hedera.node.app.spi.store;
 
-import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Factory for all readable stores. It creates new readable stores based on the {@link HederaState}.
+ * Factory for all readable stores.
  */
 public interface ReadableStoreFactory {
 
