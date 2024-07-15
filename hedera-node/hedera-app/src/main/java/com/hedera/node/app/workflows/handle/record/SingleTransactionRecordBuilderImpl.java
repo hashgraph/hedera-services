@@ -308,6 +308,7 @@ public class SingleTransactionRecordBuilderImpl
         assessedCustomFees.clear();
 
         newTotalSupply = 0L;
+        transactionFee = 0L;
         contractFunctionResult = null;
 
         transactionReceiptBuilder.accountID((AccountID) null);
