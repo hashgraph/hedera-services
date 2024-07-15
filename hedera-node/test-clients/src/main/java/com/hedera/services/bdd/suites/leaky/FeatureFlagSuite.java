@@ -17,8 +17,7 @@
 package com.hedera.services.bdd.suites.leaky;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
@@ -69,21 +68,21 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 public class FeatureFlagSuite {
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(
+            overrides = {
+                "autoCreation.enabled",
+                "utilPrng.isEnabled",
+                "tokens.autoCreations.isEnabled",
+                "lazyCreation.enabled"
+            })
     final Stream<DynamicTest> disableAllFeatureFlagsAndConfirmNotSupported() {
-        return propertyPreservingHapiSpec("disableAllFeatureFlagsAndConfirmNotSupported")
-                .preserving(
-                        "autoCreation.enabled",
-                        "utilPrng.isEnabled",
-                        "tokens.autoCreations.isEnabled",
-                        "lazyCreation.enabled")
-                .given(overridingAllOf(Map.of(
+        return hapiTest(
+                overridingAllOf(Map.of(
                         "autoCreation.enabled", "false",
                         "utilPrng.isEnabled", "false",
                         "tokens.autoCreations.isEnabled", "false",
-                        "lazyCreation.enabled", "false")))
-                .when()
-                .then(inParallel(
+                        "lazyCreation.enabled", "false")),
+                inParallel(
                                 confirmAutoCreationNotSupported(),
                                 confirmUtilPrngNotSupported(),
                                 confirmKeyAliasAutoCreationNotSupported(),

@@ -76,7 +76,7 @@ public class CryptoDeleteSuite {
                         .transfer(TRANSFER_ACCOUNT)));
     }
 
-    @LeakyHapiTest(ContextRequirement.SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = ContextRequirement.SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> deletedAccountCannotBePayer() {
         final var submittingNodeAccount = "0.0.3";
         final var beneficiaryAccount = "beneficiaryAccountForDeletedAccount";

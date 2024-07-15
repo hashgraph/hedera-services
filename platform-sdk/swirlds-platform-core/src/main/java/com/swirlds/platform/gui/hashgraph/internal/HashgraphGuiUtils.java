@@ -77,12 +77,19 @@ public final class HashgraphGuiUtils {
         if (!event.isWitness()) {
             return event.isConsensus() ? HashgraphGuiConstants.DARK_GRAY : HashgraphGuiConstants.LIGHT_GRAY;
         }
+        // after this point, we know the event is a witness
         if (!event.isFameDecided()) {
             return event.isConsensus() ? HashgraphGuiConstants.DARK_RED : HashgraphGuiConstants.LIGHT_RED;
+        }
+        // after this point, we know the event is a witness and fame is decided
+        if (event.isJudge()) {
+            return event.isConsensus() ? HashgraphGuiConstants.DARK_BLUE : HashgraphGuiConstants.LIGHT_BLUE;
         }
         if (event.isFamous()) {
             return event.isConsensus() ? HashgraphGuiConstants.DARK_GREEN : HashgraphGuiConstants.LIGHT_GREEN;
         }
-        return event.isConsensus() ? HashgraphGuiConstants.DARK_BLUE : HashgraphGuiConstants.LIGHT_BLUE;
+
+        // if we reached here, it means the event is a witness, fame is decided, but it is not famous
+        return event.isConsensus() ? HashgraphGuiConstants.DARK_YELLOW : HashgraphGuiConstants.LIGHT_YELLOW;
     }
 }

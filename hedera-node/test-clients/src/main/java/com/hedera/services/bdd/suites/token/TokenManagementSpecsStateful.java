@@ -16,10 +16,9 @@
 
 package com.hedera.services.bdd.suites.token;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -95,23 +94,20 @@ public class TokenManagementSpecsStateful {
                         .logged());
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"tokens.nfts.maxAllowedMints"})
     final Stream<DynamicTest> nftMintingCapIsEnforced() {
-        return propertyPreservingHapiSpec("NftMintingCapIsEnforced")
-                .preserving("tokens.nfts.maxAllowedMints")
-                .given(
-                        newKeyNamed("supplyKey"),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .initialSupply(0)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .supplyKey("supplyKey"),
-                        mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Why not?"))))
-                .when(overriding("tokens.nfts.maxAllowedMints", "1"))
-                .then(
-                        mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Again, why not?")))
-                                .hasKnownStatus(MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED),
-                        restoreDefault("tokens.nfts.maxAllowedMints"),
-                        mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Again, why not?"))));
+        return hapiTest(
+                newKeyNamed("supplyKey"),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .initialSupply(0)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyType(TokenSupplyType.INFINITE)
+                        .supplyKey("supplyKey"),
+                mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Why not?"))),
+                overriding("tokens.nfts.maxAllowedMints", "1"),
+                mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Again, why not?")))
+                        .hasKnownStatus(MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED),
+                restoreDefault("tokens.nfts.maxAllowedMints"),
+                mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Again, why not?"))));
     }
 }

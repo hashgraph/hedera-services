@@ -115,7 +115,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
     }
 
     @Test
-    @DisplayName("pureChecks fail when gossipCaCertificate empty")
+    @DisplayName("invalid adminKey fail")
     void adminKeyInvalid() {
         txn = new NodeUpdateBuilder()
                 .withNodeId(1)
@@ -291,7 +291,7 @@ class NodeUpdateHandlerTest extends AddressBookTestBase {
         given(handleContext.configuration()).willReturn(config);
 
         final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
-        assertEquals(ResponseCodeEnum.INVALID_SERVICE_ENDPOINT, msg.getStatus());
+        assertEquals(ResponseCodeEnum.SERVICE_ENDPOINTS_EXCEEDED_LIMIT, msg.getStatus());
     }
 
     @Test

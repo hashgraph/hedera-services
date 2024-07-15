@@ -24,7 +24,7 @@ import com.hedera.node.app.statedumpers.utils.FieldBuilder;
 import com.hedera.node.app.statedumpers.utils.ThingsToStrings;
 import com.hedera.node.app.statedumpers.utils.Writer;
 import com.swirlds.base.utility.Pair;
-import com.swirlds.platform.state.merkle.queue.QueueNode;
+import com.swirlds.state.merkle.queue.QueueNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.file.Path;
 import java.util.ArrayList;

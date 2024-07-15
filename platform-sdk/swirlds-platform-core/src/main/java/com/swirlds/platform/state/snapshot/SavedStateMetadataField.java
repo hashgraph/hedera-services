@@ -76,13 +76,5 @@ public enum SavedStateMetadataField {
     /**
      * The total weight of all nodes in the network.
      */
-    TOTAL_WEIGHT,
-    /**
-     * The epoch hash of the state. Used by emergency recovery protocols.
-     */
-    EPOCH_HASH,
-    /**
-     * The epoch hash of the state in mnemonic form.
-     */
-    EPOCH_HASH_MNEMONIC
+    TOTAL_WEIGHT
 }

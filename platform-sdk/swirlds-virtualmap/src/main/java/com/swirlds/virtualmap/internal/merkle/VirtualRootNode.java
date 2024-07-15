@@ -51,6 +51,7 @@ import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.impl.internal.AbstractMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
@@ -1456,7 +1457,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      * {@inheritDoc}
      */
     @Override
-    public LearnerTreeView<Long> buildLearnerView(final ReconnectConfig reconnectConfig) {
+    public LearnerTreeView<Long> buildLearnerView(
+            final ReconnectConfig reconnectConfig, @NonNull final ReconnectMapStats mapStats) {
         assert originalMap != null;
         // During reconnect we want to look up state from the original records
         final VirtualStateAccessor originalState = originalMap.getState();
@@ -1464,7 +1466,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                 originalMap.getRecords(), originalState.getFirstLeafPath(), originalState.getLastLeafPath());
         return switch (config.reconnectMode()) {
             case VirtualMapReconnectMode.PUSH -> new LearnerPushVirtualTreeView<>(
-                    reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover);
+                    reconnectConfig, this, originalMap.records, originalState, reconnectState, nodeRemover, mapStats);
             case VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM -> {
                 final NodeTraversalOrder topToBottom = new TopToBottomTraversalOrder();
                 yield new LearnerPullVirtualTreeView<>(
@@ -1474,7 +1476,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         originalState,
                         reconnectState,
                         nodeRemover,
-                        topToBottom);
+                        topToBottom,
+                        mapStats);
             }
             case VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC -> {
                 final NodeTraversalOrder twoPhasePessimistic = new TwoPhasePessimisticTraversalOrder();
@@ -1485,7 +1488,8 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         originalState,
                         reconnectState,
                         nodeRemover,
-                        twoPhasePessimistic);
+                        twoPhasePessimistic,
+                        mapStats);
             }
             default -> throw new UnsupportedOperationException("Unknown reconnect mode: " + config.reconnectMode());
         };
