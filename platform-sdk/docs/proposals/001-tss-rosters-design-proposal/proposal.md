@@ -383,17 +383,20 @@ void startPlatform(final State state) {
 
 In a fully Dynamic Address Book (DAB) where, say, the roster for round 101 might be different from the roster for round
 102, there is a need to track what roster is used for each non-ancient round.
-We propose the introduction of a queue of active roster hashes in the state, where the index of a roster hash determines
+We propose the introduction of a queue of roster hashes stored in the state, where the index of a roster hash determines
 what round the roster is active for as shown.
 ![](TSS%20Roster%20Lifecycle-Roster%20and%20Rounds.drawio.svg)
-The size of this queue would be ancient round window + roster offset (where roster offset is the number of rounds in
-advance that we declare what a round's roster will be).
+The size of this queue would be ancient round window + roster offset.
+The roster offset refers to the number of rounds in advance that the network determines and declares the active roster
+for a specific future round.
+This acts as a proactive mechanism that allows the network to prepare for upcoming changes in the roster and ensure a
+valid transition to a future roster.
 When each round is handled, we will pop off the active roster hash for the round that just became ancient, and add a new
 active roster hash for a new future round.
 
 Before full DAB (DAB Phase 2.5), we propose to store the current and previous active rosters in this newly introduced
 queue of hashes.
-In the initial implementation of this proposal, the queue would contain only 2 hashes, with the first hash representing
+In the DAB Phase 2.5 implementation, this queue will contain only 2 hashes, with the first hash representing
 the previous active roster, and the second hash representing the current active roster.
 At upgrade boundaries, we will pop off the previous active roster, and add a new roster to the end of the queue, which
 is the new active roster.
