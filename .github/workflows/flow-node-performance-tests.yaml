@@ -113,7 +113,7 @@ jobs:
         run: |
           curl -X POST 'https://ci.preprod.hedera-devops.com/generic-webhook-trigger/invoke?token=${{ secrets.JENKINS_RESTORE_BACKUP }}&command=/devops-restore-backup&text=gs%3A%2F%2Fchillybin%2Fengnet1-state%2Fengnet1-node00%2F${{ vars.GS_STATE }}&user_id=${{ vars.SLACK_ID }}&user_name=${{ vars.SLACK_USER }}&channel_id=${{ vars.DEVOP_CHANNEL_ID }}&channel_name=${{ vars.DEVOP_CHANNEL_NAME }}'
           echo "Sleep 18 minutes for network to load"
-          sleep 18m
+          sleep 20m
 
       - name: Run LogCLI to Wait for Network Active Again
         id: run-logcli-wait-network-active-again
