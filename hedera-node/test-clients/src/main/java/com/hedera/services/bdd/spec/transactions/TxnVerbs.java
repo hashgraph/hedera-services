@@ -689,7 +689,6 @@ public class TxnVerbs {
         return new HapiPartitionDelete(token);
     }
 
-
     public static TokenDefOperation fungibleTokenWithFeatures(@NonNull final TokenFeature... features) {
         return fungibleTokenWithFeatures(TOKEN_UNDER_TEST, features);
     }
