@@ -21,6 +21,7 @@ import static org.junit.platform.commons.support.AnnotationSupport.isAnnotated;
 
 import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
@@ -58,6 +59,9 @@ public class NetworkTargetingExtension implements BeforeEachCallback, AfterEachC
                 if (isAnnotated(method, LeakyHapiTest.class)) {
                     HapiSpec.PROPERTIES_TO_PRESERVE.set(
                             List.of(method.getAnnotation(LeakyHapiTest.class).overrides()));
+                } else if (isAnnotated(method, LeakyEmbeddedHapiTest.class)) {
+                    HapiSpec.PROPERTIES_TO_PRESERVE.set(List.of(
+                            method.getAnnotation(LeakyEmbeddedHapiTest.class).overrides()));
                 }
             }
         });
