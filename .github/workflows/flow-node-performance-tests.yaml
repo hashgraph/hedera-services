@@ -28,7 +28,7 @@ env:
   TEST_SCRIPT: ".github/workflows/support/scripts/nightly.sh"
   CHECK_ACTIVE: ".github/workflows/support/scripts/loki-logs.sh"
   VERSION_MIRRORNODE : "custom"
-  K8S_CLUSTER : "gke_hedera-testing-1_us-central1-a_sandbox-perfnet6"
+  K8S_CLUSTER : "gke_hedera-testing-1_us-south1-c_nightly-perfnet"
 
   USERNAME: ${{ secrets.TESTING_JENKINS_API_USERNAME }}
   PASSWORD: ${{ secrets.TESTING_JENKINS_API_PASSWORD }}
@@ -106,6 +106,7 @@ jobs:
           unzip logcli-linux-amd64.zip
           chmod a+x logcli-linux-amd64
           bash "${{ github.workspace }}/${{ env.CHECK_ACTIVE }}" engnet1 7 3 600 "${{ github.workspace }}/logcli-linux-amd64" 0
+          sleep 9m
 
       - name: Restore Old Signed State
         id: restore-old-signed-state
