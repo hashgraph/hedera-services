@@ -346,8 +346,10 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             if (rounds.isLastDecidedJudge(insertedEvent)
                     && round(insertedEvent.getSelfParent()) == ConsensusConstants.ROUND_NEGATIVE_INFINITY
                     && round(insertedEvent.getOtherParent()) == ConsensusConstants.ROUND_NEGATIVE_INFINITY) {
-                // If an event was a judge in the last round decided, we leave all of its metadata
-                // intact.
+                // If an event was a judge in the last round decided AND is not a descendant of any other judge in
+                // this round, we leave all of its metadata intact. We know that it is not a descendant of any other
+                // judge in this round if all of its parents have a round of -infinity.
+                //
                 // Its round must stay intact so that descendants can determine their round numbers.
                 // We don't call calculateAndVote() for this event because:
                 // - its metadata will be unchanged
