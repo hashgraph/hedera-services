@@ -61,7 +61,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Uptime Tests")
 class UptimeTests {
 
-    private static List<EventImpl> generateEvents(
+    private static List<PlatformEvent> generateEvents(
             @NonNull final Random random,
             @NonNull final FakeTime time,
             @NonNull final Duration roundDuration,
@@ -70,7 +70,7 @@ class UptimeTests {
             @NonNull Set<NodeId> noEvents,
             @NonNull Set<NodeId> noJudges) {
 
-        final List<EventImpl> events = new ArrayList<>(count);
+        final List<PlatformEvent> events = new ArrayList<>(count);
         final Set<NodeId> firstEventCreated = new HashSet<>();
         while (events.size() < count) {
 
@@ -82,26 +82,25 @@ class UptimeTests {
                     .setCreatorId(nodeId)
                     .setConsensusTimestamp(time.now())
                     .build();
-            final EventImpl event = new EventImpl(platformEvent, null, null);
 
             if (!noJudges.contains(nodeId) && firstEventCreated.add(nodeId)) {
-                event.setFamous(true);
-                event.setJudgeTrue();
+                //event.setFamous(true);
+                //event.setJudgeTrue();
                 firstEventCreated.add(nodeId);
             }
             time.tick(roundDuration.dividedBy(count));
 
-            events.add(event);
+            events.add(platformEvent);
         }
 
         return events;
     }
 
-    private static ConsensusRound mockRound(@NonNull final List<EventImpl> events, final long roundNum) {
+    private static ConsensusRound mockRound(@NonNull final List<PlatformEvent> events, final long roundNum) {
         final ConsensusSnapshot snapshot = mock(ConsensusSnapshot.class);
         final ConsensusRound round = new ConsensusRound(
                 mock(AddressBook.class),
-                events.stream().map(EventImpl::getBaseEvent).toList(),
+                events,
                 mock(PlatformEvent.class),
                 mock(GraphGenerations.class),
                 mock(EventWindow.class),
@@ -135,7 +134,7 @@ class UptimeTests {
         final int eventCount = 100;
         final Set<NodeId> noFirstRoundEvents = Set.of(addressBook.getNodeId(0), addressBook.getNodeId(1));
         final Set<NodeId> noFirstRoundJudges = Set.of(addressBook.getNodeId(8), addressBook.getNodeId(9));
-        final List<EventImpl> firstRoundEvents = generateEvents(
+        final List<PlatformEvent> firstRoundEvents = generateEvents(
                 random, time, Duration.ofSeconds(1), addressBook, eventCount, noFirstRoundEvents, noFirstRoundJudges);
 
         final UptimeDataImpl genesisUptimeData = new UptimeDataImpl();
@@ -188,7 +187,7 @@ class UptimeTests {
 
         final Set<NodeId> noSecondRoundEvents = Set.of(addressBook.getNodeId(0), addressBook.getNodeId(2));
         final Set<NodeId> noSecondRoundJudges = Set.of(addressBook.getNodeId(7), addressBook.getNodeId(9));
-        final List<EventImpl> secondRoundEvents = generateEvents(
+        final List<PlatformEvent> secondRoundEvents = generateEvents(
                 random, time, Duration.ofSeconds(1), addressBook, eventCount, noSecondRoundEvents, noSecondRoundJudges);
 
         final ConsensusRound roundTwo = mockRound(secondRoundEvents, 2);
@@ -259,7 +258,7 @@ class UptimeTests {
         final int eventCount = 100;
         final Set<NodeId> noFirstRoundEvents = Set.of(addressBook.getNodeId(0), addressBook.getNodeId(1));
         final Set<NodeId> noFirstRoundJudges = Set.of(addressBook.getNodeId(8), addressBook.getNodeId(9));
-        final List<EventImpl> firstRoundEvents = generateEvents(
+        final List<PlatformEvent> firstRoundEvents = generateEvents(
                 random, time, Duration.ofSeconds(1), addressBook, eventCount, noFirstRoundEvents, noFirstRoundJudges);
 
         final UptimeDataImpl genesisUptimeData = new UptimeDataImpl();
@@ -318,7 +317,7 @@ class UptimeTests {
 
         final Set<NodeId> noSecondRoundEvents = Set.of();
         final Set<NodeId> noSecondRoundJudges = Set.of();
-        final List<EventImpl> secondRoundEvents = generateEvents(
+        final List<PlatformEvent> secondRoundEvents = generateEvents(
                 random,
                 time,
                 Duration.ofSeconds(1),
@@ -420,12 +419,12 @@ class UptimeTests {
         for (int i = 0; i < size; i++) {
             uptimeData1.addNode(new NodeId(i));
 
-            final EventImpl lastEvent = mock(EventImpl.class);
+            final PlatformEvent lastEvent = mock(PlatformEvent.class);
             when(lastEvent.getConsensusTimestamp()).thenReturn(eventTimes1.get(i));
             when(lastEvent.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData1.recordLastEvent(lastEvent, eventRounds1.get(i));
 
-            final EventImpl lastJudge = mock(EventImpl.class);
+            final PlatformEvent lastJudge = mock(PlatformEvent.class);
             when(lastJudge.getConsensusTimestamp()).thenReturn(judgeTimes1.get(i));
             when(lastJudge.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData1.recordLastJudge(lastJudge, judgeRounds1.get(i));
@@ -475,12 +474,12 @@ class UptimeTests {
         }
 
         for (int i = 0; i < size; i++) {
-            final EventImpl lastEvent = mock(EventImpl.class);
+            final PlatformEvent lastEvent = mock(PlatformEvent.class);
             when(lastEvent.getConsensusTimestamp()).thenReturn(eventTimes2.get(i));
             when(lastEvent.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData2.recordLastEvent(lastEvent, eventRounds2.get(i));
 
-            final EventImpl lastJudge = mock(EventImpl.class);
+            final PlatformEvent lastJudge = mock(PlatformEvent.class);
             when(lastJudge.getConsensusTimestamp()).thenReturn(judgeTimes2.get(i));
             when(lastJudge.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData2.recordLastJudge(lastJudge, judgeRounds2.get(i));
@@ -540,12 +539,12 @@ class UptimeTests {
         for (int i = 0; i < size; i++) {
             uptimeData1.addNode(new NodeId(i));
 
-            final EventImpl lastEvent = mock(EventImpl.class);
+            final PlatformEvent lastEvent = mock(PlatformEvent.class);
             when(lastEvent.getConsensusTimestamp()).thenReturn(eventTimes.get(i));
             when(lastEvent.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData1.recordLastEvent(lastEvent, eventRounds.get(i));
 
-            final EventImpl lastJudge = mock(EventImpl.class);
+            final PlatformEvent lastJudge = mock(PlatformEvent.class);
             when(lastJudge.getConsensusTimestamp()).thenReturn(judgeTimes.get(i));
             when(lastJudge.getCreatorId()).thenReturn(new NodeId(i));
             uptimeData1.recordLastJudge(lastJudge, judgeRounds.get(i));
@@ -594,7 +593,7 @@ class UptimeTests {
 
         // First, simulate a round starting at genesis
         final int eventCount = 100;
-        final List<EventImpl> firstRoundEvents =
+        final List<PlatformEvent> firstRoundEvents =
                 generateEvents(random, time, Duration.ofSeconds(1), addressBook, eventCount, Set.of(), Set.of());
 
         final UptimeDataImpl genesisUptimeData = new UptimeDataImpl();
@@ -613,7 +612,7 @@ class UptimeTests {
         final UptimeDataImpl nextRoundUptimeData = genesisUptimeData.copy();
 
         final Set<NodeId> noSecondRoundEvents = Set.of(addressBook.getNodeId(0));
-        final List<EventImpl> secondRoundEvents = generateEvents(
+        final List<PlatformEvent> secondRoundEvents = generateEvents(
                 random, time, Duration.ofSeconds(1), addressBook, eventCount, noSecondRoundEvents, Set.of());
 
         final ConsensusRound roundTwo = mockRound(secondRoundEvents, 2);
@@ -625,7 +624,7 @@ class UptimeTests {
 
         final UptimeDataImpl finalRoundUptimeData = nextRoundUptimeData.copy();
 
-        final List<EventImpl> thirdRoundEvents =
+        final List<PlatformEvent> thirdRoundEvents =
                 generateEvents(random, time, Duration.ofSeconds(1), addressBook, eventCount, Set.of(), Set.of());
 
         final ConsensusRound roundThree = mockRound(thirdRoundEvents, 3);

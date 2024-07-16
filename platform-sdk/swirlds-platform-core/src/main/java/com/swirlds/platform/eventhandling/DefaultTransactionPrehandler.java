@@ -76,10 +76,6 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
      */
     @Override
     public void prehandleApplicationTransactions(@NonNull final PlatformEvent event) {
-        // FUTURE WORK: As a temporary workaround, convert to EventImpl. This workaround will be removed as part of the
-        // event refactor
-        final EventImpl eventImpl = new EventImpl(event, null, null);
-
         final long startTime = time.nanoTime();
 
         ReservedSignedState latestImmutableState = null;
@@ -90,10 +86,10 @@ public class DefaultTransactionPrehandler implements TransactionPrehandler {
             }
 
             try {
-                latestImmutableState.get().getSwirldState().preHandle(eventImpl);
+                latestImmutableState.get().getSwirldState().preHandle(event);
             } catch (final Throwable t) {
                 logger.error(
-                        EXCEPTION.getMarker(), "error invoking SwirldState.preHandle() for event {}", eventImpl, t);
+                        EXCEPTION.getMarker(), "error invoking SwirldState.preHandle() for event {}", event, t);
             }
         } finally {
             event.signalPrehandleCompletion();

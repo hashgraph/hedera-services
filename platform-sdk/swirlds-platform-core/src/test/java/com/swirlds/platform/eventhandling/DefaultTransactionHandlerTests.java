@@ -121,14 +121,14 @@ class DefaultTransactionHandlerTests {
 
     private static void assertEventReachedConsensus(@NonNull final EventImpl event) {
         assertTrue(event.getBaseEvent().getPayloadCount() > 0, "event should have transactions");
-        event.consensusTransactionIterator()
+        event.getBaseEvent().consensusTransactionIterator()
                 .forEachRemaining(transaction -> assertNotNull(
                         transaction.getConsensusTimestamp(), "transaction should have a consensus timestamp"));
     }
 
     private static void assertEventDidNotReachConsensus(@NonNull final EventImpl event) {
         assertTrue(event.getBaseEvent().getPayloadCount() > 0, "event should have transactions");
-        event.consensusTransactionIterator()
+        event.getBaseEvent().consensusTransactionIterator()
                 .forEachRemaining(transaction -> assertNull(
                         transaction.getConsensusTimestamp(), "transaction should not have a consensus timestamp"));
     }
