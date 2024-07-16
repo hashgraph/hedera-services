@@ -67,7 +67,6 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     private static final Key STANDIN_CONTRACT_KEY =
             Key.newBuilder().contractID(ContractID.newBuilder().contractNum(0)).build();
 
-    private final StakingValidator stakingValidator;
     private final WritableAccountStore accountStore;
     private final AccountID fundingAccountID;
     private final AccountID stakingRewardAccountID;
@@ -79,20 +78,17 @@ public class TokenServiceApiImpl implements TokenServiceApi {
      * Constructs a {@link TokenServiceApiImpl}
      * @param config the configuration
      * @param storeMetricsService the store metrics service
-     * @param stakingValidator the staking validator
      * @param writableStates the writable states
      * @param customFeeTest a predicate for determining if a transfer has custom fees
      */
     public TokenServiceApiImpl(
             @NonNull final Configuration config,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final StakingValidator stakingValidator,
             @NonNull final WritableStates writableStates,
             @NonNull final Predicate<CryptoTransferTransactionBody> customFeeTest) {
         this.customFeeTest = customFeeTest;
         requireNonNull(config);
         this.accountStore = new WritableAccountStore(writableStates, config, storeMetricsService);
-        this.stakingValidator = requireNonNull(stakingValidator);
 
         // Determine whether staking is enabled
         stakingConfig = config.getConfigData(StakingConfig.class);
@@ -125,7 +121,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @Nullable final Long stakedNodeIdInOp,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
-        stakingValidator.validateStakedIdForCreation(
+        StakingValidator.validateStakedIdForCreation(
                 isStakingEnabled,
                 hasDeclineRewardChange,
                 stakedIdKind,
@@ -144,7 +140,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @Nullable final Long stakedNodeIdInOp,
             @NonNull final ReadableAccountStore accountStore,
             @NonNull final NetworkInfo networkInfo) {
-        stakingValidator.validateStakedIdForUpdate(
+        StakingValidator.validateStakedIdForUpdate(
                 isStakingEnabled,
                 hasDeclineRewardChange,
                 stakedIdKind,

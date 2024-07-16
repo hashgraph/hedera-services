@@ -31,15 +31,19 @@ public class HashgraphGuiConstants {
     public static final Color LIGHT_RED = new Color(192, 0, 0);
     /** unknown-fame witness, consensus (which can't happen) */
     public static final Color DARK_RED = new Color(128, 0, 0);
-    /** unknown-fame witness, consensus */
-    public static final Color LIGHT_GREEN = new Color(0, 192, 0);
     /** famous witness, non-consensus */
-    public static final Color DARK_GREEN = new Color(0, 128, 0);
+    public static final Color LIGHT_GREEN = new Color(0, 192, 0);
     /** famous witness, consensus */
-    public static final Color LIGHT_BLUE = new Color(0, 0, 192);
+    public static final Color DARK_GREEN = new Color(0, 128, 0);
     /** non-famous witness, non-consensus */
+    public static final Color LIGHT_YELLOW = new Color(160, 160, 0);
+    /** non-famous witness, consensus */
+    public static final Color DARK_YELLOW = new Color(100, 100, 0);
+    /** judge, consensus */
+    public static final Color LIGHT_BLUE = new Color(0, 0, 192);
+    /** judge, non-consensus */
     public static final Color DARK_BLUE = new Color(0, 0, 128);
-    /** non-witness witness, consensus */
+    /** non-witness, consensus */
     public static final Color LIGHT_GRAY = new Color(160, 160, 160);
     /** non-witness, non-consensus */
     public static final Color DARK_GRAY = new Color(0, 0, 0);

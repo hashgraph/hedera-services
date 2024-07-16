@@ -31,6 +31,7 @@ import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -56,7 +57,7 @@ public class LearnerPushTask<T> {
     private final LearnerTreeView<T> view;
     private final ReconnectNodeCount nodeCount;
 
-    private final ReconnectMapStats mapStats = new ReconnectMapStats() {};
+    private final ReconnectMapStats mapStats;
 
     private final Queue<MerkleNode> rootsToReceive;
 
@@ -79,6 +80,8 @@ public class LearnerPushTask<T> {
      * 		a view used to interface with the subtree
      * @param nodeCount
      * 		an object used to keep track of the number of nodes sent during the reconnect
+     * @param mapStats
+     *      a ReconnectMapStats object to collect reconnect metrics
      */
     public LearnerPushTask(
             final StandardWorkGroup workGroup,
@@ -87,7 +90,8 @@ public class LearnerPushTask<T> {
             final Queue<MerkleNode> rootsToReceive,
             final AtomicReference<T> root,
             final LearnerTreeView<T> view,
-            final ReconnectNodeCount nodeCount) {
+            final ReconnectNodeCount nodeCount,
+            @NonNull final ReconnectMapStats mapStats) {
         this.workGroup = workGroup;
         this.in = in;
         this.out = out;
@@ -95,6 +99,7 @@ public class LearnerPushTask<T> {
         this.root = root;
         this.view = view;
         this.nodeCount = nodeCount;
+        this.mapStats = mapStats;
     }
 
     public void start() {

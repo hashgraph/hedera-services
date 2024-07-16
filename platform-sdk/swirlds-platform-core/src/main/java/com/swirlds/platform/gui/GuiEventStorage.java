@@ -31,6 +31,7 @@ import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.NoOpConsensusMetrics;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 import java.util.Objects;
 
@@ -47,6 +48,7 @@ public class GuiEventStorage {
     private final Consensus consensus;
     private final SimpleLinker linker;
     private final Configuration configuration;
+    private ConsensusRound lastConsensusRound;
 
     /**
      * Constructor
@@ -91,6 +93,7 @@ public class GuiEventStorage {
         if (rounds.isEmpty()) {
             return;
         }
+        lastConsensusRound = rounds.getLast();
 
         linker.setNonAncientThreshold(rounds.getLast().getEventWindow().getAncientThreshold());
     }
@@ -106,6 +109,7 @@ public class GuiEventStorage {
         linker.clear();
         linker.setNonAncientThreshold(snapshot.getMinimumGenerationNonAncient(
                 configuration.getConfigData(ConsensusConfig.class).roundsNonAncient()));
+        lastConsensusRound = null;
     }
 
     /**
@@ -123,5 +127,12 @@ public class GuiEventStorage {
     @NonNull
     public synchronized List<EventImpl> getNonAncientEvents() {
         return linker.getNonAncientEvents();
+    }
+
+    /**
+     * @return the last round that reached consensus
+     */
+    public synchronized @Nullable ConsensusRound getLastConsensusRound() {
+        return lastConsensusRound;
     }
 }
