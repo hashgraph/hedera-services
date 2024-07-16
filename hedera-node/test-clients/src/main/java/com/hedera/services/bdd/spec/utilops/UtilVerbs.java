@@ -26,6 +26,7 @@ import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -64,6 +65,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SHAPE;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
@@ -853,6 +855,7 @@ public class UtilVerbs {
 
     /**
      * Returns an operation that restores the given property to its startup value on the target network.
+     *
      * @param property the property to restore
      * @return the operation that restores the property
      */
@@ -861,7 +864,7 @@ public class UtilVerbs {
     }
 
     /**
-     * Returns an operation that computes and executes a of {@link SpecOperation} returned by a function whose
+     * Returns an operation that computes and executes a {@link SpecOperation} returned by a function whose
      * input is the EVM address implied by the given key.
      *
      * @param opFn the function that computes the resulting operation
@@ -878,6 +881,27 @@ public class UtilVerbs {
     }
 
     /**
+     * Returns an operation that computes and executes a {@link SpecOperation} returned by a function whose
+     * input is the EVM addresses implied by the given keys.
+     *
+     * @param opFn the function that computes the resulting operation
+     * @return the operation that computes and executes the operation using the addresses
+     */
+    public static SpecOperation withAddressesOfKeys(
+            @NonNull final List<String> keys, @NonNull final Function<List<Address>, SpecOperation> opFn) {
+        return withOpContext((spec, opLog) -> allRunFor(
+                spec,
+                opFn.apply(keys.stream()
+                        .map(key -> {
+                            final var publicKey =
+                                    fromByteString(spec.registry().getKey(key).getECDSASecp256K1());
+                            return asHeadlongAddress(
+                                    recoverAddressFromPubKey(publicKey).toByteArray());
+                        })
+                        .toList())));
+    }
+
+    /**
      * Returns an operation that computes and executes a of {@link SpecOperation} returned by a function whose
      * input is the long-zero EVM address implied by the given account's id.
      *
@@ -887,9 +911,45 @@ public class UtilVerbs {
     public static SpecOperation withLongZeroAddress(
             @NonNull final String account, @NonNull final Function<Address, SpecOperation> opFn) {
         return withOpContext((spec, opLog) -> {
-            final var address =
-                    HapiPropertySource.idAsHeadlongAddress(spec.registry().getAccountID(account));
+            final var address = idAsHeadlongAddress(spec.registry().getAccountID(account));
             allRunFor(spec, opFn.apply(address));
+        });
+    }
+
+    /**
+     * Returns an operation that creates the requested number of hollow accounts with names given by the
+     * given name function.
+     *
+     * @param n the number of hollow accounts to create
+     * @param nameFn the function that computes the spec registry names for the accounts
+     * @return the operation
+     */
+    public static SpecOperation createHollow(final int n, @NonNull final IntFunction<String> nameFn) {
+        return withOpContext((spec, opLog) -> {
+            final List<AccountID> createdIds = new ArrayList<>();
+            final List<String> keyNames = new ArrayList<>();
+            for (int i = 0; i < n; i++) {
+                final var keyName = "forHollow" + i;
+                keyNames.add(keyName);
+                allRunFor(spec, newKeyNamed(keyName).shape(SECP_256K1_SHAPE));
+            }
+            allRunFor(
+                    spec,
+                    withAddressesOfKeys(
+                            keyNames,
+                            addresses -> blockingOrder(addresses.stream()
+                                    .map(address -> blockingOrder(
+                                            cryptoTransfer(tinyBarsFromTo(GENESIS, address, ONE_HUNDRED_HBARS))
+                                                    .via("autoCreate" + address),
+                                            getTxnRecord("autoCreate" + address)
+                                                    .exposingCreationsTo(creations ->
+                                                            createdIds.add(asAccount(creations.getFirst())))))
+                                    .toArray(SpecOperation[]::new))));
+            for (int i = 0; i < n; i++) {
+                final var name = nameFn.apply(i);
+                spec.registry().saveKey(name, spec.registry().getKey(keyNames.get(i)));
+                spec.registry().saveAccountId(name, createdIds.get(i));
+            }
         });
     }
 
@@ -1008,6 +1068,7 @@ public class UtilVerbs {
 
     /**
      * Returns the given varags as a {@link SpecOperation} array.
+     *
      * @param ops the varargs to return as an array
      * @return the array of varargs
      */
@@ -1803,12 +1864,7 @@ public class UtilVerbs {
 
     public static HapiSpecOperation validateRecordTransactionFees(String txn) {
         return validateRecordTransactionFees(
-                txn,
-                Set.of(
-                        HapiPropertySource.asAccount("0.0.3"),
-                        HapiPropertySource.asAccount("0.0.98"),
-                        HapiPropertySource.asAccount("0.0.800"),
-                        HapiPropertySource.asAccount("0.0.801")));
+                txn, Set.of(asAccount("0.0.3"), asAccount("0.0.98"), asAccount("0.0.800"), asAccount("0.0.801")));
     }
 
     /**

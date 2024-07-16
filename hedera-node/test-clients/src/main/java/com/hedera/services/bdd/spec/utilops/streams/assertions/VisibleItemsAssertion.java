@@ -29,12 +29,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,7 +47,7 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
     private final HapiSpec spec;
     private final Set<String> unseenIds;
     private final CountDownLatch latch;
-    private final Map<String, VisibleItems> items = new HashMap<>();
+    private final Map<String, VisibleItems> items = new ConcurrentHashMap<>();
     private final boolean withLogging = true;
 
     @Nullable

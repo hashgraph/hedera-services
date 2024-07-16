@@ -270,6 +270,7 @@ public interface HandleContext {
      * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
      *                                  the record builder type is unknown to the app
      * @throws IllegalStateException    if the current transaction has already introduced state changes
+     * @throws HandleException if the base builder for the dispatch cannot be created
      */
     @NonNull
     <T> T dispatchPrecedingTransaction(
@@ -324,6 +325,7 @@ public interface HandleContext {
      * @throws IllegalArgumentException if the transaction is not a {@link TransactionCategory#USER}-transaction or if
      *                                  the record builder type is unknown to the app
      * @throws IllegalStateException    if the current transaction has already introduced state changes
+     * @throws HandleException if the base builder for the dispatch cannot be created
      */
     @NonNull
     <T> T dispatchRemovablePrecedingTransaction(
@@ -358,6 +360,7 @@ public interface HandleContext {
      * @return the record builder of the child transaction
      * @throws NullPointerException if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
+     * @throws HandleException if the base builder for the dispatch cannot be created
      * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
@@ -378,6 +381,7 @@ public interface HandleContext {
      * @return the record builder of the child transaction
      * @param <T> the record type
      * @throws IllegalArgumentException if the transaction body did not have an id
+     * @throws HandleException if the base builder for the dispatch cannot be created
      */
     @NonNull
     default <T> T dispatchScheduledChildTransaction(
@@ -413,6 +417,7 @@ public interface HandleContext {
      * @return the record builder of the child transaction
      * @throws NullPointerException if any of the arguments is {@code null}
      * @throws IllegalArgumentException if the current transaction is a
+     * @throws HandleException if the base builder for the dispatch cannot be created
      * {@link TransactionCategory#PRECEDING}-transaction or if the record builder type is unknown to the app
      */
     @NonNull
@@ -432,6 +437,7 @@ public interface HandleContext {
      * @return the record builder of the child transaction
      * @param <T> the record type
      * @throws IllegalArgumentException if the transaction body did not have an id
+     * @throws HandleException if the base builder for the dispatch cannot be created
      */
     @NonNull
     default <T> T dispatchRemovableChildTransaction(

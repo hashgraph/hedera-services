@@ -18,11 +18,14 @@ package com.hedera.services.bdd.suites.hip993;
 
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.operations.transactions.TouchBalancesOperation.touchBalanceOf;
+import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateVisibleItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.visibleNonSyntheticItems;
@@ -32,12 +35,15 @@ import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.hip904.UnlimitedAutoAssociationSuite.UNLIMITED_AUTO_ASSOCIATION_SLOTS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoUpdate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TOKEN_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.Objects.requireNonNull;
@@ -98,11 +104,12 @@ public class NaturalDispatchOrderingTest {
      *     <Li>Failing to create an identical schedule transaction, which leaves some information in the receipt
      *     despite rolling back the root savepoint stack.</Li>
      * </ol>
+     *
      * @return the test
      */
     @HapiTest
     @DisplayName("reversible user stream items are as expected")
-    final Stream<DynamicTest> reversibleUserStreamItemsAsExpected() {
+    final Stream<DynamicTest> reversibleUserItemsAsExpected() {
         final AtomicReference<VisibleItemsAssertion> assertion = new AtomicReference<>();
         return hapiTest(
                 streamMustIncludeNoFailuresFrom(
@@ -133,11 +140,12 @@ public class NaturalDispatchOrderingTest {
      *     <Li>Calling a transfer system contract that does an auto-association in a frame that succeeds, but within
      *     an EVM transaction that reverts.</Li>
      * </ol>
+     *
      * @return the test
      */
     @HapiTest
     @DisplayName("reversible child and removable preceding stream items are as expected")
-    final Stream<DynamicTest> reversibleChildAndRemovablePrecedingStreamItemsAsExpected(
+    final Stream<DynamicTest> reversibleChildAndRemovablePrecedingItemsAsExpected(
             @NonFungibleToken(numPreMints = 2) SpecNonFungibleToken nonFungibleToken,
             @Account(autoAssociationSlots = 1) SpecAccount beneficiary,
             @Contract(contract = "PrecompileAliasXfer", creationGas = 2_000_000) SpecContract transferContract,
@@ -190,12 +198,12 @@ public class NaturalDispatchOrderingTest {
      *     a payer that cannot afford all the fees, and hence rolls back its first preceding child due to
      *     a {@link ResponseCodeEnum#INSUFFICIENT_PAYER_BALANCE} result on the second auto-association.</Li>
      * </ol>
+     *
      * @return the test
      */
     @HapiTest
-    @DisplayName(
-            "reversible schedule stream items and removable preceding stream items are as expected are as expected")
-    final Stream<DynamicTest> reversibleScheduleStreamAndRemovablePrecedingItemsAsExpected(
+    @DisplayName("reversible schedule stream items and removable preceding stream items are as expected")
+    final Stream<DynamicTest> reversibleScheduleAndRemovablePrecedingItemsAsExpected(
             @FungibleToken SpecFungibleToken firstToken,
             @FungibleToken SpecFungibleToken secondToken,
             @Account(autoAssociationSlots = 2) SpecAccount firstReceiver,
@@ -236,6 +244,82 @@ public class NaturalDispatchOrderingTest {
                         .alsoSigningWith(insolventPayer.name())
                         .via("rolledBack"),
                 validateVisibleItems(assertion, reversibleScheduleValidator()));
+    }
+
+    /**
+     * Tests the {@link TransactionCategory#CHILD} + {@link ReversingBehavior#REMOVABLE} combination as
+     * both commit and rollback via,
+     * <ol>
+     *     <Li>Triggering a sequence of creations in an EVM transaction that does not revert.</Li>
+     *     <Li>Triggering a sequence of creations in an EVM transaction that does revert.</Li>
+     * </ol>
+     *
+     * @return the test
+     */
+    @HapiTest
+    @DisplayName("removable child stream items are as expected")
+    final Stream<DynamicTest> removableChildItemsAsExpected(
+            @Contract(contract = "OuterCreator") SpecContract outerCreatorContract,
+            @Contract(contract = "LowLevelCall") SpecContract lowLevelCallContract) {
+        final var startChainFn = new Function("startChain(bytes)");
+        final AtomicReference<VisibleItemsAssertion> assertion = new AtomicReference<>();
+        final var emptyMessage = new byte[0];
+        return hapiTest(
+                streamMustIncludeNoFailuresFrom(
+                        visibleNonSyntheticItems(assertion, "nestedCreations", "revertedCreations")),
+                outerCreatorContract.call("startChain", emptyMessage).with(txn -> txn.gas(2_000_000)
+                        .via("nestedCreations")),
+                withOpContext((spec, opLog) -> {
+                    final var calldata = startChainFn.encodeCallWithArgs(emptyMessage);
+                    allRunFor(
+                            spec,
+                            lowLevelCallContract
+                                    .call(
+                                            "callRequestedAndRevertAfterIgnoringFailure",
+                                            outerCreatorContract.addressOn(spec.targetNetworkOrThrow()),
+                                            calldata.array(),
+                                            BigInteger.valueOf(2_000_000))
+                                    .with(txn -> txn.gas(4_000_000)
+                                            .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
+                                            .via("revertedCreations")));
+                }),
+                validateVisibleItems(assertion, removableChildValidator()));
+    }
+
+    /**
+     * Tests the {@link TransactionCategory#PRECEDING} + {@link ReversingBehavior#IRREVERSIBLE} combination as
+     * both commit and rollback via,
+     * <ol>
+     *     <Li>Triggering a hollow account completion with a simple transfer that succeeds.</Li>
+     *     <Li>Triggering a hollow account completion with a simple transfer that fails.</Li>
+     * </ol>
+     *
+     * @return the test
+     */
+    @HapiTest
+    @DisplayName("irreversible preceding stream items are as expected")
+    final Stream<DynamicTest> irreversiblePrecedingItemsAsExpected() {
+        final AtomicReference<VisibleItemsAssertion> assertion = new AtomicReference<>();
+        return hapiTest(
+                streamMustIncludeNoFailuresFrom(
+                        visibleNonSyntheticItems(assertion, "finalizationBySuccess", "finalizationByFailure")),
+                tokenCreate("unassociatedToken"),
+                // Create two hollow accounts to finalize, first by a top-level success and second by failure
+                createHollow(2, i -> "hollow" + i),
+                cryptoTransfer(tinyBarsFromTo("hollow0", FUNDING, 1))
+                        .fee(ONE_HBAR)
+                        .payingWith("hollow0")
+                        .signedBy("hollow0")
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor("hollow0"))
+                        .via("finalizationBySuccess"),
+                cryptoTransfer(moving(1, "unassociatedToken").between("hollow1", "hollow0"))
+                        .fee(ONE_HBAR)
+                        .payingWith("hollow1")
+                        .signedBy("hollow1")
+                        .sigMapPrefixes(uniqueWithFullPrefixesFor("hollow1"))
+                        .via("finalizationByFailure")
+                        .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE),
+                validateVisibleItems(assertion, irreversiblePrecedingValidator()));
     }
 
     private static BiConsumer<HapiSpec, Map<String, VisibleItems>> reversibleUserValidator() {
@@ -283,6 +367,33 @@ public class NaturalDispatchOrderingTest {
         };
     }
 
+    private static BiConsumer<HapiSpec, Map<String, VisibleItems>> removableChildValidator() {
+        return (spec, records) -> {
+            final var nestedCreations = requireNonNull(records.get("nestedCreations"), "nestedCreations not found");
+            System.out.println(nestedCreations);
+            assertItemsMatch(nestedCreations, 0, ContractCall, ContractCreate, ContractCreate);
+            assertStatuses(nestedCreations, SUCCESS, SUCCESS, SUCCESS);
+            final var revertedCreations =
+                    requireNonNull(records.get("revertedCreations"), "revertedCreations not found");
+            assertItemsMatch(revertedCreations, 0, ContractCall);
+            assertStatuses(revertedCreations, CONTRACT_REVERT_EXECUTED);
+        };
+    }
+
+    private static BiConsumer<HapiSpec, Map<String, VisibleItems>> irreversiblePrecedingValidator() {
+        return (spec, records) -> {
+            final var successFinalization =
+                    requireNonNull(records.get("finalizationBySuccess"), "finalizationBySuccess not found");
+            System.out.println(successFinalization);
+            assertItemsMatch(successFinalization, 1, CryptoUpdate, CryptoTransfer);
+            assertStatuses(successFinalization, SUCCESS, SUCCESS);
+            final var failFinalization =
+                    requireNonNull(records.get("finalizationByFailure"), "finalizationByFailure not found");
+            assertItemsMatch(failFinalization, 1, CryptoUpdate, CryptoTransfer);
+            assertStatuses(failFinalization, SUCCESS, INSUFFICIENT_TOKEN_BALANCE);
+        };
+    }
+
     private static void assertScheduledItemsMatch(
             @NonNull final VisibleItems items,
             final int userTxnIndex,
@@ -313,6 +424,7 @@ public class NaturalDispatchOrderingTest {
      *     <li>Nonces</li>
      *     <li>Following child parent consensus times</li>
      * </ol>
+     *
      * @param items the items for the user transaction
      * @param numPrecedingChildren the number of preceding children expected
      * @param triggeredTxnIndex if not -1, the index of the triggered transaction

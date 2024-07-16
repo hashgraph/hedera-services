@@ -56,6 +56,7 @@ import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
@@ -148,6 +149,7 @@ public class ChildDispatchFactory {
      * @param topLevelFunction     the top level functionality
      * @param consensusNow         the consensus time
      * @return the child dispatch
+     * @throws HandleException if the child stack base builder cannot be created
      */
     public Dispatch createChildDispatch(
             @NonNull final TransactionBody txBody,
