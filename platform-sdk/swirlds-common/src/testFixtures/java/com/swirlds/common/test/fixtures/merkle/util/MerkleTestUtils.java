@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -35,6 +36,10 @@ import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.TeachingSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
+import com.swirlds.common.metrics.config.MetricsConfig;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
+import com.swirlds.common.metrics.platform.MetricKeyRegistry;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyCustomReconnectRoot;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleExternalLeaf;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
@@ -45,6 +50,9 @@ import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleNode;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.manager.ThreadManager;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.metrics.api.Metrics;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,6 +62,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -62,6 +71,20 @@ import java.util.function.Function;
  * Utility methods for testing merkle trees.
  */
 public final class MerkleTestUtils {
+
+    private static Metrics createMetrics() {
+        final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+        final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
+        final MetricKeyRegistry registry = new MetricKeyRegistry();
+        return new DefaultPlatformMetrics(
+                null,
+                registry,
+                mock(ScheduledExecutorService.class),
+                new PlatformMetricsFactoryImpl(metricsConfig),
+                metricsConfig);
+    }
+
+    private static final Metrics metrics = createMetrics();
 
     private MerkleTestUtils() {}
 
@@ -998,7 +1021,8 @@ public final class MerkleTestUtils {
                                 streams.getLearnerOutput(),
                                 startingTree,
                                 streams::disconnect,
-                                reconnectConfig) {
+                                reconnectConfig,
+                                metrics) {
 
                             @Override
                             protected StandardWorkGroup createStandardWorkGroup(
@@ -1046,7 +1070,8 @@ public final class MerkleTestUtils {
                                 startingTree,
                                 latencyMilliseconds,
                                 streams::disconnect,
-                                reconnectConfig) {
+                                reconnectConfig,
+                                metrics) {
                             @Override
                             protected StandardWorkGroup createStandardWorkGroup(
                                     ThreadManager threadManager,

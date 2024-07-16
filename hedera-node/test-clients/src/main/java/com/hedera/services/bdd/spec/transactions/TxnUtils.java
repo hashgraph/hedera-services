@@ -116,6 +116,7 @@ public class TxnUtils {
 
     private static final Pattern ID_LITERAL_PATTERN = Pattern.compile("\\d+[.]\\d+[.]\\d+");
     private static final Pattern NUMERIC_LITERAL_PATTERN = Pattern.compile("\\d+");
+    private static final Pattern POSNEG_NUMERIC_LITERAL_PATTERN = Pattern.compile("^-?\\d+");
     private static final int BANNER_WIDTH = 80;
     private static final int BANNER_BOUNDARY_THICKNESS = 2;
     // Wait just a bit longer than the 2-second block period to be certain we've ended the period
@@ -203,6 +204,10 @@ public class TxnUtils {
         return NUMERIC_LITERAL_PATTERN.matcher(s).matches();
     }
 
+    public static boolean isPosNegNumericLiteral(final String s) {
+        return POSNEG_NUMERIC_LITERAL_PATTERN.matcher(s).matches();
+    }
+
     public static AccountID asId(final String s, final HapiSpec lookupSpec) {
         return isIdLiteral(s) ? asAccount(s) : lookupSpec.registry().getAccountID(s);
     }
@@ -253,10 +258,17 @@ public class TxnUtils {
                 : lookupSpec.registry().getNodeId(s).getNumber();
     }
 
+    public static long asPosNodeId(final String s, final HapiSpec lookupSpec) {
+        return isPosNegNumericLiteral(s)
+                ? asEntityNumber(s).getNumber()
+                : lookupSpec.registry().getNodeId(s).getNumber();
+    }
+
     public static ContractID asContractId(final String s, final HapiSpec lookupSpec) {
-        if (s.length() == HapiContractCall.HEXED_EVM_ADDRESS_LEN) {
+        final var effS = s.startsWith("0x") ? s.substring(2) : s;
+        if (effS.length() == HapiContractCall.HEXED_EVM_ADDRESS_LEN) {
             return ContractID.newBuilder()
-                    .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(s)))
+                    .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(effS)))
                     .build();
         }
         return isIdLiteral(s) ? asContract(s) : lookupSpec.registry().getContractId(s);
@@ -682,7 +694,7 @@ public class TxnUtils {
     }
 
     public static void triggerAndCloseAtLeastOneFile(@NonNull final HapiSpec spec) throws InterruptedException {
-        Thread.sleep(END_OF_BLOCK_PERIOD_SLEEP_PERIOD.toMillis());
+        spec.sleepConsensusTime(END_OF_BLOCK_PERIOD_SLEEP_PERIOD);
         // Should trigger a new record to be written if we have crossed a 2-second boundary
         final var triggerOp = TxnVerbs.cryptoTransfer(HapiCryptoTransfer.tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1L))
                 .deferStatusResolution()
@@ -695,7 +707,7 @@ public class TxnUtils {
         doIfNotInterrupted(() -> {
             triggerAndCloseAtLeastOneFile(spec);
             log.info("Sleeping a bit to give the record stream a chance to close");
-            Thread.sleep(BLOCK_CREATION_SLEEP_PERIOD.toMillis());
+            spec.sleepConsensusTime(BLOCK_CREATION_SLEEP_PERIOD);
         });
     }
 

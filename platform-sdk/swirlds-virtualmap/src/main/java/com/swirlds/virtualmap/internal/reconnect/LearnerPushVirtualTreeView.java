@@ -115,6 +115,8 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     private final RecordAccessor<K, V> originalRecords;
 
+    private final ReconnectMapStats mapStats;
+
     /**
      * True until we have handled our first leaf
      */
@@ -135,6 +137,8 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
      * 		A {@link VirtualStateAccessor} for accessing state (first and last paths) from the
      * 		modified <strong>reconnect</strong> tree. We only use first and last leaf path from this state.
      * 		Cannot be null.
+     * @param mapStats
+     *      A ReconnectMapStats object to collect reconnect metrics
      */
     public LearnerPushVirtualTreeView(
             final ReconnectConfig reconnectConfig,
@@ -142,11 +146,13 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
             final RecordAccessor<K, V> originalRecords,
             final VirtualStateAccessor originalState,
             final VirtualStateAccessor reconnectState,
-            final ReconnectNodeRemover<K, V> nodeRemover) {
+            final ReconnectNodeRemover<K, V> nodeRemover,
+            @NonNull final ReconnectMapStats mapStats) {
         super(root, originalState, reconnectState);
         this.reconnectConfig = reconnectConfig;
         this.originalRecords = Objects.requireNonNull(originalRecords);
         this.nodeRemover = nodeRemover;
+        this.mapStats = mapStats;
     }
 
     @Override
@@ -163,7 +169,7 @@ public final class LearnerPushVirtualTreeView<K extends VirtualKey, V extends Vi
         out.start();
 
         final LearnerPushTask<Long> learnerThread = new LearnerPushTask<>(
-                workGroup, in, out, rootsToReceive, reconstructedRoot, this, learningSynchronizer);
+                workGroup, in, out, rootsToReceive, reconstructedRoot, this, learningSynchronizer, mapStats);
         learnerThread.start();
     }
 

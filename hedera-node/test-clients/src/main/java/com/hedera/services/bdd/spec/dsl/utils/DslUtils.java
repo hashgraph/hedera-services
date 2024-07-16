@@ -27,7 +27,6 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntityRegistrar;
-import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -90,7 +89,7 @@ public class DslUtils {
      * @return a list of all required entities
      */
     public static List<SpecEntity> allRequiredCallEntities(
-            @NonNull final SpecContract target, @NonNull final Object[] parameters) {
+            @NonNull final SpecEntity target, @NonNull final Object[] parameters) {
         List<SpecEntity> requiredEntities = new ArrayList<>();
         requiredEntities.add(target);
         for (final var parameter : parameters) {

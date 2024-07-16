@@ -21,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
+import com.hedera.services.bdd.spec.props.JutilPropertySource;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -123,6 +124,15 @@ public class WorkingDirUtils {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * Returns the path to the <i>application.properties</i> file used to bootstrap an embedded or subprocess network.
+     *
+     * @return the path to the <i>application.properties</i> file
+     */
+    public static JutilPropertySource hapiTestStartupProperties() {
+        return new JutilPropertySource(bootstrapAssetsLoc().resolve(APPLICATION_PROPERTIES));
     }
 
     private static Path bootstrapAssetsLoc() {

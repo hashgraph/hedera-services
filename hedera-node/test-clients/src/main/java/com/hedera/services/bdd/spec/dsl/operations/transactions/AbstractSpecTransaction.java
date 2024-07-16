@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.dsl.operations.transactions;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
+import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.operations.AbstractSpecOperation;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,8 +33,22 @@ public abstract class AbstractSpecTransaction<S extends AbstractSpecTransaction<
     @Nullable
     private Consumer<T> assertions;
 
+    @Nullable
+    protected SpecAccount payer;
+
     protected AbstractSpecTransaction(@NonNull final List<SpecEntity> requiredEntities) {
         super(requiredEntities);
+    }
+
+    /**
+     * Set the account that will pay for the transaction.
+     * @param payer the account
+     * @return this
+     */
+    public S payingWith(@NonNull final SpecAccount payer) {
+        this.payer = requireNonNull(payer);
+        requiredEntities.add(payer);
+        return self();
     }
 
     /**
@@ -53,7 +68,8 @@ public abstract class AbstractSpecTransaction<S extends AbstractSpecTransaction<
      * @return the assertions
      */
     protected Optional<Consumer<T>> maybeAssertions() {
-        return Optional.ofNullable(assertions);
+        return Optional.ofNullable(assertions)
+                .map(spec -> payer == null ? spec : spec.andThen(op -> op.payingWith(payer.name())));
     }
 
     /**

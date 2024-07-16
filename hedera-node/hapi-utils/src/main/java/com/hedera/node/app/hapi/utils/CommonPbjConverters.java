@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.hapi.utils;
 
+import static com.hedera.node.app.hapi.utils.ByteStringUtils.unwrapUnsafelyIfPossible;
 import static java.util.Objects.requireNonNull;
 
 import com.google.protobuf.ByteString;
@@ -31,6 +32,7 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ResponseType;
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.SubType;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
@@ -820,5 +822,23 @@ public class CommonPbjConverters {
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Converts a {@link ByteString} to a {@link Bytes} object.
+     * @param contents The {@link ByteString} to convert.
+     * @return The {@link Bytes} object.
+     */
+    public static Bytes fromByteString(ByteString contents) {
+        return Bytes.wrap(unwrapUnsafelyIfPossible(contents));
+    }
+
+    public static ServiceEndpoint toPbj(@NonNull com.hederahashgraph.api.proto.java.ServiceEndpoint t) {
+        requireNonNull(t);
+        return ServiceEndpoint.newBuilder()
+                .ipAddressV4(Bytes.wrap(t.getIpAddressV4().toByteArray()))
+                .port(t.getPort())
+                .domainName(t.getDomainName())
+                .build();
     }
 }

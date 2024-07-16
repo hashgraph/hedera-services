@@ -33,7 +33,7 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
 import com.hedera.node.app.service.addressbook.impl.test.handlers.AddressBookTestBase;
-import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
 import java.util.Set;
 import org.assertj.core.util.Streams;
 import org.junit.jupiter.api.BeforeEach;

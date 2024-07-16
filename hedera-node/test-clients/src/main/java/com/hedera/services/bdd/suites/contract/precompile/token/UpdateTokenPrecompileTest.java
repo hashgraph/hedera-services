@@ -47,11 +47,11 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.dsl.annotations.AccountSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.FungibleTokenSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.KeySpec;
-import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleTokenSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
+import com.hedera.services.bdd.spec.dsl.annotations.Key;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
@@ -72,18 +72,18 @@ import org.junit.jupiter.api.Tag;
 public class UpdateTokenPrecompileTest {
     private static final Address ZERO_ADDRESS = asHeadlongAddress(new byte[20]);
 
-    @ContractSpec(contract = "UpdateTokenInfoContract", creationGas = 4_000_000L)
+    @Contract(contract = "UpdateTokenInfoContract", creationGas = 4_000_000L)
     static SpecContract updateTokenContract;
 
-    @FungibleTokenSpec(
+    @FungibleToken(
             name = "immutableToken",
             keys = {FEE_SCHEDULE_KEY, SUPPLY_KEY, WIPE_KEY, PAUSE_KEY, FREEZE_KEY, KYC_KEY})
     static SpecFungibleToken immutableToken;
 
-    @KeySpec
+    @Key
     static SpecKey ed25519Key;
 
-    @KeySpec(type = SECP_256K1)
+    @Key(type = SECP_256K1)
     static SpecKey secp256k1Key;
 
     @HapiTest
@@ -96,7 +96,7 @@ public class UpdateTokenPrecompileTest {
 
     @HapiTest
     @DisplayName("cannot update an immutable token")
-    public Stream<DynamicTest> cannotUpdateImmutableToken(@AccountSpec final SpecAccount newTreasury) {
+    public Stream<DynamicTest> cannotUpdateImmutableToken(@Account final SpecAccount newTreasury) {
         return hapiTest(
                 newTreasury.authorizeContract(updateTokenContract),
                 updateTokenContract
@@ -110,8 +110,8 @@ public class UpdateTokenPrecompileTest {
     @HapiTest
     @DisplayName("can only update a mutable token treasury if authorized")
     public Stream<DynamicTest> canUpdateMutableTokenTreasuryOnceAuthorized(
-            @AccountSpec final SpecAccount newTreasury,
-            @NonFungibleTokenSpec(
+            @Account final SpecAccount newTreasury,
+            @NonFungibleToken(
                             numPreMints = 1,
                             keys = {SUPPLY_KEY, PAUSE_KEY, ADMIN_KEY})
                     final SpecNonFungibleToken mutableToken) {
@@ -136,13 +136,13 @@ public class UpdateTokenPrecompileTest {
     @Nested
     @DisplayName("once authorized")
     class OnceAuthorized {
-        @ContractSpec(contract = "TokenInfoSingularUpdate", creationGas = 4_000_000L)
+        @Contract(contract = "TokenInfoSingularUpdate", creationGas = 4_000_000L)
         static SpecContract updateTokenPropertyContract;
 
-        @AccountSpec(name = "sharedTreasury")
+        @Account(name = "sharedTreasury")
         static SpecAccount sharedTreasury;
 
-        @NonFungibleTokenSpec(
+        @NonFungibleToken(
                 numPreMints = 1,
                 useAutoRenewAccount = true,
                 keys = {
@@ -157,7 +157,7 @@ public class UpdateTokenPrecompileTest {
         static SpecNonFungibleToken sharedMutableToken;
 
         @BeforeAll
-        static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws Throwable {
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
             sharedMutableToken.setTreasury(sharedTreasury);
             testLifecycle.doAdhoc(
                     sharedTreasury.authorizeContract(updateTokenContract),
@@ -191,7 +191,7 @@ public class UpdateTokenPrecompileTest {
         @HapiTest
         @DisplayName("can update the auto-renew account")
         public Stream<DynamicTest> canUpdateAutoRenewAccount(
-                @AccountSpec(name = "autoRenewAccount") SpecAccount autoRenewAccount) {
+                @Account(name = "autoRenewAccount") SpecAccount autoRenewAccount) {
             return hapiTest(
                     autoRenewAccount.authorizeContract(updateTokenPropertyContract),
                     updateTokenPropertyContract.call(
@@ -211,7 +211,7 @@ public class UpdateTokenPrecompileTest {
 
         @HapiTest
         @DisplayName("can update the admin key to itself")
-        public Stream<DynamicTest> canUpdateAdminKeyToItself(@FungibleTokenSpec final SpecFungibleToken token) {
+        public Stream<DynamicTest> canUpdateAdminKeyToItself(@FungibleToken final SpecFungibleToken token) {
             return hapiTest(
                     token.authorizeContracts(updateTokenPropertyContract),
                     // This contract uses 0 as shorthand for the admin key
@@ -352,7 +352,7 @@ public class UpdateTokenPrecompileTest {
             @HapiTest
             @DisplayName("add fee schedule key")
             public Stream<DynamicTest> cannotAddFeeScheduleKey(
-                    @FungibleTokenSpec(keys = {ADMIN_KEY, SUPPLY_KEY, WIPE_KEY, PAUSE_KEY, FREEZE_KEY, KYC_KEY})
+                    @FungibleToken(keys = {ADMIN_KEY, SUPPLY_KEY, WIPE_KEY, PAUSE_KEY, FREEZE_KEY, KYC_KEY})
                             final SpecFungibleToken noFeeScheduleKeyToken) {
                 noFeeScheduleKeyToken.setTreasury(sharedTreasury);
                 return hapiTest(
@@ -372,7 +372,7 @@ public class UpdateTokenPrecompileTest {
             @HapiTest
             @DisplayName("add supply key")
             public Stream<DynamicTest> cannotAddSupplyKey(
-                    @FungibleTokenSpec(keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, WIPE_KEY, PAUSE_KEY, FREEZE_KEY, KYC_KEY})
+                    @FungibleToken(keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, WIPE_KEY, PAUSE_KEY, FREEZE_KEY, KYC_KEY})
                             final SpecFungibleToken noSupplyKeyToken) {
                 noSupplyKeyToken.setTreasury(sharedTreasury);
                 return hapiTest(
@@ -392,7 +392,7 @@ public class UpdateTokenPrecompileTest {
             @HapiTest
             @DisplayName("add wipe key")
             public Stream<DynamicTest> cannotAddWipeKey(
-                    @FungibleTokenSpec(keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, SUPPLY_KEY, PAUSE_KEY, FREEZE_KEY, KYC_KEY})
+                    @FungibleToken(keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, SUPPLY_KEY, PAUSE_KEY, FREEZE_KEY, KYC_KEY})
                             final SpecFungibleToken noWipeKeyToken) {
                 noWipeKeyToken.setTreasury(sharedTreasury);
                 return hapiTest(
@@ -412,7 +412,7 @@ public class UpdateTokenPrecompileTest {
             @HapiTest
             @DisplayName("add pause key")
             public Stream<DynamicTest> cannotAddPauseKey(
-                    @FungibleTokenSpec(keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, SUPPLY_KEY, WIPE_KEY, FREEZE_KEY, KYC_KEY})
+                    @FungibleToken(keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, SUPPLY_KEY, WIPE_KEY, FREEZE_KEY, KYC_KEY})
                             final SpecFungibleToken noPauseKeyToken) {
                 noPauseKeyToken.setTreasury(sharedTreasury);
                 return hapiTest(
@@ -432,7 +432,7 @@ public class UpdateTokenPrecompileTest {
             @HapiTest
             @DisplayName("add freeze key")
             public Stream<DynamicTest> cannotAddFreezeKey(
-                    @FungibleTokenSpec(keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, SUPPLY_KEY, WIPE_KEY, PAUSE_KEY, KYC_KEY})
+                    @FungibleToken(keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, SUPPLY_KEY, WIPE_KEY, PAUSE_KEY, KYC_KEY})
                             final SpecFungibleToken noFreezeKeyToken) {
                 noFreezeKeyToken.setTreasury(sharedTreasury);
                 return hapiTest(
@@ -452,8 +452,7 @@ public class UpdateTokenPrecompileTest {
             @HapiTest
             @DisplayName("add kyc key")
             public Stream<DynamicTest> cannotAddKycKey(
-                    @FungibleTokenSpec(
-                                    keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, SUPPLY_KEY, WIPE_KEY, PAUSE_KEY, FREEZE_KEY})
+                    @FungibleToken(keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, SUPPLY_KEY, WIPE_KEY, PAUSE_KEY, FREEZE_KEY})
                             final SpecFungibleToken noKycKeyToken) {
                 noKycKeyToken.setTreasury(sharedTreasury);
                 return hapiTest(
@@ -473,7 +472,7 @@ public class UpdateTokenPrecompileTest {
             @HapiTest
             @DisplayName("set invalid values")
             public Stream<DynamicTest> cannotSetInvalidValues(
-                    @FungibleTokenSpec(
+                    @FungibleToken(
                                     keys = {
                                         ADMIN_KEY,
                                         FEE_SCHEDULE_KEY,

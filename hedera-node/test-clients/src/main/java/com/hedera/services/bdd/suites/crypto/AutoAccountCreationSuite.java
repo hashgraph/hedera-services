@@ -358,10 +358,6 @@ public class AutoAccountCreationSuite {
     @HapiTest
     final Stream<DynamicTest> canAutoCreateWithNftTransfersToAlias() {
         final var civilianBal = 10 * ONE_HBAR;
-        // The expected fee to transfer four serial numbers of two token types to a receiver with
-        // no auto-creation; note it is approximate because the fee will vary slightly with the
-        // size of the sig map, depending on the lengths of the public key prefixes required
-        final var approxTransferFee = 0.44012644 * ONE_HBAR;
         final var multiNftTransfer = "multiNftTransfer";
 
         return defaultHapiSpec("canAutoCreateWithNftTransfersToAlias", NONDETERMINISTIC_TRANSACTION_FEES)
