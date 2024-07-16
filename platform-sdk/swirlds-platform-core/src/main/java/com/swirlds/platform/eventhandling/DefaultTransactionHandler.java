@@ -195,8 +195,7 @@ public class DefaultTransactionHandler implements TransactionHandler {
 
             if (waitForPrehandle) {
                 handlerMetrics.setPhase(WAITING_FOR_PREHANDLE);
-                consensusRound.forEach(
-                        event -> ((EventImpl) event).getBaseEvent().awaitPrehandleCompletion());
+                consensusRound.getConsensusEvents().forEach(PlatformEvent::awaitPrehandleCompletion);
             }
 
             handlerMetrics.setPhase(HANDLING_CONSENSUS_ROUND);
