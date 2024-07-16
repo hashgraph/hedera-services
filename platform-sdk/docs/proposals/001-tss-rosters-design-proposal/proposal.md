@@ -55,7 +55,7 @@ The mechanism for doing so is detailed below.
 
 ###### Roster Public API
 
-A new method will be added to the platform API to allow the App submit a Candidate Roster to the platform:
+A new method will be added to the platform API to allow the App to submit a Candidate Roster to the platform:
 
 ```java
 //in SwirldState
@@ -162,7 +162,8 @@ message RosterEntry {
      * <p>
      * This value SHALL be the DER encoding of the presented elliptic curve
      * public key.<br/>
-     * This field is REQUIRED and MUST NOT be empty.
+     * This field is OPTIONAL (that is, it can initially be null)
+     * but once set, it can no longer be null.
      */
     bytes tss_encryption_key = 4;
 
@@ -246,7 +247,7 @@ message PlatformState {
      * A Node SHALL NOT, ever, have more than one candidate roster
      * at the same time.
      */
-    bytes candidate_roster_hash = 6;
+    HashObject candidate_roster_hash = 6;
 
     /**
      * The SHA-384 hash of an active roster
@@ -255,17 +256,19 @@ message PlatformState {
      * A Node SHALL NOT, ever, have more than one active roster
      * at the same time.
      */
-    bytes active_roster_hash = 7;
+    HashObject active_roster_hash = 7;
 }
 ```
 
 It is noteworthy that the roster must be immutable to guarantee the integrity of the computed hash.
 This map of rosters will typically contain the current Active Roster, an optional previously Active Roster, and an
-optional current Candidate Roster.
+optional current Candidate Roster. Insertion of rosters will be controlled by ensuring that the acceptance of a new
+Candidate Roster invalidates and removes the current candidate roster. Therefore, the map is expected to have a maximum
+size of three elements.
 There will be new fields in PlatformState - `candidateRosterHash` and `activeRosterHash` - such that at adoption time,
 the app will set the roster through the API and the platform code inserting this roster into the roster map, alongside
 setting the `candidateRosterHash` field in the PlatformState. If a `candidateRosterHash` hash entry already exist in the
-map of Rosters, it will be discarded.
+map of Rosters, it will be discarded. That is, setting a candidate roster is an idempotent operation.
 The `activeRosterHash` will be private to the platform and will not be settable or modifiable from outside the platform.
 
 This indirection (using a Map instead of a Singleton) avoids moving data around in the merkle state which requires data
@@ -274,9 +277,6 @@ When a map is updated, only the key-value pair that changes needs to be added to
 Another benefit of this approach is that adoption trigger becomes simple (app sets the roster) with delineated
 responsibilities between the app and the platform.
 
-This map will not grow infinitely. Insertion of rosters will be controlled by ensuring that the acceptance of a new
-Candidate Roster
-invalidates and removes the current candidate roster.
 
 ###### Roster Validity
 
@@ -298,9 +298,10 @@ candidate roster, the new roster will be discarded. The operation has no effect.
 ### Core Behaviors, in summary
 
 - Roster Creation: App will create a Candidate Roster from the Candidate Address Book (CAB).
-- Roster Submission: App will trigger roster submission by setting the `candidateRosterHash` field in the PlatformState.
-- Roster Adoption: The platform will vote to adopt the last submitted Candidate Roster when it is ready, based on
-  specifications outlined in the TSS Ledger ID Proposal (referenced under related Proposals).
+- Roster Submission: App will trigger roster submission by setting the `candidate_roster_hash` field in the
+  PlatformState.
+- Roster Adoption: The platform will vote to adopt the last submitted Candidate Roster when it is ready, which will be
+  on software upgrade.
 - Roster Replacement: If a new candidate roster is submitted before the previous one is adopted, the corresponding new
   Candidate Roster will replace the old one.
 
@@ -394,9 +395,9 @@ valid transition to a future roster.
 When each round is handled, we will pop off the active roster hash for the round that just became ancient, and add a new
 active roster hash for a new future round.
 
-Before full DAB (DAB Phase 2.5), we propose to store the current and previous active rosters in this newly introduced
+Before full DAB, we propose to store the current and previous active rosters in this newly introduced
 queue of hashes.
-In the DAB Phase 2.5 implementation, this queue will contain only 2 hashes, with the first hash representing
+In this proposal implementation, this queue will contain only 2 hashes, with the first hash representing
 the previous active roster, and the second hash representing the current active roster.
 At upgrade boundaries, we will pop off the previous active roster, and add a new roster to the end of the queue, which
 is the new active roster.
