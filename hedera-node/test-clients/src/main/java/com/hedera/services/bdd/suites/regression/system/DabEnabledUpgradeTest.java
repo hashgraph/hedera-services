@@ -176,7 +176,7 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
             testLifecycle.doAdhoc(
                     newKeyNamed("adminKey"),
                     nodeCreate("node4")
-                            .adminKeyName("adminKey")
+                            .adminKey("adminKey")
                             .accountId(NEW_ACCOUNT_ID)
                             .description(CLASSIC_NODE_NAMES[4])
                             .withAvailableSubProcessPorts());

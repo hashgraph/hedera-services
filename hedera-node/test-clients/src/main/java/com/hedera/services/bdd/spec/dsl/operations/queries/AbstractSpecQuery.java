@@ -19,6 +19,7 @@ package com.hedera.services.bdd.spec.dsl.operations.queries;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
+import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.operations.AbstractSpecOperation;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -32,12 +33,26 @@ public abstract class AbstractSpecQuery<S extends AbstractSpecQuery<S, T>, T ext
     @Nullable
     private Consumer<T> assertions;
 
+    @Nullable
+    protected SpecAccount payer;
+
     protected AbstractSpecQuery(@NonNull final List<SpecEntity> requiredEntities) {
         super(requiredEntities);
     }
 
     /**
-     * Set the assertions to be made on the transaction.
+     * Set the account that will pay for the query.
+     * @param payer the account
+     * @return this
+     */
+    public S payingWith(@NonNull final SpecAccount payer) {
+        this.payer = requireNonNull(payer);
+        requiredEntities.add(payer);
+        return self();
+    }
+
+    /**
+     * Set the assertions to be made on the query.
      *
      * @param assertions the assertions
      * @return this
@@ -48,12 +63,13 @@ public abstract class AbstractSpecQuery<S extends AbstractSpecQuery<S, T>, T ext
     }
 
     /**
-     * Get the assertions to be made on the transaction, if present.
+     * Get the assertions to be made on the query, if present.
      *
      * @return the assertions
      */
     protected Optional<Consumer<T>> maybeAssertions() {
-        return Optional.ofNullable(assertions);
+        return Optional.ofNullable(assertions)
+                .map(spec -> payer == null ? spec : spec.andThen(op -> op.payingWith(payer.name())));
     }
 
     /**
