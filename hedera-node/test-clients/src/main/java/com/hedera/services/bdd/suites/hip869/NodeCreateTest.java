@@ -23,7 +23,7 @@ import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.PropertySource.asAccount;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.ALL_ZEROS_INVALID_KEY;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.WRONG_LENGTH_EDDSA_KEY;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.EmbeddedHapiTest;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyEmbeddedHapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import java.util.Arrays;
@@ -101,7 +102,7 @@ public class NodeCreateTest {
     @HapiTest
     final Stream<DynamicTest> validateAdminKey() {
         return hapiTest(nodeCreate("nodeCreate")
-                .adminKey(ALL_ZEROS_INVALID_KEY)
+                .adminKey(WRONG_LENGTH_EDDSA_KEY)
                 .signedBy(GENESIS)
                 .hasPrecheck(INVALID_ADMIN_KEY));
     }
@@ -294,9 +295,10 @@ public class NodeCreateTest {
      * Check that node creation succeeds with gossip and service endpoints using IPs and all optional fields are recorded.
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
-    @HapiTest
+    @LeakyEmbeddedHapiTest(
+            reason = NEEDS_STATE_ACCESS,
+            overrides = {"nodes.gossipFqdnRestricted"})
     final Stream<DynamicTest> allFieldsSetHappyCaseForIps() {
-
         return hapiTest(
                 newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
                 overriding("nodes.gossipFqdnRestricted", "false"),
