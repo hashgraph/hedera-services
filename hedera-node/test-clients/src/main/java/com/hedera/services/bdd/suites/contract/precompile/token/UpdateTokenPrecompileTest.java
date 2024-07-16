@@ -157,7 +157,7 @@ public class UpdateTokenPrecompileTest {
         static SpecNonFungibleToken sharedMutableToken;
 
         @BeforeAll
-        static void beforeAll(@NonNull final TestLifecycle testLifecycle) throws Throwable {
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
             sharedMutableToken.setTreasury(sharedTreasury);
             testLifecycle.doAdhoc(
                     sharedTreasury.authorizeContract(updateTokenContract),
