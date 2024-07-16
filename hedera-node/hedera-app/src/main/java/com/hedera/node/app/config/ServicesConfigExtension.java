@@ -60,7 +60,6 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NettyConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.NodesConfig;
-import com.hedera.node.config.data.PreHandleWorkflowConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.SigsConfig;
@@ -129,8 +128,7 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 TraceabilityConfig.class,
                 UpgradeConfig.class,
                 UtilPrngConfig.class,
-                VersionConfig.class,
-                PreHandleWorkflowConfig.class);
+                VersionConfig.class);
     }
 
     @NonNull

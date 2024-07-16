@@ -47,7 +47,6 @@ import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfiguration;
-import com.hedera.node.config.data.PreHandleWorkflowConfig;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -55,7 +54,6 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -97,10 +95,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * Used for registering notice of transactionIDs seen by this node
      */
     private final DeduplicationCache deduplicationCache;
-    /**
-     * Used to pre-handle transactions in parallel.
-     */
-    private final ForkJoinPool preHandlePool;
 
     /**
      * Creates a new instance of {@code PreHandleWorkflowImpl}.
@@ -109,6 +103,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
      * transaction.
      * @param transactionChecker the {@link TransactionChecker} for parsing and verifying the transaction
      * @param signatureVerifier the {@link SignatureVerifier} to verify signatures
+     * @throws NullPointerException if any of the parameters is {@code null}
      */
     @Inject
     public PreHandleWorkflowImpl(
@@ -124,12 +119,6 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         this.signatureExpander = requireNonNull(signatureExpander);
         this.configProvider = requireNonNull(configProvider);
         this.deduplicationCache = requireNonNull(deduplicationCache);
-        final var config = configProvider.getConfiguration().getConfigData(PreHandleWorkflowConfig.class);
-        if (config.isCustomPoolEnabled()) {
-            preHandlePool = new ForkJoinPool(config.preHandleThreadCount());
-        } else {
-            preHandlePool = ForkJoinPool.commonPool();
-        }
     }
 
     /**
@@ -149,7 +138,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
         final var accountStore = readableStoreFactory.getStore(ReadableAccountStore.class);
 
         // In parallel, we will pre-handle each transaction.
-        transactions.forEach(tx -> preHandlePool.execute(() -> {
+        transactions.parallel().forEach(tx -> {
             if (tx.isSystem()) return;
             try {
                 tx.setMetadata(preHandleTransaction(creator, readableStoreFactory, accountStore, tx));
@@ -161,7 +150,7 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
                         "Possibly CATASTROPHIC failure while running the pre-handle workflow", unexpectedException);
                 tx.setMetadata(unknownFailure());
             }
-        }));
+        });
     }
 
     // For each transaction, we will use a background thread to parse the transaction, validate it, lookup the
