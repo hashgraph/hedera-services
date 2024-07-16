@@ -382,28 +382,17 @@ void startPlatform(final State state) {
 
 #### Block Proof
 
-In a fully Dynamic Address Book (DAB) where, say, the roster for round 101 might be different from the roster for round
-102, there is a need to track what roster is used for each non-ancient round.
-We propose the introduction of a queue of roster hashes stored in the state, where the index of a roster hash determines
-what round the roster is active for as shown.
-![](TSS%20Roster%20Lifecycle-Roster%20and%20Rounds.drawio.svg)
-The size of this queue would be ancient round window + roster offset.
-The roster offset refers to the number of rounds in advance that the network determines and declares the active roster
-for a specific future round.
-This acts as a proactive mechanism that allows the network to prepare for upcoming changes in the roster and ensure a
-valid transition to a future roster.
-When each round is handled, we will pop off the active roster hash for the round that just became ancient, and add a new
-active roster hash for a new future round.
-
-Before full DAB, we propose to store the current and previous active rosters in this newly introduced
-queue of hashes.
+We propose the introduction of a queue of roster hashes stored in the state, which holds the current and previous active
+rosters.
 In this proposal implementation, this queue will contain only 2 hashes, with the first hash representing
 the previous active roster, and the second hash representing the current active roster.
-At upgrade boundaries, we will pop off the previous active roster, and add a new roster to the end of the queue, which
-is the new active roster.
+At upgrade boundaries, we will pop off the previous active roster and add a new roster to the end of the queue which
+becomes the new active roster as shown below.
+![](TSS%20Roster%20Lifecycle-Roster%20and%20Rounds.drawio.svg)
 
-This approach provides the benefit of introducing the necessary data structure for full DAB, while also providing a
-mechanism for tracking the active roster for each round in the interim.
+This approach provides the benefit of introducing the necessary data structure for full DAB (to be detailed in a future
+design proposal),
+while also providing a mechanism for tracking the active roster.
 
 #### Reconnect
 
@@ -424,13 +413,13 @@ Reconnect. Reconnect logic currently exchanges and validates the address book be
 Some of the obvious test cases to be covered in the plan include validating one or more of the following scenarios:
 
 1. New valid Candidate Roster created with no subsequent one sent by app. Verify accept.
-2. New valid Candidate Roster created with subsequent one sent by app. Verify accept.
+2. New valid Candidate Roster created with the subsequent one sent by app. Verify accept.
 3. Invalid roster(s) sent by the app. Verify reject.
-4. Node Failures During Roster Change: What happens if nodes fails or disconnects during a roster change? Verify valid
+4. Node Failures During Roster Change: What happens if nodes fail or disconnect during a roster change? Verify valid
    node successfully reconnects.
 5. Concurrent Roster Updates: What if we make multiple roster updates concurrently? Verify no effect on adoption.
-6. Roster recovery? Node receives candidate roster, crashes. Wakes up, reconnects. Verify recovery.
-7. What end to end testing do we need for brand new network that uses the TSS signature scheme to sign its blocks?
+6. Roster recovery? The Node receives a candidate roster, crashes. Wake up, reconnect. Verify recovery.
+7. What end-to-end testing do we need for a brand-new network that uses the TSS signature scheme to sign its blocks?
 
 ### Metrics
 
@@ -444,5 +433,5 @@ introduce is the number of candidate rosters that have been set. Others may be i
   fields.
 - Implement Roster Adoption Logic: Develop the logic for the platform to adopt candidate rosters based on TSS readiness
   and voting.
-- Update Reconnect Process: Modify the reconnect process to use rosters instead of address books.
+- Update Reconnect Process: Modify the Reconnect process to use rosters instead of address books.
 - Testing and Deployment: Conduct thorough testing of the new roster implementation and deploy.
