@@ -68,15 +68,8 @@ public class TransactionHandler {
                 stats.consensusTransHandleTime(secondsElapsed / round.getNumAppTransactions());
             }
             stats.consensusTransHandled(round.getNumAppTransactions());
-
-            for (final EventImpl event : round.getConsensusEvents()) {
-                // events being played back from stream file do not have reachedConsTimestamp set,
-                // since reachedConsTimestamp is not serialized and saved to stream file
-                if (event.getReachedConsTimestamp() != null) {
-                    stats.consensusToHandleTime(event.getReachedConsTimestamp().until(timeOfHandle, ChronoUnit.NANOS)
-                            * NANOSECONDS_TO_SECONDS);
-                }
-            }
+            stats.consensusToHandleTime(round.getReachedConsTimestamp().until(timeOfHandle, ChronoUnit.NANOS)
+                    * NANOSECONDS_TO_SECONDS);
         } catch (final Throwable t) {
             logger.error(
                     EXCEPTION.getMarker(),

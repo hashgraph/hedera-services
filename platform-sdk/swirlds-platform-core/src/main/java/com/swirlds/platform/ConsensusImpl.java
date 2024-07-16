@@ -810,8 +810,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
         // take middle. If there are 2 middle (even length) then use the 2nd (max) of them
         event.setPreliminaryConsensusTimestamp(times.get(times.size() / 2));
-
-        event.setReachedConsTimestamp(Instant.now()); // used for statistics
     }
 
     /**

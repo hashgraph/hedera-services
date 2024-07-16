@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -84,7 +85,9 @@ class DefaultTransactionHandlerTests {
         }
 
         final ConsensusRound consensusRound = mock(ConsensusRound.class);
-        when(consensusRound.getConsensusEvents()).thenReturn(events);
+        when(consensusRound.getConsensusEvents()).thenReturn(events.stream().map(EventImpl::getBaseEvent).collect(
+                Collectors.toList()));
+        when(consensusRound.getNumEvents()).thenReturn(events.size());
         when(consensusRound.getConsensusTimestamp())
                 .thenReturn(Time.getCurrent().now());
         when(consensusRound.getKeystoneEvent()).thenReturn(keystoneEvent);

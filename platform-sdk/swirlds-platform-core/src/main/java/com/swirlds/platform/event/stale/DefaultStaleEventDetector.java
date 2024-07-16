@@ -120,9 +120,9 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
     @Override
     public List<RoutableData<StaleEventDetectorOutput>> addConsensusRound(
             @NonNull final ConsensusRound consensusRound) {
-        for (final EventImpl event : consensusRound.getConsensusEvents()) {
+        for (final PlatformEvent event : consensusRound.getConsensusEvents()) {
             if (event.getCreatorId().equals(selfId)) {
-                selfEvents.remove(event.getBaseEvent().getDescriptor());
+                selfEvents.remove(event.getDescriptor());
             }
         }
 

@@ -20,6 +20,7 @@ import com.swirlds.base.utility.ToStringBuilder;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -82,6 +83,8 @@ public class ConsensusRound implements Round {
      * True if this round reached consensus during the replaying of the preconsensus event stream.
      */
     private final boolean pcesRound;
+    /** the local time (not consensus time) at which this round reached consensus */
+    private final Instant reachedConsTimestamp = Instant.EPOCH;//TODO
 
     /**
      * Create a new instance with the provided consensus events.
@@ -95,7 +98,7 @@ public class ConsensusRound implements Round {
      * @param pcesRound       true if this round reached consensus during the replaying of the preconsensus event
      *                        stream
      */
-    public ConsensusRound(
+    public ConsensusRound(//TODO chnage constructor
             @NonNull final AddressBook consensusRoster,
             @NonNull final List<EventImpl> consensusEvents,
             @NonNull final EventImpl keystoneEvent,
@@ -134,8 +137,8 @@ public class ConsensusRound implements Round {
      *
      * @return the list of events in this round
      */
-    public @NonNull List<EventImpl> getConsensusEvents() {
-        return consensusEvents;
+    public @NonNull List<PlatformEvent> getConsensusEvents() {
+        return consensusEvents.stream().map(EventImpl::getBaseEvent).collect(Collectors.toList());
     }
 
     /**
@@ -220,6 +223,13 @@ public class ConsensusRound implements Round {
     @Override
     public @NonNull Instant getConsensusTimestamp() {
         return snapshot.consensusTimestamp();
+    }
+
+    /**
+     * @return the local time (not consensus time) at which the round reached consensus
+     */
+    public @NonNull Instant getReachedConsTimestamp() {
+        return reachedConsTimestamp;
     }
 
     /**
