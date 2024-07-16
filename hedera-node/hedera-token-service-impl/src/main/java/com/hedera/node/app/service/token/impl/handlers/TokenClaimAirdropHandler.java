@@ -26,6 +26,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
@@ -34,6 +35,11 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenClaimAirdropHandler implements TransactionHandler {
+
+    @Inject
+    public TokenClaimAirdropHandler() {
+        // Exists for injection
+    }
 
     @Override
     public void preHandle(@NonNull PreHandleContext context) throws PreCheckException {}
