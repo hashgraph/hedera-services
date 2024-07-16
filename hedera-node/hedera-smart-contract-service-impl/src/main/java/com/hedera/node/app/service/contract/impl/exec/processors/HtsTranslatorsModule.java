@@ -33,6 +33,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.getapp
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantapproval.GrantApprovalTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.grantrevokekyc.GrantRevokeKycTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isapprovedforall.IsApprovedForAllTranslator;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isassociated.IsAssociatedTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.isfrozen.IsFrozenTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.iskyc.IsKycTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.istoken.IsTokenTranslator;
@@ -83,6 +84,14 @@ public interface HtsTranslatorsModule {
     @IntoSet
     @Named("HtsTranslators")
     static CallTranslator provideAssociationsTranslator(@NonNull final AssociationsTranslator translator) {
+        return translator;
+    }
+
+    @Provides
+    @Singleton
+    @IntoSet
+    @Named("HtsTranslators")
+    static CallTranslator provideIsAssociatedTranslator(@NonNull final IsAssociatedTranslator translator) {
         return translator;
     }
 

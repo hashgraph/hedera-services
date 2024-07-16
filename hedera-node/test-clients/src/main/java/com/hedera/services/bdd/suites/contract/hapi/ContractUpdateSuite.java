@@ -97,6 +97,28 @@ public class ContractUpdateSuite {
     public static final String INITIAL_ADMIN_KEY = "initialAdminKey";
 
     @HapiTest
+    final Stream<DynamicTest> updateMaxAutomaticAssociationsAndRequireKey() {
+        final var newExpiry = Instant.now().getEpochSecond() + DEFAULT_PROPS.defaultExpirationSecs() * 2;
+        return defaultHapiSpec("updateMaxAutomaticAssociationsAndRequireKey")
+                .given(
+                        newKeyNamed(ADMIN_KEY),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
+                .when(
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).signedBy(DEFAULT_PAYER, ADMIN_KEY),
+                        contractUpdate(CONTRACT)
+                                .newMaxAutomaticAssociations(20)
+                                .newExpirySecs(newExpiry)
+                                .signedBy(DEFAULT_PAYER, ADMIN_KEY),
+                        contractUpdate(CONTRACT)
+                                .newMaxAutomaticAssociations(20)
+                                .newExpirySecs(newExpiry + 1)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasKnownStatus(INVALID_SIGNATURE))
+                .then(getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(20)));
+    }
+
+    @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
         return defaultHapiSpec("idVariantsTreatedAsExpected")
                 .given(
@@ -495,7 +517,7 @@ public class ContractUpdateSuite {
                         getContractBytecode(simpleStorageContract).saveResultTo("initialBytecode"))
                 .when(contractUpdate(simpleStorageContract).bytecode(emptyConstructorContract))
                 .then(withOpContext((spec, log) -> {
-                    var op = getContractBytecode(simpleStorageContract)
+                    final var op = getContractBytecode(simpleStorageContract)
                             .hasBytecode(spec.registry().getBytes("initialBytecode"));
                     allRunFor(spec, op);
                 }));
@@ -530,9 +552,9 @@ public class ContractUpdateSuite {
         final var players = IntStream.range(1, 30).mapToObj(i -> "Player" + i).toList();
         final var contract = "MusicalChairs";
 
-        List<HapiSpecOperation> given = new ArrayList<>();
-        List<HapiSpecOperation> when = new ArrayList<>();
-        List<HapiSpecOperation> then = new ArrayList<>();
+        final List<HapiSpecOperation> given = new ArrayList<>();
+        final List<HapiSpecOperation> when = new ArrayList<>();
+        final List<HapiSpecOperation> then = new ArrayList<>();
 
         ////// Create contract //////
         given.add(cryptoCreate(dj).balance(10 * ONE_HUNDRED_HBARS));
