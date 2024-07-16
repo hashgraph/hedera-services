@@ -62,6 +62,7 @@ import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ACCOUNT_WIPE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_AIRDROP;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_BURN;
+import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CLAIM_AIRDROP;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_CREATE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_DELETE;
 import static com.hedera.hapi.node.base.HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT;
@@ -251,6 +252,7 @@ public record ApiPermissionConfig(
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenUpdateNfts,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenReject,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenAirdrop,
+        @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange tokenClaimAirdrop,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange createNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange updateNode,
         @ConfigProperty(defaultValue = "0-*") PermissionedAccountsRange deleteNode,
@@ -303,6 +305,7 @@ public record ApiPermissionConfig(
         permissionKeys.put(TOKEN_UPDATE_NFTS, c -> c.tokenUpdateNfts);
         permissionKeys.put(TOKEN_REJECT, c -> c.tokenReject);
         permissionKeys.put(TOKEN_AIRDROP, c -> c.tokenAirdrop);
+        permissionKeys.put(TOKEN_CLAIM_AIRDROP, c -> c.tokenClaimAirdrop);
         /* Queries */
         permissionKeys.put(CONSENSUS_GET_TOPIC_INFO, c -> c.getTopicInfo);
         permissionKeys.put(CONTRACT_CALL_LOCAL, c -> c.contractCallLocalMethod);

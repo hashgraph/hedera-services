@@ -206,6 +206,7 @@ public class TransactionDispatcher {
             case TOKEN_UPDATE_NFTS -> handlers.tokenUpdateNftsHandler();
             case TOKEN_REJECT -> handlers.tokenRejectHandler();
             case TOKEN_AIRDROP -> handlers.tokenAirdropHandler();
+            case TOKEN_CLAIM_AIRDROP -> handlers.tokenClaimAirdropHandler();
 
             case UTIL_PRNG -> handlers.utilPrngHandler();
 

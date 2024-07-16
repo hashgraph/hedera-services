@@ -70,7 +70,8 @@
 			"TokenUnfreezeAccount",
 			"TokenGrantKycToAccount",
 			"TokenRevokeKycFromAccount",
-		  	"TokenAirdrop"
+				"TokenAirdrop",
+				"TokenClaimAirdrop"
 		  ]
 		}
 	  ]
