@@ -90,7 +90,7 @@ class DefaultTransactionHandlerTests {
         when(consensusRound.getNumEvents()).thenReturn(events.size());
         when(consensusRound.getConsensusTimestamp())
                 .thenReturn(Time.getCurrent().now());
-        when(consensusRound.getKeystoneEvent()).thenReturn(keystoneEvent);
+        when(consensusRound.getKeystoneEvent()).thenReturn(keystoneEvent.getBaseEvent());
         when(consensusRound.getRoundNum()).thenReturn(roundNumber);
         when(consensusRound.isEmpty()).thenReturn(events.isEmpty());
         when(consensusRound.isPcesRound()).thenReturn(pcesRound);

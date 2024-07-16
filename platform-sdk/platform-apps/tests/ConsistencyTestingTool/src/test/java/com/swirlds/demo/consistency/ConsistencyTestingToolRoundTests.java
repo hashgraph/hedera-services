@@ -35,6 +35,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -61,7 +62,7 @@ class ConsistencyTestingToolRoundTests {
      * @return a mock round with the specified event contents and round received
      */
     private static Round buildMockRound(final List<List<Long>> eventContents, final long roundReceived) {
-        final List<EventImpl> mockEvents = new ArrayList<>();
+        final List<PlatformEvent> mockEvents = new ArrayList<>();
 
         eventContents.forEach(event -> {
             final List<ConsensusTransaction> mockTransactions = new ArrayList<>();
@@ -78,9 +79,7 @@ class ConsistencyTestingToolRoundTests {
 
             final ConsensusTransaction[] eventTransactionArray = new ConsensusTransactionImpl[eventContents.size()];
             mockTransactions.toArray(eventTransactionArray);
-            final EventImpl mockEvent = mock(EventImpl.class);
-            Mockito.when(mockEvent.getRoundReceived()).thenReturn(roundReceived);
-            Mockito.when(mockEvent.getBaseEvent()).thenReturn(mock(PlatformEvent.class));
+            final PlatformEvent mockEvent = mock(PlatformEvent.class);
             Mockito.when(mockEvent.consensusTransactionIterator()).thenReturn(mockTransactions.iterator());
 
             mockEvents.add(mockEvent);
@@ -91,11 +90,12 @@ class ConsistencyTestingToolRoundTests {
         return new ConsensusRound(
                 mock(AddressBook.class),
                 mockEvents,
-                mock(EventImpl.class),
+                mock(PlatformEvent.class),
                 mock(GraphGenerations.class),
                 mock(EventWindow.class),
                 mockSnapshot,
-                false);
+                false,
+                Instant.now());
     }
 
     @Test

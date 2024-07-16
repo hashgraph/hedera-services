@@ -73,16 +73,16 @@ class RoundDurabilityBufferTests {
 
         final PlatformEvent keystoneEvent = new TestingEventBuilder(randotron).build();
         keystoneEvent.setStreamSequenceNumber(keystoneSequenceNumber);
-        final EventImpl keystoneEventImpl = new EventImpl(keystoneEvent, null, null);
 
         return new ConsensusRound(
                 mock(AddressBook.class),
                 List.of(),
-                keystoneEventImpl,
+                keystoneEvent,
                 mock(Generations.class),
                 mock(EventWindow.class),
                 mock(ConsensusSnapshot.class),
-                false);
+                false,
+                Instant.now());
     }
 
     @Test

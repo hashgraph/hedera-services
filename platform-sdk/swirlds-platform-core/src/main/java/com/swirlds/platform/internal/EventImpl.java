@@ -40,7 +40,7 @@ import java.util.TreeSet;
  * which is a public-facing form of an event.
  */
 public class EventImpl extends EventMetadata implements Comparable<EventImpl>, ConsensusEvent {
-
+//TODO cleanup
     /** The base event information, including some gossip specific information */
     private PlatformEvent baseEvent;
     /** Consensus data calculated for an event */
