@@ -92,7 +92,7 @@ public class NodeCreateTest {
         return hapiTest(nodeCreate("nodeCreate")
                 .setNode("0.0.4") // exclude 0.0.3
                 .adminKey(NONSENSE_KEY)
-                .hasPrecheck(KEY_REQUIRED));
+                .hasKnownStatus(KEY_REQUIRED));
     }
 
     /**
