@@ -49,6 +49,7 @@ import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.RecordDispatch;
+import com.hedera.node.app.workflows.handle.SingleBlockStreamTransactionBuilder;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -65,6 +66,8 @@ import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.time.Instant;
 
 public record UserTxn(
@@ -83,7 +86,30 @@ public record UserTxn(
         @NonNull ReadableStoreFactory readableStoreFactory,
         @NonNull Configuration config,
         @NonNull Instant lastHandledConsensusTime,
-        @NonNull NodeInfo creatorInfo) {
+        @NonNull NodeInfo creatorInfo,
+        @Nullable SingleBlockStreamTransactionBuilder blockBuilder) {
+
+    public UserTxn(
+            boolean isGenesisTxn,
+            @NonNull HederaFunctionality functionality,
+            @NonNull Instant consensusNow,
+            @NonNull HederaState state,
+            @NonNull PlatformState platformState,
+            @NonNull ConsensusEvent event,
+            @NonNull ConsensusTransaction platformTxn,
+            @NonNull RecordListBuilder recordListBuilder,
+            @NonNull TransactionInfo txnInfo,
+            @NonNull TokenContextImpl tokenContextImpl,
+            @NonNull SavepointStackImpl stack,
+            @NonNull PreHandleResult preHandleResult,
+            @NonNull ReadableStoreFactory readableStoreFactory,
+            @NonNull Configuration config,
+            @NonNull Instant lastHandledConsensusTime,
+            @NonNull NodeInfo creatorInfo) {
+        this(isGenesisTxn, functionality, consensusNow, state, platformState, event, platformTxn, recordListBuilder,
+                txnInfo, tokenContextImpl, stack, preHandleResult, readableStoreFactory, config, lastHandledConsensusTime,
+                creatorInfo, null);
+    }
 
     public static UserTxn from(
             // @UserTxnScope
@@ -98,7 +124,8 @@ public record UserTxn(
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final BlockRecordManager blockRecordManager,
-            @NonNull final HandleWorkflow handleWorkflow) {
+            @NonNull final HandleWorkflow handleWorkflow,
+            @Nullable final SingleBlockStreamTransactionBuilder blockBuilder) {
         final var config = configProvider.getConfiguration();
         final var stack = new SavepointStackImpl(state);
         final var readableStoreFactory = new ReadableStoreFactory(stack);
@@ -122,7 +149,8 @@ public record UserTxn(
                 readableStoreFactory,
                 config,
                 lastHandledConsensusTime,
-                creatorInfo);
+                creatorInfo,
+                blockBuilder);
     }
 
     public Dispatch dispatch(
@@ -178,25 +206,31 @@ public record UserTxn(
                 dispatchProcessor,
                 recordListBuilder,
                 new AppThrottleAdviser(networkUtilizationManager, consensusNow, recordListBuilder, stack));
-        return new RecordDispatch(
-                recordBuilder,
-                config,
-                dispatcher.dispatchComputeFees(dispatchHandleContext),
-                txnInfo,
-                requireNonNull(txnInfo.payerID()),
-                readableStoreFactory,
-                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), recordBuilder),
-                keyVerifier,
-                creatorInfo,
-                consensusNow,
-                preHandleResult.getRequiredKeys(),
-                preHandleResult.getHollowAccounts(),
-                dispatchHandleContext,
-                stack,
-                USER,
-                tokenContextImpl,
-                recordListBuilder,
-                platformState,
-                preHandleResult);
+        if (blockBuilder != null) {
+            // todo: return a BlockDispatch equivalent (instead of RecordDispatch)
+            return null;
+        } else {
+            return new RecordDispatch(
+                    recordBuilder,
+                    config,
+                    dispatcher.dispatchComputeFees(dispatchHandleContext),
+                    txnInfo,
+                    requireNonNull(txnInfo.payerID()),
+                    readableStoreFactory,
+                    new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class),
+                            recordBuilder),
+                    keyVerifier,
+                    creatorInfo,
+                    consensusNow,
+                    preHandleResult.getRequiredKeys(),
+                    preHandleResult.getHollowAccounts(),
+                    dispatchHandleContext,
+                    stack,
+                    USER,
+                    tokenContextImpl,
+                    recordListBuilder,
+                    platformState,
+                    preHandleResult);
+        }
     }
 }

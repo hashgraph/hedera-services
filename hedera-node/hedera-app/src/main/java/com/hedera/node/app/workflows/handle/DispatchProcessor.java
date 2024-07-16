@@ -117,6 +117,7 @@ public class DispatchProcessor {
             }
         }
         dispatchUsageManager.trackUsage(dispatch, workDone);
+        //todo: resultFinalizer.finalizeResult(dispatch); (finalize block items, if applicable)
         recordFinalizer.finalizeRecord(dispatch);
         dispatch.stack().commitFullStack();
     }

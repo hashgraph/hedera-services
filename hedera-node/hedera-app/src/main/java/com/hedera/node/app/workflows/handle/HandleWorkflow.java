@@ -26,8 +26,12 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartU
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.BlockHashAlgorithm;
+import com.hedera.hapi.block.stream.ConsensusData;
+import com.hedera.hapi.block.stream.EventDescriptor;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.fees.ExchangeRateManager;
@@ -70,6 +74,8 @@ import com.swirlds.state.spi.HapiUtils;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -158,6 +164,11 @@ public class HandleWorkflow {
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
     }
 
+    //------------------------------------------------------------------------------------------------------------------
+
+    // todo: singleton injection into this class
+    private BlockstreamBlockFacilitator blockFacil = new BlockstreamBlockFacilitator();
+
     /**
      * Handles the next {@link Round}
      *
@@ -171,6 +182,21 @@ public class HandleWorkflow {
         final var userTransactionsHandled = new AtomicBoolean(false);
         logStartRound(round);
         cacheWarmer.warm(state, round);
+
+        // initialize the block builder
+        final var blockstreamBuilder = new BlockstreamBlockBuilder();
+        final var currentBlockNum = blockFacil.incrementBlockNumber();
+        blockstreamBuilder.header()
+                .hapiProtoVersion(version)
+                .number(currentBlockNum)
+                .previousBlockProofHash(blockFacil.previousBlockProofHash())
+                .hashAlgorithm(BlockHashAlgorithm.SHA_384)
+                // todo: set address book version when available
+                .addressBookVersion(SemanticVersion.DEFAULT);
+
+        boolean startEventAssigned = false;
+        boolean systemTxnAssigned = false;
+
         for (final var event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
@@ -184,14 +210,55 @@ public class HandleWorkflow {
             }
             // log start of event to transaction state log
             logStartEvent(event, creator);
+
+            // initialize block start event metadata
+            if (!startEventAssigned) {
+                blockstreamBuilder.startEvent()
+                        .softwareVersion(event.getSoftwareVersion())
+                        .creatorId(event.getCreatorId().id())
+                        // todo: how to get??
+                        .generation(-1)
+                        // todo: how to get??
+                        .birthRound(-1)
+                        // todo: how to get??
+                        .selfParent(EventDescriptor.DEFAULT)
+                        // todo: how to get??
+                        .otherParents(EventDescriptor.DEFAULT)
+                        .timeCreated(Timestamp.newBuilder().seconds(event.getTimeCreated().getEpochSecond()).nanos(event.getTimeCreated().getNano()))
+                        // todo: how to get??
+                        .hash(Bytes.EMPTY)
+                        .consensusData(ConsensusData.newBuilder()
+                                .consensusTimestamp(Timestamp.newBuilder().seconds(event.getConsensusTimestamp().getEpochSecond()).nanos(event.getConsensusTimestamp().getNano()))
+                                .round(round.getRoundNum())
+                                .order(event.getConsensusOrder())
+                                .build());
+                startEventAssigned = true;
+            }
+
             // handle each transaction of the event
             for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
                 final var platformTxn = it.next();
                 try {
                     // skip system transactions
                     if (!platformTxn.isSystem()) {
-                        userTransactionsHandled.set(true);
-                        handlePlatformTransaction(state, platformState, event, creator, platformTxn);
+                        handlePlatformTransaction(state, platformState, event, creator, platformTxn, blockstreamBuilder);
+                    } else if (!systemTxnAssigned) {
+                        //??? does this branch need to execute before any transaction processing?
+                        switch(platformTxn.getPayload().kind()) {
+                            case APPLICATION_PAYLOAD -> {
+                                //??? do nothing? or set blockstreamBuilder.systemTransaction().bitsPerSecond() (or ping)??
+                            }
+                            case STATE_SIGNATURE_PAYLOAD -> {
+                                // todo: set blockstreamBuilder.systemTransaction().stateSignature();
+                            }
+                            case UNSET -> {
+                                // todo: complain about unset payload
+                            }
+                            case null, default -> {
+                                // todo: complain about null payload
+                            }
+                        }
+                        systemTxnAssigned = true;
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -200,6 +267,8 @@ public class HandleWorkflow {
                             e);
                 }
             }
+
+            userTransactionsHandled.set(true);
         }
         // Update all throttle metrics once per round
         throttleServiceManager.updateAllMetrics();
@@ -227,12 +296,19 @@ public class HandleWorkflow {
             @NonNull final PlatformState platformState,
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction txn) {
+            @NonNull final ConsensusTransaction txn,
+            @NonNull final BlockstreamBlockBuilder blockBuilder) {
         final var handleStart = System.nanoTime();
 
+        // Create a new transaction block item
+        var blockTxnBuilder = blockBuilder.transactions().newTransaction()
+                //??? Is this correct?
+                .submittedBytes(txn.getApplicationPayload());
+
         final var consensusNow = txn.getConsensusTimestamp().minusNanos(1000 - 3L);
-        final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
+        final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow, blockTxnBuilder);
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
+        //todo next step: execute(userTxn) to call the block item builder
         final var recordStream = execute(userTxn);
         blockRecordManager.endUserTransaction(recordStream, state);
 
@@ -526,7 +602,8 @@ public class HandleWorkflow {
             @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction txn,
-            @NonNull final Instant consensusNow) {
+            @NonNull final Instant consensusNow,
+            @Nullable final SingleBlockStreamTransactionBuilder blockBuilder) {
         return UserTxn.from(
                 state,
                 platformState,
@@ -538,6 +615,7 @@ public class HandleWorkflow {
                 configProvider,
                 storeMetricsService,
                 blockRecordManager,
-                this);
+                this,
+                blockBuilder);
     }
 }
