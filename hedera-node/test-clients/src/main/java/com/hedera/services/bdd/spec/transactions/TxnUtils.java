@@ -265,9 +265,10 @@ public class TxnUtils {
     }
 
     public static ContractID asContractId(final String s, final HapiSpec lookupSpec) {
-        if (s.length() == HapiContractCall.HEXED_EVM_ADDRESS_LEN) {
+        final var effS = s.startsWith("0x") ? s.substring(2) : s;
+        if (effS.length() == HapiContractCall.HEXED_EVM_ADDRESS_LEN) {
             return ContractID.newBuilder()
-                    .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(s)))
+                    .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(effS)))
                     .build();
         }
         return isIdLiteral(s) ? asContract(s) : lookupSpec.registry().getContractId(s);
