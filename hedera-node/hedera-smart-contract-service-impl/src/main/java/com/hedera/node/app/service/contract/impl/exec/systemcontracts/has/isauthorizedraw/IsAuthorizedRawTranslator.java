@@ -22,6 +22,7 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.node.app.service.contract.impl.annotations.ServicesV051;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
+import com.hedera.node.app.service.contract.impl.exec.gas.CustomGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCallTranslator;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.HasCallAttempt;
@@ -44,9 +45,14 @@ public class IsAuthorizedRawTranslator extends AbstractCallTranslator<HasCallAtt
     private static final int HASH_ARG = 1;
     private static final int SIGNATURE_ARG = 2;
 
+    private final CustomGasCalculator customGasCalculator;
+
     @Inject
-    public IsAuthorizedRawTranslator(@ServicesV051 @NonNull final FeatureFlags featureFlags) {
+    public IsAuthorizedRawTranslator(
+            @ServicesV051 @NonNull final FeatureFlags featureFlags,
+            @NonNull final CustomGasCalculator customGasCalculator) {
         requireNonNull(featureFlags, "featureFlags");
+        this.customGasCalculator = requireNonNull(customGasCalculator);
     }
 
     /**
@@ -77,7 +83,7 @@ public class IsAuthorizedRawTranslator extends AbstractCallTranslator<HasCallAtt
             final var messageHash = (byte[]) call.get(HASH_ARG);
             final var signature = (byte[]) call.get(SIGNATURE_ARG);
 
-            return new IsAuthorizedRawCall(attempt, address, messageHash, signature);
+            return new IsAuthorizedRawCall(attempt, address, messageHash, signature, customGasCalculator);
         }
         return null;
     }

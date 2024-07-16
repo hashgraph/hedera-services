@@ -65,7 +65,6 @@ import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.b
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -125,6 +124,7 @@ public class Evm46ValidationSuite {
     public static final List<Long> existingSystemAccounts = List.of(800L, 999L, 1000L);
     public static final List<Long> systemAccounts =
             List.of(0L, 1L, 9L, 10L, 358L, 359L, 360L, 361L, 750L, 751L, 799L, 800L, 999L, 1000L);
+    public static final List<Long> callOperationsSuccessSystemAccounts = List.of(0L, 1L, 358L, 750L, 751L, 999L, 1000L);
 
     @HapiTest
     final Stream<DynamicTest> directCallToDeletedContractResultsInSuccessfulNoop() {
@@ -1216,7 +1216,7 @@ public class Evm46ValidationSuite {
                                 .gas(GAS_LIMIT_FOR_CALL * 4)
                                 .sending(2L)
                                 .via(INNER_TXN)
-                                .hasKnownStatus(INVALID_FEE_SUBMITTED))
+                                .hasKnownStatus(INVALID_CONTRACT_ID))
                 .then(getAccountBalance(MAKE_CALLS_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
@@ -1298,7 +1298,7 @@ public class Evm46ValidationSuite {
                                                 mirrorAddrWith(targetId.get().getAccountNum()))
                                         .gas(GAS_LIMIT_FOR_CALL * 4)
                                         .via(INNER_TXN)
-                                        .hasKnownStatus(INVALID_FEE_SUBMITTED))))
+                                        .hasKnownStatus(INVALID_CONTRACT_ID))))
                 .then(getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
@@ -1371,7 +1371,7 @@ public class Evm46ValidationSuite {
                                                 mirrorAddrWith(targetId.get().getAccountNum()))
                                         .gas(GAS_LIMIT_FOR_CALL * 4)
                                         .via(INNER_TXN)
-                                        .hasKnownStatus(INVALID_FEE_SUBMITTED))))
+                                        .hasKnownStatus(INVALID_CONTRACT_ID))))
                 .then(getAccountBalance(INTERNAL_CALLER_CONTRACT).hasTinyBars(changeFromSnapshot("initialBalance", 0)));
     }
 
@@ -1499,5 +1499,64 @@ public class Evm46ValidationSuite {
                         .hasPriority(recordWith()
                                 .status(SUCCESS)
                                 .contractCallResult(resultWith().gasUsed(GAS_LIMIT_FOR_CALL))));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> testCallOperationsForSystemAccounts() {
+        final var contract = "CallOperationsCheckerSuccess";
+        final var functionName = "call";
+        final HapiSpecOperation[] opsArray = getCallOperationsOnSystemAccounts(contract, functionName);
+        return defaultHapiSpec("testCallOperationsForSystemAccounts")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when()
+                .then(opsArray);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> testCallCodeOperationsForSystemAccounts() {
+        final var contract = "CallOperationsCheckerSuccess";
+        final var functionName = "callCode";
+        final HapiSpecOperation[] opsArray = getCallOperationsOnSystemAccounts(contract, functionName);
+        return defaultHapiSpec("testCallCodeOperationsForSystemAccounts")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when()
+                .then(opsArray);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> testDelegateCallOperationsForSystemAccounts() {
+        final var contract = "CallOperationsCheckerSuccess";
+        final var functionName = "delegateCall";
+        final HapiSpecOperation[] opsArray = getCallOperationsOnSystemAccounts(contract, functionName);
+        return defaultHapiSpec("testDelegateCallOperationsForSystemAccounts")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when()
+                .then(opsArray);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> testStaticCallOperationsForSystemAccounts() {
+        final var contract = "CallOperationsCheckerSuccess";
+        final var functionName = "staticcall";
+        final HapiSpecOperation[] opsArray = getCallOperationsOnSystemAccounts(contract, functionName);
+        return defaultHapiSpec("testStaticCallOperationsForSystemAccounts")
+                .given(uploadInitCode(contract), contractCreate(contract))
+                .when()
+                .then(opsArray);
+    }
+
+    private HapiSpecOperation[] getCallOperationsOnSystemAccounts(final String contract, final String functionName) {
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[callOperationsSuccessSystemAccounts.size()];
+        for (int i = 0; i < callOperationsSuccessSystemAccounts.size(); i++) {
+            int finalI = i;
+            opsArray[i] = withOpContext((spec, opLog) -> allRunFor(
+                    spec,
+                    contractCall(
+                                    contract,
+                                    functionName,
+                                    mirrorAddrWith(callOperationsSuccessSystemAccounts.get(finalI)))
+                            .hasKnownStatus(SUCCESS)));
+        }
+        return opsArray;
     }
 }

@@ -20,7 +20,6 @@ import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMA
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-import static java.util.stream.Collectors.toCollection;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
@@ -34,16 +33,10 @@ import com.hedera.services.bdd.spec.infrastructure.RegistryNotFound;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.hip796.operations.TokenFeature;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import com.hederahashgraph.api.proto.java.*;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -71,16 +64,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private Optional<String> newMetadataKey = Optional.empty();
     private Optional<String> newMetadata = Optional.empty();
 
-    @Nullable
-    private String newLockKey;
-
-    @Nullable
-    private String newPartitionKey;
-
-    @Nullable
-    private String newPartitionMoveKey;
-
-    private Set<TokenFeature> rolesToRemove = EnumSet.noneOf(TokenFeature.class);
     private Optional<String> newSymbol = Optional.empty();
     private Optional<String> newName = Optional.empty();
     private Optional<String> newTreasury = Optional.empty();
@@ -115,13 +98,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
     public HapiTokenUpdate(String token) {
         this.token = token;
-    }
-
-    public HapiTokenUpdate removingRoles(@NonNull final TokenFeature... rolesToRemove) {
-        this.rolesToRemove = rolesToRemove.length == 0
-                ? EnumSet.noneOf(TokenFeature.class)
-                : Arrays.stream(rolesToRemove).collect(toCollection(() -> EnumSet.noneOf(TokenFeature.class)));
-        return this;
     }
 
     public HapiTokenUpdate freezeKey(String name) {
@@ -166,21 +142,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
     public HapiTokenUpdate newMetadata(String name) {
         newMetadata = Optional.of(name);
-        return this;
-    }
-
-    public HapiTokenUpdate lockKey(@NonNull final String name) {
-        newLockKey = Objects.requireNonNull(name);
-        return this;
-    }
-
-    public HapiTokenUpdate partitionKey(@NonNull final String name) {
-        newPartitionKey = Objects.requireNonNull(name);
-        return this;
-    }
-
-    public HapiTokenUpdate partitionMoveKey(@NonNull final String name) {
-        newPartitionMoveKey = Objects.requireNonNull(name);
         return this;
     }
 

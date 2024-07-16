@@ -29,7 +29,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -49,15 +48,15 @@ import static org.junit.jupiter.api.parallel.ResourceAccessMode.READ_WRITE;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.junit.support.SpecManager;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
@@ -74,9 +73,9 @@ public class SelfDestructSuite {
     private static final String BENEFICIARY = "beneficiary";
 
     @BeforeAll
-    static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
+    static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         // Multiple tests use the same contract, so we upload it once here
-        specManager.setup(uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT));
+        testLifecycle.doAdhoc(uploadInitCode(SELF_DESTRUCT_CALLABLE_CONTRACT));
     }
 
     @Nested
@@ -84,13 +83,8 @@ public class SelfDestructSuite {
     @ResourceLock(value = "EVM_VERSION", mode = READ_WRITE)
     class WithV046EVM {
         @BeforeAll
-        static void beforeAll(@NonNull final SpecManager specManager) throws Throwable {
-            specManager.setup(overriding(HapiSuite.EVM_VERSION_PROPERTY, HapiSuite.EVM_VERSION_046));
-        }
-
-        @AfterAll
-        static void afterAll(@NonNull final SpecManager specManager) throws Throwable {
-            specManager.teardown(overriding(HapiSuite.EVM_VERSION_PROPERTY, HapiSuite.EVM_VERSION_050));
+        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+            testLifecycle.overrideInClass(Map.of("contracts.evm.version", "v0.46"));
         }
 
         @HapiTest

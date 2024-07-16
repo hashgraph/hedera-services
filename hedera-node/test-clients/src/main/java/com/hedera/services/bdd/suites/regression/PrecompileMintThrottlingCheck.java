@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.regression;
 
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
@@ -32,9 +32,9 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.esaulpaugh.headlong.abi.Address;
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -76,18 +76,17 @@ public class PrecompileMintThrottlingCheck extends HapiSuite {
         return List.of(precompileNftMintsAreLimitedByConsThrottle());
     }
 
+    // When enabling, note this disables the GAS throttle and overrides throttles
     @SuppressWarnings("java:S5960")
     final Stream<DynamicTest> precompileNftMintsAreLimitedByConsThrottle() {
         var mainnetLimits = protoDefsFromResource("testSystemFiles/mainnet-throttles.json");
-        return propertyPreservingHapiSpec("PrecompileNftMintsAreLimitedByConsThrottle")
-                .preserving("contracts.throttle.throttleByGas")
-                .given(
-                        overriding("contracts.throttle.throttleByGas", "false"),
-                        fileUpdate(THROTTLE_DEFS).payingWith(GENESIS).contents(mainnetLimits.toByteArray()))
-                .when(runWithProvider(precompileMintsFactory())
+        return hapiTest(
+                overriding("contracts.throttle.throttleByGas", "false"),
+                fileUpdate(THROTTLE_DEFS).payingWith(GENESIS).contents(mainnetLimits.toByteArray()),
+                runWithProvider(precompileMintsFactory())
                         .lasting(duration::get, unit::get)
-                        .maxOpsPerSec(maxOpsPerSec::get))
-                .then(getTokenInfo(NON_FUNGIBLE_TOKEN)
+                        .maxOpsPerSec(maxOpsPerSec::get),
+                getTokenInfo(NON_FUNGIBLE_TOKEN)
                         .hasTotalSupplySatisfying(supply -> {
                             final var allowedMaxSupply = (int) (unit.get().toSeconds(duration.get())
                                     * EXPECTED_MAX_MINTS_PER_SEC

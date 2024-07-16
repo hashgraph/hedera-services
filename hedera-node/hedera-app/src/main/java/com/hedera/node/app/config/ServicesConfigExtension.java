@@ -63,7 +63,6 @@ import com.hedera.node.config.data.NodesConfig;
 import com.hedera.node.config.data.PreHandleWorkflowConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.node.config.data.SchedulingConfig;
-import com.hedera.node.config.data.SigsConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.StatsConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -120,7 +119,6 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 NetworkAdminConfig.class,
                 RatesConfig.class,
                 SchedulingConfig.class,
-                SigsConfig.class,
                 StakingConfig.class,
                 StatsConfig.class,
                 TokensConfig.class,

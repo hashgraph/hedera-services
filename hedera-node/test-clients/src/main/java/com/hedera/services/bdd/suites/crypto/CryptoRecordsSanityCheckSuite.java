@@ -65,7 +65,7 @@ public class CryptoRecordsSanityCheckSuite {
     private static final String NEW_KEY = "newKey";
     private static final String ORIG_KEY = "origKey";
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> ownershipChangeShowsInRecord() {
         final var firstOwner = "A";
         final var secondOwner = "B";
@@ -98,7 +98,7 @@ public class CryptoRecordsSanityCheckSuite {
                         getTxnRecord(xferRecord).logged());
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> cryptoCreateRecordSanityChecks() {
         return defaultHapiSpec("CryptoCreateRecordSanityChecks")
                 .given(takeBalanceSnapshots(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, DEFAULT_PAYER))
@@ -109,7 +109,7 @@ public class CryptoRecordsSanityCheckSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> cryptoDeleteRecordSanityChecks() {
         return defaultHapiSpec("CryptoDeleteRecordSanityChecks")
                 .given(flattened(
@@ -124,7 +124,7 @@ public class CryptoRecordsSanityCheckSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> cryptoTransferRecordSanityChecks() {
         return defaultHapiSpec("CryptoTransferRecordSanityChecks")
                 .given(flattened(
@@ -137,7 +137,7 @@ public class CryptoRecordsSanityCheckSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> cryptoUpdateRecordSanityChecks() {
         return defaultHapiSpec("CryptoUpdateRecordSanityChecks")
                 .given(flattened(
@@ -151,7 +151,7 @@ public class CryptoRecordsSanityCheckSuite {
                         validateRecordTransactionFees("txn"));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> insufficientAccountBalanceRecordSanityChecks() {
         final long BALANCE = 500_000_000L;
         return defaultHapiSpec("InsufficientAccountBalanceRecordSanityChecks")
@@ -175,7 +175,7 @@ public class CryptoRecordsSanityCheckSuite {
                         List.of("txn1", "txn2"), List.of(FUNDING, NODE, STAKING_REWARD, NODE_REWARD, PAYER, RECEIVER)));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_BALANCES)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_BALANCES)
     final Stream<DynamicTest> invalidPayerSigCryptoTransferRecordSanityChecks() {
         final long BALANCE = 10_000_000L;
 

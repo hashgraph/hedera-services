@@ -64,7 +64,6 @@ import com.hedera.node.config.data.NodesConfig;
 import com.hedera.node.config.data.PreHandleWorkflowConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.node.config.data.SchedulingConfig;
-import com.hedera.node.config.data.SigsConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.StatsConfig;
 import com.hedera.node.config.data.TokensConfig;
@@ -179,7 +178,6 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(NetworkAdminConfig.class)
                 .withConfigDataType(RatesConfig.class)
                 .withConfigDataType(SchedulingConfig.class)
-                .withConfigDataType(SigsConfig.class)
                 .withConfigDataType(StakingConfig.class)
                 .withConfigDataType(StatsConfig.class)
                 .withConfigDataType(TokensConfig.class)
