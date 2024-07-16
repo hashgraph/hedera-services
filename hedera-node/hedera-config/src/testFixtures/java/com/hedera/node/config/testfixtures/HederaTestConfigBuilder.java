@@ -61,6 +61,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.NettyConfig;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.NodesConfig;
+import com.hedera.node.config.data.PreHandleWorkflowConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.SigsConfig;
@@ -189,6 +190,7 @@ public final class HederaTestConfigBuilder {
                 .withConfigDataType(UtilPrngConfig.class)
                 .withConfigDataType(VersionConfig.class)
                 .withConfigDataType(NodesConfig.class)
+                .withConfigDataType(PreHandleWorkflowConfig.class)
                 .withConverter(CongestionMultipliers.class, new CongestionMultipliersConverter())
                 .withConverter(EntityScaleFactors.class, new EntityScaleFactorsConverter())
                 .withConverter(KnownBlockValues.class, new KnownBlockValuesConverter())
