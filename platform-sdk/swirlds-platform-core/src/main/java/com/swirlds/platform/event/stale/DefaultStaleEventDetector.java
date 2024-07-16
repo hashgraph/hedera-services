@@ -26,7 +26,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;

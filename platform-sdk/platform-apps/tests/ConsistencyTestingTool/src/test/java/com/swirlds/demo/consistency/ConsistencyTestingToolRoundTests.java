@@ -30,7 +30,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;

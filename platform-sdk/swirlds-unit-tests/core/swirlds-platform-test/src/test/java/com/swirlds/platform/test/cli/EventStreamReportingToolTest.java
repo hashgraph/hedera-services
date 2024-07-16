@@ -25,7 +25,6 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.report.EventStreamReport;
 import com.swirlds.platform.event.report.EventStreamScanner;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import com.swirlds.platform.system.BasicSoftwareVersion;

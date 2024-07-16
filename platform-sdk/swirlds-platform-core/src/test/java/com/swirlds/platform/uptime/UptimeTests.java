@@ -36,7 +36,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -84,8 +83,8 @@ class UptimeTests {
                     .build();
 
             if (!noJudges.contains(nodeId) && firstEventCreated.add(nodeId)) {
-                //event.setFamous(true);
-                //event.setJudgeTrue();
+                // event.setFamous(true);
+                // event.setJudgeTrue();
                 firstEventCreated.add(nodeId);
             }
             time.tick(roundDuration.dividedBy(count));

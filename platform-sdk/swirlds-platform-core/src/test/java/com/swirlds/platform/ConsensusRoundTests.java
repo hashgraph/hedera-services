@@ -28,9 +28,7 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -54,7 +52,14 @@ class ConsensusRoundTests {
                 new TestingEventBuilder(r).build());
 
         final ConsensusRound round = new ConsensusRound(
-                mock(AddressBook.class), events, mock(PlatformEvent.class), g, mock(EventWindow.class), snapshot, false, Instant.now());
+                mock(AddressBook.class),
+                events,
+                mock(PlatformEvent.class),
+                g,
+                mock(EventWindow.class),
+                snapshot,
+                false,
+                Instant.now());
 
         assertEquals(events, round.getConsensusEvents(), "consensus event list does not match the provided list.");
         assertEquals(events.size(), round.getNumEvents(), "numEvents does not match the events provided.");
@@ -71,9 +76,10 @@ class ConsensusRoundTests {
         for (int i = 0; i < 100; i++) {
             final int numTransactions = r.nextInt(200);
             numActualTransactions += numTransactions;
-            final PlatformEvent event =                    new TestingEventBuilder(r)
-                            .setAppTransactionCount(numTransactions)
-                            .setSystemTransactionCount(0).build();
+            final PlatformEvent event = new TestingEventBuilder(r)
+                    .setAppTransactionCount(numTransactions)
+                    .setSystemTransactionCount(0)
+                    .build();
             events.add(event);
         }
 

@@ -18,15 +18,11 @@ package com.swirlds.platform.test.consensus.framework.validation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
-import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 
 public class ConsensusRoundValidation {
@@ -100,7 +96,8 @@ public class ConsensusRoundValidation {
      * @param e1 the first event
      * @param e2 the second event
      */
-    private static void assertConsensusEvents(final String description, final PlatformEvent e1, final PlatformEvent e2) {
+    private static void assertConsensusEvents(
+            final String description, final PlatformEvent e1, final PlatformEvent e2) {
         final boolean equal = Objects.equals(e1, e2);
         if (!equal) {
             final StringBuilder sb = new StringBuilder();
@@ -114,13 +111,15 @@ public class ConsensusRoundValidation {
     }
 
     /** Add a description to a string builder as to why two events are different. */
-    private static void getEventDifference(final StringBuilder sb, final PlatformEvent event1, final PlatformEvent event2) {
+    private static void getEventDifference(
+            final StringBuilder sb, final PlatformEvent event1, final PlatformEvent event2) {
         checkGeneration(event1, event2, sb);
         checkConsensusTimestamp(event1, event2, sb);
         checkConsensusOrder(event1, event2, sb);
     }
 
-    private static void checkConsensusOrder(final PlatformEvent event1, final PlatformEvent event2, final StringBuilder sb) {
+    private static void checkConsensusOrder(
+            final PlatformEvent event1, final PlatformEvent event2, final StringBuilder sb) {
         if (event1.getConsensusOrder() != event2.getConsensusOrder()) {
             sb.append("   consensus order mismatch: ")
                     .append(event1.getConsensusOrder())
@@ -141,7 +140,8 @@ public class ConsensusRoundValidation {
         }
     }
 
-    private static void checkGeneration(final PlatformEvent event1, final PlatformEvent event2, final StringBuilder sb) {
+    private static void checkGeneration(
+            final PlatformEvent event1, final PlatformEvent event2, final StringBuilder sb) {
         if (event1.getGeneration() != event2.getGeneration()) {
             sb.append("   generation mismatch: ")
                     .append(event1.getGeneration())

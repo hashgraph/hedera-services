@@ -21,9 +21,6 @@ import static org.mockito.Mockito.when;
 
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.test.PlatformTest;
-import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +45,9 @@ public final class TransactionHandlingTestUtils {
 
         final List<PlatformEvent> events = new ArrayList<>();
         for (int index = 0; index < eventCount; index++) {
-            events.add(new TestingEventBuilder(random).setSystemTransactionCount(transactionsPerEvent).build());
+            events.add(new TestingEventBuilder(random)
+                    .setSystemTransactionCount(transactionsPerEvent)
+                    .build());
         }
 
         when(round.getConsensusEvents()).thenReturn(events);

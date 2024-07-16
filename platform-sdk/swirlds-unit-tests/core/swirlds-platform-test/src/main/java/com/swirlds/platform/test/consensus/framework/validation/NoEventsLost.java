@@ -21,7 +21,6 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.event.PlatformEvent;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.consensus.framework.ConsensusOutput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;

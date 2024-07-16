@@ -35,7 +35,6 @@ import com.swirlds.platform.consensus.ConsensusConfig;
 import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.RoundHandlingMetrics;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;

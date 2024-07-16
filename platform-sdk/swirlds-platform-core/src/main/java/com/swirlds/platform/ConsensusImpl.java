@@ -691,8 +691,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
         // all events that reach consensus during this method call, in consensus order
         final List<PlatformEvent> consensusEvents =
-                findConsensusEvents(judges, decidedRoundNumber, ConsensusUtils.generateWhitening(judges))
-                        .stream().map(EventImpl::getBaseEvent).toList();
+                findConsensusEvents(judges, decidedRoundNumber, ConsensusUtils.generateWhitening(judges)).stream()
+                        .map(EventImpl::getBaseEvent)
+                        .toList();
         // all rounds before this round are now decided, and appropriate events marked consensus
         consensusMetrics.consensusReachedOnRound();
 

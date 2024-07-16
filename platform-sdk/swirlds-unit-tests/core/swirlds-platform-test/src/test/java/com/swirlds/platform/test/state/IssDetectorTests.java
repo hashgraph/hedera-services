@@ -159,7 +159,9 @@ class IssDetectorTests extends PlatformTest {
     private static ConsensusRound createRoundWithSignatureEvents(
             final long roundNumber, @NonNull final List<EventImpl> eventsToInclude) {
         final ConsensusRound consensusRound = mock(ConsensusRound.class);
-        when(consensusRound.getConsensusEvents()).thenReturn(eventsToInclude.stream().map(EventImpl::getBaseEvent).toList());
+        when(consensusRound.getConsensusEvents())
+                .thenReturn(
+                        eventsToInclude.stream().map(EventImpl::getBaseEvent).toList());
         when(consensusRound.getRoundNum()).thenReturn(roundNumber);
 
         return consensusRound;
