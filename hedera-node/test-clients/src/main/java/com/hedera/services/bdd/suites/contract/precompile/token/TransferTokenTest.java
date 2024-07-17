@@ -18,27 +18,21 @@ package com.hedera.services.bdd.suites.contract.precompile.token;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
-import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
+import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
-import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
@@ -55,81 +49,66 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestMethodOrder(OrderAnnotation.class)
 public class TransferTokenTest {
 
-    private static final String TOKEN_TRANSFER_CONTRACT = "TokenTransferContract";
-    private static final String TOKEN_RECEIVER_CONTRACT = "NestedHTSTransferrer";
-    private static final String FUNGIBLE_TOKEN = "fungibleToken";
-    private static final String ACCOUNT = "account";
-    private static final AtomicReference<Address> fungibleTokenNum = new AtomicReference<>();
-    private static final AtomicReference<Long> transferContractId = new AtomicReference<>();
-    private static final AtomicReference<Long> receiverContractId = new AtomicReference<>();
+    @Contract(contract = "TokenTransferContract", creationGas = 1_000_000L)
+    static SpecContract tokenTransferContract;
+
+    @Contract(contract = "NestedHTSTransferrer", creationGas = 1_000_000L)
+    static SpecContract tokenReceiverContract;
+
+    @FungibleToken(name = "fungibleToken")
+    static SpecFungibleToken fungibleToken;
+
+    @Account(name = "account", balance = 100 * ONE_HUNDRED_HBARS)
+    static SpecAccount account;
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-        testLifecycle.doAdhoc(
-                // Token owner contract that trys to transfer owned tokens
-                uploadInitCode(TOKEN_TRANSFER_CONTRACT),
-                contractCreate(TOKEN_TRANSFER_CONTRACT).gas(1_000_000L).exposingNumTo(transferContractId::set),
-
-                // Contract that is the recipient of the tokens
-                uploadInitCode(TOKEN_RECEIVER_CONTRACT),
-                contractCreate(TOKEN_RECEIVER_CONTRACT).gas(1_000_000L).exposingNumTo(receiverContractId::set),
-
-                // Create the treasury account
-                cryptoCreate(ACCOUNT).balance(100 * ONE_HUNDRED_HBARS),
-
-                // Create fungible token
-                tokenCreate(FUNGIBLE_TOKEN)
-                        .treasury(ACCOUNT)
-                        .initialSupply(100)
-                        .exposingAddressTo(fungibleTokenNum::set),
-
-                // Do associations
-                tokenAssociate(TOKEN_TRANSFER_CONTRACT, FUNGIBLE_TOKEN),
-                tokenAssociate(TOKEN_RECEIVER_CONTRACT, FUNGIBLE_TOKEN),
-
-                // Transfer fungible tokens to the TokenTransferContract contract
-                cryptoTransfer(moving(20, FUNGIBLE_TOKEN).between(ACCOUNT, TOKEN_TRANSFER_CONTRACT)));
+        fungibleToken.setInitialSupply(20L);
+        fungibleToken.setTreasury(account);
     }
 
+    /**
+     * The behavior of the transferToken function and transferFrom function differs for contracts that are token owners.
+     * The tests below highlight the differences and shows that an allowance approval is required for the transferFrom function
+     * in order to be consistent with the ERC20 standard.
+     */
     @Nested
     @DisplayName("successful when")
     @Order(1)
     class SuccessfulTransferTokenTest {
         @HapiTest
-        @DisplayName("transferring owner's tokens using transferToken function")
+        @DisplayName("transferring owner's tokens using transferToken function without explicit allowance")
         public Stream<DynamicTest> transferUsingTransferToken() {
-            return hapiTest(contractCall(
-                            TOKEN_TRANSFER_CONTRACT,
-                            "transferTokenPublic",
-                            fungibleTokenNum.get(),
-                            asHeadlongAddress(Bytes.ofUnsignedLong(transferContractId.get())
-                                    .toArray()),
-                            asHeadlongAddress(Bytes.ofUnsignedLong(receiverContractId.get())
-                                    .toArray()),
-                            2L)
-                    .gas(1_000_000L));
+            return hapiTest(
+                    tokenTransferContract.associateTokens(fungibleToken),
+                    tokenReceiverContract.associateTokens(fungibleToken),
+                    tokenTransferContract.transferToken(fungibleToken, 20L, account),
+                    // Transfer using transferToken function
+                    tokenTransferContract
+                            .call(
+                                    "transferTokenPublic",
+                                    fungibleToken,
+                                    tokenTransferContract,
+                                    tokenReceiverContract,
+                                    2L)
+                            .gas(1_000_000L));
         }
 
         @HapiTest
         @DisplayName("transferring owner's tokens using transferFrom function given allowance")
         public Stream<DynamicTest> transferUsingTransferFromWithAllowance() {
             return hapiTest(
-                    contractCall(
-                                    TOKEN_TRANSFER_CONTRACT,
-                                    "approvePublic",
-                                    fungibleTokenNum.get(),
-                                    asHeadlongAddress(Bytes.ofUnsignedLong(transferContractId.get())
-                                            .toArray()),
-                                    BigInteger.valueOf(2L))
+                    // Approve the transfer contract to spend 2 tokens
+                    tokenTransferContract
+                            .call("approvePublic", fungibleToken, tokenTransferContract, BigInteger.valueOf(2L))
                             .gas(1_000_000L),
-                    contractCall(
-                                    TOKEN_TRANSFER_CONTRACT,
+                    // Transfer using transferFrom function
+                    tokenTransferContract
+                            .call(
                                     "transferFromPublic",
-                                    fungibleTokenNum.get(),
-                                    asHeadlongAddress(Bytes.ofUnsignedLong(transferContractId.get())
-                                            .toArray()),
-                                    asHeadlongAddress(Bytes.ofUnsignedLong(receiverContractId.get())
-                                            .toArray()),
+                                    fungibleToken,
+                                    tokenTransferContract,
+                                    tokenReceiverContract,
                                     BigInteger.valueOf(2L))
                             .gas(1_000_000L));
         }
@@ -142,33 +121,28 @@ public class TransferTokenTest {
         @HapiTest
         @DisplayName("transferring owner's tokens using transferFrom function without allowance")
         public Stream<DynamicTest> transferUsingTransferFromWithoutAllowance() {
-            return hapiTest(contractCall(
-                            TOKEN_TRANSFER_CONTRACT,
-                            "transferFromPublic",
-                            fungibleTokenNum.get(),
-                            asHeadlongAddress(Bytes.ofUnsignedLong(transferContractId.get())
-                                    .toArray()),
-                            asHeadlongAddress(Bytes.ofUnsignedLong(receiverContractId.get())
-                                    .toArray()),
-                            BigInteger.valueOf(2L))
-                    .gas(1_000_000L)
-                    .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED));
+            return hapiTest(
+                    // Transfer using transferFrom function without allowance should fail
+                    tokenTransferContract
+                            .call(
+                                    "transferFromPublic",
+                                    fungibleToken,
+                                    tokenTransferContract,
+                                    tokenReceiverContract,
+                                    BigInteger.valueOf(2L))
+                            .gas(1_000_000L)
+                            .andAssert(txn -> txn.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)));
         }
 
         @HapiTest
         @DisplayName("transferring owner's tokens using transferToken function from receiver contract")
         public Stream<DynamicTest> transferUsingTransferFromReceiver() {
-            return hapiTest(contractCall(
-                            TOKEN_RECEIVER_CONTRACT,
-                            "transfer",
-                            fungibleTokenNum.get(),
-                            asHeadlongAddress(Bytes.ofUnsignedLong(transferContractId.get())
-                                    .toArray()),
-                            asHeadlongAddress(Bytes.ofUnsignedLong(receiverContractId.get())
-                                    .toArray()),
-                            2L)
-                    .gas(1_000_000L)
-                    .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED));
+            return hapiTest(
+                    // Transfer using receiver contract transfer function should fail
+                    tokenReceiverContract
+                            .call("transfer", fungibleToken, tokenTransferContract, tokenReceiverContract, 2L)
+                            .gas(1_000_000L)
+                            .andAssert(txn -> txn.hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)));
         }
     }
 }
