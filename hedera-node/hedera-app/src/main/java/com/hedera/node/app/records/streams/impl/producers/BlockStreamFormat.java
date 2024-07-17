@@ -16,10 +16,10 @@
 
 package com.hedera.node.app.records.streams.impl.producers;
 
-import com.hedera.hapi.streams.v7.BlockHeader;
-import com.hedera.hapi.streams.v7.BlockItem;
-import com.hedera.hapi.streams.v7.BlockStateProof;
-import com.hedera.hapi.streams.v7.StateChanges;
+import com.hedera.hapi.block.stream.BlockHeader;
+import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.BlockProof;
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.system.events.ConsensusEvent;
@@ -86,13 +86,13 @@ public interface BlockStreamFormat {
     Bytes serializeStateChanges(@NonNull final StateChanges stateChanges);
 
     /**
-     * Serialize a BlockStateProof into an intermediary format that can be used for writing to the file.
+     * Serialize a BlockProof into an intermediary format that can be used for writing to the file.
      *
-     * @param blockStateProof The {@link BlockStateProof} to serialize.
+     * @param blockStateProof The {@link BlockProof} to serialize.
      * @return the serialized bytes of the block state proof.
      */
     @NonNull
-    Bytes serializeBlockStateProof(@NonNull final BlockStateProof blockStateProof);
+    Bytes serializeBlockProof(@NonNull final BlockProof blockStateProof);
 
     /**
      * Returns an instance of a non-thread safe MessageDigest that can be used to compute the hash of block items.

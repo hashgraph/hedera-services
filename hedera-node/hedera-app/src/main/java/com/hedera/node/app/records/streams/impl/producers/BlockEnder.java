@@ -18,10 +18,9 @@ package com.hedera.node.app.records.streams.impl.producers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.HashObject;
-import com.hedera.hapi.streams.v7.BlockStateProof;
-import com.hedera.hapi.streams.v7.SiblingHashes;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.swirlds.state.HederaState;
@@ -46,7 +45,6 @@ public class BlockEnder {
     private final BlockStreamWriter writer;
     private final HederaState state;
     private final RunningHashes runningHashes;
-    private final SiblingHashes siblingHashes;
     private final long blockNumber;
 
     /**
@@ -84,20 +82,18 @@ public class BlockEnder {
             random.nextBytes(bytes);
             hashes.add(Bytes.wrap(bytes));
         }
-        this.siblingHashes = new SiblingHashes(hashes);
     }
 
     public void endBlock(
-            @NonNull final CompletableFuture<BlockStateProof> blockPersisted,
+            @NonNull final CompletableFuture<BlockProof> blockPersisted,
             @NonNull final BlockStateProofProducer stateProofProducer) {
         try {
             // Supply the running and sibling hashes to the stateProofProducer.
             stateProofProducer.setRunningHashes(runningHashes);
-            stateProofProducer.setSiblingHashes(siblingHashes);
 
             // Block until the blockStateProof is available. This call makes the operation synchronous and blocks
             // until it is able to get the state proof.
-            BlockStateProof proof = stateProofProducer.getBlockStateProof().get();
+            BlockProof proof = stateProofProducer.getBlockProof().get();
 
             writeStateProof(proof);
             closeWriter(lastRunningHash, blockNumber);
@@ -119,10 +115,10 @@ public class BlockEnder {
         }
     }
 
-    private void writeStateProof(@NonNull final BlockStateProof blockStateProof) {
+    private void writeStateProof(@NonNull final BlockProof blockStateProof) {
         // We do not update running hashes with the block state proof hash like we do for other block items, we simply
         // write it out.
-        final var serializedBlockItem = format.serializeBlockStateProof(blockStateProof);
+        final var serializedBlockItem = format.serializeBlockProof(blockStateProof);
         writeSerializedBlockItem(serializedBlockItem);
     }
 

@@ -118,7 +118,7 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
         // Log to transaction state log, what was put
         logMapPut(stateKey, key, value);
         // Notify the observer.
-        BlockObserverSingleton.getInstanceOrThrow().mapUpdateChange(stateKey, key, value);
+        StateChangesObserverSingleton.getInstanceOrThrow().mapUpdateChange(stateKey, key, value);
     }
 
     /** {@inheritDoc} */

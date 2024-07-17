@@ -22,10 +22,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Singleton instance of the BlockObserver.
+ * Singleton instance of the StateChangesObserver.
  */
-public class BlockObserverSingleton {
-    private static final AtomicReference<BlockObserver> instance = new AtomicReference<>(new NoOpBlockObserver());
+public class StateChangesObserverSingleton {
+    private static final AtomicReference<StateChangesObserver> instance = new AtomicReference<>(new NoOpStateChangesObserver());
 
     public static void initInstance(@NonNull final ConfigProvider configProvider) {
         final var current = instance.get();
@@ -34,8 +34,8 @@ public class BlockObserverSingleton {
                 BlockRecordStreamConfig.class);
         final var recordFileVersion = recordStreamConfig.recordFileVersion();
         if (recordStreamConfig.enabled() && recordFileVersion < 7) {
-            // Instantiate NoOpBlockObserver for v6 and below.
-            instance.compareAndSet(current, new NoOpBlockObserver());
+            // Instantiate NoOpStateChangesObserver for v6 and below.
+            instance.compareAndSet(current, new NoOpStateChangesObserver());
             return;
         }
 
@@ -43,20 +43,20 @@ public class BlockObserverSingleton {
                 BlockStreamConfig.class);
         final var blockVersion = blockStreamConfig.blockVersion();
         if (blockStreamConfig.enabled() && blockVersion >= 7) {
-            // Instantiate BlockObserverImpl for v7 and above.
-            instance.compareAndSet(current, new BlockObserverImpl());
+            // Instantiate StateChangesObserverImpl for v7 and above.
+            instance.compareAndSet(current, new StateChangesObserverImpl());
             return;
         }
 
-        throw new IllegalArgumentException("BlockObserverSingleton: No valid block observer configuration found. "
+        throw new IllegalArgumentException("StateChangesObserverSingleton: No valid block observer configuration found. "
                 + "Please check the configuration for blockStreamConfig and blockRecordStreamConfig.");
     }
 
     @NonNull
-    public static BlockObserver getInstanceOrThrow() {
-        BlockObserver observer = instance.get();
+    public static StateChangesObserver getInstanceOrThrow() {
+        StateChangesObserver observer = instance.get();
         if (observer == null) {
-            throw new IllegalStateException("BlockObserver has not been initialized.");
+            throw new IllegalStateException("StateChangesObserver has not been initialized.");
         }
         return observer;
     }

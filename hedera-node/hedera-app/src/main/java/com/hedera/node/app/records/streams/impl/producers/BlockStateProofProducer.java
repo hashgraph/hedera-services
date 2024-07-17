@@ -18,13 +18,11 @@ package com.hedera.node.app.records.streams.impl.producers;
 
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.BlockProof;
+import com.hedera.hapi.block.stream.BlockSignature;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.hapi.streams.v7.BlockSignature;
-import com.hedera.hapi.streams.v7.BlockStateProof;
-import com.hedera.hapi.streams.v7.SiblingHashes;
-import com.hedera.node.app.records.BlockRecordService;
-import com.swirlds.state.HederaState;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.HederaState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -60,11 +58,11 @@ public class BlockStateProofProducer {
     private final long roundNum;
 
     private final CopyOnWriteArrayList<QueuedStateSignatureTransaction> signatures = new CopyOnWriteArrayList<>();
-    private final AtomicReference<BlockStateProof> proof = new AtomicReference<>();
+    private final AtomicReference<BlockProof> proof = new AtomicReference<>();
     private final AddressBook consensusRoster;
     private final int requiredNumberOfSignatures;
     private volatile RunningHashes runningHashes;
-    private volatile SiblingHashes siblingHashes;
+    //private volatile SiblingHashes siblingHashes;
 
     public BlockStateProofProducer(
             @NonNull final ExecutorService executor,
@@ -86,9 +84,9 @@ public class BlockStateProofProducer {
         this.runningHashes = requireNonNull(runningHashes, "Running hashes cannot be null");
     }
 
-    public void setSiblingHashes(@NonNull final SiblingHashes siblingHashes) {
+    /*public void setSiblingHashes(@NonNull final SiblingHashes siblingHashes) {
         this.siblingHashes = requireNonNull(siblingHashes, "Sibling hashes cannot be null");
-    }
+    }*/
 
     /**
      * Get the block state proof for the current round. This will return a future that will complete with the block
@@ -104,7 +102,7 @@ public class BlockStateProofProducer {
      * @return a future that will complete with the block state proof for the current round
      */
     @NonNull
-    public CompletableFuture<BlockStateProof> getBlockStateProof() {
+    public CompletableFuture<BlockProof> getBlockProof() {
         // Using the Supplier, return a future that will complete with the block proof for the current round as soon as
         // we have enough signatures.
         return CompletableFuture.supplyAsync(proofSupplier(), executor);
@@ -115,19 +113,19 @@ public class BlockStateProofProducer {
      * @return the supplier for the block state proof for the current round
      */
     @NonNull
-    private Supplier<BlockStateProof> proofSupplier() {
+    private Supplier<BlockProof> proofSupplier() {
         final var c = StateSignatureTransactionCollector.getInstance();
 
         // Fast path if the proof has already been constructed.
         final var p = proof.get();
         if (p != null) {
             // Mark the proof collected on the collector.
-            c.roundComplete(p);
+            c.roundComplete(p, roundNum);
             return () -> p;
         }
 
         final var p2 = this.collectProof(c);
-        c.roundComplete(p2);
+        c.roundComplete(p2, roundNum);
         // Return our function that supplies the proof.
         return () -> p2;
     }
@@ -137,7 +135,7 @@ public class BlockStateProofProducer {
      * @return the block state proof for the current round
      */
     @NonNull
-    private BlockStateProof collectProof(@NonNull final StateSignatureTransactionCollector c) {
+    private BlockProof collectProof(@NonNull final StateSignatureTransactionCollector c) {
         final var q = c.getQueueForRound(roundNum);
 
         // Read from the queue to collect the signatures (or a proof if one is provided by the queue).
@@ -182,7 +180,7 @@ public class BlockStateProofProducer {
      * @return the block state proof for the current round or null if we don't have enough signatures
      */
     @Nullable
-    private BlockStateProof constructProof() {
+    private BlockProof constructProof() {
         // Given the signatures we have, try to construct a proof.
         // Do we have enough signatures?
         if (!haveEnoughSignatures()) return null;
@@ -202,14 +200,11 @@ public class BlockStateProofProducer {
 
     @NonNull
     private Stream<BlockSignature> buildBlockSignatures() {
-        return Stream.empty();
-        //todo create an API for the state/block(?) signature
-//        return signatures.stream()
-//                .map(sst -> new BlockSignature(
-//                        Bytes.wrap(sst.sig()
-//                                .getStateSignature() // Can't be null because we don't insert nulls into the queue.
-//                                .getSignatureBytes()),
-//                        sst.nodeId()));
+        return signatures.stream()
+                .map(sst -> new BlockSignature(
+                        sst.sig()
+                                .getStateSignaturePayload()
+                                .signature()));
     }
 
     /**
@@ -217,17 +212,14 @@ public class BlockStateProofProducer {
      * @return the block state proof for the current round
      */
     @NonNull
-    private BlockStateProof buildProof() {
+    private BlockProof buildProof() {
         final var blockSignatures = buildBlockSignatures().toList();
-        assert siblingHashes != null : "Sibling hashes should not be null";
         assert runningHashes != null : "Running hashes should not be null";
         assert blockSignatures != null : "Block signatures should not be null";
         assert !blockSignatures.isEmpty() : "Block signatures should not be empty";
 
-        final var proof = BlockStateProof.newBuilder()
-                .siblingHashes(siblingHashes)
-                .endRunningHashes(runningHashes)
-                .blockSignatures(blockSignatures)
+        final var proof = BlockProof.newBuilder()
+                //.blockSignature(blockSignatures) block
                 .build();
 
         // Construct the block proof with the information we gathered.
@@ -248,7 +240,7 @@ public class BlockStateProofProducer {
      * @param proof the proof to verify
      * @return true if the proof is valid, otherwise false
      */
-    private boolean verifyProof(@NonNull final BlockStateProof proof) {
+    private boolean verifyProof(@NonNull final BlockProof proof) {
         // TODO(nickpoorman): Implement this.
         return true;
     }
@@ -259,7 +251,7 @@ public class BlockStateProofProducer {
      * @return the proof that was set or the one that was already set
      */
     @NonNull
-    private BlockStateProof setProof(@NonNull final BlockStateProof p) {
+    private BlockProof setProof(@NonNull final BlockProof p) {
         // Only set the proof if it's currently not set.
         if (proof.compareAndSet(null, p)) return p;
         // Get the current value of the proof.
@@ -272,7 +264,7 @@ public class BlockStateProofProducer {
      * @return the proof if it was supplied, otherwise null
      */
     @Nullable
-    private BlockStateProof tryConsumeProof(@NonNull final QueuedStateSignatureTransaction e) {
+    private BlockProof tryConsumeProof(@NonNull final QueuedStateSignatureTransaction e) {
         // If a proof was not provided we can't consume it.
         final var p = e.proof();
         if (p == null) return null;

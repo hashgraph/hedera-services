@@ -25,7 +25,7 @@ import com.swirlds.common.merkle.impl.PartialBinaryMerkleInternal;
 import com.swirlds.common.merkle.utility.DebugIterationEndpoint;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.platform.state.merkle.StateUtils;
-import com.swirlds.platform.state.merkle.disk.BlockObserverSingleton;
+import com.swirlds.platform.state.merkle.disk.StateChangesObserverSingleton;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -101,6 +101,6 @@ public class SingletonNode<T> extends PartialBinaryMerkleInternal implements Lab
         // Log to transaction state log, what was written
         logSingletonWrite(label, value);
         // Notify the observer.
-        BlockObserverSingleton.getInstanceOrThrow().singletonUpdateChange(label, value);
+        StateChangesObserverSingleton.getInstanceOrThrow().singletonUpdateChange(label, value);
     }
 }

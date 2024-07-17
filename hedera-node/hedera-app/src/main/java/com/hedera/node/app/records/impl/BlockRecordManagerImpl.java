@@ -21,10 +21,10 @@ import static com.hedera.node.app.records.impl.BlockRecordInfoUtils.HASH_SIZE;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.hapi.streams.v7.BlockStateProof;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.FunctionalBlockRecordManager;
@@ -423,7 +423,7 @@ public final class BlockRecordManagerImpl implements FunctionalBlockRecordManage
     public void processRound(
             @NonNull HederaState state,
             @NonNull Round round,
-            @NonNull final CompletableFuture<BlockStateProof> persistedBlock,
+            @NonNull final CompletableFuture<BlockProof> persistedBlock,
             @NonNull Runnable runnable) {
         try {
             runnable.run(); // NO-OP stub

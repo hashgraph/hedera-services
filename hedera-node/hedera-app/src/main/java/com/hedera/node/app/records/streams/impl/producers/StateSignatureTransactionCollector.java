@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.records.streams.impl.producers;
 
-import com.hedera.hapi.streams.v7.BlockStateProof;
+import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -110,11 +110,10 @@ public class StateSignatureTransactionCollector {
      * less than that round.
      * @param proof the completed BlockStateProof for a round
      */
-    public void roundComplete(@NonNull final BlockStateProof proof) {
+    public void roundComplete(@NonNull final BlockProof proof, final long roundNum) {
         // Remove any buffered signatures for rounds equal to or less than this one. For each round we encounter that is
         // less than the most recently completed round, we should remove them and provide the most recent proof so
         // waiting threads no longer block on them.
-        final long roundNum = proof.round();
 
         // Update the last proven round in our window.
         taskCompletionWindow.completeTask(roundNum);

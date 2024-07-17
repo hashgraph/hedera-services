@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.merkle.disk;
 
+import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
@@ -36,10 +37,6 @@ import com.hedera.hapi.node.state.schedule.ScheduleList;
 import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshots;
 import com.hedera.hapi.node.state.token.*;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.hapi.streams.v7.*;
-import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,179 +58,35 @@ import java.util.List;
  *    that map the protobuf type to the OneOf type. It would be desirable if in the future PBJ generated these methods.
  *    That would ensure we would only need to add the type to the protobuf definition.
  */
-public class BlockObserverImpl implements BlockObserver {
+public class StateChangesObserverImpl implements StateChangesObserver {
     private List<StateChange> stateChanges;
     private LinkedList<StateChange> endOfRoundStateChanges;
     private HashMap<String, StateChange> endOfRoundSingletonStateChanges;
-    private boolean roundOpen = false;
-    private boolean eventOpen = false;
-    private boolean transactionOpen = false;
 
     /**
-     * Implementation of the BlockObserver for Block Streams. This should only ever be instantiated by
-     * SingletonBlockObserver.
+     * Implementation of the StateChangesObserver for Block Streams. This should only ever be instantiated by
+     * SingletonStateChangesObserver.
      */
-    protected BlockObserverImpl() {
+    protected StateChangesObserverImpl() {
         resetStateChanges();
         resetEndOfRoundStateChanges();
     }
 
-    private void resetStateChanges() {
+    public void resetStateChanges() {
         stateChanges = new ArrayList<>();
     }
 
-    private void resetEndOfRoundStateChanges() {
+    public void resetEndOfRoundStateChanges() {
         endOfRoundStateChanges = new LinkedList<>();
-        endOfRoundSingletonStateChanges = new HashMap<>();
+        endOfRoundSingletonStateChanges = new HashMap<String, StateChange>();
     }
 
-    private boolean hasRecordedStateChanges() {
+    public boolean hasRecordedStateChanges() {
         return !stateChanges.isEmpty();
     }
 
-    private boolean hasRecordedEndOfRoundStateChanges() {
+    public boolean hasRecordedEndOfRoundStateChanges() {
         return !endOfRoundStateChanges.isEmpty();
-    }
-
-    /**
-     * Flush the state changes to the sink.
-     * @param sink the sink to flush the state changes to.
-     */
-    private void flushStateChanges(@NonNull final StateChangesSink sink, @NonNull final StateChangesCause cause) {
-        final var sc = StateChanges.newBuilder()
-                .stateChanges(stateChanges)
-                .cause(cause)
-                // TODO(nickpoorman): I'm not sure consensusTimestamp makes sense on StateChanges anymore. Not all state
-                //  changes occur because of a consensus timestamp and we delay some to the end of the block to reduce
-                //  the amount of data written.
-                // .consensusTimestamp()
-                .build();
-        sink.writeStateChanges(sc);
-        resetStateChanges();
-    }
-
-    /**
-     * Flush the end-of-round state changes to the sink.
-     * @param sink the sink to flush the end-of-round state changes to.
-     */
-    private void flushEndOfRoundStateChanges(
-            @NonNull final StateChangesSink sink) {
-        final var sc = StateChanges.newBuilder()
-                .stateChanges(endOfRoundStateChanges)
-                .cause(StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM)
-                // TODO(nickpoorman): I'm not sure consensusTimestamp makes sense on StateChanges anymore. Not all state
-                //  changes occur because of a consensus timestamp and we delay some to the end of the block to reduce
-                //  the amount of data written.
-                // .consensusTimestamp()
-                .build();
-        sink.writeStateChanges(sc);
-        resetEndOfRoundStateChanges();
-    }
-
-    public void recordRoundStateChanges(
-            @NonNull final StateChangesSink sink, @NonNull final Round round, @NonNull final Runnable fn) {
-        // Only one round can be open at a time.
-        if (roundOpen) {
-            throw new IllegalStateException("Round is already open.");
-        }
-        roundOpen = true;
-
-        try {
-            // It's possible that we could have had "background" state changes that happened outside processing a round.
-            // We should write those first.
-            if (hasRecordedStateChanges()) flushStateChanges(sink, StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
-            fn.run();
-
-        } finally {
-            // We flush state changes at the end of each round being processed.
-            if (hasRecordedStateChanges()) flushStateChanges(sink, StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
-            if (hasRecordedEndOfRoundStateChanges())
-                flushEndOfRoundStateChanges(sink);
-            roundOpen = false;
-        }
-    }
-
-    public void recordEventStateChanges(
-            @NonNull final StateChangesSink sink,
-            @NonNull final ConsensusEvent platformEvent,
-            @NonNull final Runnable fn) {
-        // There can be multiple events in a round but only one can be open at a time.
-        if (eventOpen) {
-            throw new IllegalStateException("Event is already open.");
-        }
-        eventOpen = true;
-
-        try {
-            if (hasRecordedStateChanges()) flushStateChanges(sink, StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
-            fn.run();
-
-        } finally {
-            // We flush state changes at the end of each event being processed.
-            if (hasRecordedStateChanges()) flushStateChanges(sink, StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
-            eventOpen = false;
-        }
-    }
-
-    public void recordSystemTransactionStateChanges(
-            @NonNull final StateChangesSink sink,
-            @NonNull final ConsensusTransaction platformTxn,
-            @NonNull final Runnable fn) {
-        // There can only be one transaction open at a time.
-        if (transactionOpen) {
-            throw new IllegalStateException("Transaction is already open.");
-        }
-        transactionOpen = true;
-
-        try {
-            if (hasRecordedStateChanges()) flushStateChanges(sink, StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
-            // Run the function.
-            fn.run();
-
-        } finally {
-            // We flush state changes at the end of each transaction being processed.
-            if (hasRecordedStateChanges()) flushStateChanges(sink, StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
-            transactionOpen = false;
-        }
-    }
-
-    public void recordUserTransactionStateChanges(
-            @NonNull final StateChangesSink sink,
-            @NonNull final ConsensusTransaction platformTxn,
-            @NonNull final Runnable fn) {
-        // There can only be one transaction open at a time.
-        if (transactionOpen) {
-            throw new IllegalStateException("Transaction is already open.");
-        }
-        transactionOpen = true;
-
-        try {
-            if (hasRecordedStateChanges()) flushStateChanges(sink, StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
-            // Run the function.
-            fn.run();
-
-        } finally {
-            // We flush state changes at the end of each transaction being processed.
-            if (hasRecordedStateChanges()) {
-                flushStateChanges(sink, StateChangesCause.STATE_CHANGE_CAUSE_TRANSACTION);
-            }
-            transactionOpen = false;
-        }
-    }
-
-    /**
-     * This is currently not implemented because we only commit child transactions at the end of handle with their
-     * parents. Because of that we are unable to write child transaction changes with the associate transactions. One
-     * problem this poses is that failed transactions will not be written out which SmartContracts needs to show failed
-     * calls.
-     * @param fn
-     */
-    public void recordUserChildTransactionStateChanges(@NonNull final Runnable fn) {
-        // TODO(nickpoorman): We need to implement this so that SmartContract failed calls is written to the block
-        //  stream. We either need to get this from the RecordListBuilder or we need to somehow record it here.
-
-        // Q: this will require protobuf enhancement to state_changes.proto or
-        // new proto to support smart contract failures
-        fn.run();
     }
 
     /**
@@ -264,12 +117,20 @@ public class BlockObserverImpl implements BlockObserver {
         stateChanges.add(stateChange);
     }
 
+    public List<StateChange> getStateChanges() {
+        return stateChanges;
+    }
+
+    public LinkedList<StateChange> getEndOfRoundStateChanges() {
+        return endOfRoundStateChanges;
+    }
+
     private boolean isIgnoredStateChange(@NonNull final StateChange stateChange) {
         return stateChange.stateName().equals("RecordCache.TransactionRecordQueue");
     }
 
     private boolean isEndOfRoundStateChange(@NonNull final StateChange stateChange) {
-        return stateChange.hasSingletonUpdate() || stateChange.hasSingletonDelete();
+        return stateChange.hasSingletonUpdate();
     }
 
     /**
@@ -306,7 +167,7 @@ public class BlockObserverImpl implements BlockObserver {
                 .stateName(stateKey)
                 .mapUpdate(change)
                 .build();
-        BlockObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
+        StateChangesObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
     }
 
     // TODO(nickpoorman): We should have PBJ generate these.
@@ -363,7 +224,7 @@ public class BlockObserverImpl implements BlockObserver {
                 .stateName(stateKey)
                 .queuePush(change)
                 .build();
-        BlockObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
+        StateChangesObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
     }
 
     private static <V> void setQueuePushChangeElement(
@@ -385,7 +246,7 @@ public class BlockObserverImpl implements BlockObserver {
                 .stateName(stateKey)
                 .queuePop(new QueuePopChange())
                 .build();
-        BlockObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
+        StateChangesObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
     }
 
     // Singleton State  ------------------------------------------------------------------------------------------------
@@ -399,7 +260,7 @@ public class BlockObserverImpl implements BlockObserver {
                 .stateName(stateKey)
                 .singletonUpdate(change)
                 .build();
-        BlockObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
+        StateChangesObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
     }
 
     private <V> void setSingletonUpdateChangeValue(
@@ -431,6 +292,6 @@ public class BlockObserverImpl implements BlockObserver {
                 .stateName(stateKey)
                 .singletonDelete(new SingletonDeleteChange())
                 .build();
-        BlockObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
+        StateChangesObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
     }
 }

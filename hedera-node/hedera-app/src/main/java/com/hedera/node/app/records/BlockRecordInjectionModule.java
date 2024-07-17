@@ -32,7 +32,7 @@ import com.hedera.node.app.records.streams.impl.producers.BlockStreamWriterFacto
 import com.hedera.node.app.records.streams.impl.producers.ConcurrentBlockStreamProducer;
 import com.hedera.node.app.records.streams.impl.producers.formats.BlockStreamWriterFactoryImpl;
 import com.hedera.node.app.records.streams.impl.producers.formats.v1.BlockStreamFormatV1;
-import com.swirlds.platform.state.merkle.disk.BlockObserverSingleton;
+import com.swirlds.platform.state.merkle.disk.StateChangesObserverSingleton;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.amh.config.ConfigProvider;
 import com.swirlds.platform.state.merkle.disk.BlockRecordStreamConfig;
@@ -118,8 +118,8 @@ public abstract class BlockRecordInjectionModule {
             @NonNull final BlockRecordStreamProducer streamFileProducer,
             @NonNull final BlockStreamProducer blockStreamProducer) {
 
-        // We also want to create a BlockObserver instance at this point.
-        BlockObserverSingleton.initInstance(configProvider);
+        // We also want to create a StateChangesObserver instance at this point.
+        StateChangesObserverSingleton.initInstance(configProvider);
 
         final var hederaState = state.getHederaState();
         if (hederaState == null) {
@@ -211,8 +211,8 @@ public abstract class BlockRecordInjectionModule {
             @NonNull final BlockStreamProducer blockStreamProducer) {
         validateBlockStreamVersion(configProvider);
 
-        // We also want to create a BlockObserver instance at this point.
-        BlockObserverSingleton.initInstance(configProvider);
+        // We also want to create a StateChangesObserver instance at this point.
+        StateChangesObserverSingleton.initInstance(configProvider);
 
         final var hederaState = state.getHederaState();
         if (hederaState == null) {

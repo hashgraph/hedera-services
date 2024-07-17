@@ -22,8 +22,10 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.hapi.streams.v7.BlockStateProof;
-import com.hedera.hapi.streams.v7.StateChanges;
+import com.hedera.hapi.block.stream.BlockProof;
+import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.block.stream.output.StateChangesCause;
 import com.hedera.node.app.records.BlockRecordInjectionModule.AsyncWorkStealingExecutor;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
@@ -36,7 +38,7 @@ import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.records.streams.impl.producers.BlockEnder;
 import com.hedera.node.app.records.streams.impl.producers.BlockStateProofProducer;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.merkle.disk.BlockObserverSingleton;
+import com.swirlds.platform.state.merkle.disk.StateChangesObserverSingleton;
 import com.swirlds.platform.state.merkle.disk.BlockStreamConfig;
 import com.swirlds.platform.state.merkle.disk.StateChangesSink;
 import com.swirlds.state.spi.info.NodeInfo;
@@ -53,6 +55,8 @@ import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
@@ -123,6 +127,12 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
      * proof.
      */
     private final boolean writeBlockProof;
+
+    private List<StateChange> stateChanges;
+    private LinkedList<StateChange> endOfRoundStateChanges;
+    private boolean roundOpen = false;
+    private boolean eventOpen = false;
+    private boolean transactionOpen = false;
 
     @Inject
     public BlockStreamManagerImpl(
@@ -275,10 +285,106 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     // =================================================================================================================
     // StateChangesSink implementation
 
-    /** {@inheritDoc} */
-    @Override
-    public void writeStateChanges(@NonNull final StateChanges stateChanges) {
-        blockStreamProducer.writeStateChanges(stateChanges);
+    public void recordRoundStateChanges(@NonNull final Round round, @NonNull final Runnable fn) {
+        // Only one round can be open at a time.
+        if (roundOpen) {
+            throw new IllegalStateException("Round is already open.");
+        }
+        roundOpen = true;
+
+        try {
+            // It's possible that we could have had "background" state changes that happened outside processing a round.
+            // We should write those first.
+            if (StateChangesObserverSingleton.getInstanceOrThrow().hasRecordedStateChanges()) flushStateChanges(StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
+            fn.run();
+
+        } finally {
+            // We flush state changes at the end of each round being processed.
+            if (StateChangesObserverSingleton.getInstanceOrThrow().hasRecordedStateChanges()) flushStateChanges(StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
+            if (StateChangesObserverSingleton.getInstanceOrThrow().hasRecordedEndOfRoundStateChanges())
+                flushEndOfRoundStateChanges();
+            roundOpen = false;
+        }
+    }
+
+    public void recordEventStateChanges(
+            @NonNull final ConsensusEvent platformEvent,
+            @NonNull final Runnable fn) {
+        // There can be multiple events in a round but only one can be open at a time.
+        if (eventOpen) {
+            throw new IllegalStateException("Event is already open.");
+        }
+        eventOpen = true;
+
+        try {
+            if (StateChangesObserverSingleton.getInstanceOrThrow().hasRecordedStateChanges()) flushStateChanges(StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
+            fn.run();
+
+        } finally {
+            // We flush state changes at the end of each event being processed.
+            if (StateChangesObserverSingleton.getInstanceOrThrow().hasRecordedStateChanges()) flushStateChanges(StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
+            eventOpen = false;
+        }
+    }
+
+    public void recordSystemTransactionStateChanges(
+            @NonNull final ConsensusTransaction platformTxn,
+            @NonNull final Runnable fn) {
+        // There can only be one transaction open at a time.
+        if (transactionOpen) {
+            throw new IllegalStateException("Transaction is already open.");
+        }
+        transactionOpen = true;
+
+        try {
+            if (StateChangesObserverSingleton.getInstanceOrThrow().hasRecordedStateChanges()) flushStateChanges(StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
+            // Run the function.
+            fn.run();
+
+        } finally {
+            // We flush state changes at the end of each transaction being processed.
+            if (StateChangesObserverSingleton.getInstanceOrThrow().hasRecordedStateChanges()) flushStateChanges(StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
+            transactionOpen = false;
+        }
+    }
+
+    public void recordUserTransactionStateChanges(
+            @NonNull final ConsensusTransaction platformTxn,
+            @NonNull final Runnable fn) {
+        // There can only be one transaction open at a time.
+        if (transactionOpen) {
+            throw new IllegalStateException("Transaction is already open.");
+        }
+        transactionOpen = true;
+
+        try {
+            if (StateChangesObserverSingleton.getInstanceOrThrow().hasRecordedStateChanges()) flushStateChanges(StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM);
+            // Run the function.
+            fn.run();
+
+        } finally {
+            // We flush state changes at the end of each transaction being processed.
+            if (StateChangesObserverSingleton.getInstanceOrThrow().hasRecordedStateChanges()) {
+                flushStateChanges(StateChangesCause.STATE_CHANGE_CAUSE_TRANSACTION);
+            }
+            transactionOpen = false;
+        }
+    }
+
+    /**
+     * This is currently not implemented because we only commit child transactions at the end of handle with their
+     * parents. Because of that we are unable to write child transaction changes with the associate transactions. One
+     * problem this poses is that failed transactions will not be written out which SmartContracts needs to show failed
+     * calls.
+     * @param fn
+     */
+    public void recordUserChildTransactionStateChanges(@NonNull final Runnable fn) {
+        // TODO(nickpoorman): We need to implement this so that SmartContract failed calls is written to the block
+        //  stream. We either need to get this from the RecordListBuilder or we need to somehow record it here.
+
+        // Q: Will this require protobuf enhancement to state_changes.proto or
+        // new proto to support smart contract failures?
+        fn.run();
     }
 
     // =================================================================================================================
@@ -384,10 +490,10 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
     public void processRound(
             @NonNull final HederaState state,
             @NonNull final Round round,
-            @NonNull final CompletableFuture<BlockStateProof> blockPersisted,
+            @NonNull final CompletableFuture<BlockProof> blockPersisted,
             @NonNull final Runnable runnable) {
 
-        BlockObserverSingleton.getInstanceOrThrow().recordRoundStateChanges(this, round, () -> {
+        recordRoundStateChanges(round, () -> {
             this.startRound();
             try {
                 runnable.run();
@@ -449,7 +555,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             @NonNull final HederaState state,
             @NonNull final ConsensusTransaction platformTxn,
             @NonNull final Supplier<ProcessUserTransactionResult> callable) {
-        BlockObserverSingleton.getInstanceOrThrow().recordUserTransactionStateChanges(this, platformTxn, () -> {
+        recordUserTransactionStateChanges(platformTxn, () -> {
             //noinspection ResultOfMethodCallIgnored
             //todo need to pass in a platform instance here??
             this.startUserTransaction(consensusTime, state, null);
@@ -464,7 +570,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             @NonNull final HederaState state,
             @NonNull final ConsensusEvent platformEvent,
             @NonNull final Runnable runnable) {
-        BlockObserverSingleton.getInstanceOrThrow().recordEventStateChanges(this, platformEvent, () -> {
+        recordEventStateChanges(platformEvent, () -> {
             this.startConsensusEvent(platformEvent);
             try {
                 runnable.run();
@@ -482,7 +588,7 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
             @NonNull final NodeInfo creator,
             @NonNull final ConsensusTransaction systemTxn,
             @NonNull final Runnable runnable) {
-        BlockObserverSingleton.getInstanceOrThrow().recordSystemTransactionStateChanges(this, systemTxn, () -> {
+        recordSystemTransactionStateChanges(systemTxn, () -> {
             this.startSystemTransaction();
             try {
                 runnable.run();
@@ -614,5 +720,46 @@ public final class BlockStreamManagerImpl implements FunctionalBlockRecordManage
 
     private void resetRoundsUntilNextBlock() {
         roundsUntilNextBlock = numRoundsInBlock;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void writeStateChanges(@NonNull final StateChanges stateChanges) {
+        blockStreamProducer.writeStateChanges(stateChanges);
+    }
+
+    /**
+     * Flush the state changes to the sink.
+     * @param cause the cause of the state changes to flush.
+     */
+    private void flushStateChanges(@NonNull final StateChangesCause cause) {
+        stateChanges = StateChangesObserverSingleton.getInstanceOrThrow().getStateChanges();
+        final var sc = StateChanges.newBuilder()
+                .stateChanges(stateChanges)
+                .cause(cause)
+                // TODO(nickpoorman): I'm not sure consensusTimestamp makes sense on StateChanges anymore. Not all state
+                //  changes occur because of a consensus timestamp and we delay some to the end of the block to reduce
+                //  the amount of data written.
+                // .consensusTimestamp()
+                .build();
+        writeStateChanges(sc);
+        StateChangesObserverSingleton.getInstanceOrThrow().resetStateChanges();
+    }
+
+    /**
+     * Flush the end-of-round state changes to the sink.
+     */
+    private void flushEndOfRoundStateChanges() {
+        endOfRoundStateChanges = StateChangesObserverSingleton.getInstanceOrThrow().getEndOfRoundStateChanges();
+        final var sc = StateChanges.newBuilder()
+                .stateChanges(endOfRoundStateChanges)
+                .cause(StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM)
+                // TODO(nickpoorman): I'm not sure consensusTimestamp makes sense on StateChanges anymore. Not all state
+                //  changes occur because of a consensus timestamp and we delay some to the end of the block to reduce
+                //  the amount of data written.
+                // .consensusTimestamp()
+                .build();
+        writeStateChanges(sc);
+        StateChangesObserverSingleton.getInstanceOrThrow().resetEndOfRoundStateChanges();
     }
 }

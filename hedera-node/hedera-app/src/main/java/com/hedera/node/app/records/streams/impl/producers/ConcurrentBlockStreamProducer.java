@@ -17,7 +17,7 @@
 package com.hedera.node.app.records.streams.impl.producers;
 
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.hapi.streams.v7.StateChanges;
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.records.streams.impl.BlockStreamProducer;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

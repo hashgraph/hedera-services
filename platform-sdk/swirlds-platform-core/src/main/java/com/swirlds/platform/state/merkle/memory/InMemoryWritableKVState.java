@@ -23,7 +23,7 @@ import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapIterat
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapPut;
 import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapRemove;
 
-import com.swirlds.platform.state.merkle.disk.BlockObserverSingleton;
+import com.swirlds.platform.state.merkle.disk.StateChangesObserverSingleton;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.hedera.pbj.runtime.Codec;
@@ -114,7 +114,7 @@ public final class InMemoryWritableKVState<K, V> extends WritableKVStateBase<K, 
         // Log to transaction state log, what was put
         logMapPut(stateKey, key, value);
         // Notify the observer.
-        BlockObserverSingleton.getInstanceOrThrow().mapUpdateChange(stateKey, key, value);
+        StateChangesObserverSingleton.getInstanceOrThrow().mapUpdateChange(stateKey, key, value);
     }
 
     @Override

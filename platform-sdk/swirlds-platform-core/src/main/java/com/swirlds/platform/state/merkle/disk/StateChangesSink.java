@@ -16,11 +16,24 @@
 
 package com.swirlds.platform.state.merkle.disk;
 
-import com.hedera.hapi.streams.v7.StateChanges;
+import com.hedera.hapi.block.stream.output.StateChanges;
 
+import com.swirlds.platform.system.Round;
+import com.swirlds.platform.system.events.ConsensusEvent;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public interface StateChangesSink {
+
+    void recordRoundStateChanges(@NonNull final Round round, @NonNull final Runnable fn);
+
+    void recordEventStateChanges(@NonNull final ConsensusEvent platformEvent, @NonNull final Runnable fn);
+
+    void recordSystemTransactionStateChanges(@NonNull final ConsensusTransaction platformTxn, @NonNull final Runnable fn);
+
+    void recordUserTransactionStateChanges(@NonNull final ConsensusTransaction platformTxn, @NonNull final Runnable fn);
+
+    void recordUserChildTransactionStateChanges(@NonNull final Runnable fn);
 
     /**
      * Write the state changes to the sink.

@@ -16,34 +16,18 @@
 
 package com.swirlds.platform.state.merkle.disk;
 
-import com.hedera.hapi.streams.v7.StateChange;
-import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.hedera.hapi.block.stream.output.StateChange;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public interface BlockObserver {
-    void recordRoundStateChanges(
-            @NonNull final StateChangesSink sink, @NonNull final Round round, @NonNull final Runnable fn);
+import java.util.LinkedList;
+import java.util.List;
 
-    void recordEventStateChanges(
-            @NonNull final StateChangesSink sink,
-            @NonNull final ConsensusEvent platformEvent,
-            @NonNull final Runnable fn);
-
-    void recordSystemTransactionStateChanges(
-            @NonNull final StateChangesSink sink,
-            @NonNull final ConsensusTransaction platformTxn,
-            @NonNull final Runnable fn);
-
-    void recordUserTransactionStateChanges(
-            @NonNull final StateChangesSink sink,
-            @NonNull final ConsensusTransaction platformTxn,
-            @NonNull final Runnable fn);
-
-    void recordUserChildTransactionStateChanges(@NonNull final Runnable fn);
-
+public interface StateChangesObserver {
     void addStateChange(@NonNull final StateChange stateChange);
+
+    List<StateChange> getStateChanges();
+
+    LinkedList<StateChange> getEndOfRoundStateChanges();
 
     <K, V> void mapUpdateChange(@NonNull final String stateKey, @NonNull final K key, @NonNull final V value);
 
@@ -54,4 +38,12 @@ public interface BlockObserver {
     <V> void singletonUpdateChange(@NonNull final String stateKey, @NonNull final V value);
 
     void singletonDeleteChange(@NonNull final String stateKey);
+
+    void resetEndOfRoundStateChanges();
+
+    void resetStateChanges();
+
+    boolean hasRecordedStateChanges();
+
+    boolean hasRecordedEndOfRoundStateChanges();
 }

@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.records;
 
-import com.hedera.hapi.streams.v7.BlockStateProof;
+import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.swirlds.state.HederaState;
@@ -76,7 +76,7 @@ public interface FunctionalBlockRecordManager extends BlockRecordManager, BlockR
     void processRound(
             @NonNull HederaState state,
             @NonNull Round round,
-            @NonNull CompletableFuture<BlockStateProof> persistedBlock,
+            @NonNull CompletableFuture<BlockProof> persistedBlock,
             @NonNull Runnable runnable);
 
     void processUserTransaction(

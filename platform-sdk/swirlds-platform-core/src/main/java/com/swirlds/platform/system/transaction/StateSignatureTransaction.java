@@ -170,7 +170,8 @@ public final class StateSignatureTransaction extends ConsensusTransactionImpl {
         return payload;
     }
 
-    private @NonNull StateSignaturePayload getStateSignaturePayload() {
+    @NonNull
+    public StateSignaturePayload getStateSignaturePayload() {
         return payload.as();
     }
 }
