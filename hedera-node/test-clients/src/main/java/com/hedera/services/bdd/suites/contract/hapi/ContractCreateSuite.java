@@ -183,6 +183,33 @@ public class ContractCreateSuite {
                         .logged());
     }
 
+    @LeakyHapiTest(overrides = {"ledger.maxAutoAssociations"})
+    final Stream<DynamicTest> testReproduceBug() {
+        final var contract = "ManyChildren";
+        return hapiTest(
+                overriding("ledger.maxAutoAssociations", "5000"),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
+                uploadInitCode(contract),
+                contractCreate(contract)
+                        .refusingEthConversion()
+                        .maxAutomaticTokenAssociations(0)
+                        .hasKnownStatus(SUCCESS),
+                ethereumCall(contract, "createThingsRepeatedly", BigInteger.valueOf(51))
+                        .type(EthTxData.EthTransactionType.EIP1559)
+                        .signingWith(SECP_256K1_SOURCE_KEY)
+                        .payingWith(RELAYER)
+                        .via("ethereumCreate")
+                        .nonce(0)
+                        .maxFeePerGas(50L)
+                        .maxPriorityGas(2L)
+                        .logged()
+                        .gasLimit(15_000_000L)
+                        .hasKnownStatus(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED),
+                getTxnRecord("ethereumCreate").andAllChildRecords().logged());
+    }
+
     @HapiTest
     final Stream<DynamicTest> createContractWithStakingFields() {
         final var contract = "CreateTrivial";
