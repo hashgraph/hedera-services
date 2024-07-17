@@ -43,7 +43,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.workflows.handle.record.StreamManager;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -136,7 +136,7 @@ class ChildDispatchFactoryTest {
     private DispatchProcessor dispatchProcessor;
 
     @Mock
-    private BlockRecordManager blockRecordManager;
+    private StreamManager blockRecordManager;
 
     @Mock
     private ServiceScopeLookup serviceScopeLookup;

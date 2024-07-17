@@ -30,7 +30,7 @@ import com.hedera.hapi.node.contract.ContractCreateTransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.exec.scope.QueryHederaOperations;
 import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.OngoingBlockInfo;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
@@ -49,7 +49,7 @@ class QueryHederaOperationsTest {
     private ContractStateStore store;
 
     @Mock
-    private BlockRecordInfo blockRecordInfo;
+    private OngoingBlockInfo blockRecordInfo;
 
     private QueryHederaOperations subject;
 

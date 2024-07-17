@@ -26,8 +26,8 @@
  * implementation produces a block every 2 seconds of consensus time, regardless of the round boundary. In the future,
  * it will produce a block ever N number of whole rounds, or possibly every round.
  *
- * <p>{@link com.hedera.node.app.records.BlockRecordManager} is the main interface between the record management
- * system and the rest of the application code. It implements {@link com.hedera.node.app.spi.records.BlockRecordInfo},
+ * <p>{@link com.hedera.node.app.workflows.handle.record.StreamManager} is the main interface between the record management
+ * system and the rest of the application code. It implements {@link com.hedera.node.app.spi.records.OngoingBlockInfo},
  * which is used by services to get information from the record management system, without being exposed to all the
  * privileged and gory details. The {@code BlockRecordManager} is only used during handling of transactions. An API
  * on the manager exists so as to be notified of the consensus time at the start of every transaction, to be given the

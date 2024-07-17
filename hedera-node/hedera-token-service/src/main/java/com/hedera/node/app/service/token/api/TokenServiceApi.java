@@ -21,6 +21,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.spi.fees.FeeBuilder;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -198,7 +199,7 @@ public interface TokenServiceApi {
      * @param recordBuilder the record builder to record the fees in
      * @return true if the full amount was charged, false otherwise
      */
-    boolean chargeNetworkFee(@NonNull AccountID payer, long amount, @NonNull final FeeRecordBuilder recordBuilder);
+    boolean chargeNetworkFee(@NonNull AccountID payer, long amount, @NonNull final FeeBuilder recordBuilder);
 
     /**
      * Charges the payer the given fees, and records those fees in the given record builder.
@@ -206,22 +207,22 @@ public interface TokenServiceApi {
      * @param payer the id of the account that should be charged
      * @param nodeAccount the id of the node that should receive the node fee, if present and payable
      * @param fees the fees to charge
-     * @param recordBuilder the record builder to record the fees in
+     * @param feeBuilder the stream builder to record the fees in
      */
     void chargeFees(
             @NonNull AccountID payer,
             AccountID nodeAccount,
             @NonNull Fees fees,
-            @NonNull final FeeRecordBuilder recordBuilder);
+            @NonNull final FeeBuilder feeBuilder);
 
     /**
      * Refunds the given fees to the given receiver, and records those fees in the given record builder.
      *
      * @param receiver      the id of the account that should be refunded
      * @param fees          the fees to refund
-     * @param recordBuilder the record builder to record the fees in
+     * @param feeBuilder the fee builder to record the fees in
      */
-    void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeRecordBuilder recordBuilder);
+    void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeBuilder feeBuilder);
 
     /**
      * Returns the number of storage slots used by the given account before any changes were made via

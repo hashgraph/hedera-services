@@ -31,8 +31,10 @@ import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.validation.TruePredicate;
+import com.hedera.node.app.spi.workflows.record.SingleTransaction;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.state.SingleTransactionBlockItems;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.config.ConfigProvider;
@@ -172,13 +174,13 @@ public class RecordCacheImpl implements HederaRecordCache {
     public void add(
             final long nodeId,
             @NonNull final AccountID payerAccountId,
-            @NonNull final List<SingleTransactionRecord> transactionRecords) {
+            @NonNull final List<SingleTransaction> singleTxns) {
         requireNonNull(payerAccountId);
-        requireNonNull(transactionRecords);
+        requireNonNull(singleTxns);
 
         // This really shouldn't ever happen. If it does, we'll log a warning and bail.
-        if (transactionRecords.isEmpty()) {
-            logger.warn("Received an empty list of transaction records. This should never happen");
+        if (singleTxns.isEmpty()) {
+            logger.warn("Received an empty list of single transactions. This should never happen");
             return;
         }
 
@@ -186,14 +188,18 @@ public class RecordCacheImpl implements HederaRecordCache {
         // to also remove from the queue any transactions that have expired.
         final WritableStates states = getWritableState();
         final WritableQueueState<TransactionRecordEntry> queue = states.getQueue(TXN_RECORD_QUEUE);
-        final SingleTransactionRecord firstRecord = transactionRecords.getFirst();
-        removeExpiredTransactions(queue, firstRecord.transactionRecord().consensusTimestampOrElse(Timestamp.DEFAULT));
+        final SingleTransaction firstTxn = singleTxns.getFirst();
+        removeExpiredTransactions(queue, firstTxn.consensusTimestampOrElse(Timestamp.DEFAULT));
 
         // For each transaction, in order, add to the queue and to the in-memory data structures.
-        for (final var singleTransactionRecord : transactionRecords) {
-            final var rec = singleTransactionRecord.transactionRecord();
-            addToInMemoryCache(nodeId, payerAccountId, rec);
-            queue.add(new TransactionRecordEntry(nodeId, payerAccountId, rec));
+        for (final var singleTransaction : singleTxns) {
+            if (singleTransaction instanceof SingleTransactionRecord txnRecord) {
+                final var rec = txnRecord.transactionRecord();
+                addToInMemoryCache(nodeId, payerAccountId, rec);
+                queue.add(new TransactionRecordEntry(nodeId, payerAccountId, rec));
+            } else if (singleTransaction instanceof SingleTransactionBlockItems) {
+                // todo: implement in a separate ticket
+            }
         }
 
         if (states instanceof CommittableWritableStates committable) {

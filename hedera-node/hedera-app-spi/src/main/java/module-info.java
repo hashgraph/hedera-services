@@ -5,6 +5,7 @@ module com.hedera.node.app.spi {
     requires transitive com.swirlds.state.api;
     requires transitive com.hedera.pbj.runtime;
     requires static com.github.spotbugs.annotations;
+    requires com.swirlds.platform.core;
 
     exports com.hedera.node.app.spi;
     exports com.hedera.node.app.spi.fees;

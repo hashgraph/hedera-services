@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.app.spi.workflows.record;
 
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-public interface RecordDispatch extends Dispatch {
-    @NonNull
-    SingleTransactionRecordBuilder recordBuilder();
+/**
+ * Defines API for constructing stream items of a single transaction dispatch.
+ * The implementation may produce only records or could produce block items
+ */
+public interface SingleBlockItemsBuilder extends SingleTransactionBuilder {
+    // todo: implement
 }

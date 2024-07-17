@@ -25,6 +25,7 @@ import com.hedera.hapi.streams.HashAlgorithm;
 import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.annotations.CommonExecutor;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
+import com.hedera.node.app.spi.workflows.record.SingleTransaction;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.info.SelfNodeInfo;
@@ -195,7 +196,7 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
      * @param recordStreamItems the record stream items to write
      */
     @Override
-    public void writeRecordStreamItems(@NonNull final Stream<SingleTransactionRecord> recordStreamItems) {
+    public void writeStreamItems(@NonNull final Stream<SingleTransaction> recordStreamItems) {
         lock.lock(); // Block until the lock is acquired
         try {
             assert lastRecordHashingResult != null : "initRunningHash() must be called before writeRecordStreamItems";
@@ -206,7 +207,7 @@ public final class StreamFileProducerConcurrent implements BlockRecordStreamProd
             // serialize all the record stream items in background thread into SerializedSingleTransaction objects
             final var futureSerializedRecords = CompletableFuture.supplyAsync(
                     () -> recordStreamItems
-                            .map(item -> format.serialize(item, currentBlockNumber, hapiVersion))
+                            .map(item -> format.serialize(((SingleTransactionRecord) item), currentBlockNumber, hapiVersion))
                             .toList(),
                     executorService);
             // when serialization is done and previous running hash is computed, we can compute new running hash and

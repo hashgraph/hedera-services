@@ -19,13 +19,13 @@ package com.hedera.node.app.service.token.fixtures;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.node.app.service.token.api.FeeRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A fake implementation of {@link FeeRecordBuilder} for testing purposes.
+ * A fake implementation of {@link FeeBuilder} for testing purposes.
  */
-public class FakeFeeRecordBuilder implements FeeRecordBuilder {
+public class FakeFeeRecordBuilder implements FeeBuilder {
     private long transactionFee;
 
     public FakeFeeRecordBuilder() {
@@ -40,7 +40,7 @@ public class FakeFeeRecordBuilder implements FeeRecordBuilder {
 
     @Override
     @NonNull
-    public FeeRecordBuilder transactionFee(long transactionFee) {
+    public FeeBuilder transactionFee(long transactionFee) {
         this.transactionFee = transactionFee;
         return this;
     }

@@ -34,7 +34,7 @@ import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.workflows.handle.record.StreamManager;
 import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
@@ -47,7 +47,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyVerifier;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.OngoingBlockInfo;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -60,12 +60,12 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
@@ -90,7 +90,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final TransactionInfo txnInfo;
     private final Configuration config;
     private final Authorizer authorizer;
-    private final BlockRecordManager blockRecordManager;
+    private final StreamManager blockRecordManager;
     private final ResourcePriceCalculator resourcePriceCalculator;
     private final FeeManager feeManager;
     private final StoreFactoryImpl storeFactory;
@@ -119,7 +119,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionInfo transactionInfo,
             @NonNull final Configuration config,
             @NonNull final Authorizer authorizer,
-            @NonNull final BlockRecordManager blockRecordManager,
+            // todo: insert block items manager based on config flag
+            @NonNull final StreamManager blockRecordManager,
             @NonNull final ResourcePriceCalculator resourcePriceCalculator,
             @NonNull final FeeManager feeManager,
             @NonNull final StoreFactoryImpl storeFactory,
@@ -211,7 +212,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @NonNull
     @Override
-    public BlockRecordInfo blockRecordInfo() {
+    public OngoingBlockInfo blockRecordInfo() {
         return blockRecordManager;
     }
 
@@ -479,7 +480,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final AccountID syntheticPayer,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final TransactionCategory category,
-            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
+            @NonNull final SingleTransactionBuilder.ReversingBehavior reversingBehavior,
             final boolean commitStack) {
         final var childDispatch = childDispatchFactory.createChildDispatch(
                 childTxBody,

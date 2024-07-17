@@ -36,7 +36,7 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.OngoingBlockInfo;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -69,7 +69,7 @@ class UtilPrngHandlerTest {
     private RecordBuilders recordBuilders;
 
     @Mock
-    private BlockRecordInfo blockRecordInfo;
+    private OngoingBlockInfo blockRecordInfo;
 
     private UtilPrngHandler subject;
     private UtilPrngTransactionBody txn;

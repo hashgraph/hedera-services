@@ -21,17 +21,17 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.OngoingBlockInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
- * A simple implementation of {@link BlockRecordInfo} that uses the objects stored in state ({@link BlockInfo} and
+ * A simple implementation of {@link OngoingBlockInfo} that uses the objects stored in state ({@link BlockInfo} and
  * {@link RunningHashes}).
  */
-public final class BlockRecordInfoImpl implements BlockRecordInfo {
+public final class BlockRecordInfoImpl implements OngoingBlockInfo {
     private final BlockInfo blockInfo;
     private final RunningHashes runningHashes;
 

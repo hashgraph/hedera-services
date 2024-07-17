@@ -31,7 +31,7 @@ import com.hedera.node.app.info.InfoInjectionModule;
 import com.hedera.node.app.metrics.MetricsInjectionModule;
 import com.hedera.node.app.platform.PlatformModule;
 import com.hedera.node.app.records.BlockRecordInjectionModule;
-import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.workflows.handle.record.StreamManager;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.ServicesInjectionModule;
@@ -108,7 +108,7 @@ public interface HederaInjectionComponent {
 
     QueryWorkflow queryWorkflow();
 
-    BlockRecordManager blockRecordManager();
+    StreamManager blockRecordManager();
 
     FeeManager feeManager();
 

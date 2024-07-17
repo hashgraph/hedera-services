@@ -29,7 +29,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyVerifier;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.OngoingBlockInfo;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -133,7 +133,7 @@ public interface HandleContext {
      * @return current BlockRecordInfo
      */
     @NonNull
-    BlockRecordInfo blockRecordInfo();
+    OngoingBlockInfo blockRecordInfo();
 
     /**
      * Returns a {@link ResourcePriceCalculator} that provides functionality to calculate fees for transactions.

@@ -25,7 +25,7 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.node.app.service.contract.impl.hevm.QueryContextHevmBlocks;
 import com.hedera.node.app.service.contract.impl.utils.ConversionUtils;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.OngoingBlockInfo;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
@@ -43,7 +43,7 @@ class QueryContextHevmBlocksTest {
     private QueryContext context;
 
     @Mock
-    private BlockRecordInfo blockRecordInfo;
+    private OngoingBlockInfo blockRecordInfo;
 
     private QueryContextHevmBlocks subject;
 

@@ -70,7 +70,7 @@ import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
-import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.workflows.handle.record.StreamManager;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
@@ -180,7 +180,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private ServiceScopeLookup serviceScopeLookup;
 
     @Mock
-    private BlockRecordManager blockRecordManager;
+    private StreamManager blockRecordManager;
 
     @Mock
     private HederaRecordCache recordCache;

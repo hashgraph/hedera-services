@@ -17,7 +17,7 @@
 package com.hedera.node.app.records.impl;
 
 import com.hedera.hapi.node.state.blockrecords.RunningHashes;
-import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.spi.workflows.record.SingleTransaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 /**
  * Produces a stream of block records. This is used by the {@link BlockRecordManagerImpl}.
  */
-public interface BlockRecordStreamProducer extends AutoCloseable {
+public interface BlockRecordStreamProducer extends StreamProducer {
     /**
      * Initialize the current running hash of record stream items. This is called only once to initialize the running
      * hash on startup. This is called on the handle transaction thread. It is loaded from a saved state. At genesis,
@@ -42,7 +42,7 @@ public interface BlockRecordStreamProducer extends AutoCloseable {
      * Get the current running hash of record stream items. This is called on the handle transaction thread. It will
      * block if a background thread is still hashing. It will always return the running hash after the last user
      * transaction was added. Hence, any pre-transactions or others not yet committed via
-     * {@link BlockRecordStreamProducer#writeRecordStreamItems(Stream)} will not be included.
+     * {@link BlockRecordStreamProducer#writeStreamItems(Stream)} will not be included.
      *
      * @return The current running hash upto and including the last record stream item sent in writeRecordStreamItems().
      */
@@ -82,5 +82,5 @@ public interface BlockRecordStreamProducer extends AutoCloseable {
      *
      * @param recordStreamItems the record stream items to write
      */
-    void writeRecordStreamItems(@NonNull final Stream<SingleTransactionRecord> recordStreamItems);
+    void writeStreamItems(@NonNull final Stream<SingleTransaction> recordStreamItems);
 }

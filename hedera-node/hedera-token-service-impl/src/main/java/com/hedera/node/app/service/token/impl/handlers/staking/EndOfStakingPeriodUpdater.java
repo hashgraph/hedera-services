@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.calculateRewardSumHistory;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.computeNextStake;
 import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUtils.readableNonZeroHistory;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.annotations.VisibleForTesting;

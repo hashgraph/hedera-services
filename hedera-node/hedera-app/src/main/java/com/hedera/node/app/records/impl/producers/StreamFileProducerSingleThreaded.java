@@ -23,6 +23,7 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.hapi.streams.HashAlgorithm;
 import com.hedera.hapi.streams.HashObject;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
+import com.hedera.node.app.spi.workflows.record.SingleTransaction;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.info.SelfNodeInfo;
@@ -156,10 +157,10 @@ public final class StreamFileProducerSingleThreaded implements BlockRecordStream
      * @param recordStreamItems the record stream items to write
      */
     @Override
-    public void writeRecordStreamItems(@NonNull final Stream<SingleTransactionRecord> recordStreamItems) {
+    public void writeStreamItems(@NonNull final Stream<SingleTransaction> recordStreamItems) {
         // Serialize record stream items
         final var serializedItems = recordStreamItems
-                .map(item -> format.serialize(item, currentBlockNumber, hapiVersion))
+                .map(item -> format.serialize(((SingleTransactionRecord) item), currentBlockNumber, hapiVersion))
                 .toList();
         // Compute new running hash, by adding each serialized record stream item to the current running hash
         runningHashNMinus3 = runningHashNMinus2;

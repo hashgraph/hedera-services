@@ -25,6 +25,7 @@ import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThread
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.node.app.records.impl.producers.formats.v7.BlockRecordFormatV7;
+import com.hedera.node.app.workflows.handle.record.StreamManager;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
@@ -70,10 +71,10 @@ public abstract class BlockRecordInjectionModule {
         };
     }
 
-    /** Provides an implementation of the {@link com.hedera.node.app.records.BlockRecordManager}. */
+    /** Provides a record-based implementation of the {@link StreamManager}. */
     @Provides
     @Singleton
-    public static BlockRecordManager provideBlockRecordManager(
+    public static StreamManager provideBlockRecordManager(
             @NonNull final ConfigProvider configProvider,
             @NonNull final WorkingStateAccessor state,
             @NonNull final BlockRecordStreamProducer streamFileProducer) {

@@ -69,7 +69,7 @@ import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.OngoingBlockInfo;
 import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -101,7 +101,7 @@ class HandleHederaOperationsTest {
     private TokenServiceApi tokenServiceApi;
 
     @Mock
-    private BlockRecordInfo blockRecordInfo;
+    private OngoingBlockInfo blockRecordInfo;
 
     @Mock
     private ReadableAccountStore accountStore;

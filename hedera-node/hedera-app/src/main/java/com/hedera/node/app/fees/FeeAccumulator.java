@@ -19,7 +19,7 @@ package com.hedera.node.app.fees;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.service.token.api.FeeRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fees.Fees;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,17 +30,17 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class FeeAccumulator {
     private final TokenServiceApi tokenApi;
-    private final FeeRecordBuilder recordBuilder;
+    private final FeeBuilder streamBuilder;
 
     /**
      * Creates a new instance of {@link FeeAccumulator}.
      *
      * @param tokenApi the {@link TokenServiceApi} to use to charge and refund fees.
-     * @param recordBuilder the {@link FeeRecordBuilder} to record any changes
+     * @param recordBuilder the {@link FeeBuilder} to record any changes
      */
-    public FeeAccumulator(@NonNull final TokenServiceApi tokenApi, @NonNull final FeeRecordBuilder recordBuilder) {
+    public FeeAccumulator(@NonNull final TokenServiceApi tokenApi, @NonNull final FeeBuilder recordBuilder) {
         this.tokenApi = requireNonNull(tokenApi);
-        this.recordBuilder = requireNonNull(recordBuilder);
+        this.streamBuilder = requireNonNull(recordBuilder);
     }
 
     /**
@@ -52,7 +52,7 @@ public class FeeAccumulator {
      */
     public boolean chargeNetworkFee(@NonNull final AccountID payer, final long networkFee) {
         requireNonNull(payer);
-        return tokenApi.chargeNetworkFee(payer, networkFee, recordBuilder);
+        return tokenApi.chargeNetworkFee(payer, networkFee, streamBuilder);
     }
 
     /**
@@ -67,7 +67,7 @@ public class FeeAccumulator {
         requireNonNull(payer);
         requireNonNull(nodeAccount);
         requireNonNull(fees);
-        tokenApi.chargeFees(payer, nodeAccount, fees, recordBuilder);
+        tokenApi.chargeFees(payer, nodeAccount, fees, streamBuilder);
     }
 
     /**
@@ -77,6 +77,6 @@ public class FeeAccumulator {
      * @param fees The fees to refund.
      */
     public void refund(@NonNull AccountID receiver, @NonNull Fees fees) {
-        tokenApi.refundFees(receiver, fees, recordBuilder);
+        tokenApi.refundFees(receiver, fees, streamBuilder);
     }
 }

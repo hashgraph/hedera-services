@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,27 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
-
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+package com.hedera.node.app.spi.fees;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
-public interface RecordDispatch extends Dispatch {
+/**
+ * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
+ * transaction.
+ */
+public interface FeeBuilder {
+    /**
+     * Gets the current value of the transaction fee in this builder.
+     * @return The current transaction fee value.
+     */
+    long transactionFee();
+
+    /**
+     * Sets the consensus transaction fee.
+     *
+     * @param transactionFee the transaction fee
+     * @return the builder
+     */
     @NonNull
-    SingleTransactionRecordBuilder recordBuilder();
+    FeeBuilder transactionFee(final long transactionFee);
 }

@@ -21,6 +21,7 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
+
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
@@ -63,7 +64,6 @@ import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBui
 import com.hedera.node.app.service.contract.impl.records.EthereumTransactionRecordBuilder;
 import com.hedera.node.app.service.file.impl.records.CreateFileRecordBuilder;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
-import com.hedera.node.app.spi.fees.FeeBuilder;
 import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoDeleteRecordBuilder;
@@ -77,17 +77,16 @@ import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -101,22 +100,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 /**
- * A custom builder for create a {@link SingleTransactionRecord}.
- *
- * <p>The protobuf definition for the record files is defined such that a single protobuf object intermixes the
- * possible fields for all different types of transaction in a single object definition. We wanted to provide something
- * nicer and more modular for service authors, so we broke out each logical grouping of state in the record file into
- * different interfaces, such as {@link ConsensusSubmitMessageRecordBuilder} and {@link CreateFileRecordBuilder}, and
- * so forth. Services interact with these builder interfaces, and are thus isolated from details that don't pertain to
- * their service type.
- *
- * <p>This class is an ugly superset of all fields for all transaction types. It is masked down to a sensible subset by
- * the interfaces for specific transaction types.
+ * Block items equivalent of {@link SingleTransactionRecordBuilderImpl}.
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public class SingleTransactionRecordBuilderImpl
-        implements SingleTransactionRecordBuilder,
+public class SingleTransactionBlockItemsBuilderImpl
+        implements SingleTransactionBuilder,
                 ConsensusCreateTopicRecordBuilder,
                 ConsensusSubmitMessageRecordBuilder,
                 CreateFileRecordBuilder,
@@ -208,11 +200,11 @@ public class SingleTransactionRecordBuilderImpl
      *
      */
     @VisibleForTesting
-    public SingleTransactionRecordBuilderImpl() {
+    public SingleTransactionBlockItemsBuilderImpl() {
         this(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
     }
 
-    public SingleTransactionRecordBuilderImpl(
+    public SingleTransactionBlockItemsBuilderImpl(
             @NonNull final ReversingBehavior reversingBehavior,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final TransactionCategory category) {
@@ -222,7 +214,11 @@ public class SingleTransactionRecordBuilderImpl
         this.category = requireNonNull(category, "category must not be null");
     }
 
-    @Override
+    /**
+     * Builds single transaction record.
+     *
+     * @return the transaction record
+     */
     public SingleTransactionRecord build() {
         if (customizer != NOOP_RECORD_CUSTOMIZER) {
             transaction = customizer.apply(transaction);
@@ -335,13 +331,13 @@ public class SingleTransactionRecordBuilderImpl
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
 
-    public SingleTransactionRecordBuilderImpl parentConsensus(@NonNull final Instant parentConsensus) {
+    public SingleTransactionBlockItemsBuilderImpl parentConsensus(@NonNull final Instant parentConsensus) {
         this.parentConsensus = requireNonNull(parentConsensus, "parentConsensus must not be null");
         return this;
     }
 
     @Override
-    public SingleTransactionRecordBuilderImpl consensusTimestamp(@NonNull final Instant now) {
+    public SingleTransactionBlockItemsBuilderImpl consensusTimestamp(@NonNull final Instant now) {
         this.consensusNow = requireNonNull(now, "consensus time must not be null");
         return this;
     }
@@ -354,7 +350,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl transaction(@NonNull final Transaction transaction) {
+    public SingleTransactionBlockItemsBuilderImpl transaction(@NonNull final Transaction transaction) {
         this.transaction = requireNonNull(transaction, "transaction must not be null");
         return this;
     }
@@ -366,7 +362,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl transactionBytes(@NonNull final Bytes transactionBytes) {
+    public SingleTransactionBlockItemsBuilderImpl transactionBytes(@NonNull final Bytes transactionBytes) {
         this.transactionBytes = requireNonNull(transactionBytes, "transactionBytes must not be null");
         return this;
     }
@@ -387,7 +383,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl transactionID(@NonNull final TransactionID transactionID) {
+    public SingleTransactionBlockItemsBuilderImpl transactionID(@NonNull final TransactionID transactionID) {
         this.transactionID = requireNonNull(transactionID, "transactionID must not be null");
         return this;
     }
@@ -399,7 +395,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @NonNull
     @Override
-    public SingleTransactionRecordBuilderImpl syncBodyIdFromRecordId() {
+    public SingleTransactionBlockItemsBuilderImpl syncBodyIdFromRecordId() {
         final var newTransactionID = transactionID;
         final var body =
                 inProgressBody().copyBuilder().transactionID(newTransactionID).build();
@@ -415,7 +411,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl memo(@NonNull final String memo) {
+    public SingleTransactionBlockItemsBuilderImpl memo(@NonNull final String memo) {
         requireNonNull(memo, "memo must not be null");
         transactionRecordBuilder.memo(memo);
         return this;
@@ -457,7 +453,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @NonNull
     @Override
-    public SingleTransactionRecordBuilderImpl transactionFee(final long transactionFee) {
+    public SingleTransactionBlockItemsBuilderImpl transactionFee(final long transactionFee) {
         this.transactionFee = transactionFee;
         this.transactionRecordBuilder.transactionFee(transactionFee);
         return this;
@@ -484,7 +480,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl contractCallResult(
+    public SingleTransactionBlockItemsBuilderImpl contractCallResult(
             @Nullable final ContractFunctionResult contractCallResult) {
         transactionRecordBuilder.contractCallResult(contractCallResult);
         this.contractFunctionResult = contractCallResult;
@@ -499,7 +495,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl contractCreateResult(
+    public SingleTransactionBlockItemsBuilderImpl contractCreateResult(
             @Nullable ContractFunctionResult contractCreateResult) {
         transactionRecordBuilder.contractCreateResult(contractCreateResult);
         this.contractFunctionResult = contractCreateResult;
@@ -525,7 +521,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl transferList(@Nullable final TransferList transferList) {
+    public SingleTransactionBlockItemsBuilderImpl transferList(@Nullable final TransferList transferList) {
         this.transferList = transferList;
         return this;
     }
@@ -538,7 +534,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl tokenTransferLists(
+    public SingleTransactionBlockItemsBuilderImpl tokenTransferLists(
             @NonNull final List<TokenTransferList> tokenTransferLists) {
         requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
         this.tokenTransferLists = tokenTransferLists;
@@ -557,7 +553,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl addTokenTransferList(@NonNull final TokenTransferList tokenTransferList) {
+    public SingleTransactionBlockItemsBuilderImpl addTokenTransferList(@NonNull final TokenTransferList tokenTransferList) {
         requireNonNull(tokenTransferList, "tokenTransferList must not be null");
         tokenTransferLists.add(tokenTransferList);
         return this;
@@ -565,7 +561,7 @@ public class SingleTransactionRecordBuilderImpl
 
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl tokenType(final @NonNull TokenType tokenType) {
+    public SingleTransactionBlockItemsBuilderImpl tokenType(final @NonNull TokenType tokenType) {
         this.tokenType = requireNonNull(tokenType);
         return this;
     }
@@ -578,7 +574,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl scheduleRef(@NonNull final ScheduleID scheduleRef) {
+    public SingleTransactionBlockItemsBuilderImpl scheduleRef(@NonNull final ScheduleID scheduleRef) {
         requireNonNull(scheduleRef, "scheduleRef must not be null");
         transactionRecordBuilder.scheduleRef(scheduleRef);
         return this;
@@ -592,7 +588,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl assessedCustomFees(
+    public SingleTransactionBlockItemsBuilderImpl assessedCustomFees(
             @NonNull final List<AssessedCustomFee> assessedCustomFees) {
         requireNonNull(assessedCustomFees, "assessedCustomFees must not be null");
         this.assessedCustomFees = assessedCustomFees;
@@ -606,7 +602,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl addAssessedCustomFee(@NonNull final AssessedCustomFee assessedCustomFee) {
+    public SingleTransactionBlockItemsBuilderImpl addAssessedCustomFee(@NonNull final AssessedCustomFee assessedCustomFee) {
         requireNonNull(assessedCustomFee, "assessedCustomFee must not be null");
         assessedCustomFees.add(assessedCustomFee);
         return this;
@@ -619,7 +615,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl automaticTokenAssociations(
+    public SingleTransactionBlockItemsBuilderImpl automaticTokenAssociations(
             @NonNull final List<TokenAssociation> automaticTokenAssociations) {
         requireNonNull(automaticTokenAssociations, "automaticTokenAssociations must not be null");
         this.automaticTokenAssociations = automaticTokenAssociations;
@@ -633,7 +629,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl addAutomaticTokenAssociation(
+    public SingleTransactionBlockItemsBuilderImpl addAutomaticTokenAssociation(
             @NonNull final TokenAssociation automaticTokenAssociation) {
         requireNonNull(automaticTokenAssociation, "automaticTokenAssociation must not be null");
         automaticTokenAssociations.add(automaticTokenAssociation);
@@ -647,7 +643,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl alias(@NonNull final Bytes alias) {
+    public SingleTransactionBlockItemsBuilderImpl alias(@NonNull final Bytes alias) {
         requireNonNull(alias, "alias must not be null");
         transactionRecordBuilder.alias(alias);
         return this;
@@ -660,7 +656,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl ethereumHash(@NonNull final Bytes ethereumHash) {
+    public SingleTransactionBlockItemsBuilderImpl ethereumHash(@NonNull final Bytes ethereumHash) {
         requireNonNull(ethereumHash, "ethereumHash must not be null");
         transactionRecordBuilder.ethereumHash(ethereumHash);
         return this;
@@ -673,7 +669,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl paidStakingRewards(
+    public SingleTransactionBlockItemsBuilderImpl paidStakingRewards(
             @NonNull final List<AccountAmount> paidStakingRewards) {
         requireNonNull(paidStakingRewards, "paidStakingRewards must not be null");
         this.paidStakingRewards = paidStakingRewards;
@@ -687,7 +683,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl addPaidStakingReward(@NonNull final AccountAmount paidStakingReward) {
+    public SingleTransactionBlockItemsBuilderImpl addPaidStakingReward(@NonNull final AccountAmount paidStakingReward) {
         requireNonNull(paidStakingReward, "paidStakingReward must not be null");
         paidStakingRewards.add(paidStakingReward);
         return this;
@@ -701,7 +697,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl entropyNumber(final int num) {
+    public SingleTransactionBlockItemsBuilderImpl entropyNumber(final int num) {
         transactionRecordBuilder.prngNumber(num);
         return this;
     }
@@ -714,7 +710,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl entropyBytes(@NonNull final Bytes prngBytes) {
+    public SingleTransactionBlockItemsBuilderImpl entropyBytes(@NonNull final Bytes prngBytes) {
         requireNonNull(prngBytes, "The argument 'prngBytes' must not be null");
         transactionRecordBuilder.prngBytes(prngBytes);
         return this;
@@ -728,7 +724,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl evmAddress(@NonNull final Bytes evmAddress) {
+    public SingleTransactionBlockItemsBuilderImpl evmAddress(@NonNull final Bytes evmAddress) {
         requireNonNull(evmAddress, "evmAddress must not be null");
         transactionRecordBuilder.evmAddress(evmAddress);
         return this;
@@ -750,7 +746,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl status(@NonNull final ResponseCodeEnum status) {
+    public SingleTransactionBlockItemsBuilderImpl status(@NonNull final ResponseCodeEnum status) {
         this.status = requireNonNull(status, "status must not be null");
         transactionReceiptBuilder.status(status);
         return this;
@@ -788,7 +784,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl accountID(@NonNull final AccountID accountID) {
+    public SingleTransactionBlockItemsBuilderImpl accountID(@NonNull final AccountID accountID) {
         requireNonNull(accountID, "accountID must not be null");
         transactionReceiptBuilder.accountID(accountID);
         return this;
@@ -802,7 +798,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl fileID(@NonNull final FileID fileID) {
+    public SingleTransactionBlockItemsBuilderImpl fileID(@NonNull final FileID fileID) {
         requireNonNull(fileID, "fileID must not be null");
         transactionReceiptBuilder.fileID(fileID);
         return this;
@@ -817,7 +813,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl contractID(@Nullable final ContractID contractID) {
+    public SingleTransactionBlockItemsBuilderImpl contractID(@Nullable final ContractID contractID) {
         // Ensure we don't externalize as an account creation too
         transactionReceiptBuilder.accountID((AccountID) null);
         transactionReceiptBuilder.contractID(contractID);
@@ -842,7 +838,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @NonNull
     @Override
-    public SingleTransactionRecordBuilderImpl exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
+    public SingleTransactionBlockItemsBuilderImpl exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
         requireNonNull(exchangeRate, "exchangeRate must not be null");
         this.exchangeRate = exchangeRate;
         return this;
@@ -856,7 +852,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl topicID(@NonNull final TopicID topicID) {
+    public SingleTransactionBlockItemsBuilderImpl topicID(@NonNull final TopicID topicID) {
         requireNonNull(topicID, "topicID must not be null");
         transactionReceiptBuilder.topicID(topicID);
         return this;
@@ -870,7 +866,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl topicSequenceNumber(final long topicSequenceNumber) {
+    public SingleTransactionBlockItemsBuilderImpl topicSequenceNumber(final long topicSequenceNumber) {
         transactionReceiptBuilder.topicSequenceNumber(topicSequenceNumber);
         return this;
     }
@@ -883,7 +879,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl topicRunningHash(@NonNull final Bytes topicRunningHash) {
+    public SingleTransactionBlockItemsBuilderImpl topicRunningHash(@NonNull final Bytes topicRunningHash) {
         requireNonNull(topicRunningHash, "topicRunningHash must not be null");
         transactionReceiptBuilder.topicRunningHash(topicRunningHash);
         return this;
@@ -897,7 +893,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl topicRunningHashVersion(final long topicRunningHashVersion) {
+    public SingleTransactionBlockItemsBuilderImpl topicRunningHashVersion(final long topicRunningHashVersion) {
         transactionReceiptBuilder.topicRunningHashVersion(topicRunningHashVersion);
         return this;
     }
@@ -910,7 +906,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl tokenID(@NonNull final TokenID tokenID) {
+    public SingleTransactionBlockItemsBuilderImpl tokenID(@NonNull final TokenID tokenID) {
         requireNonNull(tokenID, "tokenID must not be null");
         this.tokenID = tokenID;
         transactionReceiptBuilder.tokenID(tokenID);
@@ -929,7 +925,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl nodeID(long nodeId) {
+    public SingleTransactionBlockItemsBuilderImpl nodeID(long nodeId) {
         transactionReceiptBuilder.nodeId(nodeId);
         return this;
     }
@@ -941,7 +937,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl newTotalSupply(final long newTotalSupply) {
+    public SingleTransactionBlockItemsBuilderImpl newTotalSupply(final long newTotalSupply) {
         this.newTotalSupply = newTotalSupply;
         transactionReceiptBuilder.newTotalSupply(newTotalSupply);
         return this;
@@ -959,7 +955,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl scheduleID(@NonNull final ScheduleID scheduleID) {
+    public SingleTransactionBlockItemsBuilderImpl scheduleID(@NonNull final ScheduleID scheduleID) {
         requireNonNull(scheduleID, "scheduleID must not be null");
         transactionReceiptBuilder.scheduleID(scheduleID);
         return this;
@@ -973,7 +969,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl scheduledTransactionID(
+    public SingleTransactionBlockItemsBuilderImpl scheduledTransactionID(
             @NonNull final TransactionID scheduledTransactionID) {
         transactionReceiptBuilder.scheduledTransactionID(scheduledTransactionID);
         return this;
@@ -987,7 +983,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     @NonNull
-    public SingleTransactionRecordBuilderImpl serialNumbers(@NonNull final List<Long> serialNumbers) {
+    public SingleTransactionBlockItemsBuilderImpl serialNumbers(@NonNull final List<Long> serialNumbers) {
         requireNonNull(serialNumbers, "serialNumbers must not be null");
         this.serialNumbers = serialNumbers;
         return this;
@@ -1005,7 +1001,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl addSerialNumber(final long serialNumber) {
+    public SingleTransactionBlockItemsBuilderImpl addSerialNumber(final long serialNumber) {
         serialNumbers.add(serialNumber);
         return this;
     }
@@ -1020,7 +1016,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl contractStateChanges(
+    public SingleTransactionBlockItemsBuilderImpl contractStateChanges(
             @NonNull final List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges) {
         requireNonNull(contractStateChanges, "contractStateChanges must not be null");
         this.contractStateChanges = contractStateChanges;
@@ -1035,7 +1031,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl addContractStateChanges(
+    public SingleTransactionBlockItemsBuilderImpl addContractStateChanges(
             @NonNull final ContractStateChanges contractStateChanges, final boolean isMigration) {
         requireNonNull(contractStateChanges, "contractStateChanges must not be null");
         this.contractStateChanges.add(new AbstractMap.SimpleEntry<>(contractStateChanges, isMigration));
@@ -1049,7 +1045,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl contractActions(
+    public SingleTransactionBlockItemsBuilderImpl contractActions(
             @NonNull final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions) {
         requireNonNull(contractActions, "contractActions must not be null");
         this.contractActions = contractActions;
@@ -1064,7 +1060,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl addContractActions(
+    public SingleTransactionBlockItemsBuilderImpl addContractActions(
             @NonNull final ContractActions contractActions, final boolean isMigration) {
         requireNonNull(contractActions, "contractActions must not be null");
         this.contractActions.add(new AbstractMap.SimpleEntry<>(contractActions, isMigration));
@@ -1078,7 +1074,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl contractBytecodes(
+    public SingleTransactionBlockItemsBuilderImpl contractBytecodes(
             @NonNull final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes) {
         requireNonNull(contractBytecodes, "contractBytecodes must not be null");
         this.contractBytecodes = contractBytecodes;
@@ -1093,7 +1089,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
-    public SingleTransactionRecordBuilderImpl addContractBytecode(
+    public SingleTransactionBlockItemsBuilderImpl addContractBytecode(
             @NonNull final ContractBytecode contractBytecode, final boolean isMigration) {
         requireNonNull(contractBytecode, "contractBytecode must not be null");
         contractBytecodes.add(new AbstractMap.SimpleEntry<>(contractBytecode, isMigration));

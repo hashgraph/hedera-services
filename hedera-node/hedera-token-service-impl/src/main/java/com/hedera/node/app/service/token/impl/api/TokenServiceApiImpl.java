@@ -36,7 +36,7 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
-import com.hedera.node.app.service.token.api.FeeRecordBuilder;
+import com.hedera.node.app.spi.fees.FeeBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.validators.StakingValidator;
@@ -326,7 +326,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
 
     @Override
     public boolean chargeNetworkFee(
-            @NonNull final AccountID payerId, final long amount, @NonNull final FeeRecordBuilder rb) {
+            @NonNull final AccountID payerId, final long amount, @NonNull final FeeBuilder rb) {
         requireNonNull(rb);
         requireNonNull(payerId);
 
@@ -344,8 +344,8 @@ public class TokenServiceApiImpl implements TokenServiceApi {
             @NonNull AccountID payerId,
             AccountID nodeAccountId,
             @NonNull Fees fees,
-            @NonNull final FeeRecordBuilder rb) {
-        requireNonNull(rb);
+            @NonNull final FeeBuilder feeBuilder) {
+        requireNonNull(feeBuilder);
         requireNonNull(fees);
         requireNonNull(payerId);
         requireNonNull(nodeAccountId);
@@ -371,8 +371,8 @@ public class TokenServiceApiImpl implements TokenServiceApi {
 
         chargePayer(payerAccount, amountToCharge);
         // Record the amount charged into the record builder
-        rb.transactionFee(amountToCharge);
-        distributeToNetworkFundingAccounts(amountToDistributeToFundingAccounts, rb);
+        feeBuilder.transactionFee(amountToCharge);
+        distributeToNetworkFundingAccounts(amountToDistributeToFundingAccounts, feeBuilder);
 
         if (chargeableNodeFee > 0) {
             final var nodeAccount = lookupAccount("Node account", nodeAccountId);
@@ -384,7 +384,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
     }
 
     @Override
-    public void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeRecordBuilder rb) {
+    public void refundFees(@NonNull AccountID receiver, @NonNull Fees fees, @NonNull final FeeBuilder feeBuilder) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
@@ -574,7 +574,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         return account.smartContract() ? EntityType.CONTRACT : EntityType.ACCOUNT;
     }
 
-    private void distributeToNetworkFundingAccounts(final long amount, @NonNull final FeeRecordBuilder rb) {
+    private void distributeToNetworkFundingAccounts(final long amount, @NonNull final FeeBuilder fb) {
         // We may have a rounding error, so we will first remove the node and staking rewards from the total, and then
         // whatever is left over goes to the funding account.
         long balance = amount;

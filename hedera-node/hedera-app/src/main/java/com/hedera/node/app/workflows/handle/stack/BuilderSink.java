@@ -17,7 +17,7 @@
 package com.hedera.node.app.workflows.handle.stack;
 
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.function.Consumer;
@@ -39,14 +39,14 @@ public interface BuilderSink {
      * maximum number of preceding builders has been exceeded.
      * @param builder the builder to add
      */
-    void addPrecedingOrThrow(@NonNull SingleTransactionRecordBuilder builder);
+    void addPrecedingOrThrow(@NonNull SingleTransactionBuilder builder);
 
     /**
      * Adds a builder to the following builders of this sink. Throws a {@link HandleException} if the
      * maximum number of following builders has been exceeded.
      * @param builder the builder to add
      */
-    void addFollowingOrThrow(@NonNull SingleTransactionRecordBuilder builder);
+    void addFollowingOrThrow(@NonNull SingleTransactionBuilder builder);
 
     /**
      * Returns the number of preceding builders that can be added to this sink, as controlled by both the total
@@ -67,14 +67,14 @@ public interface BuilderSink {
      * builders, in the order they were added.
      * @return all accumulated builders
      */
-    List<SingleTransactionRecordBuilder> allBuilders();
+    List<SingleTransactionBuilder> allBuilders();
 
     /**
      * Returns whether this savepoint has accumulated any builders other than the designated base builder.
      * @param baseBuilder the base builder
      * @return whether this savepoint has any builders other than the base builder
      */
-    boolean hasBuilderOtherThan(@NonNull SingleTransactionRecordBuilder baseBuilder);
+    boolean hasBuilderOtherThan(@NonNull SingleTransactionBuilder baseBuilder);
 
     /**
      * For each builder in this savepoint other than the designated base builder, invokes the given consumer
@@ -88,7 +88,7 @@ public interface BuilderSink {
     <T> void forEachOtherBuilder(
             @NonNull Consumer<T> consumer,
             @NonNull Class<T> builderType,
-            @NonNull SingleTransactionRecordBuilder baseBuilder);
+            @NonNull SingleTransactionBuilder baseBuilder);
 
     /**
      * Flushes any stream item builders accumulated in this sink to the parent sink, preserving their ordering relative
@@ -116,5 +116,5 @@ public interface BuilderSink {
      * @return the following builders in the sink
      */
     @Deprecated
-    List<SingleTransactionRecordBuilder> followingBuilders();
+    List<SingleTransactionBuilder> followingBuilders();
 }

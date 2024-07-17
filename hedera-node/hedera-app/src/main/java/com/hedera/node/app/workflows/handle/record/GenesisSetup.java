@@ -21,7 +21,7 @@ import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
 import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;

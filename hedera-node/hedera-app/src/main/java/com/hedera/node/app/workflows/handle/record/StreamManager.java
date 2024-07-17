@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.records;
+package com.hedera.node.app.workflows.handle.record;
 
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.spi.records.OngoingBlockInfo;
+import com.hedera.node.app.spi.workflows.record.SingleTransaction;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,42 +26,33 @@ import java.time.Instant;
 import java.util.stream.Stream;
 
 /**
- * {@link BlockRecordManager} is responsible for managing blocks and writing the block record stream. It manages:
+ * {@link StreamManager} is responsible for managing the ongoing blockchain data, and for writing the output stream of objects. It manages:
  * <ul>
- *     <li>Packaging transaction records into files and sending for writing</li>
+ *     <li>Packaging transactions and results into bytes, and sending for writing</li>
  *     <li>Updating block number</li>
- *     <li>Computing running hashes</li>
- *     <li>Updating State for blocks and running hashes</li>
  * </ul>
  *
  * <p>This API is used exclusively by {@link com.hedera.node.app.workflows.handle.HandleWorkflow}
  *
  * <p>This is {@link AutoCloseable} so it can wait for all inflight threads to finish and leave things in
  * a good state.
- *
- * <p>The {@link BlockRecordManager} operates on the principle that the consensus time on user transactions
- * <b>ALWAYS</b> increase with time. Transaction TX_2 will always have a higher consensus time than TX_1, and
- * TX_3 will be higher than TX_2, even if TX_2 were to fail, or be a duplicate. Likewise, we know for certain that
- * the entire set of user transaction, preceding transactions, and child transactions of TX_1 will have a consensus
- * time that comes before every preceding, user, and child transaction of TX_2.
- *
- * <p>This property allows us to make some assumptions that radically simplify the API and implementation.
- *
- * <p>While we currently produce block records on a fixed-second boundary (for example, every 2 seconds), it is possible
- * that some transactions have a consensus time that lies outside that boundary. This is OK, because it is not possible
- * to take the consensus time of a transaction and map back to which block it came from. Blocks use auto-incrementing
- * numbers, and if the network were idle for the duration of a block, there may be no block generated for that slice
- * of time. Thus, since you cannot map consensus time to block number, it doesn't matter if some preceding transactions
- * may have a consensus time that lies outside the "typical" block boundary.
  */
-public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
+public interface StreamManager extends OngoingBlockInfo, AutoCloseable {
 
     /**
-     * Inform {@link BlockRecordManager} of the new consensus time at the beginning of a new transaction. This should
+     * "Advances the consensus clock" by updating the latest consensus timestamp that the node has handled. This should
+     * be called early on in the transaction handling process in order to avoid assigning the same consensus timestamp
+     * to multiple transactions.
+     * @param consensusTime the most recent consensus timestamp that the node has <b>started</b> to handle
+     */
+    void advanceConsensusClock(@NonNull Instant consensusTime, @NonNull HederaState state);
+
+    /**
+     * Inform {@link StreamManager} of the new consensus time at the beginning of a new transaction. This should
      * only be called before <b>user transactions</b> because the workflow knows 100% that there can not be ANY user
      * transactions that proceed this one in consensus time.
      *
-     * <p>This allows {@link BlockRecordManager} to set up the correct block information for the user transaction that
+     * <p>This allows {@link StreamManager} to set up the correct block information for the user transaction that
      * is about to be executed. So block questions are answered correctly.
      *
      * <p>The BlockRecordManager may choose to close one or more files if the consensus time threshold has passed.
@@ -74,15 +65,9 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * @return               true if a new block was created, false otherwise
      */
     boolean startUserTransaction(
-            @NonNull Instant consensusTime, @NonNull HederaState state, @NonNull PlatformState platformState);
-
-    /**
-     * "Advances the consensus clock" by updating the latest consensus timestamp that the node has handled. This should
-     * be called early on in the transaction handling process in order to avoid assigning the same consensus timestamp
-     * to multiple transactions.
-     * @param consensusTime the most recent consensus timestamp that the node has <b>started</b> to handle
-     */
-    void advanceConsensusClock(@NonNull Instant consensusTime, @NonNull HederaState state);
+            @NonNull final Instant consensusTime,
+            @NonNull final HederaState state,
+            @NonNull final PlatformState platformState);
 
     /**
      * Add a user transaction's records to the record stream. They must be in exact consensus time order! This must only
@@ -91,10 +76,10 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * transactions are treated as though they were user transactions, calling
      * {@link #startUserTransaction(Instant, HederaState, PlatformState)} and this method.
      *
-     * @param recordStreamItems Stream of records produced while handling the user transaction
+     * @param singleTransactions Stream of records produced while handling the user transaction
      * @param state             The state to read {@link BlockInfo} from
      */
-    void endUserTransaction(@NonNull Stream<SingleTransactionRecord> recordStreamItems, @NonNull HederaState state);
+    void endUserTransaction(@NonNull Stream<SingleTransaction> singleTransactions, @NonNull HederaState state);
 
     /**
      * Called at the end of a round to make sure the running hash and block information is up-to-date in state.
@@ -106,15 +91,15 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
     void endRound(@NonNull HederaState state);
 
     /**
-     * Closes this BlockRecordManager and wait for any threads to finish.
+     * Closes this manager and waits for any threads to finish.
      */
     @Override
     void close();
 
     /**
-     * Notifies the block record manager that any startup migration records have been streamed.
+     * Notifies the stream manager that any startup migration transactions have been streamed.
      */
-    void markMigrationRecordsStreamed();
+    void markMigrationTransactionsStreamed();
 
     /**
      * Get the consensus time of the latest handled transaction, or EPOCH if no transactions have been handled yet

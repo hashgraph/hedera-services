@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
@@ -38,16 +38,16 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.workflows.handle.record.StreamManager;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransaction;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -105,7 +105,7 @@ public class HandleWorkflow {
     private final NetworkUtilizationManager networkUtilizationManager;
     private final ConfigProvider configProvider;
     private final StoreMetricsService storeMetricsService;
-    private final BlockRecordManager blockRecordManager;
+    private final StreamManager blockRecordManager;
     private final CacheWarmer cacheWarmer;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
@@ -130,7 +130,7 @@ public class HandleWorkflow {
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final StreamManager blockRecordManager,
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
@@ -230,7 +230,7 @@ public class HandleWorkflow {
     /**
      * Handles a platform transaction. This method is responsible for creating a {@link UserTxn} and
      * executing the workflow for the transaction. This produces a stream of records that are then passed to the
-     * {@link BlockRecordManager} to be externalized.
+     * {@link StreamManager} to be externalized.
      *
      * @param state the writable {@link HederaState} that this transaction will work on
      * @param platformState the {@link PlatformState} that this transaction will work on
@@ -313,7 +313,7 @@ public class HandleWorkflow {
      *
      * @return the stream of records
      */
-    private Stream<SingleTransactionRecord> execute(@NonNull final UserTxn userTxn) {
+    private Stream<SingleTransaction> execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo()).status(BUSY);
@@ -349,7 +349,7 @@ public class HandleWorkflow {
      *
      * @return the failure record
      */
-    private Stream<SingleTransactionRecord> failInvalidStreamItems(@NonNull final UserTxn userTxn) {
+    private Stream<SingleTransaction> failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
         final var failInvalidBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
         initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo()).status(FAIL_INVALID);
@@ -379,15 +379,15 @@ public class HandleWorkflow {
 
     /**
      * Builds and caches the result of the user transaction with
-     * the explicitly provided records.
+     * the explicitly provided single transaction items.
      *
      * @param userTxn the user transaction
      * @param builders the explicit record builders
      * @return the stream of records
      */
-    private Stream<SingleTransactionRecord> finalizedStreamItems(
-            @NonNull final UserTxn userTxn, @NonNull final List<SingleTransactionRecordBuilder> builders) {
-        final List<SingleTransactionRecord> records = new ArrayList<>();
+    private Stream<SingleTransaction> finalizedStreamItems(
+            @NonNull final UserTxn userTxn, @NonNull final List<SingleTransactionBuilder> builders) {
+        final List<SingleTransaction> singleTxns = new ArrayList<>();
         TransactionID.Builder idBuilder = null;
         int indexOfUserRecord = 0;
         for (int i = 0; i < builders.size(); i++) {
@@ -415,11 +415,11 @@ public class HandleWorkflow {
             if (i > indexOfUserRecord && builder.category() != SCHEDULED) {
                 builder.parentConsensus(userTxn.consensusNow());
             }
-            records.add(((SingleTransactionRecordBuilderImpl) builder).build());
+            singleTxns.add(builder.build());
         }
         recordCache.add(
-                userTxn.creatorInfo().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), records);
-        return records.stream();
+                userTxn.creatorInfo().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), singleTxns);
+        return singleTxns.stream();
     }
 
     /**
@@ -455,8 +455,8 @@ public class HandleWorkflow {
      * @param txnInfo the transaction information
      * @return the initialized base builder
      */
-    private SingleTransactionRecordBuilder initializeBuilderInfo(
-            @NonNull final SingleTransactionRecordBuilder builder, @NonNull final TransactionInfo txnInfo) {
+    private SingleTransactionBuilder initializeBuilderInfo(
+            @NonNull final SingleTransactionBuilder builder, @NonNull final TransactionInfo txnInfo) {
         final var transaction = txnInfo.transaction();
         // If the transaction uses the legacy body bytes field instead of explicitly
         // setting its signed bytes, the record will have the hash of its bytes as

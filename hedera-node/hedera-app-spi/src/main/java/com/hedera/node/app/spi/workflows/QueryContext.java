@@ -20,7 +20,7 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.OngoingBlockInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -71,9 +71,9 @@ public interface QueryContext {
     @NonNull
     RecordCache recordCache();
 
-    /** Gets the {@link BlockRecordInfo}. */
+    /** Gets the {@link OngoingBlockInfo}. */
     @NonNull
-    BlockRecordInfo blockRecordInfo();
+    OngoingBlockInfo blockRecordInfo();
 
     /**
      * Returns information on current exchange rates

@@ -138,7 +138,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
             final var consensusTime = Instant.now();
             subject.initRunningHash(new RunningHashes(STARTING_RUNNING_HASH_OBJ.hash(), null, null, null));
             subject.switchBlocks(0, 1, consensusTime);
-            assertThatThrownBy(() -> subject.writeRecordStreamItems(null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> subject.writeStreamItems(null)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -147,7 +147,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
             final var consensusTime = Instant.now();
             subject.initRunningHash(new RunningHashes(STARTING_RUNNING_HASH_OBJ.hash(), null, null, null));
             subject.switchBlocks(0, 1, consensusTime);
-            assertThatNoException().isThrownBy(() -> subject.writeRecordStreamItems(Stream.of()));
+            assertThatNoException().isThrownBy(() -> subject.writeStreamItems(Stream.of()));
         }
 
         @ParameterizedTest
@@ -159,7 +159,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
             subject.switchBlocks(0, 1, consensusTime);
             var rollingHash = STARTING_RUNNING_HASH_OBJ.hash();
             for (final var rec : records) {
-                subject.writeRecordStreamItems(Stream.of(rec));
+                subject.writeStreamItems(Stream.of(rec));
 
                 // Check the rolling hash
                 final var ser = BlockRecordFormatV6.INSTANCE.serialize(rec, 1, VERSION);
@@ -187,11 +187,11 @@ abstract class StreamFileProducerTest extends AppTestBase {
             subject.initRunningHash(new RunningHashes(STARTING_RUNNING_HASH_OBJ.hash(), null, null, null));
             subject.switchBlocks(0, 1, consensusTime);
             final var records = TEST_BLOCKS.get(0); // Has at least 4 transactions
-            subject.writeRecordStreamItems(Stream.of(records.get(0)));
-            subject.writeRecordStreamItems(Stream.of(records.get(1)));
-            subject.writeRecordStreamItems(Stream.of(records.get(2)));
+            subject.writeStreamItems(Stream.of(records.get(0)));
+            subject.writeStreamItems(Stream.of(records.get(1)));
+            subject.writeStreamItems(Stream.of(records.get(2)));
             assertThat(subject.getNMinus3RunningHash()).isEqualTo(STARTING_RUNNING_HASH_OBJ.hash());
-            subject.writeRecordStreamItems(Stream.of(records.get(3)));
+            subject.writeStreamItems(Stream.of(records.get(3)));
             assertThat(subject.getNMinus3RunningHash()).isNotEqualTo(STARTING_RUNNING_HASH_OBJ.hash());
             subject.close();
         }
@@ -221,7 +221,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
                 final var consensusTime = Instant.now();
                 subject.switchBlocks(blockNum, blockNum + 1, consensusTime);
                 blockNum++;
-                records.forEach(rec -> subject.writeRecordStreamItems(Stream.of(rec)));
+                records.forEach(rec -> subject.writeStreamItems(Stream.of(rec)));
             }
 
             // We will now close the producer so as to cause it to finish all its work synchronously, so we can inspect
@@ -246,7 +246,7 @@ abstract class StreamFileProducerTest extends AppTestBase {
             subject.switchBlocks(0, 1, Instant.now());
 
             final var records = TEST_BLOCKS.get(0); // Has at least 4 transactions
-            subject.writeRecordStreamItems(Stream.of(records.get(0), records.get(1), records.get(2)));
+            subject.writeStreamItems(Stream.of(records.get(0), records.get(1), records.get(2)));
 
             // Submitting a batch of records only moves the running hash forward once, because it moves forward once
             // PER USER TRANSACTION, not per record.
@@ -283,9 +283,9 @@ abstract class StreamFileProducerTest extends AppTestBase {
 
             // "switchBlocks" causes a new writer to be created, which will throw
             final var records = TEST_BLOCKS.get(0); // Has at least 4 transactions
-            subject.writeRecordStreamItems(Stream.of(records.get(0)));
+            subject.writeStreamItems(Stream.of(records.get(0)));
             subject.switchBlocks(1, 2, consensusTime.plusSeconds(2));
-            subject.writeRecordStreamItems(Stream.of(records.get(1)));
+            subject.writeStreamItems(Stream.of(records.get(1)));
 
             subject.close();
 

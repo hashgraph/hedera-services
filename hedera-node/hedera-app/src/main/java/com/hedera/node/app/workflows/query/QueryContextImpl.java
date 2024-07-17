@@ -28,7 +28,7 @@ import com.hedera.node.app.records.impl.BlockRecordInfoImpl;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.fees.FeeCalculator;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.OngoingBlockInfo;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -50,7 +50,7 @@ public class QueryContextImpl implements QueryContext {
     private final ExchangeRateManager exchangeRateManager;
     private final AccountID payer;
     private final FeeCalculator feeCalculator;
-    private BlockRecordInfo blockRecordInfo; // lazily created
+    private OngoingBlockInfo blockRecordInfo; // lazily created
     private ExchangeRateInfo exchangeRateInfo; // lazily created
 
     /**
@@ -116,7 +116,7 @@ public class QueryContextImpl implements QueryContext {
 
     @NonNull
     @Override
-    public BlockRecordInfo blockRecordInfo() {
+    public OngoingBlockInfo blockRecordInfo() {
         if (blockRecordInfo == null) {
             final var states = state.getReadableStates(BlockRecordService.NAME);
             final var blockInfoState = states.<BlockInfo>getSingleton(V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY)

@@ -23,18 +23,19 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
 
 /**
- * Interface for reading running hashes and block information managed by BlockRecordManager
+ * Interface for reading recent block information.
  */
-public interface BlockRecordInfo {
+public interface OngoingBlockInfo {
 
     // ========================================================================================================
     // Running Hash Methods
 
     /**
-     * Get the runningHash of all RecordStreamObject. This will block if the running hash has not yet
+     * // todo: is this still true?
+     * Get the runningHash of all objects. This will block if the running hash has not yet
      * been computed for the most recent user transaction.
      *
-     * @return the runningHash of all RecordStreamObject, or null if there are no running hashes yet
+     * @return the runningHash of all blocks, or null if there are no running hashes yet
      */
     @Nullable
     Bytes getRunningHash();

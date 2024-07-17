@@ -28,7 +28,7 @@ import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.workflows.handle.record.StreamManager;
 import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -36,6 +36,7 @@ import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -49,9 +50,8 @@ import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
-import com.hedera.node.app.workflows.handle.RecordDispatch;
+import com.hedera.node.app.workflows.handle.RecordDispatchImpl;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
@@ -97,7 +97,7 @@ public record UserTxn(
             // @Singleton
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final StreamManager blockRecordManager,
             @NonNull final HandleWorkflow handleWorkflow) {
 
         final var isGenesis = lastHandledConsensusTime.equals(Instant.EPOCH);
@@ -156,7 +156,7 @@ public record UserTxn(
             @NonNull final FeeManager feeManager,
             @NonNull final RecordCache recordCache,
             @NonNull final DispatchProcessor dispatchProcessor,
-            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final StreamManager blockRecordManager,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
@@ -164,7 +164,7 @@ public record UserTxn(
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             // @UserTxnScope
-            @NonNull final SingleTransactionRecordBuilder baseBuilder) {
+            @NonNull final SingleTransactionBuilder baseBuilder) {
         final var keyVerifier = new DefaultKeyVerifier(
                 txnInfo.signatureMap().sigPair().size(),
                 config.getConfigData(HederaConfig.class),
@@ -208,9 +208,9 @@ public record UserTxn(
                 throttleAdvisor);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
         final var feeAccumulator = new FeeAccumulator(
-                serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) baseBuilder);
-        return new RecordDispatch(
-                baseBuilder,
+                serviceApiFactory.getApi(TokenServiceApi.class), baseBuilder);
+        return new RecordDispatchImpl(
+                ((SingleTransactionRecordBuilder) baseBuilder),
                 config,
                 fees,
                 txnInfo,
@@ -234,7 +234,7 @@ public record UserTxn(
      * Returns the base stream builder for this user transaction.
      * @return the base stream builder
      */
-    public SingleTransactionRecordBuilder baseBuilder() {
+    public SingleTransactionBuilder baseBuilder() {
         return stack.baseStreamBuilder();
     }
 }

@@ -20,14 +20,15 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder.ReversingBehavior.IRREVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder.ReversingBehavior.REMOVABLE;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder.ReversingBehavior.REVERSIBLE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.WrappedHederaState;
@@ -59,7 +60,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     /**
      * The stream builder for the transaction whose dispatch created this stack.
      */
-    private final SingleTransactionRecordBuilder baseBuilder;
+    private final SingleTransactionBuilder baseBuilder;
     // For the root stack of a user dispatch, the final sink of all created stream builders; otherwise null,
     // because child stacks flush their builders into the savepoint at the top of their parent stack
     @Nullable
@@ -227,7 +228,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @return all stream builders created when handling the user transaction
      * @throws NullPointerException if called on a non-root stack
      */
-    public List<SingleTransactionRecordBuilder> allStreamBuilders() {
+    public List<SingleTransactionBuilder> allStreamBuilders() {
         return requireNonNull(builderSink).allBuilders();
     }
 
@@ -246,7 +247,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * that created the stack.
      * @return the base stream builder
      */
-    public @NonNull SingleTransactionRecordBuilder baseStreamBuilder() {
+    public @NonNull SingleTransactionBuilder baseStreamBuilder() {
         return baseBuilder;
     }
 
@@ -297,7 +298,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * Creates a new stream builder for a removable child in the active savepoint.
      * @return the new stream builder
      */
-    public SingleTransactionRecordBuilder createRemovableChildBuilder() {
+    public SingleTransactionBuilder createRemovableChildBuilder() {
         return peek().createBuilder(REMOVABLE, CHILD, NOOP_RECORD_CUSTOMIZER, false);
     }
 
@@ -305,7 +306,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * Creates a new stream builder for a reversible child in the active savepoint.
      * @return the new stream builder
      */
-    public SingleTransactionRecordBuilder createReversibleChildBuilder() {
+    public SingleTransactionBuilder createReversibleChildBuilder() {
         return peek().createBuilder(REVERSIBLE, CHILD, NOOP_RECORD_CUSTOMIZER, false);
     }
 
@@ -313,7 +314,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * Creates a new stream builder for an irreversible preceding transaction in the active savepoint.
      * @return the new stream builder
      */
-    public SingleTransactionRecordBuilder createIrreversiblePrecedingBuilder() {
+    public SingleTransactionBuilder createIrreversiblePrecedingBuilder() {
         return peek().createBuilder(IRREVERSIBLE, PRECEDING, NOOP_RECORD_CUSTOMIZER, false);
     }
 
@@ -325,8 +326,8 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @return the list of child records
      */
     @Deprecated
-    public List<SingleTransactionRecordBuilder> getChildBuilders() {
-        final var childRecords = new ArrayList<SingleTransactionRecordBuilder>();
+    public List<SingleTransactionBuilder> getChildBuilders() {
+        final var childRecords = new ArrayList<SingleTransactionBuilder>();
         for (final var savepoint : stack) {
             for (final var builder : savepoint.followingBuilders()) {
                 if (builder.category() == CHILD) {

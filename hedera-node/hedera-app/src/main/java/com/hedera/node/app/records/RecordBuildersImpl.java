@@ -19,7 +19,7 @@ package com.hedera.node.app.records;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.records.RecordBuilders;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -55,7 +55,7 @@ public class RecordBuildersImpl implements RecordBuilders {
     }
 
     public static <T> T castBuilder(
-            @NonNull final SingleTransactionRecordBuilder builder, @NonNull final Class<T> builderClass) {
+            @NonNull final SingleTransactionBuilder builder, @NonNull final Class<T> builderClass) {
         if (!builderClass.isInstance(builder)) {
             throw new IllegalArgumentException("Not a valid record builder class");
         }

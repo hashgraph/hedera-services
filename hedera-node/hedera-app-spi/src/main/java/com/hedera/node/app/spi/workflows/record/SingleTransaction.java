@@ -14,27 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.token.api;
+package com.hedera.node.app.spi.workflows.record;
+
+import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.base.Transaction;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
- * transaction.
+ * A representation of a single transaction
  */
-public interface FeeRecordBuilder {
-    /**
-     * Gets the current value of the transaction fee in this builder.
-     * @return The current transaction fee value.
-     */
-    long transactionFee();
-
-    /**
-     * Sets the consensus transaction fee.
-     *
-     * @param transactionFee the transaction fee
-     * @return the builder
-     */
+public interface SingleTransaction {
     @NonNull
-    FeeRecordBuilder transactionFee(final long transactionFee);
+    Transaction transaction();
+
+    @Nullable
+    Timestamp consensusTimestampOrElse(@NonNull Timestamp defaultTimestamp);
 }

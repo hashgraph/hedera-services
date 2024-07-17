@@ -1,5 +1,5 @@
 /**
- * This package contains a complete implementation of {@link com.hedera.node.app.records.BlockRecordManager}. This
+ * This package contains a complete implementation of {@link com.hedera.node.app.workflows.handle.record.StreamManager}. This
  * implementation delegates to {@link com.hedera.node.app.records.impl.BlockRecordStreamProducer}s to compute the
  * rolling hashes of {@link com.hedera.hapi.streams.RecordStreamItem}s, and to write the records to a file, socket,
  * or other destination. Implementations of {@link com.hedera.node.app.records.impl.BlockRecordStreamProducer} are

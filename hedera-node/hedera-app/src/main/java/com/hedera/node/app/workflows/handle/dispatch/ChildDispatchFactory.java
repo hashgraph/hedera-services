@@ -40,7 +40,7 @@ import com.hedera.node.app.fees.ResourcePriceCalculatorImpl;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
-import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.workflows.handle.record.StreamManager;
 import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
@@ -59,6 +59,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -69,8 +70,7 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
-import com.hedera.node.app.workflows.handle.RecordDispatch;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.RecordDispatchImpl;
 import com.hedera.node.app.workflows.handle.record.TokenContextImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
@@ -102,7 +102,7 @@ public class ChildDispatchFactory {
     private final FeeManager feeManager;
     private final RecordCache recordCache;
     private final DispatchProcessor dispatchProcessor;
-    private final BlockRecordManager blockRecordManager;
+    private final StreamManager blockRecordManager;
     private final ServiceScopeLookup serviceScopeLookup;
     private final StoreMetricsService storeMetricsService;
     private final ExchangeRateManager exchangeRateManager;
@@ -115,7 +115,8 @@ public class ChildDispatchFactory {
             @NonNull final FeeManager feeManager,
             @NonNull final RecordCache recordCache,
             @NonNull final DispatchProcessor dispatchProcessor,
-            @NonNull final BlockRecordManager blockRecordManager,
+            // todo: inject record manager or block manager based on config flag
+            @NonNull final StreamManager blockRecordManager,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager) {
@@ -157,7 +158,7 @@ public class ChildDispatchFactory {
             @NonNull final AccountID syntheticPayerId,
             @NonNull final HandleContext.TransactionCategory category,
             @NonNull final ExternalizedRecordCustomizer customizer,
-            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
+            @NonNull final SingleTransactionBuilder.ReversingBehavior reversingBehavior,
             @NonNull final Configuration config,
             @NonNull final SavepointStackImpl stack,
             @NonNull final ReadableStoreFactory readableStoreFactory,
@@ -197,9 +198,9 @@ public class ChildDispatchFactory {
                 dispatcher);
     }
 
-    private RecordDispatch newChildDispatch(
+    private Dispatch newChildDispatch(
             // @ChildDispatchScope
-            @NonNull final SingleTransactionRecordBuilder builder,
+            @NonNull final SingleTransactionBuilder builder,
             @NonNull final TransactionInfo txnInfo,
             @NonNull final AccountID payerId,
             @NonNull final HandleContext.TransactionCategory category,
@@ -219,7 +220,7 @@ public class ChildDispatchFactory {
             @NonNull final FeeManager feeManager,
             @NonNull final RecordCache recordCache,
             @NonNull final DispatchProcessor dispatchProcessor,
-            @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final StreamManager blockRecordManager,
             @NonNull final ServiceScopeLookup serviceScopeLookup,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final ExchangeRateManager exchangeRateManager,
@@ -262,11 +263,12 @@ public class ChildDispatchFactory {
                 throttleAdviser);
         final var childFees = computeChildFees(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var childFeeAccumulator = new FeeAccumulator(
-                serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder);
+                serviceApiFactory.getApi(TokenServiceApi.class), builder);
         final var childTokenContext =
                 new TokenContextImpl(config, storeMetricsService, childStack, blockRecordManager, consensusNow);
-        return new RecordDispatch(
-                builder,
+        return new RecordDispatchImpl(
+                // todo: replace with interface to allow for block items builder
+                ((SingleTransactionRecordBuilder) builder),
                 config,
                 childFees,
                 txnInfo,
@@ -475,8 +477,8 @@ public class ChildDispatchFactory {
      * @param builder the stream item builder
      * @param txnInfo the transaction info
      */
-    private SingleTransactionRecordBuilder initializedForChild(
-            @NonNull final SingleTransactionRecordBuilder builder, @NonNull final TransactionInfo txnInfo) {
+    private SingleTransactionBuilder initializedForChild(
+            @NonNull final SingleTransactionBuilder builder, @NonNull final TransactionInfo txnInfo) {
         builder.transaction(txnInfo.transaction())
                 .transactionBytes(txnInfo.signedBytes())
                 .memo(txnInfo.txBody().memo());

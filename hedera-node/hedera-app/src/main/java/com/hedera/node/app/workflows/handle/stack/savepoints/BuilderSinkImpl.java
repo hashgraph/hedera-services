@@ -20,6 +20,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEE
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,8 +35,8 @@ import java.util.function.Consumer;
  * the base builder's identity.
  */
 public class BuilderSinkImpl implements BuilderSink {
-    protected final List<SingleTransactionRecordBuilder> precedingBuilders = new ArrayList<>();
-    protected final List<SingleTransactionRecordBuilder> followingBuilders = new ArrayList<>();
+    protected final List<SingleTransactionBuilder> precedingBuilders = new ArrayList<>();
+    protected final List<SingleTransactionBuilder> followingBuilders = new ArrayList<>();
 
     private final int maxPreceding;
     private final int maxFollowing;
@@ -67,18 +68,18 @@ public class BuilderSinkImpl implements BuilderSink {
     }
 
     @Override
-    public List<SingleTransactionRecordBuilder> allBuilders() {
+    public List<SingleTransactionBuilder> allBuilders() {
         if (precedingBuilders.isEmpty()) {
             return followingBuilders;
         } else {
-            final List<SingleTransactionRecordBuilder> allBuilders = new ArrayList<>(precedingBuilders);
+            final List<SingleTransactionBuilder> allBuilders = new ArrayList<>(precedingBuilders);
             allBuilders.addAll(followingBuilders);
             return allBuilders;
         }
     }
 
     @Override
-    public boolean hasBuilderOtherThan(@NonNull final SingleTransactionRecordBuilder baseBuilder) {
+    public boolean hasBuilderOtherThan(@NonNull final SingleTransactionBuilder baseBuilder) {
         requireNonNull(baseBuilder);
         for (final var builder : precedingBuilders) {
             if (builder != baseBuilder) {
@@ -97,7 +98,7 @@ public class BuilderSinkImpl implements BuilderSink {
     public <T> void forEachOtherBuilder(
             @NonNull final Consumer<T> consumer,
             @NonNull final Class<T> builderType,
-            @NonNull final SingleTransactionRecordBuilder baseBuilder) {
+            @NonNull final SingleTransactionBuilder baseBuilder) {
         requireNonNull(builderType);
         requireNonNull(consumer);
         requireNonNull(baseBuilder);
@@ -133,7 +134,7 @@ public class BuilderSinkImpl implements BuilderSink {
     }
 
     @Override
-    public void addPrecedingOrThrow(@NonNull final SingleTransactionRecordBuilder builder) {
+    public void addPrecedingOrThrow(@NonNull final SingleTransactionBuilder builder) {
         requireNonNull(builder);
         if (precedingCapacity() == 0) {
             throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
@@ -142,7 +143,7 @@ public class BuilderSinkImpl implements BuilderSink {
     }
 
     @Override
-    public void addFollowingOrThrow(@NonNull final SingleTransactionRecordBuilder builder) {
+    public void addFollowingOrThrow(@NonNull final SingleTransactionBuilder builder) {
         requireNonNull(builder);
         if (followingCapacity() == 0) {
             throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
@@ -161,7 +162,7 @@ public class BuilderSinkImpl implements BuilderSink {
     }
 
     @Override
-    public List<SingleTransactionRecordBuilder> followingBuilders() {
+    public List<SingleTransactionBuilder> followingBuilders() {
         return followingBuilders;
     }
 

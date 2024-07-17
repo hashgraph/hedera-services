@@ -17,7 +17,7 @@
 package com.hedera.node.app.records.impl;
 
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.node.app.spi.records.BlockRecordInfo;
+import com.hedera.node.app.spi.records.OngoingBlockInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.DigestType;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -26,8 +26,8 @@ import java.time.Instant;
 
 /**
  * A utility class that provides methods for getting information from the {@link BlockInfo} object in order to
- * satisfy the {@link BlockRecordInfo} interface. There are at least two classes ({@link BlockRecordInfoImpl} and
- * {@link BlockRecordManagerImpl} which implement {@link BlockRecordInfo} and need this information, but are not
+ * satisfy the {@link OngoingBlockInfo} interface. There are at least two classes ({@link BlockRecordInfoImpl} and
+ * {@link BlockRecordManagerImpl} which implement {@link OngoingBlockInfo} and need this information, but are not
  * otherwise suitable for a class hierarchy. So, utility methods FTW!
  */
 public final class BlockRecordInfoUtils {
