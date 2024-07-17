@@ -88,7 +88,7 @@ public class UpdateTokenFeeScheduleSuite {
                                 collector.get())
                         .signingWith("thresholdKey")
                         .logged()
-                        .hasKnownStatus(ResponseCodeEnum.CONTRACT_REVERT_EXECUTED)
+                        .hasKnownStatus(ResponseCodeEnum.SUCCESS)
                         .via("setFixedHbarFeeToToken"),
                 getTxnRecord("setFixedHbarFeeToToken").logged());
     }
