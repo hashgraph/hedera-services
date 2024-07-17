@@ -16,11 +16,10 @@
 
 package com.hedera.node.app.service.addressbook.impl;
 
-//import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
-//import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
-//import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
-//import com.hedera.node.app.service.addressbook.impl.handlers.NodeGetInfoHandler;
-//import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.AddressBookHandlers;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeCreateHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeDeleteHandler;
+import com.hedera.node.app.service.addressbook.impl.handlers.NodeUpdateHandler;
 import dagger.Module;
 
 /**
@@ -29,13 +28,11 @@ import dagger.Module;
 @Module
 public interface AddressBookServiceInjectionModule {
 
-//    NodeCreateHandler nodeCreateHandler();
-//
-//    NodeDeleteHandler nodeDeleteHandler();
-//
-//    NodeGetInfoHandler nodeGetInfoHandler();
-//
-//    NodeUpdateHandler nodeUpdateHandler();
-//
-//    AddressBookHandlers addressBookHandlers();
+    NodeCreateHandler nodeCreateHandler();
+
+    NodeDeleteHandler nodeDeleteHandler();
+
+    NodeUpdateHandler nodeUpdateHandler();
+
+    AddressBookHandlers addressBookHandlers();
 }

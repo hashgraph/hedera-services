@@ -31,10 +31,12 @@ import com.hedera.services.bdd.spec.utilops.records.AutoSnapshotRecordSource;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EntityNumber;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -115,6 +117,15 @@ public interface HapiPropertySource {
         } catch (Exception ignore) {
         }
         return AccountID.getDefaultInstance();
+    }
+
+    default ServiceEndpoint getServiceEndpoint(String property) {
+        try {
+            return asServiceEndpoint(get(property));
+        } catch (Exception ignore) {
+            System.out.println("Unable to parse service endpoint from property: " + property);
+        }
+        return ServiceEndpoint.getDefaultInstance();
     }
 
     default ContractID getContract(String property) {
@@ -245,6 +256,14 @@ public interface HapiPropertySource {
         return String.format(ENTITY_STRING, topic.getShardNum(), topic.getRealmNum(), topic.getTopicNum());
     }
 
+    static ServiceEndpoint asServiceEndpoint(String v) {
+        String[] parts = v.split(":");
+        return ServiceEndpoint.newBuilder()
+                .setIpAddressV4(ByteString.copyFromUtf8(parts[0]))
+                .setPort(Integer.parseInt(parts[1]))
+                .build();
+    }
+
     static ContractID asContract(String v) {
         long[] nativeParts = asDotDelimitedLongArray(v);
         return ContractID.newBuilder()
@@ -295,6 +314,10 @@ public interface HapiPropertySource {
                 .setRealmNum(nativeParts[1])
                 .setFileNum(nativeParts[2])
                 .build();
+    }
+
+    static EntityNumber asEntityNumber(String v) {
+        return EntityNumber.newBuilder().setNumber(Long.parseLong(v)).build();
     }
 
     static String asFileString(FileID file) {

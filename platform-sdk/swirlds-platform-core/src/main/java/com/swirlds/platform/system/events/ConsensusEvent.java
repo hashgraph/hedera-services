@@ -19,7 +19,6 @@ package com.swirlds.platform.system.events;
 import com.swirlds.platform.system.ReachedConsensus;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.Iterator;
 
 /**
@@ -37,15 +36,6 @@ public interface ConsensusEvent extends Event, ReachedConsensus {
      *
      * @return a consensus transaction iterator
      */
-    Iterator<ConsensusTransaction> consensusTransactionIterator();
-
-    /**
-     * Returns an iterator over the application events in this transaction, which have all reached consensus. Each
-     * invocation returns a new iterator over the same transactions. This method is thread safe. The results are
-     * unfiltered to include system transactions.
-     *
-     * @return a consensus transaction iterator
-     */
     @NonNull
-    Iterator<ConsensusTransaction> unfilteredConsensusTransactionIterator();
+    Iterator<ConsensusTransaction> consensusTransactionIterator();
 }

@@ -39,7 +39,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptQuery;
 import com.hedera.hapi.node.transaction.TransactionGetReceiptResponse;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
@@ -51,11 +50,8 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBase {
     @Mock
     private QueryContext context;
@@ -204,11 +200,7 @@ class NetworkTransactionGetReceiptHandlerTest extends NetworkAdminHandlerTestBas
     }
 
     private SingleTransactionRecord singleRecordWith(final TransactionRecord transactionRecord) {
-        return new SingleTransactionRecord(
-                Transaction.DEFAULT,
-                transactionRecord,
-                List.of(),
-                new SingleTransactionRecord.TransactionOutputs(null, TransactionBody.DataOneOfType.UNSET));
+        return new SingleTransactionRecord(Transaction.DEFAULT, transactionRecord, List.of(), null);
     }
 
     @Test

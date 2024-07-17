@@ -121,6 +121,20 @@ public class SynthTxnUtils {
     }
 
     /**
+     * Create a new empty {@link ContractCreateTransactionBody} with only the key set for externalization.
+     *
+     * @param pendingId the pending id
+     * @return the corresponding {@link CryptoCreateTransactionBody}
+     */
+    public static ContractCreateTransactionBody synthContractCreationForExternalization(
+            @NonNull final ContractID pendingId) {
+        requireNonNull(pendingId);
+        return ContractCreateTransactionBody.newBuilder()
+                .adminKey(Key.newBuilder().contractID(pendingId).build())
+                .build();
+    }
+
+    /**
      * Returns whether the given account has an auto-renew account id that is not
      * {@code 0.0.0}.
      *

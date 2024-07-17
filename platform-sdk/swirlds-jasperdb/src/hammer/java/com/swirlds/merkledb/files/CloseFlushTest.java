@@ -33,6 +33,7 @@ import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Random;
@@ -154,9 +155,9 @@ public class CloseFlushTest {
                 public void saveRecords(
                         final long firstLeafPath,
                         final long lastLeafPath,
-                        final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+                        @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+                        @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
+                        @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
                         final boolean isReconnectContext) {
                     try {
                         delegate.saveRecords(

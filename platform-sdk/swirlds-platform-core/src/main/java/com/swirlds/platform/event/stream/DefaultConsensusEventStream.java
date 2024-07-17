@@ -40,7 +40,7 @@ import com.swirlds.common.stream.Signer;
 import com.swirlds.common.stream.internal.TimestampStreamFileWriter;
 import com.swirlds.common.utility.throttle.RateLimitedLogger;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -63,23 +63,23 @@ public class DefaultConsensusEventStream implements ConsensusEventStream {
      * receives consensus events then passes to hashQueueThread and
      * writeQueueThread
      */
-    private final MultiStream<EventImpl> multiStream;
+    private final MultiStream<DetailedConsensusEvent> multiStream;
     /**
      * check whether this event is the last event before restart
      */
-    private final Predicate<EventImpl> isLastEventInFreezeCheck;
+    private final Predicate<DetailedConsensusEvent> isLastEventInFreezeCheck;
     /**
      * receives consensus events from multiStream, then passes to hashCalculator
      */
-    private QueueThreadObjectStream<EventImpl> hashQueueThread;
+    private QueueThreadObjectStream<DetailedConsensusEvent> hashQueueThread;
     /**
      * receives consensus events from multiStream, then passes to streamFileWriter
      */
-    private QueueThreadObjectStream<EventImpl> writeQueueThread;
+    private QueueThreadObjectStream<DetailedConsensusEvent> writeQueueThread;
     /**
      * receives consensus events from writeQueueThread, serializes consensus events to event stream files
      */
-    private TimestampStreamFileWriter<EventImpl> streamFileWriter;
+    private TimestampStreamFileWriter<DetailedConsensusEvent> streamFileWriter;
     /**
      * initialHash loaded from signed state
      */
@@ -105,7 +105,7 @@ public class DefaultConsensusEventStream implements ConsensusEventStream {
             @NonNull final NodeId selfId,
             @NonNull final Signer signer,
             @NonNull final String nodeName,
-            @NonNull final Predicate<EventImpl> isLastEventInFreezeCheck) {
+            @NonNull final Predicate<DetailedConsensusEvent> isLastEventInFreezeCheck) {
         Objects.requireNonNull(platformContext);
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(signer);
@@ -139,7 +139,8 @@ public class DefaultConsensusEventStream implements ConsensusEventStream {
                     false,
                     EventStreamType.getInstance());
 
-            writeQueueThread = new QueueThreadObjectStreamConfiguration<EventImpl>(getStaticThreadManager())
+            writeQueueThread = new QueueThreadObjectStreamConfiguration<DetailedConsensusEvent>(
+                            getStaticThreadManager())
                     .setNodeId(selfId)
                     .setComponent("event-stream")
                     .setThreadName("write-queue")
@@ -164,12 +165,14 @@ public class DefaultConsensusEventStream implements ConsensusEventStream {
                         .withUnit("count"));
 
         // receives consensus events from hashCalculator, calculates and set runningHash for this event
-        final RunningHashCalculatorForStream<EventImpl> runningHashCalculator = new RunningHashCalculatorForStream<>();
+        final RunningHashCalculatorForStream<DetailedConsensusEvent> runningHashCalculator =
+                new RunningHashCalculatorForStream<>();
 
         // receives consensus events from hashQueueThread, calculates this event's Hash, then passes to
         // runningHashCalculator
-        final HashCalculatorForStream<EventImpl> hashCalculator = new HashCalculatorForStream<>(runningHashCalculator);
-        hashQueueThread = new QueueThreadObjectStreamConfiguration<EventImpl>(getStaticThreadManager())
+        final HashCalculatorForStream<DetailedConsensusEvent> hashCalculator =
+                new HashCalculatorForStream<>(runningHashCalculator);
+        hashQueueThread = new QueueThreadObjectStreamConfiguration<DetailedConsensusEvent>(getStaticThreadManager())
                 .setNodeId(selfId)
                 .setComponent("event-stream")
                 .setThreadName("hash-queue")
@@ -193,8 +196,8 @@ public class DefaultConsensusEventStream implements ConsensusEventStream {
      */
     public DefaultConsensusEventStream(
             @NonNull final Time time,
-            @NonNull final MultiStream<EventImpl> multiStream,
-            @NonNull final Predicate<EventImpl> isLastEventInFreezeCheck) {
+            @NonNull final MultiStream<DetailedConsensusEvent> multiStream,
+            @NonNull final Predicate<DetailedConsensusEvent> isLastEventInFreezeCheck) {
         eventAfterFreezeLogger = new RateLimitedLogger(logger, Objects.requireNonNull(time), Duration.ofMinutes(1));
         this.multiStream = Objects.requireNonNull(multiStream);
         multiStream.setRunningHash(initialHash);
@@ -218,7 +221,7 @@ public class DefaultConsensusEventStream implements ConsensusEventStream {
      * {@inheritDoc}
      */
     @Override
-    public void addEvents(@NonNull final List<EventImpl> events) {
+    public void addEvents(@NonNull final List<DetailedConsensusEvent> events) {
         events.forEach(event -> {
             if (!freezePeriodStarted) {
                 multiStream.addObject(event);

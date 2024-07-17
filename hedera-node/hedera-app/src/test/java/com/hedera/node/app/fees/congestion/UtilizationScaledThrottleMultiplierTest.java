@@ -29,7 +29,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.NftID;
@@ -55,20 +54,19 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
-import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
-import com.hedera.node.app.service.mono.store.models.Account;
-import com.hedera.node.app.service.mono.store.models.Id;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.amh.config.ConfigProvider;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.FeesConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.data.TopicsConfig;
+import com.hedera.node.config.types.EntityScaleFactors;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.HashMap;
@@ -145,11 +143,16 @@ class UtilizationScaledThrottleMultiplierTest {
                         Map.of(
                                 "ACCOUNTS",
                                 Map.of(
-                                        AccountID.newBuilder().accountNum(1L), new Account(Id.DEFAULT),
-                                        AccountID.newBuilder().accountNum(2L), new Account(Id.DEFAULT),
-                                        AccountID.newBuilder().accountNum(3L), new Account(Id.DEFAULT),
-                                        AccountID.newBuilder().accountNum(4L), new Account(Id.DEFAULT),
-                                        AccountID.newBuilder().accountNum(5L), new Account(Id.DEFAULT)),
+                                        AccountID.newBuilder().accountNum(1L),
+                                                com.hedera.hapi.node.state.token.Account.DEFAULT,
+                                        AccountID.newBuilder().accountNum(2L),
+                                                com.hedera.hapi.node.state.token.Account.DEFAULT,
+                                        AccountID.newBuilder().accountNum(3L),
+                                                com.hedera.hapi.node.state.token.Account.DEFAULT,
+                                        AccountID.newBuilder().accountNum(4L),
+                                                com.hedera.hapi.node.state.token.Account.DEFAULT,
+                                        AccountID.newBuilder().accountNum(5L),
+                                                com.hedera.hapi.node.state.token.Account.DEFAULT),
                                 "ALIASES",
                                 new HashMap<>()))
                 .addService(

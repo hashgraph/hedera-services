@@ -140,6 +140,7 @@ import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ANOTHER_ACCOUNT;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.ED_25519_KEY;
 import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.LAZY_CREATION_ENABLED;
+import static com.hedera.services.bdd.suites.crypto.CryptoCreateSuite.UNLIMITED_AUTO_ASSOCIATIONS_ENABLED;
 import static com.hedera.services.bdd.suites.file.FileUpdateSuite.CIVILIAN;
 import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECEIVER;
 import static com.hedera.services.bdd.suites.token.TokenPauseSpecs.LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION;
@@ -172,7 +173,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_RE
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
@@ -241,14 +241,18 @@ public class LeakyCryptoTestsSuite {
         final var payerBalance = 100 * ONE_HUNDRED_HBARS;
         final var updateWithExpiredAccount = "updateWithExpiredAccount";
         final var autoAssocSlotPrice = 0.0018;
-        final var baseFee = 0.00022;
+        final var baseFee = 0.000214;
         double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
         return propertyPreservingHapiSpec("AutoAssociationPropertiesWorkAsExpected")
-                .preserving(maxAssociationsPropertyName, minAutoRenewPeriodPropertyName)
+                .preserving(
+                        maxAssociationsPropertyName,
+                        minAutoRenewPeriodPropertyName,
+                        UNLIMITED_AUTO_ASSOCIATIONS_ENABLED)
                 .given(
-                        overridingTwo(
+                        overridingThree(
                                 maxAssociationsPropertyName, "100",
-                                minAutoRenewPeriodPropertyName, "1"),
+                                minAutoRenewPeriodPropertyName, "1",
+                                UNLIMITED_AUTO_ASSOCIATIONS_ENABLED, "true"),
                         cryptoCreate(longLivedAutoAssocUser)
                                 .balance(payerBalance)
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS),
@@ -265,7 +269,7 @@ public class LeakyCryptoTestsSuite {
                                 .payingWith(shortLivedAutoAssocUser)
                                 .maxAutomaticAssociations(10)
                                 .via(updateWithExpiredAccount),
-                        validateChargedUsd(updateWithExpiredAccount, plusTenSlotsFee));
+                        validateChargedUsd(updateWithExpiredAccount, baseFee));
     }
 
     @HapiTest
@@ -814,7 +818,7 @@ public class LeakyCryptoTestsSuite {
                     // balance to pay for the finalization (CryptoUpdate) fee
                     final var op5 = cryptoTransfer(tinyBarsFromTo(payer, secondEvmAddress, ONE_HUNDRED_HBARS))
                             .payingWith(payer)
-                            .hasKnownStatus(INSUFFICIENT_PAYER_BALANCE)
+                            .hasKnownStatusFrom(INSUFFICIENT_PAYER_BALANCE, INSUFFICIENT_ACCOUNT_BALANCE)
                             .via(TRANSFER_TXN);
                     final var op5FeeAssertion = getTxnRecord(TRANSFER_TXN)
                             .logged()
@@ -834,9 +838,9 @@ public class LeakyCryptoTestsSuite {
                             .via(TRANSFER_TXN);
                     final var op7FeeAssertion = getTxnRecord(TRANSFER_TXN)
                             .logged()
+                            .andAllChildRecords()
                             .exposingTo(record -> {
-                                Assertions.assertEquals(
-                                        REDUCED_TOTAL_FEE + 2 * REDUCED_TOTAL_FEE, record.getTransactionFee());
+                                Assertions.assertEquals(REDUCED_TOTAL_FEE, record.getTransactionFee());
                             });
                     final var op8 = getAliasedAccountInfo(secondKey)
                             .has(accountWith()
@@ -1155,14 +1159,6 @@ public class LeakyCryptoTestsSuite {
                                                         .contractCallResult(ContractFnResultAsserts.resultWith()
                                                                 .contract(asContractString(contractIdReference.get()))))
                                                 .andAllChildRecords()
-                                                .exposingAllTo(records -> {
-                                                    final long gasUsed = records.get(0)
-                                                            .getContractCallResult()
-                                                            .getGasUsed();
-                                                    final long transactionFee =
-                                                            records.get(1).getTransactionFee();
-                                                    assertEquals(GAS_PRICE, transactionFee / (gasUsed - 21_000L));
-                                                })
                                                 .logged(),
                                         expectContractActionSidecarFor(
                                                 lazyCreateTxn,

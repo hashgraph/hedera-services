@@ -16,18 +16,13 @@
 
 package com.hedera.node.config.testfixtures;
 
-import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.KnownBlockValues;
 import com.hedera.node.app.hapi.utils.sysfiles.domain.throttling.ScaleFactor;
-import com.hedera.node.app.service.mono.context.domain.security.PermissionedAccountsRange;
-import com.hedera.node.app.service.mono.fees.calculation.CongestionMultipliers;
-import com.hedera.node.app.service.mono.fees.calculation.EntityScaleFactors;
-import com.hedera.node.app.service.mono.keys.LegacyContractIdActivations;
-import com.amh.config.ConfigProvider;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.converter.AccountIDConverter;
 import com.hedera.node.config.converter.BytesConverter;
@@ -38,7 +33,6 @@ import com.hedera.node.config.converter.FileIDConverter;
 import com.hedera.node.config.converter.FunctionalitySetConverter;
 import com.hedera.node.config.converter.KeyValuePairConverter;
 import com.hedera.node.config.converter.KnownBlockValuesConverter;
-import com.hedera.node.config.converter.LegacyContractIdActivationsConverter;
 import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.converter.PermissionedAccountsRangeConverter;
 import com.hedera.node.config.converter.ScaleFactorConverter;
@@ -49,6 +43,7 @@ import com.hedera.node.config.data.AutoCreationConfig;
 import com.hedera.node.config.data.AutoRenew2Config;
 import com.hedera.node.config.data.AutoRenewConfig;
 import com.hedera.node.config.data.BalancesConfig;
+import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.CacheConfig;
 import com.hedera.node.config.data.ConsensusConfig;
@@ -77,9 +72,12 @@ import com.hedera.node.config.data.TraceabilityConfig;
 import com.hedera.node.config.data.UpgradeConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
+import com.hedera.node.config.types.CongestionMultipliers;
+import com.hedera.node.config.types.EntityScaleFactors;
 import com.hedera.node.config.types.HederaFunctionalitySet;
 import com.hedera.node.config.types.KeyValuePair;
 import com.hedera.node.config.types.LongPair;
+import com.hedera.node.config.types.PermissionedAccountsRange;
 import com.hedera.node.config.validation.EmulatesMapValidator;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.config.BasicCommonConfig;
@@ -100,7 +98,6 @@ import com.swirlds.platform.config.TransactionConfig;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.health.OSHealthCheckConfig;
 import com.swirlds.platform.network.SocketConfig;
-import com.swirlds.platform.state.merkle.disk.BlockRecordStreamConfig;
 import com.swirlds.platform.system.status.PlatformStatusConfig;
 import com.swirlds.virtualmap.config.VirtualMapConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -195,7 +192,6 @@ public final class HederaTestConfigBuilder {
                 .withConverter(CongestionMultipliers.class, new CongestionMultipliersConverter())
                 .withConverter(EntityScaleFactors.class, new EntityScaleFactorsConverter())
                 .withConverter(KnownBlockValues.class, new KnownBlockValuesConverter())
-                .withConverter(LegacyContractIdActivations.class, new LegacyContractIdActivationsConverter())
                 .withConverter(ScaleFactor.class, new ScaleFactorConverter())
                 .withConverter(AccountID.class, new AccountIDConverter())
                 .withConverter(ContractID.class, new ContractIDConverter())
@@ -222,12 +218,11 @@ public final class HederaTestConfigBuilder {
 
     /**
      * Convenience method that creates and returns a {@link ConfigProvider} with the configuration of this builder as
-     * a {@link VersionedConfiguration} with version number 0.
+     * a {@link com.hedera.node.config.VersionedConfiguration} with version number 0.
      */
     @NonNull
     public static ConfigProvider createConfigProvider() {
         final var config = createConfig();
-
         final var versioned = new VersionedConfigImpl(config, 0);
         return () -> versioned;
     }

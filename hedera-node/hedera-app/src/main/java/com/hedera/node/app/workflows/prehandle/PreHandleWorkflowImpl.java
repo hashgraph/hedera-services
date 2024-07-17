@@ -43,9 +43,9 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.app.state.DeduplicationCache;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionChecker;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.amh.config.ConfigProvider;
 import com.swirlds.platform.state.merkle.disk.BlockStreamConfig;
@@ -213,10 +213,10 @@ public class PreHandleWorkflowImpl implements PreHandleWorkflow {
 
         // No reason to do this twice, since every transaction passed to handle is first given to pre-handle
         if (previousResult == null) {
-            // Also register this txID as having been seen (we don't actually do deduplication in the pre-handle because
-            // deduplication needs to be done deterministically, but we will keep track of the fact that we have seen
-            // this
-            // transaction ID, so we can give proper results in the different receipt queries)
+            // Also register this txID as having been seen (we don't actually do deduplication in the
+            // pre-handle because deduplication needs to be done deterministically, but we will keep
+            // track of the fact that we have seen this transaction ID, so we can give proper results
+            // in the different receipt queries)
             deduplicationCache.add(txInfo.transactionID());
         }
 

@@ -80,18 +80,14 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
-import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
-import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.platform.state.merkle.disk.OnDiskKey;
 import com.swirlds.platform.state.merkle.disk.OnDiskValue;
-import com.swirlds.platform.state.merkle.memory.InMemoryKey;
-import com.swirlds.platform.state.merkle.memory.InMemoryValue;
 import com.swirlds.platform.state.merkle.queue.QueueNode;
 import com.swirlds.platform.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.HederaState;
@@ -102,6 +98,7 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A utility class for dumping the state of the {@link MerkleHederaState} to a directory.
@@ -123,7 +120,9 @@ public class StateDumper {
     private static final String SEMANTIC_CONGESTION = "congestion.txt";
 
     public static void dumpModChildrenFrom(
-            @NonNull final HederaState hederaState, @NonNull final DumpCheckpoint checkpoint) {
+            @NonNull final HederaState hederaState,
+            @NonNull final DumpCheckpoint checkpoint,
+            @NonNull final Set<MerkleStateChild> childrenToDump) {
         if (!(hederaState instanceof MerkleHederaState state)) {
             throw new IllegalArgumentException("Expected a MerkleHederaState");
         }
@@ -136,93 +135,117 @@ public class StateDumper {
                         .map(then -> Instant.ofEpochSecond(then.seconds(), then.nanos()))
                         .orElse(null));
 
-        final VirtualMap<OnDiskKey<NftID>, OnDiskValue<Nft>> uniqueTokens =
-                requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, NFTS_KEY)));
-        dumpModUniqueTokens(Paths.get(dumpLoc, SEMANTIC_UNIQUE_TOKENS), uniqueTokens, checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.NFTS)) {
+            final VirtualMap<OnDiskKey<NftID>, OnDiskValue<Nft>> uniqueTokens =
+                    requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, NFTS_KEY)));
+            dumpModUniqueTokens(Paths.get(dumpLoc, SEMANTIC_UNIQUE_TOKENS), uniqueTokens, checkpoint);
+        }
 
-        final VirtualMap<OnDiskKey<EntityIDPair>, OnDiskValue<TokenRelation>> tokenRelations =
-                requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, TOKEN_RELS_KEY)));
-        dumpModTokenRelations(Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), tokenRelations, checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.TOKEN_RELS)) {
+            final VirtualMap<OnDiskKey<EntityIDPair>, OnDiskValue<TokenRelation>> tokenRelations =
+                    requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, TOKEN_RELS_KEY)));
+            dumpModTokenRelations(Paths.get(dumpLoc, SEMANTIC_TOKEN_RELATIONS), tokenRelations, checkpoint);
+        }
 
-        final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> files =
-                requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, V0490FileSchema.BLOBS_KEY)));
-        dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), files, checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.FILES)) {
+            final VirtualMap<OnDiskKey<FileID>, OnDiskValue<com.hedera.hapi.node.state.file.File>> files =
+                    requireNonNull(state.getChild(state.findNodeIndex(FileService.NAME, V0490FileSchema.BLOBS_KEY)));
+            dumpModFiles(Paths.get(dumpLoc, SEMANTIC_FILES), files, checkpoint);
+        }
 
-        final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts =
-                requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
-        dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.ACCOUNTS)) {
+            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts =
+                    requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
+            dumpModAccounts(Paths.get(dumpLoc, SEMANTIC_ACCOUNTS), accounts, checkpoint);
+        }
 
-        final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> byteCodes = requireNonNull(
-                state.getChild(state.findNodeIndex(ContractService.NAME, V0490ContractSchema.BYTECODE_KEY)));
-        dumpModContractBytecodes(
-                Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES),
-                byteCodes,
-                accounts,
-                (StateMetadata<AccountID, Account>)
-                        state.getServices().get(TokenService.NAME).get(ACCOUNTS_KEY),
-                checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.BYTECODE)) {
+            final VirtualMap<OnDiskKey<AccountID>, OnDiskValue<Account>> accounts =
+                    requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, ACCOUNTS_KEY)));
+            final VirtualMap<OnDiskKey<ContractID>, OnDiskValue<Bytecode>> byteCodes = requireNonNull(
+                    state.getChild(state.findNodeIndex(ContractService.NAME, V0490ContractSchema.BYTECODE_KEY)));
+            dumpModContractBytecodes(
+                    Paths.get(dumpLoc, SEMANTIC_CONTRACT_BYTECODES),
+                    byteCodes,
+                    accounts,
+                    (StateMetadata<AccountID, Account>)
+                            state.getServices().get(TokenService.NAME).get(ACCOUNTS_KEY),
+                    checkpoint);
+        }
 
-        final VirtualMap<OnDiskKey<TopicID>, OnDiskValue<Topic>> topics = requireNonNull(
-                state.getChild(state.findNodeIndex(ConsensusService.NAME, ConsensusServiceImpl.TOPICS_KEY)));
-        dumpModTopics(Paths.get(dumpLoc, SEMANTIC_TOPICS), topics, checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.TOPICS)) {
+            final VirtualMap<OnDiskKey<TopicID>, OnDiskValue<Topic>> topics = requireNonNull(
+                    state.getChild(state.findNodeIndex(ConsensusService.NAME, ConsensusServiceImpl.TOPICS_KEY)));
+            dumpModTopics(Paths.get(dumpLoc, SEMANTIC_TOPICS), topics, checkpoint);
+        }
 
-        final VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> scheduledTransactionsByKey =
-                requireNonNull(state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_ID_KEY)));
-        final VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<com.hedera.hapi.node.state.schedule.ScheduleList>>
-                scheduledTransactionsByEquality = requireNonNull(
-                        state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_EQUALITY_KEY)));
-        final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> scheduledTransactionsByExpiry =
-                requireNonNull(state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_EXPIRY_SEC_KEY)));
-        dumpModScheduledTransactions(
-                Paths.get(dumpLoc, SEMANTIC_SCHEDULED_TRANSACTIONS),
-                scheduledTransactionsByKey,
-                scheduledTransactionsByEquality,
-                scheduledTransactionsByExpiry,
-                checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.SCHEDULED_TRANSACTIONS)) {
+            final VirtualMap<OnDiskKey<ScheduleID>, OnDiskValue<Schedule>> scheduledTransactionsByKey =
+                    requireNonNull(state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_ID_KEY)));
+            final VirtualMap<OnDiskKey<ProtoBytes>, OnDiskValue<ScheduleList>> scheduledTransactionsByEquality =
+                    requireNonNull(
+                            state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_EQUALITY_KEY)));
+            final VirtualMap<OnDiskKey<ProtoLong>, OnDiskValue<ScheduleList>> scheduledTransactionsByExpiry =
+                    requireNonNull(
+                            state.getChild(state.findNodeIndex(ScheduleService.NAME, SCHEDULES_BY_EXPIRY_SEC_KEY)));
+            dumpModScheduledTransactions(
+                    Paths.get(dumpLoc, SEMANTIC_SCHEDULED_TRANSACTIONS),
+                    scheduledTransactionsByKey,
+                    scheduledTransactionsByEquality,
+                    scheduledTransactionsByExpiry);
+        }
 
-        final VirtualMap<OnDiskKey<TokenID>, OnDiskValue<Token>> tokenTypes =
-                requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, TOKENS_KEY)));
-        dumpModTokenType(Paths.get(dumpLoc, SEMANTIC_TOKEN_TYPE), tokenTypes, checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.TOKENS)) {
+            final VirtualMap<OnDiskKey<TokenID>, OnDiskValue<Token>> tokenTypes =
+                    requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, TOKENS_KEY)));
+            dumpModTokenType(Paths.get(dumpLoc, SEMANTIC_TOKEN_TYPE), tokenTypes, checkpoint);
+        }
 
-        // Dump block info, running hashes and entity id
-        final SingletonNode<RunningHashes> runningHashesSingleton =
-                requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, RUNNING_HASHES_STATE_KEY)));
-        final SingletonNode<BlockInfo> blocksStateSingleton =
-                requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, BLOCK_INFO_STATE_KEY)));
-        final SingletonNode<EntityNumber> entityIdSingleton =
-                requireNonNull(state.getChild(state.findNodeIndex(EntityIdService.NAME, ENTITY_ID_STATE_KEY)));
-        dumpModBlockInfo(
-                Paths.get(dumpLoc, SEMANTIC_BLOCK),
-                runningHashesSingleton.getValue(),
-                blocksStateSingleton.getValue(),
-                entityIdSingleton.getValue(),
-                checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.BLOCK_METADATA)) {
+            final SingletonNode<RunningHashes> runningHashesSingleton = requireNonNull(
+                    state.getChild(state.findNodeIndex(BlockRecordService.NAME, RUNNING_HASHES_STATE_KEY)));
+            final SingletonNode<BlockInfo> blocksStateSingleton =
+                    requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, BLOCK_INFO_STATE_KEY)));
+            final SingletonNode<EntityNumber> entityIdSingleton =
+                    requireNonNull(state.getChild(state.findNodeIndex(EntityIdService.NAME, ENTITY_ID_STATE_KEY)));
+            dumpModBlockInfo(
+                    Paths.get(dumpLoc, SEMANTIC_BLOCK),
+                    runningHashesSingleton.getValue(),
+                    blocksStateSingleton.getValue(),
+                    entityIdSingleton.getValue(),
+                    checkpoint);
+        }
 
-        // Dump staking info
-        final MerkleMap<InMemoryKey<EntityNumber>, InMemoryValue<EntityNumber, StakingNodeInfo>> stakingInfoMap =
-                requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY)));
-        dumpModStakingInfo(Paths.get(dumpLoc, SEMANTIC_STAKING_INFO), stakingInfoMap, checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.STAKING_INFOS)) {
+            final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> stakingInfoMap =
+                    requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY)));
+            dumpModStakingInfo(Paths.get(dumpLoc, SEMANTIC_STAKING_INFO), stakingInfoMap);
+        }
 
-        // Dump staking rewards
-        final SingletonNode<NetworkStakingRewards> stakingRewards =
-                requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, STAKING_NETWORK_REWARDS_KEY)));
-        dumpModStakingRewards(Paths.get(dumpLoc, SEMANTIC_STAKING_REWARDS), stakingRewards.getValue(), checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.STAKING_NETWORK_METADATA)) {
+            final SingletonNode<NetworkStakingRewards> stakingRewards =
+                    requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, STAKING_NETWORK_REWARDS_KEY)));
+            dumpModStakingRewards(Paths.get(dumpLoc, SEMANTIC_STAKING_REWARDS), stakingRewards.getValue());
+        }
 
-        // Dump txn record queue
-        final QueueNode<TransactionRecordEntry> queue =
-                requireNonNull(state.getChild(state.findNodeIndex(RecordCacheService.NAME, TXN_RECORD_QUEUE)));
-        dumpModTxnRecordQueue(Paths.get(dumpLoc, SEMANTIC_TXN_RECORD_QUEUE), queue, checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.TRANSACTION_RECORD_QUEUE)) {
+            final QueueNode<TransactionRecordEntry> queue =
+                    requireNonNull(state.getChild(state.findNodeIndex(RecordCacheService.NAME, TXN_RECORD_QUEUE)));
+            dumpModTxnRecordQueue(Paths.get(dumpLoc, SEMANTIC_TXN_RECORD_QUEUE), queue);
+        }
 
-        // Dump congestion snapshots
-        final SingletonNode<CongestionLevelStarts> congestionLevelStartsSingletonNode = requireNonNull(
-                state.getChild(state.findNodeIndex(CongestionThrottleService.NAME, CONGESTION_LEVEL_STARTS_STATE_KEY)));
-        final SingletonNode<ThrottleUsageSnapshots> throttleUsageSnapshotsSingletonNode = requireNonNull(state.getChild(
-                state.findNodeIndex(CongestionThrottleService.NAME, THROTTLE_USAGE_SNAPSHOTS_STATE_KEY)));
-        dumpModCongestion(
-                Paths.get(dumpLoc, SEMANTIC_CONGESTION),
-                congestionLevelStartsSingletonNode.getValue(),
-                throttleUsageSnapshotsSingletonNode.getValue(),
-                checkpoint);
+        if (childrenToDump.contains(MerkleStateChild.THROTTLE_METADATA)) {
+            final SingletonNode<CongestionLevelStarts> congestionLevelStartsSingletonNode =
+                    requireNonNull(state.getChild(
+                            state.findNodeIndex(CongestionThrottleService.NAME, CONGESTION_LEVEL_STARTS_STATE_KEY)));
+            final SingletonNode<ThrottleUsageSnapshots> throttleUsageSnapshotsSingletonNode =
+                    requireNonNull(state.getChild(
+                            state.findNodeIndex(CongestionThrottleService.NAME, THROTTLE_USAGE_SNAPSHOTS_STATE_KEY)));
+            dumpModCongestion(
+                    Paths.get(dumpLoc, SEMANTIC_CONGESTION),
+                    congestionLevelStartsSingletonNode.getValue(),
+                    throttleUsageSnapshotsSingletonNode.getValue());
+        }
     }
 
     private static String getExtantDumpLoc(

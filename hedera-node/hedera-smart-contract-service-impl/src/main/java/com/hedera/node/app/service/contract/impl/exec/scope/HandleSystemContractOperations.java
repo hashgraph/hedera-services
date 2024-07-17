@@ -91,7 +91,8 @@ public class HandleSystemContractOperations implements SystemContractOperations 
         requireNonNull(syntheticBody);
         requireNonNull(preemptingStatus);
 
-        return context.addChildRecordBuilder(ContractCallRecordBuilder.class)
+        return context.recordBuilders()
+                .addChildRecordBuilder(ContractCallRecordBuilder.class)
                 .transaction(transactionWith(syntheticBody))
                 .transactionBodyType(syntheticBody.data().kind())
                 .status(preemptingStatus);
@@ -103,7 +104,7 @@ public class HandleSystemContractOperations implements SystemContractOperations 
     @Override
     public void externalizeResult(
             @NonNull final ContractFunctionResult result, @NonNull final ResponseCodeEnum responseStatus) {
-        final var childRecordBuilder = context.addChildRecordBuilder(ContractCallRecordBuilder.class);
+        final var childRecordBuilder = context.recordBuilders().addChildRecordBuilder(ContractCallRecordBuilder.class);
         childRecordBuilder
                 .transaction(Transaction.DEFAULT)
                 .transactionBodyType(TransactionBody.DataOneOfType.CONTRACT_CALL)
@@ -118,7 +119,8 @@ public class HandleSystemContractOperations implements SystemContractOperations 
             @NonNull final ResponseCodeEnum responseStatus,
             @NonNull Transaction transaction) {
         requireNonNull(transaction);
-        context.addChildRecordBuilder(ContractCallRecordBuilder.class)
+        context.recordBuilders()
+                .addChildRecordBuilder(ContractCallRecordBuilder.class)
                 .transaction(transaction)
                 .transactionBodyType(TransactionBody.DataOneOfType.CONTRACT_CALL)
                 .status(responseStatus)

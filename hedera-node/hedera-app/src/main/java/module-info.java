@@ -2,11 +2,10 @@ import com.hedera.node.app.config.ServicesConfigExtension;
 import com.swirlds.config.api.ConfigurationExtension;
 
 module com.hedera.node.app {
-    requires transitive com.hedera.node.app.hapi.utils;
+    requires transitive com.hedera.node.app.service.addressbook.impl;
     requires transitive com.hedera.node.app.service.consensus.impl;
     requires transitive com.hedera.node.app.service.contract.impl;
     requires transitive com.hedera.node.app.service.file.impl;
-    requires transitive com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.app.service.network.admin.impl;
     requires transitive com.hedera.node.app.service.schedule.impl;
     requires transitive com.hedera.node.app.service.schedule;
@@ -23,9 +22,11 @@ module com.hedera.node.app {
     requires transitive com.swirlds.state.api;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
-    requires transitive grpc.stub;
+    requires transitive io.grpc.stub;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
+    requires com.hedera.node.app.hapi.utils;
+    requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
     requires com.hedera.node.app.service.file;
@@ -41,7 +42,7 @@ module com.hedera.node.app {
     requires com.google.common;
     requires com.google.protobuf;
     requires com.hedera.evm;
-    requires grpc.netty;
+    requires io.grpc.netty;
     requires io.grpc;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
@@ -77,8 +78,6 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle to
             com.hedera.node.app.test.fixtures,
             com.hedera.node.test.clients;
-    exports com.hedera.node.app.workflows.handle.record to
-            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.version to
             com.hedera.node.app.test.fixtures,
             com.swirlds.platform,
@@ -87,6 +86,19 @@ module com.hedera.node.app {
     exports com.hedera.node.app.state.listeners to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.services;
+    exports com.hedera.node.app.store;
+    exports com.hedera.node.app.workflows.handle.steps to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
+    exports com.hedera.node.app.workflows.handle.record to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
+    exports com.hedera.node.app.workflows.handle.throttle to
+            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.dispatch;
+    exports com.hedera.node.app.workflows.handle.cache to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

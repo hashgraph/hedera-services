@@ -16,133 +16,63 @@
 
 package com.hedera.node.app.workflows.handle;
 
-import static com.hedera.hapi.node.base.HederaFunctionality.NONE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.AUTHORIZATION_FAILED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.DUPLICATE_TRANSACTION;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_PAYER_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_SIGNATURE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.UNAUTHORIZED;
-import static com.hedera.hapi.util.HapiUtils.isHollow;
-import static com.hedera.node.app.service.contract.impl.ContractServiceImpl.CONTRACT_SERVICE;
-import static com.hedera.node.app.spi.key.KeyUtils.IMMUTABILITY_SENTINEL_KEY;
-import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.NO_DUPLICATE;
-import static com.hedera.node.app.state.HederaRecordCache.DuplicateCheckResult.SAME_NODE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
-import static com.hedera.node.app.throttle.ThrottleAccumulator.canAutoCreate;
-import static com.hedera.node.app.throttle.ThrottleAccumulator.isGasThrottled;
-import static com.hedera.node.app.workflows.handle.flow.dispatch.logic.WorkflowCheck.NOT_INGEST;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.NODE_DUE_DILIGENCE_FAILURE;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.PRE_HANDLE_FAILURE;
-import static com.hedera.node.app.workflows.prehandle.PreHandleResult.Status.SO_FAR_SO_GOOD;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
-import static com.hedera.hapi.node.base.HederaFunctionality.ETHEREUM_TRANSACTION;
-
 import static java.util.Objects.requireNonNull;
-import com.hedera.hapi.streams.v7.BlockStateProof;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.hapi.node.base.SignatureMap;
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.hapi.node.base.TransferList;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.token.CryptoUpdateTransactionBody;
-import com.hedera.hapi.node.transaction.SignedTransaction;
-import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.util.HapiUtils;
 import com.hedera.node.app.fees.ExchangeRateManager;
-import com.hedera.node.app.fees.FeeAccumulatorImpl;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
-import com.hedera.node.app.records.FunctionalBlockRecordManager;
-import com.hedera.node.app.records.streams.ProcessUserTransactionResult;
-import com.hedera.node.app.records.streams.impl.producers.StateSignatureTransactionCollector;
-import com.hedera.node.app.service.file.ReadableFileStore;
+import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
-import com.hedera.node.app.service.token.records.CryptoUpdateRecordBuilder;
-import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.services.ServiceScopeLookup;
-import com.hedera.node.app.signature.DefaultKeyVerifier;
-import com.hedera.node.app.signature.KeyVerifier;
-import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.authorization.Authorizer;
-import com.hedera.node.app.spi.authorization.SystemPrivilege;
-import com.hedera.node.app.spi.fees.FeeAccumulator;
-import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.signatures.SignatureVerification;
-import com.hedera.node.app.spi.workflows.*;
-import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.state.HederaRecordCache;
+import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.store.ReadableStoreFactory;
+import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
-import com.hedera.node.app.throttle.SynchronizedThrottleAccumulator;
 import com.hedera.node.app.throttle.ThrottleServiceManager;
-import com.hedera.node.app.workflows.SolvencyPreCheck;
-import com.hedera.node.app.workflows.TransactionChecker;
-import com.hedera.node.app.workflows.TransactionChecker.RequireMinValidLifetimeBuffer;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
-import com.hedera.node.app.workflows.dispatcher.ServiceApiFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.dispatcher.WritableStoreFactory;
+import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
+import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.GenesisRecordsConsensusHook;
+import com.hedera.node.app.workflows.handle.record.GenesisSetup;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
-import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
+import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
+import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
+import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
-import com.amh.config.ConfigProvider;
-import com.hedera.node.config.data.ConsensusConfig;
-import com.hedera.node.config.data.ContractsConfig;
-import com.hedera.node.config.data.HederaConfig;
+import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.merkle.disk.BlockStreamConfig;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.HapiUtils;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -153,1029 +83,178 @@ import org.apache.logging.log4j.Logger;
  */
 @Singleton
 public class HandleWorkflow {
-
-    private static final AtomicReference<Throwable> roundException = new AtomicReference<>(null);
-
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
-    private static final Set<HederaFunctionality> DISPATCHING_CONTRACT_TRANSACTIONS =
-            EnumSet.of(HederaFunctionality.CONTRACT_CREATE, HederaFunctionality.CONTRACT_CALL, ETHEREUM_TRANSACTION);
+
+    public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
+
     private final NetworkInfo networkInfo;
-    private final PreHandleWorkflow preHandleWorkflow;
-    private final TransactionDispatcher dispatcher;
-    private final FunctionalBlockRecordManager blockRecordManager;
-    private final TransactionChecker checker;
-    private final ServiceScopeLookup serviceScopeLookup;
-    private final ConfigProvider configProvider;
-    private final HederaRecordCache recordCache;
-    private final GenesisRecordsConsensusHook genesisRecordsTimeHook;
-    private final StakingPeriodTimeHook stakingPeriodTimeHook;
-    private final ScheduleExpirationHook scheduleExpirationHook;
-    private final FeeManager feeManager;
-    private final ExchangeRateManager exchangeRateManager;
-    private final ChildRecordFinalizer childRecordFinalizer;
-    private final ParentRecordFinalizer transactionFinalizer;
-    private final SystemFileUpdateFacility systemFileUpdateFacility;
-    private final PlatformStateUpdateFacility platformStateUpdateFacility;
-    private final SolvencyPreCheck solvencyPreCheck;
+    private final NodeStakeUpdates nodeStakeUpdates;
     private final Authorizer authorizer;
+    private final FeeManager feeManager;
+    private final DispatchProcessor dispatchProcessor;
+    private final ServiceScopeLookup serviceScopeLookup;
+    private final ChildDispatchFactory childDispatchFactory;
+    private final TransactionDispatcher dispatcher;
     private final NetworkUtilizationManager networkUtilizationManager;
-    private final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator;
+    private final ConfigProvider configProvider;
+    private final StoreMetricsService storeMetricsService;
+    private final BlockRecordManager blockRecordManager;
     private final CacheWarmer cacheWarmer;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
-    private final StoreMetricsService storeMetricsService;
-    private final TransactionChecker transactionChecker;
+    private final SemanticVersion version;
     private final InitTrigger initTrigger;
-    private final SoftwareVersion softwareVersion;
+    private final HollowAccountCompletions hollowAccountCompletions;
+    private final GenesisSetup genesisSetup;
+    private final HederaRecordCache recordCache;
+    private final ExchangeRateManager exchangeRateManager;
+    private final PreHandleWorkflow preHandleWorkflow;
 
     @Inject
     public HandleWorkflow(
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final PreHandleWorkflow preHandleWorkflow,
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final FunctionalBlockRecordManager blockRecordManager,
-            @NonNull final TransactionChecker checker,
-            @NonNull final ServiceScopeLookup serviceScopeLookup,
-            @NonNull final ConfigProvider configProvider,
-            @NonNull final HederaRecordCache recordCache,
-            @NonNull final GenesisRecordsConsensusHook genesisRecordsTimeHook,
-            @NonNull final StakingPeriodTimeHook stakingPeriodTimeHook,
-            @NonNull final FeeManager feeManager,
-            @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final ChildRecordFinalizer childRecordFinalizer,
-            @NonNull final ParentRecordFinalizer transactionFinalizer,
-            @NonNull final SystemFileUpdateFacility systemFileUpdateFacility,
-            @NonNull final PlatformStateUpdateFacility platformStateUpdateFacility,
-            @NonNull final SolvencyPreCheck solvencyPreCheck,
+            @NonNull final NodeStakeUpdates nodeStakeUpdates,
             @NonNull final Authorizer authorizer,
+            @NonNull final FeeManager feeManager,
+            @NonNull final DispatchProcessor dispatchProcessor,
+            @NonNull final ServiceScopeLookup serviceScopeLookup,
+            @NonNull final ChildDispatchFactory childDispatchFactory,
+            @NonNull final TransactionDispatcher dispatcher,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
-            @NonNull final SynchronizedThrottleAccumulator synchronizedThrottleAccumulator,
-            @NonNull final ScheduleExpirationHook scheduleExpirationHook,
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final StoreMetricsService storeMetricsService,
+            @NonNull final BlockRecordManager blockRecordManager,
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
-            @NonNull final StoreMetricsService storeMetricsService,
-            @NonNull final TransactionChecker transactionChecker,
+            @NonNull final SemanticVersion version,
             @NonNull final InitTrigger initTrigger,
-            @NonNull final SoftwareVersion softwareVersion) {
-        this.networkInfo = requireNonNull(networkInfo, "networkInfo must not be null");
-        this.preHandleWorkflow = requireNonNull(preHandleWorkflow, "preHandleWorkflow must not be null");
-        this.dispatcher = requireNonNull(dispatcher, "dispatcher must not be null");
-        this.blockRecordManager = requireNonNull(blockRecordManager, "recordManager must not be null");
-        this.checker = requireNonNull(checker, "checker must not be null");
-        this.serviceScopeLookup = requireNonNull(serviceScopeLookup, "serviceScopeLookup must not be null");
-        this.configProvider = requireNonNull(configProvider, "configProvider must not be null");
-        this.recordCache = requireNonNull(recordCache, "recordCache must not be null");
-        this.genesisRecordsTimeHook = requireNonNull(genesisRecordsTimeHook, "genesisRecordsTimeHook must not be null");
-        this.stakingPeriodTimeHook = requireNonNull(stakingPeriodTimeHook, "stakingPeriodTimeHook must not be null");
-        this.feeManager = requireNonNull(feeManager, "feeManager must not be null");
-        this.exchangeRateManager = requireNonNull(exchangeRateManager, "exchangeRateManager must not be null");
-        this.childRecordFinalizer = childRecordFinalizer;
-        this.transactionFinalizer = requireNonNull(transactionFinalizer, "transactionFinalizer must not be null");
-        this.systemFileUpdateFacility =
-                requireNonNull(systemFileUpdateFacility, "systemFileUpdateFacility must not be null");
-        this.platformStateUpdateFacility =
-                requireNonNull(platformStateUpdateFacility, "platformStateUpdateFacility must not be null");
-        this.solvencyPreCheck = requireNonNull(solvencyPreCheck, "solvencyPreCheck must not be null");
-        this.authorizer = requireNonNull(authorizer, "authorizer must not be null");
-        this.networkUtilizationManager =
-                requireNonNull(networkUtilizationManager, "networkUtilizationManager must not be null");
-        this.synchronizedThrottleAccumulator =
-                requireNonNull(synchronizedThrottleAccumulator, "synchronizedThrottleAccumulator must not be null");
-        this.scheduleExpirationHook = requireNonNull(scheduleExpirationHook, "scheduleExpirationHook must not be null");
-        this.cacheWarmer = requireNonNull(cacheWarmer, "cacheWarmer must not be null");
-        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics, "handleWorkflowMetrics must not be null");
-        this.throttleServiceManager = requireNonNull(throttleServiceManager, "throttleServiceManager must not be null");
-        this.storeMetricsService = requireNonNull(storeMetricsService, "storeMetricsService must not be null");
-        this.transactionChecker = requireNonNull(transactionChecker, "transactionChecker must not be null");
-        this.initTrigger = requireNonNull(initTrigger, "initTrigger must not be null");
-        this.softwareVersion = requireNonNull(softwareVersion, "softwareVersion must not be null");
+            @NonNull final HollowAccountCompletions hollowAccountCompletions,
+            @NonNull final GenesisSetup genesisSetup,
+            @NonNull final HederaRecordCache recordCache,
+            @NonNull final ExchangeRateManager exchangeRateManager,
+            @NonNull final PreHandleWorkflow preHandleWorkflow) {
+        this.networkInfo = requireNonNull(networkInfo);
+        this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
+        this.authorizer = requireNonNull(authorizer);
+        this.feeManager = requireNonNull(feeManager);
+        this.dispatchProcessor = requireNonNull(dispatchProcessor);
+        this.serviceScopeLookup = requireNonNull(serviceScopeLookup);
+        this.childDispatchFactory = requireNonNull(childDispatchFactory);
+        this.dispatcher = requireNonNull(dispatcher);
+        this.networkUtilizationManager = requireNonNull(networkUtilizationManager);
+        this.configProvider = requireNonNull(configProvider);
+        this.storeMetricsService = requireNonNull(storeMetricsService);
+        this.blockRecordManager = requireNonNull(blockRecordManager);
+        this.cacheWarmer = requireNonNull(cacheWarmer);
+        this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
+        this.throttleServiceManager = requireNonNull(throttleServiceManager);
+        this.version = requireNonNull(version);
+        this.initTrigger = requireNonNull(initTrigger);
+        this.hollowAccountCompletions = requireNonNull(hollowAccountCompletions);
+        this.genesisSetup = requireNonNull(genesisSetup);
+        this.recordCache = requireNonNull(recordCache);
+        this.exchangeRateManager = requireNonNull(exchangeRateManager);
+        this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
     }
 
     /**
      * Handles the next {@link Round}
      *
      * @param state the writable {@link HederaState} that this round will work on
+     * @param platformState the {@link PlatformState} that this round will work on
      * @param round the next {@link Round} that needs to be processed
      */
     public void handleRound(
             @NonNull final HederaState state, @NonNull final PlatformState platformState, @NonNull final Round round) {
-        // We should never join this future to the handle thread, or it will prevent us from making progress.
-        // Signatures are created at the end of a round. Therefore, handle must complete in order to create the
-        // signatures.
-        // If we get an error from here then we weren't able to persist the block. We should do something with this
-        // error. The platform call here isn't asynchronous, so best we can do right now is throw the exception for a
-        // previous round.
-        final var asyncException = roundException.get();
-        if (asyncException != null) {
-            throw new RuntimeException("Error persisting block", roundException.get());
-        }
-        CompletableFuture<BlockStateProof> persistedBlock = new CompletableFuture<>();
-        persistedBlock.exceptionally(ex -> {
-            logger.error("Error persisting block for round {}", round.getRoundNum(), ex);
-            roundException.compareAndSet(null, ex);
-            return null;
-        });
-
-        // Keep track of whether any user transactions were handled. If so, then we will need to close the round
-        // with the block record manager.
+        // We only close the round with the block record manager after user transactions
         final var userTransactionsHandled = new AtomicBoolean(false);
-
-        // log start of round to transaction state log
         logStartRound(round);
-
-        // warm the cache
         cacheWarmer.warm(state, round);
-
-        // Signal the BlockRecordManager that a new round is being handled. This is needed to align rounds to blocks. We
-        // can have empty rounds. If we want a block per round than we need to allow the creation of a block for this
-        // round even if there are no events in it. A round can have no events and an event can have no transactions.
-        //
-        // We also provide a CompletableFuture to the BlockRecordManager that will be completed when the block is
-        // persisted. Should platform need this signal in the future, we will have it available.
-        blockRecordManager.processRound(state, round, persistedBlock, () -> {
-            int i = 0;
-            // handle each event in the round
-            for (final ConsensusEvent event : round) {
-                i++;
-                final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
-                if (creator == null) {
-                    // We were given an event for a node that *does not exist in the address book*. This will be logged
-                    // as
-                    // a warning, as this should never happen, and we will skip the event. The platform should guarantee
-                    // that we never receive an event that isn't associated with the address book, and every node in the
-                    // address book must have an account ID, since you cannot delete an account belonging to a node, and
-                    // you cannot change the address book non-deterministically.
-                    logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
-                    return;
-                }
-
-                // log start of event to transaction state log
-                logStartEvent(event, creator);
-
-                final var eventNum = i;
-                blockRecordManager.processConsensusEvent(state, event, () -> {
-                    // handle each transaction of the event
-                    for (final var it = event.unfilteredConsensusTransactionIterator(); it.hasNext(); ) {
-                        final var platformTxn = it.next();
-                        try {
-                            if (!platformTxn.isSystem()) {
-                                // Handle user transaction
-                                userTransactionsHandled.set(true);
-                                handlePlatformTransaction(state, platformState, event, creator, platformTxn);
-                            } else if (usingBlockStreams()) {
-                                // Handle system transaction
-                                handleSystemTransaction(state, creator, platformTxn);
-                            }
-                        } catch (final Exception e) {
-                            logger.fatal(
-                                    "Possibly CATASTROPHIC failure while running the handle workflow. "
-                                            + "While this node may not die right away, it is in a bad way, most likely fatally.",
-                                    e);
-                        }
-                    }
-                });
+        for (final var event : round) {
+            final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
+            if (creator == null) {
+                // We were given an event for a node that *does not exist in the address book*. This will be logged as
+                // a warning, as this should never happen, and we will skip the event. The platform should guarantee
+                // that we never receive an event that isn't associated with the address book, and every node in the
+                // address book must have an account ID, since you cannot delete an account belonging to a node, and
+                // you cannot change the address book non-deterministically.
+                logger.warn("Received event from node {} which is not in the address book", event.getCreatorId());
+                return;
             }
-
+            // log start of event to transaction state log
+            logStartEvent(event, creator);
+            // handle each transaction of the event
+            for (final var it = event.consensusTransactionIterator(); it.hasNext(); ) {
+                final var platformTxn = it.next();
+                try {
+                    // skip system transactions
+                    if (!platformTxn.isSystem()) {
+                        userTransactionsHandled.set(true);
+                        handlePlatformTransaction(state, platformState, event, creator, platformTxn);
+                    }
+                } catch (final Exception e) {
+                    logger.fatal(
+                            "Possibly CATASTROPHIC failure while running the handle workflow. "
+                                    + "While this node may not die right away, it is in a bad way, most likely fatally.",
+                            e);
+                }
+            }
+        }
         // Update all throttle metrics once per round
         throttleServiceManager.updateAllMetrics();
-
-            // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
-            // that have been being computed in background threads. The running hash has to be included in
-            // state, but we want to synchronize with background threads as infrequently as possible. So once per
-            // round is the minimum we can do.
-            if (!usingBlockStreams() && userTransactionsHandled.get()) {
-                blockRecordManager.endRound(state); // Only implemented for v6
-            }
-        });
-    }
-
-    private int countItems(Iterator<?> iterator) {
-        int count = 0;
-        while (iterator.hasNext()) {
-            iterator.next(); // Move to the next element (important to call this to advance the iterator)
-            count++; // Increment the count for each element
+        // Inform the BlockRecordManager that the round is complete, so it can update running-hashes in state
+        // that have been being computed in background threads. The running hash has to be included in
+        // state, but we want to synchronize with background threads as infrequently as possible. So once per
+        // round is the minimum we can do.
+        if (userTransactionsHandled.get()) {
+            blockRecordManager.endRound(state);
         }
-        return count;
     }
 
-    private void handleSystemTransaction(
-            @NonNull final HederaState state,
-            @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction platformTxn) {
-
-        // FUTURE: We can probably skip this check in the future, but it's here for now so we can toggle the
-        // ability to pull these from preHandle or handle.
-        if (collectSignaturesEnabled()) {
-            if (platformTxn instanceof StateSignatureTransaction txn) {
-                // Collect the state signature transaction. We have a singleton instance of the
-                // StateSignatureTransactionCollector that is responsible for collecting state signatures from the
-                // network and sorting them into queues to later.
-                StateSignatureTransactionCollector.getInstance().putStateSignatureTransaction(creator.nodeId(), txn);
-            }
-        }
-
-        // We want to write out the system transaction to the block stream.
-        blockRecordManager.processSystemTransaction(state, creator, platformTxn, () -> {});
-    }
-
+    /**
+     * Handles a platform transaction. This method is responsible for creating a {@link UserTxn} and
+     * executing the workflow for the transaction. This produces a stream of records that are then passed to the
+     * {@link BlockRecordManager} to be externalized.
+     * @param state the writable {@link HederaState} that this transaction will work on
+     * @param platformState the {@link PlatformState} that this transaction will work on
+     * @param event the {@link ConsensusEvent} that this transaction belongs to
+     * @param creator the {@link NodeInfo} of the creator of the transaction
+     * @param txn the {@link ConsensusTransaction} to be handled
+     */
     private void handlePlatformTransaction(
             @NonNull final HederaState state,
             @NonNull final PlatformState platformState,
-            @NonNull final ConsensusEvent platformEvent,
+            @NonNull final ConsensusEvent event,
             @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction platformTxn) {
+            @NonNull final ConsensusTransaction txn) {
+        final var handleStart = System.nanoTime();
 
-        // Get the consensus timestamp. FUTURE We want this to exactly match the consensus timestamp from the hashgraph,
-        // but for compatibility with the current implementation, we adjust it as follows.
-        //
-        // From what I understand, this was added as a fix because Mirror Node ran into an issue with reconciling saved
-        // states with the record stream. Now that the block stream aligns everything into a block, we should be able to
-        // disable adjusting of the consensus timestamp so that it correctly matches the hashgraph assigned timestamp.
-        final Instant consensusNow = usingBlockStreams()
-                ? platformTxn.getConsensusTimestamp()
-                : platformTxn.getConsensusTimestamp().minusNanos(1000 - 3L);
+        final var consensusNow = txn.getConsensusTimestamp().minusNanos(1000 - 3L);
+        final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
+        blockRecordManager.startUserTransaction(consensusNow, state, platformState);
+        final var recordStream = execute(userTxn);
+        blockRecordManager.endUserTransaction(recordStream, state);
 
-        // handle user transaction
-        handleUserTransaction(consensusNow, state, platformState, platformEvent, creator, platformTxn);
-    }
-
-    private void handleUserTransaction(
-            @NonNull final Instant consensusNow,
-            @NonNull final HederaState state,
-            @NonNull final PlatformState platformState,
-            @NonNull final ConsensusEvent platformEvent,
-            @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction platformTxn) {
-            final var recordListBuilder = new RecordListBuilder(consensusNow);
-            final var recordBuilder = recordListBuilder.userTransactionRecordBuilder();
-
-        // First, check if the transaction is submitted with a version prior to the deployed version. If so, set the
-        // status on the receipt to BUSY and return
-        if (this.initTrigger != EVENT_STREAM_RECOVERY
-                && softwareVersion.compareTo(platformEvent.getSoftwareVersion()) > 0) {
-            // Reparse the transaction (so we don't need to get the prehandle result)
-            final TransactionInfo transactionInfo;
-            try {
-                transactionInfo = transactionChecker.parseAndCheck(platformTxn.getApplicationPayload());
-            } catch (PreCheckException e) {
-                logger.error(
-                        "Bad old transaction (version {}) from creator {}",
-                        platformEvent.getSoftwareVersion(),
-                        creator,
-                        e);
-                // We don't care since we're checking a transaction with an older software version. We were going to
-                // skip the transaction handling anyway
-                return;
-            }
-
-            // Initialize record builder list
-            recordBuilder
-                    .transaction(transactionInfo.transaction())
-                    .transactionBytes(transactionInfo.signedBytes())
-                    .transactionID(transactionInfo.transactionID())
-                    .exchangeRate(exchangeRateManager.exchangeRates())
-                    .memo(transactionInfo.txBody().memo());
-
-            // Place a BUSY record in the cache
-            final var record = recordBuilder.status(ResponseCodeEnum.BUSY).build();
-            recordCache.add(creator.nodeId(), transactionInfo.payerID(), List.of(record));
-
-            return;
-        }
-
-        // (FUTURE) We actually want to consider exporting synthetic transactions on every
-        // first post-upgrade transaction, not just the first transaction after genesis.
-        final var consTimeOfLastHandledTxn = blockRecordManager.consTimeOfLastHandledTxn();
-        final var isFirstTransaction = !consTimeOfLastHandledTxn.isAfter(Instant.EPOCH);
-
-        // Start the user transaction
-        if (!usingBlockStreams()) {
-            blockRecordManager.startUserTransaction(consensusNow, state, platformState); // Only implemented for v6.
-        }
-
-        blockRecordManager.processUserTransaction(consensusNow, state, platformTxn, () -> {
-            final boolean switchedBlocks = isConsTimeFirstTransactionInBlock(consensusNow);
-
-            // Setup helpers
-            final var configuration = configProvider.getConfiguration();
-            final var stack = new SavepointStackImpl(state);
-            final var readableStoreFactory = new ReadableStoreFactory(stack);
-            final var feeAccumulator = createFeeAccumulator(stack, configuration, recordBuilder);
-
-            final var tokenServiceContext = new TokenContextImpl(
-                    configuration,
-                    state,
-                    storeMetricsService,
-                    stack,
-                    recordListBuilder,
-                    blockRecordManager,
-                    isFirstTransaction);
-        // Export synthetic records for the system accounts created in GENESIS onStateInitialized()
-        if (isFirstTransaction) {
-            genesisRecordsTimeHook.process(tokenServiceContext);
-        }
-            try {
-                // If this is the first user transaction after midnight, then handle staking updates prior to handling
-                // the
-                // transaction itself.
-                stakingPeriodTimeHook.process(stack, tokenServiceContext);
-            } catch (final Exception e) {
-                // If anything goes wrong, we log the error and continue
-                logger.error("Failed to process staking period time hook", e);
-            }
-
-            // Consensus hooks have now had a chance to publish any records from migrations; therefore we can begin
-            // handling
-            // the user transaction
-            blockRecordManager.advanceConsensusClock(consensusNow, state);
-            // Look for any expired schedules and delete them when new block is created
-            if (switchedBlocks) {
-                final var firstSecondToExpire =
-                        blockRecordManager.firstConsTimeOfLastBlock().getEpochSecond();
-                final var lastSecondToExpire = consensusNow.getEpochSecond();
-                final var scheduleStore = new WritableStoreFactory(
-                        stack, ScheduleService.NAME, configuration, storeMetricsService)
-                        .getStore(WritableScheduleStore.class);
-                // purge all expired schedules between the first consensus time of last block and the current consensus time
-                scheduleExpirationHook.processExpiredSchedules(scheduleStore, firstSecondToExpire,
-                        lastSecondToExpire);
-            }
-
-            final long handleStart = System.nanoTime();
-            TransactionBody txBody = null;
-            AccountID payer = null;
-            Fees fees = null;
-            TransactionInfo transactionInfo = null;
-            HederaFunctionality functionality = NONE;
-            Map<AccountID, Long> prePaidRewards = emptyMap();
-            try {
-                final var preHandleResult = getCurrentPreHandleResult(readableStoreFactory, creator,
-                        platformTxn);
-
-                transactionInfo = preHandleResult.txInfo();
-
-                if (transactionInfo == null) {
-                    // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
-                    logger.error("Bad transaction from creator {}", creator);
-                    return null;
-                }
-
-                // Get the parsed data
-                final var transaction = transactionInfo.transaction();
-                txBody = transactionInfo.txBody();
-                payer = transactionInfo.payerID();
-                functionality = transactionInfo.functionality();
-
-                final Bytes transactionBytes;
-                if (transaction.signedTransactionBytes().length() > 0) {
-                    transactionBytes = transaction.signedTransactionBytes();
-                } else {
-                    // in this case, recorder hash the transaction itself, not its bodyBytes.
-                    transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
-                }
-
-                // Log start of user transaction to transaction state log
-                logStartUserTransaction(platformTxn, txBody, payer);
-                logStartUserTransactionPreHandleResultP2(preHandleResult);
-                logStartUserTransactionPreHandleResultP3(preHandleResult);
-
-                // Initialize record builder list
-                recordBuilder
-                        .transaction(transactionInfo.transaction())
-                        .transactionBodyType(txBody.data().kind())
-                        .transactionBytes(transactionBytes)
-                        .transactionID(transactionInfo.transactionID())
-                        .exchangeRate(exchangeRateManager.exchangeRates())
-                        .memo(txBody.memo());
-
-                // Set up the verifier
-                final var hederaConfig = configuration.getConfigData(HederaConfig.class);
-                final var legacyFeeCalcNetworkVpt =
-                        transactionInfo.signatureMap().sigPair().size();
-                final var verifier = new DefaultKeyVerifier(
-                        legacyFeeCalcNetworkVpt, hederaConfig,
-                        preHandleResult.getVerificationResults());
-                final var signatureMapSize = SignatureMap.PROTOBUF.measureRecord(
-                        transactionInfo.signatureMap());
-
-                // Setup context
-                final var context = new HandleContextImpl(
-                        txBody,
-                        functionality,
-                        signatureMapSize,
-                        payer,
-                        preHandleResult.getPayerKey(),
-                        networkInfo,
-                        TransactionCategory.USER,
-                        recordBuilder,
-                        stack,
-                        configuration,
-                        verifier,
-                        recordListBuilder,
-                        checker,
-                        dispatcher,
-                        serviceScopeLookup,
-                        blockRecordManager,
-                        recordCache,
-                        feeManager,
-                        exchangeRateManager,
-                        consensusNow,
-                        authorizer,
-                        solvencyPreCheck,
-                        childRecordFinalizer,
-                        transactionFinalizer,
-                        networkUtilizationManager,
-                        synchronizedThrottleAccumulator,
-                        platformState,
-                        storeMetricsService);
-
-                // Calculate the fee
-                fees = dispatcher.dispatchComputeFees(context);
-
-                // Run all pre-checks
-                final var validationResult = validate(
-                        consensusNow,
-                        verifier,
-                        preHandleResult,
-                        readableStoreFactory,
-                        networkUtilizationManager,
-                        context,
-                        dispatcher,
-                        stack,
-                        platformEvent.getCreatorId().id());
-
-                final var hasWaivedFees = authorizer.hasWaivedFees(payer, functionality, txBody);
-                if (validationResult.status() != SO_FAR_SO_GOOD) {
-                    recordBuilder.status(validationResult.responseCodeEnum());
-                    try {
-                        // If the payer is authorized to waive fees, then we don't charge them
-                        if (!hasWaivedFees) {
-                            if (validationResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
-                                feeAccumulator.chargeNetworkFee(creator.accountId(),
-                                        fees.networkFee());
-                            } else if (validationResult.status()
-                                    == PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE) {
-                                // We do not charge partial service fees; if the payer is unwilling or unable to cover
-                                // the entire service fee, then we only charge network and node fees (prioritizing
-                                // the network fee in case of a very low payer balance)
-                                feeAccumulator.chargeFees(payer, creator.accountId(),
-                                        fees.withoutServiceComponent());
-                            } else {
-                                final var feesToCharge =
-                                        validationResult.responseCodeEnum().equals(
-                                                DUPLICATE_TRANSACTION)
-                                                ? fees.withoutServiceComponent()
-                                                : fees;
-                                feeAccumulator.chargeFees(payer, creator.accountId(), feesToCharge);
-                            }
-                        }
-                    } catch (final HandleException ex) {
-                        final var identifier = validationResult.status == NODE_DUE_DILIGENCE_FAILURE
-                                ? "node " + creator.nodeId()
-                                : "account " + payer;
-                        logger.error(
-                                "Unable to charge {} a penalty after {} happened. Cause of the failed charge:",
-                                identifier,
-                                validationResult.responseCodeEnum,
-                                ex);
-                    }
-                } else {
-                    try {
-                        // Any hollow accounts that must sign to have all needed signatures, need to be finalized
-                        // as a result of transaction being handled.
-                        Set<Account> hollowAccounts = preHandleResult.getHollowAccounts();
-                        SignatureVerification maybeEthTxVerification = null;
-                        if (functionality == ETHEREUM_TRANSACTION) {
-                            final var maybeEthTxSigs = CONTRACT_SERVICE
-                                    .handlers()
-                                    .ethereumTransactionHandler()
-                                    .maybeEthTxSigsFor(
-                                            transactionInfo.txBody().ethereumTransactionOrThrow(),
-                                            readableStoreFactory.getStore(ReadableFileStore.class),
-                                            configuration);
-                            if (maybeEthTxSigs != null) {
-                                final var alias = Bytes.wrap(maybeEthTxSigs.address());
-                                final var accountStore = readableStoreFactory.getStore(
-                                        ReadableAccountStore.class);
-                                final var maybeHollowAccountId = accountStore.getAccountIDByAlias(
-                                        alias);
-                                if (maybeHollowAccountId != null) {
-                                    final var maybeHollowAccount =
-                                            requireNonNull(accountStore.getAccountById(
-                                                    maybeHollowAccountId));
-                                    if (isHollow(maybeHollowAccount)) {
-                                        hollowAccounts = new LinkedHashSet<>(
-                                                preHandleResult.getHollowAccounts());
-                                        hollowAccounts.add(maybeHollowAccount);
-                                        maybeEthTxVerification = new SignatureVerificationImpl(
-                                                Key.newBuilder()
-                                                        .ecdsaSecp256k1(Bytes.wrap(
-                                                                maybeEthTxSigs.publicKey()))
-                                                        .build(),
-                                                alias,
-                                                true);
-                                    }
-                                }
-                            }
-                        }
-                        finalizeHollowAccounts(
-                                context, configuration, hollowAccounts, verifier,
-                                maybeEthTxVerification);
-
-                        // If the payer is authorized to waive fees, then we don't charge them
-                        if (!hasWaivedFees) {
-                            // privileged transactions are not charged fees
-                            feeAccumulator.chargeFees(payer, creator.accountId(), fees);
-                        }
-
-                        if (networkUtilizationManager.wasLastTxnGasThrottled()) {
-                            // Don't charge the payer the service fee component, because the user-submitted transaction
-                            // was fully valid but network capacity was unavailable to satisfy it
-                            fees = fees.withoutServiceComponent();
-                            throw new HandleException(CONSENSUS_GAS_EXHAUSTED);
-                        }
-
-                        // Dispatch the transaction to the handler
-                        dispatcher.dispatchHandle(context);
-                        // Possibly charge assessed fees for preceding child transactions; but
-                        // only if not a contract operation, since these dispatches were already
-                        // charged using gas. [FUTURE - stop setting transactionFee in recordBuilder
-                        // at the point of dispatch, so we no longer need this special case here.]
-                        final var isContractOp = DISPATCHING_CONTRACT_TRANSACTIONS.contains(
-                                functionality);
-                        if (!isContractOp
-                                && !recordListBuilder.precedingRecordBuilders().isEmpty()) {
-                            // We intentionally charge fees even if the transaction failed (may need to update
-                            // mono-service to this behavior?)
-                            final var childFees =
-                                    recordListBuilder.precedingRecordBuilders().stream()
-                                            .mapToLong(
-                                                    SingleTransactionRecordBuilderImpl::transactionFee)
-                                            .sum();
-                            // If the payer is authorized to waive fees, then we don't charge them
-                            if (!hasWaivedFees && !feeAccumulator.chargeNetworkFee(payer,
-                                    childFees)) {
-                                throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
-                            }
-                        }
-                        recordBuilder.status(SUCCESS);
-                        // Only ScheduleCreate and ScheduleSign can trigger paid staking rewards via
-                        // dispatch; and only if this top-level transaction was successful
-                        prePaidRewards = context.dispatchPaidRewards();
-
-                        // Notify responsible facility if system-file was uploaded.
-                        // Returns SUCCESS if no system-file was uploaded
-                        final var fileUpdateResult = systemFileUpdateFacility.handleTxBody(stack,
-                                txBody);
-
-                        recordBuilder
-                                .exchangeRate(exchangeRateManager.exchangeRates())
-                                .status(fileUpdateResult);
-
-                        // Notify if platform state was updated
-                        platformStateUpdateFacility.handleTxBody(stack, platformState, txBody);
-
-                    } catch (final HandleException e) {
-                        // In case of a ContractCall when it reverts, the gas charged should not be rolled back
-                        rollback(e.shouldRollbackStack(), e.getStatus(), stack, recordListBuilder);
-                        if (!hasWaivedFees && e.shouldRollbackStack()) {
-                            // Only re-charge fees if we rolled back the stack
-                            feeAccumulator.chargeFees(payer, creator.accountId(), fees);
-                        }
-                    }
-
-                    // After a contract operation was handled (i.e., not throttled), update the
-                    // gas throttle by leaking any unused gas
-                    if (isGasThrottled(functionality)
-                            && recordBuilder.status() != CONSENSUS_GAS_EXHAUSTED
-                            && recordBuilder.hasContractResult()) {
-                        final var gasUsed = recordBuilder.getGasUsedForContractTxn();
-                        handleWorkflowMetrics.addGasUsed(gasUsed);
-                        final var contractsConfig = configuration.getConfigData(
-                                ContractsConfig.class);
-                        if (contractsConfig.throttleThrottleByGas()) {
-                            final var gasLimitForContractTx =
-                                    getGasLimitForContractTx(transactionInfo.txBody(),
-                                            functionality);
-                            final var excessAmount = gasLimitForContractTx - gasUsed;
-                            networkUtilizationManager.leakUnusedGasPreviouslyReserved(
-                                    transactionInfo, excessAmount);
-                        }
-                    }
-                }
-            } catch (final Exception e) {
-                logger.error("Possibly CATASTROPHIC failure while handling a user transaction", e);
-                if (transactionInfo == null) {
-                    final var baseData = extractTransactionBaseData(
-                            platformTxn.getApplicationPayload());
-                    if (baseData.transaction() == null) {
-                        // FUTURE: Charge node generic penalty, set values in record builder, and remove log statement
-                        logger.error("Failed to parse transaction from creator: {}", creator);
-                        return null;
-                    }
-                    functionality = baseData.functionality();
-                    txBody = baseData.txBody();
-                    payer = baseData.payer();
-                    recordBuilder.transaction(baseData.transaction()).transactionBytes(
-                            baseData.transactionBytes());
-                    if (txBody != null && txBody.hasTransactionID()) {
-                        recordBuilder.transactionID(txBody.transactionIDOrThrow());
-                    }
-                }
-                // We should always rollback stack including gas charges when there is an unexpected exception
-                rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
-                if (payer != null && fees != null) {
-                    try {
-                        feeAccumulator.chargeFees(payer, creator.accountId(), fees);
-                    } catch (final Exception chargeException) {
-                        logger.error(
-                                "Unable to charge account {} a penalty after an unexpected exception {}. Cause of the failed charge:",
-                                payer,
-                                e,
-                                chargeException);
-                    }
-                }
-            }
-
-            if (isFirstTransaction
-                    || consensusNow.getEpochSecond() > consTimeOfLastHandledTxn.getEpochSecond()) {
-                handleWorkflowMetrics.switchConsensusSecond();
-            }
-
-            // If a transaction appeared to try an auto-creation, and hence used
-            // frontend throttle capacity; but then failed, we need to reclaim the
-            // frontend throttle capacity on the node that submitted the transaction
-            if (txBody != null && canAutoCreate(functionality)
-                    && recordBuilder.status() != SUCCESS) {
-                final var numImplicitCreations = throttleServiceManager.numImplicitCreations(
-                        txBody, tokenServiceContext.readableStore(ReadableAccountStore.class));
-                if (usedSelfFrontendThrottleCapacity(numImplicitCreations, txBody)) {
-                    throttleServiceManager.reclaimFrontendThrottleCapacity(numImplicitCreations);
-                }
-            }
-
-            throttleServiceManager.saveThrottleSnapshotsAndCongestionLevelStartsTo(stack);
-            try {
-                transactionFinalizer.finalizeParentRecord(
-                        tokenServiceContext,
-                        functionality,
-                        extraRewardReceivers(txBody, functionality, recordBuilder),
-                        prePaidRewards);
-            } catch (final Exception e) {
-                logger.error(
-                        "Possibly CATASTROPHIC error: failed to finalize parent record for transaction {}",
-                        transactionInfo.transactionID(),
-                        e);
-
-                // Undo any changes made to the state
-                final var userTransactionRecordBuilder =
-                        recordListBuilder.userTransactionRecordBuilder();
-                userTransactionRecordBuilder.nullOutSideEffectFields();
-                rollback(true, ResponseCodeEnum.FAIL_INVALID, stack, recordListBuilder);
-            }
-
-            // Commit all state changes
-            stack.commitFullStack();
-
-            // store all records at once, build() records end of transaction to log
-            final var recordListResult = recordListBuilder.build();
-            if (payer != null) { // temporary check to avoid NPE
-                recordCache.add(creator.nodeId(), payer, recordListResult.records());
-            }
-
-            final int handleDuration = (int) (System.nanoTime() - handleStart);
-            handleWorkflowMetrics.updateTransactionDuration(functionality, handleDuration);
-
-            // Only implemented for v6.
-            if (!usingBlockStreams()) {
-                blockRecordManager.endUserTransaction(recordListResult.records().stream(), state);
-                return null;
-            }
-
-            // Only implemented for v7.
-            if (txBody == null) {
-                // txBody should have been set by this point.
-                throw new IllegalStateException("txBody must not be null");
-        }
-        return new ProcessUserTransactionResult(recordListResult.records().stream(), txBody);
-        });
+        handleWorkflowMetrics.updateTransactionDuration(
+                userTxn.functionality(), (int) (System.nanoTime() - handleStart));
     }
 
     /**
-     * Returns a set of "extra" account ids that should be considered as eligible for
-     * collecting their accrued staking rewards with the given transaction info and
-     * record builder.
-     *
-     * <p><b>IMPORTANT:</b> Needed only for mono-service fidelity.
-     *
-     * <p>There are three cases, none of which HIP-406 defined as a reward situation;
-     * but were "false positives" in the original mono-service implementation:
-     * <ol>
-     *     <li>For a crypto transfer, any account explicitly listed in the HBAR
-     *     transfer list, even with a zero balance adjustment.</li>
-     *     <li>For a contract operation, any called contract.</li>
-     *     <li>For a contract operation, any account loaded in a child
-     *     transaction (primarily, any account involved in a child
-     *     token transfer).</li>
-     * </ol>
-     *
-     * @param body the {@link TransactionBody} of the transaction
-     * @param function the {@link HederaFunctionality} of the transaction
-     * @param recordBuilder the record builder
-     * @return the set of extra account ids
-     */
-    static Set<AccountID> extraRewardReceivers(
-            @Nullable final TransactionBody body,
-            @NonNull final HederaFunctionality function,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
-        if (recordBuilder.status() != SUCCESS || body == null) {
-            return emptySet();
-        }
-        return switch (function) {
-            case CRYPTO_TRANSFER -> zeroAdjustIdsFrom(body.cryptoTransferOrThrow()
-                    .transfersOrElse(TransferList.DEFAULT)
-                    .accountAmounts());
-            case ETHEREUM_TRANSACTION, CONTRACT_CALL, CONTRACT_CREATE -> recordBuilder.explicitRewardSituationIds();
-            default -> emptySet();
-        };
-    }
-
-    /**
-     * Returns any ids from the given list of explicit hbar adjustments that have a zero amount.
-     *
-     * @param explicitHbarAdjustments the list of explicit hbar adjustments
-     * @return the set of account ids that have a zero amount
-     */
-    private static @NonNull Set<AccountID> zeroAdjustIdsFrom(
-            @NonNull final List<AccountAmount> explicitHbarAdjustments) {
-        Set<AccountID> zeroAdjustmentAccounts = null;
-        for (final var aa : explicitHbarAdjustments) {
-            if (aa.amount() == 0) {
-                if (zeroAdjustmentAccounts == null) {
-                    zeroAdjustmentAccounts = new LinkedHashSet<>();
-                }
-                zeroAdjustmentAccounts.add(aa.accountID());
-            }
-        }
-        return zeroAdjustmentAccounts == null ? emptySet() : zeroAdjustmentAccounts;
-    }
-
-    /**
-     * Updates key on the hollow accounts that need to be finalized. This is done by dispatching a preceding
-     * synthetic update transaction. The ksy is derived from the signature expansion, by looking up the ECDSA key
-     * for the alias.
-     *
-     * @param context the handle context
-     * @param configuration the configuration
-     * @param accounts the set of hollow accounts that need to be finalized
-     * @param verifier the key verifier
-     * @param ethTxVerification
-     */
-    private void finalizeHollowAccounts(
-            @NonNull final HandleContext context,
-            @NonNull final Configuration configuration,
-            @NonNull final Set<Account> accounts,
-            @NonNull final DefaultKeyVerifier verifier,
-            @Nullable SignatureVerification ethTxVerification) {
-        final var consensusConfig = configuration.getConfigData(ConsensusConfig.class);
-        final var precedingHollowAccountRecords = accounts.size();
-        final var maxRecords = consensusConfig.handleMaxPrecedingRecords();
-        // If the hollow accounts that need to be finalized is greater than the max preceding
-        // records allowed throw an exception
-        if (precedingHollowAccountRecords >= maxRecords) {
-            throw new HandleException(MAX_CHILD_RECORDS_EXCEEDED);
-        } else {
-            for (final var hollowAccount : accounts) {
-                if (hollowAccount.accountIdOrElse(AccountID.DEFAULT).equals(AccountID.DEFAULT)) {
-                    // The CryptoCreateHandler uses a "hack" to validate that a CryptoCreate with
-                    // an EVM address has signed with that alias's ECDSA key; that is, it adds a
-                    // dummy "hollow account" with the EVM address as an alias. But we don't want
-                    // to try to finalize such a dummy account, so skip it here.
-                    continue;
-                }
-                // get the verified key for this hollow account
-                final var verification =
-                        ethTxVerification != null && hollowAccount.alias().equals(ethTxVerification.evmAlias())
-                                ? ethTxVerification
-                                : requireNonNull(
-                                        verifier.verificationFor(hollowAccount.alias()),
-                                        "Required hollow account verified signature did not exist");
-                if (verification.key() != null) {
-                    if (!IMMUTABILITY_SENTINEL_KEY.equals(hollowAccount.keyOrThrow())) {
-                        logger.error("Hollow account {} has a key other than the sentinel key", hollowAccount);
-                        return;
-                    }
-                    // dispatch synthetic update transaction for updating key on this hollow account
-                    final var syntheticUpdateTxn = TransactionBody.newBuilder()
-                            .cryptoUpdateAccount(CryptoUpdateTransactionBody.newBuilder()
-                                    .accountIDToUpdate(hollowAccount.accountId())
-                                    .key(verification.key())
-                                    .build())
-                            .build();
-                    // Note the null key verification callback below; we bypass signature
-                    // verifications when doing hollow account finalization
-                    final var recordBuilder = context.dispatchPrecedingTransaction(
-                            syntheticUpdateTxn, CryptoUpdateRecordBuilder.class, null, context.payer());
-                    // For some reason update accountId is set only for the hollow account finalizations and not
-                    // for top level crypto update transactions. So we set it here.
-                    recordBuilder.accountID(hollowAccount.accountId());
-                }
-            }
-        }
-    }
-
-    @NonNull
-    private FeeAccumulator createFeeAccumulator(
-            @NonNull final SavepointStackImpl stack,
-            @NonNull final Configuration configuration,
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder) {
-        final var serviceApiFactory = new ServiceApiFactory(stack, configuration, storeMetricsService);
-        final var tokenApi = serviceApiFactory.getApi(TokenServiceApi.class);
-        return new FeeAccumulatorImpl(tokenApi, recordBuilder);
-    }
-
-    private static long getGasLimitForContractTx(final TransactionBody txnBody, final HederaFunctionality function) {
-        return switch (function) {
-            case CONTRACT_CREATE -> txnBody.contractCreateInstance().gas();
-            case CONTRACT_CALL -> txnBody.contractCall().gas();
-            case ETHEREUM_TRANSACTION -> getGasLimitFromEthTxData(txnBody);
-            default -> 0L;
-        };
-    }
-
-    private static long getGasLimitFromEthTxData(final TransactionBody txn) {
-        final var ethTxBody = txn.ethereumTransaction();
-        if (ethTxBody == null) return 0L;
-        final var ethTxData =
-                EthTxData.populateEthTxData(ethTxBody.ethereumData().toByteArray());
-        return ethTxData != null ? ethTxData.gasLimit() : 0L;
-    }
-
-    private ValidationResult validate(
-            @NonNull final Instant consensusNow,
-            @NonNull final KeyVerifier verifier,
-            @NonNull final PreHandleResult preHandleResult,
-            @NonNull final ReadableStoreFactory storeFactory,
-            @NonNull final NetworkUtilizationManager utilizationManager,
-            @NonNull final HandleContextImpl context,
-            @NonNull final TransactionDispatcher dispatcher,
-            @NonNull final HederaState state,
-            final long nodeID) {
-        if (preHandleResult.status() == NODE_DUE_DILIGENCE_FAILURE) {
-            utilizationManager.trackFeePayments(consensusNow, state);
-            final var fees = dispatcher.dispatchComputeFees(context);
-            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode(), fees);
-        }
-
-        final var txInfo = requireNonNull(preHandleResult.txInfo());
-        final var payerID = requireNonNull(txInfo.payerID());
-        final var functionality = txInfo.functionality();
-        final var txBody = txInfo.txBody();
-        boolean isPayerHollow;
-
-        final Account payer;
-        try {
-            payer = solvencyPreCheck.getPayerAccount(storeFactory, payerID);
-        } catch (PreCheckException e) {
-            throw new IllegalStateException("Missing payer should be a due diligence failure", e);
-        }
-        isPayerHollow = isHollow(payer);
-        // Check all signature verifications. This will also wait, if validation is still ongoing.
-        // If the payer is hollow the key will be null, so we skip the payer signature verification.
-        if (!isPayerHollow) {
-            final var payerKeyVerification = verifier.verificationFor(preHandleResult.getPayerKey());
-            if (payerKeyVerification.failed()) {
-                utilizationManager.trackFeePayments(consensusNow, state);
-                final var fees = dispatcher.dispatchComputeFees(context);
-                return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, INVALID_PAYER_SIGNATURE, fees);
-            }
-        }
-
-        // Notice that above, we computed fees assuming network utilization for
-        // just a fee payment. Here we instead calculate fees based on tracking the
-        // user transaction. This is for mono-service fidelity, but does not have any
-        // particular priority and could be revisited later after diff testing
-        utilizationManager.trackTxn(txInfo, consensusNow, state);
-        final var fees = dispatcher.dispatchComputeFees(context);
-
-        // Check for duplicate transactions. It is perfectly normal for there to be duplicates -- it is valid for
-        // a user to intentionally submit duplicates to multiple nodes as a hedge against dishonest nodes, or for
-        // other reasons. If we find a duplicate, we *will not* execute the transaction, we will simply charge
-        // the payer (whether the payer from the transaction or the node in the event of a due diligence failure)
-        // and create an appropriate record to save in state and send to the record stream.
-        final var duplicateCheckResult = recordCache.hasDuplicate(txBody.transactionIDOrThrow(), nodeID);
-        if (duplicateCheckResult != NO_DUPLICATE) {
-            return new ValidationResult(
-                    duplicateCheckResult == SAME_NODE ? NODE_DUE_DILIGENCE_FAILURE : PRE_HANDLE_FAILURE,
-                    DUPLICATE_TRANSACTION,
-                    fees);
-        }
-
-        // Check the status and solvency of the payer (assuming their signature is valid)
-        try {
-            solvencyPreCheck.checkSolvency(txInfo, payer, fees, NOT_INGEST);
-        } catch (final InsufficientServiceFeeException e) {
-            return new ValidationResult(PAYER_UNWILLING_OR_UNABLE_TO_PAY_SERVICE_FEE, e.responseCode(), fees);
-        } catch (final InsufficientNonFeeDebitsException e) {
-            return new ValidationResult(PRE_HANDLE_FAILURE, e.responseCode(), fees);
-        } catch (final PreCheckException e) {
-            // Includes InsufficientNetworkFeeException
-            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode(), fees);
-        }
-
-        // Check the time box of the transaction
-        try {
-            checker.checkTimeBox(txBody, consensusNow, RequireMinValidLifetimeBuffer.NO);
-        } catch (final PreCheckException e) {
-            return new ValidationResult(NODE_DUE_DILIGENCE_FAILURE, e.responseCode(), fees);
-        }
-
-        // Check if the payer has the required permissions
-        if (!authorizer.isAuthorized(payerID, functionality)) {
-            if (functionality == HederaFunctionality.SYSTEM_DELETE) {
-                return new ValidationResult(PRE_HANDLE_FAILURE, NOT_SUPPORTED, fees);
-            }
-            return new ValidationResult(PRE_HANDLE_FAILURE, UNAUTHORIZED, fees);
-        }
-
-        // Check if pre-handle was successful
-        if (preHandleResult.status() != SO_FAR_SO_GOOD) {
-            return new ValidationResult(preHandleResult.status(), preHandleResult.responseCode(), fees);
-        }
-
-        // Check if the transaction is privileged and if the payer has the required privileges
-        final var privileges = authorizer.hasPrivilegedAuthorization(payerID, functionality, txBody);
-        if (privileges == SystemPrivilege.UNAUTHORIZED) {
-            return new ValidationResult(PRE_HANDLE_FAILURE, AUTHORIZATION_FAILED, fees);
-        }
-        if (privileges == SystemPrivilege.IMPERMISSIBLE) {
-            return new ValidationResult(PRE_HANDLE_FAILURE, ENTITY_NOT_ALLOWED_TO_DELETE, fees);
-        }
-
-        // verify all the keys
-        for (final var key : preHandleResult.getRequiredKeys()) {
-            final var verification = verifier.verificationFor(key);
-            if (verification.failed()) {
-                utilizationManager.trackFeePayments(consensusNow, state);
-                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
-            }
-        }
-        // If there are any hollow accounts whose signatures need to be verified, verify them
-        for (final var hollowAccount : preHandleResult.getHollowAccounts()) {
-            final var verification = verifier.verificationFor(hollowAccount.alias());
-            if (verification.failed()) {
-                utilizationManager.trackFeePayments(consensusNow, state);
-                return new ValidationResult(PRE_HANDLE_FAILURE, INVALID_SIGNATURE, fees);
-            }
-        }
-
-        return new ValidationResult(SO_FAR_SO_GOOD, OK, fees);
-    }
-
-    private record ValidationResult(
-            @NonNull PreHandleResult.Status status, @NonNull ResponseCodeEnum responseCodeEnum, @NonNull Fees fees) {}
-
-    /**
-     * Rolls back the stack and sets the status of the transaction in case of a failure.
-     *
-     * @param rollbackStack whether to rollback the stack. Will be false when the failure is due to a
-     * {@link HandleException} that is due to a contract call revert.
-     * @param status the status to set
-     * @param stack the save point stack to rollback
-     * @param recordListBuilder the record list builder to revert
-     */
-    private void rollback(
-            final boolean rollbackStack,
-            @NonNull final ResponseCodeEnum status,
-            @NonNull final SavepointStackImpl stack,
-            @NonNull final RecordListBuilder recordListBuilder) {
-        if (rollbackStack) {
-            stack.rollbackFullStack();
-        }
-        final var userTransactionRecordBuilder = recordListBuilder.userTransactionRecordBuilder();
-        userTransactionRecordBuilder.status(status);
-        recordListBuilder.revertChildrenOf(userTransactionRecordBuilder);
-    }
-
-    private boolean usedSelfFrontendThrottleCapacity(
-            final int numImplicitCreations, @NonNull final TransactionBody txnBody) {
-        return numImplicitCreations > 0
-                && txnBody.nodeAccountIDOrThrow()
-                        .equals(networkInfo.selfNodeInfo().accountId());
-    }
-
-    /*
      * This method gets all the verification data for the current transaction. If pre-handle was previously ran
      * successfully, we only add the missing keys. If it did not run or an error occurred, we run it again.
      * If there is a due diligence error, this method will return a CryptoTransfer to charge the node along with
      * its verification data.
+     * @param creator the node that created the transaction
+     * @param platformTxn the transaction to be verified
+     * @param storeFactory the store factory
+     * @return the verification data for the transaction
      */
     @NonNull
-    private PreHandleResult getCurrentPreHandleResult(
-            @NonNull final ReadableStoreFactory storeFactory,
+    public PreHandleResult getCurrentPreHandleResult(
             @NonNull final NodeInfo creator,
-            @NonNull final ConsensusTransaction platformTxn) {
+            @NonNull final ConsensusTransaction platformTxn,
+            final ReadableStoreFactory storeFactory) {
         final var metadata = platformTxn.getMetadata();
         final PreHandleResult previousResult;
         if (metadata instanceof PreHandleResult result) {
@@ -1200,74 +279,265 @@ public class HandleWorkflow {
                 previousResult);
     }
 
-    private boolean usingBlockStreams() {
-        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(
-                BlockStreamConfig.class);
-        // If gathering signatures is not enabled for preHandle, then we must do it in handle.
-        return blockStreamConfig.enabled() && blockStreamConfig.blockVersion() >= 7;
-    }
-
-    private boolean collectSignaturesEnabled() {
-        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
-
-        // If block streams are not enabled then this is not enabled.
-        if (!usingBlockStreams()) return false;
-
-        // If writing proofs is not enabled then this is not enabled.
-        if (!blockStreamConfig.writeBlockProof()) return false;
-
-        // If gathering signatures is not enabled for preHandle, then we are doing it in handle.
-        return !blockStreamConfig.collectSignaturesInPreHandle();
-    }
-
-    private boolean isConsTimeFirstTransactionInBlock(Instant consensusTimestamp) {
-
-        final var firstTxTs = blockRecordManager.firstConsTimeOfCurrentBlock();
-        if (firstTxTs == null || consensusTimestamp == null) {
-            return false;
-        }
-        return firstTxTs.equals(consensusTimestamp);
-    }
-
-    private record TransactionBaseData(
-            @NonNull HederaFunctionality functionality,
-            @NonNull Bytes transactionBytes,
-            @Nullable Transaction transaction,
-            @Nullable TransactionBody txBody,
-            @Nullable AccountID payer) {}
-
-    private TransactionBaseData extractTransactionBaseData(@NonNull final Bytes content) {
-        // This method is only called if something fatal happened. We do a best effort approach to extract the
-        // type of the transaction, the TransactionBody and the payer if not known.
-        if (content.length() == 0) {
-            return new TransactionBaseData(NONE, Bytes.EMPTY, null, null, null);
-        }
-
-        HederaFunctionality function = NONE;
-        Bytes transactionBytes = content;
-        Transaction transaction = null;
-        TransactionBody txBody = null;
-        AccountID payer = null;
+    /**
+     * Executes the user transaction and returns a stream of records that capture all
+     * side effects on state that are stipulated by the pre-block-stream contract with
+     * mirror nodes.
+     *
+     * <p>Never throws an exception without a fundamental breakdown in the integrity
+     * of the system invariants. If there is an internal error when executing the
+     * transaction, returns a stream of a single {@link ResponseCodeEnum#FAIL_INVALID}
+     * record with no other side effects.
+     *
+     * <p><b>IMPORTANT:</b> With block streams, this contract will expand to include
+     * all side effects on state, no exceptions.
+     *
+     * @return the stream of records
+     */
+    private Stream<SingleTransactionRecord> execute(@NonNull final UserTxn userTxn) {
         try {
-            transaction = Transaction.PROTOBUF.parseStrict(transactionBytes);
-
-            final Bytes bodyBytes;
-            if (transaction.signedTransactionBytes().length() > 0) {
-                final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
-                        transaction.signedTransactionBytes().toReadableSequentialData());
-                bodyBytes = signedTransaction.bodyBytes();
-                transactionBytes = bodyBytes;
+            if (isOlderSoftwareEvent(userTxn)) {
+                skip(userTxn);
             } else {
-                bodyBytes = transaction.bodyBytes();
+                if (userTxn.isGenesisTxn()) {
+                    genesisSetup.setupIn(userTxn.tokenContextImpl());
+                }
+                updateNodeStakes(userTxn);
+                blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+                expireSchedules(userTxn);
+                logPreDispatch(userTxn);
+                final var dispatch = dispatchFor(userTxn);
+                hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
+                dispatchProcessor.processDispatch(dispatch);
+                updateWorkflowMetrics(userTxn);
             }
-            txBody = TransactionBody.PROTOBUF.parseStrict(bodyBytes.toReadableSequentialData());
-
-            payer = txBody.transactionIDOrElse(TransactionID.DEFAULT).accountID();
-
-            function = HapiUtils.functionOf(txBody);
-        } catch (Exception ex) {
-            // ignore
+            return finalRecordStream(userTxn);
+        } catch (final Exception e) {
+            logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
+            return failInvalidRecordStream(userTxn);
         }
-        return new TransactionBaseData(function, transactionBytes, transaction, txBody, payer);
+    }
+
+    /**
+     * Returns a stream of a single {@link ResponseCodeEnum#FAIL_INVALID} record
+     * for the given user transaction.
+     *
+     * @return the failure record
+     */
+    private Stream<SingleTransactionRecord> failInvalidRecordStream(@NonNull final UserTxn userTxn) {
+        final var failInvalidRecordListBuilder = new RecordListBuilder(userTxn.consensusNow());
+        final var recordBuilder = failInvalidRecordListBuilder.userTransactionRecordBuilder();
+        initializeUserRecord(recordBuilder, userTxn.txnInfo());
+        recordBuilder.status(FAIL_INVALID);
+        userTxn.stack().rollbackFullStack();
+        return recordStream(userTxn, failInvalidRecordListBuilder);
+    }
+
+    /**
+     * Has the side effect of adding a {@link ResponseCodeEnum#BUSY} record to
+     * the transaction's record stream, but skips any other execution.
+     *
+     * @param userTxn the user transaction to skip
+     */
+    private void skip(@NonNull final UserTxn userTxn) {
+        final TransactionInfo txnInfo = userTxn.txnInfo();
+        userTxn.recordListBuilder()
+                .userTransactionRecordBuilder()
+                .transaction(txnInfo.transaction())
+                .transactionBytes(txnInfo.signedBytes())
+                .transactionID(txnInfo.txBody().transactionIDOrElse(TransactionID.DEFAULT))
+                .exchangeRate(exchangeRateManager.exchangeRates())
+                .memo(txnInfo.txBody().memo())
+                .status(BUSY);
+    }
+
+    /**
+     * Returns true if the software event is older than the current software version.
+     *
+     * @return true if the software event is older than the current software version
+     */
+    private boolean isOlderSoftwareEvent(@NonNull final UserTxn userTxn) {
+        return this.initTrigger != EVENT_STREAM_RECOVERY
+                && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(
+                                version, userTxn.event().getSoftwareVersion())
+                        > 0;
+    }
+
+    /**
+     * Updates the metrics for the handle workflow.
+     */
+    private void updateWorkflowMetrics(@NonNull final UserTxn userTxn) {
+        if (userTxn.isGenesisTxn()
+                || userTxn.consensusNow().getEpochSecond()
+                        > userTxn.lastHandledConsensusTime().getEpochSecond()) {
+            handleWorkflowMetrics.switchConsensusSecond();
+        }
+    }
+
+    /**
+     * Returns a stream of records for the given user transaction with
+     * its in-scope records.
+     *
+     * @param userTxn the user transaction
+     * @return the stream of records
+     */
+    private Stream<SingleTransactionRecord> finalRecordStream(@NonNull final UserTxn userTxn) {
+        return recordStream(userTxn, userTxn.recordListBuilder());
+    }
+
+    /**
+     * Builds and caches the result of the user transaction with
+     * the explicitly provided records.
+     *
+     * @param userTxn the user transaction
+     * @param recordListBuilder the explicit records
+     * @return the stream of records
+     */
+    private Stream<SingleTransactionRecord> recordStream(
+            @NonNull final UserTxn userTxn, @NonNull final RecordListBuilder recordListBuilder) {
+        final var result = recordListBuilder.build();
+        recordCache.add(
+                userTxn.creatorInfo().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), result.records());
+        return result.records().stream();
+    }
+
+    /**
+     * Returns the user dispatch for the given user transaction.
+     *
+     * @param userTxn the user transaction
+     * @return the user dispatch
+     */
+    private Dispatch dispatchFor(@NonNull final UserTxn userTxn) {
+        return userTxn.dispatch(
+                authorizer,
+                networkInfo,
+                feeManager,
+                recordCache,
+                dispatchProcessor,
+                blockRecordManager,
+                serviceScopeLookup,
+                storeMetricsService,
+                exchangeRateManager,
+                childDispatchFactory,
+                dispatcher,
+                initializeUserRecord(userTxn),
+                networkUtilizationManager);
+    }
+
+    /**
+     * Initializes the user record with the transaction information. The record builder
+     * list is initialized with the transaction, transaction bytes, transaction ID,
+     * exchange rate, and memo.
+     *
+     * @param userTxn the user transaction whose record should be initialized
+     */
+    private SingleTransactionRecordBuilderImpl initializeUserRecord(@NonNull final UserTxn userTxn) {
+        return initializeUserRecord(userTxn.recordListBuilder().userTransactionRecordBuilder(), userTxn.txnInfo());
+    }
+
+    /**
+     * Initializes the user record with the transaction information. The record builder
+     * list is initialized with the transaction, transaction bytes, transaction ID,
+     * exchange rate, and memo.
+     *
+     * @param recordBuilder the record builder
+     * @param txnInfo the transaction info
+     */
+    private SingleTransactionRecordBuilderImpl initializeUserRecord(
+            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder, @NonNull final TransactionInfo txnInfo) {
+        final var transaction = txnInfo.transaction();
+        // If the transaction uses the legacy body bytes field instead of explicitly
+        // setting its signed bytes, the record will have the hash of its bytes as
+        // serialized by PBJ
+        final Bytes transactionBytes;
+        if (transaction.signedTransactionBytes().length() > 0) {
+            transactionBytes = transaction.signedTransactionBytes();
+        } else {
+            transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
+        }
+        return recordBuilder
+                .transaction(txnInfo.transaction())
+                .transactionBytes(transactionBytes)
+                .transactionID(txnInfo.txBody().transactionIDOrThrow())
+                .exchangeRate(exchangeRateManager.exchangeRates())
+                .memo(txnInfo.txBody().memo());
+    }
+
+    private void updateNodeStakes(@NonNull final UserTxn userTxn) {
+        try {
+            nodeStakeUpdates.process(userTxn.stack(), userTxn.tokenContextImpl());
+        } catch (final Exception e) {
+            // We don't propagate a failure here to avoid a catastrophic scenario
+            // where we are "stuck" trying to process node stake updates and never
+            // get back to user transactions
+            logger.error("Failed to process staking period time hook", e);
+        }
+    }
+
+    private static void logPreDispatch(@NonNull final UserTxn userTxn) {
+        if (logger.isDebugEnabled()) {
+            logStartUserTransaction(
+                    userTxn.platformTxn(),
+                    userTxn.txnInfo().txBody(),
+                    requireNonNull(userTxn.txnInfo().payerID()));
+            logStartUserTransactionPreHandleResultP2(userTxn.preHandleResult());
+            logStartUserTransactionPreHandleResultP3(userTxn.preHandleResult());
+        }
+    }
+
+    /**
+     * Expire schedules that are due to be executed between the last handled
+     * transaction time and the current consensus time.
+     *
+     * @param userTxn the user transaction
+     */
+    private void expireSchedules(@NonNull UserTxn userTxn) {
+        if (userTxn.isGenesisTxn()) {
+            return;
+        }
+        final var lastHandledTxnTime = userTxn.lastHandledConsensusTime();
+        if (userTxn.consensusNow().getEpochSecond() > lastHandledTxnTime.getEpochSecond()) {
+            final var firstSecondToExpire = lastHandledTxnTime.getEpochSecond();
+            final var lastSecondToExpire = userTxn.consensusNow().getEpochSecond() - 1;
+            final var scheduleStore = new WritableStoreFactory(
+                            userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
+                    .getStore(WritableScheduleStore.class);
+            scheduleStore.purgeExpiredSchedulesBetween(firstSecondToExpire, lastSecondToExpire);
+            userTxn.stack().commitFullStack();
+        }
+    }
+
+    /**
+     *
+     * Constructs a new {@link UserTxn} with the scope defined by the
+     * current state, platform context, creator, and consensus time.
+     *
+     * @param state the current state
+     * @param platformState the current platform state
+     * @param event the current consensus event
+     * @param creator the creator of the transaction
+     * @param txn the consensus transaction
+     * @param consensusNow the consensus time
+     * @return the new user transaction
+     */
+    private UserTxn newUserTxn(
+            @NonNull final HederaState state,
+            @NonNull final PlatformState platformState,
+            @NonNull final ConsensusEvent event,
+            @NonNull final NodeInfo creator,
+            @NonNull final ConsensusTransaction txn,
+            @NonNull final Instant consensusNow) {
+        return UserTxn.from(
+                state,
+                platformState,
+                event,
+                creator,
+                txn,
+                consensusNow,
+                blockRecordManager.consTimeOfLastHandledTxn(),
+                configProvider,
+                storeMetricsService,
+                blockRecordManager,
+                this);
     }
 }

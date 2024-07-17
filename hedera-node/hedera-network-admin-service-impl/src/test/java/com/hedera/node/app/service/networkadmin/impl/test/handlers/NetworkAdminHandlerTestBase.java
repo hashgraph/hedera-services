@@ -22,12 +22,14 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.a
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
-import com.amh.config.VersionedConfiguration;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenSupplyType;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
@@ -37,7 +39,6 @@ import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
@@ -51,12 +52,12 @@ import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
-import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.state.recordcache.DeduplicationCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheImpl;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
-import com.amh.config.ConfigProvider;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.OneOf;
@@ -67,11 +68,15 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class NetworkAdminHandlerTestBase {
     public static final String ACCOUNTS = "ACCOUNTS";
     protected static final String TOKENS = "TOKENS";
@@ -182,7 +187,9 @@ public class NetworkAdminHandlerTestBase {
     private NetworkInfo networkInfo;
 
     @Mock
-    FeeCalculator feeCalculator;
+    protected FeeCalculator feeCalculator;
+
+    private final InstantSource instantSource = InstantSource.system();
 
     @BeforeEach
     void commonSetUp() {
@@ -295,11 +302,7 @@ public class NetworkAdminHandlerTestBase {
     }
 
     private SingleTransactionRecord singleTransactionRecord(TransactionRecord record) {
-        return new SingleTransactionRecord(
-                Transaction.DEFAULT,
-                record,
-                List.of(),
-                new TransactionOutputs(com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON, TransactionBody.DataOneOfType.UNSET));
+        return new SingleTransactionRecord(Transaction.DEFAULT, record, List.of(), null);
     }
 
     protected MapReadableKVState<AccountID, Account> readableAccountState() {
@@ -322,7 +325,7 @@ public class NetworkAdminHandlerTestBase {
 
     @NonNull
     protected RecordCacheImpl emptyRecordCacheBuilder() {
-        dedupeCache = new DeduplicationCacheImpl(props);
+        dedupeCache = new DeduplicationCacheImpl(props, instantSource);
         return new RecordCacheImpl(dedupeCache, wsa, props);
     }
 
@@ -348,7 +351,7 @@ public class NetworkAdminHandlerTestBase {
                 .copyBuilder()
                 .tokenId(nonFungibleTokenId)
                 .customFees(List.of())
-                .tokenType(com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE)
+                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .build();
     }
 
@@ -376,8 +379,8 @@ public class NetworkAdminHandlerTestBase {
                 null,
                 0,
                 deleted,
-                com.hedera.hapi.node.base.TokenType.FUNGIBLE_COMMON,
-                com.hedera.hapi.node.base.TokenSupplyType.INFINITE,
+                TokenType.FUNGIBLE_COMMON,
+                TokenSupplyType.INFINITE,
                 autoRenewAccountId,
                 autoRenewSecs,
                 expirationTime,
@@ -463,8 +466,7 @@ public class NetworkAdminHandlerTestBase {
 
     private TransactionID transactionID(Instant validStartTime, int nanos, int nonce) {
         return TransactionID.newBuilder()
-                .transactionValidStart(
-                        com.hedera.hapi.node.base.Timestamp.newBuilder()
+                .transactionValidStart(Timestamp.newBuilder()
                         .seconds(validStartTime.getEpochSecond())
                         .nanos(nanos))
                 .accountID(PAYER_ACCOUNT_ID)
@@ -476,7 +478,7 @@ public class NetworkAdminHandlerTestBase {
         final var now = Instant.now();
         return TransactionID.newBuilder()
                 .transactionValidStart(
-                        com.hedera.hapi.node.base.Timestamp.newBuilder().seconds(now.getEpochSecond()).nanos(nanos))
+                        Timestamp.newBuilder().seconds(now.getEpochSecond()).nanos(nanos))
                 .nonce(nonce)
                 .build();
     }

@@ -44,7 +44,5 @@ public record SingleTransactionRecord(
 
     // This is used by BlockStream, and is not serialized.
     public record TransactionOutputs(
-            @Nullable TokenType tokenType,
-            // TODO (nickpoorman): We may want to put this here so we don't have to decode later to ge the type.
-            @NonNull TransactionBody.DataOneOfType transactionBodyType) {}
+            @Nullable TokenType tokenType, @NonNull TransactionBody.DataOneOfType transactionBodyType) {}
 }

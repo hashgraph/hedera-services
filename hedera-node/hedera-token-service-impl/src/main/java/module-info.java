@@ -3,22 +3,17 @@
  */
 module com.hedera.node.app.service.token.impl {
     requires transitive com.hedera.node.app.hapi.fees;
-    requires transitive com.hedera.node.app.service.mono;
+    requires transitive com.hedera.node.app.hapi.utils;
     requires transitive com.hedera.node.app.service.token;
     requires transitive com.hedera.node.app.spi;
     requires transitive com.hedera.node.config;
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.config.api;
-    requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.state.api;
-    requires transitive com.swirlds.virtualmap;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive javax.inject;
-    requires com.hedera.node.app.hapi.utils;
     requires com.swirlds.base;
-    requires com.swirlds.common;
-    requires com.swirlds.platform.core;
     requires com.google.common;
     requires com.hedera.evm;
     requires org.apache.commons.lang3;
@@ -34,7 +29,6 @@ module com.hedera.node.app.service.token.impl {
     exports com.hedera.node.app.service.token.impl.handlers to
             com.hedera.node.app,
             com.hedera.node.app.service.token.impl.test;
-    exports com.hedera.node.app.service.token.impl.serdes;
     exports com.hedera.node.app.service.token.impl;
     exports com.hedera.node.app.service.token.impl.api to
             com.hedera.node.app,
