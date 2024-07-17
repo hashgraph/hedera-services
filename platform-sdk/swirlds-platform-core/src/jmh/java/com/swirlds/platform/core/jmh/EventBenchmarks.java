@@ -22,6 +22,7 @@ import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.EventHasher;
+import com.swirlds.platform.event.hashing.PbjHasher;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
@@ -48,7 +49,7 @@ import org.openjdk.jmh.infra.Blackhole;
 @Fork(value = 1)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 3, time = 10)
-public class EventSerialization {
+public class EventBenchmarks {
 
     @Param({"0"})
     public long seed;
@@ -56,13 +57,17 @@ public class EventSerialization {
     private PlatformEvent event;
     private MerkleDataOutputStream outStream;
     private MerkleDataInputStream inStream;
-    private EventHasher eventHasher;
+    private EventHasher legacyEventHasher;
+    private EventHasher pbjEventHasher;
 
     @Setup
     public void setup() throws IOException, ConstructableRegistryException {
         final Random random = new Random(seed);
 
-        event = new TestingEventBuilder(random).setSystemTransactionCount(1).build();
+        event = new TestingEventBuilder(random)
+                .setAppTransactionCount(20)
+                .setSystemTransactionCount(10)
+                .build();
         StaticSoftwareVersion.setSoftwareVersion(
                 new BasicSoftwareVersion(event.getSoftwareVersion().major()));
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.platform.system");
@@ -70,7 +75,8 @@ public class EventSerialization {
         final PipedOutputStream outputStream = new PipedOutputStream(inputStream);
         outStream = new MerkleDataOutputStream(outputStream);
         inStream = new MerkleDataInputStream(inputStream);
-        eventHasher = new StatefulEventHasher();
+        legacyEventHasher = new StatefulEventHasher();
+        pbjEventHasher = new PbjHasher();
     }
 
     @Benchmark
@@ -88,11 +94,32 @@ public class EventSerialization {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
-    public void hashingBase(final Blackhole bh) throws IOException {
+    public void hashingLegacy(final Blackhole bh) {
         // results on Timo's M3 Max MacBook Pro:
         //
+        // With 2 app and 1 system transactions:
         // Benchmark                       (seed)   Mode  Cnt     Score     Error   Units
         // EventSerialization.hashingBase       0  thrpt    3  1680.478 ± 173.379  ops/ms
-        bh.consume(eventHasher.hashEvent(event));
+        //
+        // With 20 app and 10 system transactions:
+        // Benchmark                       (seed)   Mode  Cnt    Score    Error   Units
+        // EventSerialization.hashingBase       0  thrpt    3  236.143 ± 36.057  ops/ms
+        bh.consume(legacyEventHasher.hashEvent(event));
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public void hashingPbj(final Blackhole bh) {
+        // results on Timo's M3 Max MacBook Pro:
+        //
+        // With 2 app and 1 system transactions:
+        // Benchmark                      (seed)   Mode  Cnt    Score    Error   Units
+        // EventSerialization.hashingNew       0  thrpt    3  991.056 ± 75.874  ops/ms (~ 60 %)
+        // With 20 app and 10 system transactions:
+        // Benchmark                      (seed)   Mode  Cnt    Score    Error   Units
+        // EventSerialization.hashingNew       0  thrpt    3  121.640 ± 18.174  ops/ms (~ 50 %)
+
+        bh.consume(pbjEventHasher.hashEvent(event));
     }
 }
