@@ -39,11 +39,14 @@ import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetContractInfoOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.StaticCallContractOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.CallContractOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.DissociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
 
 /**
@@ -97,6 +100,29 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
      */
     public GetContractInfoOperation getInfo() {
         return new GetContractInfoOperation(this);
+    }
+
+    /**
+     * Returns an operation to associate the contract with the given tokens. Will ultimately fail if the contract
+     * does not have an admin key.
+     *
+     * @param tokens the tokens to associate
+     * @return the operation
+     */
+    public AssociateTokensOperation associateTokens(@NonNull final SpecToken... tokens) {
+        requireNonNull(tokens);
+        return new AssociateTokensOperation(this, List.of(tokens));
+    }
+
+    /**
+     * Returns an operation to dissociate the contract with the given tokens.
+     *
+     * @param tokens the tokens to dissociate
+     * @return the operation
+     */
+    public DissociateTokensOperation dissociateTokens(@NonNull final SpecToken... tokens) {
+        requireNonNull(tokens);
+        return new DissociateTokensOperation(this, List.of(tokens));
     }
 
     /**

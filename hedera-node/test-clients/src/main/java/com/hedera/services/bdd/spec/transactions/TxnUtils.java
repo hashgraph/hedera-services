@@ -128,7 +128,7 @@ public class TxnUtils {
             Key.newBuilder().setThresholdKey(ThresholdKey.getDefaultInstance()).build();
     public static Key EMPTY_KEY_LIST =
             Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build();
-    public static Key ALL_ZEROS_INVALID_KEY = Key.newBuilder()
+    public static Key WRONG_LENGTH_EDDSA_KEY = Key.newBuilder()
             .setEd25519(ByteString.fromHex("0000000000000000000000000000000000000000"))
             .build();
 
@@ -265,9 +265,10 @@ public class TxnUtils {
     }
 
     public static ContractID asContractId(final String s, final HapiSpec lookupSpec) {
-        if (s.length() == HapiContractCall.HEXED_EVM_ADDRESS_LEN) {
+        final var effS = s.startsWith("0x") ? s.substring(2) : s;
+        if (effS.length() == HapiContractCall.HEXED_EVM_ADDRESS_LEN) {
             return ContractID.newBuilder()
-                    .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(s)))
+                    .setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(effS)))
                     .build();
         }
         return isIdLiteral(s) ? asContract(s) : lookupSpec.registry().getContractId(s);

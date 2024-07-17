@@ -32,10 +32,12 @@ import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
+import com.hedera.services.bdd.spec.dsl.operations.queries.GetAccountInfoOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetBalanceOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DeleteAccountOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.DissociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.TransferTokensOperation;
 import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
@@ -119,6 +121,17 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     }
 
     /**
+     * Returns an operation to dissociate the account with the given tokens.
+     *
+     * @param tokens the tokens to dissociate
+     * @return the operation
+     */
+    public DissociateTokensOperation dissociateTokens(@NonNull final SpecToken... tokens) {
+        requireNonNull(tokens);
+        return new DissociateTokensOperation(this, List.of(tokens));
+    }
+
+    /**
      * Returns an operation to authorize the given contract to act on behalf of this account.
      *
      * @param contract the contract to authorize
@@ -136,6 +149,15 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
      */
     public GetBalanceOperation getBalance() {
         return new GetBalanceOperation(this);
+    }
+
+    /**
+     * Returns an operation to get the info of the account.
+     *
+     * @return the operation
+     */
+    public GetAccountInfoOperation getInfo() {
+        return new GetAccountInfoOperation(this);
     }
 
     /**
