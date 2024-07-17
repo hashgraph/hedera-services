@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.test.fixtures.Randotron;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.consensus.GraphGenerations;
@@ -34,6 +35,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,27 +63,20 @@ class ConsistencyTestingToolRoundTests {
      * @return a mock round with the specified event contents and round received
      */
     private static Round buildMockRound(final List<List<Long>> eventContents, final long roundReceived) {
+        final Randotron randotron = Randotron.create();
         final List<PlatformEvent> mockEvents = new ArrayList<>();
 
-        eventContents.forEach(event -> {
-            final List<ConsensusTransaction> mockTransactions = new ArrayList<>();
+        eventContents.forEach(eventContent -> {
+            final List<OneOf<PayloadOneOfType>> payloads = new ArrayList<>();
 
-            event.forEach(content -> {
-                final ConsensusTransactionImpl transaction = mock(ConsensusTransactionImpl.class);
-                final Bytes bytes = Bytes.wrap(longToByteArray(content));
+            eventContent.forEach(payloadContent -> {
+                final Bytes bytes = Bytes.wrap(longToByteArray(payloadContent));
                 final OneOf<PayloadOneOfType> payload = new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, bytes);
-                Mockito.when(transaction.getPayload()).thenReturn(payload);
-                Mockito.when(transaction.getApplicationPayload()).thenReturn(bytes);
-                Mockito.when(transaction.isSystem()).thenReturn(false);
-                mockTransactions.add(transaction);
+                payloads.add(payload);
             });
 
-            final ConsensusTransaction[] eventTransactionArray = new ConsensusTransactionImpl[eventContents.size()];
-            mockTransactions.toArray(eventTransactionArray);
-            final PlatformEvent mockEvent = mock(PlatformEvent.class);
-            Mockito.when(mockEvent.consensusTransactionIterator()).thenReturn(mockTransactions.iterator());
-
-            mockEvents.add(mockEvent);
+            final PlatformEvent e = new TestingEventBuilder(randotron).setTransactions(payloads).build();
+            mockEvents.add(e);
         });
         final ConsensusSnapshot mockSnapshot = mock(ConsensusSnapshot.class);
         Mockito.when(mockSnapshot.round()).thenReturn(roundReceived);
