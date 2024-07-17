@@ -96,12 +96,13 @@ public class HashTreeManagerTest {
     }
 
     private String testAcceptBlockItem(@NonNull final BlockItem blockItem) throws NoSuchAlgorithmException {
+        // TODO: Not fully implemented yet
         MerkleNode outputRoot = null;
         TransactionOutput transactionOutput = null;
         TransactionResult transactionResult = null;
         StateChanges stateChanges = null;
         HashTreeManager<String> tree = new HashTreeManager<>(new SimpleStringCodec());
-        tree.addBlockItemElement(String.valueOf(blockItem));
+        tree.addElement(String.valueOf(blockItem));
 
         if (blockItem.hasHeader()) {
             // A header item signals the end of the previous block so we compute the block hash here

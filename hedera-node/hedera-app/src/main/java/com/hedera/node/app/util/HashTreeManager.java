@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This class is responsible for managing the streaming hashes of a Tree.
- * It is used to calculate the root hash of the Tree.
+ * The HashTreeManager class is responsible for managing streaming elements and calculating the root hash of a Tree.
+ * @param <T> The type of elements in the tree
  */
 public class HashTreeManager<T> {
     private final String HASHING_ALGO = "SHA-384"; // The hashing algorithm used
@@ -53,6 +53,10 @@ public class HashTreeManager<T> {
         rebalanceTree();
     }
 
+    /** Add a list of elements to the Tree
+     * @param elements The list of elements to add to the tree
+     * @throws NoSuchAlgorithmException If the hashing algorithm is not found
+     */
     public void addElements(List<T> elements) throws NoSuchAlgorithmException {
         for (T element : elements) {
             Bytes encodedElement = codec.toBytes(element);
@@ -62,16 +66,20 @@ public class HashTreeManager<T> {
         rebalanceTree();
     }
 
+    /** Rebalance the binary tree of hashes, where each non-leaf node is the cryptographic hash of its child nodes.
+     */
     private void rebalanceTree() {
         while (hashList.size() > 1) {
             if (hashList.size() % 2 != 0) {
-                hashList.add(hashList.get(hashList.size() - 1));
+                hashList.add(hashList.get(hashList.size() - 1)); // ensures that the number of nodes is always even
             }
             List<Bytes> newHashList = new ArrayList<>();
+            // each iteration processes two consecutive nodes (parent and child in the tree structure).
             for (int i = 0; i < hashList.size(); i += 2) {
                 Bytes x = hashList.get(i);
                 Bytes y = hashList.get(i + 1);
-                newHashList.add(hash(x.append(y), digest));
+                newHashList.add(
+                        hash(x.append(y), digest)); // For each pair of nodes, appends y to x and hashes the result.
             }
             hashList = newHashList;
         }
@@ -87,6 +95,9 @@ public class HashTreeManager<T> {
         return Bytes.wrap(encodedHash);
     }
 
+    /** Get the root hash of the tree
+     * @return The root hash of the tree
+     */
     public Bytes getTreeRoot() {
         if (hashList.isEmpty()) {
             return null;
@@ -95,6 +106,9 @@ public class HashTreeManager<T> {
         return hashList.get(0); // The last remaining element is the tree root
     }
 
+    /** Get the root hash of the tree as a string
+     * @return The root hash of the tree as a string
+     */
     public String getTreeRootAsString() {
         Bytes treeRoot = getTreeRoot();
         StringBuilder sb = new StringBuilder();
