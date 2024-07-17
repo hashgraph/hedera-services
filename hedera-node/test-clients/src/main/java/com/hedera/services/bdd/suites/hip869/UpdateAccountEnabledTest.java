@@ -57,7 +57,7 @@ public class UpdateAccountEnabledTest {
     final Stream<DynamicTest> updateEmptyAccountIdFail() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode").accountId("").hasPrecheck(INVALID_NODE_ACCOUNT_ID));
     }
 
@@ -65,7 +65,7 @@ public class UpdateAccountEnabledTest {
     final Stream<DynamicTest> updateAliasAccountIdFail() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode").aliasAccountId("alias").hasPrecheck(INVALID_NODE_ACCOUNT_ID));
     }
 
@@ -77,7 +77,7 @@ public class UpdateAccountEnabledTest {
                 newKeyNamed("randomAccount"),
                 cryptoCreate("payer").balance(10_000_000_000L),
                 nodeCreate("node100")
-                        .adminKeyName("testKey")
+                        .adminKey("testKey")
                         .description(description)
                         .fee(ONE_HBAR),
                 // Submit to a different node so ingest check is skipped
@@ -115,7 +115,7 @@ public class UpdateAccountEnabledTest {
     final Stream<DynamicTest> updateAccountIdWork() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode").adminKey("adminKey").accountId("0.0.1000"),
                 viewNode(
                         "testNode",
