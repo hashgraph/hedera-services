@@ -68,7 +68,6 @@ import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsVal
 import com.hedera.node.app.service.token.records.TokenBurnRecordBuilder;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -387,7 +386,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
             final var recordBuilder = new SingleTransactionRecordBuilderImpl();
-            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+            given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -427,7 +426,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
             final var recordBuilder = new SingleTransactionRecordBuilderImpl();
-            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+            given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -708,7 +707,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
             final var recordBuilder = new SingleTransactionRecordBuilderImpl();
-            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+            given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -771,7 +770,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L);
             final var context = mockContext(txn);
             final var recordBuilder = new SingleTransactionRecordBuilderImpl();
-            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+            given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -835,7 +834,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L, 1L, 2L, 3L, 3L, 1L, 1L, 2L);
             final var context = mockContext(txn);
             final var recordBuilder = new SingleTransactionRecordBuilderImpl();
-            given(context.recordBuilders().getOrCreate(TokenBurnRecordBuilder.class))
+            given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
             subject.handle(context);
@@ -854,7 +853,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
 
         private HandleContext mockContext(TransactionBody txn) {
             final var context = mock(HandleContext.class);
-            final var recordBuilders = mock(RecordBuilders.class);
+            final var stack = mock(HandleContext.SavepointStack.class);
 
             given(context.body()).willReturn(txn);
 
@@ -865,7 +864,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
             given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);
             given(storeFactory.writableStore(WritableNftStore.class)).willReturn(writableNftStore);
             given(context.configuration()).willReturn(configuration);
-            lenient().when(context.recordBuilders()).thenReturn(recordBuilders);
+            lenient().when(context.savepointStack()).thenReturn(stack);
 
             return context;
         }

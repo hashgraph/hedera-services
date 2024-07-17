@@ -26,7 +26,6 @@ import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBu
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
@@ -52,7 +51,7 @@ import java.util.function.Consumer;
  * the savepoint was created and all the changes made to the state from the time savepoint was created, along with all
  * the stream builders created in the savepoint.
  */
-public class SavepointStackImpl implements SavepointStack, HederaState {
+public class SavepointStackImpl implements HandleContext.SavepointStack, HederaState {
     private final HederaState root;
     private final Deque<Savepoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
@@ -221,6 +220,35 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
         return writableStatesMap.computeIfAbsent(serviceName, s -> new WritableStatesStack(this, s));
     }
 
+    @NonNull
+    @Override
+    public <T> T getBaseBuilder(@NonNull Class<T> recordBuilderClass) {
+        requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
+        return castBuilder(baseBuilder, recordBuilderClass);
+    }
+
+    @NonNull
+    @Override
+    public <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
+        final var result = createReversibleChildBuilder();
+        return castBuilder(result, recordBuilderClass);
+    }
+
+    @NonNull
+    @Override
+    public <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass) {
+        final var result = createRemovableChildBuilder();
+        return castBuilder(result, recordBuilderClass);
+    }
+
+    public static <T> T castBuilder(
+            @NonNull final SingleTransactionRecordBuilder builder, @NonNull final Class<T> builderClass) {
+        if (!builderClass.isInstance(builder)) {
+            throw new IllegalArgumentException("Not a valid record builder class");
+        }
+        return builderClass.cast(builder);
+    }
+
     /**
      * May only be called on the root stack to get the entire list of stream builders created in the course
      * of handling a user transaction.
@@ -239,15 +267,6 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      */
     public boolean hasMoreSystemRecords() {
         return requireNonNull(builderSink).precedingCapacity() > 0;
-    }
-
-    /**
-     * Returns the base stream builder for this stack; i.e., the builder corresponding to the dispatch
-     * that created the stack.
-     * @return the base stream builder
-     */
-    public @NonNull SingleTransactionRecordBuilder baseStreamBuilder() {
-        return baseBuilder;
     }
 
     /**

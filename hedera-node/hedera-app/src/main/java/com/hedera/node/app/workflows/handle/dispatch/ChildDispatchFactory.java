@@ -41,7 +41,6 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
@@ -165,12 +164,13 @@ public class ChildDispatchFactory {
             @NonNull final PlatformState platformState,
             @NonNull final HederaFunctionality topLevelFunction,
             @NonNull final ThrottleAdviser throttleAdviser,
-            final Instant consensusNow) {
+            @NonNull final Instant consensusNow) {
         final var preHandleResult = preHandleChild(txBody, syntheticPayerId, config, readableStoreFactory);
         final var childVerifier = getKeyVerifier(callback);
         final var childTxnInfo = getTxnInfoFrom(txBody);
         final var childStack = SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer);
-        final var streamBuilder = initializedForChild(childStack.baseStreamBuilder(), childTxnInfo);
+        final var streamBuilder =
+                initializedForChild(childStack.getBaseBuilder(SingleTransactionRecordBuilder.class), childTxnInfo);
         return newChildDispatch(
                 streamBuilder,
                 childTxnInfo,
@@ -234,7 +234,6 @@ public class ChildDispatchFactory {
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
-        final var recordBuilders = new RecordBuildersImpl(childStack);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,
@@ -256,7 +255,6 @@ public class ChildDispatchFactory {
                 dispatcher,
                 recordCache,
                 networkInfo,
-                recordBuilders,
                 this,
                 dispatchProcessor,
                 throttleAdviser);

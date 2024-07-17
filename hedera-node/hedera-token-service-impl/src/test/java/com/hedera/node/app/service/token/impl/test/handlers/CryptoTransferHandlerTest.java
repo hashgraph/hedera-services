@@ -104,7 +104,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     public void setUp() {
         super.setUp();
         subject = new CryptoTransferHandler(validator);
-        given(recordBuilders.getOrCreate(CryptoTransferRecordBuilder.class)).willReturn(transferRecordBuilder);
+        given(stack.getBaseBuilder(CryptoTransferRecordBuilder.class)).willReturn(transferRecordBuilder);
     }
 
     @Test

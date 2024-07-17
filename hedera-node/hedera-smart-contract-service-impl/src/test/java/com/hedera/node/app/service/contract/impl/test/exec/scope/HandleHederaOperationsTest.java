@@ -70,7 +70,6 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -94,9 +93,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class HandleHederaOperationsTest {
-    @Mock
-    private HandleContext.SavepointStack savepointStack;
-
     @Mock
     private TokenServiceApi tokenServiceApi;
 
@@ -134,7 +130,7 @@ class HandleHederaOperationsTest {
     private EntityNumGenerator entityNumGenerator;
 
     @Mock
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
     private HandleHederaOperations subject;
 
@@ -206,21 +202,21 @@ class HandleHederaOperationsTest {
 
     @Test
     void createsNewSavepointWhenBeginningScope() {
-        given(context.savepointStack()).willReturn(savepointStack);
+        given(context.savepointStack()).willReturn(stack);
 
         final var nestedScope = subject.begin();
 
         assertSame(subject, nestedScope);
-        verify(savepointStack).createSavepoint();
+        verify(stack).createSavepoint();
     }
 
     @Test
     void rollsBackSavepointWhenReverting() {
-        given(context.savepointStack()).willReturn(savepointStack);
+        given(context.savepointStack()).willReturn(stack);
 
         subject.revert();
 
-        verify(savepointStack).rollback();
+        verify(stack).rollback();
     }
 
     @Test
@@ -239,11 +235,11 @@ class HandleHederaOperationsTest {
 
     @Test
     void commitIsNoopUntilSavepointExposesIt() {
-        given(context.savepointStack()).willReturn(savepointStack);
+        given(context.savepointStack()).willReturn(stack);
 
         subject.commit();
 
-        verify(savepointStack).commit();
+        verify(stack).commit();
     }
 
     @Test
@@ -514,7 +510,7 @@ class HandleHederaOperationsTest {
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status()).willReturn(SUCCESS);
         given(context.payer()).willReturn(A_NEW_ACCOUNT_ID);
-        given(context.recordBuilders()).willReturn(recordBuilders);
+        given(context.savepointStack()).willReturn(stack);
 
         subject.createContract(666L, someBody, CANONICAL_ALIAS);
 
@@ -639,8 +635,8 @@ class HandleHederaOperationsTest {
     void externalizeHollowAccountMerge() {
         // given
         var contractId = ContractID.newBuilder().contractNum(1001).build();
-        given(context.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class))
+        given(context.savepointStack()).willReturn(stack);
+        given(stack.addRemovableChildRecordBuilder(ContractCreateRecordBuilder.class))
                 .willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.contractID(contractId)).willReturn(contractCreateRecordBuilder);
         given(contractCreateRecordBuilder.status(any())).willReturn(contractCreateRecordBuilder);

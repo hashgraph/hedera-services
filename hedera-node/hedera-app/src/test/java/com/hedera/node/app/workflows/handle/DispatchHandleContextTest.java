@@ -85,7 +85,6 @@ import com.hedera.node.app.spi.fixtures.Scenarios;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
@@ -251,9 +250,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     @Mock
     private VerificationAssistant assistant;
 
-    @Mock
-    private RecordBuilders recordBuilders;
-
     private ServiceApiFactory apiFactory;
     private ReadableStoreFactory readableStoreFactory;
     private StoreFactoryImpl storeFactory;
@@ -381,7 +377,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             dispatcher,
             recordCache,
             networkInfo,
-            recordBuilders,
             childDispatchFactory,
             dispatchProcessor,
             throttleAdviser
@@ -416,7 +411,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         assertThat(subject.authorizer()).isEqualTo(authorizer);
         assertThat(subject.storeFactory()).isEqualTo(storeFactory);
         assertThat(subject.entityNumGenerator()).isEqualTo(entityNumGenerator);
-        assertThat(subject.recordBuilders()).isEqualTo(recordBuilders);
         assertThat(subject.keyVerifier()).isEqualTo(verifier);
     }
 
@@ -765,7 +759,6 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 dispatcher,
                 recordCache,
                 networkInfo,
-                recordBuilders,
                 childDispatchFactory,
                 dispatchProcessor,
                 throttleAdviser);

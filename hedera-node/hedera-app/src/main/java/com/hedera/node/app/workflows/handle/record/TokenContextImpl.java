@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
-import static com.hedera.node.app.records.RecordBuildersImpl.castBuilder;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.workflows.handle.stack.SavepointStackImpl.castBuilder;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.records.BlockRecordManager;
@@ -90,7 +90,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @Override
     public <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
-        return castBuilder(stack.baseStreamBuilder(), recordBuilderClass);
+        return stack.getBaseBuilder(recordBuilderClass);
     }
 
     @Override

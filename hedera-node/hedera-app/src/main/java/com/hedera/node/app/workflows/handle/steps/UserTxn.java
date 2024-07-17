@@ -29,7 +29,6 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.DefaultKeyVerifier;
@@ -179,7 +178,6 @@ public record UserTxn(
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
-        final var recordBuilders = new RecordBuildersImpl(stack);
         final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
@@ -202,7 +200,6 @@ public record UserTxn(
                 dispatcher,
                 recordCache,
                 networkInfo,
-                recordBuilders,
                 childDispatchFactory,
                 dispatchProcessor,
                 throttleAdvisor);
@@ -235,6 +232,6 @@ public record UserTxn(
      * @return the base stream builder
      */
     public SingleTransactionRecordBuilder baseBuilder() {
-        return stack.baseStreamBuilder();
+        return stack.getBaseBuilder(SingleTransactionRecordBuilder.class);
     }
 }

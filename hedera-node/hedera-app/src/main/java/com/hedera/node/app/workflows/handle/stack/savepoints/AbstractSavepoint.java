@@ -38,7 +38,6 @@ import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Implementation support for a {@link Savepoint}. The sole abstract method is {@link #commitBuilders()}, which
@@ -133,21 +132,17 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
     abstract void commitBuilders();
 
     private void rollback(@NonNull final List<SingleTransactionRecordBuilder> builders) {
-        var removedBuilder = false;
-        for (int i = 0; i < builders.size(); i++) {
-            final var builder = builders.get(i);
+        var iterator = builders.listIterator();
+        while (iterator.hasNext()) {
+            final var builder = iterator.next();
             if (builder.reversingBehavior() == REVERSIBLE) {
                 builder.nullOutSideEffectFields();
                 if (SUCCESSES.contains(builder.status())) {
                     builder.status(REVERTED_SUCCESS);
                 }
             } else if (builder.reversingBehavior() == REMOVABLE) {
-                builders.set(i, null);
-                removedBuilder = true;
+                iterator.remove();
             }
-        }
-        if (removedBuilder) {
-            builders.removeIf(Objects::isNull);
         }
     }
 }

@@ -219,15 +219,6 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
     }
 
     /**
-     * Sets the initial supply of the token.
-     *
-     * @param initialSupply the initial supply
-     */
-    public void setInitialSupply(final long initialSupply) {
-        this.initialSupply = initialSupply;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override

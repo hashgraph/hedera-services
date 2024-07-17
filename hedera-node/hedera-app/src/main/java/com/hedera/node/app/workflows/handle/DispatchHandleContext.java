@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
+import static com.hedera.node.app.workflows.handle.stack.SavepointStackImpl.castBuilder;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
@@ -35,7 +36,6 @@ import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
-import com.hedera.node.app.records.RecordBuildersImpl;
 import com.hedera.node.app.signature.AppKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.authorization.SystemPrivilege;
@@ -48,7 +48,6 @@ import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
@@ -107,7 +106,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final TransactionDispatcher dispatcher;
     private final RecordCache recordCache;
     private final NetworkInfo networkInfo;
-    private final RecordBuilders recordBuilders;
     private final ChildDispatchFactory childDispatchFactory;
     private final DispatchProcessor dispatchProcessor;
     private final ThrottleAdviser throttleAdviser;
@@ -134,7 +132,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final RecordCache recordCache,
             @NonNull final NetworkInfo networkInfo,
-            @NonNull final RecordBuilders recordBuilders,
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final ThrottleAdviser throttleAdviser) {
@@ -163,7 +160,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.dispatcher = requireNonNull(dispatcher);
         this.recordCache = requireNonNull(recordCache);
         this.networkInfo = requireNonNull(networkInfo);
-        this.recordBuilders = requireNonNull(recordBuilders);
     }
 
     @NonNull
@@ -316,12 +312,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public NetworkInfo networkInfo() {
         return networkInfo;
-    }
-
-    @NonNull
-    @Override
-    public RecordBuilders recordBuilders() {
-        return recordBuilders;
     }
 
     @Override
@@ -508,6 +498,6 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             }
             paidStakingRewards.forEach(aa -> dispatchPaidRewards.put(aa.accountIDOrThrow(), aa.amount()));
         }
-        return RecordBuildersImpl.castBuilder(childDispatch.recordBuilder(), recordBuilderClass);
+        return castBuilder(childDispatch.recordBuilder(), recordBuilderClass);
     }
 }

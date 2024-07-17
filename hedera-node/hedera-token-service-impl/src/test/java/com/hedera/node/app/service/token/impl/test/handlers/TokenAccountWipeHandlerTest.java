@@ -72,7 +72,6 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.ParityTestBase;
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenAccountWipeRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -990,7 +989,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
         private HandleContext mockContext(TransactionBody txn) {
             final var context = mock(HandleContext.class);
-            final var recordBuilders = mock(RecordBuilders.class);
+            final var stack = mock(HandleContext.SavepointStack.class);
 
             given(context.body()).willReturn(txn);
 
@@ -1004,9 +1003,9 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
 
             given(context.expiryValidator()).willReturn(validator);
 
-            lenient().when(context.recordBuilders()).thenReturn(recordBuilders);
+            lenient().when(context.savepointStack()).thenReturn(stack);
             lenient()
-                    .when(recordBuilders.getOrCreate(TokenAccountWipeRecordBuilder.class))
+                    .when(stack.getBaseBuilder(TokenAccountWipeRecordBuilder.class))
                     .thenReturn(recordBuilder);
 
             return context;

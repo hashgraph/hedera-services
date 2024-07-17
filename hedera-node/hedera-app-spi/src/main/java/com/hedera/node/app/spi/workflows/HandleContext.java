@@ -30,7 +30,6 @@ import com.hedera.node.app.spi.fees.ResourcePriceCalculator;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
 import com.hedera.node.app.spi.key.KeyVerifier;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
@@ -221,14 +220,6 @@ public interface HandleContext {
      */
     @NonNull
     NetworkInfo networkInfo();
-
-    /**
-     * Returns the current {@link RecordBuilders} to manage record builders.
-     *
-     * @return the {@link RecordBuilders}
-     */
-    @NonNull
-    RecordBuilders recordBuilders();
 
     /**
      * Dispatches the fee calculation for a child transaction (that might then be dispatched).
@@ -506,6 +497,45 @@ public interface HandleContext {
          * @return the depth of the savepoint stack
          */
         int depth();
+
+        /**
+         * Returns a record builder for the given record builder subtype.
+         *
+         * @param recordBuilderClass the record type
+         * @param <T> the record type
+         * @return a builder for the given record type
+         * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+         * @throws IllegalArgumentException if the record builder type is unknown to the app
+         */
+        @NonNull
+        <T> T getBaseBuilder(@NonNull Class<T> recordBuilderClass);
+
+        /**
+         * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent
+         * context) is rolled back, all child record builders will be reverted.
+         *
+         * @param recordBuilderClass the record type
+         * @return the new child record builder
+         * @param <T> the record type
+         * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+         * @throws IllegalArgumentException if the record builder type is unknown to the app
+         */
+        @NonNull
+        <T> T addChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+
+        /**
+         * Adds a removable child record builder to the list of record builders. Unlike a regular child record builder,
+         * a removable child record builder is removed, if the current {@link HandleContext} (or any parent context) is
+         * rolled back.
+         *
+         * @param recordBuilderClass the record type
+         * @return the new child record builder
+         * @param <T> the record type
+         * @throws NullPointerException if {@code recordBuilderClass} is {@code null}
+         * @throws IllegalArgumentException if the record builder type is unknown to the app
+         */
+        @NonNull
+        <T> T addRemovableChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
     }
 
     static void throwIfMissingPayerId(@NonNull final TransactionBody body) {

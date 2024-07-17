@@ -81,7 +81,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         givenTxn();
         given(handleContext.body()).willReturn(txn);
-        given(recordBuilders.getOrCreate(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+        given(stack.getBaseBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
         givenAutoCreationDispatchEffects(payerId);
 
         transferContext = new TransferContextImpl(handleContext);

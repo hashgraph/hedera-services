@@ -39,7 +39,6 @@ import com.hedera.node.app.service.schedule.impl.ScheduleTestBase;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.signature.impl.SignatureVerificationImpl;
 import com.hedera.node.app.spi.key.KeyVerifier;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.store.StoreFactory;
@@ -186,9 +185,9 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
                         any(TransactionCategory.class)))
                 .willReturn(new SingleTransactionRecordBuilderImpl());
 
-        final var mockRecordBuilders = mock(RecordBuilders.class);
-        given(mockContext.recordBuilders()).willReturn(mockRecordBuilders);
-        given(mockRecordBuilders.getOrCreate(ScheduleRecordBuilder.class))
+        final var mockStack = mock(HandleContext.SavepointStack.class);
+        given(mockContext.savepointStack()).willReturn(mockStack);
+        given(mockStack.getBaseBuilder(ScheduleRecordBuilder.class))
                 .willReturn(new SingleTransactionRecordBuilderImpl());
     }
 
