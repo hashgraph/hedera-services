@@ -24,7 +24,7 @@ public interface StoreMetricsService {
     enum StoreType {
         TOPIC,
         ACCOUNT,
-        AIRDROPS,
+        AIRDROP,
         NFT,
         TOKEN,
         TOKEN_RELATION,
