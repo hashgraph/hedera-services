@@ -16,9 +16,13 @@
 
 package com.hedera.services.bdd.suites.hip993;
 
+import static com.hedera.services.bdd.junit.hedera.NodeSelector.byNodeId;
+import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.guaranteedExtantDir;
+import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.operations.transactions.TouchBalancesOperation.touchBalanceOf;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.triggerAndCloseAtLeastOneFile;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
@@ -55,6 +59,9 @@ import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.support.StreamDataListener;
+import com.hedera.services.bdd.junit.support.TestLifecycle;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
@@ -75,6 +82,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
@@ -95,7 +104,26 @@ import org.junit.jupiter.api.DynamicTest;
  * their originating savepoint is rolled back.
  */
 @DisplayName("given HIP-993 natural dispatch ordering")
+@HapiTestLifecycle
 public class NaturalDispatchOrderingTest {
+    private static Runnable unsubscribe;
+
+    // Ensure the record stream monitor is watching the streams directory to stabilize in CI
+    // (FUTURE) Make record stream access more resilient in CI so this isn't needed
+    @BeforeAll
+    static void setUp(@NonNull final TestLifecycle testLifecycle) {
+        testLifecycle.doAdhoc(withOpContext((spec, opLog) -> {
+            unsubscribe = RECORD_STREAM_ACCESS.subscribe(
+                    guaranteedExtantDir(spec.streamsLoc(byNodeId(0))), new StreamDataListener() {});
+            triggerAndCloseAtLeastOneFile(spec);
+        }));
+    }
+
+    @AfterAll
+    static void cleanUp() {
+        unsubscribe.run();
+    }
+
     /**
      * Tests the {@link TransactionCategory#USER} + {@link ReversingBehavior#REVERSIBLE} combination for
      * both commit and rollback via,
