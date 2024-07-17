@@ -32,8 +32,8 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUti
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

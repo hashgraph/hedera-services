@@ -235,6 +235,8 @@ public class HapiUtils {
             case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
             case TOKEN_REJECT -> HederaFunctionality.TOKEN_REJECT;
             case TOKEN_AIRDROP -> HederaFunctionality.TOKEN_AIRDROP;
+            case TOKEN_CANCEL_AIRDROP -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
+            case TOKEN_CLAIM_AIRDROP -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
