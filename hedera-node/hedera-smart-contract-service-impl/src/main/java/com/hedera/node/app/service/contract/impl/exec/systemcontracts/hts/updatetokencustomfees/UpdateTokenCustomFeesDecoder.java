@@ -87,38 +87,42 @@ public class UpdateTokenCustomFeesDecoder {
     private TokenFeeScheduleUpdateTransactionBody updateTokenCustomFees(
             @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter, final boolean isFungible) {
         final Address tokenAddress = call.get(TOKEN_ADDRESS);
-
+        final var tokenId = ConversionUtils.asTokenId(tokenAddress);
         return TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .tokenId(ConversionUtils.asTokenId(tokenAddress))
+                .tokenId(tokenId)
                 .customFees(
                         isFungible
-                                ? customFungibleFees(call, addressIdConverter)
-                                : customNonFungibleFees(call, addressIdConverter))
+                                ? customFungibleFees(call, addressIdConverter, tokenId)
+                                : customNonFungibleFees(call, addressIdConverter, tokenId))
                 .build();
     }
 
     private List<CustomFee> customFungibleFees(
-            @NonNull Tuple call, @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull Tuple call, @NonNull final AddressIdConverter addressIdConverter, @NonNull final TokenID tokenId) {
         return Stream.concat(
-                        decodeFixedFees(call.get(FIXED_FEE), addressIdConverter),
+                        decodeFixedFees(call.get(FIXED_FEE), addressIdConverter, tokenId),
                         decodeFractionalFees(call.get(FRACTIONAL_FEE), addressIdConverter))
                 .toList();
     }
 
     private List<CustomFee> customNonFungibleFees(
-            @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final Tuple call,
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final TokenID tokenId) {
         return Stream.concat(
-                        decodeFixedFees(call.get(FIXED_FEE), addressIdConverter),
+                        decodeFixedFees(call.get(FIXED_FEE), addressIdConverter, tokenId),
                         decodeRoyaltyFees(call.get(ROYALTY_FEE), addressIdConverter))
                 .toList();
     }
 
     private Stream<CustomFee> decodeFixedFees(
-            @NonNull final Tuple[] fixedFee, @NonNull final AddressIdConverter addressIdConverter) {
+            @NonNull final Tuple[] fixedFee,
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final TokenID tokenId) {
         return Arrays.stream(fixedFee).map(fee -> CustomFee.newBuilder()
                 .fixedFee(FixedFee.newBuilder()
                         .amount(fee.get(FIXED_FEE_AMOUNT))
-                        .denominatingTokenId(getIfPresent(fee.get(FIXED_FEE_TOKEN_ID)))
+                        .denominatingTokenId(determineDenominatingToken(fee, tokenId))
                         .build())
                 .feeCollectorAccountId(addressIdConverter.convert(fee.get(FIXED_FEE_FEE_COLLECTOR)))
                 .build());
@@ -150,15 +154,25 @@ public class UpdateTokenCustomFeesDecoder {
                                 .build())
                         .fallbackFee(FixedFee.newBuilder()
                                 .amount(fee.get(ROYALTY_FEE_AMOUNT))
-                                .denominatingTokenId(getIfPresent(fee.get(ROYALTY_FEE_TOKEN_ID)))
+                                .denominatingTokenId(getIfPresent(
+                                        fee.get(ROYALTY_FEE_TOKEN_ID), fee.get(ROYALTY_FEE_USE_HBARS_FOR_PAYMENT)))
                                 .build())
                         .build())
                 .feeCollectorAccountId(addressIdConverter.convert(fee.get(ROYALTY_FEE_FEE_COLLECTOR)))
                 .build());
     }
 
-    private TokenID getIfPresent(Address address) {
-        final var token = ConversionUtils.asTokenId(address);
-        return !token.equals(TokenID.DEFAULT) ? token : null;
+    // In the solidity structure for Fixed Fees we have the property `bool useCurrentTokenForPayment` that is not
+    // present in the protobuf version.
+    // In order to determine the denominating token we need to check if the property is present.
+    private TokenID determineDenominatingToken(@NonNull final Tuple fee, @NonNull final TokenID tokenId) {
+        final boolean useCurrentToken = fee.get(FIXED_FEE_USE_CURRENT_TOKEN_FOR_PAYMENT);
+        return useCurrentToken
+                ? tokenId
+                : getIfPresent(fee.get(FIXED_FEE_TOKEN_ID), fee.get(FIXED_FEE_USE_HBARS_FOR_PAYMENT));
+    }
+
+    private TokenID getIfPresent(@NonNull final Address address, final boolean useHbarsForPayment) {
+        return useHbarsForPayment ? null : ConversionUtils.asTokenId(address);
     }
 }
