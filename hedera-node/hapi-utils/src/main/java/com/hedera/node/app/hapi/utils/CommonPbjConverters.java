@@ -327,6 +327,8 @@ public class CommonPbjConverters {
             case UtilPrng -> HederaFunctionality.UTIL_PRNG;
             case TokenReject -> HederaFunctionality.TOKEN_REJECT;
             case TokenAirdrop -> HederaFunctionality.TOKEN_AIRDROP;
+            case TokenCancelAirdrop -> HederaFunctionality.TOKEN_CANCEL_AIRDROP;
+            case TokenClaimAirdrop -> HederaFunctionality.TOKEN_CLAIM_AIRDROP;
             case UNRECOGNIZED -> throw new RuntimeException("Unknown function UNRECOGNIZED");
         };
     }
@@ -686,6 +688,11 @@ public class CommonPbjConverters {
             case INVALID_IPV4_ADDRESS -> ResponseCodeEnum.INVALID_IPV4_ADDRESS;
             case EMPTY_TOKEN_REFERENCE_LIST -> ResponseCodeEnum.EMPTY_TOKEN_REFERENCE_LIST;
             case UPDATE_NODE_ACCOUNT_NOT_ALLOWED -> ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
+            case PENDING_NFT_AIRDROP_ALREADY_EXISTS -> ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
+            case ACCOUNT_HAS_PENDING_AIRDROPS -> ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
+            case EMPTY_PENDING_AIRDROP_ID_LIST -> ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
+            case PENDING_AIRDROP_ID_REPEATED -> ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
+            case MAX_PENDING_AIRDROP_ID_EXCEEDED -> ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
