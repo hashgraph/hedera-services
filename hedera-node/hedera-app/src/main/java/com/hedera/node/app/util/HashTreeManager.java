@@ -18,166 +18,94 @@ package com.hedera.node.app.util;
 
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This class is responsible for managing the streaming hashes of a Tree.
+ * It is used to calculate the root hash of the Tree.
+ */
 public class HashTreeManager<T> {
+    private final String HASHING_ALGO = "SHA-384"; // The hashing algorithm used
+    private List<Bytes> hashList = new ArrayList<>(); // The list of hashes in the tree
+    private final Codec<T> codec; // The codec used to encode and decode the elements in the tree
+    private final MessageDigest digest; // The message digest
 
-    public HashTreeManager(Codec<T> codec) {
+    /**
+     * Constructor for the HashTreeManager class.
+     * @param codec The codec used to encode and decode the elements in the tree
+     * @throws NoSuchAlgorithmException If the hashing algorithm is not found
+     */
+    public HashTreeManager(Codec<T> codec) throws NoSuchAlgorithmException {
         this.codec = codec;
+        this.digest = MessageDigest.getInstance(HASHING_ALGO);
     }
 
-    private final Codec<T> codec;
-    List<Bytes> inputsCompleteSubtreeHashes;
-    List<Bytes> outputsCompleteSubtreeHashes;
-    private List<Bytes> hashList = new ArrayList<>();
-
-    private enum Alternator {
-        LEFT,
-        RIGHT
+    /** Add an element to the Tree
+     * @param element The element to add to the tree - This could just be a Block Item
+     */
+    public void addElement(T element) {
+        Bytes encodedElement = codec.toBytes(element); // Use the codec to encode the element
+        Bytes hashedElement = Bytes.wrap(digest.digest(encodedElement.toByteArray()));
+        hashList.add(hashedElement);
+        rebalanceTree();
     }
 
-    Alternator currentAlternate = Alternator.LEFT;
-
-    public void processNodes(List<T> elements) {
+    public void addElements(List<T> elements) throws NoSuchAlgorithmException {
         for (T element : elements) {
-            Bytes elementHash = hash(codec.toBytes(element));
-            hashList.add(elementHash);
+            Bytes encodedElement = codec.toBytes(element);
+            Bytes hashedElement = Bytes.wrap(digest.digest(encodedElement.toByteArray()));
+            hashList.add(hashedElement);
+        }
+        rebalanceTree();
+    }
 
-            if ((elements.indexOf(element) & 1) == 1) {
-                Bytes yHash = hashList.remove(hashList.size() - 1);
-                Bytes xHash = hashList.remove(hashList.size() - 1);
-                Bytes combinedHash = hash(yHash.append(xHash));
-                hashList.add(combinedHash);
+    private void rebalanceTree() {
+        while (hashList.size() > 1) {
+            if (hashList.size() % 2 != 0) {
+                hashList.add(hashList.get(hashList.size() - 1));
             }
+            List<Bytes> newHashList = new ArrayList<>();
+            for (int i = 0; i < hashList.size(); i += 2) {
+                Bytes x = hashList.get(i);
+                Bytes y = hashList.get(i + 1);
+                newHashList.add(hash(x.append(y), digest));
+            }
+            hashList = newHashList;
         }
     }
 
-    public Bytes calculateMerkleRootHash() {
-        Bytes merkleRootHash = hashList.get(hashList.size() - 1);
-        for (int i = hashList.size() - 2; i >= 0; i--) {
-            merkleRootHash = hash(hashList.get(i).append(merkleRootHash));
-        }
-        return merkleRootHash;
+    /** Hash the base bytes using the given message digest
+     * @param base The base bytes to hash
+     * @param digest The message digest to use
+     * @return The hashed bytes
+     */
+    public Bytes hash(Bytes base, MessageDigest digest) {
+        byte[] encodedHash = digest.digest(base.toByteArray());
+        return Bytes.wrap(encodedHash);
     }
 
-    public String calculateMerkleRootOnLeafNodes(List<String> elements) {
-        List<String> hashList = new ArrayList<>();
-
-        // Initial hashing of elements
-        for (String element : elements) {
-            System.out.println(
-                    "Writing element " + element + " to the stream, with Hash: " + sha384(element.toString()));
-            hashList.add(sha384(element).toString());
-
-            // Perform the double hashing operation
-            int i = hashList.size() - 1;
-            while (i % 2 != 0) {
-                i = i / 2;
-                String x = hashList.remove(i);
-                String y = hashList.remove(i);
-                System.out.println("Adding: " + i + "," + sha384(x + y));
-                hashList.add(i, sha384(x + y).toString());
-            }
+    public Bytes getTreeRoot() {
+        if (hashList.isEmpty()) {
+            return null;
         }
+        rebalanceTree();
+        return hashList.get(0); // The last remaining element is the tree root
+    }
 
-        // Calculate Merkle root hash
-        String merkleRootHash = hashList.get(hashList.size() - 1);
-        for (int i = hashList.size() - 2; i >= 0; i--) {
-            merkleRootHash = sha384(hashList.get(i) + merkleRootHash).toString();
+    public String getTreeRootAsString() {
+        Bytes treeRoot = getTreeRoot();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < treeRoot.length(); i++) {
+            byte b = treeRoot.getByte(i);
+            sb.append(String.format("%02x", b));
         }
-
-        System.out.println(merkleRootHash);
-        return merkleRootHash;
+        return sb.toString();
     }
 
     public void setHeader(Bytes bytes) {}
-
-    public void acceptItem(T item) {
-        boolean isForInputMerkleTree = isForInput(item);
-
-        List<Bytes> listToOperateOn = isForInputMerkleTree ? inputsCompleteSubtreeHashes : outputsCompleteSubtreeHashes;
-
-        // add the hash for the given block item
-        var serializedItem = codec.toBytes(item);
-        var hashedItem = hash(serializedItem);
-        listToOperateOn.add(hashedItem);
-
-        // if we're inserting a left node, do nothing; if right, compute the parent hash
-        if (currentAlternate == Alternator.LEFT) {
-            currentAlternate = Alternator.RIGHT;
-        } else {
-            var yHashToRemove = listToOperateOn.removeLast();
-            var xHashToRemove = listToOperateOn.removeLast();
-            var concatenated = xHashToRemove.append(yHashToRemove);
-            var newParentHash = hash(concatenated);
-            inputsCompleteSubtreeHashes.add(newParentHash);
-
-            currentAlternate = Alternator.LEFT;
-        }
-    }
-
-    public Bytes hash(Bytes bytes) {
-        return sha384(String.valueOf(bytes));
-    }
-
-    public Bytes sha384(String base) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-384");
-            byte[] encodedhash = digest.digest(base.getBytes(StandardCharsets.UTF_8));
-            return Bytes.wrap(encodedhash);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public boolean isForInput(T item) {
-        return false;
-    }
-
-    public void combineTreesAndComputeHash() {
-        // Todo: part of "closing" the block, implement in separate ticket
-    }
-
-    /* This method calculates the Merkle root hash of a list of elements provided by Output Merkle Tree. */
-    public String calculateMerkleRootOnOutputTree(List<OutputMerkleTreeData> elements) {
-
-        // Initial hashing of elements
-        for (OutputMerkleTreeData element : elements) {
-            System.out.println(
-                    "Writing element " + element + " to the stream, with Hash: " + sha384(element.toString()));
-            hashList.add(sha384(element.toString()));
-
-            // Perform the double hashing operation
-            int i = hashList.size() - 1;
-            while (i % 2 != 0) {
-                i = i / 2;
-                Bytes x = hashList.remove(i);
-                Bytes y = hashList.remove(i);
-                System.out.println("Adding: " + i + "," + sha384(String.valueOf(x.append(y))));
-                hashList.add(i, sha384(String.valueOf(x.append(y))));
-            }
-        }
-
-        // Calculate Merkle root hash
-        String merkleRootHash = String.valueOf(hashList.get(hashList.size() - 1));
-        for (int i = hashList.size() - 2; i >= 0; i--) {
-            merkleRootHash = sha384(hashList.get(i) + merkleRootHash).toString();
-        }
-
-        System.out.println(merkleRootHash);
-        return merkleRootHash;
-    }
-
-    private String bytesToHex(byte[] hash) {
-        StringBuffer hexString = new StringBuffer();
-        for (int i = 0; i < hash.length; i++) {
-            String hex = Integer.toHexString(0xff & hash[i]);
-            if (hex.length() == 1) hexString.append('0');
-            hexString.append(hex);
-        }
-        return hexString.toString();
-    }
+    // ----------------- part of "closing" the block, implement in separate ticket
+    public void combineTreesAndComputeHash() {}
 }
