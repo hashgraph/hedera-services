@@ -327,7 +327,7 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenAirdropTxn();
 
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                any(), eq(TokenAirdropRecordBuilder.class), eq(null), eq(payerId)))
+                        any(), eq(TokenAirdropRecordBuilder.class), eq(null), eq(payerId)))
                 .will((invocation) -> {
                     var pendingAirdropId = PendingAirdropId.newBuilder().build();
                     var pendingAirdropValue = PendingAirdropValue.newBuilder().build();

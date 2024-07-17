@@ -191,11 +191,11 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.dispatchRemovableChildTransaction(
-                any(),
-                eq(CryptoCreateRecordBuilder.class),
-                any(Predicate.class),
-                eq(payerId),
-                any(ExternalizedRecordCustomizer.class)))
+                        any(),
+                        eq(CryptoCreateRecordBuilder.class),
+                        any(Predicate.class),
+                        eq(payerId),
+                        any(ExternalizedRecordCustomizer.class)))
                 .willReturn(cryptoCreateRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1l, 2l, 3l));
         transferContext = new TransferContextImpl(handleContext);
@@ -210,7 +210,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
 
     protected void givenAutoCreationDispatchEffects(AccountID syntheticPayer) {
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(syntheticPayer)))
+                        any(), eq(CryptoCreateRecordBuilder.class), eq(null), eq(syntheticPayer)))
                 .will((invocation) -> {
                     final var copy = writableAccountStore
                             .get(hbarReceiverId)
@@ -269,11 +269,11 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(handleContext.dispatchRemovableChildTransaction(
-                any(),
-                eq(TokenAirdropRecordBuilder.class),
-                any(Predicate.class),
-                eq(payerId),
-                any(ExternalizedRecordCustomizer.class)))
+                        any(),
+                        eq(TokenAirdropRecordBuilder.class),
+                        any(Predicate.class),
+                        eq(payerId),
+                        any(ExternalizedRecordCustomizer.class)))
                 .willReturn(tokenAirdropRecordBuilder);
         given(handleContext.dispatchComputeFees(any(), any(), any())).willReturn(new Fees(1L, 2L, 3L));
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
