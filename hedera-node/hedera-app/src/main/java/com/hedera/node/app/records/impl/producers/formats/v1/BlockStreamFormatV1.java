@@ -21,6 +21,7 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.hapi.block.stream.EventMetadata;
 import com.hedera.hapi.block.stream.FilteredBlockItem;
+import com.hedera.hapi.block.stream.input.StateSignatureSystemTransaction;
 import com.hedera.hapi.block.stream.input.SystemTransaction;
 import com.hedera.hapi.block.stream.output.CallContractOutput;
 import com.hedera.hapi.block.stream.output.CreateContractOutput;
@@ -38,8 +39,17 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.records.impl.producers.BlockStreamFormat;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.crypto.DigestType;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
+import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
+/**
+ * A block stream format that uses the v1 format.
+ */
 public final class BlockStreamFormatV1 implements BlockStreamFormat {
 
     public static final int VERSION_8 = 8;
@@ -50,6 +60,37 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
         // prohibit instantiation
     }
 
+    /** {@inheritDoc} */
+    @NonNull
+    public Bytes computeNewRunningHash(
+            @NonNull final MessageDigest messageDigest,
+            @NonNull final Bytes startRunningHash,
+            @NonNull final Bytes serializedItem) {
+
+        byte[] previousHash = startRunningHash.toByteArray();
+
+        // Hash the block item
+        serializedItem.writeTo(messageDigest);
+        final byte[] serializedItemHash = messageDigest.digest();
+
+        // now hash the previous hash and the item hash
+        messageDigest.update(previousHash);
+        messageDigest.update(serializedItemHash);
+        previousHash = messageDigest.digest();
+        return Bytes.wrap(previousHash);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @NonNull
+    public MessageDigest getMessageDigest() {
+        try {
+            return MessageDigest.getInstance(DigestType.SHA_384.algorithmName());
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public Bytes serializeBlockItem(@NonNull final BlockItem blockItem) {
         return BlockItem.PROTOBUF.toBytes(blockItem);
@@ -58,7 +99,8 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
     /** {@inheritDoc} */
     @Override
     public Bytes serializeBlockHeader(@NonNull final BlockHeader blockHeader) {
-        return null;
+        BlockItem blockItem = BlockItem.newBuilder().header(blockHeader).build();
+        return serializeBlockItem(blockItem);
     }
 
     /** {@inheritDoc} */
@@ -69,8 +111,32 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
 
     /** {@inheritDoc} */
     @Override
-    public Bytes serializeSystemTransaction(@NonNull final SystemTransaction systemTransaction) {
-        return null;
+    public Bytes serializeSystemTransaction(@NonNull final ConsensusTransaction systemTransaction) {
+        var systemTxnBuilder = SystemTransaction.newBuilder();
+
+        switch (systemTransaction) {
+            case StateSignatureTransaction stateSignatureTransaction -> {
+                var stateSig = new byte[48];
+                var stateHash = new byte[48];
+                long round = 0;
+                final byte[] bytes = new byte[48];
+                new SecureRandom().nextBytes(bytes);
+                systemTxnBuilder.stateSignature(StateSignatureSystemTransaction.newBuilder()
+                        .stateSignature(Bytes.wrap(stateSig))
+                        .stateHash(Bytes.wrap(stateHash))
+                        .epochHash(Bytes.wrap(bytes))
+                        .round(round));
+            }
+            default -> {
+                // The may be a new ConsensusTransaction being produced that is unhandled and needs to be
+                //  added to this switch.
+                throw new RuntimeException(
+                        String.format("Unhandled ConsensusTransaction type: %s", systemTransaction.getClass()));
+            }
+        }
+
+        return serializeBlockItem(
+                BlockItem.newBuilder().systemTransaction(systemTxnBuilder).build());
     }
 
     /** {@inheritDoc} */
@@ -128,80 +194,6 @@ public final class BlockStreamFormatV1 implements BlockStreamFormat {
                 // TODO: We need to surface this from services.
                 //  .congestionPricingMultiplier(transactionRecord.congestionPricingMultiplier())
                 .build();
-    }
-
-    @NonNull
-    private TransactionOutput extractTransactionOutput(@NonNull final SingleTransactionRecord item) {
-        final var builder = TransactionOutput.newBuilder();
-
-        // This is never going to work because body is deprecated.
-        // What we really want here is the TransactionBody. Is there a place we can get it from the
-        // SingleTransactionRecord?
-
-        // We can't always get the transaction type and use that to determine the transaction output. For example,
-        // synthetic transactions from genesis piggyback on transactions.
-
-        //        var body = item.transaction().body();
-        //        if (body == null && item.transactionRecord().memo().equals("End of staking period calculation
-        // record")) {
-        //            // TODO: Skip this one for now till I figure out how we want to handle it.
-        //            return builder.build();
-        //        }
-        // One case where it appears to be empty is when we have a transactionRecord
-
-        // item.transactionRecord().body().kind()
-        //        var body = item.transaction().bodyOrThrow();
-        switch (item.transactionOutputs().transactionBodyType()) {
-            case UNSET -> {} // NOOP
-            case CONTRACT_CALL -> builder.contractCall(buildContractCallOutput(item));
-            case CONTRACT_CREATE_INSTANCE -> builder.contractCreate(buildContractCreateOutput(item));
-            case CONTRACT_UPDATE_INSTANCE -> {} // NOOP
-            case CRYPTO_ADD_LIVE_HASH -> {} // NOOP
-            case CRYPTO_CREATE_ACCOUNT -> {} // NOOP
-            case CRYPTO_DELETE -> {} // NOOP
-            case CRYPTO_DELETE_LIVE_HASH -> {} // NOOP
-            case CRYPTO_TRANSFER -> builder.cryptoTransfer(buildCryptoTransferOutput(item));
-            case CRYPTO_UPDATE_ACCOUNT -> {} // NOOP
-            case FILE_APPEND -> {} // NOOP
-            case FILE_CREATE -> {} // NOOP
-            case FILE_DELETE -> {} // NOOP
-            case FILE_UPDATE -> {} // NOOP
-            case SYSTEM_DELETE -> {} // NOOP
-            case SYSTEM_UNDELETE -> {} // NOOP
-            case CONTRACT_DELETE_INSTANCE -> {} // NOOP
-            case FREEZE -> {} // NOOP
-            case CONSENSUS_CREATE_TOPIC -> {} // NOOP
-            case CONSENSUS_UPDATE_TOPIC -> {} // NOOP
-            case CONSENSUS_DELETE_TOPIC -> {} // NOOP
-            case CONSENSUS_SUBMIT_MESSAGE -> builder.submitMessage(buildConsensusSubmitMessageOutput(item));
-            case UNCHECKED_SUBMIT -> {} // NOOP
-            case TOKEN_CREATION -> {} // NOOP
-            case TOKEN_FREEZE -> {} // NOOP
-            case TOKEN_UNFREEZE -> {} // NOOP
-            case TOKEN_GRANT_KYC -> {} // NOOP
-            case TOKEN_REVOKE_KYC -> {} // NOOP
-            case TOKEN_DELETION -> {} // NOOP
-            case TOKEN_UPDATE -> {} // NOOP
-            case TOKEN_MINT -> {} // NOOP
-            case TOKEN_BURN -> {} // NOOP
-            case TOKEN_WIPE -> {} // NOOP
-            case TOKEN_ASSOCIATE -> {} // NOOP
-            case TOKEN_DISSOCIATE -> {} // NOOP
-            case SCHEDULE_CREATE -> builder.createSchedule(buildScheduleCreateOutput(item));
-            case SCHEDULE_DELETE -> {} // NOOP
-            case SCHEDULE_SIGN -> builder.signSchedule(buildScheduleSignOutput(item));
-            case TOKEN_FEE_SCHEDULE_UPDATE -> {} // NOOP
-            case TOKEN_PAUSE -> {} // NOOP
-            case TOKEN_UNPAUSE -> {} // NOOP
-            case CRYPTO_APPROVE_ALLOWANCE -> {} // NOOP
-            case CRYPTO_DELETE_ALLOWANCE -> {} // NOOP
-            case ETHEREUM_TRANSACTION -> builder.ethereumCall(buildEthereumTransactionOutput(item));
-            case NODE_STAKE_UPDATE -> {} // NOOP
-            case UTIL_PRNG -> builder.utilPrng(buildUtilPrngOutput(item));
-                // No default case, so we can get compiler warnings if we are missing one.
-        }
-
-        return builder.build();
     }
 
     @NonNull

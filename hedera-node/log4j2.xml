@@ -221,6 +221,9 @@
     <Logger name="com.hedera.services.queries.answering" level="debug" additivity="false">
       <AppenderRef ref="QueriesRollingFile"/>
     </Logger>
+    <Logger name="com.hedera.node.app.records.impl.BlockStreamManagerImpl" level="debug" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
 
     <Logger name="com.hedera.services.legacy" level="warn" additivity="false">
       <!-- <AppenderRef ref="Console"/> -->

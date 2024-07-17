@@ -21,13 +21,14 @@ import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.BlockProof;
 import com.hedera.hapi.block.stream.EventMetadata;
 import com.hedera.hapi.block.stream.FilteredBlockItem;
-import com.hedera.hapi.block.stream.input.SystemTransaction;
 import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.security.MessageDigest;
 
 /**
  * Defines API for computing running hashes, and converting {@link BlockItem}s into
@@ -38,13 +39,37 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface BlockStreamFormat {
 
+    /**
+     * Given the starting running hash and a stream of serialized {@link BlockItem}s, compute the new running hash by
+     * adding each {@link BlockItem}'s hash to the running hash one at a time.
+     *
+     * @param messageDigest the MessageDigest to use for computing the new running hash. This is an optimization to
+     *                      reduce the amount of garbage created when a caller calls this method in a loop.
+     * @param startRunningHash the starting current running hash of all record stream items up to this point in time.
+     * @param serializedItem the intermediary format serialized {@link BlockItem} to add to the running hash
+     * @return the new running hash, or startRunningHash if there were no items to add
+     */
+    @NonNull
+    Bytes computeNewRunningHash(
+            @NonNull final MessageDigest messageDigest,
+            @NonNull final Bytes startRunningHash,
+            @NonNull final Bytes serializedItem);
+
+    /**
+     * Returns an instance of a non-thread safe MessageDigest that can be used to compute the hash of block items.
+     *
+     * @return a non-thread safe MessageDigest instance
+     */
+    @NonNull
+    MessageDigest getMessageDigest();
+
     Bytes serializeBlockItem(@NonNull final BlockItem blockItem);
 
     Bytes serializeBlockHeader(@NonNull final BlockHeader blockHeader);
 
     Bytes serializeEventMetadata(@NonNull final EventMetadata eventMetadata);
 
-    Bytes serializeSystemTransaction(@NonNull final SystemTransaction systemTransaction);
+    Bytes serializeSystemTransaction(@NonNull final ConsensusTransaction systemTransaction);
 
     Bytes serializeTransaction(@NonNull final Transaction transaction);
 

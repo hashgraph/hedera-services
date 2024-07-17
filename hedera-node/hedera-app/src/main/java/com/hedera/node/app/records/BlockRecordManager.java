@@ -18,12 +18,12 @@ package com.hedera.node.app.records;
 
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
-import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionStreamRecord;
 import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.stream.Stream;
 
 /**
  * {@link BlockRecordManager} is responsible for managing blocks and writing the block record stream. It manages:
@@ -91,15 +91,19 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * transactions are treated as though they were user transactions, calling
      * {@link #startUserTransaction(Instant, HederaState, PlatformState)} and this method.
      *
-     * @param recordStreamItems Stream of records produced while handling the user transaction
+     * @param singleTransactionStreamRecord Wrapper containing a stream of SingleTransactionRecord and/or a stream of BlockItem's
      * @param state             The state to read {@link BlockInfo} from
      */
-    void endUserTransaction(@NonNull Stream<SingleTransactionRecord> recordStreamItems, @NonNull HederaState state);
+    void endUserTransaction(
+            @NonNull SingleTransactionStreamRecord singleTransactionStreamRecord, @NonNull HederaState state);
+
+    /**
+     * Called at the start of a round. In the case of a BlockStreamManagerImpl, this will begin a new block.
+     */
+    void startRound();
 
     /**
      * Called at the end of a round to make sure the running hash and block information is up-to-date in state.
-     * This should be called <b>AFTER</b> the last end user transaction in that round has been passed to
-     * {@link #endUserTransaction(Stream, HederaState)}.
      *
      * @param state The state to update
      */
@@ -121,4 +125,12 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      */
     @NonNull
     Instant consTimeOfLastHandledTxn();
+
+    /**
+     * In the context of the {@link com.hedera.node.app.records.impl.BlockStreamManagerImpl} this will write the approriate
+     * BlockItem's to the stream. In the context of the {@link com.hedera.node.app.records.impl.BlockRecordManagerImpl}
+     * it is a no-op.
+     * @param platformTxn The system transaction to process
+     */
+    void processSystemTransaction(ConsensusTransaction platformTxn);
 }

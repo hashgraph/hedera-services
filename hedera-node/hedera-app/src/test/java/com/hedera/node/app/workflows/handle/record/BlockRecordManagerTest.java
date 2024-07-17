@@ -46,6 +46,7 @@ import com.hedera.node.app.records.impl.producers.StreamFileProducerSingleThread
 import com.hedera.node.app.records.impl.producers.formats.BlockRecordWriterFactoryImpl;
 import com.hedera.node.app.records.impl.producers.formats.v6.BlockRecordFormatV6;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
+import com.hedera.node.app.state.SingleTransactionStreamRecord;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
@@ -201,7 +202,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                         assertThat(blockRecordManager.getRunningHash().toHex())
                                 .isEqualTo(STARTING_RUNNING_HASH_OBJ.hash().toHex());
                     }
-                    blockRecordManager.endUserTransaction(Stream.of(record), hederaState);
+                    SingleTransactionStreamRecord recordStreamRecord =
+                            new SingleTransactionStreamRecord(Stream.of(record), null);
+                    blockRecordManager.endUserTransaction(recordStreamRecord, hederaState);
                     transactionCount++;
                     // pretend rounds happen every 20 transactions
                     if (transactionCount % 20 == 0) {
@@ -291,7 +294,9 @@ final class BlockRecordManagerTest extends AppTestBase {
                                 fromTimestamp(record.transactionRecord().consensusTimestamp()),
                                 hederaState,
                                 mock(PlatformState.class));
-                        blockRecordManager.endUserTransaction(Stream.of(record), hederaState);
+                        SingleTransactionStreamRecord recordStreamRecord =
+                                new SingleTransactionStreamRecord(Stream.of(record), null);
+                        blockRecordManager.endUserTransaction(recordStreamRecord, hederaState);
                         transactionCount++;
                         // collect hashes
                         runningHashNMinus3 = runningHashNMinus2;

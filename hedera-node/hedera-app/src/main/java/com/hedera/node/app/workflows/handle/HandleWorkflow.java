@@ -41,6 +41,7 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionStreamRecord;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -171,6 +172,8 @@ public class HandleWorkflow {
         final var userTransactionsHandled = new AtomicBoolean(false);
         logStartRound(round);
         cacheWarmer.warm(state, round);
+        // Start the round in the block record manager
+        blockRecordManager.startRound();
         for (final var event : round) {
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
@@ -192,6 +195,9 @@ public class HandleWorkflow {
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
                         handlePlatformTransaction(state, platformState, event, creator, platformTxn);
+                    } else {
+                        // We don't handle system transactions, but we need to write them to the block stream
+                        blockRecordManager.processSystemTransaction(platformTxn);
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -233,7 +239,7 @@ public class HandleWorkflow {
         final var consensusNow = txn.getConsensusTimestamp().minusNanos(1000 - 3L);
         final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var recordStream = execute(userTxn);
+        final SingleTransactionStreamRecord recordStream = execute(userTxn);
         blockRecordManager.endUserTransaction(recordStream, state);
 
         handleWorkflowMetrics.updateTransactionDuration(
@@ -294,7 +300,7 @@ public class HandleWorkflow {
      *
      * @return the stream of records
      */
-    private Stream<SingleTransactionRecord> execute(@NonNull final UserTxn userTxn) {
+    private SingleTransactionStreamRecord execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 skip(userTxn);
@@ -311,10 +317,12 @@ public class HandleWorkflow {
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
             }
-            return finalRecordStream(userTxn);
+            return new SingleTransactionStreamRecord(finalRecordStream(userTxn), null);
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
-            return failInvalidRecordStream(userTxn);
+            SingleTransactionStreamRecord streamRecord =
+                    new SingleTransactionStreamRecord(failInvalidRecordStream(userTxn), null);
+            return streamRecord;
         }
     }
 

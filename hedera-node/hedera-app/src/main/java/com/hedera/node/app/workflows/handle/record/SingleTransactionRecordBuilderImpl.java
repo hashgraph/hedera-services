@@ -326,10 +326,7 @@ public class SingleTransactionRecordBuilderImpl
         logEndTransactionRecord(transactionID, transactionRecord);
 
         return new SingleTransactionRecord(
-                transaction,
-                transactionRecord,
-                transactionSidecarRecords,
-                new TransactionOutputs(tokenType, transaction.body().data().kind()));
+                transaction, transactionRecord, transactionSidecarRecords, new TransactionOutputs(tokenType));
     }
 
     public void nullOutSideEffectFields() {

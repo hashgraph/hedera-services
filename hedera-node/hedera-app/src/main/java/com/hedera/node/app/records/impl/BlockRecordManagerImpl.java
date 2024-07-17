@@ -27,7 +27,7 @@ import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.BlockRecordService;
 import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
-import com.hedera.node.app.state.SingleTransactionRecord;
+import com.hedera.node.app.state.SingleTransactionStreamRecord;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -36,11 +36,11 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.stream.LinkedObjectStreamUtilities;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.spi.WritableSingletonStateBase;
+import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
-import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -244,15 +244,18 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
      * {@inheritDoc}
      */
     public void endUserTransaction(
-            @NonNull final Stream<SingleTransactionRecord> recordStreamItems, @NonNull final HederaState state) {
+            @NonNull final SingleTransactionStreamRecord streamRecord, @NonNull final HederaState state) {
         // check if we need to run event recovery before we can write any new records to stream
         if (!this.eventRecoveryCompleted) {
             // FUTURE create event recovery class and call it here. Should this be in startUserTransaction()?
             this.eventRecoveryCompleted = true;
         }
         // pass to record stream writer to handle
-        streamFileProducer.writeRecordStreamItems(recordStreamItems);
+        streamFileProducer.writeRecordStreamItems(streamRecord.singleTransactionRecordStream());
     }
+
+    @Override
+    public void startRound() {}
 
     /**
      * {@inheritDoc}
@@ -328,6 +331,9 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
                 ? Instant.ofEpochSecond(lastHandledTxn.seconds(), lastHandledTxn.nanos())
                 : Instant.EPOCH;
     }
+
+    @Override
+    public void processSystemTransaction(ConsensusTransaction platformTxn) {}
 
     @Override
     public @NonNull Timestamp currentBlockTimestamp() {

@@ -46,7 +46,7 @@ public record BlockRecordStreamConfig(
         @ConfigProperty(defaultValue = "2") @Min(1) @NodeProperty int logPeriod,
         @ConfigProperty(defaultValue = "5000") @Min(1) @NodeProperty int queueCapacity,
         @ConfigProperty(defaultValue = "256") @Min(1) @Max(1024) @NetworkProperty int sidecarMaxSizeMb,
-        @ConfigProperty(defaultValue = "6") @Min(1) @NetworkProperty int recordFileVersion,
+        @ConfigProperty(defaultValue = "8") @Min(1) @NetworkProperty int recordFileVersion,
         @ConfigProperty(defaultValue = "6") @Min(1) @NetworkProperty int signatureFileVersion,
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean logEveryTransaction,
         @ConfigProperty(defaultValue = "true") @NetworkProperty boolean compressFilesOnCreation, // NOT SURE

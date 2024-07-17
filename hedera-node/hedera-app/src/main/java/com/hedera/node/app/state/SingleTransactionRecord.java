@@ -20,7 +20,6 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.TransactionSidecarRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -43,6 +42,5 @@ public record SingleTransactionRecord(
     }
 
     // This is used by BlockStream, and is not serialized.
-    public record TransactionOutputs(
-            @Nullable TokenType tokenType, @NonNull TransactionBody.DataOneOfType transactionBodyType) {}
+    public record TransactionOutputs(@Nullable TokenType tokenType) {}
 }
