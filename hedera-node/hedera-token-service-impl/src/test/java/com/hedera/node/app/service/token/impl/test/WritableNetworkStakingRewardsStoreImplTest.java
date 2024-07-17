@@ -22,8 +22,8 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore;
-import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;

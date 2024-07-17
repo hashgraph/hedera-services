@@ -52,7 +52,7 @@ public class Issue2319Spec {
     private static final String NON_TREASURY_ADMIN_KEY = "nonTreasuryAdminKey";
     private static final String DEFAULT_ADMIN_KEY = "defaultAdminKey";
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_KEYS)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_KEYS)
     final Stream<DynamicTest> propsPermissionsSigReqsWaivedForAddressBookAdmin() {
         return hapiTest(
                 newKeyNamed(NON_TREASURY_KEY),
@@ -80,7 +80,7 @@ public class Issue2319Spec {
                 fileUpdate(API_PERMISSIONS).wacl(GENESIS));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_KEYS)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_KEYS)
     final Stream<DynamicTest> sysFileImmutabilityWaivedForMasterAndTreasury() {
         return defaultHapiSpec("sysFileImmutabilityWaivedForMasterAndTreasury")
                 .given(
@@ -104,7 +104,7 @@ public class Issue2319Spec {
                                 .signedBy(GENESIS));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_KEYS)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_KEYS)
     final Stream<DynamicTest> sysAccountSigReqsWaivedForMasterAndTreasury() {
         return defaultHapiSpec("SysAccountSigReqsWaivedForMasterAndTreasury")
                 .given(
@@ -138,7 +138,7 @@ public class Issue2319Spec {
                                 .signedBy(GENESIS));
     }
 
-    @LeakyHapiTest(SYSTEM_ACCOUNT_KEYS)
+    @LeakyHapiTest(requirement = SYSTEM_ACCOUNT_KEYS)
     final Stream<DynamicTest> sysFileSigReqsWaivedForMasterAndTreasury() {
         var validRates = new AtomicReference<ByteString>();
 

@@ -23,11 +23,13 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.extractTxnId;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.meta.ActionableContractCall;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -67,6 +69,9 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
     private List<ResponseCodeEnum> childStatuses;
 
     @Nullable
+    private List<ContractFnResultAsserts> resultsAsserts;
+
+    @Nullable
     private Function<HapiSpec, Tuple> tupleFn = null;
 
     private Optional<ObjLongConsumer<ResponseCodeEnum>> gasObserver = Optional.empty();
@@ -89,6 +94,14 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
         }
         childStatuses = List.of(Arrays.copyOfRange(statuses, 1, statuses.length));
         return hasKnownStatus(statuses[0]);
+    }
+
+    public HapiContractCall hasResults(@NonNull final ContractFnResultAsserts... resultAsserts) {
+        if (resultAsserts.length < 1) {
+            throw new IllegalArgumentException("There must be at least a parent result");
+        }
+        this.resultsAsserts = List.of(resultAsserts);
+        return this;
     }
 
     public static HapiContractCall fromDetails(String actionable) {
@@ -343,16 +356,29 @@ public class HapiContractCall extends HapiBaseCall<HapiContractCall> {
 
     @Override
     protected void assertExpectationsGiven(@NonNull final HapiSpec spec) throws Throwable {
-        if (childStatuses != null) {
+        if (childStatuses != null || resultsAsserts != null) {
             final var lastTxnId = extractTxnId(txnSubmitted);
-            allRunFor(
-                    spec,
-                    getTxnRecord(lastTxnId)
-                            .assertingNothingAboutHashes()
-                            .andAllChildRecords()
-                            .hasChildRecords(childStatuses.stream()
-                                    .map(status -> recordWith().status(status))
-                                    .toArray(TransactionRecordAsserts[]::new)));
+            if (childStatuses != null) {
+                allRunFor(
+                        spec,
+                        getTxnRecord(lastTxnId)
+                                .assertingNothingAboutHashes()
+                                .andAllChildRecords()
+                                .hasChildRecords(childStatuses.stream()
+                                        .map(status -> recordWith().status(status))
+                                        .toArray(TransactionRecordAsserts[]::new)));
+            } else {
+                final var childAsserts = requireNonNull(resultsAsserts).subList(1, resultsAsserts.size());
+                allRunFor(
+                        spec,
+                        getTxnRecord(lastTxnId)
+                                .assertingNothingAboutHashes()
+                                .andAllChildRecords()
+                                .hasPriority(recordWith().contractCallResult(resultsAsserts.getFirst()))
+                                .hasChildRecords(childAsserts.stream()
+                                        .map(result -> recordWith().contractCallResult(result))
+                                        .toArray(TransactionRecordAsserts[]::new)));
+            }
         }
     }
 

@@ -16,10 +16,9 @@
 
 package com.hedera.services.bdd.suites.schedule;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.keys.ControlForKey.forKey;
 import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
@@ -630,36 +629,32 @@ public class ScheduleSignSpecs {
                         getAccountBalance(SENDER).hasTinyBars(664L));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"ledger.schedule.txExpiryTimeSecs"})
     final Stream<DynamicTest> signFailsDueToDeletedExpiration() {
-        return propertyPreservingHapiSpec("SignFailsDueToDeletedExpiration")
-                .preserving("ledger.schedule.txExpiryTimeSecs")
-                .given(
-                        cryptoCreate(SENDER).balance(1L),
-                        cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true))
-                .when(
-                        overriding("ledger.schedule.txExpiryTimeSecs", "0"),
-                        scheduleCreate(TWO_SIG_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
-                                .alsoSigningWith(SENDER),
-                        getAccountBalance(RECEIVER).hasTinyBars(0L))
-                .then(
-                        sleepFor(1000),
-                        scheduleSign(TWO_SIG_XFER)
-                                .alsoSigningWith(RECEIVER)
-                                .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
-                                .hasKnownStatusFrom(INVALID_SCHEDULE_ID, SCHEDULE_PENDING_EXPIRATION),
-                        sleepFor(2000),
-                        scheduleSign(TWO_SIG_XFER)
-                                .alsoSigningWith(RECEIVER)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
-                                .hasKnownStatusFrom(INVALID_SCHEDULE_ID, SCHEDULE_PENDING_EXPIRATION),
-                        scheduleSign(TWO_SIG_XFER)
-                                .alsoSigningWith(RECEIVER)
-                                .fee(ONE_HUNDRED_HBARS)
-                                .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
-                                .hasKnownStatusFrom(INVALID_SCHEDULE_ID),
-                        getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
+        return hapiTest(
+                cryptoCreate(SENDER).balance(1L),
+                cryptoCreate(RECEIVER).balance(0L).receiverSigRequired(true),
+                overriding("ledger.schedule.txExpiryTimeSecs", "0"),
+                scheduleCreate(TWO_SIG_XFER, cryptoTransfer(tinyBarsFromTo(SENDER, RECEIVER, 1)))
+                        .alsoSigningWith(SENDER),
+                getAccountBalance(RECEIVER).hasTinyBars(0L),
+                sleepFor(1000),
+                scheduleSign(TWO_SIG_XFER)
+                        .alsoSigningWith(RECEIVER)
+                        .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
+                        .hasKnownStatusFrom(INVALID_SCHEDULE_ID, SCHEDULE_PENDING_EXPIRATION),
+                sleepFor(2000),
+                scheduleSign(TWO_SIG_XFER)
+                        .alsoSigningWith(RECEIVER)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
+                        .hasKnownStatusFrom(INVALID_SCHEDULE_ID, SCHEDULE_PENDING_EXPIRATION),
+                scheduleSign(TWO_SIG_XFER)
+                        .alsoSigningWith(RECEIVER)
+                        .fee(ONE_HUNDRED_HBARS)
+                        .hasPrecheckFrom(OK, INVALID_SCHEDULE_ID)
+                        .hasKnownStatusFrom(INVALID_SCHEDULE_ID),
+                getScheduleInfo(TWO_SIG_XFER).hasCostAnswerPrecheck(INVALID_SCHEDULE_ID));
     }
 
     private Key bumpThirdNestedThresholdSigningReq(Key source) {

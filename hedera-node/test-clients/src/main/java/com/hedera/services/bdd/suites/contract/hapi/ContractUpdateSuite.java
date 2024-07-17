@@ -16,10 +16,9 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
-import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
@@ -96,6 +95,24 @@ public class ContractUpdateSuite {
     public static final String NEW_ADMIN_KEY = "newAdminKey";
     private static final String CONTRACT = "Multipurpose";
     public static final String INITIAL_ADMIN_KEY = "initialAdminKey";
+
+    @HapiTest
+    final Stream<DynamicTest> updateMaxAutomaticAssociationsAndRequireKey() {
+        return defaultHapiSpec("updateMaxAutomaticAssociationsAndRequireKey")
+                .given(
+                        newKeyNamed(ADMIN_KEY),
+                        uploadInitCode(CONTRACT),
+                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
+                .when(
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).signedBy(DEFAULT_PAYER, ADMIN_KEY),
+                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(20).signedBy(DEFAULT_PAYER, ADMIN_KEY),
+                        doWithStartupConfigNow("entities.maxLifetime", (value, now) -> contractUpdate(CONTRACT)
+                                .newMaxAutomaticAssociations(20)
+                                .newExpirySecs(now.getEpochSecond() + Long.parseLong(value) - 12345L)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasKnownStatus(INVALID_SIGNATURE)))
+                .then(getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(20)));
+    }
 
     @HapiTest
     final Stream<DynamicTest> idVariantsTreatedAsExpected() {
@@ -496,41 +513,33 @@ public class ContractUpdateSuite {
                         getContractBytecode(simpleStorageContract).saveResultTo("initialBytecode"))
                 .when(contractUpdate(simpleStorageContract).bytecode(emptyConstructorContract))
                 .then(withOpContext((spec, log) -> {
-                    var op = getContractBytecode(simpleStorageContract)
+                    final var op = getContractBytecode(simpleStorageContract)
                             .hasBytecode(spec.registry().getBytes("initialBytecode"));
                     allRunFor(spec, op);
                 }));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @LeakyHapiTest(overrides = {"ledger.maxAutoAssociations"})
     final Stream<DynamicTest> tryContractUpdateWithMaxAutoAssociations() {
-        return propertyPreservingHapiSpec("tryContractUpdateWithMaxAutoAssociations")
-                .preserving("ledger.maxAutoAssociations")
-                .given(
-                        overriding("ledger.maxAutoAssociations", "5000"),
-                        newKeyNamed(ADMIN_KEY),
-                        uploadInitCode(CONTRACT),
-                        contractCreate(CONTRACT).adminKey(ADMIN_KEY))
-                .when()
-                .then(
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(-2)
-                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(-200)
-                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(5001)
-                                .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
-                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
-                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
-                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)),
-                        contractUpdate(CONTRACT).newMaxAutomaticAssociations(0).hasKnownStatus(SUCCESS),
-                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
-                        contractUpdate(CONTRACT)
-                                .newMaxAutomaticAssociations(5000)
-                                .hasKnownStatus(SUCCESS),
-                        getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(5000)));
+        return hapiTest(
+                overriding("ledger.maxAutoAssociations", "5000"),
+                newKeyNamed(ADMIN_KEY),
+                uploadInitCode(CONTRACT),
+                contractCreate(CONTRACT).adminKey(ADMIN_KEY),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(-2).hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                contractUpdate(CONTRACT)
+                        .newMaxAutomaticAssociations(-200)
+                        .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
+                contractUpdate(CONTRACT)
+                        .newMaxAutomaticAssociations(5001)
+                        .hasKnownStatus(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(-1).hasKnownStatus(SUCCESS),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(-1)),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(0).hasKnownStatus(SUCCESS),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(0)),
+                contractUpdate(CONTRACT).newMaxAutomaticAssociations(5000).hasKnownStatus(SUCCESS),
+                getContractInfo(CONTRACT).has(contractWith().maxAutoAssociations(5000)));
     }
 
     @HapiTest
@@ -539,9 +548,9 @@ public class ContractUpdateSuite {
         final var players = IntStream.range(1, 30).mapToObj(i -> "Player" + i).toList();
         final var contract = "MusicalChairs";
 
-        List<HapiSpecOperation> given = new ArrayList<>();
-        List<HapiSpecOperation> when = new ArrayList<>();
-        List<HapiSpecOperation> then = new ArrayList<>();
+        final List<HapiSpecOperation> given = new ArrayList<>();
+        final List<HapiSpecOperation> when = new ArrayList<>();
+        final List<HapiSpecOperation> then = new ArrayList<>();
 
         ////// Create contract //////
         given.add(cryptoCreate(dj).balance(10 * ONE_HUNDRED_HBARS));

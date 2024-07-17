@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitForActive;
+import static com.hedera.services.bdd.suites.regression.system.LifecycleTest.RESTART_TO_ACTIVE_TIMEOUT;
 import static com.hedera.services.bdd.suites.regression.system.MixedOperations.burstOfTps;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -54,9 +55,8 @@ public class MixedOpsNodeDeathReconnectTest implements LifecycleTest {
                         burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
                         // Restart node2
                         FakeNmt.restartNode("Carol"),
-                        logIt("Node 2 is supposedly restarted"),
                         // Wait for node2 ACTIVE (BUSY and RECONNECT_COMPLETE are too transient to reliably poll for)
-                        waitForActive("Carol", LifecycleTest.RESTART_TO_ACTIVE_TIMEOUT))
+                        waitForActive("Carol", RESTART_TO_ACTIVE_TIMEOUT))
                 .then(
                         // Run some more transactions
                         burstOfTps(MIXED_OPS_BURST_TPS, MIXED_OPS_BURST_DURATION),
