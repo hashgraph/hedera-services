@@ -287,8 +287,6 @@ public class ContractCallSuite {
                                 .exposingTo(txnRecord -> gasWithoutAutoAssociation.set(
                                         txnRecord.getContractCallResult().getGasUsed())),
                         getTxnRecord("autoAssociation")
-                                .andAllChildRecords()
-                                .logged()
                                 .exposingTo(txnRecord -> gasWithAutoAssociation.set(
                                         txnRecord.getContractCallResult().getGasUsed())),
                         withOpContext((spec, opLog) -> {
