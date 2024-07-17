@@ -18,6 +18,7 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE;
@@ -25,19 +26,24 @@ import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBu
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
+import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.BuilderSinkImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstChildSavepoint;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstRootSavepoint;
+import com.hedera.node.app.workflows.handle.stack.savepoints.FollowingSavepoint;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -134,7 +140,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
 
     @Override
     public void createSavepoint() {
-        stack.push(peek().createFollowingSavepoint());
+        stack.push(new FollowingSavepoint(new WrappedHederaState(peek().state()), peek()));
     }
 
     @Override
@@ -222,7 +228,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
 
     @NonNull
     @Override
-    public <T> T getBaseBuilder(@NonNull Class<T> recordBuilderClass) {
+    public <T extends SingleTransactionRecordBuilder> T getBaseBuilder(@NonNull Class<T> recordBuilderClass) {
         requireNonNull(recordBuilderClass, "recordBuilderClass must not be null");
         return castBuilder(baseBuilder, recordBuilderClass);
     }
@@ -369,6 +375,48 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
             throw new IllegalStateException("The stack has already been committed");
         }
         return stack.peek();
+    }
+
+    /**
+     * Builds and caches the result of the user transaction with
+     * the explicitly provided records.
+     *
+     * @param consensusTime consensus time of the transaction
+     * @return the stream of records
+     */
+    public List<SingleTransactionRecord> buildStreamItems(@NonNull final Instant consensusTime) {
+        final List<SingleTransactionRecord> records = new ArrayList<>();
+        final var builders = allStreamBuilders();
+        TransactionID.Builder idBuilder = null;
+        int indexOfUserRecord = 0;
+        for (int i = 0; i < builders.size(); i++) {
+            if (builders.get(i).category() == USER) {
+                indexOfUserRecord = i;
+                idBuilder = builders.get(i).transactionID().copyBuilder();
+                break;
+            }
+        }
+        int nextNonce = 1;
+        for (int i = 0; i < builders.size(); i++) {
+            final var builder = builders.get(i);
+            final var nonce =
+                    switch (builder.category()) {
+                        case USER, SCHEDULED -> 0;
+                        case PRECEDING, CHILD -> nextNonce++;
+                    };
+            // The schedule service specifies the transaction id to use for a triggered transaction
+            if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
+                builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
+                        .syncBodyIdFromRecordId();
+            }
+            final var consensusNow = consensusTime.plusNanos((long) i - indexOfUserRecord);
+            builder.consensusTimestamp(consensusNow);
+            if (i > indexOfUserRecord && builder.category() != SCHEDULED) {
+                builder.parentConsensus(consensusTime);
+            }
+            records.add(((SingleTransactionRecordBuilderImpl) builder).build());
+        }
+        return records;
     }
 
     private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {

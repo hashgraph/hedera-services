@@ -18,7 +18,6 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
@@ -35,7 +34,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -76,7 +74,6 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -336,7 +333,9 @@ public class HandleWorkflow {
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
             }
-            return finalizedStreamItems(userTxn, userTxn.stack().allStreamBuilders());
+            final var streamItems = userTxn.stack().buildStreamItems(userTxn.consensusNow());
+            recordCache.add(userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), streamItems);
+            return streamItems.stream();
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
             return failInvalidStreamItems(userTxn);
@@ -352,8 +351,14 @@ public class HandleWorkflow {
     private Stream<SingleTransactionRecord> failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
         final var failInvalidBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
-        initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo()).status(FAIL_INVALID);
-        return finalizedStreamItems(userTxn, List.of(failInvalidBuilder));
+        initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
+                .status(FAIL_INVALID)
+                .consensusTimestamp(userTxn.consensusNow());
+        recordCache.add(
+                userTxn.creatorInfo().nodeId(),
+                requireNonNull(userTxn.txnInfo().payerID()),
+                List.of(failInvalidBuilder.build()));
+        return Stream.of(failInvalidBuilder.build());
     }
 
     /**
@@ -375,51 +380,6 @@ public class HandleWorkflow {
                         > userTxn.lastHandledConsensusTime().getEpochSecond()) {
             handleWorkflowMetrics.switchConsensusSecond();
         }
-    }
-
-    /**
-     * Builds and caches the result of the user transaction with
-     * the explicitly provided records.
-     *
-     * @param userTxn the user transaction
-     * @param builders the explicit record builders
-     * @return the stream of records
-     */
-    private Stream<SingleTransactionRecord> finalizedStreamItems(
-            @NonNull final UserTxn userTxn, @NonNull final List<SingleTransactionRecordBuilder> builders) {
-        final List<SingleTransactionRecord> records = new ArrayList<>();
-        TransactionID.Builder idBuilder = null;
-        int indexOfUserRecord = 0;
-        for (int i = 0; i < builders.size(); i++) {
-            if (builders.get(i).category() == USER) {
-                indexOfUserRecord = i;
-                idBuilder = builders.get(i).transactionID().copyBuilder();
-                break;
-            }
-        }
-        int nextNonce = 1;
-        for (int i = 0; i < builders.size(); i++) {
-            final var builder = builders.get(i);
-            final var nonce =
-                    switch (builder.category()) {
-                        case USER, SCHEDULED -> 0;
-                        case PRECEDING, CHILD -> nextNonce++;
-                    };
-            // The schedule service specifies the transaction id to use for a triggered transaction
-            if (builder.transactionID() == null || TransactionID.DEFAULT.equals(builder.transactionID())) {
-                builder.transactionID(requireNonNull(idBuilder).nonce(nonce).build())
-                        .syncBodyIdFromRecordId();
-            }
-            final var consensusNow = userTxn.consensusNow().plusNanos((long) i - indexOfUserRecord);
-            builder.consensusTimestamp(consensusNow);
-            if (i > indexOfUserRecord && builder.category() != SCHEDULED) {
-                builder.parentConsensus(userTxn.consensusNow());
-            }
-            records.add(((SingleTransactionRecordBuilderImpl) builder).build());
-        }
-        recordCache.add(
-                userTxn.creatorInfo().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), records);
-        return records.stream();
     }
 
     /**

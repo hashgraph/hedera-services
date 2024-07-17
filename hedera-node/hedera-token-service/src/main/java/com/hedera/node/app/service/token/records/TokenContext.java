@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.records;
 
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -80,7 +81,7 @@ public interface TokenContext {
      * @throws IllegalArgumentException if the record builder type is unknown to the app
      */
     @NonNull
-    <T> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
+    <T extends SingleTransactionRecordBuilder> T addPrecedingChildRecordBuilder(@NonNull Class<T> recordBuilderClass);
 
     /**
      * Signal that any records created during startup migrations have been streamed.

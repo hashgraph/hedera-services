@@ -52,6 +52,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
 
     protected final BuilderSink parentSink;
     protected final WrappedHederaState state;
+    private Status status = Status.PENDING;
 
     /**
      * Constructs a savepoint with limits that discriminate between the number of preceding and following builders.
@@ -90,20 +91,21 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
 
     @Override
     public void commit() {
+        assertNotFinished();
+
         state.commit();
         commitBuilders();
+        status = Status.FINISHED;
     }
 
     @Override
     public void rollback() {
+        assertNotFinished();
+
         rollback(precedingBuilders);
         rollback(followingBuilders);
         commitBuilders();
-    }
-
-    @Override
-    public Savepoint createFollowingSavepoint() {
-        return new FollowingSavepoint(new WrappedHederaState(state), this);
+        status = Status.FINISHED;
     }
 
     @Override
@@ -144,5 +146,16 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
                 iterator.remove();
             }
         }
+    }
+
+    private void assertNotFinished() {
+        if (status == Status.FINISHED) {
+            throw new IllegalStateException("Savepoint has already been committed or rolled back");
+        }
+    }
+
+    private enum Status {
+        PENDING,
+        FINISHED
     }
 }

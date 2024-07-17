@@ -37,7 +37,6 @@ import com.hedera.node.app.service.token.impl.WritableNetworkStakingRewardsStore
 import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.EndOfStakingPeriodUpdater;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper;
-import com.hedera.node.app.service.token.impl.test.fixtures.FakeNodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
@@ -78,12 +77,14 @@ public class EndOfStakingPeriodUpdaterTest {
     @Mock
     private TokenContext context;
 
+    @Mock
+    private NodeStakeUpdateRecordBuilder nodeStakeUpdateRecordBuilder;
+
     private ReadableAccountStore accountStore;
 
     @LoggingSubject
     private EndOfStakingPeriodUpdater subject;
 
-    private NodeStakeUpdateRecordBuilder nodeStakeUpdateRecordBuilder;
     private WritableStakingInfoStore stakingInfoStore;
     private WritableNetworkStakingRewardsStore stakingRewardsStore;
 
@@ -94,7 +95,6 @@ public class EndOfStakingPeriodUpdaterTest {
                 .tinybarBalance(100_000_000_000L)
                 .build());
         subject = new EndOfStakingPeriodUpdater(new FakeHederaNumbers(), new StakingRewardsHelper());
-        this.nodeStakeUpdateRecordBuilder = new FakeNodeStakeUpdateRecordBuilder().create();
     }
 
     @Test

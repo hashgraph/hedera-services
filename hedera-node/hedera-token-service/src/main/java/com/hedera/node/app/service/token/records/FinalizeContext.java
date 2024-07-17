@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.records;
 
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -106,5 +107,5 @@ public interface FinalizeContext {
      * @throws IllegalArgumentException if the record builder type is unknown to the app
      */
     @NonNull
-    <T> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass);
+    <T extends SingleTransactionRecordBuilder> T userTransactionRecordBuilder(@NonNull Class<T> recordBuilderClass);
 }

@@ -116,20 +116,20 @@ public class BuilderSinkImpl implements BuilderSink {
     @Override
     public void flushInOrder(@NonNull final BuilderSink parentSink) {
         requireNonNull(parentSink);
-        ((BuilderSinkImpl) parentSink).precedingBuilders.addAll(precedingBuilders);
-        ((BuilderSinkImpl) parentSink).followingBuilders.addAll(followingBuilders);
+        parentSink.addAllPreceding(precedingBuilders);
+        parentSink.addAllFollowing(followingBuilders);
     }
 
     @Override
     public void flushPreceding(@NonNull final BuilderSink parentSink) {
         requireNonNull(parentSink);
-        ((BuilderSinkImpl) parentSink).precedingBuilders.addAll(allBuilders());
+        parentSink.addAllPreceding(allBuilders());
     }
 
     @Override
     public void flushFollowing(@NonNull final BuilderSink parentSink) {
         requireNonNull(parentSink);
-        ((BuilderSinkImpl) parentSink).followingBuilders.addAll(allBuilders());
+        parentSink.addAllFollowing(allBuilders());
     }
 
     @Override

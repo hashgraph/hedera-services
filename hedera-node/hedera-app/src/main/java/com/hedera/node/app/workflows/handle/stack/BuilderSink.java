@@ -49,6 +49,24 @@ public interface BuilderSink {
     void addFollowingOrThrow(@NonNull SingleTransactionRecordBuilder builder);
 
     /**
+     * Adds all the given builders to the preceding builders of this sink. Throws a {@link HandleException} if the
+     * maximum number of preceding builders has been exceeded.
+     * @param builders the builders to add
+     */
+    default void addAllPreceding(@NonNull List<SingleTransactionRecordBuilder> builders) {
+        builders.forEach(this::addPrecedingOrThrow);
+    }
+
+    /**
+     * Adds all the given builders to the following builders of this sink. Throws a {@link HandleException} if the
+     * maximum number of following builders has been exceeded.
+     * @param builders the builders to add
+     */
+    default void addAllFollowing(@NonNull List<SingleTransactionRecordBuilder> builders) {
+        builders.forEach(this::addFollowingOrThrow);
+    }
+
+    /**
      * Returns the number of preceding builders that can be added to this sink, as controlled by both the total
      * and preceding builder limits.
      * @return the number of preceding builders that can be added to this sink

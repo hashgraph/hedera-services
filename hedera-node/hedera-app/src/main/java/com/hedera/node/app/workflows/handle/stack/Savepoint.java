@@ -29,7 +29,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public interface Savepoint extends BuilderSink {
     /**
-     * The that this savepoint is buffering changes for, including all modifications made so far.
+     * The state that this savepoint is buffering changes for, including all modifications made so far.
      *
      * @return the state
      */
@@ -37,26 +37,22 @@ public interface Savepoint extends BuilderSink {
 
     /**
      * Rolls back all changes made in this savepoint, making any necessary changes to the stream item builders
-     * this savepoint is managing.
+     * this savepoint is managing. This method cannot be called twice and cannot be called after commit has been called.
      * <p>
      * <b>Important:</b> Unlike transactional management of state changes, which simply discards everything,
      * management of stream item builders includes flushing builders not of type {@link ReversingBehavior#REMOVABLE}
      * to the parent sink of the savepoint.
+     * @throws IllegalStateException if the savepoint has already been committed or rolled back
      */
     void rollback();
 
     /**
      * Commits all changes made in this savepoint and flushes any stream item builders accumulated in this savepoint
      * to the parent sink of the savepoint.
+     * This method cannot be called twice and cannot be called after rollback has been called.
+     * @throws IllegalStateException if the savepoint has already been committed or rolled back
      */
     void commit();
-
-    /**
-     * Creates and returns a new savepoint that represents a new transactional unit based on this savepoint's
-     * modifications to state.
-     * @return the new savepoint
-     */
-    Savepoint createFollowingSavepoint();
 
     /**
      * Creates and returns a new stream item builder whose lifecycle will be scoped to the state changes made
