@@ -118,7 +118,7 @@ class EventRecoveryWorkflowTests {
         final Round round = mock(Round.class);
         when(round.iterator()).thenReturn(events.iterator());
 
-        final List<EventImpl> preHandleList = new ArrayList<>();
+        final List<PlatformEvent> preHandleList = new ArrayList<>();
         final AtomicBoolean roundHandled = new AtomicBoolean(false);
 
         final SwirldState immutableState = mock(SwirldState.class);

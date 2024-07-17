@@ -33,8 +33,6 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -75,7 +73,8 @@ class ConsistencyTestingToolRoundTests {
                 payloads.add(payload);
             });
 
-            final PlatformEvent e = new TestingEventBuilder(randotron).setTransactions(payloads).build();
+            final PlatformEvent e =
+                    new TestingEventBuilder(randotron).setTransactions(payloads).build();
             mockEvents.add(e);
         });
         final ConsensusSnapshot mockSnapshot = mock(ConsensusSnapshot.class);
