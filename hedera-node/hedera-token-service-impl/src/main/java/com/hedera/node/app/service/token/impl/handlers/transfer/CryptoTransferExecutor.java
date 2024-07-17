@@ -32,6 +32,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Service class that provides static methods for execution of Crypto transfer transaction. The main purpose of this
+ * class is reusing the crypto transfer steps logic in to
+ * {@link com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler} It also adds the possibility to separate
+ * custom fee assessment steps from other steps (to prepay fees in case of pending airdrops)
+ */
 public class CryptoTransferExecutor {
 
     /**
@@ -52,6 +58,13 @@ public class CryptoTransferExecutor {
         executeCryptoTransfer(txn, transferContext, context, validator, recordBuilder, false);
     }
 
+    /**
+     * Charges only the custom fees if any. Used when custom fees should be prepaid in
+     * {@link com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler}
+     *
+     * @param txn             transaction body
+     * @param transferContext transfer context
+     */
     public static void chargeCustomFee(TransactionBody txn, TransferContextImpl transferContext) {
         final var customFeeStep = new CustomFeeAssessmentStep(txn.cryptoTransferOrThrow());
         var transferBodies = customFeeStep.assessCustomFees(transferContext);
@@ -71,6 +84,16 @@ public class CryptoTransferExecutor {
         }
     }
 
+    /**
+     * Executes crypto transfer, but skip custom fee steps. Used when custom fees should be prepaid in
+     * {@link com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler}
+     *
+     * @param txn             transaction body
+     * @param transferContext transfer context
+     * @param context         handle context
+     * @param validator       crypto transfer validator
+     * @param recordBuilder   record builder
+     */
     public static void executeCryptoTransferWithoutCustomFee(
             TransactionBody txn,
             TransferContextImpl transferContext,
