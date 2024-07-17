@@ -608,10 +608,14 @@ public class HapiSpec implements Runnable, Executable {
         }
         try {
             hapiRegistry = new HapiSpecRegistry(hapiSetup);
-            if (sharedStates != null) {
-                sharedStates.forEach(sharedState -> hapiRegistry.include(sharedState.registry()));
-            }
             keyFactory = new KeyFactory(hapiSetup, hapiRegistry);
+            if (sharedStates != null) {
+                sharedStates.forEach(sharedState -> {
+                    hapiRegistry.include(sharedState.registry());
+                    keyFactory.include(sharedState.keyFactory());
+                });
+            }
+
             txnFactory =
                     (nextValidStart == null) ? new TxnFactory(hapiSetup) : new TxnFactory(hapiSetup, nextValidStart);
             FeesAndRatesProvider scheduleProvider =
