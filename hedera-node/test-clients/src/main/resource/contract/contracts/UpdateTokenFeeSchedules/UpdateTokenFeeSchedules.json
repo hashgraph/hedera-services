@@ -146,6 +146,34 @@
         "type": "address"
       },
       {
+        "internalType": "uint8",
+        "name": "numberOfFees",
+        "type": "uint8"
+      },
+      {
+        "internalType": "int64",
+        "name": "amount",
+        "type": "int64"
+      },
+      {
+        "internalType": "address",
+        "name": "collector",
+        "type": "address"
+      }
+    ],
+    "name": "updateFungibleFixedHbarFees",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      },
+      {
         "internalType": "address",
         "name": "feeToken",
         "type": "address"
@@ -261,6 +289,44 @@
       }
     ],
     "name": "updateFungibleFractionalFeeMinAndMax",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "numberOfFees",
+        "type": "uint8"
+      },
+      {
+        "internalType": "int64",
+        "name": "numerator",
+        "type": "int64"
+      },
+      {
+        "internalType": "int64",
+        "name": "denominator",
+        "type": "int64"
+      },
+      {
+        "internalType": "bool",
+        "name": "netOfTransfers",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "collector",
+        "type": "address"
+      }
+    ],
+    "name": "updateFungibleFractionalFees",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -434,6 +500,39 @@
       }
     ],
     "name": "updateNonFungibleRoyaltyFeeHtsFallback",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "numberOfFees",
+        "type": "uint8"
+      },
+      {
+        "internalType": "int64",
+        "name": "numerator",
+        "type": "int64"
+      },
+      {
+        "internalType": "int64",
+        "name": "denominator",
+        "type": "int64"
+      },
+      {
+        "internalType": "address",
+        "name": "collector",
+        "type": "address"
+      }
+    ],
+    "name": "updateNonFungibleRoyaltyFees",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

@@ -22,6 +22,17 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         }
     }
 
+    function updateFungibleFixedHbarFees(address tokenAddress, uint8 numberOfFees, int64 amount, address collector) external {
+
+        IHederaTokenService.FixedFee[] memory fixedFees = createNAmountFixedFeesForHbars(numberOfFees, amount, collector);
+        IHederaTokenService.FractionalFee[] memory fractionalFees = new IHederaTokenService.FractionalFee[](0);
+        int responseCode = updateFungibleTokenCustomFees(tokenAddress, fixedFees, fractionalFees);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of custom fee failed!");
+        }
+    }
+
     function updateNonFungibleFixedHbarFee(address tokenAddress, int64 amount, address collector) external {
 
         IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](1);
@@ -101,6 +112,18 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         }
     }
 
+    function updateFungibleFractionalFees(address tokenAddress, uint8 numberOfFees, int64 numerator, int64 denominator, bool netOfTransfers, address collector) external {
+
+        IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](0);
+        IHederaTokenService.FractionalFee[] memory fractionalFees = createNAmountFractionalFees(numberOfFees, numerator, denominator, netOfTransfers, collector);
+
+        int responseCode = updateFungibleTokenCustomFees(tokenAddress, fixedFees, fractionalFees);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of custom fee failed!");
+        }
+    }
+
       function updateFungibleFractionalFeeMinAndMax(address tokenAddress, int64 numerator, int64 denominator, int64 minimumAmount, int64 maximumAmount, bool netOfTransfers, address collector) external {
 
         IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](0);
@@ -122,6 +145,19 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         IHederaTokenService.RoyaltyFee[] memory royaltyFees = new IHederaTokenService.RoyaltyFee[](1);
         IHederaTokenService.RoyaltyFee memory royaltyFee = createRoyaltyFeeWithoutFallback(numerator, denominator, collector);
         royaltyFees[0] = royaltyFee;
+
+        int responseCode = updateNonFungibleTokenCustomFees(tokenAddress, fixedFees, royaltyFees);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of custom fee failed!");
+        }
+    }
+
+    function updateNonFungibleRoyaltyFees(address tokenAddress, uint8 numberOfFees, int64 numerator, int64 denominator, address collector) external {
+
+        IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](0);
+
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees = createNAmountRoyaltyFees(numberOfFees, numerator, denominator, collector);
 
         int responseCode = updateNonFungibleTokenCustomFees(tokenAddress, fixedFees, royaltyFees);
 
