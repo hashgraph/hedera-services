@@ -383,7 +383,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         weightedTokensInvolved += tokenMultiplier * involvedTokens.size();
         long rbs = (totalXfers * LONG_ACCOUNT_AMOUNT_BYTES)
                 + TOKEN_ENTITY_SIZES.bytesUsedToRecordTokenTransfers(
-                weightedTokensInvolved, weightedTokenXfers, numNftOwnershipChanges);
+                        weightedTokensInvolved, weightedTokenXfers, numNftOwnershipChanges);
 
         /* Get subType based on the above information */
         final var subType = getSubType(
