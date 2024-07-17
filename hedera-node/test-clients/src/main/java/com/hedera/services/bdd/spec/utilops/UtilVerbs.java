@@ -1489,6 +1489,29 @@ public class UtilVerbs {
         });
     }
 
+    /**
+     * Validates that an amount is within a certain percentage of an expected value.
+     * @param expected expected value
+     * @param actual actual value
+     * @param allowedPercentDiff allowed percentage difference
+     * @param quantity quantity being compared
+     * @param context context of the comparison
+     */
+    public static void assertCloseEnough(
+            final double expected,
+            final double actual,
+            final double allowedPercentDiff,
+            final String quantity,
+            final String context) {
+        assertEquals(
+                expected,
+                actual,
+                (allowedPercentDiff / 100.0) * expected,
+                String.format(
+                        "%s %s (%s) more than %.2f percent different than expected",
+                        CryptoTransferSuite.sdec(actual, 4), quantity, context, allowedPercentDiff));
+    }
+
     public static CustomSpecAssert validateChargedUsdWithin(String txn, double expectedUsd, double allowedPercentDiff) {
         return assertionsHold((spec, assertLog) -> {
             final var actualUsdCharged = getChargedUsed(spec, txn);

@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.suites.contract.hapi;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hedera.services.bdd.junit.ContextRequirement.PROPERTY_OVERRIDES;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContract;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asContractString;
@@ -25,6 +26,7 @@ import static com.hedera.services.bdd.spec.HapiPropertySource.contractIdFromHexe
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.changeFromSnapshot;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.isLiteralResult;
@@ -65,6 +67,7 @@ import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfe
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertCloseEnough;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertionsHold;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
@@ -72,6 +75,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createLargeFile;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyListNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sidecarIdValidator;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
@@ -111,6 +115,7 @@ import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.NESTE
 import static com.hedera.services.bdd.suites.regression.factories.HollowAccountCompletedFuzzingFactory.CONTRACT;
 import static com.hedera.services.bdd.suites.utils.ECDSAKeysUtils.randomHeadlongAddress;
 import static com.hedera.services.bdd.suites.utils.contracts.SimpleBytesResult.bigIntResult;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
@@ -124,6 +129,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -137,9 +143,16 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.abi.TypeFactory;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.dsl.annotations.AccountSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleTokenSpec;
+import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
+import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
@@ -164,6 +177,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
@@ -241,6 +255,65 @@ public class ContractCallSuite {
                 .given()
                 .when()
                 .then(contractCall(null).hasPrecheck(INVALID_CONTRACT_ID));
+    }
+
+    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @DisplayName("auto-association through HTS system contract changes gas cost")
+    final Stream<DynamicTest> autoAssociationThroughSystemContractChangesGasCost(
+            @ContractSpec(contract = "HTSCalls", creationGas = 4_000_000) SpecContract htsCallsContract,
+            @NonFungibleTokenSpec(numPreMints = 2) SpecNonFungibleToken token,
+            @AccountSpec SpecAccount preAssociated,
+            @AccountSpec(maxAutoAssociations = 1) SpecAccount autoAssociated) {
+        // Note we have a 20% markup on doing HAPI operations through EVM
+        final var expectedUsdAssociationFee = 0.05 * 1.2;
+        final var gasWithoutAutoAssociation = new AtomicLong();
+        final var gasWithAutoAssociation = new AtomicLong();
+        return propertyPreservingHapiSpec("autoAssociationThroughSystemContractChangesGasCost")
+                .preserving("contracts.maxRefundPercentOfGasLimit")
+                .given()
+                .when()
+                .then(
+                        // To make it trivial to compare actual gas costs refund all unused gas in this test
+                        overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                        preAssociated.associateTokens(token),
+                        token.treasury().authorizeContract(htsCallsContract),
+                        htsCallsContract
+                                .call("transferNFTCall", token, token.treasury(), preAssociated, 1L)
+                                .andAssert(txn -> txn.via("noAutoAssociation").gas(1_000_000)),
+                        htsCallsContract
+                                .call("transferNFTCall", token, token.treasury(), autoAssociated, 2L)
+                                .andAssert(txn -> txn.via("autoAssociation").gas(1_000_000)),
+                        getTxnRecord("noAutoAssociation")
+                                .exposingTo(txnRecord -> gasWithoutAutoAssociation.set(
+                                        txnRecord.getContractCallResult().getGasUsed())),
+                        getTxnRecord("autoAssociation")
+                                .andAllChildRecords()
+                                .logged()
+                                .exposingTo(txnRecord -> gasWithAutoAssociation.set(
+                                        txnRecord.getContractCallResult().getGasUsed())),
+                        withOpContext((spec, opLog) -> {
+                            final var gasDiff = gasWithAutoAssociation.get() - gasWithoutAutoAssociation.get();
+                            // Convert to USD by multiplying the gas difference by the price in thousandths of a
+                            // tinycent in
+                            // the fee schedule; and then dividing by 1e13 to convert all the way to USD
+                            final var approxUsdDiff = (1.0
+                                            * gasDiff
+                                            * spec.fees()
+                                                    .getCurrentOpFeeData()
+                                                    .get(ContractCall)
+                                                    .get(DEFAULT)
+                                                    .getServicedata()
+                                                    .getGas()
+                                            / 1000
+                                            / TINY_PARTS_PER_WHOLE)
+                                    / 100.0;
+                            assertCloseEnough(
+                                    expectedUsdAssociationFee,
+                                    approxUsdDiff,
+                                    5.0,
+                                    "USD value of gas difference",
+                                    "auto-association fee");
+                        }));
     }
 
     @HapiTest

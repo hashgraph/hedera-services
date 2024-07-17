@@ -155,7 +155,9 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
                 .map(AccountSpec::name)
                 .filter(n -> !n.isBlank())
                 .orElse(defaultName);
-        return new SpecAccount(name);
+        final var account = new SpecAccount(name);
+        account.builder().maxAutoAssociations(annotation == null ? 0 : annotation.maxAutoAssociations());
+        return account;
     }
 
     private SpecKey keyFrom(@Nullable final KeySpec annotation, @NonNull final String defaultName) {
