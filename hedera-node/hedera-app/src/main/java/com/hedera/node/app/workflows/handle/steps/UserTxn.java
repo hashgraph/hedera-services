@@ -179,6 +179,7 @@ public record UserTxn(
                 new WritableStoreFactory(stack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
         final var throttleAdvisor = new AppThrottleAdviser(networkUtilizationManager, consensusNow, stack);
+        final var feeAccumulator = new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), recordBuilder);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,
@@ -202,7 +203,8 @@ public record UserTxn(
                 networkInfo,
                 childDispatchFactory,
                 dispatchProcessor,
-                throttleAdvisor);
+                throttleAdvisor,
+                feeAccumulator);
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
         final var feeAccumulator = new FeeAccumulator(
                 serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) baseBuilder);

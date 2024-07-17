@@ -82,7 +82,7 @@ public class UnlimitedAutoAssociationSuite {
     private static final String CAROL = "CAROL";
     private static final String DAVE = "DAVE";
 
-    @DisplayName("Auto-associate tokens will create a child record for association")
+    @DisplayName("Auto-associate tokens do not require a child dispatch")
     @HapiTest
     final Stream<DynamicTest> autoAssociateTokensHappyPath() {
         final String tokenA = "tokenA";
@@ -111,7 +111,7 @@ public class UnlimitedAutoAssociationSuite {
                         .via(transferFungible),
                 getTxnRecord(transferFungible)
                         .andAllChildRecords()
-                        .hasChildRecordCount(1)
+                        .hasChildRecordCount(0)
                         .hasNewTokenAssociation(tokenA, secondUser)
                         .logged(),
                 // Transfer NFT
@@ -120,7 +120,7 @@ public class UnlimitedAutoAssociationSuite {
                         .via(transferNonFungible),
                 getTxnRecord(transferNonFungible)
                         .andAllChildRecords()
-                        .hasChildRecordCount(1)
+                        .hasChildRecordCount(0)
                         .hasNewTokenAssociation(tokenB, secondUser)
                         .logged(),
                 getAccountInfo(secondUser)

@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl.handlers.transfer;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
@@ -47,9 +48,9 @@ import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
+import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.EntitiesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -60,6 +61,18 @@ import java.util.List;
  * They are auto-associated only if there are open auto-associations available on the account.
  */
 public class AssociateTokenRecipientsStep extends BaseTokenHandler implements TransferStep {
+    /**
+     * With unlimited associations enabled, the fee computed by TokenAssociateToAccountHandler depends
+     * only on the number of tokens associated and nothing else; so a placeholder transaction body works
+     * fine for us when calling dispatchComputeFees()
+     */
+    private static final TransactionBody PLACEHOLDER_SYNTHETIC_ASSOCIATION = TransactionBody.newBuilder()
+            .tokenAssociate(TokenAssociateTransactionBody.newBuilder()
+                    .account(AccountID.DEFAULT)
+                    .tokens(TokenID.DEFAULT)
+                    .build())
+            .build();
+
     private final CryptoTransferTransactionBody op;
 
     /**
@@ -185,16 +198,15 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             final var unlimitedAssociationsEnabled =
                     config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
             if (unlimitedAssociationsEnabled) {
-                dispatchAutoAssociation(token, accountStore, tokenRelStore, context, account);
-                // We still need to return this association to the caller. Since this is used to set in record automatic
-                // associations.
-                return asTokenAssociation(tokenId, accountId);
-            } else {
-                // Once the unlimitedAssociationsEnabled is enabled, this block of code can be removed and
-                // all auto-associations will be done through the synthetic transaction and charged.
-                final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
-                return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
+                final var autoAssociationFee = associationFeeFor(context, PLACEHOLDER_SYNTHETIC_ASSOCIATION);
+                try {
+                    context.chargePayerFee(autoAssociationFee);
+                } catch (IllegalArgumentException ignore) {
+                    throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
+                }
             }
+            final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);
+            return asTokenAssociation(newRelation.tokenId(), newRelation.accountId());
         } else {
             validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
             validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
@@ -202,46 +214,11 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
         }
     }
 
-    /**
-     * Dispatches a synthetic transaction to associate the token with the account. It will increment the usedAutoAssociations
-     * count on the account and set the token relation as automaticAssociation.
-     * This is done only if the unlimitedAutoAssociationsEnabled is enabled.
-     * @param token The token to associate with the account
-     * @param accountStore The account store
-     * @param tokenRelStore The token relation store
-     * @param context The context
-     * @param account The account to associate the token with
-     */
-    private void dispatchAutoAssociation(
-            final @NonNull Token token,
-            final @NonNull WritableAccountStore accountStore,
-            final @NonNull WritableTokenRelationStore tokenRelStore,
-            final @NonNull HandleContext context,
-            final @NonNull Account account) {
-        final var accountId = account.accountIdOrThrow();
-        final var tokenId = token.tokenIdOrThrow();
-        final var syntheticAssociation = TransactionBody.newBuilder()
-                .tokenAssociate(TokenAssociateTransactionBody.newBuilder()
-                        .account(account.accountId())
-                        .tokens(token.tokenId())
-                        .build())
-                .build();
-        // We don't need to verify signatures for this internal dispatch. So we specify the keyVerifier to null
-        final var streamBuilder = context.dispatchRemovablePrecedingTransaction(
-                syntheticAssociation, SingleTransactionRecordBuilder.class, null, context.payer());
-        validateTrue(streamBuilder.status() == SUCCESS, streamBuilder.status());
-        // increment the usedAutoAssociations count
-        final var accountModified = requireNonNull(accountStore.getAliasedAccountById(accountId))
-                .copyBuilder()
-                .usedAutoAssociations(account.usedAutoAssociations() + 1)
-                .build();
-        accountStore.put(accountModified);
-        // We need to set this as auto-association
-        final var newTokenRel = requireNonNull(tokenRelStore.get(accountId, tokenId))
-                .copyBuilder()
-                .automaticAssociation(true)
-                .build();
-        tokenRelStore.put(newTokenRel);
+    private long associationFeeFor(@NonNull final HandleContext context, @NonNull final TransactionBody txnBody) {
+        final var topLevelPayer = context.payer();
+        // If we get here the payer must exist
+        final var fees = context.dispatchComputeFees(txnBody, topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
+        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
     }
 
     private void validateFungibleAllowance(

@@ -68,6 +68,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -168,6 +169,9 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
     @Mock
     private AppKeyVerifier verifier;
+
+    @Mock
+    private FeeAccumulator feeAccumulator;
 
     @Mock
     private NetworkInfo networkInfo;
@@ -379,7 +383,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             networkInfo,
             childDispatchFactory,
             dispatchProcessor,
-            throttleAdviser
+            throttleAdviser,
+            feeAccumulator
         };
 
         final var constructor = DispatchHandleContext.class.getConstructors()[0];
@@ -761,7 +766,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 networkInfo,
                 childDispatchFactory,
                 dispatchProcessor,
-                throttleAdviser);
+                throttleAdviser,
+                feeAccumulator);
     }
 
     private void mockNeeded() {

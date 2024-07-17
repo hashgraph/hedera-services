@@ -234,6 +234,7 @@ public class ChildDispatchFactory {
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
+        final var feeAccumulator = new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), recordBuilder);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,
@@ -257,7 +258,8 @@ public class ChildDispatchFactory {
                 networkInfo,
                 this,
                 dispatchProcessor,
-                throttleAdviser);
+                throttleAdviser,
+                feeAccumulator);
         final var childFees = computeChildFees(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
         final var childFeeAccumulator = new FeeAccumulator(
                 serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder);
