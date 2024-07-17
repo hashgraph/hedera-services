@@ -19,11 +19,11 @@ package com.hedera.node.app.service.token.impl.test.handlers.util;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.PendingAirdropId;
-import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.AccountAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
@@ -80,12 +80,12 @@ public class StateBuilderUtil {
     }
 
     @NonNull
-    protected MapReadableKVState.Builder<PendingAirdropId, PendingAirdropValue> emptyReadableAirdropStateBuilder() {
+    protected MapReadableKVState.Builder<PendingAirdropId, AccountAirdrop> emptyReadableAirdropStateBuilder() {
         return MapReadableKVState.builder(AIRDROPS);
     }
 
     @NonNull
-    protected MapWritableKVState.Builder<PendingAirdropId, PendingAirdropValue> emptyWritableAirdropStateBuilder() {
+    protected MapWritableKVState.Builder<PendingAirdropId, AccountAirdrop> emptyWritableAirdropStateBuilder() {
         return MapWritableKVState.builder(AIRDROPS);
     }
 
