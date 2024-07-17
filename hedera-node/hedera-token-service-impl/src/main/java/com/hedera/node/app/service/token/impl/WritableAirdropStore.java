@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.token.impl;
 
-import static com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema.AIRDROPS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0530TokenSchema.AIRDROPS_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.PendingAirdropId;
