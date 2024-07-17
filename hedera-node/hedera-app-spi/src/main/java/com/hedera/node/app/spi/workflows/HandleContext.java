@@ -120,6 +120,13 @@ public interface HandleContext {
     AccountID payer();
 
     /**
+     * Attempts to charge the payer in this context the given amount.
+     * @param amount the amount to charge
+     * @throws IllegalArgumentException if the payer cannot afford the fee
+     */
+    void chargePayerFee(long amount);
+
+    /**
      * Returns the current {@link Configuration} for the node.
      *
      * @return the {@code Configuration}

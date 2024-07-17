@@ -129,7 +129,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         assertThat(senderTokenRelBalance).isEqualTo(1);
         final var receiverTokenRelBalance =
                 writableTokenRelStore.get(receiver, nonFungibleTokenId).balance();
-        assertThat(receiverTokenRelBalance).isEqualTo(1);
+        assertThat(receiverTokenRelBalance).isEqualTo(0);
 
         changeNFTOwnersStep.doIn(transferContext);
 
@@ -157,7 +157,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         final var numPositiveBalancesSenderAfter = senderAccountAfter.numberPositiveBalances();
         assertThat(numPositiveBalancesSenderAfter).isEqualTo(numPositiveBalancesSender - 1);
         final var numPositiveBalancesReceiverAfter = receiverAccountAfter.numberPositiveBalances();
-        assertThat(numPositiveBalancesReceiverAfter).isEqualTo(numPositiveBalancesReceiver);
+        assertThat(numPositiveBalancesReceiverAfter).isEqualTo(numPositiveBalancesReceiver + 1);
 
         // see token relation balances for sender and receiver change
         final var senderTokenRelBalanceAfter = writableTokenRelStore.get(ownerId, nonFungibleTokenId);
@@ -213,7 +213,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         final var receiverTokenRelBalance =
                 writableTokenRelStore.get(receiver, nonFungibleTokenId).balance();
         // association already happened in association step
-        assertThat(receiverTokenRelBalance).isEqualTo(1);
+        assertThat(receiverTokenRelBalance).isEqualTo(0);
 
         changeNFTOwnersStep.doIn(transferContext);
 
@@ -232,7 +232,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         final var numPositiveBalancesSenderAfter = senderAccountAfter.numberPositiveBalances();
         assertThat(numPositiveBalancesSenderAfter).isEqualTo(numPositiveBalancesSender - 1);
         final var numPositiveBalancesReceiverAfter = receiverAccountAfter.numberPositiveBalances();
-        assertThat(numPositiveBalancesReceiverAfter).isEqualTo(numPositiveBalancesReceiver);
+        assertThat(numPositiveBalancesReceiverAfter).isEqualTo(numPositiveBalancesReceiver + 1);
 
         // see token relation balances for sender and receiver change
         final var senderTokenRelBalanceAfter = writableTokenRelStore.get(ownerId, nonFungibleTokenId);

@@ -233,6 +233,7 @@ public class ChildDispatchFactory {
         final var writableStoreFactory = new WritableStoreFactory(
                 stack, serviceScopeLookup.getServiceName(txnInfo.txBody()), config, storeMetricsService);
         final var serviceApiFactory = new ServiceApiFactory(stack, config, storeMetricsService);
+        final var feeAccumulator = new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), recordBuilder);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,
@@ -260,7 +261,8 @@ public class ChildDispatchFactory {
                 this,
                 dispatchProcessor,
                 recordListBuilder,
-                throttleAdviser);
+                throttleAdviser,
+                feeAccumulator);
         return new RecordDispatch(
                 recordBuilder,
                 config,
@@ -268,7 +270,7 @@ public class ChildDispatchFactory {
                 txnInfo,
                 payerId,
                 readableStoreFactory,
-                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), recordBuilder),
+                feeAccumulator,
                 keyVerifier,
                 creatorInfo,
                 consensusNow,

@@ -97,7 +97,6 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         assertThat(senderAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(senderRelBefore.balance()).isEqualTo(1000L);
-        assertThat(receiverRelBefore.balance()).isEqualTo(1);
 
         adjustFungibleTokenChangesStep.doIn(transferContext);
 
@@ -110,10 +109,8 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         // numPositiveBalancesChanged since all 1000 token Rel balance is transferred and new balance is 0
         assertThat(senderAccountAfter.numberPositiveBalances())
                 .isEqualTo(senderAccountBefore.numberPositiveBalances() - 1);
-        // It is not changed since the original balance before the method is called is > 0.
-        // So no need to increment the positive balances
         assertThat(receiverAccountAfter.numberPositiveBalances())
-                .isEqualTo(receiverAccountBefore.numberPositiveBalances());
+                .isEqualTo(receiverAccountBefore.numberPositiveBalances() + 1);
         assertThat(senderRelAfter.balance()).isEqualTo(senderRelBefore.balance() - 1000);
         assertThat(receiverRelAfter.balance()).isEqualTo(receiverRelBefore.balance() + 1000);
     }
@@ -146,7 +143,7 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         assertThat(receiverAccountBefore.numberPositiveBalances()).isEqualTo(2);
         assertThat(senderRelBefore.balance()).isEqualTo(1000L);
         // There is an association happening during the transfer for auto creation
-        assertThat(receiverRelBefore.balance()).isEqualTo(1);
+        assertThat(receiverRelBefore.balance()).isEqualTo(0);
 
         assertThat(senderAccountBefore.tokenAllowances()).hasSize(1);
 
@@ -161,10 +158,8 @@ class AdjustFungibleTokenChangesStepTest extends StepsBase {
         // numPositiveBalancesChanged since all 1000 token Rel balance is transferred and new balance is 0
         assertThat(senderAccountAfter.numberPositiveBalances())
                 .isEqualTo(senderAccountBefore.numberPositiveBalances() - 1);
-        // It is not changed since the original balance before the method is called is > 0.
-        // So no need to increment the positive balances
         assertThat(receiverAccountAfter.numberPositiveBalances())
-                .isEqualTo(receiverAccountBefore.numberPositiveBalances());
+                .isEqualTo(receiverAccountBefore.numberPositiveBalances() + 1);
         assertThat(senderRelAfter.balance()).isEqualTo(senderRelBefore.balance() - 1000);
         assertThat(receiverRelAfter.balance()).isEqualTo(receiverRelBefore.balance() + 1000);
 

@@ -33,6 +33,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.hapi.util.UnknownHederaFunctionality;
 import com.hedera.node.app.fees.ChildFeeContextImpl;
 import com.hedera.node.app.fees.ExchangeRateManager;
+import com.hedera.node.app.fees.FeeAccumulator;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.records.RecordBuildersImpl;
@@ -112,6 +113,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final DispatchProcessor dispatchProcessor;
     private final RecordListBuilder recordListBuilder;
     private final ThrottleAdviser throttleAdviser;
+    private final FeeAccumulator feeAccumulator;
     private Map<AccountID, Long> dispatchPaidRewards;
 
     public DispatchHandleContext(
@@ -139,7 +141,8 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final ChildDispatchFactory childDispatchLogic,
             @NonNull final DispatchProcessor dispatchProcessor,
             @NonNull final RecordListBuilder recordListBuilder,
-            @NonNull final ThrottleAdviser throttleAdviser) {
+            @NonNull final ThrottleAdviser throttleAdviser,
+            @NonNull final FeeAccumulator feeAccumulator) {
         this.consensusNow = requireNonNull(consensusNow);
         this.creatorInfo = requireNonNull(creatorInfo);
         this.txnInfo = requireNonNull(transactionInfo);
@@ -161,6 +164,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.dispatchProcessor = requireNonNull(dispatchProcessor);
         this.recordListBuilder = requireNonNull(recordListBuilder);
         this.throttleAdviser = requireNonNull(throttleAdviser);
+        this.feeAccumulator = requireNonNull(feeAccumulator);
         this.attributeValidator = new AttributeValidatorImpl(this);
         this.expiryValidator = new ExpiryValidatorImpl(this);
         this.dispatcher = requireNonNull(dispatcher);
@@ -185,6 +189,11 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @Override
     public AccountID payer() {
         return syntheticPayer;
+    }
+
+    @Override
+    public void chargePayerFee(final long amount) {
+        feeAccumulator.chargeNetworkFee(syntheticPayer, amount);
     }
 
     @NonNull
