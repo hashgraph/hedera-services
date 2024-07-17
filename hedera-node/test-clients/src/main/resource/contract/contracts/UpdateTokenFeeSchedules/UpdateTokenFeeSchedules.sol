@@ -22,6 +22,21 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         }
     }
 
+    function updateFungibleFees(address tokenAddress, int64 amount, address feeToken, int64 numerator, int64 denominator, bool netOfTransfers, address collector) external {
+
+        IHederaTokenService.FixedFee[] memory fixedFees = createFixedFeesWithAllTypes(amount, feeToken, collector);
+
+        IHederaTokenService.FractionalFee[] memory fractionalFees = new IHederaTokenService.FractionalFee[](1);
+        IHederaTokenService.FractionalFee memory fractionalFee = createFractionalFee(numerator, denominator, netOfTransfers, collector);
+        fractionalFees[0] = fractionalFee;
+
+        int responseCode = updateFungibleTokenCustomFees(tokenAddress, fixedFees, fractionalFees);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of custom fee failed!");
+        }
+    }
+
     function updateFungibleFixedHbarFees(address tokenAddress, uint8 numberOfFees, int64 amount, address collector) external {
 
         IHederaTokenService.FixedFee[] memory fixedFees = createNAmountFixedFeesForHbars(numberOfFees, amount, collector);
@@ -65,6 +80,20 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         IHederaTokenService.FixedFee memory fixedHtsFee = createFixedTokenFee(amount, feeToken, collector);
         fixedFees[0] = fixedHtsFee;
         IHederaTokenService.RoyaltyFee[] memory royaltyFees = new IHederaTokenService.RoyaltyFee[](0);
+        int responseCode = updateNonFungibleTokenCustomFees(tokenAddress, fixedFees, royaltyFees);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of custom fee failed!");
+        }
+    }
+
+    function updateNonFungibleFees(address tokenAddress, address feeToken, int64 amount, int64 numerator, int64 denominator, address collector) external {
+
+        IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](1);
+        IHederaTokenService.FixedFee memory fixedHtsFee = createFixedTokenFee(amount, feeToken, collector);
+        fixedFees[0] = fixedHtsFee;
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees = createRoyaltyFeesWithAllTypes(numerator, denominator, amount, feeToken, collector);
+
         int responseCode = updateNonFungibleTokenCustomFees(tokenAddress, fixedFees, royaltyFees);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
