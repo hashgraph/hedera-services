@@ -308,7 +308,8 @@ public class ContractCallSuite {
                             assertCloseEnough(
                                     expectedUsdAssociationFee,
                                     approxUsdDiff,
-                                    5.0,
+                                    // Allow at most one percent deviation from expected
+                                    1.0,
                                     "USD value of gas difference",
                                     "auto-association fee");
                         }));
