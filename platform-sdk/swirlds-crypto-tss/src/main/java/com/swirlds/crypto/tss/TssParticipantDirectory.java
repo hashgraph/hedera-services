@@ -87,6 +87,7 @@ public class TssParticipantDirectory {
      *
      * @return a new Builder instance
      */
+    @NonNull
     public static Builder createBuilder() {
         return new Builder();
     }
@@ -105,6 +106,7 @@ public class TssParticipantDirectory {
      *
      * @return the shares owned by the participant represented as self.
      */
+    @NonNull
     public List<TssShareId> getOwnedShareIds() {
         return ownedShareIds;
     }
@@ -114,6 +116,7 @@ public class TssParticipantDirectory {
      *
      * @return the list of all the shareIds
      */
+    @NonNull
     public List<TssShareId> getShareIds() {
         return shareOwnersMap.keySet().stream()
                 .sorted(Comparator.comparing(TssShareId::idElement))
@@ -137,6 +140,7 @@ public class TssParticipantDirectory {
          * @param tssEncryptionPrivateKey the pairing private key used to decrypt tss share portions
          * @return the builder instance
          */
+        @NonNull
         public Builder withSelf(final int id, @NonNull final PairingPrivateKey tssEncryptionPrivateKey) {
             if (selfEntry != null) {
                 throw new IllegalArgumentException("There is already an for the current participant");
@@ -152,6 +156,7 @@ public class TssParticipantDirectory {
          * @return the builder instance
          * @throws IllegalArgumentException if threshold is less than or equals to 0
          */
+        @NonNull
         public Builder withThreshold(final int threshold) {
             if (threshold <= 0) {
                 throw new IllegalArgumentException("Invalid threshold: " + threshold);
@@ -169,10 +174,11 @@ public class TssParticipantDirectory {
          * @return the builder instance
          * @throws IllegalArgumentException if participantId was previously added.
          */
+        @NonNull
         public Builder withParticipant(
                 final int participantId,
                 final int numberOfShares,
-                final @NonNull PairingPublicKey tssEncryptionPublicKey) {
+                @NonNull final PairingPublicKey tssEncryptionPublicKey) {
             if (participantEntries.containsKey(participantId))
                 throw new IllegalArgumentException(
                         "Participant with id " + participantId + " was previously added to the directory");
@@ -191,7 +197,8 @@ public class TssParticipantDirectory {
          * @throws IllegalStateException if there are no configured participants
          * @throws IllegalStateException if the threshold value is higher than the total shares
          */
-        public TssParticipantDirectory build(@NonNull SignatureSchema schema) {
+        @NonNull
+        public TssParticipantDirectory build(@NonNull final SignatureSchema schema) {
             Objects.requireNonNull(schema, "Schema must not be null");
 
             if (isNull(selfEntry)) {

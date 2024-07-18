@@ -131,7 +131,7 @@ public interface TssService {
      * @return the signature, which will be in the group opposite to the group of the public key
      */
     @NonNull
-    TssShareSignature sign(final @NonNull TssPrivateShare privateShare, final @NonNull byte[] message);
+    TssShareSignature sign(@NonNull final TssPrivateShare privateShare, @NonNull final byte[] message);
 
     /**
      * verifies a signature using the participantDirectory and the list of public shares.
@@ -143,7 +143,7 @@ public interface TssService {
     boolean verifySignature(
             @NonNull final TssParticipantDirectory participantDirectory,
             @NonNull final List<TssPublicShare> publicShares,
-            final @NonNull TssShareSignature signature);
+            @NonNull final TssShareSignature signature);
 
     /**
      * Aggregate a threshold number of {@link TssShareSignature}s.
