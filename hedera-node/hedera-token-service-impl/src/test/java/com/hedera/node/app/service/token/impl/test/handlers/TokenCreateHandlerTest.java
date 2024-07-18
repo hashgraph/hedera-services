@@ -875,6 +875,9 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
         private Key pauseKey = A_COMPLEX_KEY;
         private Key metadataKey = A_COMPLEX_KEY;
         private String metadata = "test metadata";
+        private Key lockKey = A_COMPLEX_KEY;
+        private Key partitionKey = A_COMPLEX_KEY;
+        private Key partitionMoveKey = A_COMPLEX_KEY;
         private Timestamp expiry = Timestamp.newBuilder().seconds(1234600L).build();
         private AccountID autoRenewAccount = autoRenewAccountId;
         private long autoRenewPeriod = autoRenewSecs;
@@ -912,7 +915,10 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
                     .supplyType(supplyType)
                     .customFees(customFees)
                     .metadataKey(metadataKey)
-                    .metadata(Bytes.wrap(metadata));
+                    .metadata(Bytes.wrap(metadata))
+                    .lockKey(lockKey)
+                    .partitionKey(partitionKey)
+                    .partitionMoveKey(partitionMoveKey);
             if (autoRenewPeriod > 0) {
                 createTxnBody.autoRenewPeriod(
                         Duration.newBuilder().seconds(autoRenewPeriod).build());
@@ -1043,6 +1049,21 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
         public TokenCreateBuilder withMetadataKey(final Key k) {
             this.metadataKey = k;
+            return this;
+        }
+
+        public TokenCreateBuilder withLockKey(final Key k) {
+            this.lockKey = k;
+            return this;
+        }
+
+        public TokenCreateBuilder withPartitionKey(final Key k) {
+            this.partitionKey = k;
+            return this;
+        }
+
+        public TokenCreateBuilder withPartitionMoveKey(final Key k) {
+            this.partitionMoveKey = k;
             return this;
         }
     }

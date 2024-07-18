@@ -1230,6 +1230,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         private Key feeScheduleKey = B_COMPLEX_KEY;
         private Key pauseKey = B_COMPLEX_KEY;
         private Key metadataKey = B_COMPLEX_KEY;
+        private Key lockKey = B_COMPLEX_KEY;
+        private Key partitionKey = B_COMPLEX_KEY;
+        private Key partitionMoveKey = B_COMPLEX_KEY;
         private Timestamp expiry = Timestamp.newBuilder().seconds(1234600L).build();
         private AccountID autoRenewAccount = ownerId;
         private long autoRenewPeriod = autoRenewSecs;
@@ -1257,6 +1260,9 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
                     .metadata(Bytes.wrap(metadata))
                     .feeScheduleKey(feeScheduleKey)
                     .pauseKey(pauseKey)
+                    .lockKey(lockKey)
+                    .partitionKey(partitionKey)
+                    .partitionMoveKey(partitionMoveKey)
                     .keyVerificationMode(keyVerification)
                     .autoRenewAccount(autoRenewAccount)
                     .expiry(expiry)
@@ -1363,6 +1369,21 @@ class TokenUpdateHandlerTest extends CryptoTokenHandlerTestBase {
 
         public TokenUpdateBuilder withKeyVerification(final TokenKeyValidation keyVerification) {
             this.keyVerification = keyVerification;
+            return this;
+        }
+
+        public TokenUpdateBuilder withLockKey(final Key k) {
+            this.lockKey = k;
+            return this;
+        }
+
+        public TokenUpdateBuilder withPartitionKey(final Key k) {
+            this.partitionKey = k;
+            return this;
+        }
+
+        public TokenUpdateBuilder withPartitionMoveKey(final Key k) {
+            this.partitionMoveKey = k;
             return this;
         }
     }
