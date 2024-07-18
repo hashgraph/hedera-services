@@ -105,16 +105,11 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 public class CryptoTransferHTSSuite {
-
-    private static final Logger log = LogManager.getLogger(CryptoTransferHTSSuite.class);
-
     private static final long GAS_TO_OFFER = 4_000_000L;
     public static final long TOTAL_SUPPLY = 1_000;
     private static final String FUNGIBLE_TOKEN = "TokenA";
