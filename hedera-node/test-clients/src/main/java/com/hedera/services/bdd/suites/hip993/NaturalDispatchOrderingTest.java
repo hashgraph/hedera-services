@@ -91,7 +91,7 @@ import org.junit.jupiter.api.DynamicTest;
  * Asserts the expected presence and order of all valid combinations of preceding and following stream items;
  * both when rolled back and directly committed. It particularly emphasizes the natural ordering of
  * {@link TransactionCategory#PRECEDING} stream items as defined in
- * [HIP-993](<a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/a64bdb258d52ba4ce1ca26bede8e03871b9ade10/HIP/hip-993.md#natural-ordering-of-preceding-records">...</a>).
+ * HIP-993 <a href="https://hips.hedera.com/hip/hip-993#natural-ordering-of-preceding-records">here</a>.
  * <p>
  * The only stream items created in a savepoint that are <b>not</b> expected to be present are those with reversing
  * behavior {@link SingleTransactionRecordBuilder.ReversingBehavior#REMOVABLE}, and whose originating savepoint was rolled back.
