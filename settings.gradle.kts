@@ -116,6 +116,8 @@ include(":swirlds-platform-core", "platform-sdk/swirlds-platform-core")
 
 include(":swirlds-state-api", "platform-sdk/swirlds-state-api")
 
+include(":swirlds-crypto-tss", "platform-sdk/swirlds-crypto-tss")
+
 include(":swirlds-cli", "platform-sdk/swirlds-cli")
 
 include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
