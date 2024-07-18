@@ -24,7 +24,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_AUTORENEW_ACCOU
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MODIFYING_IMMUTABLE_CONTRACT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
@@ -58,7 +57,6 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
-import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
@@ -122,6 +120,7 @@ public class ContractUpdateHandler implements TransactionHandler {
     private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {
         return !op.hasExpirationTime()
                 || hasCryptoAdminKey(op)
+                || op.hasMaxAutomaticTokenAssociations()
                 || op.hasProxyAccountID()
                 || op.hasAutoRenewPeriod()
                 || op.hasFileID()
@@ -175,13 +174,13 @@ public class ContractUpdateHandler implements TransactionHandler {
             final var ledgerConfig = context.configuration().getConfigData(LedgerConfig.class);
             final var entitiesConfig = context.configuration().getConfigData(EntitiesConfig.class);
             final var tokensConfig = context.configuration().getConfigData(TokensConfig.class);
-            final var contractsConfig = context.configuration().getConfigData(ContractsConfig.class);
 
             final long newMaxAssociations = op.maxAutomaticTokenAssociationsOrThrow();
 
             if (entitiesConfig.unlimitedAutoAssociationsEnabled() && newMaxAssociations < 0) {
                 validateTrue(newMaxAssociations == UNLIMITED_AUTOMATIC_ASSOCIATIONS, INVALID_MAX_AUTO_ASSOCIATIONS);
             } else {
+                validateFalse(newMaxAssociations < 0, INVALID_MAX_AUTO_ASSOCIATIONS);
                 validateFalse(
                         newMaxAssociations > ledgerConfig.maxAutoAssociations(),
                         REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
@@ -191,8 +190,6 @@ public class ContractUpdateHandler implements TransactionHandler {
                 validateFalse(
                         entitiesConfig.limitTokenAssociations() && newMaxAssociations > tokensConfig.maxPerAccount(),
                         REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
-
-                validateTrue(contractsConfig.allowAutoAssociations(), NOT_SUPPORTED);
             }
         }
 

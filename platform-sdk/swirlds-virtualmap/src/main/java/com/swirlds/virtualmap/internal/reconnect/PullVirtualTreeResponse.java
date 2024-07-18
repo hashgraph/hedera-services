@@ -124,6 +124,7 @@ public class PullVirtualTreeResponse implements SelfSerializable {
     @Override
     public void deserialize(final SerializableDataInputStream in, final int version) throws IOException {
         assert learnerView != null;
+        learnerView.getMapStats().incrementTransfersFromTeacher();
         path = in.readLong();
         isClean = in.read() == 0;
         if (path == Path.ROOT_PATH) {
@@ -137,6 +138,11 @@ public class PullVirtualTreeResponse implements SelfSerializable {
         final boolean isLeaf = learnerView.isLeaf(path);
         if (isLeaf && !isClean) {
             leafData = in.readSerializable(false, VirtualLeafRecord::new);
+        }
+        if (learnerView.isLeaf(path)) {
+            learnerView.getMapStats().incrementLeafHashes(1, isClean ? 1 : 0);
+        } else {
+            learnerView.getMapStats().incrementInternalHashes(1, isClean ? 1 : 0);
         }
         if (path != Path.INVALID_PATH) {
             learnerView.responseReceived(this);

@@ -27,6 +27,8 @@ import com.hedera.node.app.HederaInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
+import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.version.HederaSoftwareVersion;
@@ -78,7 +80,8 @@ class IngestComponentTest {
                 new HederaSoftwareVersion(
                         SemanticVersion.newBuilder().major(1).build(),
                         SemanticVersion.newBuilder().major(2).build(),
-                        0));
+                        0),
+                "Node7");
 
         final var configProvider = new ConfigProviderImpl(false);
         app = DaggerHederaInjectionComponent.builder()
@@ -92,7 +95,9 @@ class IngestComponentTest {
                 .currentPlatformStatus(() -> PlatformStatus.ACTIVE)
                 .servicesRegistry(mock(ServicesRegistry.class))
                 .instantSource(InstantSource.system())
-                .softwareVersion(mock(HederaSoftwareVersion.class))
+                .softwareVersion(mock(SemanticVersion.class))
+                .contractServiceImpl(new ContractServiceImpl(InstantSource.system()))
+                .fileServiceImpl(new FileServiceImpl())
                 .metrics(metrics)
                 .build();
 

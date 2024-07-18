@@ -65,7 +65,7 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

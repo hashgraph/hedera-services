@@ -22,6 +22,7 @@ import static com.swirlds.logging.legacy.LogMarker.RECONNECT;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.merkle.MerkleNode;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
@@ -29,6 +30,7 @@ import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
 import com.swirlds.common.utility.ThresholdLimitingHandler;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -58,6 +60,8 @@ public class LearnerPushTask<T> {
 
     private final Consumer<CustomReconnectRoot<?, ?>> subtreeListener;
 
+    private final ReconnectMapStats mapStats;
+
     private final ThresholdLimitingHandler<Throwable> exceptionRateLimiter = new ThresholdLimitingHandler<>(1);
 
     private final Consumer<Integer> completeListener;
@@ -79,6 +83,8 @@ public class LearnerPushTask<T> {
      * 		a view used to interface with the subtree
      * @param nodeCount
      * 		an object used to keep track of the number of nodes sent during the reconnect
+     * @param mapStats
+     *      a ReconnectMapStats object to collect reconnect metrics
      */
     public LearnerPushTask(
             final StandardWorkGroup workGroup,
@@ -89,7 +95,8 @@ public class LearnerPushTask<T> {
             final AtomicReference<MerkleNode> root,
             final LearnerTreeView<T> view,
             final ReconnectNodeCount nodeCount,
-            final Consumer<Integer> completeListener) {
+            final Consumer<Integer> completeListener,
+            @NonNull final ReconnectMapStats mapStats) {
         this.workGroup = workGroup;
         this.viewId = viewId;
         this.in = in;
@@ -99,6 +106,7 @@ public class LearnerPushTask<T> {
         this.view = view;
         this.nodeCount = nodeCount;
         this.completeListener = completeListener;
+        this.mapStats = mapStats;
     }
 
     public void start() {
@@ -204,6 +212,8 @@ public class LearnerPushTask<T> {
             }
             final boolean nodeAlreadyPresent = originalHash != null && originalHash.equals(teacherHash);
             out.sendAsync(viewId, new QueryResponse(nodeAlreadyPresent));
+            mapStats.incrementTransfersFromLearner();
+            view.recordHashStats(mapStats, newParent, childIndex, nodeAlreadyPresent);
 
             view.expectLessonFor(newParent, childIndex, originalChild, nodeAlreadyPresent);
         }
@@ -213,6 +223,10 @@ public class LearnerPushTask<T> {
      * Update node counts for statistics.
      */
     private void addToNodeCount(final ExpectedLesson<T> expectedLesson, final Lesson<T> lesson, final T newChild) {
+        if (lesson.isLeafLesson()) {
+            mapStats.incrementLeafData(1, expectedLesson.isNodeAlreadyPresent() ? 1 : 0);
+        }
+
         if (lesson.isCurrentNodeUpToDate()) {
             return;
         }
@@ -244,6 +258,7 @@ public class LearnerPushTask<T> {
 
                 final ExpectedLesson<T> expectedLesson = view.getNextExpectedLesson();
                 final Lesson<T> lesson = in.readAnticipatedMessage(viewId, messageFactory);
+                mapStats.incrementTransfersFromTeacher();
 
                 final T parent = expectedLesson.getParent();
 

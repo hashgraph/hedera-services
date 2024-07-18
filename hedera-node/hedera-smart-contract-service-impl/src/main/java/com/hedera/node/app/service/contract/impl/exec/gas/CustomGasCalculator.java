@@ -91,6 +91,18 @@ public class CustomGasCalculator extends CancunGasCalculator {
     }
 
     /**
+     * Gas charge to do a signature verification for an ED key.
+     *
+     * Based on the cost of system resources used.
+     *
+     * FUTURE: Gas for system contract method calls needs to be a) determined by measurement of
+     * resources consumed, and b) incorporated into the fee schedule.
+     */
+    public long getEdSignatureVerificationSystemContractGasCost() {
+        return 1_500_000L;
+    }
+
+    /**
      * Logically, would return the gas cost of storing the given number of bytes for the given number of seconds,
      * given the relative prices of a byte-hour and a gas unit in tinybar.
      *

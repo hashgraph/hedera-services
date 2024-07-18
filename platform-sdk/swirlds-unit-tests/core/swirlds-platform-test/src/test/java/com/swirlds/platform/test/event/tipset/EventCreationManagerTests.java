@@ -32,7 +32,7 @@ import com.swirlds.platform.event.creation.DefaultEventCreationManager;
 import com.swirlds.platform.event.creation.EventCreationManager;
 import com.swirlds.platform.event.creation.EventCreator;
 import com.swirlds.platform.pool.TransactionPoolNexus;
-import com.swirlds.platform.system.events.BaseEventHashedData;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.status.PlatformStatus;
 import java.time.Duration;
 import java.util.List;
@@ -44,15 +44,14 @@ import org.junit.jupiter.api.Test;
 class EventCreationManagerTests {
     private AtomicLong intakeQueueSize;
     private EventCreator creator;
-    private List<BaseEventHashedData> eventsToCreate;
+    private List<UnsignedEvent> eventsToCreate;
     private FakeTime time;
     private EventCreationManager manager;
 
     @BeforeEach
     void setUp() {
         creator = mock(EventCreator.class);
-        eventsToCreate = List.of(
-                mock(BaseEventHashedData.class), mock(BaseEventHashedData.class), mock(BaseEventHashedData.class));
+        eventsToCreate = List.of(mock(UnsignedEvent.class), mock(UnsignedEvent.class), mock(UnsignedEvent.class));
         when(creator.maybeCreateEvent())
                 .thenReturn(eventsToCreate.get(0), eventsToCreate.get(1), eventsToCreate.get(2));
 
@@ -75,21 +74,21 @@ class EventCreationManagerTests {
 
     @Test
     void basicBehaviorTest() {
-        final BaseEventHashedData e0 = manager.maybeCreateEvent();
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
         assertNotNull(e0);
         assertSame(eventsToCreate.get(0), e0);
 
         time.tick(Duration.ofSeconds(1));
 
-        final BaseEventHashedData e1 = manager.maybeCreateEvent();
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
         verify(creator, times(2)).maybeCreateEvent();
         assertNotNull(e1);
         assertSame(eventsToCreate.get(1), e1);
 
         time.tick(Duration.ofSeconds(1));
 
-        final BaseEventHashedData e2 = manager.maybeCreateEvent();
+        final UnsignedEvent e2 = manager.maybeCreateEvent();
         verify(creator, times(3)).maybeCreateEvent();
         assertNotNull(e2);
         assertSame(eventsToCreate.get(2), e2);
@@ -97,7 +96,7 @@ class EventCreationManagerTests {
 
     @Test
     void statusPreventsCreation() {
-        final BaseEventHashedData e0 = manager.maybeCreateEvent();
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
         assertNotNull(e0);
         assertSame(eventsToCreate.get(0), e0);
@@ -111,7 +110,7 @@ class EventCreationManagerTests {
         time.tick(Duration.ofSeconds(1));
 
         manager.updatePlatformStatus(PlatformStatus.ACTIVE);
-        final BaseEventHashedData e1 = manager.maybeCreateEvent();
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
         assertNotNull(e1);
         verify(creator, times(2)).maybeCreateEvent();
         assertSame(eventsToCreate.get(1), e1);
@@ -119,7 +118,7 @@ class EventCreationManagerTests {
 
     @Test
     void backpressurePreventsCreation() {
-        final BaseEventHashedData e0 = manager.maybeCreateEvent();
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
         assertNotNull(e0);
         assertSame(eventsToCreate.get(0), e0);
@@ -133,7 +132,7 @@ class EventCreationManagerTests {
         time.tick(Duration.ofSeconds(1));
         intakeQueueSize.set(9);
 
-        final BaseEventHashedData e1 = manager.maybeCreateEvent();
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
         assertNotNull(e1);
         verify(creator, times(2)).maybeCreateEvent();
         assertSame(eventsToCreate.get(1), e1);
@@ -141,7 +140,7 @@ class EventCreationManagerTests {
 
     @Test
     void ratePreventsCreation() {
-        final BaseEventHashedData e0 = manager.maybeCreateEvent();
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
         assertNotNull(e0);
         assertSame(eventsToCreate.get(0), e0);
@@ -154,7 +153,7 @@ class EventCreationManagerTests {
 
         time.tick(Duration.ofSeconds(1));
 
-        final BaseEventHashedData e1 = manager.maybeCreateEvent();
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
         verify(creator, times(2)).maybeCreateEvent();
         assertNotNull(e1);
         assertSame(eventsToCreate.get(1), e1);
@@ -166,7 +165,7 @@ class EventCreationManagerTests {
     @Disabled
     @Test
     void unhealthyNodePreventsCreation() {
-        final BaseEventHashedData e0 = manager.maybeCreateEvent();
+        final UnsignedEvent e0 = manager.maybeCreateEvent();
         verify(creator, times(1)).maybeCreateEvent();
         assertNotNull(e0);
         assertSame(eventsToCreate.get(0), e0);
@@ -182,7 +181,7 @@ class EventCreationManagerTests {
 
         manager.reportUnhealthyDuration(Duration.ZERO);
 
-        final BaseEventHashedData e1 = manager.maybeCreateEvent();
+        final UnsignedEvent e1 = manager.maybeCreateEvent();
         assertNotNull(e1);
         verify(creator, times(2)).maybeCreateEvent();
         assertSame(eventsToCreate.get(1), e1);

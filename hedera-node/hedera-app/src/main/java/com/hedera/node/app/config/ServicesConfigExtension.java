@@ -62,13 +62,11 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.node.config.data.NodesConfig;
 import com.hedera.node.config.data.RatesConfig;
 import com.hedera.node.config.data.SchedulingConfig;
-import com.hedera.node.config.data.SigsConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.StatsConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.node.config.data.TopicsConfig;
 import com.hedera.node.config.data.TraceabilityConfig;
-import com.hedera.node.config.data.UpgradeConfig;
 import com.hedera.node.config.data.UtilPrngConfig;
 import com.hedera.node.config.data.VersionConfig;
 import com.hedera.node.config.types.CongestionMultipliers;
@@ -120,13 +118,11 @@ public class ServicesConfigExtension implements ConfigurationExtension {
                 NetworkAdminConfig.class,
                 RatesConfig.class,
                 SchedulingConfig.class,
-                SigsConfig.class,
                 StakingConfig.class,
                 StatsConfig.class,
                 TokensConfig.class,
                 TopicsConfig.class,
                 TraceabilityConfig.class,
-                UpgradeConfig.class,
                 UtilPrngConfig.class,
                 VersionConfig.class);
     }

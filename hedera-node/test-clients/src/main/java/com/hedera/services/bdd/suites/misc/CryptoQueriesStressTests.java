@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.misc;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -34,6 +35,7 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +47,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
+@Tag(NOT_REPEATABLE)
 public class CryptoQueriesStressTests {
     private AtomicLong duration = new AtomicLong(10);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
@@ -90,7 +94,7 @@ public class CryptoQueriesStressTests {
     private Function<HapiSpec, OpProvider> getAccountRecordsFactory() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(
                         cryptoCreate("somebody").sendThreshold(1L),
                         cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 2L)).via("first"),
@@ -113,7 +117,7 @@ public class CryptoQueriesStressTests {
     private Function<HapiSpec, OpProvider> getAccountBalanceFactory() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(cryptoCreate("somebody"));
             }
 
@@ -127,7 +131,7 @@ public class CryptoQueriesStressTests {
     private Function<HapiSpec, OpProvider> getAccountInfoFactory() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(cryptoCreate("somebody"));
             }
 

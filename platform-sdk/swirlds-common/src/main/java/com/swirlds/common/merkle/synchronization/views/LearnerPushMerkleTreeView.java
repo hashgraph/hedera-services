@@ -25,12 +25,14 @@ import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 import com.swirlds.common.merkle.synchronization.task.LearnerPushTask;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -51,15 +53,21 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
     private final Queue<ExpectedLesson<MerkleNode>> expectedLessons;
     private final LinkedList<MerkleInternal> nodesToInitialize;
 
+    private final ReconnectMapStats mapStats;
+
     /**
      * Create a new standard tree view out of an in-memory merkle tree (or subtree).
      *
      * @param root
      * 		the root of the tree (or subtree)
+     * @param mapStats
+     *      a ReconnectMapStats object to collect reconnect metrics
      */
-    public LearnerPushMerkleTreeView(final int viewId, final MerkleNode root) {
+    public LearnerPushMerkleTreeView(
+            final int viewId, final MerkleNode root, @NonNull final ReconnectMapStats mapStats) {
         this.viewId = viewId;
         this.originalRoot = root;
+        this.mapStats = mapStats;
         expectedLessons = new LinkedList<>();
         nodesToInitialize = new LinkedList<>();
     }
@@ -83,7 +91,8 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
                 reconstructedRoot,
                 this,
                 learningSynchronizer,
-                completeListener);
+                completeListener,
+                mapStats);
         learnerThread.start();
     }
 
@@ -264,6 +273,30 @@ public class LearnerPushMerkleTreeView implements LearnerTreeView<MerkleNode> {
     public void releaseNode(final MerkleNode node) {
         if (node != null) {
             node.release();
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void recordHashStats(
+            @NonNull final ReconnectMapStats mapStats,
+            @NonNull final MerkleNode parent,
+            final int childIndex,
+            final boolean nodeAlreadyPresent) {
+        if (!parent.isInternal()) {
+            throw new IllegalArgumentException("parent is not an internal node: " + parent);
+        }
+        final MerkleNode child = parent.asInternal().getChild(childIndex);
+        // The child may be missing per the getChild() specification,
+        // and this method cannot reason about a `null`, so just bail.
+        if (child == null) return;
+
+        if (child.isLeaf()) {
+            mapStats.incrementLeafHashes(1, nodeAlreadyPresent ? 1 : 0);
+        } else {
+            mapStats.incrementInternalHashes(1, nodeAlreadyPresent ? 1 : 0);
         }
     }
 }

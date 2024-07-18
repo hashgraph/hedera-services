@@ -82,6 +82,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.CryptoCreateWithAliasConfig;
 import com.hedera.node.config.data.EntitiesConfig;
@@ -367,11 +368,13 @@ public class CryptoCreateHandler extends BaseCryptoHandler implements Transactio
         cryptoCreateValidator.validateKey(
                 op.keyOrThrow(), // cannot be null by this point
                 context.attributeValidator(),
-                !context.body().hasTransactionID());
+                context.recordBuilders()
+                        .getOrCreate(SingleTransactionRecordBuilder.class)
+                        .isInternalDispatch());
 
         // Validate the staking information included in this account creation.
         if (op.hasStakedAccountId() || op.hasStakedNodeId()) {
-            stakingValidator.validateStakedIdForCreation(
+            StakingValidator.validateStakedIdForCreation(
                     context.configuration().getConfigData(StakingConfig.class).isEnabled(),
                     op.declineReward(),
                     op.stakedId().kind().name(),

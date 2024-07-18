@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Collections.emptySet;
@@ -73,6 +74,7 @@ import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
@@ -185,6 +187,9 @@ public class SingleTransactionRecordBuilderImpl
     // Used for some child records builders.
     private final ReversingBehavior reversingBehavior;
 
+    // Category of the record
+    private final TransactionCategory category;
+
     // Used to customize the externalized form of a dispatched child transaction, right before
     // its record stream item is built; lets the contract service externalize certain dispatched
     // CryptoCreate transactions as ContractCreate synthetic transactions
@@ -222,7 +227,7 @@ public class SingleTransactionRecordBuilderImpl
      * @param consensusNow the consensus timestamp for the transaction
      */
     public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
-        this(consensusNow, ReversingBehavior.REVERSIBLE);
+        this(consensusNow, ReversingBehavior.REVERSIBLE, USER);
     }
 
     /**
@@ -232,8 +237,10 @@ public class SingleTransactionRecordBuilderImpl
      * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
      */
     public SingleTransactionRecordBuilderImpl(
-            @NonNull final Instant consensusNow, final ReversingBehavior reversingBehavior) {
-        this(consensusNow, reversingBehavior, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER);
+            @NonNull final Instant consensusNow,
+            final ReversingBehavior reversingBehavior,
+            final TransactionCategory category) {
+        this(consensusNow, reversingBehavior, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, category);
     }
 
     /**
@@ -246,10 +253,12 @@ public class SingleTransactionRecordBuilderImpl
     public SingleTransactionRecordBuilderImpl(
             @NonNull final Instant consensusNow,
             @NonNull final ReversingBehavior reversingBehavior,
-            @NonNull final ExternalizedRecordCustomizer customizer) {
+            @NonNull final ExternalizedRecordCustomizer customizer,
+            @NonNull final TransactionCategory category) {
         this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
         this.reversingBehavior = requireNonNull(reversingBehavior, "reversingBehavior must not be null");
         this.customizer = requireNonNull(customizer, "customizer must not be null");
+        this.category = requireNonNull(category, "category must not be null");
     }
 
     /**
@@ -1218,36 +1227,12 @@ public class SingleTransactionRecordBuilderImpl
         return paidStakingRewards;
     }
 
+    /**
+     * Returns the {@link TransactionRecord.Builder} of the record. It can be PRECEDING, CHILD, USER or SCHEDULED.
+     * @return the {@link TransactionRecord.Builder} of the record
+     */
     @Override
-    public String toString() {
-        return "SingleTransactionRecordBuilderImpl{" + "transaction="
-                + transaction + ", transactionBytes="
-                + transactionBytes + ", consensusNow="
-                + consensusNow + ", parentConsensus="
-                + parentConsensus + ", transactionID="
-                + transactionID + ", tokenTransferLists="
-                + tokenTransferLists + ", assessedCustomFees="
-                + assessedCustomFees + ", automaticTokenAssociations="
-                + automaticTokenAssociations + ", paidStakingRewards="
-                + paidStakingRewards + ", transactionRecordBuilder="
-                + transactionRecordBuilder + ", transferList="
-                + transferList + ", status="
-                + status + ", exchangeRate="
-                + exchangeRate + ", serialNumbers="
-                + serialNumbers + ", newTotalSupply="
-                + newTotalSupply + ", transactionReceiptBuilder="
-                + transactionReceiptBuilder + ", contractStateChanges="
-                + contractStateChanges + ", contractActions="
-                + contractActions + ", contractBytecodes="
-                + contractBytecodes + ", deletedAccountBeneficiaries="
-                + deletedAccountBeneficiaries + ", explicitRewardReceiverIds="
-                + explicitRewardReceiverIds + ", transactionFee="
-                + transactionFee + ", contractFunctionResult="
-                + contractFunctionResult + ", reversingBehavior="
-                + reversingBehavior + ", customizer="
-                + customizer + ", tokenID="
-                + tokenID + ", tokenType="
-                + tokenType + ", inProgressBody="
-                + inProgressBody() + '}';
+    public TransactionCategory category() {
+        return category;
     }
 }

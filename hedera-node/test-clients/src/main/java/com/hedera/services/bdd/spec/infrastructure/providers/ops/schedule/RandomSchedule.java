@@ -29,7 +29,6 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import java.util.Optional;
@@ -38,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RandomSchedule implements OpProvider {
     private final AtomicInteger opNo = new AtomicInteger();
     private final RegistrySourcedNameProvider<ScheduleID> schedules;
-    private final EntityNameProvider<AccountID> accounts;
+    private final EntityNameProvider accounts;
 
     public final ResponseCodeEnum[] permissibleOutcomes =
             standardOutcomesAnd(UNRESOLVABLE_REQUIRED_SIGNERS, IDENTICAL_SCHEDULE_ALREADY_CREATED);
@@ -47,7 +46,7 @@ public class RandomSchedule implements OpProvider {
     private int ceilingNum = DEFAULT_CEILING_NUM;
     static final String ADMIN_KEY = DEFAULT_PAYER;
 
-    public RandomSchedule(RegistrySourcedNameProvider<ScheduleID> schedules, EntityNameProvider<AccountID> accounts) {
+    public RandomSchedule(RegistrySourcedNameProvider<ScheduleID> schedules, EntityNameProvider accounts) {
         this.schedules = schedules;
         this.accounts = accounts;
     }

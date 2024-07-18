@@ -86,14 +86,14 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.platform.state.spi.ReadableSingletonStateBase;
-import com.swirlds.platform.state.spi.WritableSingletonStateBase;
-import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
-import com.swirlds.platform.test.fixtures.state.MapWritableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -293,7 +293,7 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
             List.of(withFixedFee(hbarFixedFee, feeCollectorId, false), customFractionalFee);
 
     /* ---------- Misc ---------- */
-    protected final Timestamp consensusTimestamp =
+    protected static final Timestamp consensusTimestamp =
             Timestamp.newBuilder().seconds(1_234_567L).build();
     protected final Instant consensusInstant = Instant.ofEpochSecond(1_234_567L);
     protected final String tokenName = "test token";

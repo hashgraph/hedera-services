@@ -21,6 +21,7 @@ import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
@@ -28,7 +29,6 @@ import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Random;
@@ -39,7 +39,7 @@ class BirthRoundMigrationShimTests {
     @NonNull
     private PlatformEvent buildEvent(
             @NonNull final Random random,
-            @NonNull final SoftwareVersion softwareVersion,
+            @NonNull final SemanticVersion softwareVersion,
             final long generation,
             final long birthRound) {
 
@@ -87,8 +87,9 @@ class BirthRoundMigrationShimTests {
             final long birthRound = random.nextLong(100, 1000);
             final PlatformEvent event = buildEvent(
                     random,
-                    new BasicSoftwareVersion(
-                            firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100)),
+                    SemanticVersion.newBuilder()
+                            .major(firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100))
+                            .build(),
                     lowestJudgeGenerationBeforeBirthRoundMode - random.nextInt(1, 100),
                     birthRound);
 
@@ -130,8 +131,9 @@ class BirthRoundMigrationShimTests {
             final long birthRound = random.nextLong(100, 1000);
             final PlatformEvent event = buildEvent(
                     random,
-                    new BasicSoftwareVersion(
-                            firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100)),
+                    SemanticVersion.newBuilder()
+                            .major(firstVersionInBirthRoundMode.getSoftwareVersion() - random.nextInt(1, 100))
+                            .build(),
                     lowestJudgeGenerationBeforeBirthRoundMode + random.nextInt(0, 10),
                     birthRound);
 
@@ -172,7 +174,9 @@ class BirthRoundMigrationShimTests {
             final long birthRound = random.nextLong(100, 1000);
             final PlatformEvent event = buildEvent(
                     random,
-                    new BasicSoftwareVersion(firstVersionInBirthRoundMode.getSoftwareVersion() + random.nextInt(0, 10)),
+                    SemanticVersion.newBuilder()
+                            .major(firstVersionInBirthRoundMode.getSoftwareVersion() + random.nextInt(1, 10))
+                            .build(),
                     lowestJudgeGenerationBeforeBirthRoundMode - random.nextInt(-100, 100),
                     birthRound);
 

@@ -30,14 +30,15 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.node.app.service.file.FileMetadata;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.file.impl.WritableFileStore;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.data.FilesConfig;
+import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -77,15 +78,10 @@ public class FileServiceUtils {
             throws PreCheckException {
         requireNonNull(context);
         requireNonNull(fileId);
-
-        final var fileConfig = context.configuration().getConfigData(FilesConfig.class);
-
-        // @future('8172'): check if upgrade file exist after modularization is done
-        FileMetadata fileMeta = null;
-        if (fileId.fileNum() < fileConfig.softwareUpdateRange().left()
-                || fileId.fileNum() > fileConfig.softwareUpdateRange().right()) {
-            fileMeta = fileStore.getFileMetadata(fileId);
-            mustExist(fileMeta, INVALID_FILE_ID);
+        // System files are created as a side effect of handling the genesis transaction, so by the time any
+        // handler is invoked at consensus, they will necessarily exist
+        if (notGenesisCreation(fileId, context.configuration())) {
+            mustExist(fileStore.getFileMetadata(fileId), INVALID_FILE_ID);
         }
     }
 
@@ -202,5 +198,29 @@ public class FileServiceUtils {
             @NonNull final WritableFileStore fileStore,
             @NonNull final FileID fileId) {
         return verifyNotSystemFile(ledgerConfig, fileStore, fileId, false);
+    }
+
+    /**
+     * Returns true if the given file number is not created before handling the genesis transaction.
+     *
+     * @param fileID the file id to check
+     * @param config the network configuration
+     * @return true if the file number is not created before handling the genesis transaction
+     */
+    public static boolean notGenesisCreation(final FileID fileID, @NonNull final Configuration config) {
+        final var hederaConfig = config.getConfigData(HederaConfig.class);
+        if (fileID.shardNum() != hederaConfig.shard() || fileID.realmNum() != hederaConfig.realm()) {
+            return true;
+        }
+        final var fileNum = fileID.fileNum();
+        final var filesConfig = config.getConfigData(FilesConfig.class);
+        return !filesConfig.softwareUpdateRange().containsInclusive(fileNum)
+                && fileNum != filesConfig.addressBook()
+                && fileNum != filesConfig.nodeDetails()
+                && fileNum != filesConfig.feeSchedules()
+                && fileNum != filesConfig.exchangeRates()
+                && fileNum != filesConfig.networkProperties()
+                && fileNum != filesConfig.hapiPermissions()
+                && fileNum != filesConfig.throttleDefinitions();
     }
 }

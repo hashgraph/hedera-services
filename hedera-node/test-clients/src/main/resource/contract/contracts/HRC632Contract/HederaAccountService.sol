@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "./HederaResponseCodes.sol";
 import "./IHederaAccountService.sol";
 
-abstract contract HederaAccountService is HederaResponseCodes {
+abstract contract HederaAccountService {
     address constant precompileAddress = address(0x16a);
 
     /// Returns the amount of hbar that the spender has been authorized to spend on behalf of the owner.
@@ -34,5 +34,18 @@ abstract contract HederaAccountService is HederaResponseCodes {
             abi.encodeWithSelector(IHederaAccountService.hbarApprove.selector,
                 owner, spender, amount));
         responseCode = success ? abi.decode(result, (int32)) : HederaResponseCodes.UNKNOWN;
+    }
+
+    /// Determines if the signature is valid for the given message hash and account.
+    /// It is assumed that the signature is composed of a single EDCSA or ED25519 key.
+    /// @param account The account to check the signature against
+    /// @param messageHash The hash of the message to check the signature against
+    /// @param signature The signature to check
+    /// @return response True if the signature is valid, false otherwise
+    function isAuthorizedRaw(address account, bytes memory messageHash, bytes memory signature) internal returns (bool response) {
+        (bool success, bytes memory result) = precompileAddress.call(
+            abi.encodeWithSelector(IHederaAccountService.isAuthorizedRaw.selector,
+                account, messageHash, signature));
+        response = abi.decode(result, (bool));
     }
 }

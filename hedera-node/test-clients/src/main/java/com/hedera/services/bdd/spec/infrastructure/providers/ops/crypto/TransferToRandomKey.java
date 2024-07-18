@@ -27,13 +27,12 @@ import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
-import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
 public class TransferToRandomKey implements OpProvider {
-    private final EntityNameProvider<Key> keys;
+    private final EntityNameProvider keys;
 
-    public TransferToRandomKey(EntityNameProvider<Key> keys) {
+    public TransferToRandomKey(EntityNameProvider keys) {
         this.keys = keys;
     }
 

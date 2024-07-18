@@ -21,6 +21,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CONTRACT_NEGATIVE_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -48,7 +50,7 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.time.Instant;
+import java.time.InstantSource;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -61,12 +63,16 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 public class ContractCallLocalHandler extends PaidQueryHandler {
     private final Provider<QueryComponent.Factory> provider;
     private final GasCalculator gasCalculator;
+    private final InstantSource instantSource;
 
     @Inject
     public ContractCallLocalHandler(
-            @NonNull final Provider<Factory> provider, @NonNull final GasCalculator gasCalculator) {
-        this.provider = provider;
-        this.gasCalculator = gasCalculator;
+            @NonNull final Provider<Factory> provider,
+            @NonNull final GasCalculator gasCalculator,
+            @NonNull final InstantSource instantSource) {
+        this.provider = requireNonNull(provider);
+        this.gasCalculator = requireNonNull(gasCalculator);
+        this.instantSource = requireNonNull(instantSource);
     }
 
     @Override
@@ -103,9 +109,15 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         // to call)
         final var contract = context.createStore(ReadableAccountStore.class).getContractById(contractID);
         if (contract == null) {
-            final var tokenID = TokenID.newBuilder()
-                    .tokenNum(contractID.contractNumOrElse(0L))
-                    .build();
+            var tokenNum = contractID.contractNumOrElse(0L);
+            // For convenience also translate a long-zero address to a token ID
+            if (contractID.hasEvmAddress()) {
+                final var evmAddress = contractID.evmAddressOrThrow().toByteArray();
+                if (isLongZeroAddress(evmAddress)) {
+                    tokenNum = numberOfLongZero(evmAddress);
+                }
+            }
+            final var tokenID = TokenID.newBuilder().tokenNum(tokenNum).build();
             final var tokenContract =
                     context.createStore(ReadableTokenStore.class).get(tokenID);
             mustExist(tokenContract, INVALID_CONTRACT_ID);
@@ -117,7 +129,7 @@ public class ContractCallLocalHandler extends PaidQueryHandler {
         requireNonNull(context);
         requireNonNull(header);
 
-        final var component = provider.get().create(context, Instant.now(), CONTRACT_CALL_LOCAL);
+        final var component = provider.get().create(context, instantSource.instant(), CONTRACT_CALL_LOCAL);
         final var outcome = component.contextQueryProcessor().call();
 
         final var responseHeader = outcome.isSuccess()

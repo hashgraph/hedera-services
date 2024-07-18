@@ -17,10 +17,12 @@
 package com.hedera.services.bdd.spec.transactions.node;
 
 import com.google.common.base.MoreObjects;
+import com.hedera.node.app.hapi.fees.usage.state.UsageAccumulator;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.fees.AdapterUtils;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
-import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
@@ -78,14 +80,13 @@ public class HapiNodeDelete extends HapiTxnOp<HapiNodeDelete> {
 
     @Override
     protected long feeFor(final HapiSpec spec, final Transaction txn, final int numPayerKeys) throws Throwable {
-        // TODO issue #13670
-        // This is a placeholder implementation until the actual fee estimation is implemented.
-        return FeeData.newBuilder()
-                .setNodedata(FeeComponents.newBuilder().setBpr(0))
-                .setNetworkdata(FeeComponents.newBuilder().setBpr(0))
-                .setServicedata(FeeComponents.newBuilder().setBpr(0))
-                .build()
-                .getSerializedSize();
+        return spec.fees().forActivityBasedOp(HederaFunctionality.NodeDelete, this::usageEstimate, txn, numPayerKeys);
+    }
+
+    private FeeData usageEstimate(final TransactionBody txn, final SigValueObj svo) {
+        final UsageAccumulator accumulator = new UsageAccumulator();
+        accumulator.addVpt(Math.max(0, svo.getTotalSigCount() - 1));
+        return AdapterUtils.feeDataFrom(accumulator);
     }
 
     @Override

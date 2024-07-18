@@ -29,7 +29,7 @@ mainModuleInfo { annotationProcessor("dagger.compiler") }
 
 testModuleInfo {
     requires("com.hedera.node.app.service.consensus.impl")
-    requires("com.swirlds.platform.core.test.fixtures")
+    requires("com.swirlds.state.api.test.fixtures")
     requires("com.hedera.node.app.service.token")
     requires("com.hedera.node.app.spi.test.fixtures")
     requires("com.hedera.node.config.test.fixtures")

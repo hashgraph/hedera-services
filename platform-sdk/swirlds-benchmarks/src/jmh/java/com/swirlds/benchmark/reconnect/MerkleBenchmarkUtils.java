@@ -21,6 +21,7 @@ import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticT
 
 import com.swirlds.base.time.Time;
 import com.swirlds.benchmark.BenchmarkKey;
+import com.swirlds.benchmark.BenchmarkMetrics;
 import com.swirlds.benchmark.BenchmarkValue;
 import com.swirlds.benchmark.reconnect.lag.BenchmarkSlowLearningSynchronizer;
 import com.swirlds.benchmark.reconnect.lag.BenchmarkSlowTeachingSynchronizer;
@@ -128,7 +129,8 @@ public class MerkleBenchmarkUtils {
                                 e.printStackTrace();
                             }
                         },
-                        reconnectConfig);
+                        reconnectConfig,
+                        BenchmarkMetrics.getMetrics());
                 teacher = new TeachingSynchronizer(
                         configuration,
                         Time.getCurrent(),
@@ -163,7 +165,8 @@ public class MerkleBenchmarkUtils {
                                 e.printStackTrace();
                             }
                         },
-                        reconnectConfig);
+                        reconnectConfig,
+                        BenchmarkMetrics.getMetrics());
                 teacher = new BenchmarkSlowTeachingSynchronizer(
                         configuration,
                         streams.getTeacherInput(),

@@ -21,7 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.TargetNetworkType;
+import com.hedera.services.bdd.spec.SpecOperation;
+import com.hedera.services.bdd.spec.TargetNetworkType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
 
@@ -32,10 +33,10 @@ import java.util.Set;
  */
 public class NetworkTypeFilterOp extends UtilOp {
     private final Set<TargetNetworkType> allowedNetworkTypes;
-    private final HapiSpecOperation[] ops;
+    private final SpecOperation[] ops;
 
     public NetworkTypeFilterOp(
-            @NonNull final Set<TargetNetworkType> allowedNetworkTypes, @NonNull final HapiSpecOperation[] ops) {
+            @NonNull final Set<TargetNetworkType> allowedNetworkTypes, @NonNull final SpecOperation[] ops) {
         this.allowedNetworkTypes = requireNonNull(allowedNetworkTypes);
         this.ops = requireNonNull(ops);
     }

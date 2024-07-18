@@ -42,7 +42,7 @@ public class CreateFilesBeforeReconnect extends HapiSuite {
     private static final Logger log = LogManager.getLogger(CreateFilesBeforeReconnect.class);
 
     private static final int FILE_CREATION_LIMIT = 1000;
-    private static final int FILE_CREATION_RECONNECT_TPS = 6;
+    private static final int FILE_CREATION_RECONNECT_TPS = 5;
 
     public static void main(String... args) {
         new CreateFilesBeforeReconnect().runSuiteSync();

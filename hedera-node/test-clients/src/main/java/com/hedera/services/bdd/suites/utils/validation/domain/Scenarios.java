@@ -25,15 +25,6 @@ public class Scenarios {
     ConsensusScenario consensus;
     StakingScenario staking;
     VersionInfoScenario versions;
-    FeeSnapshotsScenario feeSnapshots;
-
-    public FeeSnapshotsScenario getFeeSnapshots() {
-        return feeSnapshots;
-    }
-
-    public void setFeeSnapshots(FeeSnapshotsScenario feeSnapshots) {
-        this.feeSnapshots = feeSnapshots;
-    }
 
     public SysFilesUpScenario getSysFilesUp() {
         return sysFilesUp;

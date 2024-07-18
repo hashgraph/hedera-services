@@ -138,7 +138,7 @@ public class PrivilegesVerifier {
     }
 
     private boolean hasNodeChangePrivilige(@NonNull final AccountID accountID) {
-        return accountID.accountNumOrThrow() == accountsConfig.nodeAdmin() || isSuperUser(accountID);
+        return accountID.accountNumOrThrow() == accountsConfig.addressBookAdmin() || isSuperUser(accountID);
     }
 
     private SystemPrivilege checkFreeze(@NonNull final AccountID accountID) {
