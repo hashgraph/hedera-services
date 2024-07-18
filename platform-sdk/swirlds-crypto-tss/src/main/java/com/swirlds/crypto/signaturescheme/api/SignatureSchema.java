@@ -36,7 +36,7 @@ public class SignatureSchema {
      * @param groupAssignment the group assignment
      * @param curve           the curve
      */
-    private SignatureSchema(GroupAssignment groupAssignment, Curve curve) {
+    private SignatureSchema(@NonNull final GroupAssignment groupAssignment, @NonNull final Curve curve) {
         this.groupAssignment = Objects.requireNonNull(groupAssignment, "groupAssignment must not be null");
         this.cure = Objects.requireNonNull(curve, "curve must not be null");
     }
@@ -46,6 +46,7 @@ public class SignatureSchema {
      *
      * @return the groupAssignment
      */
+    @NonNull
     public GroupAssignment getGroupAssignment() {
         return groupAssignment;
     }
@@ -55,6 +56,7 @@ public class SignatureSchema {
      *
      * @return the curve
      */
+    @NonNull
     public Curve getCure() {
         return cure;
     }
@@ -67,7 +69,7 @@ public class SignatureSchema {
      * @return the SignatureSchema instance
      */
     @NonNull
-    public static SignatureSchema create(@NonNull Curve curve, @NonNull GroupAssignment groupAssignment) {
+    public static SignatureSchema create(@NonNull final Curve curve, @NonNull final GroupAssignment groupAssignment) {
         return new SignatureSchema(groupAssignment, curve);
     }
 }
