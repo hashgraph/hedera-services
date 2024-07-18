@@ -27,7 +27,7 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.state.token.AccountAirdrop;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -54,14 +54,15 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
     @Mock
     private StoreMetricsService storeMetricsService;
 
-    private MapWritableKVState<PendingAirdropId, AccountAirdrop> writableAirdropState;
+    private MapWritableKVState<PendingAirdropId, AccountPendingAirdrop> writableAirdropState;
 
     private WritableAirdropStore subject;
 
     @BeforeEach
     public void setUp() {
         writableAirdropState = emptyWritableAirdropStateBuilder().build();
-        given(writableStates.<PendingAirdropId, AccountAirdrop>get(AIRDROPS)).willReturn(writableAirdropState);
+        given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(writableAirdropState);
         subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
     }
 
@@ -69,7 +70,7 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
     void putsAirdropsToState() {
         final var airdropId = getFungibleAirdrop();
         final var airdropValue = airdropWithValue(20);
-        final var accountAirdrop = accountAirdropWith(airdropId, airdropValue);
+        final var accountAirdrop = accountAirdropWith(airdropValue);
 
         assertThat(writableAirdropState.contains(airdropId)).isFalse();
 
@@ -86,11 +87,12 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
     void putsUpdatesExistingAirdrop() {
         final var airdropId = getFungibleAirdrop();
         final var airdropValue = airdropWithValue(30);
-        final var accountAirdrop = accountAirdropWith(airdropId, airdropValue);
+        final var accountAirdrop = accountAirdropWith(airdropValue);
         writableAirdropState = emptyWritableAirdropStateBuilder()
                 .value(airdropId, accountAirdrop)
                 .build();
-        given(writableStates.<PendingAirdropId, AccountAirdrop>get(AIRDROPS)).willReturn(writableAirdropState);
+        given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(writableAirdropState);
         subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
 
         final var newAirdropValue = airdropWithValue(20);
@@ -113,12 +115,13 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
     @Test
     void putsDoesNotUpdateNftIfExists() {
         final var nftId = getNonFungibleAirDrop();
-        final var accountAirdrop = accountAirdropWith(nftId, null);
+        final var accountAirdrop = accountAirdropWith(null);
         var stateSpy = Mockito.spy(
                 writableAirdropState = emptyWritableAirdropStateBuilder()
                         .value(nftId, accountAirdrop)
                         .build());
-        given(writableStates.<PendingAirdropId, AccountAirdrop>get(AIRDROPS)).willReturn(writableAirdropState);
+        given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(writableAirdropState);
         subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
 
         assertThat(writableAirdropState.contains(nftId)).isTrue();
@@ -136,9 +139,9 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
     void removesAirdropById() {
         final var fungibleAirdropToRemove = getFungibleAirdrop();
         final var fungibleAirdropValue = airdropWithValue(15);
-        final var fungibleAccountAirdrop = accountAirdropWith(fungibleAirdropToRemove, fungibleAirdropValue);
+        final var fungibleAccountAirdrop = accountAirdropWith(fungibleAirdropValue);
         final var nftToRemove = getNonFungibleAirDrop();
-        final var nftAccountAirdrop = accountAirdropWith(nftToRemove, null);
+        final var nftAccountAirdrop = accountAirdropWith(null);
         writableAirdropState = emptyWritableAirdropStateBuilder()
                 .value(fungibleAirdropToRemove, fungibleAccountAirdrop)
                 .value(nftToRemove, nftAccountAirdrop)
@@ -147,7 +150,8 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
         assertThat(writableAirdropState.contains(fungibleAirdropToRemove)).isTrue();
         assertThat(writableAirdropState.contains(nftToRemove)).isTrue();
 
-        given(writableStates.<PendingAirdropId, AccountAirdrop>get(AIRDROPS)).willReturn(writableAirdropState);
+        given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(writableAirdropState);
         subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
 
         assertThat(subject.exists(fungibleAirdropToRemove)).isTrue();
@@ -162,9 +166,9 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
     void getForModifyReturnsImmutableAirDrop() {
         final var airdropId = getFungibleAirdrop();
         final var airdropValue = airdropWithValue(255);
-        final var accountAirdrop = accountAirdropWith(airdropId, airdropValue);
+        final var accountAirdrop = accountAirdropWith(airdropValue);
         final var nftAirdropId = getNonFungibleAirDrop();
-        final var nftAccountAirdrop = accountAirdropWith(nftAirdropId, null);
+        final var nftAccountAirdrop = accountAirdropWith(null);
 
         subject.put(airdropId, accountAirdrop);
         subject.put(nftAirdropId, nftAccountAirdrop);
@@ -231,10 +235,8 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
         return PendingAirdropValue.newBuilder().amount(value).build();
     }
 
-    private AccountAirdrop accountAirdropWith(
-            PendingAirdropId pendingAirdropId, PendingAirdropValue pendingAirdropValue) {
-        return AccountAirdrop.newBuilder()
-                .pendingAirdropId(pendingAirdropId)
+    private AccountPendingAirdrop accountAirdropWith(PendingAirdropValue pendingAirdropValue) {
+        return AccountPendingAirdrop.newBuilder()
                 .pendingAirdropValue(pendingAirdropValue)
                 .build();
     }
