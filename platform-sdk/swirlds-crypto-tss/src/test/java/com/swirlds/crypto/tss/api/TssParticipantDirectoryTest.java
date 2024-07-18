@@ -33,32 +33,30 @@ class TssParticipantDirectoryTest {
         PairingPublicKey publicKey = mock(PairingPublicKey.class);
 
         builder.withSelf(1, privateKey);
-        builder.withParticipant(2, 1, publicKey);
+        builder.withParticipant(1, 1, publicKey);
 
         // Test threshold too low
-        builder.withThreshold(0);
-        Exception exception =
-                assertThrows(IllegalStateException.class, () -> builder.build(mock(SignatureSchema.class)));
-        assertTrue(exception.getMessage().contains("Invalid threshold"));
 
-        builder.withThreshold(-1);
-        exception = assertThrows(IllegalStateException.class, () -> builder.build(mock(SignatureSchema.class)));
-        assertTrue(exception.getMessage().contains("Invalid threshold"));
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> builder.withThreshold(0));
+        assertTrue(exception.getMessage().contains("Invalid threshold: 0"));
+
+        exception = assertThrows(IllegalArgumentException.class, () -> builder.withThreshold(-1));
+        assertTrue(exception.getMessage().contains("Invalid threshold: -1"));
 
         // Test threshold too high
         builder.withThreshold(3);
         exception = assertThrows(IllegalStateException.class, () -> builder.build(mock(SignatureSchema.class)));
         assertTrue(exception.getMessage().contains("Threshold exceeds the number of shares"));
 
-        exception = assertThrows(IllegalArgumentException.class, () -> builder.withParticipant(2, 1, publicKey));
-        assertTrue(exception.getMessage().contains("Participant with id 2 was previously added to the directory"));
+        exception = assertThrows(IllegalArgumentException.class, () -> builder.withParticipant(1, 1, publicKey));
+        assertTrue(exception.getMessage().contains("Participant with id 1 was previously added to the directory"));
     }
 
     @Test
     void testEmptyBuilder() {
         TssParticipantDirectory.Builder builder = TssParticipantDirectory.createBuilder();
         Exception exception =
-                assertThrows(NullPointerException.class, () -> builder.build(mock(SignatureSchema.class)));
+                assertThrows(IllegalStateException.class, () -> builder.build(mock(SignatureSchema.class)));
         assertTrue(exception.getMessage().contains("There should be an entry for the current participant"));
     }
 

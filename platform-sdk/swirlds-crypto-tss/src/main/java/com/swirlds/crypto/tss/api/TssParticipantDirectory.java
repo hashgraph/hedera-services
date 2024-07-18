@@ -16,6 +16,8 @@
 
 package com.swirlds.crypto.tss.api;
 
+import static java.util.Objects.isNull;
+
 import com.swirlds.crypto.signaturescheme.api.PairingPrivateKey;
 import com.swirlds.crypto.signaturescheme.api.PairingPublicKey;
 import com.swirlds.crypto.signaturescheme.api.SignatureSchema;
@@ -89,14 +91,25 @@ public class TssParticipantDirectory {
         return new Builder();
     }
 
+    /**
+     * Returns the threshold value.
+     *
+     * @return the threshold value
+     */
     public int getThreshold() {
         return threshold;
     }
 
+    /**
+     * @return the shares owned by the participant represented as self.
+     */
     public List<TssShareId> getOwnedShareIds() {
         return ownedShareIds;
     }
 
+    /**
+     * @return the list of all the shareIds
+     */
     public List<TssShareId> getShareIds() {
         return shareOwnersMap.keySet().stream()
                 .sorted(Comparator.comparing(TssShareId::idElement))
@@ -121,6 +134,9 @@ public class TssParticipantDirectory {
          * @return the builder instance
          */
         public Builder withSelf(final int id, @NonNull final PairingPrivateKey tssEncryptionPrivateKey) {
+            if (selfEntry != null) {
+                throw new IllegalArgumentException("There is already an for the current participant");
+            }
             selfEntry = new SelfEntry(id, tssEncryptionPrivateKey);
             return this;
         }
@@ -130,8 +146,12 @@ public class TssParticipantDirectory {
          *
          * @param threshold the threshold value
          * @return the builder instance
+         * @throws IllegalArgumentException if threshold is less than or equals to 0
          */
         public Builder withThreshold(final int threshold) {
+            if (threshold <= 0) {
+                throw new IllegalArgumentException("Invalid threshold: " + threshold);
+            }
             this.threshold = threshold;
             return this;
         }
@@ -143,7 +163,7 @@ public class TssParticipantDirectory {
          * @param numberOfShares the number of shares
          * @param tssEncryptionPublicKey the pairing public key used to encrypt tss share portions designated to the participant represented by this entry
          * @return the builder instance
-         *
+         * @throws IllegalArgumentException if participantId was previously added.
          */
         public Builder withParticipant(
                 final int participantId,
@@ -162,14 +182,25 @@ public class TssParticipantDirectory {
          *
          * @param schema the signature schema
          * @return the constructed ParticipantDirectory instance
+         * @throws NullPointerException if schema is null
+         * @throws IllegalStateException if there is no entry for the current participant
+         * @throws IllegalStateException if there are no configured participants
+         * @throws IllegalStateException if the threshold value is higher than the total shares
          */
         public TssParticipantDirectory build(@NonNull SignatureSchema schema) {
-            Objects.requireNonNull(selfEntry, "There should be an entry for the current participant");
+            Objects.requireNonNull(schema, "Schema must not be null");
+
+            if (isNull(selfEntry)) {
+                throw new IllegalStateException("There should be an entry for the current participant");
+            }
+
             if (participantEntries.isEmpty()) {
                 throw new IllegalStateException("There should be at least one participant in the protocol");
             }
-            if (threshold <= 0) {
-                throw new IllegalStateException("Invalid threshold: " + threshold);
+
+            if (!participantEntries.containsKey(selfEntry.id)) {
+                throw new IllegalStateException(
+                        "The participant list does not contain a reference to the current participant");
             }
 
             int totalShares = participantEntries.values().stream()
@@ -192,11 +223,6 @@ public class TssParticipantDirectory {
             List<Integer> sortedParticipantIds =
                     participantEntries.keySet().stream().sorted().toList();
             Map<Integer, PairingPublicKey> tssEncryptionPublicKeyMap = new HashMap<>();
-
-            if (!participantEntries.containsKey(selfEntry.id)) {
-                throw new IllegalStateException(
-                        "The participant list does not contain a reference to the current participant");
-            }
 
             for (Integer participantId : sortedParticipantIds) {
                 ParticipantEntry record = participantEntries.get(participantId);
