@@ -43,7 +43,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -138,12 +138,14 @@ public class CryptoUpdateSuite {
                         .newStakedAccountId("0.0.21")));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     final Stream<DynamicTest> updateForMaxAutoAssociationsForAccountsWorks() {
         return propertyPreservingHapiSpec("updateForMaxAutoAssociationsForAccountsWorks")
-                .preserving("contracts.allowAutoAssociations")
+                .preserving("entities.unlimitedAutoAssociationsEnabled", "contracts.allowAutoAssociations")
                 .given(
-                        overriding("contracts.allowAutoAssociations", TRUE_VALUE),
+                        overridingTwo(
+                                "entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE,
+                                "contracts.allowAutoAssociations", TRUE_VALUE),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(ACCOUNT_ALICE).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(0),
                         cryptoCreate(ACCOUNT_PETER).balance(ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(-1),
@@ -254,9 +256,13 @@ public class CryptoUpdateSuite {
 
         AtomicLong expiration = new AtomicLong();
         return propertyPreservingHapiSpec("usdFeeAsExpectedCryptoUpdate", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.maxLifetime", "ledger.maxAutoAssociations")
+                .preserving(
+                        "entities.unlimitedAutoAssociationsEnabled",
+                        "entities.maxLifetime",
+                        "ledger.maxAutoAssociations")
                 .given(
-                        overridingTwo(
+                        overridingThree(
+                                "entities.unlimitedAutoAssociationsEnabled", "true",
                                 "ledger.maxAutoAssociations", "5000",
                                 "entities.maxLifetime", "3153600000"),
                         newKeyNamed("key").shape(SIMPLE),
@@ -529,9 +535,13 @@ public class CryptoUpdateSuite {
         final String ADMIN_KEY = "adminKey";
 
         return propertyPreservingHapiSpec("updateMaxAutoAssociationsWorks", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("contracts.allowAutoAssociations")
+                .preserving("entities.unlimitedAutoAssociationsEnabled", "contracts.allowAutoAssociations")
                 .given(
-                        overriding("contracts.allowAutoAssociations", "true"),
+                        overridingTwo(
+                                "entities.unlimitedAutoAssociationsEnabled",
+                                "true",
+                                "contracts.allowAutoAssociations",
+                                "true"),
                         cryptoCreate(treasury).balance(ONE_HUNDRED_HBARS),
                         newKeyNamed(ADMIN_KEY),
                         uploadInitCode(CONTRACT),
