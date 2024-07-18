@@ -440,7 +440,7 @@ public class TxnFactory {
     }
 
     public Consumer<TokenCreatePartitionDefinitionTransactionBody.Builder>
-    defaultDefTokenCreatePartitionDefinitionTransactionBody() {
+            defaultDefTokenCreatePartitionDefinitionTransactionBody() {
         return builder -> {};
     }
 

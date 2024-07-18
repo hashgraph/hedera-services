@@ -490,8 +490,8 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                             } else if (useEmptyPartitionMoveKey) {
                                 b.setPartitionMoveKey(TxnUtils.EMPTY_KEY_LIST);
                             } else {
-                                newPartitionMoveKey.ifPresent(
-                                        k -> b.setPartitionMoveKey(spec.registry().getKey(k)));
+                                newPartitionMoveKey.ifPresent(k ->
+                                        b.setPartitionMoveKey(spec.registry().getKey(k)));
                             }
                             newPartitionKey.ifPresent(
                                     k -> b.setPartitionKey(spec.registry().getKey(k)));

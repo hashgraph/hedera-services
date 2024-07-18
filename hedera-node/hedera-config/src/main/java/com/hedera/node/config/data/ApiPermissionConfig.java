@@ -186,7 +186,7 @@ import java.util.function.Function;
  * @param createNode                   the permission for {@link HederaFunctionality#NODE_CREATE} functionality
  * @param updateNode                   the permission for {@link HederaFunctionality#NODE_UPDATE} functionality
  * @param deleteNode                   the permission for {@link HederaFunctionality#NODE_DELETE} functionality
-
+ *
  * @param partitionCreation          the permission for {@link HederaFunctionality#TOKEN_CREATE_PARTITION} functionality
  * @param partitionUpdate            the permission for {@link HederaFunctionality#TOKEN_UPDATE_PARTITION} functionality
  * @param partitionDeletion          the permission for {@link HederaFunctionality#TOKEN_DELETE_PARTITION} functionality
