@@ -55,6 +55,9 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     @Mock
     private HandleContext.SavepointStack stack;
 
+    @Mock
+    private CryptoTransferRecordBuilder builder;
+
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
     private TransferContextImpl transferContext;
@@ -82,6 +85,8 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                 .withValue("entities.unlimitedAutoAssociationsEnabled", false)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(modifiedConfiguration);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(any())).willReturn(builder);
 
         subject.doIn(transferContext);
 

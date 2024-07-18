@@ -196,11 +196,11 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
 
-            // We only charge auto-association fees inline if this is NOT an internal dispatch; in that case the
+            // We only charge auto-association fees inline if this is a user disaptch; in that case the
             // contract service will take the auto-association costs from the remaining EVM gas
-            if (!context.recordBuilders()
+            if (context.recordBuilders()
                     .getOrCreate(SingleTransactionRecordBuilder.class)
-                    .isInternalDispatch()) {
+                    .isUserDispatch()) {
                 final var unlimitedAssociationsEnabled =
                         config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
                 // And the "sender pays" fee model only applies when using unlimited auto-associations

@@ -18,6 +18,8 @@ package com.hedera.node.app.spi.workflows.record;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -179,12 +181,21 @@ public interface SingleTransactionRecordBuilder {
     SingleTransactionRecordBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate);
 
     /**
-     * Returns true if this transaction originated from inside another handler or workflow; and not
+     * Returns true if this builder's transaction originated from inside another handler or workflow; and not
      * a user transaction (or scheduled user transaction).
      * @return true if this transaction is internal
      */
     default boolean isInternalDispatch() {
         return category() == CHILD || category() == PRECEDING;
+    }
+
+    /**
+     * Returns true if this builder's transaction originated from a user transaction or scheduled user transaction; and
+     * not from inside another handler or workflow.
+     * @return true if this transaction is internal
+     */
+    default boolean isUserDispatch() {
+        return category() == USER || category() == SCHEDULED;
     }
 
     /**
