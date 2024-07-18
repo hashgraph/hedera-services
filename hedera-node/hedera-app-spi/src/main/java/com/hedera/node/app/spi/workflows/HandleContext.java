@@ -120,9 +120,9 @@ public interface HandleContext {
     AccountID payer();
 
     /**
-     * Attempts to charge the payer in this context the given amount.
+     * Attempts to charge the payer in this context the given amount of tinybar.
      * @param amount the amount to charge
-     * @throws IllegalArgumentException if the payer cannot afford the fee
+     * @return true if the entire amount was successfully charged, false otherwise
      */
     boolean tryToChargePayer(long amount);
 
