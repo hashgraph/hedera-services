@@ -30,7 +30,7 @@ public class IndexedEvent extends EventImpl {
     private long generatorIndex;
 
     public IndexedEvent(final PlatformEvent platformEvent) {
-        super(platformEvent);
+        super(platformEvent, null, null);
     }
 
     public IndexedEvent(final PlatformEvent platformEvent, final EventImpl selfParent, final EventImpl otherParent) {

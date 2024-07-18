@@ -186,7 +186,7 @@ public class AddedEventMetrics {
         int numAppTrans = 0;
         int numSysTrans = 0;
 
-        final Iterator<Transaction> iterator = event.transactionIterator();
+        final Iterator<Transaction> iterator = event.getBaseEvent().transactionIterator();
         while (iterator.hasNext()) {
             final Transaction transaction = iterator.next();
             if (transaction.isSystem()) {

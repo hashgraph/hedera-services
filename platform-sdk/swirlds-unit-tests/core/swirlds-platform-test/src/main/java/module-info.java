@@ -4,6 +4,7 @@ open module com.swirlds.platform.test {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.platform.core.test.fixtures;
     requires transitive com.swirlds.platform.core;
+    requires com.hedera.node.hapi;
     requires com.swirlds.config.api;
     requires com.swirlds.config.extensions.test.fixtures;
     requires java.desktop;
