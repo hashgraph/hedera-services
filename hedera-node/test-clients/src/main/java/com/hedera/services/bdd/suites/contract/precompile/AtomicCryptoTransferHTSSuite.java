@@ -102,6 +102,7 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
 public class AtomicCryptoTransferHTSSuite {
+    private static final long GAS_FOR_AUTO_ASSOCIATING_CALLS = 2_000_000;
     private static final Tuple[] EMPTY_TUPLE_ARRAY = new Tuple[] {};
     private static final long GAS_TO_OFFER = 5_000_000L;
     private static final long TOTAL_SUPPLY = 1_000;
@@ -1077,6 +1078,7 @@ public class AtomicCryptoTransferHTSSuite {
                                                             accountAmount(receiver, allowance + 1, true))
                                                     .build()))
                                     .via(revertingTransferFromTxnFungible)
+                                    .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                             // Try to send allowance amount but turn off isApproval
                             // flag
@@ -1095,6 +1097,7 @@ public class AtomicCryptoTransferHTSSuite {
                                                             accountAmount(receiver, 1L, false))
                                                     .build()))
                                     .via(successfulTransferFromTxn)
+                                    .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                     .hasKnownStatus(SUCCESS),
                             // Try to send 1/2 of the allowance amount from owner to
                             // receiver
@@ -1112,6 +1115,7 @@ public class AtomicCryptoTransferHTSSuite {
                                                             accountAmount(receiver, (allowance - 1) / 2, true))
                                                     .build()))
                                     .via(successfulTransferFromTxn2)
+                                    .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                     .hasKnownStatus(SUCCESS),
                             // Try to send second 1/2 of the allowance amount from
                             // owner to receiver
@@ -1129,6 +1133,7 @@ public class AtomicCryptoTransferHTSSuite {
                                                             accountAmount(receiver, (allowance - 1) / 2, true))
                                                     .build()))
                                     .via(successfulTransferFromTxn3)
+                                    .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                     .hasKnownStatus(SUCCESS),
                             getAccountDetails(OWNER)
                                     .payingWith(GENESIS)
@@ -1255,6 +1260,7 @@ public class AtomicCryptoTransferHTSSuite {
                                                     .withNftTransfers(nftTransfer(owner, receiver, 1L, true))
                                                     .build()))
                                     .via(revertingTransferFromTxnNft)
+                                    .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                     .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                             // transfer allowed NFT
                             contractCall(
@@ -1268,6 +1274,7 @@ public class AtomicCryptoTransferHTSSuite {
                                                     .withNftTransfers(nftTransfer(owner, receiver, 2L, true))
                                                     .build()))
                                     .via(successfulTransferFromTxn)
+                                    .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                     .hasKnownStatus(SUCCESS));
                 }))
                 .then(
@@ -1295,7 +1302,6 @@ public class AtomicCryptoTransferHTSSuite {
     @HapiTest
     final Stream<DynamicTest> cryptoTransferAllowanceToContractFromContract() {
         final var successfulTransferFromTxn = "txn";
-        final var revertingTransferFromTxnNft = "revertWhenMoreThanAllowanceNft";
         final var simpleStorageContract = "SimpleStorage";
         final long allowance = 10L;
 
@@ -1350,6 +1356,7 @@ public class AtomicCryptoTransferHTSSuite {
                                                             accountAmount(receiver, allowance, true))
                                                     .build()))
                                     .via(successfulTransferFromTxn)
+                                    .gas(GAS_FOR_AUTO_ASSOCIATING_CALLS)
                                     .hasKnownStatus(SUCCESS));
                 }))
                 .then();
