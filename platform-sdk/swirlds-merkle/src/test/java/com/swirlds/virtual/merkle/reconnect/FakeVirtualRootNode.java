@@ -69,7 +69,7 @@ public class FakeVirtualRootNode extends PartialBinaryMerkleInternal
 
     @Override
     public LearnerTreeView<Long> buildLearnerView(
-        final int viewId, final ReconnectConfig reconnectConfig, final ReconnectMapStats mapStats) {
+            final int viewId, final ReconnectConfig reconnectConfig, final ReconnectMapStats mapStats) {
         throw new UnsupportedOperationException();
     }
 

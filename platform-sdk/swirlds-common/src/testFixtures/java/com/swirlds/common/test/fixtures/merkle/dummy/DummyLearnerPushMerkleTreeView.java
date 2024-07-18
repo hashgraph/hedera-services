@@ -32,7 +32,7 @@ public class DummyLearnerPushMerkleTreeView extends LearnerPushMerkleTreeView {
      *      a ReconnectMapStats object to collect reconnect metrics
      */
     public DummyLearnerPushMerkleTreeView(
-        final int viewId, final MerkleNode root, @NonNull final ReconnectMapStats mapStats) {
+            final int viewId, final MerkleNode root, @NonNull final ReconnectMapStats mapStats) {
         super(viewId, root, mapStats);
     }
 
