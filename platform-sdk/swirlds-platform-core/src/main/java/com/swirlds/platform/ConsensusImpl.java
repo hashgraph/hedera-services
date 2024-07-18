@@ -22,6 +22,7 @@ import static com.swirlds.platform.consensus.ConsensusConstants.FIRST_CONSENSUS_
 
 import com.hedera.hapi.platform.event.EventConsensusData;
 import com.hedera.hapi.util.HapiUtils;
+import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.utility.Threshold;
@@ -41,6 +42,7 @@ import com.swirlds.platform.consensus.RoundElections;
 import com.swirlds.platform.consensus.ThreadSafeConsensusInfo;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.EventUtils;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.shadowgraph.Generations;
 import com.swirlds.platform.internal.ConsensusRound;
@@ -154,6 +156,9 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
     public static final String CONSENSUS_EXCEPTION_MARKER_FILE = "consensus-exception";
 
     private static final Logger logger = LogManager.getLogger(ConsensusImpl.class);
+
+    /** wall clock time */
+    private final Time time;
     /** the only address book currently, until address book changes are implemented */
     private final AddressBook addressBook;
     /** metrics related to consensus */
@@ -226,6 +231,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
             @NonNull final ConsensusMetrics consensusMetrics,
             @NonNull final AddressBook addressBook) {
         super(platformContext);
+        this.time = platformContext.getTime();
         this.markerFileWriter = new MarkerFileWriter(platformContext);
         this.consensusMetrics = consensusMetrics;
 
@@ -714,8 +720,10 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         this.updateRoundGenerations(rounds.getFameDecidedBelow());
 
         // all events that reach consensus during this method call, in consensus order
-        final List<EventImpl> consensusEvents =
-                findConsensusEvents(judges, decidedRoundNumber, ConsensusUtils.generateWhitening(judges));
+        final List<PlatformEvent> consensusEvents =
+                findConsensusEvents(judges, decidedRoundNumber, ConsensusUtils.generateWhitening(judges)).stream()
+                        .map(EventImpl::getBaseEvent)
+                        .toList();
         // all rounds before this round are now decided, and appropriate events marked consensus
         consensusMetrics.consensusReachedOnRound();
 
@@ -750,7 +758,7 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
         return new ConsensusRound(
                 addressBook,
                 consensusEvents,
-                recentEvents.get(recentEvents.size() - 1),
+                recentEvents.get(recentEvents.size() - 1).getBaseEvent(),
                 new Generations(this),
                 new EventWindow(decidedRoundNumber, nonAncientThreshold, nonExpiredThreshold, ancientMode),
                 new ConsensusSnapshot(
@@ -759,7 +767,8 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
                         rounds.getMinimumJudgeInfoList(),
                         numConsensus,
                         lastConsensusTime),
-                pcesMode);
+                pcesMode,
+                time.now());
     }
 
     /**
@@ -840,8 +849,6 @@ public class ConsensusImpl extends ThreadSafeConsensusInfo implements Consensus 
 
         // take middle. If there are 2 middle (even length) then use the 2nd (max) of them
         event.setPreliminaryConsensusTimestamp(times.get(times.size() / 2));
-
-        event.setReachedConsTimestamp(Instant.now()); // used for statistics
     }
 
     /**
