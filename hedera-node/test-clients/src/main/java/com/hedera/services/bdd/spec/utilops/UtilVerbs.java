@@ -166,7 +166,6 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsA
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
 import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
@@ -1755,9 +1754,7 @@ public class UtilVerbs {
         return validateChargedUsd(txn, actualUsdCharged -> {
             assertTrue(
                     actualUsdCharged > amount,
-                    String.format(
-                            "%s fee (%s) is not greater than %s!",
-                            sdec(actualUsdCharged, 4), txn, amount));
+                    String.format("%s fee (%s) is not greater than %s!", sdec(actualUsdCharged, 4), txn, amount));
         });
     }
 

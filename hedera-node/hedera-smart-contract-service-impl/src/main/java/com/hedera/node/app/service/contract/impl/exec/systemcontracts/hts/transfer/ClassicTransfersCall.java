@@ -125,8 +125,7 @@ public class ClassicTransfersCall extends AbstractCall {
                     false);
         }
         // Will be updated with additional charges for any auto-associations done by the transfer
-        var gasRequirement =
-                transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId, selector);
+        var gasRequirement = transferGasRequirement(syntheticTransfer, gasCalculator, enhancement, senderId, selector);
         if (preemptingFailureStatus != null) {
             return reversionWith(preemptingFailureStatus, gasRequirement);
         }

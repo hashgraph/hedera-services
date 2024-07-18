@@ -106,48 +106,48 @@ class UnlimitedAutoAssociationSuite {
         final var gasWithoutAutoAssociation = new AtomicLong();
         final var gasWithAutoAssociation = new AtomicLong();
         return hapiTest(
-                        // To make it trivial to compare actual gas costs refund all unused gas in this test
-                        overriding("contracts.maxRefundPercentOfGasLimit", "100"),
-                        preAssociated.associateTokens(token),
-                        token.treasury().authorizeContract(htsCallsContract),
-                        // Make two calls, the first with no auto-association and the second with auto-association
-                        htsCallsContract
-                                .call("transferNFTCall", token, token.treasury(), preAssociated, 1L)
-                                .andAssert(txn -> txn.via("noAutoAssociation").gas(1_000_000)),
-                        htsCallsContract
-                                .call("transferNFTCall", token, token.treasury(), autoAssociated, 2L)
-                                .andAssert(txn -> txn.via("autoAssociation").gas(1_000_000)),
-                        // Look up their gas used
-                        getTxnRecord("noAutoAssociation")
-                                .exposingTo(txnRecord -> gasWithoutAutoAssociation.set(
-                                        txnRecord.getContractCallResult().getGasUsed())),
-                        getTxnRecord("autoAssociation")
-                                .exposingTo(txnRecord -> gasWithAutoAssociation.set(
-                                        txnRecord.getContractCallResult().getGasUsed())),
-                        // Verify that the gas difference is consistent with the expected auto-association fee
-                        withOpContext((spec, opLog) -> {
-                            final var gasDiff = gasWithAutoAssociation.get() - gasWithoutAutoAssociation.get();
-                            // Convert to USD by multiplying the gas difference by the price in thousandths of a
-                            // tinycent from the fee schedule; and then dividing by 1e13 to convert to USD
-                            final var approxUsdDiff = (1.0
+                // To make it trivial to compare actual gas costs refund all unused gas in this test
+                overriding("contracts.maxRefundPercentOfGasLimit", "100"),
+                preAssociated.associateTokens(token),
+                token.treasury().authorizeContract(htsCallsContract),
+                // Make two calls, the first with no auto-association and the second with auto-association
+                htsCallsContract
+                        .call("transferNFTCall", token, token.treasury(), preAssociated, 1L)
+                        .andAssert(txn -> txn.via("noAutoAssociation").gas(1_000_000)),
+                htsCallsContract
+                        .call("transferNFTCall", token, token.treasury(), autoAssociated, 2L)
+                        .andAssert(txn -> txn.via("autoAssociation").gas(1_000_000)),
+                // Look up their gas used
+                getTxnRecord("noAutoAssociation")
+                        .exposingTo(txnRecord -> gasWithoutAutoAssociation.set(
+                                txnRecord.getContractCallResult().getGasUsed())),
+                getTxnRecord("autoAssociation")
+                        .exposingTo(txnRecord -> gasWithAutoAssociation.set(
+                                txnRecord.getContractCallResult().getGasUsed())),
+                // Verify that the gas difference is consistent with the expected auto-association fee
+                withOpContext((spec, opLog) -> {
+                    final var gasDiff = gasWithAutoAssociation.get() - gasWithoutAutoAssociation.get();
+                    // Convert to USD by multiplying the gas difference by the price in thousandths of a
+                    // tinycent from the fee schedule; and then dividing by 1e13 to convert to USD
+                    final var approxUsdDiff = (1.0
                                     * gasDiff
                                     * spec.fees()
-                                    .getCurrentOpFeeData()
-                                    .get(ContractCall)
-                                    .get(DEFAULT)
-                                    .getServicedata()
-                                    .getGas()
+                                            .getCurrentOpFeeData()
+                                            .get(ContractCall)
+                                            .get(DEFAULT)
+                                            .getServicedata()
+                                            .getGas()
                                     / 1000
                                     / TINY_PARTS_PER_WHOLE)
-                                    / 100.0;
-                            assertCloseEnough(
-                                    expectedUsdAssociationFee,
-                                    approxUsdDiff,
-                                    // Allow at most one percent deviation from expected
-                                    1.0,
-                                    "USD value of gas difference",
-                                    "auto-association fee");
-                        }));
+                            / 100.0;
+                    assertCloseEnough(
+                            expectedUsdAssociationFee,
+                            approxUsdDiff,
+                            // Allow at most one percent deviation from expected
+                            1.0,
+                            "USD value of gas difference",
+                            "auto-association fee");
+                }));
     }
 
     @DisplayName("Auto-associate tokens will create a child record for association")
