@@ -90,6 +90,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private boolean useEmptyFeeScheduleKey = false;
     private boolean useEmptyMetadataKey = false;
     private boolean useEmptyPauseKey = false;
+    private boolean useEmptyLockKey = false;
+    private boolean useEmptyPartitionKey = false;
+    private boolean useEmptyPartitionMoveKey = false;
     private boolean useInvalidAdminKey = false;
     private boolean useInvalidWipeKey = false;
     private boolean useInvalidKycKey = false;
@@ -98,6 +101,9 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
     private boolean useInvalidFeeScheduleKey = false;
     private boolean useInvalidMetadataKey = false;
     private boolean useInvalidPauseKey = false;
+    private boolean useInvalidLockKey = false;
+    private boolean useInvalidPartitionKey = false;
+    private boolean useInvalidPartitionMoveKey = false;
     private boolean noKeyValidation = false;
     private Optional<String> contractKeyName = Optional.empty();
     private Set<TokenKeyType> contractKeyAppliedTo = Set.of();
@@ -261,6 +267,21 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         return this;
     }
 
+    public HapiTokenUpdate properlyEmptyingLockKey() {
+        useEmptyLockKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingPartitionKey() {
+        useEmptyPartitionKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate properlyEmptyingPartitionMoveKey() {
+        useEmptyPartitionMoveKey = true;
+        return this;
+    }
+
     public HapiTokenUpdate usingInvalidAdminKey() {
         useInvalidAdminKey = true;
         return this;
@@ -278,6 +299,21 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
 
     public HapiTokenUpdate usingInvalidPauseKey() {
         useInvalidPauseKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate usingInvalidLockKey() {
+        useInvalidLockKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate usingInvalidPartitionKey() {
+        useInvalidPartitionKey = true;
+        return this;
+    }
+
+    public HapiTokenUpdate usingInvalidPartitionMoveKey() {
+        useInvalidPartitionMoveKey = true;
         return this;
     }
 
@@ -433,6 +469,30 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                             }
                             newLockKey.ifPresent(
                                     k -> b.setLockKey(spec.registry().getKey(k)));
+                            if (useInvalidLockKey) {
+                                b.setLockKey(TxnUtils.WRONG_LENGTH_EDDSA_KEY);
+                            } else if (useEmptyLockKey) {
+                                b.setLockKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newLockKey.ifPresent(
+                                        k -> b.setLockKey(spec.registry().getKey(k)));
+                            }
+                            if (useInvalidPartitionKey) {
+                                b.setPartitionKey(TxnUtils.WRONG_LENGTH_EDDSA_KEY);
+                            } else if (useEmptyPartitionKey) {
+                                b.setPartitionKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newPartitionKey.ifPresent(
+                                        k -> b.setPartitionKey(spec.registry().getKey(k)));
+                            }
+                            if (useInvalidPartitionMoveKey) {
+                                b.setPartitionMoveKey(TxnUtils.WRONG_LENGTH_EDDSA_KEY);
+                            } else if (useEmptyPartitionMoveKey) {
+                                b.setPartitionMoveKey(TxnUtils.EMPTY_KEY_LIST);
+                            } else {
+                                newPartitionMoveKey.ifPresent(
+                                        k -> b.setPartitionMoveKey(spec.registry().getKey(k)));
+                            }
                             newPartitionKey.ifPresent(
                                     k -> b.setPartitionKey(spec.registry().getKey(k)));
                             newPartitionMoveKey.ifPresent(
@@ -525,6 +585,15 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         }
         if (useEmptyMetadataKey) {
             registry.forgetMetadataKey(token);
+        }
+        if (useEmptyLockKey) {
+            registry.forgetLockKey(token);
+        }
+        if (useEmptyPartitionKey) {
+            registry.forgetPartitionKey(token);
+        }
+        if (useEmptyPartitionMoveKey) {
+            registry.forgetPartitionMoveKey(token);
         }
         newMemo.ifPresent(m -> registry.saveMemo(token, m));
         newAdminKey.ifPresent(n -> registry.saveAdminKey(token, registry.getKey(n)));

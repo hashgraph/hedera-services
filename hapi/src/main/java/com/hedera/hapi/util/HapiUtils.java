@@ -234,11 +234,11 @@ public class HapiUtils {
             case NODE_CREATE -> HederaFunctionality.NODE_CREATE;
             case NODE_UPDATE -> HederaFunctionality.NODE_UPDATE;
             case NODE_DELETE -> HederaFunctionality.NODE_DELETE;
-            case TOKEN_CREATE_PARTITION -> null;
-            case TOKEN_UPDATE_PARTITION -> null;
-            case TOKEN_DELETE_PARTITION -> null;
-            case TOKEN_LOCK -> null;
-            case TOKEN_UNLOCK -> null;
+            case TOKEN_CREATE_PARTITION -> HederaFunctionality.TOKEN_CREATE_PARTITION;
+            case TOKEN_UPDATE_PARTITION -> HederaFunctionality.TOKEN_UPDATE_PARTITION;
+            case TOKEN_DELETE_PARTITION -> HederaFunctionality.TOKEN_DELETE_PARTITION;
+            case TOKEN_LOCK -> HederaFunctionality.TOKEN_LOCK;
+            case TOKEN_UNLOCK -> HederaFunctionality.TOKEN_UNLOCK;
             case UNSET -> throw new UnknownHederaFunctionality();
         };
     }
