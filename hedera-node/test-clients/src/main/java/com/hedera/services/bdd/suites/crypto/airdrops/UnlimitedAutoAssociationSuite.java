@@ -38,8 +38,11 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadGivenFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithChild;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
@@ -88,12 +91,15 @@ class UnlimitedAutoAssociationSuite {
 
     @BeforeAll
     static void setUp(@NonNull final SpecManager manager) throws Throwable {
-        manager.setup(overriding("entities.unlimitedAutoAssociationsEnabled", "true"));
+        manager.setup(
+                overriding("entities.unlimitedAutoAssociationsEnabled", "true"),
+                uploadGivenFeeSchedules(GENESIS, "unlimited-associations-fee-schedules.json"));
     }
 
     @AfterAll
     static void tearDown(@NonNull final SpecManager manager) throws Throwable {
-        manager.setup(overriding("entities.unlimitedAutoAssociationsEnabled", "false"));
+        manager.setup(
+                overriding("entities.unlimitedAutoAssociationsEnabled", "false"), uploadDefaultFeeSchedules(GENESIS));
     }
 
     @DisplayName("Auto-associate tokens will create a child record for association")
