@@ -53,12 +53,16 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 class CustomFeeAssessmentStepTest extends StepsBase {
     private TransferContextImpl transferContext;
     private CustomFeeAssessmentStep subject;
     private Token fungibleWithNoKyc;
     private Token nonFungibleWithNoKyc;
+
+    @Mock
+    private CryptoTransferRecordBuilder builder;
 
     @BeforeEach
     public void setUp() {
@@ -80,7 +84,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         givenTxn();
         given(handleContext.body()).willReturn(txn);
-        given(recordBuilders.getOrCreate(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
         givenAutoCreationDispatchEffects(payerId);
 
         transferContext = new TransferContextImpl(handleContext);
@@ -89,6 +92,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
 
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(recordBuilders.getOrCreate(any())).willReturn(builder);
         final var replacedOp = getReplacedOp();
         subject = new CustomFeeAssessmentStep(replacedOp);
     }
@@ -174,8 +178,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
-
-        //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     @Test
@@ -254,8 +256,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
 
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
-
-        //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     @Test
@@ -367,8 +367,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         assertThatTransferListContains(level1Op.tokenTransfers(), expectedLevel1TokenTransfers);
         assertThatTransferListContains(givenOp.tokenTransfers(), expectedGivenOpTokenTransfers);
         assertThatTransfersContains(givenOp.transfers().accountAmounts(), expectedGivenOpHbarTransfers);
-
-        //        verify(xferRecordBuilder).assessedCustomFees(anyList());
     }
 
     @Test
@@ -446,6 +444,8 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         givenTxn(body, payerId);
         givenAutoCreationDispatchEffects(payerId);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(any())).willReturn(builder);
 
         transferContext = new TransferContextImpl(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);

@@ -422,7 +422,6 @@ public class ContractMintHTSSuite {
                                     childRecordsCheck(
                                             nestedTransferTxn,
                                             SUCCESS,
-                                            recordWith().status(SUCCESS),
                                             recordWith()
                                                     .status(SUCCESS)
                                                     .contractCallResult(resultWith()

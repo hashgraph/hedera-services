@@ -535,6 +535,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 writableAccountStore.get(feeCollectorId).tinybarBalance();
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.getOrCreate(any())).willReturn(transferRecordBuilder);
 
         subject.handle(handleContext);
 
