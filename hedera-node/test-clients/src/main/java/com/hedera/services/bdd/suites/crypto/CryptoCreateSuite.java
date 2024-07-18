@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.junit.TestTags.EMBEDDED;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_OUTCOMES;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.STANDARD_PERMISSIBLE_PRECHECKS;
@@ -45,7 +44,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewAccount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -53,7 +51,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.suites.HapiSuite.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
-import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -315,11 +312,10 @@ public class CryptoCreateSuite {
                         getAccountInfo(unlimitedAutoAssocSlots).hasMaxAutomaticAssociations(-1));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> createFailsIfMaxAutoAssocIsNegativeAndUnlimitedFlagDisabled() {
-        return propertyPreservingHapiSpec("createFailsIfMaxAutoIsNegativeAndNoUnlimitedAutoAssoc")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
-                .given(overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE))
+        return defaultHapiSpec("createFailsIfMaxAutoIsNegativeAndNoUnlimitedAutoAssoc")
+                .given()
                 .when()
                 .then(
                         cryptoCreate(CIVILIAN)

@@ -63,6 +63,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
+import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -159,15 +160,12 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                                 .logged()));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> autoAccountCreationsUnlimitedAssociationsDisabled() {
         final var creationTime = new AtomicLong();
         final long transferFee = 188608L;
-        return propertyPreservingHapiSpec(
-                        "autoAccountCreationsUnlimitedAssociationsDisabled", NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+        return defaultHapiSpec("autoAccountCreationsUnlimitedAssociationsDisabled", NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(VALID_ALIAS),
                         cryptoCreate(CIVILIAN).balance(10 * ONE_HBAR),
                         cryptoCreate(PAYER).balance(10 * ONE_HBAR),
@@ -339,7 +337,8 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
 
-        return defaultHapiSpec("transferTokensToEVMAddressAliasUnlimitedAssociations")
+        return propertyPreservingHapiSpec("transferTokensToEVMAddressAliasUnlimitedAssociations")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),

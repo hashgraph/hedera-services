@@ -101,7 +101,6 @@ import static com.hedera.services.bdd.suites.contract.Utils.captureOneChildCreat
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.Utils.ocWith;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.A_TOKEN;
-import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.FALSE;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.LAZY_MEMO;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_CREATE;
 import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.NFT_INFINITE_SUPPLY_TOKEN;
@@ -523,15 +522,13 @@ public class Create2OperationSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec(
+        return defaultHapiSpec(
                         "CanMergeCreate2ChildWithHollowAccount",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_LOG_DATA)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
@@ -626,7 +623,7 @@ public class Create2OperationSuite {
     }
 
     @SuppressWarnings("java:S5960")
-    @LeakyHapiTest
+    @HapiTest
     final Stream<DynamicTest> canMergeCreate2MultipleCreatesWithHollowAccount() {
         final var tcValue = 1_234L;
         final var contract = "Create2MultipleCreates";
@@ -646,10 +643,8 @@ public class Create2OperationSuite {
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("CanMergeCreate2MultipleCreatesWithHollowAccount", FULLY_NONDETERMINISTIC)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
+        return defaultHapiSpec("CanMergeCreate2MultipleCreatesWithHollowAccount", FULLY_NONDETERMINISTIC)
                 .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", FALSE),
                         newKeyNamed(adminKey),
                         newKeyNamed(MULTI_KEY),
                         uploadInitCode(contract),
@@ -1888,7 +1883,7 @@ public class Create2OperationSuite {
                                 assertCreate2Address(contract, salt, expectedCreate2Address, testContractInitcode)));
     }
 
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> canMergeCreate2ChildWithHollowAccountFungibleTransfersUnlimitedAssociations() {
         final var tcValue = 1_234L;
         final var contract = "Create2Factory";
@@ -1946,16 +1941,14 @@ public class Create2OperationSuite {
             j1++;
         }
 
-        return propertyPreservingHapiSpec(
+        return defaultHapiSpec(
                         "CanMergeCreate2ChildWithHollowAccountFungibleTransfersUnlimitedAssociations",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         NONDETERMINISTIC_CONTRACT_CALL_RESULTS,
                         NONDETERMINISTIC_TRANSACTION_FEES,
                         NONDETERMINISTIC_LOG_DATA)
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
                 .given(givenOps)
                 .when(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", "false"),
                         // GET BYTECODE OF THE CREATE2 CONTRACT
                         sourcing(() -> contractCallLocal(
                                         contract, GET_BYTECODE, asHeadlongAddress(factoryEvmAddress.get()), salt)
