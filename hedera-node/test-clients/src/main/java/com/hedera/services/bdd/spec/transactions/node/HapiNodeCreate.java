@@ -170,7 +170,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
                         NodeCreateTransactionBody.class, builder -> {
                             accountId.ifPresent(builder::setAccountId);
                             description.ifPresent(builder::setDescription);
-                            if (adminKey != null) builder.setAdminKey(adminKey);
+                            builder.setAdminKey(adminKey);
                             builder.clearGossipEndpoint().addAllGossipEndpoint(gossipEndpoints);
                             builder.clearServiceEndpoint().addAllServiceEndpoint(grpcEndpoints);
                             gossipCaCertificate.ifPresent(s -> builder.setGossipCaCertificate(ByteString.copyFrom(s)));
@@ -211,5 +211,9 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         final MoreObjects.ToStringHelper helper = super.toStringHelper();
         Optional.ofNullable(lastReceipt).ifPresent(receipt -> helper.add("created", receipt.getNodeId()));
         return helper;
+    }
+
+    public Key getAdminKey() {
+        return adminKey;
     }
 }

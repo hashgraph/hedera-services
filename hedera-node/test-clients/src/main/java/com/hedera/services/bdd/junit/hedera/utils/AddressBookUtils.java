@@ -143,7 +143,7 @@ public class AddressBookUtils {
     /**
      *  Returns service end point base on the host and port. - used for hapi path for ServiceEndPoint
      *
-     * @param host is an ip or domain name
+     * @param host is an ip or domain name, do not pass in an invalid ip such as "130.0.0.1", will set it as domain name otherwise.
      * @param port
      * @return ServiceEndpoint
      */
