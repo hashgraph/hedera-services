@@ -171,7 +171,9 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     @Override
     protected Creation<HapiCryptoCreate, Account> newCreation(@NonNull final HapiSpec spec) {
         final var model = builder.build();
-        final var op = cryptoCreate(name).balance(model.tinybarBalance());
+        final var op = cryptoCreate(name)
+                .balance(model.tinybarBalance())
+                .maxAutomaticTokenAssociations(model.maxAutoAssociations());
         if (model.hasStakedNodeId()) {
             op.stakedNodeId(model.stakedNodeIdOrThrow());
         }

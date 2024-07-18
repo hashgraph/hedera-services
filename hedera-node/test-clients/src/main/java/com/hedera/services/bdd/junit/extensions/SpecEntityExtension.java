@@ -160,6 +160,7 @@ public class SpecEntityExtension implements ParameterResolver, BeforeAllCallback
             if (annotation.stakedNodeId() > -1L) {
                 builder.stakedNodeId(annotation.stakedNodeId());
             }
+            builder.maxAutoAssociations(annotation.maxAutoAssociations());
         }
         return account;
     }

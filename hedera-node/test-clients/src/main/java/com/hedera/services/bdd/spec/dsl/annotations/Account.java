@@ -50,4 +50,10 @@ public @interface Account {
      * @return the initial staked node id of the account
      */
     long stakedNodeId() default -1;
+
+    /**
+     * If set, the maximum number of auto-associations to allow for the account.
+     * @return the maximum number of auto-associations
+     */
+    int maxAutoAssociations() default 0;
 }

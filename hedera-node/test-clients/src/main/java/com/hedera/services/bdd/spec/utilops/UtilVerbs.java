@@ -63,6 +63,7 @@ import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
+import static com.hedera.services.bdd.suites.crypto.CryptoTransferSuite.sdec;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
@@ -1710,7 +1711,7 @@ public class UtilVerbs {
                     (allowedPercentDiff / 100.0) * expectedUsd,
                     String.format(
                             "%s fee (%s) more than %.2f percent different than expected!",
-                            CryptoTransferSuite.sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
+                            sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
         });
     }
 
@@ -1723,8 +1724,31 @@ public class UtilVerbs {
                     (allowedPercentDiff / 100.0) * expectedUsd,
                     String.format(
                             "%s fee (%s) more than %.2f percent different than expected!",
-                            CryptoTransferSuite.sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
+                            sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
         });
+    }
+
+    /**
+     * Validates that an amount is within a certain percentage of an expected value.
+     * @param expected expected value
+     * @param actual actual value
+     * @param allowedPercentDiff allowed percentage difference
+     * @param quantity quantity being compared
+     * @param context context of the comparison
+     */
+    public static void assertCloseEnough(
+            final double expected,
+            final double actual,
+            final double allowedPercentDiff,
+            final String quantity,
+            final String context) {
+        assertEquals(
+                expected,
+                actual,
+                (allowedPercentDiff / 100.0) * expected,
+                String.format(
+                        "%s %s (%s) more than %.2f percent different than expected",
+                        sdec(actual, 4), quantity, context, allowedPercentDiff));
     }
 
     public static CustomSpecAssert validateChargedUsdExceeds(String txn, double amount) {
@@ -1733,7 +1757,7 @@ public class UtilVerbs {
                     actualUsdCharged > amount,
                     String.format(
                             "%s fee (%s) is not greater than %s!",
-                            CryptoTransferSuite.sdec(actualUsdCharged, 4), txn, amount));
+                            sdec(actualUsdCharged, 4), txn, amount));
         });
     }
 
