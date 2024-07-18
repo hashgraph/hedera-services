@@ -18,6 +18,7 @@ package com.swirlds.crypto.signaturescheme.api;
 
 import com.swirlds.crypto.pairings.api.Curve;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Represents a threshold signature schema.
@@ -29,9 +30,27 @@ public class SignatureSchema {
     private GroupAssignment groupAssignment;
     private Curve cure;
 
-    public SignatureSchema(GroupAssignment groupAssignment, Curve cure) {
-        this.groupAssignment = groupAssignment;
-        this.cure = cure;
+    public SignatureSchema(GroupAssignment groupAssignment, Curve curve) {
+        this.groupAssignment = Objects.requireNonNull(groupAssignment, "groupAssignment must not be null");
+        this.cure = Objects.requireNonNull(curve, "curve must not be null");
+    }
+
+    /**
+     * Returns the groupAssignment.
+     *
+     * @return the groupAssignment
+     */
+    public GroupAssignment getGroupAssignment() {
+        return groupAssignment;
+    }
+
+    /**
+     * Returns the curve.
+     *
+     * @return the curve
+     */
+    public Curve getCure() {
+        return cure;
     }
 
     /**
