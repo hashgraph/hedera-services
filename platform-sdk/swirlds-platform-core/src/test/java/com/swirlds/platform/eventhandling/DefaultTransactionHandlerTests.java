@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -84,10 +85,12 @@ class DefaultTransactionHandlerTests {
         }
 
         final ConsensusRound consensusRound = mock(ConsensusRound.class);
-        when(consensusRound.getConsensusEvents()).thenReturn(events);
+        when(consensusRound.getConsensusEvents())
+                .thenReturn(events.stream().map(EventImpl::getBaseEvent).collect(Collectors.toList()));
+        when(consensusRound.getNumEvents()).thenReturn(events.size());
         when(consensusRound.getConsensusTimestamp())
                 .thenReturn(Time.getCurrent().now());
-        when(consensusRound.getKeystoneEvent()).thenReturn(keystoneEvent);
+        when(consensusRound.getKeystoneEvent()).thenReturn(keystoneEvent.getBaseEvent());
         when(consensusRound.getRoundNum()).thenReturn(roundNumber);
         when(consensusRound.isEmpty()).thenReturn(events.isEmpty());
         when(consensusRound.isPcesRound()).thenReturn(pcesRound);
@@ -118,14 +121,16 @@ class DefaultTransactionHandlerTests {
 
     private static void assertEventReachedConsensus(@NonNull final EventImpl event) {
         assertTrue(event.getBaseEvent().getPayloadCount() > 0, "event should have transactions");
-        event.consensusTransactionIterator()
+        event.getBaseEvent()
+                .consensusTransactionIterator()
                 .forEachRemaining(transaction -> assertNotNull(
                         transaction.getConsensusTimestamp(), "transaction should have a consensus timestamp"));
     }
 
     private static void assertEventDidNotReachConsensus(@NonNull final EventImpl event) {
         assertTrue(event.getBaseEvent().getPayloadCount() > 0, "event should have transactions");
-        event.consensusTransactionIterator()
+        event.getBaseEvent()
+                .consensusTransactionIterator()
                 .forEachRemaining(transaction -> assertNull(
                         transaction.getConsensusTimestamp(), "transaction should not have a consensus timestamp"));
     }

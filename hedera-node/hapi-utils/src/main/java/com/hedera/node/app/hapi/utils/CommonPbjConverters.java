@@ -685,6 +685,7 @@ public class CommonPbjConverters {
             case INVALID_IPV4_ADDRESS -> ResponseCodeEnum.INVALID_IPV4_ADDRESS;
             case EMPTY_TOKEN_REFERENCE_LIST -> ResponseCodeEnum.EMPTY_TOKEN_REFERENCE_LIST;
             case UPDATE_NODE_ACCOUNT_NOT_ALLOWED -> ResponseCodeEnum.UPDATE_NODE_ACCOUNT_NOT_ALLOWED;
+            case TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY -> ResponseCodeEnum.TOKEN_HAS_NO_METADATA_OR_SUPPLY_KEY;
             case UNRECOGNIZED -> throw new RuntimeException("UNRECOGNIZED Response code!");
         };
     }
