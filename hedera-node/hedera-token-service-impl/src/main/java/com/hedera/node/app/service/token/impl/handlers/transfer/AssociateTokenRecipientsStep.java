@@ -220,10 +220,8 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
     }
 
     private long associationFeeFor(@NonNull final HandleContext context, @NonNull final TransactionBody txnBody) {
-        final var topLevelPayer = context.payer();
-        // If we get here the payer must exist
-        final var fees = context.dispatchComputeFees(txnBody, topLevelPayer, ComputeDispatchFeesAsTopLevel.NO);
-        return fees.serviceFee() + fees.networkFee() + fees.nodeFee();
+        return context.dispatchComputeFees(txnBody, context.payer(), ComputeDispatchFeesAsTopLevel.NO)
+                .totalFee();
     }
 
     private void validateFungibleAllowance(
