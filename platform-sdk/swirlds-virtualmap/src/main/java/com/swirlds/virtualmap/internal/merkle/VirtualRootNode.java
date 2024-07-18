@@ -52,6 +52,7 @@ import com.swirlds.common.merkle.impl.internal.AbstractMerkleInternal;
 import com.swirlds.common.merkle.route.MerkleRoute;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
+import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
@@ -1458,7 +1459,10 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
      */
     @Override
     public LearnerTreeView<Long> buildLearnerView(
-            final int viewId, final ReconnectConfig reconnectConfig, @NonNull final ReconnectMapStats mapStats) {
+            final int viewId,
+            final ReconnectConfig reconnectConfig,
+            @NonNull final ReconnectNodeCount nodeCount,
+            @NonNull final ReconnectMapStats mapStats) {
         assert originalMap != null;
         // During reconnect we want to look up state from the original records
         final VirtualStateAccessor originalState = originalMap.getState();
@@ -1468,7 +1472,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
             case VirtualMapReconnectMode.PUSH -> new LearnerPushVirtualTreeView<>(
                     viewId, this, originalMap.records, originalState, reconnectState, nodeRemover, mapStats);
             case VirtualMapReconnectMode.PULL_TOP_TO_BOTTOM -> {
-                final NodeTraversalOrder topToBottom = new TopToBottomTraversalOrder();
+                final NodeTraversalOrder topToBottom = new TopToBottomTraversalOrder(nodeCount);
                 yield new LearnerPullVirtualTreeView<>(
                         reconnectConfig,
                         viewId,
@@ -1481,7 +1485,7 @@ public final class VirtualRootNode<K extends VirtualKey, V extends VirtualValue>
                         mapStats);
             }
             case VirtualMapReconnectMode.PULL_TWO_PHASE_PESSIMISTIC -> {
-                final NodeTraversalOrder twoPhasePessimistic = new TwoPhasePessimisticTraversalOrder();
+                final NodeTraversalOrder twoPhasePessimistic = new TwoPhasePessimisticTraversalOrder(nodeCount);
                 yield new LearnerPullVirtualTreeView<>(
                         reconnectConfig,
                         viewId,

@@ -285,7 +285,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
             return new LearnerPushMerkleTreeView(viewId, root, mapStats);
         } else {
             assert root instanceof CustomReconnectRoot;
-            return ((CustomReconnectRoot<?, ?>) root).buildLearnerView(viewId, reconnectConfig, mapStats);
+            return ((CustomReconnectRoot<?, ?>) root).buildLearnerView(viewId, reconnectConfig, this, mapStats);
         }
     }
 

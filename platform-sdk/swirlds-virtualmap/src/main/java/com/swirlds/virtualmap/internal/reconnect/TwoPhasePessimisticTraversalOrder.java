@@ -57,10 +57,10 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  */
 public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
 
-    private ReconnectNodeCount nodeCount;
+    private final ReconnectNodeCount nodeCount;
 
-    private long reconnectFirstLeafPath;
-    private long reconnectLastLeafPath;
+    private volatile long reconnectFirstLeafPath;
+    private volatile long reconnectLastLeafPath;
 
     private final Set<Long> cleanNodes = ConcurrentHashMap.newKeySet();
 
@@ -98,13 +98,19 @@ public class TwoPhasePessimisticTraversalOrder implements NodeTraversalOrder {
     // Used during phase 2
     private long lastLeafPath = Path.INVALID_PATH;
 
-    public TwoPhasePessimisticTraversalOrder() {}
+    /**
+     * Constructor.
+     *
+     * @param nodeCount object to report node stats
+     */
+    public TwoPhasePessimisticTraversalOrder(final ReconnectNodeCount nodeCount) {
+        this.nodeCount = nodeCount;
+    }
 
     @Override
-    public void start(final long firstLeafPath, final long lastLeafPath, final ReconnectNodeCount nodeCount) {
+    public void start(final long firstLeafPath, final long lastLeafPath) {
         this.reconnectFirstLeafPath = firstLeafPath;
         this.reconnectLastLeafPath = lastLeafPath;
-        this.nodeCount = nodeCount;
 
         final int leafParentRank = Path.getRank(firstLeafPath) - 1;
         if (leafParentRank < 14) {

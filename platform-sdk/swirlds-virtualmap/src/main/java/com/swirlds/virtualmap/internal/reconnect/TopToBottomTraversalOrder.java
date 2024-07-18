@@ -36,10 +36,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TopToBottomTraversalOrder implements NodeTraversalOrder {
 
-    private ReconnectNodeCount nodeCount;
+    private final ReconnectNodeCount nodeCount;
 
-    private long reconnectFirstLeafPath;
-    private long reconnectLastLeafPath;
+    private volatile long reconnectFirstLeafPath;
+    private volatile long reconnectLastLeafPath;
 
     // Last sent path. Initialized to 0, since the root path is always sent first
     private long lastPath = 0;
@@ -49,13 +49,19 @@ public class TopToBottomTraversalOrder implements NodeTraversalOrder {
     // populated on the receiving thread and queried on the sending thread
     private final Set<Long> cleanNodes = ConcurrentHashMap.newKeySet();
 
-    public TopToBottomTraversalOrder() {}
+    /**
+     * Constructor.
+     *
+     * @param nodeCount object to report node stats
+     */
+    public TopToBottomTraversalOrder(final ReconnectNodeCount nodeCount) {
+        this.nodeCount = nodeCount;
+    }
 
     @Override
-    public void start(final long firstLeafPath, final long lastLeafPath, final ReconnectNodeCount nodeCount) {
+    public void start(final long firstLeafPath, final long lastLeafPath) {
         this.reconnectFirstLeafPath = firstLeafPath;
         this.reconnectLastLeafPath = lastLeafPath;
-        this.nodeCount = nodeCount;
     }
 
     @Override

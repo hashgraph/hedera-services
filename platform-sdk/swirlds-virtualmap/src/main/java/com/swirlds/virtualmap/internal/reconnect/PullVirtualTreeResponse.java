@@ -144,14 +144,11 @@ public class PullVirtualTreeResponse implements SelfSerializable {
         } else {
             learnerView.getMapStats().incrementInternalHashes(1, isClean ? 1 : 0);
         }
-        if (path != Path.INVALID_PATH) {
-            learnerView.responseReceived(this);
-        }
     }
 
-    public int getViewId() {
+    public LearnerPullVirtualTreeView getLearnerView() {
         assert learnerView != null;
-        return learnerView.getViewId();
+        return learnerView;
     }
 
     public long getPath() {

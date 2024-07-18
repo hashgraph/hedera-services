@@ -28,7 +28,6 @@ import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.streams.AsyncInputStream;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
-import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
 import com.swirlds.common.merkle.synchronization.utility.MerkleSynchronizationException;
 import com.swirlds.common.merkle.synchronization.views.CustomReconnectRoot;
 import com.swirlds.common.merkle.synchronization.views.LearnerTreeView;
@@ -41,12 +40,11 @@ import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -89,11 +87,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     private final ReconnectNodeRemover<K, V> nodeRemover;
 
     /**
-     * Received nodes statistics.
-     */
-    private ReconnectNodeCount nodeCount;
-
-    /**
      * A {@link RecordAccessor} for getting access to the original records.
      */
     private final RecordAccessor<K, V> originalRecords;
@@ -109,25 +102,25 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      * Indicates if no responses from the teacher have been received yet. The very first response
      * must be for path 0 (root virtual node)
      */
-    private boolean firstNodeResponse = true;
+    private volatile boolean firstNodeResponse = true;
 
     /**
      * True until we have handled our first leaf
      */
-    private boolean firstLeaf = true;
+    private volatile boolean firstLeaf = true;
 
     /**
      * Responses from teacher may come in a different order than they are sent by learner. The order
      * is important for hashing, so it's restored using this queue. Once hashing is improved to work
      * with unsorted dirty leaves stream, this code may be cleaned up.
      */
-    private final Queue<Long> anticipatedPaths = new ArrayDeque<>();
+    private final Queue<Long> anticipatedPaths = new ConcurrentLinkedDeque<>();
 
     /**
      * Related to the queue above. If a response is received out of order, it's temporarily stored
      * in this map.
      */
-    private final Map<Long, PullVirtualTreeResponse> responses = new HashMap<>();
+    private final Map<Long, PullVirtualTreeResponse> responses = new ConcurrentHashMap<>();
 
     /**
      * Create a new {@link LearnerPullVirtualTreeView}.
@@ -176,8 +169,6 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final Consumer<CustomReconnectRoot<?, ?>> subtreeListener,
             final AtomicReference<MerkleNode> reconstructedRoot,
             final Consumer<Integer> completeListener) {
-        this.nodeCount = learningSynchronizer;
-
         final Map<Integer, CountDownLatch> allRootResponseReceived =
                 learningSynchronizer.computeViewMetadata("ROOTRESPONSES", new ConcurrentHashMap<>());
         final CountDownLatch viewRootResponseReceived = new CountDownLatch(1);
@@ -243,15 +234,20 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         reconnectState.setLastLeafPath(lastLeafPath);
         root.prepareReconnectHashing(firstLeafPath, lastLeafPath);
         nodeRemover.setPathInformation(firstLeafPath, lastLeafPath);
-        traversalOrder.start(firstLeafPath, lastLeafPath, nodeCount);
+        traversalOrder.start(firstLeafPath, lastLeafPath);
         firstNodeResponse = false;
     }
 
-    synchronized void responseReceived(final PullVirtualTreeResponse response) {
+    // This method is called concurrently from multiple threads
+    void responseReceived(final PullVirtualTreeResponse response) {
         responses.put(response.getPath(), response);
-        while (!anticipatedPaths.isEmpty()) {
-            final long nextExpectedPath = anticipatedPaths.peek();
-            final PullVirtualTreeResponse r = responses.get(nextExpectedPath);
+        // Handle responses in the same order as the corresponding requests were sent to the teacher
+        while (true) {
+            final Long nextExpectedPath = anticipatedPaths.peek();
+            if (nextExpectedPath == null) {
+                break;
+            }
+            final PullVirtualTreeResponse r = responses.remove(nextExpectedPath);
             if (r == null) {
                 break;
             }
@@ -279,10 +275,10 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
                 final VirtualLeafRecord<K, V> leaf = response.getLeafData();
                 assert leaf != null;
                 assert path == leaf.getPath();
-                mapStats.incrementLeafData(1, 0);
                 nodeRemover.newLeafNode(path, leaf.getKey());
                 root.handleReconnectLeaf(leaf); // may block if hashing is slower than ingest
             }
+            mapStats.incrementLeafData(1, isClean ? 1 : 0);
         }
     }
 
@@ -334,7 +330,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         return hash;
     }
 
-    synchronized void anticipatePath(final long path) {
+    void anticipatePath(final long path) {
         anticipatedPaths.add(path);
     }
 

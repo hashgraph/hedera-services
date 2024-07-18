@@ -110,10 +110,15 @@ public class LearnerPullVirtualTreeReceiveTask {
                     Thread.sleep(0, 1);
                     continue;
                 }
-                final int viewId = response.getViewId();
+                final LearnerPullVirtualTreeView<?, ?> view = response.getLearnerView();
+                final long path = response.getPath();
+                if (path != Path.INVALID_PATH) {
+                    view.responseReceived(response);
+                }
+                final int viewId = view.getViewId();
                 final AtomicLong viewExpectedResponses = expectedResponses.get(viewId);
                 viewExpectedResponses.decrementAndGet();
-                if (response.getPath() == Path.INVALID_PATH) {
+                if (path == Path.INVALID_PATH) {
                     // There may be other messages for this view being handled by other threads
                     final long waitStart = System.currentTimeMillis();
                     while (viewExpectedResponses.get() != 0) {
