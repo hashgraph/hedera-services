@@ -388,7 +388,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                             new NegotiationProtocols(List.of(
                                     heartbeatProtocolFactory.build(otherId),
                                     reconnectProtocolFactory.build(otherId),
-                                    syncProtocolFactory.build(otherId)))))
+                                    syncProtocolFactory.build(otherId))),
+                            platformContext.getTime()))
                     .build());
         }
     }
