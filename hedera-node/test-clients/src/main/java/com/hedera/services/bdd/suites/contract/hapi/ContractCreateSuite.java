@@ -757,7 +757,7 @@ public class ContractCreateSuite {
     final Stream<DynamicTest> tryContractCreateWithMaxAutoAssoc() {
         final var contract = "CreateTrivial";
         return defaultHapiSpec("tryContractCreateWithMaxAutoAssoc")
-                .given(uploadInitCode(contract))
+                .given(overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE), uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)

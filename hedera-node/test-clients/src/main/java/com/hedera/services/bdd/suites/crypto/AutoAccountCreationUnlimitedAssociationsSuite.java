@@ -333,7 +333,6 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
     final Stream<DynamicTest> transferTokensToEVMAddressAliasUnlimitedAssociations() {
         double v13PriceUsd = 0.05;
         double autoAssocSlotPrice = 0.0018;
-        double v13PriceUsdOneAutoAssociation = v13PriceUsd + autoAssocSlotPrice;
 
         final AtomicReference<AccountID> partyId = new AtomicReference<>();
         final AtomicReference<ByteString> partyAlias = new AtomicReference<>();
@@ -342,6 +341,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
 
         return defaultHapiSpec("transferTokensToEVMAddressAliasUnlimitedAssociations")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
                         cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
                         tokenCreate(VANILLA_TOKEN)
                                 .tokenType(FUNGIBLE_COMMON)
