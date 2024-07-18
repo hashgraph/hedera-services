@@ -50,7 +50,7 @@ public class SystemTransactionExtractionUtils {
             @NonNull final ConsensusRound round, @NonNull final Class<T> systemTransactionTypeClass) {
 
         return round.getConsensusEvents().stream()
-                .map(event -> extractFromEvent(event.getBaseEvent(), systemTransactionTypeClass))
+                .map(event -> extractFromEvent(event, systemTransactionTypeClass))
                 .filter(Objects::nonNull)
                 .flatMap(List::stream)
                 .collect(collectingAndThen(toList(), list -> list.isEmpty() ? null : list));

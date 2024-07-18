@@ -22,7 +22,6 @@ import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.sequence.set.SequenceSet;
 import com.swirlds.platform.sequence.set.StandardSequenceSet;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -70,15 +69,11 @@ public class ConsensusOutput implements Clearable {
     }
 
     public void consensusRound(@NonNull final ConsensusRound consensusRound) {
-        for (final EventImpl event : consensusRound.getConsensusEvents()) {
-            // this a workaround until Consensus starts using a clock that is provided
-            event.setReachedConsTimestamp(time.now());
-        }
         consensusRounds.add(consensusRound);
 
         // Look for stale events
-        for (final EventImpl consensusEvent : consensusRound.getConsensusEvents()) {
-            nonAncientConsensusEvents.add(consensusEvent.getBaseEvent().getDescriptor());
+        for (final PlatformEvent consensusEvent : consensusRound.getConsensusEvents()) {
+            nonAncientConsensusEvents.add(consensusEvent.getDescriptor());
         }
         final long ancientThreshold = consensusRound.getEventWindow().getAncientThreshold();
         nonAncientEvents.shiftWindow(ancientThreshold, e -> {

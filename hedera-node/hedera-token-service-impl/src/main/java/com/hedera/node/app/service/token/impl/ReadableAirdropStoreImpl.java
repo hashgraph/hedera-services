@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.token.impl.schemas.V0530TokenSchema.AI
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.PendingAirdropId;
-import com.hedera.hapi.node.state.token.AccountAirdrop;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.swirlds.state.spi.ReadableKVState;
@@ -33,7 +33,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
  */
 public class ReadableAirdropStoreImpl implements ReadableAirdropStore {
     /** The underlying data storage class that holds the airdrop data. */
-    private final ReadableKVState<PendingAirdropId, AccountAirdrop> readableAirdropState;
+    private final ReadableKVState<PendingAirdropId, AccountPendingAirdrop> readableAirdropState;
 
     /**
      * Create a new {@link ReadableAirdropStoreImpl} instance.
@@ -54,7 +54,7 @@ public class ReadableAirdropStoreImpl implements ReadableAirdropStore {
     /** {@inheritDoc} */
     @Override
     @Nullable
-    public AccountAirdrop get(@NonNull final PendingAirdropId airdropId) {
+    public AccountPendingAirdrop get(@NonNull final PendingAirdropId airdropId) {
         requireNonNull(airdropId);
         return readableAirdropState.get(airdropId);
     }
