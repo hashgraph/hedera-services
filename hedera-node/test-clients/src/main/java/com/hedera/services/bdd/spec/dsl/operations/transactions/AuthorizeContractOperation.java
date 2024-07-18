@@ -73,7 +73,9 @@ public class AuthorizeContractOperation extends AbstractSpecOperation implements
         spec.registry().saveKey(managedKeyName, key);
         return switch (target) {
             case SpecAccount account -> cryptoUpdate(account.name()).key(managedKeyName);
-            case SpecToken token -> tokenUpdate(token.name()).adminKey(managedKeyName);
+            case SpecToken token -> tokenUpdate(token.name())
+                    .adminKey(managedKeyName)
+                    .feeScheduleKey(managedKeyName);
             default -> throw new IllegalStateException("Cannot authorize contracts for " + target);
         };
     }

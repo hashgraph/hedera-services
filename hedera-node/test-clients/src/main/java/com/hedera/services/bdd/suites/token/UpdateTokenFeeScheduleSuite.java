@@ -18,78 +18,111 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
-import static com.hedera.services.bdd.spec.keys.KeyShape.ED25519;
-import static com.hedera.services.bdd.spec.keys.KeyShape.sigs;
-import static com.hedera.services.bdd.spec.keys.SigControl.ON;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCall;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.contractCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.FEE_SCHEDULE_KEY;
+import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 
-import com.esaulpaugh.headlong.abi.Address;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.keys.KeyShape;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
+import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
+import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
+import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 
 @Tag(SMART_CONTRACT)
-@DisplayName("evmValidation")
+@DisplayName("updateTokenFeeSchedule")
 @HapiTestLifecycle
+// To avoid race conditions; it is very fast regardless
+@OrderedInIsolation
 public class UpdateTokenFeeScheduleSuite {
 
-    static final String updateTokenFeeSchedules = "UpdateTokenFeeSchedules";
-    static final AtomicReference<Address> fungibleTokenNum = new AtomicReference<>();
-    static final AtomicReference<Address> account = new AtomicReference<>();
-    static final AtomicReference<Address> collector = new AtomicReference<>();
-    private static final KeyShape THRESHOLD_KEY_SHAPE = KeyShape.threshOf(1, ED25519, CONTRACT);
+    @Contract(contract = "UpdateTokenFeeSchedules", creationGas = 4_000_000L)
+    static SpecContract updateTokenFeeSchedules;
+
+    @FungibleToken(
+            name = "fungibleToken",
+            keys = {ADMIN_KEY, FEE_SCHEDULE_KEY})
+    static SpecFungibleToken fungibleToken;
+
+    @FungibleToken(name = "feeToken")
+    static SpecFungibleToken feeToken;
+
+    @NonFungibleToken(
+            name = "fungibleToken",
+            keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, SUPPLY_KEY})
+    static SpecNonFungibleToken nonFungibleToken;
+
+    @Account(name = "account", balance = ONE_HUNDRED_HBARS)
+    static SpecAccount feeCollector;
 
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         testLifecycle.doAdhoc(
-                cryptoCreate("collector").balance(100 * ONE_HUNDRED_HBARS).exposingEvmAddressTo(collector::set),
-                uploadInitCode(updateTokenFeeSchedules),
-                contractCreate(updateTokenFeeSchedules),
-                newKeyNamed("feeScheduleKey"),
-                newKeyNamed("adminKey"),
-                newKeyNamed("thresholdKey").shape(THRESHOLD_KEY_SHAPE.signedWith(sigs(ON, updateTokenFeeSchedules))),
-                cryptoCreate("account")
-                        .balance(100 * ONE_HUNDRED_HBARS)
-                        .exposingEvmAddressTo(account::set)
-                        .key("feeScheduleKey"),
-                tokenCreate("fungibleToken")
-                        .treasury("account")
-                        .adminKey("adminKey")
-                        .feeScheduleKey(updateTokenFeeSchedules)
-                        .exposingAddressTo(fungibleTokenNum::set));
+                fungibleToken.authorizeContracts(updateTokenFeeSchedules),
+                nonFungibleToken.authorizeContracts(updateTokenFeeSchedules),
+                feeCollector.associateTokens(feeToken));
     }
 
+    @Order(0)
     @HapiTest
-    @DisplayName("try to set fixed hbar fee to a token")
-    public Stream<DynamicTest> trySetFixedHbarFeeToToken() {
+    @DisplayName("fungible token with fixed ℏ fee")
+    public Stream<DynamicTest> updateFungibleTokenWithHbarFixedFee() {
         return hapiTest(
-                contractCall(
-                                updateTokenFeeSchedules,
-                                "updateFungibleFixedHbarFee",
-                                fungibleTokenNum.get(),
-                                10L,
-                                collector.get())
-                        .signingWith("thresholdKey")
-                        .logged()
-                        .hasKnownStatus(ResponseCodeEnum.SUCCESS)
-                        .via("setFixedHbarFeeToToken"),
-                getTxnRecord("setFixedHbarFeeToToken").logged());
+                updateTokenFeeSchedules.call("updateFungibleFixedHbarFee", fungibleToken, 10L, feeCollector),
+                fungibleToken
+                        .getInfo()
+                        .andAssert(info -> info.hasCustom(fixedHbarFeeInSchedule(10L, feeCollector.name()))));
+    }
+
+    @Order(1)
+    @HapiTest
+    @DisplayName("non fungible token with fixed ℏ fee")
+    public Stream<DynamicTest> updateNonFungibleTokenWithHbarFixedFee() {
+        return hapiTest(
+                updateTokenFeeSchedules.call("updateNonFungibleFixedHbarFee", nonFungibleToken, 10L, feeCollector),
+                nonFungibleToken
+                        .getInfo()
+                        .andAssert(info -> info.hasCustom(fixedHbarFeeInSchedule(10L, feeCollector.name()))));
+    }
+
+    @Order(2)
+    @HapiTest
+    @DisplayName("fungible token with token fixed fee")
+    public Stream<DynamicTest> updateFungibleTokenWithTokenFixedFee() {
+        return hapiTest(
+                updateTokenFeeSchedules.call("updateFungibleFixedHtsFee", fungibleToken, feeToken, 1L, feeCollector),
+                fungibleToken
+                        .getInfo()
+                        .andAssert(info ->
+                                info.hasCustom(fixedHtsFeeInSchedule(1L, feeToken.name(), feeCollector.name()))));
+    }
+
+    @Order(3)
+    @HapiTest
+    @DisplayName("non fungible token with token fixed fee")
+    public Stream<DynamicTest> updateNonFungibleTokenWithTokenFixedFee() {
+        return hapiTest(
+                updateTokenFeeSchedules.call(
+                        "updateNonFungibleFixedHtsFee", nonFungibleToken, feeToken, 1L, feeCollector),
+                nonFungibleToken
+                        .getInfo()
+                        .andAssert(info ->
+                                info.hasCustom(fixedHtsFeeInSchedule(1L, feeToken.name(), feeCollector.name()))));
     }
 }
