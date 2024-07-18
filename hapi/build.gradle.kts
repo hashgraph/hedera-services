@@ -27,25 +27,17 @@ description = "Hedera API"
 // and then fix the reported issues.
 tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports") }
 
-// Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
-tasks.cloneHederaProtobufs {
-    // uncomment below to use a specific tag
-    //    tag = "v0.51.0"
-    // uncomment below to use a specific branch
-    branch = "main"
-}
-
 sourceSets {
     main {
         pbj {
-            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
-            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
-            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("platform") })
+            srcDir(layout.projectDirectory.dir("hedera-protobufs/services"))
+            srcDir(layout.projectDirectory.dir("hedera-protobufs/streams"))
+            srcDir(layout.projectDirectory.dir("hedera-protobufs/platform"))
         }
         proto {
-            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
-            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
-            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("platform") })
+            srcDir(layout.projectDirectory.dir("hedera-protobufs/services"))
+            srcDir(layout.projectDirectory.dir("hedera-protobufs/streams"))
+            srcDir(layout.projectDirectory.dir("hedera-protobufs/platform"))
         }
     }
 }
