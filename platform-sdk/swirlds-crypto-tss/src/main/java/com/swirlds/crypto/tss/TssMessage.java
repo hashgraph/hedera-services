@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.crypto.tss.api;
+package com.swirlds.crypto.tss;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 

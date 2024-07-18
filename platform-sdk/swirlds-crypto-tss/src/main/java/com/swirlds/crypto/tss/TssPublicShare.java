@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.swirlds.crypto.tss.api;
+package com.swirlds.crypto.tss;
 
-import com.swirlds.crypto.signaturescheme.api.PairingPrivateKey;
+import com.swirlds.crypto.signaturescheme.api.PairingPublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A record that contains a share ID, and the corresponding private key.
+ * A record that contains a share ID, and the corresponding public key.
  *
- * @param shareId    the share ID
- * @param privateKey the private key
+ * @param shareId   the share ID
+ * @param publicKey the public key
  */
-public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull PairingPrivateKey privateKey) {}
+public record TssPublicShare(@NonNull TssShareId shareId, @NonNull PairingPublicKey publicKey) {}

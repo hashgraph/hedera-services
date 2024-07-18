@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.crypto.tss.api;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
+package com.swirlds.crypto.pairings.api;
 
 /**
- * The ID of a TSS share.
- *
- * @param idElement the field element that represents the share ID
+ * An enumeration of supported pairing curves.
  */
-public record TssShareId(@NonNull Integer /*This would be a fieldElement*/ idElement) {}
+public enum Curve {
+    ALT_BN128,
+    BLS12_381;
+}

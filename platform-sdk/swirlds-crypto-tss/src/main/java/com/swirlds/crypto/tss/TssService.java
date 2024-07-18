@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.swirlds.crypto.tss.api;
+package com.swirlds.crypto.tss;
 
 import com.swirlds.crypto.signaturescheme.api.PairingPrivateKey;
 import com.swirlds.crypto.signaturescheme.api.PairingPublicKey;

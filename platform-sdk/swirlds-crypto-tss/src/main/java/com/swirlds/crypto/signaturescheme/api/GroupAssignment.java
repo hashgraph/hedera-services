@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-package com.swirlds.crypto.tss.api;
-
-import com.swirlds.crypto.signaturescheme.api.PairingSignature;
-import edu.umd.cs.findbugs.annotations.NonNull;
+package com.swirlds.crypto.signaturescheme.api;
 
 /**
- * Represents a signature created for a TSSPrivateShare.
- *
- * @param shareId   the share ID
- * @param signature the signature
+ * An enum to clarify which group public keys and signatures are in, for a given
+ * {@link SignatureSchema SignatureSchema}
  */
-public record TssShareSignature(@NonNull TssShareId shareId, @NonNull PairingSignature signature) {}
+public enum GroupAssignment {
+    /**
+     * The group for signatures is the first group in the pairing, and the group for public keys is the second group.
+     */
+    GROUP1_FOR_SIGNING,
+    /**
+     * The group for signatures is the second group in the pairing, and the group for public keys is the first group.
+     */
+    GROUP1_FOR_PUBLIC_KEY;
+}

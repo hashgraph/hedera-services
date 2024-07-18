@@ -16,10 +16,33 @@
 
 package com.swirlds.crypto.signaturescheme.api;
 
+import com.swirlds.crypto.pairings.api.Curve;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 /**
  * Represents a threshold signature schema.
  *
  * @implNote Given that we pack the type of the curve in serialized forms in 1 byte alongside other information
  * we can only support a limited amount of curves (128).
  */
-public record SignatureSchema() {}
+public class SignatureSchema {
+    private GroupAssignment groupAssignment;
+    private Curve cure;
+
+    public SignatureSchema(GroupAssignment groupAssignment, Curve cure) {
+        this.groupAssignment = groupAssignment;
+        this.cure = cure;
+    }
+
+    /**
+     * Returns a signature scheme a curve and a groupAssignment
+     *
+     * @param groupAssignment the group assignment
+     * @param curve           the curve
+     * @return the SignatureSchema instance
+     */
+    @NonNull
+    public static SignatureSchema create(@NonNull Curve curve, @NonNull GroupAssignment groupAssignment) {
+        return new SignatureSchema(groupAssignment, curve);
+    }
+}

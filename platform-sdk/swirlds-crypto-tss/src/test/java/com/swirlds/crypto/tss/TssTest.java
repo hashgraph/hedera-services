@@ -18,15 +18,12 @@ package com.swirlds.crypto.tss;
 
 import static org.mockito.Mockito.mock;
 
+import com.swirlds.crypto.pairings.api.Curve;
+import com.swirlds.crypto.signaturescheme.api.GroupAssignment;
 import com.swirlds.crypto.signaturescheme.api.PairingPrivateKey;
 import com.swirlds.crypto.signaturescheme.api.PairingPublicKey;
 import com.swirlds.crypto.signaturescheme.api.PairingSignature;
 import com.swirlds.crypto.signaturescheme.api.SignatureSchema;
-import com.swirlds.crypto.tss.api.TssMessage;
-import com.swirlds.crypto.tss.api.TssParticipantDirectory;
-import com.swirlds.crypto.tss.api.TssPrivateShare;
-import com.swirlds.crypto.tss.api.TssPublicShare;
-import com.swirlds.crypto.tss.api.TssShareSignature;
 import com.swirlds.crypto.tss.impl.TssServiceImpl;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -42,6 +39,9 @@ import org.junit.jupiter.api.Test;
  */
 class TssTest {
 
+    public static final SignatureSchema SIGNATURE_SCHEMA =
+            SignatureSchema.create(Curve.ALT_BN128, GroupAssignment.GROUP1_FOR_SIGNING);
+
     @Test
     void testGenesis() {
         // Simulates the genesis process for a 3 participant network
@@ -55,7 +55,7 @@ class TssTest {
                 .withParticipant(1, 1, publicKey2)
                 .withParticipant(2, 1, publicKey3)
                 .withThreshold(2)
-                .build(mock(SignatureSchema.class));
+                .build(SIGNATURE_SCHEMA);
 
         TssServiceImpl tssService = new TssServiceImpl();
 
@@ -68,7 +68,7 @@ class TssTest {
                 .withParticipant(1, 1, publicKey2)
                 .withParticipant(2, 1, publicKey3)
                 .withThreshold(2)
-                .build(mock(SignatureSchema.class));
+                .build(SIGNATURE_SCHEMA);
 
         // this message will contain a random share split in 3 parts
         TssMessage p1Message = tssService.generateTssMessage(p1sDirectory);
@@ -79,7 +79,7 @@ class TssTest {
                 .withParticipant(1, 1, publicKey2)
                 .withParticipant(2, 1, publicKey3)
                 .withThreshold(2)
-                .build(mock(SignatureSchema.class));
+                .build(SIGNATURE_SCHEMA);
 
         // this message will contain a random share split in 3 parts
         TssMessage p2Message = tssService.generateTssMessage(p2sDirectory);
@@ -124,7 +124,7 @@ class TssTest {
                 .withParticipant(1, 1, publicKey2)
                 .withParticipant(2, 1, publicKey3)
                 .withThreshold(2)
-                .build(mock(SignatureSchema.class));
+                .build(SIGNATURE_SCHEMA);
 
         TssServiceImpl tssService = new TssServiceImpl();
         List<TssPublicShare> publicShares =
@@ -178,7 +178,7 @@ class TssTest {
                 .withParticipant(1, 1, publicKey2)
                 .withParticipant(2, 1, publicKey3)
                 .withThreshold(2)
-                .build(mock(SignatureSchema.class));
+                .build(SIGNATURE_SCHEMA);
 
         TssServiceImpl tssService = new TssServiceImpl();
         List<TssPublicShare> publicShares =
