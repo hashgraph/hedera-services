@@ -304,7 +304,9 @@ public class CommonPbjConverters {
             case TokenAssociateToAccount -> HederaFunctionality.TOKEN_ASSOCIATE_TO_ACCOUNT;
             case TokenBurn -> HederaFunctionality.TOKEN_BURN;
             case TokenCreate -> HederaFunctionality.TOKEN_CREATE;
+            case TokenCreatePartition -> HederaFunctionality.TOKEN_CREATE_PARTITION;
             case TokenDelete -> HederaFunctionality.TOKEN_DELETE;
+            case TokenDeletePartition -> HederaFunctionality.TOKEN_DELETE_PARTITION;
             case TokenDissociateFromAccount -> HederaFunctionality.TOKEN_DISSOCIATE_FROM_ACCOUNT;
             case TokenFeeScheduleUpdate -> HederaFunctionality.TOKEN_FEE_SCHEDULE_UPDATE;
             case TokenFreezeAccount -> HederaFunctionality.TOKEN_FREEZE_ACCOUNT;
@@ -313,12 +315,15 @@ public class CommonPbjConverters {
             case TokenGetNftInfo -> HederaFunctionality.TOKEN_GET_NFT_INFO;
             case TokenGetNftInfos -> HederaFunctionality.TOKEN_GET_NFT_INFOS;
             case TokenGrantKycToAccount -> HederaFunctionality.TOKEN_GRANT_KYC_TO_ACCOUNT;
+            case TokenLock -> HederaFunctionality.TOKEN_LOCK;
             case TokenMint -> HederaFunctionality.TOKEN_MINT;
             case TokenPause -> HederaFunctionality.TOKEN_PAUSE;
             case TokenRevokeKycFromAccount -> HederaFunctionality.TOKEN_REVOKE_KYC_FROM_ACCOUNT;
             case TokenUnfreezeAccount -> HederaFunctionality.TOKEN_UNFREEZE_ACCOUNT;
+            case TokenUnlock -> HederaFunctionality.TOKEN_UNLOCK;
             case TokenUnpause -> HederaFunctionality.TOKEN_UNPAUSE;
             case TokenUpdate -> HederaFunctionality.TOKEN_UPDATE;
+            case TokenUpdatePartition -> HederaFunctionality.TOKEN_UPDATE_PARTITION;
             case TokenUpdateNfts -> HederaFunctionality.TOKEN_UPDATE_NFTS;
             case TokenReject -> HederaFunctionality.TOKEN_REJECT;
             case TransactionGetReceipt -> HederaFunctionality.TRANSACTION_GET_RECEIPT;

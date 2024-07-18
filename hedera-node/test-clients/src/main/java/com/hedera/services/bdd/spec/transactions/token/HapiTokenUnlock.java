@@ -114,11 +114,6 @@ public class HapiTokenUnlock extends HapiTxnOp<HapiTokenUnlock> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::unlockToken;
-    }
-
-    @Override
     protected void updateStateOf(final HapiSpec spec) throws Throwable {
         if (rememberingNothing || actualStatus != SUCCESS) {
             return;

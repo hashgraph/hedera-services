@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.TokenCreatePartitionDefinitionTransact
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -106,11 +105,6 @@ public class HapiPartitionCreate extends HapiTxnOp<HapiPartitionCreate> {
             }
         });
         return signers;
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::createTokenPartitionDefinition;
     }
 
     @Override

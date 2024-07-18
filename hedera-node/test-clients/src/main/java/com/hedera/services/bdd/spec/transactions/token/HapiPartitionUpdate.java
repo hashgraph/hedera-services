@@ -98,11 +98,6 @@ public class HapiPartitionUpdate extends HapiTxnOp<HapiPartitionUpdate> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::updateTokenPartitionDefinition;
-    }
-
-    @Override
     protected void updateStateOf(final HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;

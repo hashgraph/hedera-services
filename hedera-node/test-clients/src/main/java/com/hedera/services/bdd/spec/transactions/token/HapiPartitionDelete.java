@@ -78,11 +78,6 @@ public class HapiPartitionDelete extends HapiTxnOp<HapiPartitionDelete> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::deleteTokenPartitionDefinition;
-    }
-
-    @Override
     protected void updateStateOf(final HapiSpec spec) {
         if (actualStatus != SUCCESS) {
             return;
