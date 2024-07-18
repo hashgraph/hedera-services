@@ -104,7 +104,6 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
     public void setUp() {
         super.setUp();
         subject = new CryptoTransferHandler(validator);
-        given(stack.getBaseBuilder(CryptoTransferRecordBuilder.class)).willReturn(transferRecordBuilder);
     }
 
     @Test
@@ -536,6 +535,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 writableAccountStore.get(feeCollectorId).tinybarBalance();
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(CryptoTransferRecordBuilder.class)).willReturn(transferRecordBuilder);
 
         subject.handle(handleContext);
 

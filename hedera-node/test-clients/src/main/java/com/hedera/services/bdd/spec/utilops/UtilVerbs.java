@@ -219,6 +219,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1045,7 +1046,7 @@ public class UtilVerbs {
         return withOpContext((spec, opLog) -> {
             triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
             final var entries =
-                    assertion.get().itemsWithin(Duration.ofSeconds(2)).join();
+                    assertion.get().itemsFuture().orTimeout(3, TimeUnit.SECONDS).join();
             validator.accept(spec, entries);
         });
     }

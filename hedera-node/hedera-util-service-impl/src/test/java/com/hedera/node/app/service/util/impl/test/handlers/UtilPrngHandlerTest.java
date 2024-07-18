@@ -42,7 +42,6 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -59,9 +58,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UtilPrngHandlerTest {
-    @Mock
-    private PreHandleContext preHandleContext;
-
     @Mock(strictness = LENIENT)
     private HandleContext handleContext;
 
@@ -137,7 +133,7 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        verify(recordBuilder).entropyNumber(0);
+        verify(recordBuilder, never()).entropyNumber(anyInt());
         verify(recordBuilder).entropyBytes(hash);
     }
 
@@ -276,7 +272,7 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        verify(recordBuilder).entropyNumber(0);
+        verify(recordBuilder, never()).entropyNumber(anyInt());
         verify(recordBuilder).entropyBytes(hash);
     }
 
@@ -287,7 +283,7 @@ class UtilPrngHandlerTest {
 
         assertThatThrownBy(() -> subject.handle(handleContext)).isInstanceOf(NullPointerException.class);
 
-        verify(recordBuilder).entropyNumber(0);
+        verify(recordBuilder, never()).entropyNumber(anyInt());
         verify(recordBuilder, never()).entropyBytes(any());
     }
 
@@ -299,7 +295,7 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        verify(recordBuilder).entropyNumber(0);
+        verify(recordBuilder, never()).entropyNumber(anyInt());
         verify(recordBuilder).entropyBytes(Bytes.wrap(new byte[48]));
     }
 
@@ -311,7 +307,7 @@ class UtilPrngHandlerTest {
 
         subject.handle(handleContext);
 
-        verify(recordBuilder).entropyNumber(0);
+        verify(recordBuilder, never()).entropyNumber(anyInt());
         verify(recordBuilder).entropyBytes(Bytes.wrap(new byte[48]));
     }
 

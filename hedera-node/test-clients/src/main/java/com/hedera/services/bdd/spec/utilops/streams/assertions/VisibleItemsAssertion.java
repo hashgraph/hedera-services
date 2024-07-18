@@ -20,14 +20,12 @@ import static com.hedera.services.bdd.spec.utilops.streams.assertions.BaseIdScre
 import static com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItems.newVisibleItems;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.NodeStakeUpdate;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -74,14 +72,13 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
         latch = new CountDownLatch(unseenIds.size());
     }
 
-    public CompletableFuture<Map<String, VisibleItems>> itemsWithin(@NonNull final Duration timeout) {
-        requireNonNull(timeout);
+    public CompletableFuture<Map<String, VisibleItems>> itemsFuture() {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                latch.await(timeout.toMillis(), MILLISECONDS);
+                latch.await();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrupted while waiting for all expected items!");
+                throw new IllegalStateException("Interrupted while waiting for all expected items");
             }
             items.values().forEach(vi -> vi.entries().sort(Comparator.naturalOrder()));
             return items;

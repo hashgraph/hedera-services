@@ -23,6 +23,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.EndOfStaki
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -203,6 +204,8 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(STAKING_INFO_1.pendingRewards()).isZero();
         assertThat(STAKING_INFO_2.pendingRewards()).isZero();
         assertThat(STAKING_INFO_3.pendingRewards()).isZero();
+        given(nodeStakeUpdateRecordBuilder.transaction(any())).willReturn(nodeStakeUpdateRecordBuilder);
+        given(nodeStakeUpdateRecordBuilder.memo(any())).willReturn(nodeStakeUpdateRecordBuilder);
 
         subject.updateNodes(context);
 
@@ -261,6 +264,8 @@ public class EndOfStakingPeriodUpdaterTest {
         assertThat(STAKING_INFO_1.pendingRewards()).isZero();
         assertThat(STAKING_INFO_2.pendingRewards()).isZero();
         assertThat(STAKING_INFO_3.pendingRewards()).isZero();
+        given(nodeStakeUpdateRecordBuilder.transaction(any())).willReturn(nodeStakeUpdateRecordBuilder);
+        given(nodeStakeUpdateRecordBuilder.memo(any())).willReturn(nodeStakeUpdateRecordBuilder);
 
         subject.updateNodes(context);
 
@@ -297,6 +302,8 @@ public class EndOfStakingPeriodUpdaterTest {
                         .withValue("staking.rewardBalanceThreshold", 100000)
                         .withValue("staking.maxStakeRewarded", 0L)
                         .getOrCreateConfig());
+        given(nodeStakeUpdateRecordBuilder.transaction(any())).willReturn(nodeStakeUpdateRecordBuilder);
+        given(nodeStakeUpdateRecordBuilder.memo(any())).willReturn(nodeStakeUpdateRecordBuilder);
 
         subject.updateNodes(context);
 
@@ -334,6 +341,8 @@ public class EndOfStakingPeriodUpdaterTest {
                 STAKING_INFO_2.copyBuilder().stakeRewardStart(0).build(),
                 STAKING_INFO_3.copyBuilder().stakeRewardStart(0).build());
         assertThat(stakingRewardsStore.totalStakeRewardStart()).isZero();
+        given(nodeStakeUpdateRecordBuilder.transaction(any())).willReturn(nodeStakeUpdateRecordBuilder);
+        given(nodeStakeUpdateRecordBuilder.memo(any())).willReturn(nodeStakeUpdateRecordBuilder);
 
         subject.updateNodes(context);
 
