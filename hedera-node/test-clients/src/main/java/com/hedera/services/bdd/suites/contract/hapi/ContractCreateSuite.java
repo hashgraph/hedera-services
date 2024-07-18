@@ -16,7 +16,10 @@
 
 package com.hedera.services.bdd.suites.contract.hapi;
 
+import static com.google.protobuf.ByteString.EMPTY;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
+import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
+import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
@@ -53,10 +56,13 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.explicitEthereu
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromAccountToAlias;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.expectContractActionSidecarFor;
+import static com.hedera.services.bdd.spec.utilops.SidecarVerbs.sidecarValidation;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertCreationMaxAssociations;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.assertCreationViaCallMaxAssociations;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.contractListWithPropertiesInheritedFrom;
@@ -86,8 +92,10 @@ import static com.hedera.services.bdd.suites.HapiSuite.SECP_256K1_SOURCE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.HapiSuite.ZERO_BYTE_MEMO;
 import static com.hedera.services.bdd.suites.contract.Utils.FunctionType.FUNCTION;
+import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.getABIFor;
 import static com.hedera.services.bdd.suites.contract.hapi.ContractUpdateSuite.ADMIN_KEY;
+import static com.hedera.services.stream.proto.ContractActionType.CALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_BYTECODE_EMPTY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ERROR_DECODING_BYTESTRING;
@@ -103,6 +111,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_OVERSIZE;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -111,6 +120,7 @@ import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.assertions.ContractInfoAsserts;
@@ -119,6 +129,8 @@ import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.utilops.UtilVerbs;
 import com.hedera.services.bdd.utils.Signing;
+import com.hedera.services.stream.proto.CallOperationType;
+import com.hedera.services.stream.proto.ContractAction;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -130,6 +142,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -183,31 +196,61 @@ public class ContractCreateSuite {
                         .logged());
     }
 
-    @LeakyHapiTest(overrides = {"ledger.maxAutoAssociations"})
+    @HapiTest
     final Stream<DynamicTest> testReproduceBug() {
         final var contract = "ManyChildren";
-        return hapiTest(
-                overriding("ledger.maxAutoAssociations", "5000"),
-                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
-                cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS),
-                uploadInitCode(contract),
-                contractCreate(contract)
-                        .refusingEthConversion()
-                        .maxAutomaticTokenAssociations(0)
-                        .hasKnownStatus(SUCCESS),
-                ethereumCall(contract, "createThingsRepeatedly", BigInteger.valueOf(51))
-                        .type(EthTxData.EthTransactionType.EIP1559)
-                        .signingWith(SECP_256K1_SOURCE_KEY)
-                        .payingWith(RELAYER)
-                        .via("ethereumCreate")
-                        .nonce(0)
-                        .maxFeePerGas(50L)
-                        .maxPriorityGas(2L)
-                        .logged()
-                        .gasLimit(15_000_000L)
-                        .hasKnownStatus(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED),
-                getTxnRecord("ethereumCreate").andAllChildRecords().logged());
+        return defaultHapiSpec("testReproduceBug")
+                .given(
+                        sidecarValidation(),
+                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                        cryptoTransfer(tinyBarsFromAccountToAlias(GENESIS, SECP_256K1_SOURCE_KEY, ONE_HUNDRED_HBARS)),
+                        cryptoCreate(RELAYER).balance(6 * ONE_MILLION_HBARS).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(TOKEN_TREASURY).balance(6 * ONE_HUNDRED_HBARS),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .initialSupply(1000)
+                                .adminKey(SECP_256K1_SOURCE_KEY)
+                                .supplyKey(SECP_256K1_SOURCE_KEY)
+                                .treasury(TOKEN_TREASURY),
+                        uploadInitCode(contract),
+                        contractCreate(contract)
+                                .refusingEthConversion()
+                                .maxAutomaticTokenAssociations(0)
+                                .hasKnownStatus(SUCCESS))
+                .when(withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ftType = registry.getTokenID(FUNGIBLE_TOKEN);
+                   var call = ethereumCall(
+                                    contract,
+                                    "createThingsRepeatedly",
+                                    BigInteger.valueOf(51),
+                            asHeadlongAddress(hex(asSolidityAddress(ftType))),
+                            asHeadlongAddress(asAddress(registry.getAccountID(TOKEN_TREASURY))),
+                            asHeadlongAddress(asAddress(registry.getAccountID(RELAYER))),
+                                    1L)
+                            .type(EthTransactionType.EIP1559)
+                            .signingWith(SECP_256K1_SOURCE_KEY)
+                            .payingWith(RELAYER)
+                            .via("ethereumCreate")
+                            .nonce(0)
+                            .maxFeePerGas(50L)
+                            .maxPriorityGas(2L)
+                            .logged()
+                            .gasLimit(15_000_000L)
+                            .hasKnownStatus(ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED);
+                    allRunFor(spec, call);
+                }))
+                .then(
+                        // I need this random expected action just to print the actual sidecars actions;
+                        expectContractActionSidecarFor(
+                                "ethereumCreate",
+                                List.of(ContractAction.newBuilder()
+                                        .setCallType(CALL)
+                                        .setCallDepth(1)
+                                        .setCallOperationType(CallOperationType.OP_CALL)
+                                        .setOutput(EMPTY)
+                                        .setGas(5_832_424)
+                                        .build())),
+                        getTxnRecord("ethereumCreate").andAllChildRecords().logged());
     }
 
     @HapiTest

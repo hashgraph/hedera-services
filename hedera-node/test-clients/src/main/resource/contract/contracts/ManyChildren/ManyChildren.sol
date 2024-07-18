@@ -6,27 +6,21 @@ import "./hip-206/HederaTokenService.sol";
 import "./IERC20.sol";
 
 contract ManyChildren is HederaTokenService {
-    function checkBalanceRepeatedly(address token, address account, uint timesToCheck) external {
-        for (uint i = 0; i < timesToCheck; i++) {
-            IERC20(token).balanceOf(account);
-        }    
+
+    function transferTokensCall(address token, address sender, address receiver, int64 amount) public {
+        HederaTokenService.transferToken(token, sender, receiver, amount);
     }
 
-    function createThingsRepeatedly(uint thingsToCreate) external {
+    function createThingsRepeatedly(
+        uint thingsToCreate,
+        address token,
+        address sender,
+        address receiver,
+        int64 amount
+    ) external {
         for (uint i = 0; i < thingsToCreate; i++) {
-            new Thing(i);
+        transferTokensCall.token(token, sender, receiver, amount);
         }    
     }
 
-    function sendSomeValueTo(address payable beneficiary) external payable {
-        beneficiary.transfer(msg.value); 
-    }
-}
-
-contract Thing {
-    uint256 i;
-
-    constructor(uint256 _i) {
-        i = _i;
-    }
 }

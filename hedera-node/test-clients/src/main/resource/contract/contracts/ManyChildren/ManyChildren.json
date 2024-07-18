@@ -1,1 +1,192 @@
-[{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"account","type":"address"},{"internalType":"uint256","name":"timesToCheck","type":"uint256"}],"name":"checkBalanceRepeatedly","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"thingsToCreate","type":"uint256"}],"name":"createThingsRepeatedly","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address payable","name":"beneficiary","type":"address"}],"name":"sendSomeValueTo","outputs":[],"stateMutability":"payable","type":"function"}]
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "name": "CallResponseEvent",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "thingsToCreate",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "int64",
+        "name": "amount",
+        "type": "int64"
+      }
+    ],
+    "name": "createThingsRepeatedly",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes",
+        "name": "encodedFunctionSelector",
+        "type": "bytes"
+      }
+    ],
+    "name": "redirectForToken",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "responseCode",
+        "type": "int256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "response",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "beneficiary",
+        "type": "address"
+      }
+    ],
+    "name": "sendSomeValueTo",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFrom",
+    "outputs": [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "from",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "serialNumber",
+        "type": "uint256"
+      }
+    ],
+    "name": "transferFromNFT",
+    "outputs": [
+      {
+        "internalType": "int64",
+        "name": "responseCode",
+        "type": "int64"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "int64",
+        "name": "amount",
+        "type": "int64"
+      }
+    ],
+    "name": "transferTokensCall",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
