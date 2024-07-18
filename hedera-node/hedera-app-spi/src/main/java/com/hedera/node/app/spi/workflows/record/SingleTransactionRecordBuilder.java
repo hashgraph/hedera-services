@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.spi.workflows.record;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -178,6 +179,15 @@ public interface SingleTransactionRecordBuilder {
     SingleTransactionRecordBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate);
 
     /**
+     * Returns true if this transaction originated from inside another handler or workflow; and not
+     * a user transaction (or scheduled user transaction).
+     * @return true if this transaction is internal
+     */
+    default boolean isInternalDispatch() {
+        return category() == CHILD || category() == PRECEDING;
+    }
+
+    /**
      * Convenience method to package as {@link TransactionBody} as a {@link Transaction} .
      *
      * @param body the transaction body
@@ -199,14 +209,6 @@ public interface SingleTransactionRecordBuilder {
      */
     default boolean isPreceding() {
         return category().equals(HandleContext.TransactionCategory.PRECEDING);
-    }
-
-    /**
-     * Returns whether the transaction is an internal dispatch.
-     * @return true if the transaction is an internal dispatch; otherwise false
-     */
-    default boolean isInternalDispatch() {
-        return !category().equals(USER);
     }
 
     /**

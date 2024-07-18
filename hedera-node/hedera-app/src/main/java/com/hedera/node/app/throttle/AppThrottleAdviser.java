@@ -101,7 +101,7 @@ public class AppThrottleAdviser implements ThrottleAdviser {
             }
         }
         if (isAllowed && numAutoAssociations > 0) {
-            isAllowed = networkUtilizationManager.shouldThrottleNOfUnscaled(
+            isAllowed = !networkUtilizationManager.shouldThrottleNOfUnscaled(
                     numAutoAssociations, TOKEN_ASSOCIATE_TO_ACCOUNT, consensusNow);
         }
         if (!isAllowed) {
