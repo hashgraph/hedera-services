@@ -68,11 +68,11 @@ public class UpdateTokenFeeScheduleTest {
     static SpecFungibleToken feeToken;
 
     @NonFungibleToken(
-            name = "fungibleToken",
+            name = "nonFungibleToken",
             keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, SUPPLY_KEY})
     static SpecNonFungibleToken nonFungibleToken;
 
-    @Account(name = "account", balance = ONE_HUNDRED_HBARS)
+    @Account(name = "feeCollector", balance = ONE_HUNDRED_HBARS)
     static SpecAccount feeCollector;
 
     @BeforeAll
