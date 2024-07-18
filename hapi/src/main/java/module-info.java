@@ -32,7 +32,6 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.streams;
     exports com.hedera.hapi.streams.codec;
     exports com.hedera.hapi.streams.schema;
-    exports com.hedera.hapi.streams.v7;
     exports com.hedera.hapi.node.addressbook;
     exports com.hedera.hapi.node.state.addressbook.codec;
     exports com.hedera.hapi.node.state.addressbook;
@@ -53,11 +52,8 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.congestion;
     exports com.hedera.hapi.platform.event;
     exports com.hedera.services.stream.proto;
-    exports com.hedera.services.stream.v7.proto;
     exports com.hederahashgraph.api.proto.java;
     exports com.hederahashgraph.service.proto.java;
-    exports com.hedera.block.node.api.proto.java;
-    exports com.hedera.hapi.streams.v7.schema;
     exports com.hedera.hapi.util;
     exports com.hedera.hapi.block.stream;
     exports com.hedera.hapi.block.stream.input;
