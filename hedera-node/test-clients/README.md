@@ -24,20 +24,20 @@ Merkle tree.
 
 ## Table of contents
 
--   [Structure of a `HapiSpec`](#structure-of-a-hapispec)
--   [`HederaNetwork` implementations](#hederanetwork-implementations)
-    -   [`RemoteNetwork`](#remotenetwork)
-    -   [`SubProcessNetwork`](#subprocessnetwork)
-    -   [Embedded networks](#embedded-networks)
--   [Style guide](#style-guide)
-    -   [The `@HapiTest` checklist](#the-hapitest-checklist)
--   [JUnit Jupiter integrations](#junit-jupiter-integrations)
-    -   [Meta-annotations](#meta-annotations)
-    -   [`SharedNetworkLauncherSessionListener`](#sharednetworklaunchersessionlistener)
-    -   [`NetworkTargetingExtension`](#networktargetingextension)
-    -   [`SpecNamingExtension`](#specnamingextension)
-    -   [`SpecManagerExtension`](#specmanagerextension)
-    -   [`SpecEntityExtension`](#specentityextension)
+- [Structure of a `HapiSpec`](#structure-of-a-hapispec)
+- [`HederaNetwork` implementations](#hederanetwork-implementations)
+  - [`RemoteNetwork`](#remotenetwork)
+  - [`SubProcessNetwork`](#subprocessnetwork)
+  - [Embedded networks](#embedded-networks)
+- [Style guide](#style-guide)
+  - [The `@HapiTest` checklist](#the-hapitest-checklist)
+- [JUnit Jupiter integrations](#junit-jupiter-integrations)
+  - [Meta-annotations](#meta-annotations)
+  - [`SharedNetworkLauncherSessionListener`](#sharednetworklaunchersessionlistener)
+  - [`NetworkTargetingExtension`](#networktargetingextension)
+  - [`SpecNamingExtension`](#specnamingextension)
+  - [`SpecManagerExtension`](#specmanagerextension)
+  - [`SpecEntityExtension`](#specentityextension)
 
 ## Structure of a `HapiSpec`
 
@@ -171,13 +171,13 @@ accounts involved before and after the `ScheduleSign`.
 
 There are many ways to manage such complexity. We could,
 
--   Extend the DSL, especially the object-oriented DSL in the `c.h.s.bdd.spec.dsl` package, to
-    encapsulate the boilerplate and expose only the intent.
--   Extract the setup into a `@BeforeAll` method, using an injected `SpecManager` to create
-    prerequisite entities needed by this and other `@HapiTest` methods in the test class.
--   Write a helper method that returns a grouped `SpecOperation` to encapsulate the setup
-    operations.
--   Accept a slightly more verbose test method, but add rigorous comments to explain each step.
+- Extend the DSL, especially the object-oriented DSL in the `c.h.s.bdd.spec.dsl` package, to
+  encapsulate the boilerplate and expose only the intent.
+- Extract the setup into a `@BeforeAll` method, using an injected `SpecManager` to create
+  prerequisite entities needed by this and other `@HapiTest` methods in the test class.
+- Write a helper method that returns a grouped `SpecOperation` to encapsulate the setup
+  operations.
+- Accept a slightly more verbose test method, but add rigorous comments to explain each step.
 
 There is no "best" approach. For example, the effort of extending the DSL is probably only justified
 when the new constructs will apply to many tests. But it is essential to achieve a final result that
@@ -192,29 +192,29 @@ meets two criteria:
 To help consistently meet these criteria, we use the following minimum checklist for every
 `@HapiTest`:
 
--   [x] The `@DisplayName`, when combined with the display names of any enclosing test classes,
-        forms a single, clear phrase that fully summarizes the behavior being tested.
--   [x] If the test specifies behavior from a HIP, its javadoc links to the section in the markdown
-        file in the
-        [`hedera-improvement-proposal` repo](https://github.com/hashgraph/hedera-improvement-proposal)
-        outlining the behavior.
--   [x] The test includes no more than seven (7) `SpecOperation`'s.
--   [x] Any lambda injected into the operation chain is at most three (3) lines long; and there is
-        no more than one (1) such lambda.
--   [x] Boilerplate needed to set up the test does not repeat in any other `@HapiTest` in the same
-        class.
--   [x] If the test includes a contract call, the semantics of the function being called are
-        described in a single sentence comment that directly precedes the call, even if that comment
-        appears in other test in the same class.
--   [x] If the test uses `@LeakyHapiTest`, it specifies the reason for the link in the annotation
-        attribute; for example, `@LeakyHapiTest(NO_CONCURRENT_CREATIONS)` if the test depends on no
-        other entities being created while it executes.
--   [x] If the test leaks property overrides, there is no other `@LeakyHapiTest` **in the entire
-        module** that leaks the exact same property overrides; if so, all such tests are grouped in
-        a single test class that uses `@BeforeAll` and `@AfterAll` to manage the shared overrides
-        and replaces the leaky annotations with `@HapiTest`.
--   [x] Each test class and utility method must have javadoc that briefly sums up the reason for the
-        test or method.
+- [x] The `@DisplayName`, when combined with the display names of any enclosing test classes,
+  forms a single, clear phrase that fully summarizes the behavior being tested.
+- [x] If the test specifies behavior from a HIP, its javadoc links to the section in the markdown
+  file in the
+  [`hedera-improvement-proposal` repo](https://github.com/hashgraph/hedera-improvement-proposal)
+  outlining the behavior.
+- [x] The test includes no more than seven (7) `SpecOperation`'s.
+- [x] Any lambda injected into the operation chain is at most three (3) lines long; and there is
+  no more than one (1) such lambda.
+- [x] Boilerplate needed to set up the test does not repeat in any other `@HapiTest` in the same
+  class.
+- [x] If the test includes a contract call, the semantics of the function being called are
+  described in a single sentence comment that directly precedes the call, even if that comment
+  appears in other test in the same class.
+- [x] If the test uses `@LeakyHapiTest`, it specifies the reason for the link in the annotation
+  attribute; for example, `@LeakyHapiTest(NO_CONCURRENT_CREATIONS)` if the test depends on no
+  other entities being created while it executes.
+- [x] If the test leaks property overrides, there is no other `@LeakyHapiTest` **in the entire
+  module** that leaks the exact same property overrides; if so, all such tests are grouped in
+  a single test class that uses `@BeforeAll` and `@AfterAll` to manage the shared overrides
+  and replaces the leaky annotations with `@HapiTest`.
+- [x] Each test class and utility method must have javadoc that briefly sums up the reason for the
+  test or method.
 
 ## JUnit Jupiter integrations
 

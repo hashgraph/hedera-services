@@ -14,10 +14,10 @@ From IntelliJ, choose `File -> Open` the _hedera-services/_ directory you just c
 
 The following plugins add comfort features for working with certain parts of the code base:
 
--   [Android IntelliJ plugin](https://plugins.jetbrains.com/plugin/22989-android) adds additional
-    code navigation capabilities for Dagger2 annotated interfaces.
--   [JMH IntelliJ plugin](https://plugins.jetbrains.com/plugin/7529-jmh-java-microbenchmark-harness)
-    allows running selected JMH benchmarks directly from the IDE.
+- [Android IntelliJ plugin](https://plugins.jetbrains.com/plugin/22989-android) adds additional
+  code navigation capabilities for Dagger2 annotated interfaces.
+- [JMH IntelliJ plugin](https://plugins.jetbrains.com/plugin/7529-jmh-java-microbenchmark-harness)
+  allows running selected JMH benchmarks directly from the IDE.
 
 ## Configure the JDK used by Gradle
 
@@ -38,9 +38,9 @@ press the **Reload All Gradle project** in IntelliJ.
 
 Changes to the project setup include,
 
--   Changing `build.gradle.kts` files
--   Changing dependencies in `src/main/java/module-info.java` files
--   Changing build configuration in `gradle/plugins/src/main/kotlin`
+- Changing `build.gradle.kts` files
+- Changing dependencies in `src/main/java/module-info.java` files
+- Changing build configuration in `gradle/plugins/src/main/kotlin`
 
 <p>
     <img src="./assets/gradle-reload.png" />

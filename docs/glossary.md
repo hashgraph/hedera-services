@@ -2,63 +2,63 @@
 
 ## A
 
--   [Account Aliases](#account-aliases)
--   [Address Book](#address-book)
--   [Admin Transaction](#admin-transaction)
--   [Application Accounts](#application-accounts)
--   [Auto Associations](#asynchronous)
--   [Auto-Renew Accounts](#auto-renew-accounts)
+- [Account Aliases](#account-aliases)
+- [Address Book](#address-book)
+- [Admin Transaction](#admin-transaction)
+- [Application Accounts](#application-accounts)
+- [Auto Associations](#asynchronous)
+- [Auto-Renew Accounts](#auto-renew-accounts)
 
 ## B
 
--   [BLS](#bls)
--   [Block Proof](#block-proof)
--   [Block Signature](#block-signature)
--   [Block Stream](#block-stream)
+- [BLS](#bls)
+- [Block Proof](#block-proof)
+- [Block Signature](#block-signature)
+- [Block Stream](#block-stream)
 
 ## C
 
--   [Civilian Accounts](#civilian-accounts)
--   [Config.txt](#config.txt)
--   [Congestion Pricing](#congestion-pricing)
--   [Consensus Time](#consensus-time)
+- [Civilian Accounts](#civilian-accounts)
+- [Config.txt](#config.txt)
+- [Congestion Pricing](#congestion-pricing)
+- [Consensus Time](#consensus-time)
 
 ## D
 
--   [Delegate Call](#delegate-call)
+- [Delegate Call](#delegate-call)
 
 ## E
 
--   [EOA](#eoa)
+- [EOA](#eoa)
 
 ## H
 
--   [Hollow Accounts](#hollow-accounts)
+- [Hollow Accounts](#hollow-accounts)
 
 ## L
 
--   [Leaky Tests](#leaky-tests)
+- [Leaky Tests](#leaky-tests)
 
 ## P
 
--   [Precompiles](#precompiles)
--   [Privileged System Accounts](#privileged-system-accounts)
+- [Precompiles](#precompiles)
+- [Privileged System Accounts](#privileged-system-accounts)
 
 ## S
 
--   [Security Model V2](#security-model-v2)
--   [Sidecars](#sidecars)
--   [Synthetic Transaction](#synthetic-transactions)
--   [System Contracts](#system-contracts)
--   [System Transaction](#system-transaction)
+- [Security Model V2](#security-model-v2)
+- [Sidecars](#sidecars)
+- [Synthetic Transaction](#synthetic-transactions)
+- [System Contracts](#system-contracts)
+- [System Transaction](#system-transaction)
 
 ## T
 
--   [Token Allowance](#token-allowance)
+- [Token Allowance](#token-allowance)
 
 ## W
 
--   [Weibar](#weibar)
+- [Weibar](#weibar)
 
 ---
 
@@ -85,12 +85,12 @@ the "network address book" which are manually managed by devops.
 [Privileged System Account](#privileged-system-accounts). Some examples of Admin Transactions
 include the following:
 
--   Freeze Transactions
--   System Delete
--   System Undelete
--   Address Book File 0.0.101/102 updates
--   Exchange Rate File 0.0.111 updates
--   Dynamic Properties File 0.0.121 updates
+- Freeze Transactions
+- System Delete
+- System Undelete
+- Address Book File 0.0.101/102 updates
+- Exchange Rate File 0.0.111 updates
+- Dynamic Properties File 0.0.121 updates
 
 ## Application Accounts
 

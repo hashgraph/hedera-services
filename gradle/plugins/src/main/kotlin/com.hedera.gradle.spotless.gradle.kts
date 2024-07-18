@@ -23,25 +23,6 @@ spotless {
     // optional: limit format enforcement to just the files changed by this feature branch
     ratchetFrom("origin/develop")
 
-    format("misc") {
-        // define the files to apply `misc` to
-        target("docs/*.md", "/*.md", "*.md", "test-clients/*.md", ".gitignore")
-        prettier() // Override the default prettier config to limit column width to 100 characters
-            .config(
-                mapOf(
-                    "parser" to "markdown",
-                    "tabWidth" to 4,
-                    "printWidth" to 100,
-                    "proseWrap" to "always"
-                )
-            )
-
-        // define the steps to apply to those files
-        trimTrailingWhitespace()
-        indentWithSpaces()
-        endWithNewline()
-    }
-
     format("actionYaml") {
         target(".github/workflows/*.yaml")
         /*

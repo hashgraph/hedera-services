@@ -31,16 +31,16 @@ Use the following tutorials to set up a GPG key.
 
 **Be sure to enable Vigilant Mode and adding GPG key in GitHub**.
 
--   **Github**
-    -   [Github - Generating a new GPG key](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key)
-    -   [Github - Adding a GPG key to your Github account](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account)
-    -   [Github - Configuring your Git CLI for GPG commit signing](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key)
-    -   [Github - Signing Commits with the Git CLI](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)
-    -   [Github - Vigilant Mode](https://docs.github.com/en/authentication/managing-commit-signature-verification/displaying-verification-statuses-for-all-of-your-commits)
-        ‼️
--   **IntelliJ IDEA (if you use IntelliJ to interact with git)**
-    -   [IntelliJ - Signing Commits with GPG Keys](https://www.jetbrains.com/help/idea/set-up-GPG-commit-signing.html)
-    -   [IntelliJ Official YouTube - GPG Commit Signing (10:59)](https://youtu.be/RBhz-8fZN9A?t=659)
+- **Github**
+  - [Github - Generating a new GPG key](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key)
+  - [Github - Adding a GPG key to your Github account](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account)
+  - [Github - Configuring your Git CLI for GPG commit signing](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key)
+  - [Github - Signing Commits with the Git CLI](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)
+  - [Github - Vigilant Mode](https://docs.github.com/en/authentication/managing-commit-signature-verification/displaying-verification-statuses-for-all-of-your-commits)
+    ‼️
+- **IntelliJ IDEA (if you use IntelliJ to interact with git)**
+  - [IntelliJ - Signing Commits with GPG Keys](https://www.jetbrains.com/help/idea/set-up-GPG-commit-signing.html)
+  - [IntelliJ Official YouTube - GPG Commit Signing (10:59)](https://youtu.be/RBhz-8fZN9A?t=659)
 
 ## Development Model
 
@@ -62,10 +62,10 @@ pattern for the development life cycle.
 
 Note especially the roles of the `main` and `develop` branches:
 
--   `develop` is the default branch, the target of active development, and should at all times
-    should be a viable candidate for the next release.
--   `main` is a tightly-controlled branch that release engineering uses for final tags deployed to
-    production.
+- `develop` is the default branch, the target of active development, and should at all times
+  should be a viable candidate for the next release.
+- `main` is a tightly-controlled branch that release engineering uses for final tags deployed to
+  production.
 
 ### Creating issues on GitHub
 
@@ -75,12 +75,12 @@ associated to an issue in GitHub.
 
 There are three types of issues:
 
--   **Bug**: These track issues with the code
--   **Documentation**: These track problems or insufficient coverage with the documentation
--   **Enhancement**: These track specific feature requests and ideas until they are complete. This
-    should only be for trivial or minor enhancements. If the feature is sufficiently large, complex
-    or requires coordination among multiple Hedera projects, it should first go through the Hedera
-    Improvement Proposal process.
+- **Bug**: These track issues with the code
+- **Documentation**: These track problems or insufficient coverage with the documentation
+- **Enhancement**: These track specific feature requests and ideas until they are complete. This
+  should only be for trivial or minor enhancements. If the feature is sufficiently large, complex
+  or requires coordination among multiple Hedera projects, it should first go through the Hedera
+  Improvement Proposal process.
 
 Any issue created should be added to
 [Services Sprint Tracking](https://github.com/orgs/hashgraph/projects/13) (if it is targeted to be
@@ -100,10 +100,10 @@ with 0.30 milestone on it.
 
 The release engineering team will handle the following:
 
--   Create a release branch from `develop` branch at the end of first sprint in the release cycle
--   Will merge the release branch for current deploying release into `main`
--   Will provide automated release processes and coordinate release schedules
--   Will handle production releases
+- Create a release branch from `develop` branch at the end of first sprint in the release cycle
+- Will merge the release branch for current deploying release into `main`
+- Will provide automated release processes and coordinate release schedules
+- Will handle production releases
 
 ### User Stories
 
@@ -129,9 +129,9 @@ Open a pull request (PR) from the feature branch to `develop` branch and add
 
 Also add the following labels on the PR :
 
--   `CI:UnitTests` - Initiates PR UnitTests needed for the PR to merge
--   `CI:FullStackTests` - Initiates full stack PR checks needed for PR to merge
--   `CI:FinalChecks` - Initiates final checks required for the PR to merge
+- `CI:UnitTests` - Initiates PR UnitTests needed for the PR to merge
+- `CI:FullStackTests` - Initiates full stack PR checks needed for PR to merge
+- `CI:FinalChecks` - Initiates final checks required for the PR to merge
 
 PR should be merged after an approving review and all the checks are passed.
 

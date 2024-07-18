@@ -6,9 +6,9 @@ An [Eclipse Adoptium](https://adoptium.net/) build of the Java **21.0.1** JDK is
 
 ## Building, Running and Working with the project
 
--   [Building, Testing and Running with Gradle](gradle-quickstart.md)
--   [Developing with IntelliJ](intellij-quickstart.md)
--   [Branch Naming Conventions](branch-naming-conventions.md)
--   [Java Style Guide](hedera-java-style-guide.md)
--   [Maintainers Guide](maintainers-guide.md)
--   [Glossary](glossary.md)
+- [Building, Testing and Running with Gradle](gradle-quickstart.md)
+- [Developing with IntelliJ](intellij-quickstart.md)
+- [Branch Naming Conventions](branch-naming-conventions.md)
+- [Java Style Guide](hedera-java-style-guide.md)
+- [Maintainers Guide](maintainers-guide.md)
+- [Glossary](glossary.md)

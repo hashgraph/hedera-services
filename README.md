@@ -16,9 +16,9 @@ Implementation of the Platform and the
 
 ## Overview of child modules
 
--   _platform-sdk/_ - the basic Platform – [documentation](platform-sdk/docs/platformWiki.md)
--   _hedera-node/_ - implementation of Hedera services on the Platform –
-    [documentation](hedera-node/docs/)
+- _platform-sdk/_ - the basic Platform – [documentation](platform-sdk/docs/platformWiki.md)
+- _hedera-node/_ - implementation of Hedera services on the Platform –
+  [documentation](hedera-node/docs/)
 
 ## Getting Started
 

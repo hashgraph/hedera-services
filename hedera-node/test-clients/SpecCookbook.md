@@ -19,17 +19,17 @@ throughout.
 
 ## Table of contents
 
--   [Patterns](#patterns)
-    -   [DO create template objects to enumerate families of related tests](#do-create-template-objects-to-enumerate-families-of-related-tests)
-    -   [DO fully validate a transaction's record before submitting the next one](#do-fully-validate-a-transactions-record-before-submitting-the-next-one)
-    -   [DO prefer the object-oriented DSL when working with contract-managed entities](#do-prefer-the-object-oriented-dsl-when-working-with-contract-managed-entities)
-    -   [DO opt for `@BeforeAll` property overrides whenever possible](#do-opt-for-beforeall-property-overrides-whenever-possible)
-    -   [DO strictly adhere to the `@HapiTest` checklist](#do-strictly-adhere-to-the-hapitest-checklist)
-    -   [DO identify natural groupings of test classes and collect them in packages](#do-identify-natural-groupings-of-test-classes-and-collect-them-in-packages)
--   [Anti-patterns](#anti-patterns)
-    -   [DON'T extract string literals to constants, even if they are repeated](#dont-extract-string-literals-to-constants-even-if-they-are-repeated)
-    -   [DON'T add any `HapiSpecOperation` modifier not essential to the test](#dont-add-any-hapispecoperation-modifier-not-essential-to-the-test)
-    -   [DON'T start by copying a test that uses `withOpContext()`](#dont-start-by-copying-a-test-that-uses-withopcontext)
+- [Patterns](#patterns)
+  - [DO create template objects to enumerate families of related tests](#do-create-template-objects-to-enumerate-families-of-related-tests)
+  - [DO fully validate a transaction's record before submitting the next one](#do-fully-validate-a-transactions-record-before-submitting-the-next-one)
+  - [DO prefer the object-oriented DSL when working with contract-managed entities](#do-prefer-the-object-oriented-dsl-when-working-with-contract-managed-entities)
+  - [DO opt for `@BeforeAll` property overrides whenever possible](#do-opt-for-beforeall-property-overrides-whenever-possible)
+  - [DO strictly adhere to the `@HapiTest` checklist](#do-strictly-adhere-to-the-hapitest-checklist)
+  - [DO identify natural groupings of test classes and collect them in packages](#do-identify-natural-groupings-of-test-classes-and-collect-them-in-packages)
+- [Anti-patterns](#anti-patterns)
+  - [DON'T extract string literals to constants, even if they are repeated](#dont-extract-string-literals-to-constants-even-if-they-are-repeated)
+  - [DON'T add any `HapiSpecOperation` modifier not essential to the test](#dont-add-any-hapispecoperation-modifier-not-essential-to-the-test)
+  - [DON'T start by copying a test that uses `withOpContext()`](#dont-start-by-copying-a-test-that-uses-withopcontext)
 
 ## Patterns
 
@@ -53,11 +53,11 @@ the possible choices for the,
 The result is a comprehensive set of dozens of tests that are all run by,
 
 ```java
-        @HapiTest
-        public Stream<DynamicTest> allScenariosAsExpected() {
-              return ALL_HIP_540_SCENARIOS.stream()
-                  .map(scenario -> namedHapiTest(scenario.testName(), scenario.asOperation()));
-        }
+@HapiTest
+public Stream<DynamicTest> allScenariosAsExpected() {
+      return ALL_HIP_540_SCENARIOS.stream()
+          .map(scenario -> namedHapiTest(scenario.testName(), scenario.asOperation()));
+}
 ```
 
 Of course there are tradeoffs, but when done carefully, templates are more likely to cover the
@@ -88,42 +88,42 @@ Suppose `0.0.E` is a token. To accomplish this we must,
 Using "low-level" operations, this would often look like,
 
 ```java
-        final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
-        return hapiTest(
-                        // Create our key, treasury account, token, and a manager contract
-                        newKeyNamed("tokenKey"),
-                        cryptoCreate("treasury"),
-                        tokenCreate("managedToken")
-                                .supplyKey("tokenKey")
-                                .adminKey("tokenKey")
-                                .treasury("treasury"),
-                        uploadInitCode("adminContract"),
-                        contractCreate("adminContract"),
-                        withOpContext((spec, opLog) -> allRunFor(
-                                spec,
-                                // Define a 1/2 threshold key with the manager contract id
-                                newKeyNamed("contractKey")
-                                        .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, "adminContract"))),
-                                // Update the token's admin key to the threshold key
-                                tokenUpdate("managedToken").adminKey("contractKey"),
-        ...
+final AtomicReference<TokenID> vanillaTokenTokenID = new AtomicReference<>();
+return hapiTest(
+                // Create our key, treasury account, token, and a manager contract
+                newKeyNamed("tokenKey"),
+                cryptoCreate("treasury"),
+                tokenCreate("managedToken")
+                        .supplyKey("tokenKey")
+                        .adminKey("tokenKey")
+                        .treasury("treasury"),
+                uploadInitCode("adminContract"),
+                contractCreate("adminContract"),
+                withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        // Define a 1/2 threshold key with the manager contract id
+                        newKeyNamed("contractKey")
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, "adminContract"))),
+                        // Update the token's admin key to the threshold key
+                        tokenUpdate("managedToken").adminKey("contractKey"),
+...
 ```
 
 While with the object-oriented DSL this becomes something like,
 
 ```java
-        ...
-        @Contract(contract = "UpdateTokenInfoContract", creationGas = 4_000_000L)
-        static SpecContract updateTokenContract;
-        ...
-        @HapiTest
-        public Stream<DynamicTest> canUpdateMutableTokenTreasuryOnceAuthorized(
-            @NonFungibleToken(keys = {SUPPLY_KEY, ADMIN_KEY}) SpecNonFungibleToken mutableToken
-        ) {
-                return hapiTest(
-                        // Authorize the contract to manage the token
-                        mutableToken.authorizeContracts(updateTokenContract),
-        ...
+...
+@Contract(contract = "UpdateTokenInfoContract", creationGas = 4_000_000L)
+static SpecContract updateTokenContract;
+...
+@HapiTest
+public Stream<DynamicTest> canUpdateMutableTokenTreasuryOnceAuthorized(
+    @NonFungibleToken(keys = {SUPPLY_KEY, ADMIN_KEY}) SpecNonFungibleToken mutableToken
+) {
+        return hapiTest(
+                // Authorize the contract to manage the token
+                mutableToken.authorizeContracts(updateTokenContract),
+...
 ```
 
 ### DO opt for `@BeforeAll` property overrides whenever possible
@@ -136,10 +136,10 @@ with `@HapiTestLifecycle`.
 Then add a `@BeforeAll` with an injected `TestLifecycle` instance and set the overrides there.
 
 ```java
-        @BeforeAll
-        static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-                testLifecycle.overrideInClass(Map.of("contracts.evm.version", "v0.46"));
-        }
+@BeforeAll
+static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+        testLifecycle.overrideInClass(Map.of("contracts.evm.version", "v0.46"));
+}
 ```
 
 The overridden properties will automatically be restored to their previous values on the target
@@ -194,19 +194,19 @@ Suppose we need a mutable token to test a contract management function. The mini
 `HapiTokenCreate` might be,
 
 ```java
-        tokenCreate("mutableToken").adminKey("aKey"),
+tokenCreate("mutableToken").adminKey("aKey"),
 ```
 
 But if we aimlessly copy or add modifiers, this could easily expand to,
 
 ```java
-        cryptoCreate("treasury"),
-        tokenCreate("mutableToken")
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury("treasury")
-                                .initialSupply(1234)
-                                .adminKey("aKey")
-                                .freezeKey("aKey")
+cryptoCreate("treasury"),
+tokenCreate("mutableToken")
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury("treasury")
+                        .initialSupply(1234)
+                        .adminKey("aKey")
+                        .freezeKey("aKey")
 ```
 
 And already we are spending our reader's attention span rather liberally.

@@ -4,11 +4,11 @@
 
 ### Minimum Requirements
 
--   **Adoptium OpenJDK 17**
-    -   Available from
-        [https://adoptium.net/temurin/releases/](https://adoptium.net/temurin/releases/)
--   **Gradle 7.5.1**
-    -   Available via the provided Gradle wrapper included in this repository.
+- **Adoptium OpenJDK 17**
+  - Available from
+    [https://adoptium.net/temurin/releases/](https://adoptium.net/temurin/releases/)
+- **Gradle 7.5.1**
+  - Available via the provided Gradle wrapper included in this repository.
 
 ### Standard Build Command
 

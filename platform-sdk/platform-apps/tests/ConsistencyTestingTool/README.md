@@ -19,10 +19,10 @@ time if it exists.
 
 During operation, when a given round comes to consensus, the tool behaves in the following way:
 
--   If the round coming to consensus doesn't already appear in the log:
-    -   the round is written to the log, along with all included transactions
-    -   each transaction is added to a hashmap, to guarantee that no transaction is handled more
-        than once
--   If the round coming to consensus already appears in the log:
-    -   the tool checks that the transactions included in the round are the same as the ones already
-        in the log, in the exact same order
+- If the round coming to consensus doesn't already appear in the log:
+  - the round is written to the log, along with all included transactions
+  - each transaction is added to a hashmap, to guarantee that no transaction is handled more
+    than once
+- If the round coming to consensus already appears in the log:
+  - the tool checks that the transactions included in the round are the same as the ones already
+    in the log, in the exact same order

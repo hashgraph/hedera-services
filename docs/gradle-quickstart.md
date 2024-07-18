@@ -22,19 +22,19 @@ command. All Gradle tasks can also be invoked from the Gradle view in
 
 There are several Gradle tasks you can use. Most notably:
 
--   `./gradlew assemble` compile all code and create all Jar files
--   `./gradlew qualityGate` in addition to the above, run all quality checks and auto-fix formatting
-    where possible
--   `./gradlew :<module-name>:<test-type>` run all tests in one module of the given
-    [test type](#Testing).
+- `./gradlew assemble` compile all code and create all Jar files
+- `./gradlew qualityGate` in addition to the above, run all quality checks and auto-fix formatting
+  where possible
+- `./gradlew :<module-name>:<test-type>` run all tests in one module of the given
+  [test type](#Testing).
 
 You may run `./gradlew` (without arguments) for a detailed overview
 
 ## Running a services instance or example apps
 
--   `./gradlew :app:modrun` runs a services instance
--   `./gradlew :test-clients:runTestClient -PtestClient=com.hedera.services.bdd.suites.crypto.HelloWorldSpec`
--   `./gradlew :swirlds-platform-base-example:run` runs Platform-base Example App
+- `./gradlew :app:modrun` runs a services instance
+- `./gradlew :test-clients:runTestClient -PtestClient=com.hedera.services.bdd.suites.crypto.HelloWorldSpec`
+- `./gradlew :swirlds-platform-base-example:run` runs Platform-base Example App
 
 ## Using Gradle during Development
 
@@ -45,13 +45,13 @@ All modules are listed in [settings.gradle.kts](../settings.gradle.kts) using
 a subdirectory like [platform-sdk](../platform-sdk) or [hedera-node](../hedera-node). In the folder,
 the following files are expected:
 
--   `build.gradle.kts` specifies to which group of modules the module belongs, e.g.
-    `id("com.hedera.gradle.services")` or `id("com.hedera.gradle.platform")` and may contain
-    [dependency definitions](#changing-or-adding-dependencies) for tests.
--   `src/main/java/module-info.java` is the Java Module specification that is also used to determine
-    the [dependencies of the module](#changing-or-adding-dependencies) by Gradle. Note that the last
-    segment of the module name defined in the `module-info.java` file needs to correspond to the
-    name of the module defined in [settings.gradle.kts](../settings.gradle.kts).
+- `build.gradle.kts` specifies to which group of modules the module belongs, e.g.
+  `id("com.hedera.gradle.services")` or `id("com.hedera.gradle.platform")` and may contain
+  [dependency definitions](#changing-or-adding-dependencies) for tests.
+- `src/main/java/module-info.java` is the Java Module specification that is also used to determine
+  the [dependencies of the module](#changing-or-adding-dependencies) by Gradle. Note that the last
+  segment of the module name defined in the `module-info.java` file needs to correspond to the
+  name of the module defined in [settings.gradle.kts](../settings.gradle.kts).
 
 ### Changing or Adding Dependencies
 
@@ -108,8 +108,8 @@ module.
 
 #### Unit Tests
 
--   located in `src/main/test` of the corresponding module
--   run with `./gradlew :<module-name>:test`
+- located in `src/main/test` of the corresponding module
+- run with `./gradlew :<module-name>:test`
 
 Unit tests will **always** be executed in PR builds and must pass before merging. The vast majority
 of our tests should be unit tests (measured in the 10's of thousands). These tests are never flaky
@@ -118,8 +118,8 @@ execute in roughly 5 minutes.
 
 #### Integration Tests
 
--   located in `src/main/itest` of the corresponding module
--   run with `./gradlew :<module-name>:itest`
+- located in `src/main/itest` of the corresponding module
+- run with `./gradlew :<module-name>:itest`
 
 We define integration tests as those that involve several components, but not an entire working
 instance. These use JUnit. Integration tests take longer to execute than unit tests. These should be
@@ -134,8 +134,8 @@ Integration tests must **all pass** before merging to **main**, so they must be 
 
 #### Hammer Tests
 
--   located in `src/main/hammer` of the corresponding module
--   run with `./gradlew :<module-name>:hammer`
+- located in `src/main/hammer` of the corresponding module
+- run with `./gradlew :<module-name>:hammer`
 
 A hammer test is a unit test that "hammers" the code. A more common and less visceral name for this
 type of test is a "fuzzing" test. These usually take the form of pseudo-random tests that run for an
@@ -147,8 +147,8 @@ bug that needs to be triaged.
 
 #### Micro-benchmarks
 
--   located in `src/main/jmh` of the corresponding module
--   run with `./gradlew :<module-name>:jmh`
+- located in `src/main/jmh` of the corresponding module
+- run with `./gradlew :<module-name>:jmh`
 
 Micro-benchmarks are like the unit-tests of performance testing. They should be used liberally for
 establishing metric-driven decisions about different designs. The specific numbers produced by a
@@ -166,8 +166,8 @@ and executing our micro-benchmarks.
 
 #### End-to-End Tests
 
--   located in `src/main/eet` of the `test-clients` module
--   run with `./gradlew :test-clients:eet`
+- located in `src/main/eet` of the `test-clients` module
+- run with `./gradlew :test-clients:eet`
 
 End-to-end tests need a running instance. You can start one in one terminal with `./gradlew modrun`
 and then execute the tests from a second terminal with `./gradlew eet`. Or you can use JRS to start

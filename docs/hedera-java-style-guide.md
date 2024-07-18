@@ -23,12 +23,12 @@ _advice_ that isn't clearly enforceable (whether by human or tool).
 
 In this document, unless otherwise clarified:
 
-1.  The term _class_ is used inclusively to mean an "ordinary" class, enum class, interface or
-    annotation type (`@interface`).
-2.  The term _member_ (of a class) is used inclusively to mean a nested class, field, method, _or
-    constructor_; that is, all top-level contents of a class except initializers and comments.
-3.  The term _comment_ always refers to _implementation_ comments. We do not use the phrase
-    "documentation comments", and instead use the common term "Javadoc."
+1. The term _class_ is used inclusively to mean an "ordinary" class, enum class, interface or
+   annotation type (`@interface`).
+2. The term _member_ (of a class) is used inclusively to mean a nested class, field, method, _or
+   constructor_; that is, all top-level contents of a class except initializers and comments.
+3. The term _comment_ always refers to _implementation_ comments. We do not use the phrase
+   "documentation comments", and instead use the common term "Javadoc."
 
 Other "terminology notes" will appear occasionally throughout the document.
 
@@ -56,8 +56,8 @@ Source files are encoded in **UTF-8**.
 Aside from the line terminator sequence, the **ASCII horizontal space character** (**0x20**) is the
 only whitespace character that appears anywhere in a source file. This implies that:
 
-1.  All other whitespace characters in string and character literals are escaped.
-2.  Tab characters are **not** used for indentation.
+1. All other whitespace characters in string and character literals are escaped.
+2. Tab characters are **not** used for indentation.
 
 As an exception to this rule, Java text blocks (introduced in Java 15) may use arbitrary whitespace
 characters.
@@ -81,8 +81,8 @@ strongly discouraged.
 
 Examples:
 
-| Example                                                  | Discussion                                                                |
-| -------------------------------------------------------- | ------------------------------------------------------------------------- |
+|                         Example                          |                                Discussion                                 |
+|----------------------------------------------------------|---------------------------------------------------------------------------|
 | `String unitAbbrev = "μs";`                              | Best: perfectly clear even without a comment.                             |
 | `String unitAbbrev = "\u03bcs"; // "μs"`                 | Allowed, but there's no reason to do this.                                |
 | `String unitAbbrev = "\u03bcs"; // Greek letter mu, "s"` | Allowed, but awkward and prone to mistakes.                               |
@@ -97,10 +97,10 @@ Examples:
 
 A source file consists of, **in order**:
 
-1.  License or copyright information, if present
-2.  Package statement
-3.  Import statements
-4.  Exactly one top-level class
+1. License or copyright information, if present
+2. Package statement
+3. Import statements
+4. Exactly one top-level class
 
 **Exactly one blank line** separates each section that is present.
 
@@ -128,8 +128,8 @@ Import statements are **not line-wrapped**. The column limit (Section 4.4,
 
 Imports are ordered as follows:
 
-1.  All static imports in a single block.
-2.  All non-static imports in a single block.
+1. All static imports in a single block.
+2. All non-static imports in a single block.
 
 If there are both static and non-static imports, a single blank line separates the two blocks. There
 are no other blank lines between import statements.
@@ -191,14 +191,14 @@ Braces follow the Kernighan and Ritchie style
 ("[Egyptian brackets](http://www.codinghorror.com/blog/2012/07/new-programming-jargon.html)") for
 _nonempty_ blocks and block-like constructs:
 
--   No line break before the opening brace, except as detailed below.
--   Line break after the opening brace.
--   Line break before the closing brace.
--   Line break after the closing brace, _only if_ that brace terminates a statement or terminates
-    the body of a method,
--   constructor, or _named_ class. For example, there is _no_ line break after the brace if it is
-    followed by `else` or a
--   comma.
+- No line break before the opening brace, except as detailed below.
+- Line break after the opening brace.
+- Line break before the closing brace.
+- Line break after the closing brace, _only if_ that brace terminates a statement or terminates
+  the body of a method,
+- constructor, or _named_ class. For example, there is _no_ line break after the brace if it is
+  followed by `else` or a
+- comma.
 
 Exception: In places where these rules allow a single statement ending with a semicolon (`;`), a
 block of statements can appear, and the opening brace of this block is preceded by a line break.
@@ -288,14 +288,14 @@ as noted below, any line that would exceed this limit must be line-wrapped, as e
 
 **Exceptions:**
 
-1.  Lines where obeying the column limit is not possible (for example, a long URL in Javadoc, or a
-    long JSNI method reference).
-2.  `package` and `import` statements (see Sections 3.2 [Package statement](#s3.2-package-statement)
-    and 3.3 [Import statements](#s3.3-import-statements)).
-3.  Command lines in a comment that may be copied-and-pasted into a shell.
-4.  Very long identifiers, on the rare occasions they are called for, are allowed to exceed the
-    column limit. In that case, the valid wrapping for the surrounding code is as produced by
-    [google-java-format](https://github.com/google/google-java-format).
+1. Lines where obeying the column limit is not possible (for example, a long URL in Javadoc, or a
+   long JSNI method reference).
+2. `package` and `import` statements (see Sections 3.2 [Package statement](#s3.2-package-statement)
+   and 3.3 [Import statements](#s3.3-import-statements)).
+3. Command lines in a comment that may be copied-and-pasted into a shell.
+4. Very long identifiers, on the rare occasions they are called for, are allowed to exceed the
+   column limit. In that case, the valid wrapping for the surrounding code is as produced by
+   [google-java-format](https://github.com/google/google-java-format).
 
 ### 4.5 Line-wrapping
 
@@ -308,7 +308,7 @@ situation. Very often there are several valid ways to line-wrap the same piece o
 > **Note:** While the typical reason for line-wrapping is to avoid overflowing the column limit,
 > even code that would in fact fit within the column limit _may_ be line-wrapped at the author's
 > discretion.
-
+>
 > **Tip:** Extracting a method or local variable may solve the problem without the need to
 > line-wrap.
 
@@ -316,33 +316,33 @@ situation. Very often there are several valid ways to line-wrap the same piece o
 
 The prime directive of line-wrapping is: prefer to break at a **higher syntactic level**. Also:
 
-1.  When a line is broken at a _non-assignment_ operator the break comes _before_ the symbol. (Note
-    that this is not the same practice used in Google style for other languages, such as C++ and
-    JavaScript.)
-    -   This also applies to the following "operator-like" symbols:
-        -   the dot separator (`.`)
-        -   the two colons of a method reference (`::`)
-        -   an ampersand in a type bound (`<T extends Foo & Bar>`)
-        -   a pipe in a catch block (`catch (FooException | BarException e)`).
-2.  When a line is broken at an _assignment_ operator the break typically comes _after_ the symbol,
-    but either way is acceptable.
-    -   This also applies to the "assignment-operator-like" colon in an enhanced `for` ("foreach")
-        statement.
-3.  A method or constructor name stays attached to the open parenthesis (`(`) that follows it.
-4.  A comma (`,`) stays attached to the token that precedes it.
-5.  A line is never broken adjacent to the arrow in a lambda, except that a break may come
-    immediately after the arrow if the body of the lambda consists of a single unbraced expression.
-    Examples:
+1. When a line is broken at a _non-assignment_ operator the break comes _before_ the symbol. (Note
+   that this is not the same practice used in Google style for other languages, such as C++ and
+   JavaScript.)
+   - This also applies to the following "operator-like" symbols:
+     - the dot separator (`.`)
+     - the two colons of a method reference (`::`)
+     - an ampersand in a type bound (`<T extends Foo & Bar>`)
+     - a pipe in a catch block (`catch (FooException | BarException e)`).
+2. When a line is broken at an _assignment_ operator the break typically comes _after_ the symbol,
+   but either way is acceptable.
+   - This also applies to the "assignment-operator-like" colon in an enhanced `for` ("foreach")
+     statement.
+3. A method or constructor name stays attached to the open parenthesis (`(`) that follows it.
+4. A comma (`,`) stays attached to the token that precedes it.
+5. A line is never broken adjacent to the arrow in a lambda, except that a break may come
+   immediately after the arrow if the body of the lambda consists of a single unbraced expression.
+   Examples:
 
-    ```java
-    MyLambda<String, Long, Object> lambda =
-    (String label, Long value, Object obj) -> {
-    ...
-    };
+   ```java
+   MyLambda<String, Long, Object> lambda =
+   (String label, Long value, Object obj) -> {
+   ...
+   };
 
-    Predicate<String> predicate = str ->
-    longExpressionInvolving(str);
-    ```
+   Predicate<String> predicate = str ->
+   longExpressionInvolving(str);
+   ```
 
 > **Note:** The primary goal for line wrapping is to have clear code, _not necessarily_ code that
 > fits in the smallest number of lines.
@@ -365,16 +365,16 @@ practice of using a variable number of spaces to align certain tokens with previ
 
 A single blank line always appears:
 
-1.  _Between_ consecutive members or initializers of a class: fields, constructors, methods, nested
-    classes, static initializers, and instance initializers.
-    -   **Exception:** A blank line between two consecutive fields (having no other code between
-        them) is optional. Such blank lines are used as needed to create _logical groupings_ of
-        fields.
-    -   **Exception:** Blank lines between enum constants are covered in
-        [Section 4.8.1](#s4.8.1-enum-classes).
-2.  As required by other sections of this document (such as Section 3,
-    [Source file structure](#s3-source-file-structure), and Section 3.3,
-    [Import statements](#s3.3-import-statements)).
+1. _Between_ consecutive members or initializers of a class: fields, constructors, methods, nested
+   classes, static initializers, and instance initializers.
+   - **Exception:** A blank line between two consecutive fields (having no other code between
+     them) is optional. Such blank lines are used as needed to create _logical groupings_ of
+     fields.
+   - **Exception:** Blank lines between enum constants are covered in
+     [Section 4.8.1](#s4.8.1-enum-classes).
+2. As required by other sections of this document (such as Section 3,
+   [Source file structure](#s3-source-file-structure), and Section 3.3,
+   [Import statements](#s3.3-import-statements)).
 
 A single blank line may also appear anywhere it improves readability, for example between statements
 to organize the code into logical subsections. A blank line before the first member or initializer,
@@ -387,35 +387,33 @@ _Multiple_ consecutive blank lines are permitted, but never required (or encoura
 Beyond where required by the language or other style rules, and apart from literals, comments and
 Javadoc, a single ASCII space also appears in the following places **only**.
 
-1.  Separating any reserved word, such as `if`, `for` or `catch`, from an open parenthesis (`(`)
-    that follows it on that line
-2.  Separating any reserved word, such as `else` or `catch`, from a closing curly brace (`}`) that
-    precedes it on that line
-3.  Before any open curly brace (`{`), with two exceptions:
-    -   `@SomeAnnotation({a, b})` (no space is used)
-    -   `String[][] x = {{"foo"}};` (no space is required between `{{`, by item 9 below)
-4.  On both sides of any binary or ternary operator. This also applies to the following
-    "operator-like" symbols:
+1. Separating any reserved word, such as `if`, `for` or `catch`, from an open parenthesis (`(`)
+   that follows it on that line
+2. Separating any reserved word, such as `else` or `catch`, from a closing curly brace (`}`) that
+   precedes it on that line
+3. Before any open curly brace (`{`), with two exceptions:
+   - `@SomeAnnotation({a, b})` (no space is used)
+   - `String[][] x = {{"foo"}};` (no space is required between `{{`, by item 9 below)
+4. On both sides of any binary or ternary operator. This also applies to the following
+   "operator-like" symbols:
+   - the ampersand in a conjunctive type bound: `<T extends Foo & Bar>`
+   - the pipe for a catch block that handles multiple exceptions:
+     `catch (FooException | BarException e)`
+   - the colon (`:`) in an enhanced `for` ("foreach") statement
+   - the arrow in a lambda expression: `(String str) -> str.length()`
 
-    -   the ampersand in a conjunctive type bound: `<T extends Foo & Bar>`
-    -   the pipe for a catch block that handles multiple exceptions:
-        `catch (FooException | BarException e)`
-    -   the colon (`:`) in an enhanced `for` ("foreach") statement
-    -   the arrow in a lambda expression: `(String str) -> str.length()`
+   but not
 
-    but not
-
-    -   the two colons (`::`) of a method reference, which is written like `Object::toString`
-    -   the dot separator (`.`), which is written like `object.toString()`
-
-5.  After `,:;` or the closing parenthesis (`)`) of a cast
-6.  Between any content and a double slash (`//`) which begins a comment. Multiple spaces are
-    allowed.
-7.  Between a double slash (`//`) which begins a comment and the comment's text. Multiple spaces are
-    allowed.
-8.  Between the type and variable of a declaration: `List<String> list`
-9.  _Optional_ just inside both braces of an array initializer
-    -   `new int[] {5, 6}` and `new int[] { 5, 6 }` are both valid
+   - the two colons (`::`) of a method reference, which is written like `Object::toString`
+   - the dot separator (`.`), which is written like `object.toString()`
+5. After `,:;` or the closing parenthesis (`)`) of a cast
+6. Between any content and a double slash (`//`) which begins a comment. Multiple spaces are
+   allowed.
+7. Between a double slash (`//`) which begins a comment and the comment's text. Multiple spaces are
+   allowed.
+8. Between the type and variable of a declaration: `List<String> list`
+9. _Optional_ just inside both braces of an array initializer
+   - `new int[] {5, 6}` and `new int[] { 5, 6 }` are both valid
 10. Between a type annotation and `[]` or `...`.
 
 This rule is never interpreted as requiring or forbidding additional space at the start or end of a
@@ -703,9 +701,9 @@ styled as constants.
 
 Each type variable is named in one of two styles:
 
--   A single capital letter, optionally followed by a single numeral (such as `E`, `T`, `X`, `T2`)
--   A name in the form used for classes (see Section 5.2.2, [Class names](#s5.2.2-class-names)),
-    followed by the capital letter `T` (examples: `RequestT`, `FooBarT`).
+- A single capital letter, optionally followed by a single numeral (such as `E`, `T`, `X`, `T2`)
+- A name in the form used for classes (see Section 5.2.2, [Class names](#s5.2.2-class-names)),
+  followed by the capital letter `T` (examples: `RequestT`, `FooBarT`).
 
 ### 5.3 Camel case: defined
 
@@ -715,18 +713,18 @@ Google Style specifies the following (nearly) deterministic scheme.
 
 Beginning with the prose form of the name:
 
-1.  Convert the phrase to plain ASCII and remove any apostrophes. For example, "Müller's algorithm"
-    might become "Muellers algorithm".
-2.  Divide this result into words, splitting on spaces and any remaining punctuation (typically
-    hyphens).
-    -   _Recommended:_ if any word already has a conventional camel-case appearance in common usage,
-        split this into its constituent parts (e.g., "AdWords" becomes "ad words"). Note that a word
-        such as "iOS" is not really in camel case _per se_; it defies _any_ convention, so this
-        recommendation does not apply.
-3.  Now lowercase _everything_ (including acronyms), then uppercase only the first character of:
-    -   ... each word, to yield _upper camel case_, or
-    -   ... each word except the first, to yield _lower camel case_
-4.  Finally, join all the words into a single identifier.
+1. Convert the phrase to plain ASCII and remove any apostrophes. For example, "Müller's algorithm"
+   might become "Muellers algorithm".
+2. Divide this result into words, splitting on spaces and any remaining punctuation (typically
+   hyphens).
+   - _Recommended:_ if any word already has a conventional camel-case appearance in common usage,
+     split this into its constituent parts (e.g., "AdWords" becomes "ad words"). Note that a word
+     such as "iOS" is not really in camel case _per se_; it defies _any_ convention, so this
+     recommendation does not apply.
+3. Now lowercase _everything_ (including acronyms), then uppercase only the first character of:
+   - ... each word, to yield _upper camel case_, or
+   - ... each word except the first, to yield _lower camel case_
+4. Finally, join all the words into a single identifier.
 
 Note that the casing of the original words is almost entirely disregarded. Examples:
 
