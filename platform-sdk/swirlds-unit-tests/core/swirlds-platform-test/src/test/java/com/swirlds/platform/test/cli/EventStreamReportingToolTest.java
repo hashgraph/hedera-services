@@ -21,10 +21,10 @@ import static com.swirlds.platform.test.consensus.ConsensusTestArgs.DEFAULT_PLAT
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.report.EventStreamReport;
 import com.swirlds.platform.event.report.EventStreamScanner;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -88,7 +88,7 @@ class EventStreamReportingToolTest {
                 .filter(r -> r.getRoundNum() >= roundToReportFrom)
                 .mapToInt(ConsensusRound::getNumEvents)
                 .sum();
-        final List<EventImpl> lastRound =
+        final List<PlatformEvent> lastRound =
                 Optional.ofNullable(rounds.peekLast()).orElseThrow().getConsensusEvents();
         final Instant lastEventTime = lastRound.get(lastRound.size() - 1).getConsensusTimestamp();
 
@@ -141,7 +141,7 @@ class EventStreamReportingToolTest {
                 })
                 .mapToInt(ConsensusRound::getNumEvents)
                 .sum();
-        final List<EventImpl> lastRound =
+        final List<PlatformEvent> lastRound =
                 Optional.ofNullable(rounds.peekLast()).orElseThrow().getConsensusEvents();
         final Instant lastEventTime = lastRound.get(lastRound.size() - 1).getConsensusTimestamp();
 
