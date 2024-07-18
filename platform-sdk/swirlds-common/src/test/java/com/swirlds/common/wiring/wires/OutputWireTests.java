@@ -23,12 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -51,7 +51,7 @@ public class OutputWireTests {
     void orderedSolderToTest(final int count) {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
         final TaskScheduler<Integer> intForwarder = model.schedulerBuilder("intForwarder")
                 .withType(TaskSchedulerType.DIRECT)
@@ -107,7 +107,7 @@ public class OutputWireTests {
     void orderedSolderToThrows() {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
-        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
         final TaskScheduler<Integer> schedulerA = model.schedulerBuilder("schedulerA")
                 .withType(TaskSchedulerType.DIRECT)

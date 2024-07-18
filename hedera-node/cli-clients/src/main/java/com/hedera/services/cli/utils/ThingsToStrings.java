@@ -17,34 +17,17 @@
 package com.hedera.services.cli.utils;
 
 import com.google.protobuf.ByteString;
-import com.hedera.node.app.service.mono.legacy.core.jproto.JKey;
-import com.hedera.node.app.service.mono.state.submerkle.EntityId;
-import com.hedera.node.app.service.mono.state.submerkle.FcCustomFee;
-import com.hedera.node.app.service.mono.state.submerkle.FcTokenAllowanceId;
-import com.hedera.node.app.service.mono.state.submerkle.FixedFeeSpec;
-import com.hedera.node.app.service.mono.state.submerkle.FractionalFeeSpec;
-import com.hedera.node.app.service.mono.state.submerkle.RichInstant;
-import com.hedera.node.app.service.mono.state.submerkle.RoyaltyFeeSpec;
-import com.hedera.node.app.service.mono.state.virtual.ContractKey;
-import com.hedera.node.app.service.mono.utils.EntityNum;
-import com.hedera.node.app.service.mono.utils.EntityNumPair;
 import com.hederahashgraph.api.proto.java.Key;
-import com.swirlds.common.crypto.CryptographyHolder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
 import java.util.Arrays;
 import java.util.HexFormat;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -100,55 +83,10 @@ public class ThingsToStrings {
         return true;
     }
 
-    public static boolean toStringOfEntityNumPair(
-            @NonNull final StringBuilder sb, @Nullable final EntityNumPair entityNumPair) {
-        if (entityNumPair == null || entityNumPair.equals(EntityNumPair.MISSING_NUM_PAIR)) return false;
-
-        sb.append("(");
-        sb.append(entityNumPair.getHiOrderAsLong());
-        sb.append(",");
-        sb.append(entityNumPair.getLowOrderAsLong());
-        sb.append(")");
-        return true;
-    }
-
-    public static boolean toStringOfEntityNum(@NonNull final StringBuilder sb, @Nullable final EntityNum entityNum) {
-        if (entityNum == null || entityNum.equals(EntityNum.MISSING_NUM)) return false;
-
-        sb.append(entityNum.longValue());
-        return true;
-    }
-
-    public static String toStringOfEntityId(@NonNull EntityId entityId) {
-        if (entityId.equals(EntityId.MISSING_ENTITY_ID)) return "";
-        return entityId.toAbbrevString();
-    }
-
-    public static boolean toStringOfEntityId(@NonNull final StringBuilder sb, @Nullable final EntityId entityId) {
-        if (entityId == null || entityId.equals(EntityId.MISSING_ENTITY_ID)) return false;
-
-        sb.append(entityId.toAbbrevString());
-        return true;
-    }
-
     public static boolean toStringOfIntArray(@NonNull final StringBuilder sb, @Nullable final int[] ints) {
         if (ints == null || ints.length == 0) return false;
 
         sb.append(Arrays.stream(ints).mapToObj(Integer::toString).collect(Collectors.joining(",", "(", ")")));
-        return true;
-    }
-
-    public static boolean toStructureSummaryOfJKey(@NonNull final StringBuilder sb, @Nullable final JKey jkey) {
-        if (jkey == null || jkey.isEmpty()) return false;
-        try {
-            final var key = JKey.mapJKey(jkey);
-            if (null == key) return false; // This is some kind of _invalid_ key; should it say so somehow?
-            sb.append("Key[");
-            toStructureSummaryOfKey(sb, key);
-            sb.append("]");
-        } catch (InvalidKeyException unknown) {
-            sb.append("<invalid-key>");
-        }
         return true;
     }
 
@@ -190,200 +128,9 @@ public class ThingsToStrings {
         }
     }
 
-    /** Writes a cryptographic hash of the actual key */
-    @SuppressWarnings(
-            "java:S5738") // 'deprecated' code marked for removal - it's practically impossible to use the platform sdk
-    // these days w/o running into deprecated methods
-    @NonNull
-    public static String toStringOfJKey(@NonNull final JKey jkey) {
-        if (jkey.isEmpty()) return "";
-        try {
-            final var ser = jkey.serialize();
-            final var hash = CryptographyHolder.get().digestSync(ser).getValue();
-            return toStringOfByteArray(hash);
-
-        } catch (final IOException ex) {
-            return "**EXCEPTION SERIALIZING JKEY**";
-        }
-    }
-
-    /** Writes a cryptographic hash of the actual key */
-    @SuppressWarnings(
-            "java:S5738") // 'deprecated' code marked for removal - it's practically impossible to use the platform sdk
-    // these days w/o running into deprecated methods
-    public static boolean toStringOfJKey(@NonNull final StringBuilder sb, @Nullable final JKey jkey) {
-        if (jkey == null || jkey.isEmpty()) return false;
-
-        try {
-            final var ser = jkey.serialize();
-            final var hash = CryptographyHolder.get().digestSync(ser).getValue();
-            toStringOfByteArray(sb, hash);
-        } catch (final IOException ex) {
-            sb.append("**EXCEPTION SERIALIZING JKEY**");
-        }
-        return true;
-    }
-
-    public static boolean toStringOfContractKey(@NonNull final StringBuilder sb, @Nullable final ContractKey ckey) {
-        if (ckey == null) return false;
-
-        sb.append("(");
-        sb.append(ckey.getContractId());
-        sb.append(",");
-        sb.append(ckey.getKeyAsBigInteger());
-        sb.append(")");
-        return true;
-    }
-
-    public static boolean toStringOfFcTokenAllowanceId(
-            @NonNull final StringBuilder sb, @Nullable final FcTokenAllowanceId id) {
-        if (id == null) return false;
-
-        var r = true;
-        sb.append("(");
-        r &= toStringOfEntityNum(sb, id.getTokenNum());
-        sb.append(",");
-        r &= toStringOfEntityNum(sb, id.getSpenderNum());
-        sb.append(")");
-        return r;
-    }
-
-    public static boolean toStringOfFcTokenAllowanceIdSet(
-            @NonNull final StringBuilder sb, @Nullable final Set<FcTokenAllowanceId> ids) {
-        if (ids == null || ids.isEmpty()) return false;
-
-        final var orderedIds = ids.stream().sorted().toList();
-        sb.append("(");
-        for (final var id : orderedIds) {
-            toStringOfFcTokenAllowanceId(sb, id);
-            sb.append(",");
-        }
-        sb.setLength(sb.length() - 1);
-        sb.append(")");
-        return true;
-    }
-
-    public static boolean toStringOfMapEnLong(
-            @NonNull final StringBuilder sb, @Nullable final Map<EntityNum, Long> map) {
-        if (map == null || map.isEmpty()) return false;
-
-        final var orderedEntries = new TreeMap<>(map);
-        sb.append("(");
-        for (final var kv : orderedEntries.entrySet()) {
-            toStringOfEntityNum(sb, kv.getKey());
-            sb.append("->");
-            sb.append(kv.getValue());
-            sb.append(",");
-        }
-        sb.setLength(sb.length() - 1);
-        sb.append(")");
-        return true;
-    }
-
-    public static boolean toStringOfMapFcLong(
-            @NonNull final StringBuilder sb, @Nullable final Map<FcTokenAllowanceId, Long> map) {
-        if (map == null || map.isEmpty()) return false;
-
-        final var orderedEntries = new TreeMap<>(map);
-        sb.append("(");
-        for (final var kv : orderedEntries.entrySet()) {
-            toStringOfFcTokenAllowanceId(sb, kv.getKey());
-            sb.append("->");
-            sb.append(kv.getValue());
-            sb.append(",");
-        }
-        sb.setLength(sb.length() - 1);
-        sb.append(")");
-        return true;
-    }
-
     public enum FeeProfile {
         FULL,
         SKETCH
-    }
-
-    @NonNull
-    public static String toStringOfFcCustomFee(@NonNull final FcCustomFee fee) {
-        return toStringOfFcCustomFee(fee, FeeProfile.FULL);
-    }
-
-    @NonNull
-    public static String toSketchyStringOfFcCustomFee(@NonNull final FcCustomFee fee) {
-        return toStringOfFcCustomFee(fee, FeeProfile.SKETCH);
-    }
-
-    @NonNull
-    public static String toStringOfFcCustomFee(@NonNull final FcCustomFee fee, @NonNull final FeeProfile profile) {
-        final EntityId feeCollector = fee.getFeeCollector();
-        final boolean allCollectorsAreExempt = fee.getAllCollectorsAreExempt();
-        final String actualFee =
-                switch (fee.getFeeType()) {
-                    case FIXED_FEE -> toStringOfFixedFee(fee.getFixedFeeSpec(), profile);
-                    case FRACTIONAL_FEE -> toStringOfFractionalFee(fee.getFractionalFeeSpec(), profile);
-                    case ROYALTY_FEE -> toStringOfRoyaltyFee(fee.getRoyaltyFeeSpec(), profile);
-                };
-        return switch (profile) {
-            case FULL -> "Fee[%s,%s%s]"
-                    .formatted(
-                            actualFee, toStringOfEntityId(feeCollector), allCollectorsAreExempt ? ",ALL-EXEMPT" : "");
-            case SKETCH -> "Fee[%s%s]".formatted(actualFee, allCollectorsAreExempt ? ",ALL-EXEMPT" : "");
-        };
-    }
-
-    @NonNull
-    public static String toStringOfFixedFee(@NonNull final FixedFeeSpec fee, @NonNull final FeeProfile profile) {
-        final long unitsToCollect = fee.getUnitsToCollect();
-        final EntityId tokenDenomination = fee.getTokenDenomination();
-        final boolean usedDenomWildcard = fee.usedDenomWildcard();
-
-        return switch (profile) {
-            case FULL -> "Fixed[%d,%s%s]"
-                    .formatted(
-                            unitsToCollect,
-                            tokenDenomination != null ? toStringOfEntityId(tokenDenomination) : "NO-TOKEN-DENOMINATION",
-                            usedDenomWildcard ? ",*" : "");
-            case SKETCH -> "FIX[%s%s]"
-                    .formatted(null == tokenDenomination ? "NO-TOKEN-DENOMINATION" : "", usedDenomWildcard ? "*" : "");
-        };
-    }
-
-    @NonNull
-    public static String toStringOfFractionalFee(
-            @NonNull final FractionalFeeSpec fee, @NonNull final FeeProfile profile) {
-        final long numerator = fee.getNumerator();
-        final long denominator = fee.getDenominator();
-        final long minimumUnitsToCollect = fee.getMinimumAmount();
-        final long maximumUnitsToCollect = fee.getMaximumUnitsToCollect();
-        final boolean isNetOfTransfers = fee.isNetOfTransfers();
-
-        return switch (profile) {
-            case FULL -> "Fractional[%d/%d (min %d max %d)%s]"
-                    .formatted(
-                            numerator,
-                            denominator,
-                            minimumUnitsToCollect,
-                            maximumUnitsToCollect,
-                            isNetOfTransfers ? ", NET" : "");
-            case SKETCH -> "FRAC[%s]".formatted(isNetOfTransfers ? "NET" : "");
-        };
-    }
-
-    @NonNull
-    public static String toStringOfRoyaltyFee(@NonNull final RoyaltyFeeSpec fee, @NonNull final FeeProfile profile) {
-        final long numerator = fee.numerator();
-        final long denominator = fee.denominator();
-        final FixedFeeSpec fallbackFee = fee.fallbackFee();
-
-        return switch (profile) {
-            case FULL -> "Royalty[%d/%d%s]"
-                    .formatted(
-                            numerator,
-                            denominator,
-                            fee.hasFallbackFee() ? "," + toStringOfFixedFee(fallbackFee, profile) : "");
-            case SKETCH -> fee.hasFallbackFee()
-                    ? "ROYAL+FALLBACK[%s]".formatted(toStringOfFixedFee(fallbackFee, FeeProfile.SKETCH))
-                    : "ROYAL[]";
-        };
     }
 
     @NonNull

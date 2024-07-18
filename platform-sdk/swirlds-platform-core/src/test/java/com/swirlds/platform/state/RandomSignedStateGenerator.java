@@ -20,11 +20,14 @@ import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignature;
 
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.merkle.crypto.MerkleCryptoFactory;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.consensus.ConsensusSnapshot;
@@ -34,7 +37,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -57,7 +60,7 @@ public class RandomSignedStateGenerator {
 
     private State state;
     private Long round;
-    private Hash hashEventsCons;
+    private Hash legacyRunningEventHash;
     private AddressBook addressBook;
     private Instant consensusTimestamp;
     private Boolean freezeState = false;
@@ -70,6 +73,8 @@ public class RandomSignedStateGenerator {
     private Hash epoch = null;
     private ConsensusSnapshot consensusSnapshot;
     private SignatureVerifier signatureVerifier;
+    private boolean deleteOnBackgroundThread;
+    private boolean pcesRound;
 
     /**
      * Create a new signed state generator with a random seed.
@@ -100,9 +105,8 @@ public class RandomSignedStateGenerator {
     public SignedState build() {
         final AddressBook addressBookInstance;
         if (addressBook == null) {
-            addressBookInstance = new RandomAddressBookGenerator(random)
-                    .setWeightDistributionStrategy(RandomAddressBookGenerator.WeightDistributionStrategy.BALANCED)
-                    .setHashStrategy(RandomAddressBookGenerator.HashStrategy.REAL_HASH)
+            addressBookInstance = RandomAddressBookBuilder.create(random)
+                    .withWeightDistributionStrategy(RandomAddressBookBuilder.WeightDistributionStrategy.BALANCED)
                     .build();
         } else {
             addressBookInstance = addressBook;
@@ -115,7 +119,6 @@ public class RandomSignedStateGenerator {
             stateInstance.setSwirldState(swirldState);
             PlatformState platformState = new PlatformState();
             platformState.setAddressBook(addressBookInstance);
-            platformState.setEpochHash(epoch);
             stateInstance.setPlatformState(platformState);
         } else {
             stateInstance = state;
@@ -128,11 +131,11 @@ public class RandomSignedStateGenerator {
             roundInstance = round;
         }
 
-        final Hash hashEventsConsInstance;
-        if (hashEventsCons == null) {
-            hashEventsConsInstance = randomHash(random);
+        final Hash legacyRunningEventHashInstance;
+        if (legacyRunningEventHash == null) {
+            legacyRunningEventHashInstance = randomHash(random);
         } else {
-            hashEventsConsInstance = hashEventsCons;
+            legacyRunningEventHashInstance = legacyRunningEventHash;
         }
 
         final Instant consensusTimestampInstance;
@@ -158,7 +161,7 @@ public class RandomSignedStateGenerator {
 
         final SoftwareVersion softwareVersionInstance;
         if (softwareVersion == null) {
-            softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextLong()));
+            softwareVersionInstance = new BasicSoftwareVersion(Math.abs(random.nextInt()));
         } else {
             softwareVersionInstance = softwareVersion;
         }
@@ -180,7 +183,7 @@ public class RandomSignedStateGenerator {
         final PlatformState platformState = stateInstance.getPlatformState();
 
         platformState.setRound(roundInstance);
-        platformState.setRunningEventHash(hashEventsConsInstance);
+        platformState.setLegacyRunningEventHash(legacyRunningEventHashInstance);
         platformState.setConsensusTimestamp(consensusTimestampInstance);
         platformState.setCreationSoftwareVersion(softwareVersionInstance);
         platformState.setRoundsNonAncient(roundsNonAncientInstance);
@@ -190,16 +193,22 @@ public class RandomSignedStateGenerator {
             signatureVerifier = SignatureVerificationTestUtils::verifySignature;
         }
 
+        final Configuration configuration = new TestConfigBuilder()
+                .withValue("state.stateHistoryEnabled", true)
+                .withConfigDataType(StateConfig.class)
+                .getOrCreateConfig();
+        final PlatformContext platformContext = TestPlatformContextBuilder.create()
+                .withConfiguration(configuration)
+                .build();
+
         final SignedState signedState = new SignedState(
-                new TestConfigBuilder()
-                        .withValue("state.stateHistoryEnabled", true)
-                        .withConfigDataType(StateConfig.class)
-                        .getOrCreateConfig()
-                        .getConfigData(StateConfig.class),
+                platformContext,
                 signatureVerifier,
                 stateInstance,
                 "RandomSignedStateGenerator.build()",
-                freezeStateInstance);
+                freezeStateInstance,
+                deleteOnBackgroundThread,
+                pcesRound);
 
         MerkleCryptoFactory.getInstance().digestTreeSync(stateInstance);
         if (stateHash != null) {
@@ -256,6 +265,19 @@ public class RandomSignedStateGenerator {
     }
 
     /**
+     * Set if this state should be deleted on a background thread.
+     * ({@link com.swirlds.platform.state.signed.StateGarbageCollector} must be wired up in order for this to happen)
+     *
+     * @param deleteOnBackgroundThread if true, delete on a background thread
+     * @return this object
+     */
+    @NonNull
+    public RandomSignedStateGenerator setDeleteOnBackgroundThread(final boolean deleteOnBackgroundThread) {
+        this.deleteOnBackgroundThread = deleteOnBackgroundThread;
+        return this;
+    }
+
+    /**
      * Set the state.
      *
      * @return this object
@@ -276,12 +298,12 @@ public class RandomSignedStateGenerator {
     }
 
     /**
-     * Set the running hash of all events that have been applied to this state since genesis.
+     * Set the legacy running hash of all events that have been applied to this state since genesis.
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setHashEventsCons(final Hash hashEventsCons) {
-        this.hashEventsCons = hashEventsCons;
+    public RandomSignedStateGenerator setLegacyRunningEventHash(final Hash legacyRunningEventHash) {
+        this.legacyRunningEventHash = legacyRunningEventHash;
         return this;
     }
 
@@ -407,6 +429,18 @@ public class RandomSignedStateGenerator {
     @NonNull
     public RandomSignedStateGenerator setSignatureVerifier(@NonNull final SignatureVerifier signatureVerifier) {
         this.signatureVerifier = signatureVerifier;
+        return this;
+    }
+
+    /**
+     * Set if this state was generated during a PCES round.
+     *
+     * @param pcesRound true if this state was generated during a PCES round
+     * @return this object
+     */
+    @NonNull
+    public RandomSignedStateGenerator setPcesRound(final boolean pcesRound) {
+        this.pcesRound = pcesRound;
         return this;
     }
 }

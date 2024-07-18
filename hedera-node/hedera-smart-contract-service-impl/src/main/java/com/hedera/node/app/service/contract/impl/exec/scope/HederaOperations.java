@@ -26,10 +26,10 @@ import com.hedera.node.app.service.contract.impl.state.ContractStateStore;
 import com.hedera.node.app.service.contract.impl.state.DispatchingEvmFrameState;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -250,8 +250,7 @@ public interface HederaOperations {
      * @param contractId    ContractId of hollow account
      * @param evmAddress    Evm address of hollow account
      */
-    void externalizeHollowAccountMerge(
-            @NonNull ContractID contractId, @NonNull ContractID parentId, @Nullable Bytes evmAddress);
+    void externalizeHollowAccountMerge(@NonNull ContractID contractId, @Nullable Bytes evmAddress);
 
     /**
      * Given a {@link ContractID}, returns it if the shard and realm match for this node; otherwise,

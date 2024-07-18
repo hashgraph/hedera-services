@@ -45,18 +45,35 @@ import java.util.Set;
  * for the parent record (excluding changes from child transaction records)
  */
 public interface ParentRecordFinalizer {
+    /**
+     * This class is used to "finalize" hbar and token transfers for the parent transaction record.
+     * It determines the net hbar transfers and token transfers based on the original value from readable state,
+     * and based on changes made during this transaction. It then constructs a TransferList and TokenTransferList
+     * for the parent record. It also calculates staking rewards for the parent record.
+     * @param context the context
+     * @param functionality the functionality
+     * @param explicitRewardReceivers the explicit reward receivers
+     */
     default void finalizeParentRecord(
-            @NonNull AccountID payer,
             @NonNull FinalizeContext context,
-            HederaFunctionality functionality,
+            @NonNull HederaFunctionality functionality,
             @NonNull Set<AccountID> explicitRewardReceivers) {
-        finalizeParentRecord(payer, context, functionality, explicitRewardReceivers, emptyMap());
+        finalizeParentRecord(context, functionality, explicitRewardReceivers, emptyMap());
     }
 
+    /**
+     * This class is used to "finalize" hbar and token transfers for the parent transaction record.
+     * It determines the net hbar transfers and token transfers based on the original value from readable state,
+     * and based on changes made during this transaction. It then constructs a TransferList and TokenTransferList
+     * for the parent record. It also calculates staking rewards for the parent record.
+     * @param context the context
+     * @param functionality the functionality
+     * @param explicitRewardReceivers the explicit reward receivers
+     * @param prePaidRewards a map of account id to the amount of rewards paid out
+     */
     void finalizeParentRecord(
-            @NonNull AccountID payer,
             @NonNull FinalizeContext context,
-            HederaFunctionality functionality,
+            @NonNull HederaFunctionality functionality,
             @NonNull Set<AccountID> explicitRewardReceivers,
             @NonNull Map<AccountID, Long> prePaidRewards);
 }

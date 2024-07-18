@@ -15,9 +15,9 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.sdk.conventions")
-    id("com.hedera.hashgraph.platform-maven-publish")
-    id("com.hedera.hashgraph.java-test-fixtures")
+    id("com.hedera.gradle.platform")
+    id("com.hedera.gradle.platform-publish")
+    id("com.hedera.gradle.java-test-fixtures")
 }
 
 testModuleInfo {
@@ -25,12 +25,10 @@ testModuleInfo {
     requires("com.swirlds.base")
     requires("com.swirlds.common.test.fixtures")
     requires("com.swirlds.config.api")
-    requires("com.swirlds.config.extensions")
     requires("com.swirlds.merkledb")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.virtualmap")
     requires("org.junit.jupiter.api")
     requires("org.junit.jupiter.params")
     requires("org.mockito")
-    requiresStatic("com.github.spotbugs.annotations")
 }

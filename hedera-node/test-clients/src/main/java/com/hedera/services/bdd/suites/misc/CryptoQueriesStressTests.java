@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.misc;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.AssertUtils.inOrder;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -27,15 +28,15 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -44,30 +45,18 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
-public class CryptoQueriesStressTests extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CryptoQueriesStressTests.class);
-
-    private AtomicLong duration = new AtomicLong(30);
+@Tag(NOT_REPEATABLE)
+public class CryptoQueriesStressTests {
+    private AtomicLong duration = new AtomicLong(10);
     private AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
-    private AtomicInteger maxOpsPerSec = new AtomicInteger(100);
-
-    public static void main(String... args) {
-        new CryptoQueriesStressTests().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            getAccountInfoStress(), getAccountBalanceStress(),
-        });
-    }
+    private AtomicInteger maxOpsPerSec = new AtomicInteger(10);
 
     @HapiTest
-    final HapiSpec getAccountBalanceStress() {
+    final Stream<DynamicTest> getAccountBalanceStress() {
         return defaultHapiSpec("getAccountBalanceStress")
                 .given()
                 .when()
@@ -79,7 +68,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getAccountInfoStress() {
+    final Stream<DynamicTest> getAccountInfoStress() {
         return defaultHapiSpec("getAccountInfoStress")
                 .given()
                 .when()
@@ -91,7 +80,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec getAccountRecordsStress() {
+    final Stream<DynamicTest> getAccountRecordsStress() {
         return defaultHapiSpec("getAccountRecordsStress")
                 .given()
                 .when()
@@ -105,7 +94,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     private Function<HapiSpec, OpProvider> getAccountRecordsFactory() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(
                         cryptoCreate("somebody").sendThreshold(1L),
                         cryptoTransfer(tinyBarsFromTo("somebody", FUNDING, 2L)).via("first"),
@@ -128,7 +117,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     private Function<HapiSpec, OpProvider> getAccountBalanceFactory() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(cryptoCreate("somebody"));
             }
 
@@ -142,7 +131,7 @@ public class CryptoQueriesStressTests extends HapiSuite {
     private Function<HapiSpec, OpProvider> getAccountInfoFactory() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(cryptoCreate("somebody"));
             }
 
@@ -165,10 +154,5 @@ public class CryptoQueriesStressTests extends HapiSuite {
         if (ciProps.has(name)) {
             configurer.accept(getter.apply(name));
         }
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

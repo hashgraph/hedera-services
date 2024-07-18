@@ -70,7 +70,7 @@ class FileUtilsTests {
 
     @BeforeEach
     void beforeEach() throws IOException {
-        TemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory.resolve("tmp"));
+        LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(testDirectory.resolve("tmp"));
     }
 
     @AfterEach

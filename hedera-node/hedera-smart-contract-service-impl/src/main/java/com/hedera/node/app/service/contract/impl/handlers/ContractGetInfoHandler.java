@@ -19,10 +19,11 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.hexedEvmAddressOf;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.summarizeStakingInfo;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.tokenRelationshipsOf;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -50,9 +51,9 @@ import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
-import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.InstantSource;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -63,9 +64,11 @@ import javax.inject.Singleton;
 public class ContractGetInfoHandler extends PaidQueryHandler {
     private static final long BYTES_PER_EVM_KEY_VALUE_PAIR = 64;
 
+    private final InstantSource instantSource;
+
     @Inject
-    public ContractGetInfoHandler() {
-        // Dagger2
+    public ContractGetInfoHandler(@NonNull final InstantSource instantSource) {
+        this.instantSource = requireNonNull(instantSource);
     }
 
     @Override
@@ -114,7 +117,7 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
         return context.feeCalculator().legacyCalculate(sigValueObj -> {
             final var contract = contractFrom(context);
             if (contract == null) {
-                return FeeData.getDefaultInstance();
+                return CONSTANT_FEE_DATA;
             } else {
                 return ContractGetInfoUsage.newEstimate(fromPbj(context.query()))
                         .givenCurrentKey(fromPbj(contract.keyOrThrow()))
@@ -140,7 +143,8 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
                 stakingConfig.periodMins(),
                 stakingRewardsStore.isStakingRewardsActivated(),
                 contract,
-                stakingInfoStore);
+                stakingInfoStore,
+                instantSource.instant());
         final var maxReturnedRels = tokensConfig.maxRelsPerInfoQuery();
         final var builder = ContractInfo.newBuilder()
                 .ledgerId(ledgerConfig.id())

@@ -20,9 +20,10 @@ import static com.hedera.hapi.node.base.Timestamp.newBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hapi.node.state.blockrecords.BlockInfo;
-import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
-import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
+import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.ReadableSingletonStateBase;
+import com.swirlds.state.test.fixtures.MapReadableStates;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -54,8 +55,9 @@ class ReadableBlockRecordStoreTest {
                 .build();
 
         final var blockState = new MapReadableStates(Map.of(
-                BlockRecordService.BLOCK_INFO_STATE_KEY,
-                new ReadableSingletonStateBase<>(BlockRecordService.BLOCK_INFO_STATE_KEY, () -> expectedBlockInfo)));
+                V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY,
+                new ReadableSingletonStateBase<>(
+                        V0490BlockRecordSchema.BLOCK_INFO_STATE_KEY, () -> expectedBlockInfo)));
         final var subject = new ReadableBlockRecordStore(blockState);
 
         // When

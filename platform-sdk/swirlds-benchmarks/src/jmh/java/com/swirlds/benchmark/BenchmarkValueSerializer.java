@@ -19,7 +19,6 @@ package com.swirlds.benchmark;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.nio.ByteBuffer;
 
 public class BenchmarkValueSerializer implements ValueSerializer<BenchmarkValue> {
 
@@ -64,23 +63,9 @@ public class BenchmarkValueSerializer implements ValueSerializer<BenchmarkValue>
     }
 
     @Override
-    @Deprecated
-    public void serialize(BenchmarkValue data, ByteBuffer buffer) {
-        data.serialize(buffer);
-    }
-
-    @Override
     public BenchmarkValue deserialize(final ReadableSequentialData in) {
         final BenchmarkValue value = new BenchmarkValue();
         value.deserialize(in);
-        return value;
-    }
-
-    @Override
-    @Deprecated
-    public BenchmarkValue deserialize(ByteBuffer buffer, long dataVersion) {
-        final BenchmarkValue value = new BenchmarkValue();
-        value.deserialize(buffer, (int) dataVersion);
         return value;
     }
 }

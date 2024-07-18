@@ -16,16 +16,20 @@
 
 package com.swirlds.platform.test.network;
 
+import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.test.fixtures.Randotron;
+import com.swirlds.platform.Utilities;
+import com.swirlds.platform.network.PeerInfo;
 import com.swirlds.platform.network.RandomGraph;
 import com.swirlds.platform.network.topology.NetworkTopology;
 import com.swirlds.platform.network.topology.StaticTopology;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -33,6 +37,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -107,7 +112,8 @@ class TopologyTest {
     @MethodSource({"failing", "topologicalVariations", "fullyConnected"})
     void testRandomGraphs(final int numNodes, final int numNeighbors, final long seed) throws Exception {
         System.out.println("numNodes = " + numNodes + ", numNeighbors = " + numNeighbors + ", seed = " + seed);
-        final RandomGraph randomGraph = new RandomGraph(numNodes, numNeighbors, seed);
+        final Random random = getRandomPrintSeed();
+        final RandomGraph randomGraph = new RandomGraph(random, numNodes, numNeighbors, seed);
 
         testRandomGraphWithSets(randomGraph, numNodes, numNeighbors);
         testRandomGraphTestIterative(randomGraph, numNodes, numNeighbors, seed);
@@ -115,18 +121,22 @@ class TopologyTest {
 
     @ParameterizedTest
     @MethodSource("fullyConnected")
-    void testFullyConnectedTopology(final int numNodes, final int numNeighbors, final long ignoredSeed) {
+    void testFullyConnectedTopology(final int numNodes, final long ignoredSeed) {
+        final Randotron randotron = Randotron.create();
         final AddressBook addressBook =
-                new RandomAddressBookGenerator().setSize(numNodes).build();
+                RandomAddressBookBuilder.create(randotron).withSize(numNodes).build();
         for (int thisNode = 0; thisNode < numNodes; thisNode++) {
             final NodeId outOfBoundsId = addressBook.getNextNodeId();
             final NodeId thisNodeId = addressBook.getNodeId(thisNode);
-            final NetworkTopology topology = new StaticTopology(addressBook, thisNodeId, numNeighbors);
-            final List<NodeId> neighbors = topology.getNeighbors();
-            final List<NodeId> expected = IntStream.range(0, numNodes)
+
+            final List<PeerInfo> peers = Utilities.createPeerInfoList(addressBook, thisNodeId);
+
+            final NetworkTopology topology = new StaticTopology(peers, thisNodeId);
+            final Set<NodeId> neighbors = topology.getNeighbors();
+            final Set<NodeId> expected = IntStream.range(0, numNodes)
                     .mapToObj(addressBook::getNodeId)
                     .filter(nodeId -> !Objects.equals(thisNodeId, nodeId))
-                    .toList();
+                    .collect(Collectors.toSet());
             assertEquals(expected, neighbors, "all should be neighbors except me");
             for (final NodeId neighbor : neighbors) {
                 assertTrue(
@@ -139,8 +149,6 @@ class TopologyTest {
             assertFalse(topology.shouldConnectToMe(thisNodeId), "I should not connect to myself");
 
             assertFalse(topology.shouldConnectToMe(outOfBoundsId), "values >=numNodes should return to false");
-
-            testRandomGraphWithSets(topology.getConnectionGraph(), numNodes, numNeighbors);
         }
     }
 

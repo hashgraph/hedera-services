@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.transactions.token;
 
 import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
+import static com.hedera.services.bdd.spec.PropertySource.asAccountString;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 
 import com.google.common.base.MoreObjects;
@@ -24,15 +25,16 @@ import com.hedera.node.app.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.node.app.hapi.fees.usage.token.TokenRevokeKycUsage;
 import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.queries.crypto.ReferenceType;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -43,7 +45,9 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
     static final Logger log = LogManager.getLogger(HapiTokenKycRevoke.class);
 
     private final String token;
-    private final String account;
+    private String account;
+    private String alias = null;
+    private ReferenceType referenceType = ReferenceType.REGISTRY_NAME;
 
     @Override
     public HederaFunctionality type() {
@@ -51,8 +55,17 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
     }
 
     public HapiTokenKycRevoke(final String token, final String account) {
+        this(token, account, ReferenceType.REGISTRY_NAME);
+    }
+
+    public HapiTokenKycRevoke(final String token, final String reference, ReferenceType referenceType) {
         this.token = token;
-        this.account = account;
+        this.referenceType = referenceType;
+        if (referenceType == ReferenceType.ALIAS_KEY_NAME) {
+            this.alias = reference;
+        } else {
+            this.account = reference;
+        }
     }
 
     @Override
@@ -74,7 +87,13 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(final HapiSpec spec) throws Throwable {
-        final var aId = TxnUtils.asId(account, spec);
+        AccountID aId;
+        if (referenceType == ReferenceType.REGISTRY_NAME) {
+            aId = TxnUtils.asId(account, spec);
+        } else {
+            aId = spec.registry().keyAliasIdFor(alias);
+            account = asAccountString(aId);
+        }
         final var tId = TxnUtils.asTokenId(token, spec);
         final TokenRevokeKycTransactionBody opBody = spec.txns()
                 .<TokenRevokeKycTransactionBody, TokenRevokeKycTransactionBody.Builder>body(
@@ -92,17 +111,14 @@ public class HapiTokenKycRevoke extends HapiTxnOp<HapiTokenKycRevoke> {
     }
 
     @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getTokenSvcStub(targetNodeFor(spec), useTls)::revokeKycFromTokenAccount;
-    }
-
-    @Override
     protected void updateStateOf(final HapiSpec spec) {}
 
     @Override
     protected MoreObjects.ToStringHelper toStringHelper() {
-        final MoreObjects.ToStringHelper helper =
-                super.toStringHelper().add("token", token).add("account", account);
+        final MoreObjects.ToStringHelper helper = super.toStringHelper()
+                .add("token", token)
+                .add("account", account)
+                .add("alias", alias);
         return helper;
     }
 }

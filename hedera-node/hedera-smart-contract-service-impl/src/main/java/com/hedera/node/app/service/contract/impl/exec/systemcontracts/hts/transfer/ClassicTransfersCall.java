@@ -21,12 +21,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BOD
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.FullResult.haltResult;
-import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCall.PricedResult.gasOnly;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.Call.PricedResult.gasOnly;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes.encodedRc;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.ClassicTransfersTranslator.TRANSFER_TOKEN;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulFungibleTransfer;
 import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.transfer.TransferEventLoggingUtils.logSuccessfulNftTransfer;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -37,7 +36,7 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.contract.impl.exec.gas.DispatchType;
 import com.hedera.node.app.service.contract.impl.exec.gas.SystemContractGasCalculator;
 import com.hedera.node.app.service.contract.impl.exec.scope.VerificationStrategy;
-import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.AbstractHtsCall;
+import com.hedera.node.app.service.contract.impl.exec.systemcontracts.common.AbstractCall;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -66,7 +65,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * </ol>
  * But the basic pattern of constructing and dispatching a synthetic {@link CryptoTransferTransactionBody} remains.
  */
-public class ClassicTransfersCall extends AbstractHtsCall {
+public class ClassicTransfersCall extends AbstractCall {
     private final byte[] selector;
     private final AccountID senderId;
     private final ResponseCodeEnum preemptingFailureStatus;
@@ -218,13 +217,12 @@ public class ClassicTransfersCall extends AbstractHtsCall {
             @NonNull final ReadableAccountStore extantAccounts,
             @NonNull final byte[] selector) {
         long minimumTinybarPrice = 0L;
-        final var numHbarAdjusts = op.transfersOrElse(TransferList.DEFAULT)
-                .accountAmountsOrElse(emptyList())
-                .size();
+        final var numHbarAdjusts =
+                op.transfersOrElse(TransferList.DEFAULT).accountAmounts().size();
         minimumTinybarPrice += numHbarAdjusts * baseHbarAdjustTinybarPrice;
         final Set<Bytes> aliasesToLazyCreate = new HashSet<>();
-        for (final var tokenTransfers : op.tokenTransfersOrElse(emptyList())) {
-            final var unitAdjusts = tokenTransfers.transfersOrElse(emptyList());
+        for (final var tokenTransfers : op.tokenTransfers()) {
+            final var unitAdjusts = tokenTransfers.transfers();
             // (FUTURE) Remove this divisor special case, done only for mono-service fidelity
             final var sizeDivisor = Arrays.equals(selector, TRANSFER_TOKEN.selector()) ? 2 : 1;
             minimumTinybarPrice += (unitAdjusts.size() / sizeDivisor) * baseUnitAdjustTinybarPrice;
@@ -238,7 +236,7 @@ public class ClassicTransfersCall extends AbstractHtsCall {
                     }
                 }
             }
-            final var nftTransfers = tokenTransfers.nftTransfersOrElse(emptyList());
+            final var nftTransfers = tokenTransfers.nftTransfers();
             minimumTinybarPrice += nftTransfers.size() * baseNftTransferTinybarPrice;
             for (final var nftTransfer : nftTransfers) {
                 if (nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT).hasAlias()) {
@@ -266,19 +264,13 @@ public class ClassicTransfersCall extends AbstractHtsCall {
     private void maybeEmitErcLogsFor(
             @NonNull final CryptoTransferTransactionBody op, @NonNull final MessageFrame frame) {
         if (Arrays.equals(ClassicTransfersTranslator.TRANSFER_FROM.selector(), selector)) {
-            final var fungibleTransfers = op.tokenTransfersOrThrow().getFirst();
+            final var fungibleTransfers = op.tokenTransfers().getFirst();
             logSuccessfulFungibleTransfer(
-                    fungibleTransfers.tokenOrThrow(),
-                    fungibleTransfers.transfersOrThrow(),
-                    readableAccountStore(),
-                    frame);
+                    fungibleTransfers.tokenOrThrow(), fungibleTransfers.transfers(), readableAccountStore(), frame);
         } else if (Arrays.equals(ClassicTransfersTranslator.TRANSFER_NFT_FROM.selector(), selector)) {
-            final var nftTransfers = op.tokenTransfersOrThrow().getFirst();
+            final var nftTransfers = op.tokenTransfers().getFirst();
             logSuccessfulNftTransfer(
-                    nftTransfers.tokenOrThrow(),
-                    nftTransfers.nftTransfersOrThrow().getFirst(),
-                    readableAccountStore(),
-                    frame);
+                    nftTransfers.tokenOrThrow(), nftTransfers.nftTransfers().getFirst(), readableAccountStore(), frame);
         }
     }
 }

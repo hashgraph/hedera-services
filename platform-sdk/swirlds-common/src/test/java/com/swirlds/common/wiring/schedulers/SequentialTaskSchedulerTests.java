@@ -32,11 +32,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.common.TestWiringModelBuilder;
+import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.RandomUtils;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.threading.framework.config.ThreadConfiguration;
 import com.swirlds.common.wiring.counters.BackpressureObjectCounter;
 import com.swirlds.common.wiring.counters.ObjectCounter;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
@@ -315,11 +318,11 @@ class SequentialTaskSchedulerTests {
     }
 
     /**
-     * Ensure that the work happening on the task scheduler is not happening on the callers thread.
+     * Ensure that the work happening on the task scheduler is not happening on the caller's thread.
      */
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
-    void wireWordDoesNotBlockCallingThreadTest(final String typeString) throws InterruptedException {
+    void wireDoesNotBlockCallingThreadTest(final String typeString) throws InterruptedException {
         final WiringModel model = TestWiringModelBuilder.create();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
@@ -458,7 +461,13 @@ class SequentialTaskSchedulerTests {
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
     void backpressureTest(final String typeString) throws InterruptedException {
-        final WiringModel model = TestWiringModelBuilder.create();
+
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel model = WiringModelBuilder.create(platformContext)
+                .withHardBackpressureEnabled(true)
+                .build();
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
         final AtomicInteger wireValue = new AtomicInteger();
@@ -558,7 +567,13 @@ class SequentialTaskSchedulerTests {
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
     void uninterruptableTest(final String typeString) throws InterruptedException {
-        final WiringModel model = TestWiringModelBuilder.create();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel model = WiringModelBuilder.create(platformContext)
+                .withHardBackpressureEnabled(true)
+                .build();
+
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
         final AtomicInteger wireValue = new AtomicInteger();
@@ -869,7 +884,13 @@ class SequentialTaskSchedulerTests {
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
     void multipleChannelBackpressureTest(final String typeString) throws InterruptedException {
-        final WiringModel model = TestWiringModelBuilder.create();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel model = WiringModelBuilder.create(platformContext)
+                .withHardBackpressureEnabled(true)
+                .build();
+
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
         final AtomicInteger wireValue = new AtomicInteger();
@@ -1094,7 +1115,13 @@ class SequentialTaskSchedulerTests {
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
     void flushTest(final String typeString) throws InterruptedException {
-        final WiringModel model = TestWiringModelBuilder.create();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel model = WiringModelBuilder.create(platformContext)
+                .withHardBackpressureEnabled(true)
+                .build();
+
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
         final AtomicInteger wireValue = new AtomicInteger();
@@ -1675,7 +1702,13 @@ class SequentialTaskSchedulerTests {
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
     void injectionSolderingTest(final String typeString) throws InterruptedException {
-        final WiringModel model = TestWiringModelBuilder.create();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel model = WiringModelBuilder.create(platformContext)
+                .withHardBackpressureEnabled(true)
+                .build();
+
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
         // In this test, wires A and B are connected to the input of wire C, which has a maximum capacity.
@@ -1760,9 +1793,14 @@ class SequentialTaskSchedulerTests {
         assertEventuallyEquals(expectedCount, countB::get, Duration.ofSeconds(10), "B should have processed task");
 
         // If we wait some time, the task from B should have increased C's count to 11, but the task from A
-        // should have been unable to increase C's count.
+        // should have been unable to increase C's count. We need to do an "eventually equals" since a failed
+        // insertion may briefly push the count up to 12 (although it should always fall immediately after).
         MILLISECONDS.sleep(50);
-        assertEquals(11, taskSchedulerC.getUnprocessedTaskCount());
+        assertEventuallyEquals(
+                11L,
+                taskSchedulerC::getUnprocessedTaskCount,
+                Duration.ofSeconds(1),
+                "should have 11 unprocessed tasks");
 
         // Push some more data into A and B. A will be unable to process it because it's still
         // stuck pushing the previous value.
@@ -2160,7 +2198,13 @@ class SequentialTaskSchedulerTests {
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
     void multipleCountersInternalBackpressureTest(final String typeString) throws InterruptedException {
-        final WiringModel model = TestWiringModelBuilder.create();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel model = WiringModelBuilder.create(platformContext)
+                .withHardBackpressureEnabled(true)
+                .build();
+
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
         // There are three components, A, B, and C.
@@ -2282,7 +2326,13 @@ class SequentialTaskSchedulerTests {
     @ParameterizedTest
     @ValueSource(strings = {"SEQUENTIAL", "SEQUENTIAL_THREAD"})
     void offerSolderingTest(final String typeString) {
-        final WiringModel model = TestWiringModelBuilder.create();
+        final PlatformContext platformContext =
+                TestPlatformContextBuilder.create().build();
+
+        final WiringModel model = WiringModelBuilder.create(platformContext)
+                .withHardBackpressureEnabled(true)
+                .build();
+
         final TaskSchedulerType type = TaskSchedulerType.valueOf(typeString);
 
         final TaskScheduler<Integer> schedulerA = model.schedulerBuilder("A")

@@ -18,8 +18,8 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Iterator;
@@ -48,7 +48,7 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
     /**
      * Constructs a {@link WritableKVStateStack} that delegates to the current {@link WritableKVState} in
      * the given {@link WritableStatesStack} for the given state key. A {@link WritableStatesStack} is an implementation
-     * of {@link com.hedera.node.app.spi.state.WritableStates} that delegates to the most recent version in a
+     * of {@link com.swirlds.state.spi.WritableStates} that delegates to the most recent version in a
      * {@link com.hedera.node.app.spi.workflows.HandleContext.SavepointStack}
      *
      * @param writableStatesStack the {@link WritableStatesStack}
@@ -125,7 +125,7 @@ public class WritableKVStateStack<K, V> implements WritableKVState<K, V> {
     }
 
     @Override
-    public void setupMetrics(@NonNull Metrics metrics, @NonNull String name, @NonNull String label, long maxCapacity) {
-        getCurrent().setupMetrics(metrics, name, label, maxCapacity);
+    public void setMetrics(@NonNull StoreMetrics storeMetrics) {
+        getCurrent().setMetrics(storeMetrics);
     }
 }

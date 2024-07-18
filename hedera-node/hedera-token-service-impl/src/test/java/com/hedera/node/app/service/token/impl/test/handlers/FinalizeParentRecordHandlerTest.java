@@ -120,7 +120,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
     @Test
     void handleNullArg() {
         assertThatThrownBy(() -> subject.finalizeParentRecord(
-                        ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet()))
+                        context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet()))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -138,7 +138,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .willReturn(mock(SingleTransactionRecordBuilder.class));
 
         assertThatThrownBy(() -> subject.finalizeParentRecord(
-                        ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet()))
+                        context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet()))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -163,7 +163,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .willReturn(mock(SingleTransactionRecordBuilder.class));
 
         assertThatThrownBy(() -> subject.finalizeParentRecord(
-                        ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet()))
+                        context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet()))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -183,8 +183,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         BDDMockito.verifyNoInteractions(recordBuilder);
     }
@@ -211,8 +210,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         BDDMockito.verify(recordBuilder)
                 .transferList(TransferList.newBuilder()
@@ -268,7 +266,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                         .amount(childRecordTransfer)
                                         .build())
                         .build());
-        given(context.hasChildRecords()).willReturn(true);
+        given(context.hasChildOrPrecedingRecords()).willReturn(true);
         doAnswer(invocation -> {
                     final var consumer = invocation.getArgument(1, Consumer.class);
                     consumer.accept(childRecord);
@@ -277,8 +275,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .when(context)
                 .forEachChildRecord(any(), any());
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         final var transferAmount1212 = -amountToTransfer + childRecordTransfer;
         final var transferAmount3434 = amountToTransfer - childRecordTransfer;
@@ -340,7 +337,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .when(childRecord.transferList())
                 .thenReturn(TransferList.newBuilder().build());
         lenient()
-                .when(childRecord.tokenTransferListsOrElse(List.of()))
+                .when(childRecord.tokenTransferLists())
                 .thenReturn(List.of(TokenTransferList.newBuilder()
                         .token(TOKEN_321)
                         .transfers(
@@ -354,8 +351,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                         .build())
                         .build()));
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -403,8 +399,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -443,8 +438,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -482,8 +476,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         BDDMockito.verify(recordBuilder)
                 .transferList(TransferList.newBuilder()
@@ -514,7 +507,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         given(context.configuration()).willReturn(configuration);
 
         assertThatThrownBy(() -> subject.finalizeParentRecord(
-                        ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet()))
+                        context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet()))
                 .isInstanceOf(HandleException.class)
                 .has(responseCode(FAIL_INVALID));
     }
@@ -535,8 +528,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         BDDMockito.verifyNoInteractions(recordBuilder);
     }
@@ -577,8 +569,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -669,8 +660,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(
@@ -735,8 +725,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -774,8 +763,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
 
         given(context.configuration()).willReturn(configuration);
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         BDDMockito.verify(recordBuilder)
                 .tokenTransferLists(List.of(TokenTransferList.newBuilder()
@@ -849,8 +837,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .getOrCreateConfig();
         given(context.configuration()).willReturn(config);
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         // The transfer list should be sorted by token ID, then by serial number
         BDDMockito.verify(recordBuilder)
@@ -886,8 +873,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                                                 .build())
                                 .build()));
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
         verify(stakingRewardsHandler, never())
                 .applyStakingRewards(context, Collections.emptySet(), Collections.emptyMap());
     }
@@ -929,12 +915,17 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         // Make fungible token changes
         final var fungible321Change = token321Rel.balance() - 25;
+        final var fungible654Change = token654Rel.balance() - 1;
         writableTokenRelStore.put(token321Rel.copyBuilder().balance(25).build());
         writableTokenRelStore.put(token321Rel
                 .copyBuilder()
                 .accountId(ACCOUNT_5656_ID)
                 .balance(fungible321Change)
                 .build());
+        writableTokenRelStore.put(
+                token654Rel.copyBuilder().balance(fungible654Change).build());
+        writableTokenRelStore.put(
+                token654Rel.copyBuilder().accountId(ACCOUNT_1212_ID).balance(1).build());
         // Make NFT changes
         writableNftStore.put(nft.copyBuilder().ownerId(ACCOUNT_1212_ID).build());
         writableTokenStore = TestStoreFactory.newWritableStoreWithTokens(TOKEN_321_FUNGIBLE, token654);
@@ -942,8 +933,7 @@ class FinalizeParentRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        subject.finalizeParentRecord(
-                ACCOUNT_1212_ID, context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
+        subject.finalizeParentRecord(context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet());
 
         BDDMockito.verify(recordBuilder)
                 .transferList(TransferList.newBuilder()

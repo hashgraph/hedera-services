@@ -60,12 +60,22 @@ abstract class AbstractScheduleHandler {
 
     /**
      * A simple record to return both "deemed valid" signatories and remaining primitive keys that must sign.
+     *
      * @param updatedSignatories a Set of "deemed valid" signatories, possibly updated with new entries
      * @param remainingRequiredKeys A Set of Key entries that have not yet signed the scheduled transaction, but
      *     must sign that transaction before it can be executed.
      */
     protected static record ScheduleKeysResult(Set<Key> updatedSignatories, Set<Key> remainingRequiredKeys) {}
 
+    /**
+     * Gets the set of all the keys required to sign a transaction.
+     *
+     * @param scheduleInState the schedule in state
+     * @param context the Prehandle context
+     * @return the set of keys required to sign the transaction
+     * @throws PreCheckException if the transaction cannot be handled successfully due to a validation failure of the
+     * dispatcher related to signer requirements or other pre-validation criteria.
+     */
     @NonNull
     protected Set<Key> allKeysForTransaction(
             @NonNull final Schedule scheduleInState, @NonNull final PreHandleContext context) throws PreCheckException {
@@ -78,6 +88,14 @@ abstract class AbstractScheduleHandler {
         return getKeySetFromTransactionKeys(keyStructure);
     }
 
+    /**
+     * Get the schedule keys result to sign the transaction
+     *
+     * @param scheduleInState the schedule in state
+     * @param context         the Prehandle context
+     * @return the schedule keys result containing the updated signatories and the remaining required keys
+     * @throws HandleException if any validation check fails when getting the keys for the transaction
+     */
     @NonNull
     protected ScheduleKeysResult allKeysForTransaction(
             @NonNull final Schedule scheduleInState, @NonNull final HandleContext context) throws HandleException {
@@ -144,9 +162,16 @@ abstract class AbstractScheduleHandler {
             throw new HandleException(ResponseCodeEnum.NO_NEW_VALID_SIGNATURES);
     }
 
+    /**
+     * Gets key for account.
+     *
+     * @param context        the handle context
+     * @param accountToQuery the account to query
+     * @return the key for account
+     */
     @Nullable
     protected Key getKeyForAccount(@NonNull final HandleContext context, @NonNull final AccountID accountToQuery) {
-        final ReadableAccountStore accountStore = context.readableStore(ReadableAccountStore.class);
+        final ReadableAccountStore accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
         final Account accountData = accountStore.getAccountById(accountToQuery);
         return (accountData != null && accountData.key() != null) ? accountData.key() : null;
     }
@@ -276,6 +301,18 @@ abstract class AbstractScheduleHandler {
         if (validStart == null) throw new PreCheckException(ResponseCodeEnum.INVALID_TRANSACTION_START);
     }
 
+    /**
+     * Try to execute a schedule. Will attempt to execute a schedule if the remaining signatories are empty
+     * and the schedule is not waiting for expiration.
+     *
+     * @param context              the context
+     * @param scheduleToExecute    the schedule to execute
+     * @param remainingSignatories the remaining signatories
+     * @param validSignatories     the valid signatories
+     * @param validationResult     the validation result
+     * @param isLongTermEnabled    the is long term enabled
+     * @return boolean indicating if the schedule was executed
+     */
     protected boolean tryToExecuteSchedule(
             @NonNull final HandleContext context,
             @NonNull final Schedule scheduleToExecute,
@@ -306,7 +343,8 @@ abstract class AbstractScheduleHandler {
             // set the schedule ref for the child transaction to the schedule that we're executing
             recordBuilder.scheduleRef(scheduleToExecute.scheduleId());
             // also set the child transaction ID as scheduled transaction ID in the parent record.
-            final ScheduleRecordBuilder parentRecordBuilder = context.recordBuilder(ScheduleRecordBuilder.class);
+            final ScheduleRecordBuilder parentRecordBuilder =
+                    context.recordBuilders().getOrCreate(ScheduleRecordBuilder.class);
             parentRecordBuilder.scheduledTransactionID(childTransaction.transactionID());
             return true;
         } else {
@@ -314,6 +352,12 @@ abstract class AbstractScheduleHandler {
         }
     }
 
+    /**
+     * Checks if the validation is OK, SUCCESS, or SCHEDULE_PENDING_EXPIRATION.
+     *
+     * @param validationResult the validation result
+     * @return boolean indicating status of the validation
+     */
     protected boolean validationOk(final ResponseCodeEnum validationResult) {
         return validationResult == ResponseCodeEnum.OK
                 || validationResult == ResponseCodeEnum.SUCCESS
@@ -341,7 +385,7 @@ abstract class AbstractScheduleHandler {
         final var assistant = new ScheduleVerificationAssistant(currentSignatories, currentUnverifiedKeys);
         for (final Key next : scheduledRequiredKeys) {
             // The schedule verification assistant observes each primitive key in the tree
-            final SignatureVerification isVerified = context.verificationFor(next, assistant);
+            final SignatureVerification isVerified = context.keyVerifier().verificationFor(next, assistant);
             // unverified primitive keys only count if the top-level key failed verification.
             // @todo('9447') The comparison to originalPayerKey here is to match monoservice
             //      "hidden default payer" behavior. We intend to remove that behavior after v1

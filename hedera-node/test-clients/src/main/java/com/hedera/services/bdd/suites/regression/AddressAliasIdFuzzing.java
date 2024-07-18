@@ -16,28 +16,24 @@
 
 package com.hedera.services.bdd.suites.regression;
 
+import static com.hedera.services.bdd.junit.TestTags.NOT_REPEATABLE;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT;
 import static com.hedera.services.bdd.spec.infrastructure.OpProvider.UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE;
-import static com.hedera.services.bdd.spec.queries.QueryVerbs.getFileContents;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.*;
-import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.*;
-import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.*;
-import static java.util.stream.Collectors.joining;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
+import static com.hedera.services.bdd.suites.HapiSuite.flattened;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idFuzzingWith;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.idTransferToRandomKeyWith;
+import static com.hedera.services.bdd.suites.regression.factories.IdFuzzingProviderFactory.initOperations;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Tag;
 
 /**
  * We want to make this suite exercise all forms of identity a Hedera account may have, under all
@@ -45,58 +41,31 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>See <a href="https://github.com/hashgraph/hedera-services/issues/4565">#4565</a> for details.
  */
-@HapiTestSuite
-public class AddressAliasIdFuzzing extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(AddressAliasIdFuzzing.class);
-
+@Tag(NOT_REPEATABLE)
+public class AddressAliasIdFuzzing {
     private static final String PROPERTIES = "id-fuzzing.properties";
-    public static final String ATOMIC_CRYPTO_TRANSFER = "contracts.precompile.atomicCryptoTransfer.enabled";
-    private final AtomicInteger maxOpsPerSec = new AtomicInteger(1);
+    private final AtomicInteger maxOpsPerSec = new AtomicInteger(10);
     private final AtomicInteger maxPendingOps = new AtomicInteger(Integer.MAX_VALUE);
     private final AtomicInteger backoffSleepSecs = new AtomicInteger(Integer.MAX_VALUE);
 
-    public static void main(String... args) {
-        new AddressAliasIdFuzzing().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(addressAliasIdFuzzing(), transferToKeyFuzzing());
-    }
-
     @HapiTest
-    final HapiSpec addressAliasIdFuzzing() {
-        final Map<String, String> existingProps = new LinkedHashMap<>();
-        return propertyPreservingHapiSpec("AddressAliasIdFuzzing")
-                .preserving(
-                        CHAIN_ID_PROP, LAZY_CREATE_PROPERTY_NAME, CONTRACTS_EVM_VERSION_PROP, ATOMIC_CRYPTO_TRANSFER)
-                .given(
-                        getFileContents(APP_PROPERTIES).addingConfigListTo(existingProps),
-                        withOpContext((spec, opLog) -> log.info(
-                                "Before initOperations() properties are\n\t{}",
-                                existingProps.entrySet().stream()
-                                        .map(e -> e.getKey() + "=" + e.getValue())
-                                        .collect(joining("\n\t")))))
-                .when(initOperations())
-                .then(runWithProvider(idFuzzingWith(PROPERTIES))
+    final Stream<DynamicTest> addressAliasIdFuzzing() {
+        return hapiTest(flattened(
+                initOperations(),
+                runWithProvider(idFuzzingWith(PROPERTIES))
                         .lasting(10L, TimeUnit.SECONDS)
                         .maxOpsPerSec(maxOpsPerSec::get)
                         .maxPendingOps(maxPendingOps::get)
-                        .backoffSleepSecs(backoffSleepSecs::get));
+                        .backoffSleepSecs(backoffSleepSecs::get)));
     }
 
     @HapiTest
-    final HapiSpec transferToKeyFuzzing() {
+    final Stream<DynamicTest> transferToKeyFuzzing() {
         return defaultHapiSpec("TransferToKeyFuzzing")
                 .given(cryptoCreate(UNIQUE_PAYER_ACCOUNT)
                         .balance(UNIQUE_PAYER_ACCOUNT_INITIAL_BALANCE)
                         .withRecharging())
                 .when()
                 .then(runWithProvider(idTransferToRandomKeyWith(PROPERTIES)).lasting(10L, TimeUnit.SECONDS));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

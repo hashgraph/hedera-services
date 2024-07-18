@@ -676,7 +676,7 @@ class MerkleMapTests {
 
         final Hash hash = mm.getRootHash();
         assertNotNull(hash, "expected non-null hash");
-        assertNotNull(hash.getValue(), "expected non-null hash data");
+        assertNotNull(hash.getBytes(), "expected non-null hash data");
         final MerkleMap<Key, Value> copy01 = mm.copy();
 
         final Key key01 = new Key(0, 0, 0);

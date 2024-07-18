@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.hapi.node.base.AccountID.AccountOneOfType.ACCOUNT_NUM;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static java.util.Objects.requireNonNull;
 
@@ -25,12 +26,13 @@ import com.hedera.hapi.node.contract.ContractNonceInfo;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.api.ContractChangeSummary;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -51,18 +53,18 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      *
      * @param states The state to use.
      * @param configuration The configuration used to read the maximum capacity.
-     * @param metrics The metrics-API used to report utilization.
+     * @param storeMetricsService Service that provides utilization metrics.
      */
     public WritableAccountStore(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final Metrics metrics) {
+            @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
-        requireNonNull(metrics);
 
         final long maxCapacity =
                 configuration.getConfigData(AccountsConfig.class).maxNumber();
-        accountState().setupMetrics(metrics, "accounts", maxCapacity);
+        final var storeMetrics = storeMetricsService.get(StoreType.ACCOUNT, maxCapacity);
+        accountState().setMetrics(storeMetrics);
     }
 
     @Override
@@ -133,6 +135,7 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
      * null}
      *
      * @param accountID - the id of the Account to be retrieved.
+     * @return the Account with the given AccountID, or null if no such account exists.
      */
     @Nullable
     public Account get(@NonNull final AccountID accountID) {
@@ -140,16 +143,17 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     }
 
     /**
-     * Returns the {@link Account} with the given {@link AccountID}.
-     * If no such account exists, returns {@code Optional.empty()}
+     * Returns the {@link Account} with the given {@link AccountID}.It uses the getForModify method
+     * to get the account. If no such account exists, returns {@code null}
      *
      * @param id - the number of the account to be retrieved.
+     * @return the account with the given account number, or null if no such account exists.
      */
     @Nullable
     public Account getForModify(@NonNull final AccountID id) {
         requireNonNull(id);
         // Get the account number based on the account identifier. It may be null.
-        final var accountId = unaliasedAccountId(id);
+        final var accountId = id.account().kind() == ACCOUNT_NUM ? id : null;
         return accountId == null ? null : accountState().getForModify(accountId);
     }
 
@@ -164,7 +168,8 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
     @Nullable
     public Account getOriginalValue(@NonNull final AccountID id) {
         requireNonNull(id);
-        final var accountId = unaliasedAccountId(id);
+        // Get the account number based on the account identifier. It may be null.
+        final var accountId = id.account().kind() == ACCOUNT_NUM ? id : null;
         return accountId == null ? null : accountState().getOriginalValue(accountId);
     }
 
@@ -246,6 +251,10 @@ public class WritableAccountStore extends ReadableAccountStoreImpl {
         return aliases().modifiedKeys();
     }
 
+    /**
+     * Checks if the given accountId is not the default accountId. If it is, throws an {@link IllegalArgumentException}.
+     * @param accountId The accountId to check.
+     */
     public static void requireNotDefault(@NonNull final AccountID accountId) {
         if (accountId.equals(AccountID.DEFAULT)) {
             throw new IllegalArgumentException("Account ID cannot be default");

@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.suites.regression;
 
-import static com.hedera.services.bdd.junit.TestTags.TIME_CONSUMING;
+import static com.hedera.services.bdd.junit.TestTags.LONG_RUNNING;
 import static com.hedera.services.bdd.spec.HapiSpec.customHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -34,6 +34,12 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.runWithProvider;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.THROTTLE_DEFS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.utils.sysfiles.serdes.ThrottleDefsLoader.protoDefsFromResource;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
@@ -43,14 +49,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
+import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.crypto.HapiGetAccountBalance;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -61,25 +65,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.TestMethodOrder;
 
-@HapiTestSuite
-@TestMethodOrder(OrderAnnotation.class)
-@Tag(TIME_CONSUMING)
-public class SteadyStateThrottlingCheck extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(SteadyStateThrottlingCheck.class);
-
-    private static final String TOKENS_NFTS_MINT_THROTTLE_SCALE_FACTOR = "tokens.nfts.mintThrottleScaleFactor";
-    private static final String DEFAULT_NFT_SCALING =
-            HapiSpecSetup.getDefaultNodeProps().get(TOKENS_NFTS_MINT_THROTTLE_SCALE_FACTOR);
-
+@Tag(LONG_RUNNING)
+@OrderedInIsolation
+public class SteadyStateThrottlingCheck {
     private static final int REGRESSION_NETWORK_SIZE = 4;
 
     private static final double THROUGHPUT_LIMITS_XFER_NETWORK_TPS = 100.0;
@@ -106,25 +100,9 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
     private final AtomicReference<TimeUnit> unit = new AtomicReference<>(SECONDS);
     private final AtomicInteger maxOpsPerSec = new AtomicInteger(500);
 
-    public static void main(String... args) {
-        new SteadyStateThrottlingCheck().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                setArtificialLimits(),
-                checkTps("Xfers", EXPECTED_XFER_TPS, xferOps()),
-                checkTps("FungibleMints", EXPECTED_FUNGIBLE_MINT_TPS, fungibleMintOps()),
-                checkTps("ContractCalls", EXPECTED_CONTRACT_CALL_TPS, scCallOps()),
-                checkTps("CryptoCreates", EXPECTED_CRYPTO_CREATE_TPS, cryptoCreateOps()),
-                checkBalanceQps(1000, EXPECTED_GET_BALANCE_QPS),
-                restoreDevLimits());
-    }
-
     @HapiTest
     @Order(1)
-    final HapiSpec setArtificialLimits() {
+    final Stream<DynamicTest> setArtificialLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/artificial-limits.json");
 
         return defaultHapiSpec("SetArtificialLimits")
@@ -137,52 +115,47 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
 
     @HapiTest
     @Order(2)
-    final HapiSpec checkXfersTps() {
+    final Stream<DynamicTest> checkXfersTps() {
         return checkTps("Xfers", EXPECTED_XFER_TPS, xferOps());
     }
 
     @HapiTest
     @Order(3)
-    final HapiSpec checkFungibleMintsTps() {
+    final Stream<DynamicTest> checkFungibleMintsTps() {
         return checkTps("FungibleMints", EXPECTED_FUNGIBLE_MINT_TPS, fungibleMintOps());
     }
 
     @HapiTest
     @Order(4)
-    final HapiSpec checkContractCallsTps() {
+    final Stream<DynamicTest> checkContractCallsTps() {
         return checkTps("ContractCalls", EXPECTED_CONTRACT_CALL_TPS, scCallOps());
     }
 
     @HapiTest
     @Order(5)
-    final HapiSpec checkCryptoCreatesTps() {
+    final Stream<DynamicTest> checkCryptoCreatesTps() {
         return checkTps("CryptoCreates", EXPECTED_CRYPTO_CREATE_TPS, cryptoCreateOps());
     }
 
     @HapiTest
     @Order(6)
-    final HapiSpec checkBalanceQps() {
+    final Stream<DynamicTest> checkBalanceQps() {
         return checkBalanceQps(50, EXPECTED_GET_BALANCE_QPS);
     }
 
     @HapiTest
     @Order(7)
-    final HapiSpec restoreDevLimits() {
-        var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
+    final Stream<DynamicTest> restoreDevLimits() {
+        final var defaultThrottles = protoDefsFromResource("testSystemFiles/throttles-dev.json");
         return defaultHapiSpec("RestoreDevLimits")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(defaultThrottles.toByteArray()),
-                        fileUpdate(APP_PROPERTIES)
-                                .overridingProps(Map.of(TOKENS_NFTS_MINT_THROTTLE_SCALE_FACTOR, DEFAULT_NFT_SCALING))
-                                .payingWith(ADDRESS_BOOK_CONTROL));
+                .then(fileUpdate(THROTTLE_DEFS)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents(defaultThrottles.toByteArray()));
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
+    final Stream<DynamicTest> checkTps(String txn, double expectedTps, Function<HapiSpec, OpProvider> provider) {
         return checkCustomNetworkTps(txn, expectedTps, provider, Collections.emptyMap());
     }
 
@@ -199,9 +172,8 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
      *     "default.payer.pemKeyPassphrase", "[SUPERUSER_PEM_PASSPHRASE]")));
      * }</pre>
      */
-    @BddMethodIsNotATest
     @SuppressWarnings("java:S5960")
-    final HapiSpec checkCustomNetworkTps(
+    final Stream<DynamicTest> checkCustomNetworkTps(
             String txn, double expectedTps, Function<HapiSpec, OpProvider> provider, Map<String, String> custom) {
         final var name = "Throttles" + txn + "AsExpected";
         final var baseSpec =
@@ -225,8 +197,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                 }));
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec checkBalanceQps(int burstSize, double expectedQps) {
+    final Stream<DynamicTest> checkBalanceQps(int burstSize, double expectedQps) {
         return defaultHapiSpec("CheckBalanceQps")
                 .given(cryptoCreate("curious").payingWith(GENESIS))
                 .when()
@@ -279,7 +250,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
     private Function<HapiSpec, OpProvider> xferOps() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(
                         cryptoCreate(CIVILIAN)
                                 .payingWith(GENESIS)
@@ -295,9 +266,8 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                         .deferStatusResolution()
                         .payingWith(CIVILIAN)
                         .hasPrecheckFrom(OK, BUSY)
-                        /* In my local environment spec has been flaky with the first few
-                        operations here...doesn't seem to happen with other specs? */
-                        .hasKnownStatusFrom(OK, SUCCESS);
+                        // The last "known status" can still be BUSY if we exhaust retries
+                        .hasKnownStatusFrom(BUSY, SUCCESS);
                 return Optional.of(op);
             }
         };
@@ -308,7 +278,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
 
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(cryptoCreate(CIVILIAN)
                         .payingWith(GENESIS)
                         .balance(ONE_MILLION_HBARS)
@@ -331,7 +301,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
         final var contract = "Multipurpose";
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(
                         uploadInitCode(contract),
                         contractCreate(contract).payingWith(GENESIS),
@@ -355,7 +325,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
     private Function<HapiSpec, OpProvider> fungibleMintOps() {
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(
                         newKeyNamed(SUPPLY),
                         cryptoCreate(TOKEN_TREASURY).payingWith(GENESIS).balance(ONE_MILLION_HBARS),
@@ -371,7 +341,8 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                         .deferStatusResolution()
                         .signedBy(TOKEN_TREASURY, SUPPLY)
                         .payingWith(TOKEN_TREASURY)
-                        .hasKnownStatusFrom(OK, SUCCESS)
+                        // The last "known status" can still be BUSY if we exhaust retries
+                        .hasKnownStatusFrom(BUSY, SUCCESS)
                         .hasPrecheckFrom(OK, BUSY);
                 return Optional.of(op);
             }
@@ -384,7 +355,7 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                 + "01234567890123456789012345678901234567890123456789";
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(
                         newKeyNamed(SUPPLY),
                         cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
@@ -403,15 +374,11 @@ public class SteadyStateThrottlingCheck extends HapiSuite {
                         .deferStatusResolution()
                         .signedBy(TOKEN_TREASURY, SUPPLY)
                         .payingWith(TOKEN_TREASURY)
-                        .hasKnownStatusFrom(OK, SUCCESS)
+                        // The last "known status" can still be BUSY if we exhaust retries
+                        .hasKnownStatusFrom(BUSY, SUCCESS)
                         .hasPrecheckFrom(OK, BUSY);
                 return Optional.of(op);
             }
         };
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
     }
 }

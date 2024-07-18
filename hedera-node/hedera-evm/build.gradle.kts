@@ -15,13 +15,15 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.evm-maven-publish")
+    id("com.hedera.gradle.evm")
+    id("com.hedera.gradle.evm-publish")
 }
 
-group = "com.hedera.evm"
-
 description = "Hedera EVM - API"
+
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports,-static") }
 
 mainModuleInfo { annotationProcessor("dagger.compiler") }
 
@@ -29,13 +31,4 @@ testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
-}
-
-publishing {
-    publications {
-        named<MavenPublication>("maven") {
-            groupId = "com.hedera.evm"
-            artifactId = "hedera-evm"
-        }
-    }
 }

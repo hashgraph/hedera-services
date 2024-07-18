@@ -27,8 +27,13 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class BaseExecutorFactoryImpl implements BaseExecutorFactory {
 
-    private static final BaseExecutorFactory instance = new BaseExecutorFactoryImpl();
+    private static final class InstanceHolder {
+        private static final BaseExecutorFactory INSTANCE = new BaseExecutorFactoryImpl();
+    }
 
+    /**
+     * Constructs a new factory.
+     */
     private BaseExecutorFactoryImpl() {}
 
     @NonNull
@@ -44,6 +49,6 @@ public class BaseExecutorFactoryImpl implements BaseExecutorFactory {
      */
     @NonNull
     public static BaseExecutorFactory getInstance() {
-        return instance;
+        return InstanceHolder.INSTANCE;
     }
 }

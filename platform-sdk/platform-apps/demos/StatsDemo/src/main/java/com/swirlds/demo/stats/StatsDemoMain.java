@@ -39,10 +39,12 @@ import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.Browser;
 import com.swirlds.platform.ParameterProvider;
+import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.SwirldMain;
-import com.swirlds.platform.system.SwirldState;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -293,9 +295,12 @@ public class StatsDemoMain implements SwirldMain {
         return "";
     }
 
+    @NonNull
     @Override
-    public SwirldState newState() {
-        return new StatsDemoState();
+    public MerkleRoot newMerkleStateRoot() {
+        final State state = new State();
+        state.setSwirldState(new StatsDemoState());
+        return state;
     }
 
     /**

@@ -112,7 +112,7 @@ Uses the `currentEffectiveRoster` for the `pendingConsensusRound`.
 When a round comes to consensus:
 
 * The `latestConsensusRound` and `latestConsensRoster` can be retrieved from the produced `ConsensusRound`.
-* A new `NonAncientEventWindow` is produced on an output wire.
+* A new `EventWindow` is produced on an output wire.
 * Consensus advances the `pendingConsensusRound` and uses the `currentEffectiveRoster` for that round.
 * The `RosterDiff` between the `currentEffectiveRoster` and the `latestConsensusRoster` is produced on an output wire.
 

@@ -17,9 +17,9 @@
 package com.swirlds.platform.event.deduplication;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.GossipEvent;
-import com.swirlds.platform.wiring.ClearTrigger;
+import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -49,20 +49,20 @@ public interface EventDeduplicator {
      */
     @Nullable
     @InputWireLabel("non-deduplicated events")
-    GossipEvent handleEvent(@NonNull GossipEvent event);
+    PlatformEvent handleEvent(@NonNull PlatformEvent event);
 
     /**
-     * Set the NonAncientEventWindow, defines the minimum threshold for an event to be non-ancient.
+     * Set the EventWindow, defines the minimum threshold for an event to be non-ancient.
      *
-     * @param nonAncientEventWindow the non-ancient event window
+     * @param eventWindow the event window
      */
-    @InputWireLabel("non-ancient event window")
-    void setNonAncientEventWindow(@NonNull NonAncientEventWindow nonAncientEventWindow);
+    @InputWireLabel("event window")
+    void setEventWindow(@NonNull EventWindow eventWindow);
 
     /**
      * Clear the internal state of this deduplicator.
      *
      * @param ignored ignored trigger object
      */
-    void clear(@NonNull final ClearTrigger ignored);
+    void clear(@NonNull final NoInput ignored);
 }

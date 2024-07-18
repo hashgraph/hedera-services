@@ -18,6 +18,7 @@ package com.hedera.node.app.service.contract.impl.test.exec.scope;
 
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_NEW_ACCOUNT_ID;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_SECP256K1_KEY;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,11 +43,12 @@ import com.hedera.node.app.service.contract.impl.test.TestHelpers;
 import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
+import com.hedera.node.app.spi.key.KeyVerifier;
+import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,13 +78,16 @@ class HandleSystemContractOperationsTest {
     private SignatureVerification failed;
 
     @Mock
-    private MessageFrame messageFrame;
+    private KeyVerifier keyVerifier;
+
+    @Mock
+    private RecordBuilders recordBuilders;
 
     private HandleSystemContractOperations subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HandleSystemContractOperations(context);
+        subject = new HandleSystemContractOperations(context, A_SECP256K1_KEY);
     }
 
     @Test
@@ -95,9 +100,10 @@ class HandleSystemContractOperationsTest {
                 .willReturn(Decision.DELEGATE_TO_CRYPTOGRAPHIC_VERIFICATION);
         given(strategy.decideForPrimitive(TestHelpers.A_SECP256K1_KEY)).willReturn(Decision.INVALID);
         given(passed.passed()).willReturn(true);
-        given(context.verificationFor(AN_ED25519_KEY)).willReturn(passed);
-        given(context.verificationFor(TestHelpers.B_SECP256K1_KEY)).willReturn(failed);
-        doCallRealMethod().when(strategy).asSignatureTestIn(context);
+        given(context.keyVerifier()).willReturn(keyVerifier);
+        given(keyVerifier.verificationFor(AN_ED25519_KEY)).willReturn(passed);
+        given(keyVerifier.verificationFor(TestHelpers.B_SECP256K1_KEY)).willReturn(failed);
+        doCallRealMethod().when(strategy).asSignatureTestIn(context, A_SECP256K1_KEY);
 
         subject.dispatch(TransactionBody.DEFAULT, strategy, A_NEW_ACCOUNT_ID, CryptoTransferRecordBuilder.class);
 
@@ -125,7 +131,9 @@ class HandleSystemContractOperationsTest {
                 AccountID.newBuilder().build());
 
         // given
-        given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.addChildRecordBuilder(ContractCallRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
         given(recordBuilder.contractID(any())).willReturn(recordBuilder);
@@ -155,7 +163,9 @@ class HandleSystemContractOperationsTest {
                 AccountID.newBuilder().build());
 
         // given
-        given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.addChildRecordBuilder(ContractCallRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.transaction(transaction)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
 
@@ -177,7 +187,9 @@ class HandleSystemContractOperationsTest {
                 AccountID.newBuilder().build());
 
         // given
-        given(context.addChildRecordBuilder(ContractCallRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.recordBuilders()).willReturn(recordBuilders);
+        given(recordBuilders.addChildRecordBuilder(ContractCallRecordBuilder.class))
+                .willReturn(recordBuilder);
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.FAIL_INVALID)).willReturn(recordBuilder);
         given(recordBuilder.contractID(any())).willReturn(recordBuilder);
@@ -194,7 +206,7 @@ class HandleSystemContractOperationsTest {
 
     @Test
     void syntheticTransactionForHtsCallTest() {
-        assertNotNull(subject.syntheticTransactionForHtsCall(Bytes.EMPTY, ContractID.DEFAULT, true));
+        assertNotNull(subject.syntheticTransactionForNativeCall(Bytes.EMPTY, ContractID.DEFAULT, true));
     }
 
     @Test

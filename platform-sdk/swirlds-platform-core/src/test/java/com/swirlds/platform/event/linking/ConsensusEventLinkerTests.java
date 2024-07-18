@@ -28,9 +28,9 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -75,11 +75,11 @@ class ConsensusEventLinkerTests {
         final List<EventImpl> linkedEvents = new LinkedList<>();
         final InOrderLinker linker = new ConsensusLinker(platformContext, new NodeId(0));
 
-        NonAncientEventWindow eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        EventWindow eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
 
         for (int i = 0; i < 10_000; i++) {
 
-            final GossipEvent event = generator.generateEvent().getBaseEvent();
+            final PlatformEvent event = generator.generateEvent().getBaseEvent();
 
             // Verify correct behavior when added to the linker.
 
@@ -94,17 +94,17 @@ class ConsensusEventLinkerTests {
                 linkedEvents.add(linkedEvent);
                 assertSame(event, linkedEvent.getBaseEvent());
 
-                final EventDescriptor selfParent = event.getHashedData().getSelfParent();
+                final EventDescriptor selfParent = event.getSelfParent();
                 if (selfParent == null || eventWindow.isAncient(selfParent)) {
                     assertNull(linkedEvent.getSelfParent());
                 } else {
                     assertNotNull(linkedEvent.getSelfParent());
                     assertEquals(
-                            event.getHashedData().getSelfParent(),
+                            event.getSelfParent(),
                             linkedEvent.getSelfParent().getBaseEvent().getDescriptor());
                 }
 
-                final List<EventDescriptor> otherParents = event.getHashedData().getOtherParents();
+                final List<EventDescriptor> otherParents = event.getOtherParents();
                 if (otherParents.isEmpty()) {
                     assertNull(linkedEvent.getOtherParent());
                 } else {
@@ -127,12 +127,12 @@ class ConsensusEventLinkerTests {
                     continue;
                 }
 
-                eventWindow = new NonAncientEventWindow(
+                eventWindow = new EventWindow(
                         ROUND_FIRST /* ignored in this test */,
                         event.getAncientIndicator(ancientMode),
                         ancientMode.getGenesisIndicator() /* ignored in this test */,
                         ancientMode);
-                linker.setNonAncientEventWindow(eventWindow);
+                linker.setEventWindow(eventWindow);
 
                 // All ancient events should have their parents nulled out
                 final Iterator<EventImpl> iterator = linkedEvents.iterator();

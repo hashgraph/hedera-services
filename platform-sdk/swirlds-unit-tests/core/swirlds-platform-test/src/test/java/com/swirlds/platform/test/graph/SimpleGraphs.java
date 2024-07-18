@@ -19,8 +19,7 @@ package com.swirlds.platform.test.graph;
 import static com.swirlds.platform.test.fixtures.event.EventImplTestUtils.createEventImpl;
 
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.time.Instant;
@@ -39,30 +38,30 @@ public class SimpleGraphs {
      * 0  1
      * </pre>
      */
-    public static List<GossipEvent> graph5e2n(final Random random) {
-        final GossipEvent e0 =
+    public static List<PlatformEvent> graph5e2n(final Random random) {
+        final PlatformEvent e0 =
                 new TestingEventBuilder(random).setCreatorId(new NodeId(1)).build();
-        final GossipEvent e1 =
+        final PlatformEvent e1 =
                 new TestingEventBuilder(random).setCreatorId(new NodeId(2)).build();
-        final GossipEvent e2 = new TestingEventBuilder(random)
+        final PlatformEvent e2 = new TestingEventBuilder(random)
                 .setCreatorId(new NodeId(1))
                 .setSelfParent(e0)
                 .setOtherParent(e1)
                 .build();
-        final GossipEvent e3 = new TestingEventBuilder(random)
+        final PlatformEvent e3 = new TestingEventBuilder(random)
                 .setCreatorId(new NodeId(1))
                 .setSelfParent(e2)
                 .build();
-        final GossipEvent e4 = new TestingEventBuilder(random)
+        final PlatformEvent e4 = new TestingEventBuilder(random)
                 .setCreatorId(new NodeId(2))
                 .setSelfParent(e1)
                 .setOtherParent(e2)
                 .build();
-        System.out.println("e0 " + EventStrings.toShortString(e0));
-        System.out.println("e1 " + EventStrings.toShortString(e1));
-        System.out.println("e2 " + EventStrings.toShortString(e2));
-        System.out.println("e3 " + EventStrings.toShortString(e3));
-        System.out.println("e4 " + EventStrings.toShortString(e4));
+        System.out.println("e0 " + e0.getDescriptor());
+        System.out.println("e1 " + e1.getDescriptor());
+        System.out.println("e2 " + e2.getDescriptor());
+        System.out.println("e3 " + e3.getDescriptor());
+        System.out.println("e4 " + e4.getDescriptor());
         return List.of(e0, e1, e2, e3, e4);
     }
 

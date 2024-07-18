@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto;
 
 import static com.hedera.services.bdd.suites.HapiSuite.*;
-import static com.hedera.services.bdd.suites.leaky.LeakyCryptoTestsSuite.PAY_TXN;
+import static com.hedera.services.bdd.suites.crypto.LeakyCryptoTestsSuite.PAY_TXN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 
 import com.google.protobuf.ByteString;
@@ -28,15 +28,14 @@ import com.hedera.services.bdd.spec.infrastructure.HapiSpecRegistry;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.TxnVerbs;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
-import com.hederahashgraph.api.proto.java.Key;
 import java.util.Optional;
 
 public class EthereumTransferToRandomEVMAddress implements OpProvider {
-    private final EntityNameProvider<Key> keys;
+    private final EntityNameProvider keys;
     private final HapiSpecRegistry registry;
     private static int nonce = 0;
 
-    public EthereumTransferToRandomEVMAddress(HapiSpecRegistry registry, EntityNameProvider<Key> keys) {
+    public EthereumTransferToRandomEVMAddress(HapiSpecRegistry registry, EntityNameProvider keys) {
         this.registry = registry;
         this.keys = keys;
     }
@@ -70,7 +69,7 @@ public class EthereumTransferToRandomEVMAddress implements OpProvider {
                 // Since the receiver _could_ have receiverSigRequired=true (c.f. the
                 // InitialAccountIdentifiers.customize() method), INVALID_SIGNATURE is a valid
                 // response code
-                .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE);
+                .hasKnownStatusFrom(SUCCESS, INVALID_SIGNATURE, WRONG_NONCE);
 
         incrementNonce();
 

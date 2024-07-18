@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.processors;
 import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
 import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.acquiredSenderAuthorizationViaDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
@@ -31,7 +31,6 @@ import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.tr
 import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.MISSING_RECEIVER_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.hevm.HevmPropagatedCallFailure.RESULT_CANNOT_BE_EXTERNALIZED;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.PRECOMPILE_ERROR;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 
 import com.hedera.hapi.streams.ContractActionType;
@@ -39,7 +38,7 @@ import com.hedera.node.app.service.contract.impl.exec.AddressChecks;
 import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.HederaSystemContract;
 import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer;
-import com.hedera.node.app.service.contract.impl.state.ProxyEvmAccount;
+import com.hedera.node.app.service.contract.impl.state.ProxyEvmContract;
 import com.hedera.node.app.service.contract.impl.state.ProxyWorldUpdater;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -124,12 +123,25 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             return;
         }
 
+        final var evmPrecompile = precompiles.get(codeAddress);
         // Check to see if the code address is a system account and possibly halt
         if (addressChecks.isSystemAccount(codeAddress)) {
-            doHaltIfInvalidSystemCall(codeAddress, frame, tracer);
+            doHaltIfInvalidSystemCall(frame, tracer);
             if (alreadyHalted(frame)) {
                 return;
             }
+
+            if (evmPrecompile == null) {
+                handleNonExtantSystemAccount(frame, tracer);
+
+                return;
+            }
+        }
+
+        // Handle evm precompiles
+        if (evmPrecompile != null) {
+            doExecutePrecompile(evmPrecompile, frame, tracer);
+            return;
         }
 
         // Transfer value to the contract if required and possibly halt
@@ -140,18 +152,11 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             }
         }
 
-        // Handle evm precompiles
-        final var evmPrecompile = precompiles.get(codeAddress);
-        if (evmPrecompile != null) {
-            doExecutePrecompile(evmPrecompile, frame, tracer);
-            return;
-        }
-
         // For mono-service fidelity, we need to consider called contracts
         // as a special case eligible for staking rewards
         if (isTopLevelTransaction(frame)) {
             final var maybeCalledContract = proxyUpdaterFor(frame).get(codeAddress);
-            if (maybeCalledContract instanceof ProxyEvmAccount a && a.isContract()) {
+            if (maybeCalledContract instanceof ProxyEvmContract a) {
                 recordBuilderFor(frame).trackExplicitRewardSituation(a.hederaId());
             }
         }
@@ -161,6 +166,13 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
 
     public boolean isImplicitCreationEnabled(@NonNull Configuration config) {
         return featureFlags.isImplicitCreationEnabled(config);
+    }
+
+    private void handleNonExtantSystemAccount(
+            @NonNull final MessageFrame frame, @NonNull final OperationTracer tracer) {
+        final PrecompileContractResult result = PrecompileContractResult.success(Bytes.EMPTY);
+        frame.clearGasRemaining();
+        finishPrecompileExecution(frame, result, PRECOMPILE, (ActionSidecarContentTracer) tracer);
     }
 
     private void doExecutePrecompile(
@@ -251,13 +263,9 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     }
 
     private void doHaltIfInvalidSystemCall(
-            @NonNull final Address codeAddress,
-            @NonNull final MessageFrame frame,
-            @NonNull final OperationTracer operationTracer) {
-        if (precompiles.get(codeAddress) == null) {
-            doHalt(frame, PRECOMPILE_ERROR, operationTracer);
-        } else if (transfersValue(frame)) {
-            doHalt(frame, INVALID_FEE_SUBMITTED, operationTracer);
+            @NonNull final MessageFrame frame, @NonNull final OperationTracer operationTracer) {
+        if (transfersValue(frame)) {
+            doHalt(frame, INVALID_CONTRACT_ID, operationTracer);
         }
     }
 
@@ -273,10 +281,6 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
             @NonNull final ExceptionalHaltReason reason,
             @NonNull final OperationTracer tracer) {
         doHalt(frame, reason, tracer, ForLazyCreation.NO);
-    }
-
-    private void doHalt(@NonNull final MessageFrame frame, @NonNull final ExceptionalHaltReason reason) {
-        doHalt(frame, reason, null, ForLazyCreation.NO);
     }
 
     private void doHalt(

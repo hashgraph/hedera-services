@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.contract.impl.test.state;
 
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.has.hbarallowance.HbarAllowanceTranslator.HBAR_ALLOWANCE_PROXY;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.pbjToTuweniBytes;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
@@ -88,7 +89,7 @@ class TokenEvmAccountTest {
     void returnsEvmCode() {
         final var code = pbjToTuweniBytes(SOME_PRETEND_CODE);
         given(state.getTokenRedirectCode(TOKEN_ADDRESS)).willReturn(code);
-        assertEquals(CodeFactory.createCode(code, 0, false), subject.getEvmCode());
+        assertEquals(CodeFactory.createCode(code, 0, false), subject.getEvmCode(org.apache.tuweni.bytes.Bytes.EMPTY));
     }
 
     @Test
@@ -127,5 +128,19 @@ class TokenEvmAccountTest {
         assertThrows(UnsupportedOperationException.class, () -> subject.setStorageValue(UInt256.ONE, UInt256.ONE));
         assertThrows(UnsupportedOperationException.class, subject::clearStorage);
         assertThrows(UnsupportedOperationException.class, subject::getUpdatedStorage);
+    }
+
+    @Test
+    void neverRegularAccount() {
+        assertFalse(subject.isRegularAccount());
+    }
+
+    @Test
+    void returnEvmCodeWhenCalledWithExpectedFunctionSelectorBytes() {
+        final var code = pbjToTuweniBytes(SOME_PRETEND_CODE);
+        given(state.getTokenRedirectCode(TOKEN_ADDRESS)).willReturn(code);
+        assertEquals(
+                CodeFactory.createCode(code, 0, false),
+                subject.getEvmCode(org.apache.tuweni.bytes.Bytes.wrap(HBAR_ALLOWANCE_PROXY.selector())));
     }
 }

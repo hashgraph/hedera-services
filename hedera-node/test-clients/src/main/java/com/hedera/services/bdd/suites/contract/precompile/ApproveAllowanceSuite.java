@@ -45,11 +45,18 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.HIGHLY_NON_DETERMINISTIC_FEES;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.asToken;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
@@ -63,10 +70,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
@@ -76,13 +79,14 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(SMART_CONTRACT)
-public class ApproveAllowanceSuite extends HapiSuite {
+public class ApproveAllowanceSuite {
 
     public static final String CONTRACTS_PERMITTED_DELEGATE_CALLERS = "contracts.permittedDelegateCallers";
     private static final Logger log = LogManager.getLogger(ApproveAllowanceSuite.class);
@@ -103,33 +107,8 @@ public class ApproveAllowanceSuite extends HapiSuite {
     private static final String APPROVE_FOR_ALL_SIGNATURE = "ApprovalForAll(address,address,bool)";
     public static final String CALL_TO = "callTo";
 
-    public static void main(String... args) {
-        new ApproveAllowanceSuite().runSuiteAsync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                hapiNftGetApproved(),
-                hapiNftIsApprovedForAll(),
-                hapiNftSetApprovalForAll(),
-                htsTokenAllowance(),
-                htsTokenApprove(),
-                htsTokenApproveToInnerContract(),
-                nftAutoCreationIncludeAllowanceCheck(),
-                testIndirectApprovalWithDirectPrecompileCallee(),
-                testIndirectApprovalWithDelegateErc20Callee(),
-                testIndirectApprovalWithDelegatePrecompileCallee(),
-                testIndirectApprovalWithDirectErc20Callee());
-    }
-
     @HapiTest
-    final HapiSpec nftAutoCreationIncludeAllowanceCheck() {
+    final Stream<DynamicTest> nftAutoCreationIncludeAllowanceCheck() {
         final var ownerAccount = "owningAlias";
         final var receivingAlias = "receivingAlias";
         return defaultHapiSpec("NftAutoCreationIncludeAllowanceCheck", NONDETERMINISTIC_TRANSACTION_FEES)
@@ -177,13 +156,8 @@ public class ApproveAllowanceSuite extends HapiSuite {
     public static final String DELEGATE_ERC_CALLEE = "ERC20DelegateCallee";
     private static final String DIRECT_ERC_CALLEE = "NonDelegateCallee";
 
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
     @HapiTest
-    final HapiSpec htsTokenApproveToInnerContract() {
+    final Stream<DynamicTest> htsTokenApproveToInnerContract() {
         final var approveTxn = "NestedChildren";
         final var nestedContract = DIRECT_ERC_CALLEE;
         final var theSpender = SPENDER;
@@ -207,9 +181,11 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT).refusingEthConversion(),
                         uploadInitCode(nestedContract),
-                        contractCreate(nestedContract).adminKey(MULTI_KEY),
+                        contractCreate(nestedContract).adminKey(MULTI_KEY).refusingEthConversion(),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, FUNGIBLE_TOKEN),
                         tokenAssociate(nestedContract, FUNGIBLE_TOKEN))
@@ -254,10 +230,47 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec htsTokenAllowance() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        newKeyNamed("supplyKey"),
+                        cryptoCreate(TOKEN_TREASURY),
+                        cryptoCreate(OWNER).maxAutomaticTokenAssociations(2),
+                        cryptoCreate("delegatingOwner").maxAutomaticTokenAssociations(1),
+                        cryptoCreate(SPENDER))
+                .when(
+                        tokenCreate("fungibleToken").initialSupply(123).treasury(TOKEN_TREASURY),
+                        tokenCreate("nonFungibleToken")
+                                .treasury(TOKEN_TREASURY)
+                                .tokenType(NON_FUNGIBLE_UNIQUE)
+                                .initialSupply(0L)
+                                .supplyKey("supplyKey"),
+                        mintToken(
+                                "nonFungibleToken",
+                                List.of(
+                                        ByteString.copyFromUtf8("A"),
+                                        ByteString.copyFromUtf8("B"),
+                                        ByteString.copyFromUtf8("C"))),
+                        cryptoTransfer(
+                                movingUnique("nonFungibleToken", 1L, 2L).between(TOKEN_TREASURY, OWNER),
+                                moving(10, "fungibleToken").between(TOKEN_TREASURY, OWNER)),
+                        cryptoTransfer(movingUnique("nonFungibleToken", 3L).between(TOKEN_TREASURY, "delegatingOwner")))
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoApproveAllowance()
+                                .addNftAllowance("delegatingOwner", "nonFungibleToken", OWNER, true, List.of())
+                                .signedBy(DEFAULT_PAYER, "delegatingOwner")),
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> cryptoApproveAllowance()
+                                .addNftAllowance(OWNER, "nonFungibleToken", SPENDER, false, List.of(1L))
+                                .addTokenAllowance(OWNER, "fungibleToken", SPENDER, 1L)
+                                .addDelegatedNftAllowance(
+                                        "delegatingOwner", "nonFungibleToken", SPENDER, OWNER, false, List.of(3L))
+                                .signedBy(DEFAULT_PAYER, OWNER)));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> htsTokenAllowance() {
         final var theSpender = SPENDER;
         final var allowanceTxn = ALLOWANCE_TX;
-        final var notAnAddress = new byte[20];
 
         return defaultHapiSpec("htsTokenAllowance", NONDETERMINISTIC_FUNCTION_PARAMETERS, HIGHLY_NON_DETERMINISTIC_FEES)
                 .given(
@@ -338,7 +351,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec htsTokenApprove() {
+    final Stream<DynamicTest> htsTokenApprove() {
         final var approveTxn = "approveTxn";
         final var theSpender = SPENDER;
 
@@ -361,7 +374,9 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .supplyKey(MULTI_KEY),
                         uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, FUNGIBLE_TOKEN),
                         tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, FUNGIBLE_TOKEN))
                 .when(withOpContext((spec, opLog) -> allRunFor(
@@ -403,7 +418,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiNftIsApprovedForAll() {
+    final Stream<DynamicTest> hapiNftIsApprovedForAll() {
         final var notApprovedTxn = "notApprovedTxn";
         final var approvedForAllTxn = "approvedForAllTxn";
         final var notAnAddress = new byte[20];
@@ -521,7 +536,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiNftGetApproved() {
+    final Stream<DynamicTest> hapiNftGetApproved() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
@@ -610,7 +625,7 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiNftSetApprovalForAll() {
+    final Stream<DynamicTest> hapiNftSetApprovalForAll() {
         final var theSpender = SPENDER;
         final var theSpender2 = "spender2";
         final var allowanceTxn = ALLOWANCE_TX;
@@ -633,7 +648,9 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .adminKey(MULTI_KEY)
                                 .treasury(TOKEN_TREASURY),
                         uploadInitCode(HTS_APPROVE_ALLOWANCE_CONTRACT),
-                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(HTS_APPROVE_ALLOWANCE_CONTRACT).refusingEthConversion(),
                         tokenAssociate(OWNER, NON_FUNGIBLE_TOKEN),
                         tokenAssociate(HTS_APPROVE_ALLOWANCE_CONTRACT, NON_FUNGIBLE_TOKEN),
                         mintToken(NON_FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("a")))
@@ -681,27 +698,26 @@ public class ApproveAllowanceSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec testIndirectApprovalWithDelegatePrecompileCallee() {
+    final Stream<DynamicTest> testIndirectApprovalWithDelegatePrecompileCallee() {
         return testIndirectApprovalWith("DelegatePrecompileCallee", DELEGATE_PRECOMPILE_CALLEE, false);
     }
 
     @HapiTest
-    final HapiSpec testIndirectApprovalWithDirectPrecompileCallee() {
+    final Stream<DynamicTest> testIndirectApprovalWithDirectPrecompileCallee() {
         return testIndirectApprovalWith("DirectPrecompileCallee", DIRECT_PRECOMPILE_CALLEE, true);
     }
 
     @HapiTest
-    final HapiSpec testIndirectApprovalWithDelegateErc20Callee() {
+    final Stream<DynamicTest> testIndirectApprovalWithDelegateErc20Callee() {
         return testIndirectApprovalWith("DelegateErc20Callee", DELEGATE_ERC_CALLEE, false);
     }
 
     @HapiTest
-    final HapiSpec testIndirectApprovalWithDirectErc20Callee() {
+    final Stream<DynamicTest> testIndirectApprovalWithDirectErc20Callee() {
         return testIndirectApprovalWith("DirectErc20Callee", DIRECT_ERC_CALLEE, true);
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec testIndirectApprovalWith(
+    final Stream<DynamicTest> testIndirectApprovalWith(
             @NonNull final String testName, @NonNull final String callee, final boolean expectGrantedApproval) {
 
         final AtomicReference<TokenID> tokenID = new AtomicReference<>();
@@ -723,9 +739,12 @@ public class ApproveAllowanceSuite extends HapiSuite {
                                 .treasury(TOKEN_TREASURY)
                                 .exposingCreatedIdTo(id -> tokenID.set(asToken(id))),
                         uploadInitCode(PRETEND_PAIR),
-                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER),
+                        // Refusing ethereum create conversion, because we get INVALID_SIGNATURE upon tokenAssociate,
+                        // since we have CONTRACT_ID key
+                        contractCreate(PRETEND_PAIR).adminKey(DEFAULT_PAYER).refusingEthConversion(),
                         uploadInitCode(callee),
                         contractCreate(callee)
+                                .refusingEthConversion()
                                 .adminKey(DEFAULT_PAYER)
                                 .exposingNumTo(num -> calleeMirrorAddr.set(asHexedSolidityAddress(0, 0, num))),
                         tokenAssociate(PRETEND_PAIR, FUNGIBLE_TOKEN),

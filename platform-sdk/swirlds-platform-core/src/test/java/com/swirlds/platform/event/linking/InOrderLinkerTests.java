@@ -17,37 +17,29 @@
 package com.swirlds.platform.event.linking;
 
 import static com.swirlds.common.test.fixtures.RandomUtils.getRandomPrintSeed;
-import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
-import static com.swirlds.platform.system.events.EventConstants.GENERATION_UNDEFINED;
+import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.swirlds.base.test.fixtures.time.FakeTime;
-import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig_;
 import com.swirlds.platform.gossip.IntakeEventCounter;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
-import com.swirlds.platform.system.events.EventConstants;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,73 +58,13 @@ class InOrderLinkerTests {
 
     private InOrderLinker inOrderLinker;
 
-    private GossipEvent genesisSelfParent;
-    private GossipEvent genesisOtherParent;
+    private PlatformEvent genesisSelfParent;
+    private PlatformEvent genesisOtherParent;
 
     private FakeTime time;
 
     private NodeId selfId = new NodeId(0);
     private NodeId otherId = new NodeId(1);
-
-    /**
-     * Generates a mock event with the given parameters
-     *
-     * @param selfId          the id of the event creator
-     * @param selfHash        the hash of the event
-     * @param selfGeneration  the generation of the event
-     * @param selfBirthRound  the birthRound of the event
-     * @param selfParent      the self parent event descriptor
-     * @param otherParent     the other parent event descriptor
-     * @param selfTimeCreated the time created of the event
-     * @return the mock event
-     */
-    private static GossipEvent generateMockEvent(
-            @NonNull final NodeId selfId,
-            @NonNull final Hash selfHash,
-            final long selfGeneration,
-            final long selfBirthRound,
-            @Nullable final EventDescriptor selfParent,
-            @Nullable final EventDescriptor otherParent,
-            @NonNull final Instant selfTimeCreated) {
-
-        final EventDescriptor selfDescriptor = new EventDescriptor(selfHash, selfId, selfGeneration, selfBirthRound);
-
-        final BaseEventHashedData hashedData = mock(BaseEventHashedData.class);
-        when(hashedData.getHash()).thenReturn(selfHash);
-        when(hashedData.getGeneration()).thenReturn(selfGeneration);
-        when(hashedData.getBirthRound()).thenReturn(selfBirthRound);
-        if (selfParent != null) {
-            when(hashedData.getSelfParentHash()).thenReturn(selfParent.getHash());
-            when(hashedData.getSelfParentGen()).thenReturn(selfParent.getGeneration());
-        } else {
-            when(hashedData.getSelfParentHash()).thenReturn(null);
-            when(hashedData.getSelfParentGen()).thenReturn(GENERATION_UNDEFINED);
-        }
-        if (otherParent != null) {
-            when(hashedData.getOtherParentHash()).thenReturn(otherParent.getHash());
-            when(hashedData.getOtherParentGen()).thenReturn(otherParent.getGeneration());
-        } else {
-            when(hashedData.getOtherParentHash()).thenReturn(null);
-            when(hashedData.getOtherParentGen()).thenReturn(GENERATION_UNDEFINED);
-        }
-        when(hashedData.getTimeCreated()).thenReturn(selfTimeCreated);
-        when(hashedData.getSelfParent()).thenReturn(selfParent);
-        when(hashedData.getOtherParents()).thenReturn(Collections.singletonList(otherParent));
-
-        final BaseEventUnhashedData unhashedData = mock(BaseEventUnhashedData.class);
-
-        final GossipEvent event = mock(GossipEvent.class);
-        when(event.getGeneration()).thenReturn(selfGeneration);
-        when(event.getDescriptor()).thenReturn(selfDescriptor);
-        when(event.getHashedData()).thenReturn(hashedData);
-        when(event.getUnhashedData()).thenReturn(unhashedData);
-        when(event.getSenderId()).thenReturn(selfId);
-
-        when(event.getAncientIndicator(any()))
-                .thenAnswer(args -> selfDescriptor.getAncientIndicator((AncientMode) args.getArguments()[0]));
-
-        return event;
-    }
 
     /**
      * Set up the in order linker for testing
@@ -169,28 +101,54 @@ class InOrderLinkerTests {
                 intakeEventCounter);
 
         time.tick(Duration.ofSeconds(1));
-        genesisSelfParent = generateMockEvent(
-                selfId,
-                randomHash(random),
-                EventConstants.FIRST_GENERATION,
-                ConsensusConstants.ROUND_FIRST,
-                null,
-                null,
-                time.now());
+        genesisSelfParent = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setBirthRound(ROUND_FIRST)
+                .setTimeCreated(time.now())
+                .build();
+
         inOrderLinker.linkEvent(genesisSelfParent);
 
         time.tick(Duration.ofSeconds(1));
-        genesisOtherParent = generateMockEvent(
-                otherId,
-                randomHash(random),
-                EventConstants.FIRST_GENERATION,
-                ConsensusConstants.ROUND_FIRST,
-                null,
-                null,
-                time.now());
+        genesisOtherParent = new TestingEventBuilder(random)
+                .setCreatorId(otherId)
+                .setBirthRound(ROUND_FIRST)
+                .setTimeCreated(time.now())
+                .build();
+
         inOrderLinker.linkEvent(genesisOtherParent);
 
         time.tick(Duration.ofSeconds(1));
+    }
+
+    /**
+     * Choose an event window that will cause all given events to be considered ancient.
+     *
+     * @param ancientMode   the ancient mode to use
+     * @param ancientEvents the events that will be considered ancient
+     * @return the event window that will cause the given events to be considered ancient
+     */
+    private static EventWindow chooseEventWindow(
+            @NonNull final AncientMode ancientMode, final PlatformEvent... ancientEvents) {
+
+        long ancientValue = 0;
+        for (final PlatformEvent ancientEvent : ancientEvents) {
+            ancientValue = switch (ancientMode) {
+                case BIRTH_ROUND_THRESHOLD -> Math.max(ancientValue, ancientEvent.getBirthRound());
+                case GENERATION_THRESHOLD -> Math.max(ancientValue, ancientEvent.getGeneration());};
+        }
+
+        final EventWindow eventWindow = new EventWindow(
+                ROUND_FIRST /* ignored in this context */,
+                ancientValue + 1, /* one more than the ancient value, so that the events are ancient */
+                ROUND_FIRST /* ignored in this context */,
+                ancientMode);
+
+        for (final PlatformEvent ancientEvent : ancientEvents) {
+            assertTrue(eventWindow.isAncient(ancientEvent));
+        }
+
+        return eventWindow;
     }
 
     @ParameterizedTest
@@ -202,23 +160,16 @@ class InOrderLinkerTests {
         inOrderLinkerSetup(ancientMode);
 
         // In the following test events are created with increasing generation and birth round numbers.
-        // The linking should fail to occur based on the advancing non-ancient event window.
+        // The linking should fail to occur based on the advancing event window.
         // The values used for birthRound and generation are just for this test and do not reflect real world values.
-        // Each event lives for 2 rounds or generations before becoming ancient.
 
-        long latestConsensusRound = ConsensusConstants.ROUND_FIRST;
-        long minRoundNonAncient = ConsensusConstants.ROUND_FIRST;
-        long minGenNonAncient = EventConstants.FIRST_GENERATION;
-
-        final Hash child1Hash = randomHash(random);
-        final GossipEvent child1 = generateMockEvent(
-                selfId,
-                child1Hash,
-                minGenNonAncient + 1,
-                minRoundNonAncient + 1,
-                genesisSelfParent.getDescriptor(),
-                genesisOtherParent.getDescriptor(),
-                time.now());
+        final PlatformEvent child1 = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(genesisSelfParent)
+                .setOtherParent(genesisOtherParent)
+                .setBirthRound(genesisSelfParent.getBirthRound() + 1)
+                .setTimeCreated(time.now())
+                .build();
 
         final EventImpl linkedEvent1 = inOrderLinker.linkEvent(child1);
         assertNotEquals(null, linkedEvent1);
@@ -227,32 +178,19 @@ class InOrderLinkerTests {
         assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
-        latestConsensusRound += 1;
-        minRoundNonAncient += 1;
-        minGenNonAncient += 1;
-        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                    latestConsensusRound,
-                    minRoundNonAncient,
-                    ConsensusConstants.ROUND_FIRST /* ignored in this context */,
-                    ancientMode));
-        } else {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                    latestConsensusRound,
-                    minGenNonAncient,
-                    ConsensusConstants.ROUND_FIRST /* ignored in this context */,
-                    ancientMode));
-        }
 
-        final Hash child2Hash = randomHash(random);
-        final GossipEvent child2 = generateMockEvent(
-                selfId,
-                child2Hash,
-                minGenNonAncient + 1,
-                minRoundNonAncient + 1,
-                child1.getDescriptor(),
-                genesisOtherParent.getDescriptor(),
-                time.now());
+        // cause genesisOtherParent to become ancient
+        EventWindow eventWindow = chooseEventWindow(ancientMode, genesisOtherParent);
+        assertFalse(eventWindow.isAncient(child1));
+        inOrderLinker.setEventWindow(eventWindow);
+
+        final PlatformEvent child2 = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(child1)
+                .setOtherParent(genesisOtherParent)
+                .setBirthRound(child1.getBirthRound() + 1)
+                .setTimeCreated(time.now())
+                .build();
 
         final EventImpl linkedEvent2 = inOrderLinker.linkEvent(child2);
         assertNotEquals(null, linkedEvent2);
@@ -261,32 +199,19 @@ class InOrderLinkerTests {
         assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
-        latestConsensusRound += 1;
-        minRoundNonAncient += 1;
-        minGenNonAncient += 1;
-        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                    latestConsensusRound,
-                    minRoundNonAncient,
-                    ConsensusConstants.ROUND_FIRST /* ignored in this context */,
-                    ancientMode));
-        } else {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                    latestConsensusRound,
-                    minGenNonAncient,
-                    ConsensusConstants.ROUND_FIRST /* ignored in this context */,
-                    ancientMode));
-        }
 
-        final Hash child3Hash = randomHash(random);
-        final GossipEvent child3 = generateMockEvent(
-                selfId,
-                child3Hash,
-                minGenNonAncient + 1,
-                minRoundNonAncient + 1,
-                child1.getDescriptor(),
-                child2.getDescriptor(),
-                time.now());
+        // cause child1 to become ancient
+        eventWindow = chooseEventWindow(ancientMode, child1);
+        assertFalse(eventWindow.isAncient(child2));
+        inOrderLinker.setEventWindow(eventWindow);
+
+        final PlatformEvent child3 = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(child1)
+                .setOtherParent(child2)
+                .setBirthRound(child2.getBirthRound() + 1)
+                .setTimeCreated(time.now())
+                .build();
 
         final EventImpl linkedEvent3 = inOrderLinker.linkEvent(child3);
         assertNotEquals(null, linkedEvent3);
@@ -295,33 +220,17 @@ class InOrderLinkerTests {
         assertEquals(0, exitedIntakePipelineCount.get());
 
         time.tick(Duration.ofSeconds(1));
-        latestConsensusRound += 1;
         // make both parents ancient.
-        minRoundNonAncient += 2;
-        minGenNonAncient += 2;
-        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                    latestConsensusRound,
-                    minRoundNonAncient,
-                    ConsensusConstants.ROUND_FIRST /* ignored in this context */,
-                    ancientMode));
-        } else {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                    latestConsensusRound,
-                    minGenNonAncient,
-                    ConsensusConstants.ROUND_FIRST /* ignored in this context */,
-                    ancientMode));
-        }
+        eventWindow = chooseEventWindow(ancientMode, child2, child3);
+        inOrderLinker.setEventWindow(eventWindow);
 
-        final Hash child4Hash = randomHash(random);
-        final GossipEvent child4 = generateMockEvent(
-                selfId,
-                child4Hash,
-                minGenNonAncient + 1,
-                minRoundNonAncient + 1,
-                child2.getDescriptor(),
-                child3.getDescriptor(),
-                time.now());
+        final PlatformEvent child4 = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(child2)
+                .setOtherParent(child3)
+                .setBirthRound(child3.getBirthRound() + 1)
+                .setTimeCreated(time.now())
+                .build();
 
         final EventImpl linkedEvent4 = inOrderLinker.linkEvent(child4);
         assertNotEquals(null, linkedEvent4);
@@ -337,8 +246,12 @@ class InOrderLinkerTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final GossipEvent child = generateMockEvent(
-                selfId, randomHash(random), 4, 1, null, genesisOtherParent.getDescriptor(), time.now());
+
+        final PlatformEvent child = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setOtherParent(genesisOtherParent)
+                .setTimeCreated(time.now())
+                .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
@@ -355,8 +268,12 @@ class InOrderLinkerTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final GossipEvent child = generateMockEvent(
-                selfId, randomHash(random), 4, 1, genesisSelfParent.getDescriptor(), null, time.now());
+
+        final PlatformEvent child = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(genesisSelfParent)
+                .setTimeCreated(time.now())
+                .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
@@ -373,44 +290,32 @@ class InOrderLinkerTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final long minRoundNonAncient = 3;
-        final long minGenNonAncient = 3;
-        if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                    ConsensusConstants.ROUND_FIRST /* not consequential for this test */,
-                    minRoundNonAncient,
-                    ConsensusConstants.ROUND_FIRST /* ignored in this context */,
-                    ancientMode));
-        } else {
-            inOrderLinker.setNonAncientEventWindow(new NonAncientEventWindow(
-                    ConsensusConstants.ROUND_FIRST /* not consequential for this test */,
-                    minGenNonAncient,
-                    ConsensusConstants.ROUND_FIRST /* ignored in this context */,
-                    ancientMode));
-        }
 
-        final GossipEvent child1 = generateMockEvent(
-                selfId,
-                randomHash(random),
-                1,
-                1,
-                genesisSelfParent.getDescriptor(),
-                genesisOtherParent.getDescriptor(),
-                time.now());
+        inOrderLinker.setEventWindow(new EventWindow(
+                ROUND_FIRST /* not consequential for this test */,
+                3,
+                ROUND_FIRST /* ignored in this context */,
+                ancientMode));
+
+        final PlatformEvent child1 = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(genesisSelfParent)
+                .setOtherParent(genesisOtherParent)
+                .setBirthRound(1)
+                .setTimeCreated(time.now())
+                .build();
 
         time.tick(Duration.ofSeconds(1));
 
         assertNull(inOrderLinker.linkEvent(child1));
 
-        // barely ancient
-        final GossipEvent child2 = generateMockEvent(
-                selfId,
-                randomHash(random),
-                2,
-                2,
-                genesisSelfParent.getDescriptor(),
-                genesisOtherParent.getDescriptor(),
-                time.now());
+        final PlatformEvent child2 = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(child1)
+                .setOtherParent(genesisOtherParent)
+                .setBirthRound(2)
+                .setTimeCreated(time.now())
+                .build();
 
         assertNull(inOrderLinker.linkEvent(child2));
         assertEquals(2, exitedIntakePipelineCount.get());
@@ -423,13 +328,13 @@ class InOrderLinkerTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final EventDescriptor mismatchedSelfParent = new EventDescriptor(
-                genesisSelfParent.getDescriptor().getHash(),
-                genesisSelfParent.getSenderId(),
-                genesisSelfParent.getGeneration() + 1,
-                genesisSelfParent.getHashedData().getBirthRound());
-        final GossipEvent child = generateMockEvent(
-                selfId, randomHash(random), 2, 1, mismatchedSelfParent, genesisOtherParent.getDescriptor(), time.now());
+
+        final PlatformEvent child = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(genesisSelfParent)
+                .setOtherParent(genesisOtherParent)
+                .overrideSelfParentGeneration(genesisSelfParent.getGeneration() + 1) // generation doesn't match actual
+                .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
@@ -445,17 +350,17 @@ class InOrderLinkerTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final EventDescriptor mismatchedSelfParent = new EventDescriptor(
-                genesisSelfParent.getDescriptor().getHash(),
-                genesisSelfParent.getSenderId(),
-                genesisSelfParent.getGeneration(),
-                genesisSelfParent.getHashedData().getBirthRound() + 1);
-        final GossipEvent child = generateMockEvent(
-                selfId, randomHash(random), 2, 1, mismatchedSelfParent, genesisOtherParent.getDescriptor(), time.now());
+
+        final PlatformEvent child = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(genesisSelfParent)
+                .setOtherParent(genesisOtherParent)
+                .overrideSelfParentBirthRound(genesisSelfParent.getBirthRound() + 1) // birth round doesn't match actual
+                .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
-        assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched generation, and should be null");
+        assertNull(linkedEvent.getSelfParent(), "Self parent has mismatched birth round, and should be null");
         assertNotEquals(null, linkedEvent.getOtherParent(), "Other parent should not be null");
         assertEquals(0, exitedIntakePipelineCount.get());
     }
@@ -467,13 +372,14 @@ class InOrderLinkerTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final EventDescriptor mismatchedOtherParent = new EventDescriptor(
-                genesisOtherParent.getDescriptor().getHash(),
-                genesisOtherParent.getSenderId(),
-                genesisOtherParent.getGeneration() + 1,
-                genesisOtherParent.getHashedData().getBirthRound());
-        final GossipEvent child = generateMockEvent(
-                selfId, randomHash(random), 2, 1, genesisSelfParent.getDescriptor(), mismatchedOtherParent, time.now());
+
+        final PlatformEvent child = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(genesisSelfParent)
+                .setOtherParent(genesisOtherParent)
+                .overrideOtherParentGeneration(
+                        genesisOtherParent.getGeneration() + 1) // generation doesn't match actual
+                .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
@@ -489,18 +395,18 @@ class InOrderLinkerTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final EventDescriptor mismatchedOtherParent = new EventDescriptor(
-                genesisOtherParent.getDescriptor().getHash(),
-                genesisOtherParent.getSenderId(),
-                genesisOtherParent.getGeneration(),
-                genesisOtherParent.getHashedData().getBirthRound() + 1);
-        final GossipEvent child = generateMockEvent(
-                selfId, randomHash(random), 2, 1, genesisSelfParent.getDescriptor(), mismatchedOtherParent, time.now());
+        final PlatformEvent child = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(genesisSelfParent)
+                .setOtherParent(genesisOtherParent)
+                .overrideOtherParentBirthRound(
+                        genesisOtherParent.getBirthRound() + 1) // birth round doesn't match actual
+                .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
         assertNotEquals(null, linkedEvent.getSelfParent(), "Self parent should not be null");
-        assertNull(linkedEvent.getOtherParent(), "Other parent has mismatched generation, and should be null");
+        assertNull(linkedEvent.getOtherParent(), "Other parent has mismatched birth round, and should be null");
         assertEquals(0, exitedIntakePipelineCount.get());
     }
 
@@ -511,26 +417,22 @@ class InOrderLinkerTests {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final Hash lateParentHash = randomHash(random);
-        final long lateParentGeneration = 1;
-        final GossipEvent lateParent = generateMockEvent(
-                selfId,
-                lateParentHash,
-                lateParentGeneration,
-                1,
-                genesisSelfParent.getDescriptor(),
-                genesisOtherParent.getDescriptor(),
-                time.now().plus(Duration.ofSeconds(10)));
+
+        final PlatformEvent lateParent = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(genesisSelfParent)
+                .setOtherParent(genesisOtherParent)
+                .setTimeCreated(time.now().plus(Duration.ofSeconds(10)))
+                .build();
+
         inOrderLinker.linkEvent(lateParent);
 
-        final GossipEvent child = generateMockEvent(
-                selfId,
-                randomHash(random),
-                2,
-                1,
-                lateParent.getDescriptor(),
-                genesisOtherParent.getDescriptor(),
-                time.now());
+        final PlatformEvent child = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(lateParent)
+                .setOtherParent(genesisOtherParent)
+                .setTimeCreated(time.now())
+                .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);
@@ -541,31 +443,26 @@ class InOrderLinkerTests {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    @DisplayName("Other parent with mismatched time created should be linked")
+    @DisplayName("Other parent with mismatched time created SHOULD be linked")
     void otherParentTimeCreatedMismatch(final boolean useBirthRoundForAncient) {
         final AncientMode ancientMode =
                 useBirthRoundForAncient ? AncientMode.BIRTH_ROUND_THRESHOLD : AncientMode.GENERATION_THRESHOLD;
         inOrderLinkerSetup(ancientMode);
-        final Hash lateParentHash = randomHash(random);
-        final long lateParentGeneration = 1;
-        final GossipEvent lateParent = generateMockEvent(
-                otherId,
-                lateParentHash,
-                lateParentGeneration,
-                1,
-                genesisSelfParent.getDescriptor(),
-                genesisOtherParent.getDescriptor(),
-                time.now().plus(Duration.ofSeconds(10)));
+        final PlatformEvent lateParent = new TestingEventBuilder(random)
+                .setCreatorId(otherId)
+                .setSelfParent(genesisOtherParent)
+                .setOtherParent(genesisSelfParent)
+                .setTimeCreated(time.now().plus(Duration.ofSeconds(10)))
+                .build();
+
         inOrderLinker.linkEvent(lateParent);
 
-        final GossipEvent child = generateMockEvent(
-                selfId,
-                randomHash(random),
-                2,
-                2,
-                genesisSelfParent.getDescriptor(),
-                lateParent.getDescriptor(),
-                time.now());
+        final PlatformEvent child = new TestingEventBuilder(random)
+                .setCreatorId(selfId)
+                .setSelfParent(genesisSelfParent)
+                .setOtherParent(lateParent)
+                .setTimeCreated(time.now())
+                .build();
 
         final EventImpl linkedEvent = inOrderLinker.linkEvent(child);
         assertNotEquals(null, linkedEvent);

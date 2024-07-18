@@ -32,14 +32,14 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.IOIterator;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.platform.recovery.internal.EventStreamPathIterator;
 import com.swirlds.platform.recovery.internal.EventStreamRoundIterator;
+import com.swirlds.platform.recovery.internal.StreamedRound;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.system.events.DetailedConsensusEvent;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,9 +68,9 @@ class EventStreamRoundIteratorTest {
         StaticSoftwareVersion.reset();
     }
 
-    public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
-        assertEquals(expected.getBaseEvent(), actual.getBaseEvent());
-        assertEquals(expected.getConsensusData(), actual.getConsensusData());
+    public static void assertEventsAreEqual(
+            final DetailedConsensusEvent expected, final DetailedConsensusEvent actual) {
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -79,30 +79,30 @@ class EventStreamRoundIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<EventImpl> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<DetailedConsensusEvent> events =
+                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
-        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(
+        try (final IOIterator<StreamedRound> iterator = new EventStreamRoundIterator(
                 mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
 
-            final List<EventImpl> deserializedEvents = new ArrayList<>();
+            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
 
             while (iterator.hasNext()) {
 
-                final Round peekRound = iterator.peek();
-                final Round nextRound = iterator.next();
+                final StreamedRound peekRound = iterator.peek();
+                final StreamedRound nextRound = iterator.next();
                 assertSame(peekRound, nextRound, "peek returned wrong object");
 
-                nextRound.iterator().forEachRemaining(event -> {
-                    deserializedEvents.add((EventImpl) event);
-                    assertEquals(
-                            nextRound.getRoundNum(), ((EventImpl) event).getRoundReceived(), "event in wrong round");
+                nextRound.getEvents().iterator().forEachRemaining(event -> {
+                    deserializedEvents.add(event);
+                    assertEquals(nextRound.getRoundNum(), event.getRoundReceived(), "event in wrong round");
                 });
             }
 
@@ -124,15 +124,16 @@ class EventStreamRoundIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
         final long firstRoundToRead = 10;
 
-        final List<EventImpl> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<DetailedConsensusEvent> events =
+                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
-        final List<EventImpl> eventsToBeReturned = new ArrayList<>();
+        final List<DetailedConsensusEvent> eventsToBeReturned = new ArrayList<>();
         events.forEach(event -> {
             if (event.getRoundReceived() >= firstRoundToRead) {
                 eventsToBeReturned.add(event);
@@ -141,24 +142,23 @@ class EventStreamRoundIteratorTest {
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
-        try (final IOIterator<Round> iterator =
+        try (final IOIterator<StreamedRound> iterator =
                 new EventStreamRoundIterator(mock(AddressBook.class), directory, firstRoundToRead, true)) {
 
-            final List<EventImpl> deserializedEvents = new ArrayList<>();
+            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
 
             while (iterator.hasNext()) {
 
-                final Round peekRound = iterator.peek();
-                final Round nextRound = iterator.next();
+                final StreamedRound peekRound = iterator.peek();
+                final StreamedRound nextRound = iterator.next();
                 assertSame(peekRound, nextRound, "peek returned wrong object");
 
                 assertTrue(
                         nextRound.getRoundNum() >= firstRoundToRead, "low rounds should not be returned for this test");
 
-                nextRound.iterator().forEachRemaining(event -> {
-                    deserializedEvents.add((EventImpl) event);
-                    assertEquals(
-                            nextRound.getRoundNum(), ((EventImpl) event).getRoundReceived(), "event in wrong round");
+                nextRound.getEvents().iterator().forEachRemaining(event -> {
+                    deserializedEvents.add(event);
+                    assertEquals(nextRound.getRoundNum(), event.getRoundReceived(), "event in wrong round");
                 });
             }
 
@@ -178,12 +178,13 @@ class EventStreamRoundIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<EventImpl> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<DetailedConsensusEvent> events =
+                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -191,24 +192,21 @@ class EventStreamRoundIteratorTest {
 
         boolean exception = false;
 
-        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(
+        try (final IOIterator<StreamedRound> iterator = new EventStreamRoundIterator(
                 mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
 
-            final List<EventImpl> deserializedEvents = new ArrayList<>();
+            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
 
             try {
                 while (iterator.hasNext()) {
 
-                    final Round peekRound = iterator.peek();
-                    final Round nextRound = iterator.next();
+                    final StreamedRound peekRound = iterator.peek();
+                    final StreamedRound nextRound = iterator.next();
                     assertSame(peekRound, nextRound, "peek returned wrong object");
 
-                    nextRound.iterator().forEachRemaining(event -> {
-                        deserializedEvents.add((EventImpl) event);
-                        assertEquals(
-                                nextRound.getRoundNum(),
-                                ((EventImpl) event).getRoundReceived(),
-                                "event in wrong round");
+                    nextRound.getEvents().iterator().forEachRemaining(event -> {
+                        deserializedEvents.add(event);
+                        assertEquals(nextRound.getRoundNum(), event.getRoundReceived(), "event in wrong round");
                     });
                 }
             } catch (final IOException e) {
@@ -242,12 +240,13 @@ class EventStreamRoundIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<EventImpl> events = generateRandomEvents(random, 100L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<DetailedConsensusEvent> events =
+                generateRandomEvents(random, 100L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -265,36 +264,34 @@ class EventStreamRoundIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<EventImpl> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<DetailedConsensusEvent> events =
+                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
         final Path lastFile = getLastEventStreamFile(directory);
         truncateFile(lastFile, false);
 
-        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(
+        try (final IOIterator<StreamedRound> iterator = new EventStreamRoundIterator(
                 mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, true)) {
 
-            final List<EventImpl> deserializedEvents = new ArrayList<>();
+            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
 
             try {
                 while (iterator.hasNext()) {
 
-                    final Round peekRound = iterator.peek();
-                    final Round nextRound = iterator.next();
+                    final StreamedRound peekRound = iterator.peek();
+                    final StreamedRound nextRound = iterator.next();
                     assertSame(peekRound, nextRound, "peek returned wrong object");
 
-                    nextRound.iterator().forEachRemaining(event -> {
-                        deserializedEvents.add((EventImpl) event);
-                        assertEquals(
-                                nextRound.getRoundNum(),
-                                ((EventImpl) event).getRoundReceived(),
-                                "event in wrong round");
+                    nextRound.getEvents().iterator().forEachRemaining(event -> {
+                        deserializedEvents.add(event);
+                        assertEquals(nextRound.getRoundNum(), event.getRoundReceived(), "event in wrong round");
                     });
                 }
             } catch (final IOException e) {
@@ -327,33 +324,33 @@ class EventStreamRoundIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<EventImpl> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<DetailedConsensusEvent> events =
+                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
         final Path lastFile = getLastEventStreamFile(directory);
         truncateFile(lastFile, false);
 
-        try (final IOIterator<Round> iterator = new EventStreamRoundIterator(
+        try (final IOIterator<StreamedRound> iterator = new EventStreamRoundIterator(
                 mock(AddressBook.class), directory, EventStreamPathIterator.FIRST_ROUND_AVAILABLE, false)) {
 
-            final List<EventImpl> deserializedEvents = new ArrayList<>();
+            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
 
             while (iterator.hasNext()) {
 
-                final Round peekRound = iterator.peek();
-                final Round nextRound = iterator.next();
+                final StreamedRound peekRound = iterator.peek();
+                final StreamedRound nextRound = iterator.next();
                 assertSame(peekRound, nextRound, "peek returned wrong object");
 
-                nextRound.iterator().forEachRemaining(event -> {
-                    deserializedEvents.add((EventImpl) event);
-                    assertEquals(
-                            nextRound.getRoundNum(), ((EventImpl) event).getRoundReceived(), "event in wrong round");
+                nextRound.getEvents().iterator().forEachRemaining(event -> {
+                    deserializedEvents.add(event);
+                    assertEquals(nextRound.getRoundNum(), (event).getRoundReceived(), "event in wrong round");
                 });
             }
 

@@ -18,15 +18,17 @@ package com.swirlds.benchmark.reconnect.lag;
 
 import static com.swirlds.common.threading.manager.AdHocThreadManager.getStaticThreadManager;
 
+import com.swirlds.common.io.SelfSerializable;
 import com.swirlds.common.io.streams.MerkleDataInputStream;
 import com.swirlds.common.io.streams.MerkleDataOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.threading.pool.StandardWorkGroup;
+import com.swirlds.metrics.api.Metrics;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@link LearningSynchronizer} with simulated delay.
@@ -41,6 +43,7 @@ public class BenchmarkSlowLearningSynchronizer extends LearningSynchronizer {
 
     /**
      * Create a new learning synchronizer with simulated latency.
+     * @param metrics a Metrics instance for ReconnectMapStats
      */
     public BenchmarkSlowLearningSynchronizer(
             final MerkleDataInputStream in,
@@ -52,8 +55,9 @@ public class BenchmarkSlowLearningSynchronizer extends LearningSynchronizer {
             final long delayNetworkMicroseconds,
             final double delayNetworkFuzzRangePercent,
             final Runnable breakConnection,
-            final ReconnectConfig reconnectConfig) {
-        super(getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig);
+            final ReconnectConfig reconnectConfig,
+            @NonNull final Metrics metrics) {
+        super(getStaticThreadManager(), in, out, root, breakConnection, reconnectConfig, metrics);
 
         this.randomSeed = randomSeed;
         this.delayStorageMicroseconds = delayStorageMicroseconds;
@@ -66,7 +70,7 @@ public class BenchmarkSlowLearningSynchronizer extends LearningSynchronizer {
      * {@inheritDoc}
      */
     @Override
-    protected AsyncOutputStream<QueryResponse> buildOutputStream(
+    public <T extends SelfSerializable> AsyncOutputStream<T> buildOutputStream(
             final StandardWorkGroup workGroup, final SerializableDataOutputStream out) {
         return new BenchmarkSlowAsyncOutputStream<>(
                 out,

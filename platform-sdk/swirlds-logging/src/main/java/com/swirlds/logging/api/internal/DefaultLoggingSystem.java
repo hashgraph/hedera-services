@@ -51,7 +51,7 @@ public class DefaultLoggingSystem {
     /**
      * The singleton instance holder for a more flexible singelton instantiation.
      */
-    private static class InstanceHolder {
+    private static final class InstanceHolder {
 
         /**
          * The real singleton instance.
@@ -62,7 +62,7 @@ public class DefaultLoggingSystem {
     /**
      * Flag that defines if the logging system has been initialized.
      */
-    private static final AtomicBoolean INITIALIZED = new AtomicBoolean(false);
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
 
     /**
      * The logging system that is internally used.
@@ -92,7 +92,7 @@ public class DefaultLoggingSystem {
                                     event.marker(),
                                     event.context()))
                     .forEach(internalLoggingSystem::accept);
-            INITIALIZED.set(true);
+            initialized.set(true);
         } catch (Exception e) {
             EMERGENCY_LOGGER.log(Level.ERROR, "Unable to initialize logging system", e);
             throw e;
@@ -164,7 +164,7 @@ public class DefaultLoggingSystem {
      *
      * @return True if the logging system has been initialized.
      */
-    public static boolean isInitialized() {
-        return INITIALIZED.get();
+    public boolean isInitialized() {
+        return initialized.get();
     }
 }

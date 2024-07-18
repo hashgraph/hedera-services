@@ -48,6 +48,7 @@ import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
@@ -56,8 +57,18 @@ import java.util.function.UnaryOperator;
  * Methods for summarizing an account's relationships and attributes to HAPI clients.
  */
 public interface AccountSummariesApi {
+    /**
+     * The size of an EVM address.
+     */
     int EVM_ADDRESS_SIZE = 20;
+    /**
+     * The sentinel node id to represent stakingNodeId is absent on account.
+     * It is -1 because nodeId 0 is allowed for network.
+     */
     long SENTINEL_NODE_ID = -1L;
+    /**
+     * The sentinel account id to represent stakedAccountId is absent on account.
+     */
     AccountID SENTINEL_ACCOUNT_ID = AccountID.newBuilder().accountNum(0).build();
 
     /**
@@ -182,6 +193,7 @@ public interface AccountSummariesApi {
      * @param areRewardsActive whether the rewards are active
      * @param account the account
      * @param stakingInfoStore the staking info store
+     * @param estimatedConsensusNow the estimated consensus time
      * @return the summary of the account's staking info
      */
     static StakingInfo summarizeStakingInfo(
@@ -189,33 +201,58 @@ public interface AccountSummariesApi {
             final long stakePeriodMins,
             final boolean areRewardsActive,
             @NonNull final Account account,
-            @NonNull final ReadableStakingInfoStore stakingInfoStore) {
+            @NonNull final ReadableStakingInfoStore stakingInfoStore,
+            @NonNull final Instant estimatedConsensusNow) {
         requireNonNull(account);
         requireNonNull(stakingInfoStore);
+        requireNonNull(estimatedConsensusNow);
 
         final var stakingInfo =
                 StakingInfo.newBuilder().declineReward(account.declineReward()).stakedToMe(account.stakedToMe());
-        if (account.hasStakedNodeId() && account.stakedNodeId() != SENTINEL_NODE_ID) {
+        if (account.hasStakedNodeId() && account.stakedNodeIdOrThrow() != SENTINEL_NODE_ID) {
             stakingInfo.stakedNodeId(account.stakedNodeIdOrThrow());
             addNodeStakeMeta(
-                    numStoredPeriods, stakePeriodMins, areRewardsActive, account, stakingInfoStore, stakingInfo);
+                    numStoredPeriods,
+                    stakePeriodMins,
+                    areRewardsActive,
+                    account,
+                    stakingInfoStore,
+                    stakingInfo,
+                    estimatedConsensusNow);
         } else if (account.hasStakedAccountId() && account.stakedAccountId() != null) {
             stakingInfo.stakedAccountId(account.stakedAccountIdOrThrow());
         }
         return stakingInfo.build();
     }
 
+    /**
+     * Adds the node stake meta to the given staking info builder, given the account
+     * and some information about the network.
+     *
+     * @param numStoredPeriods the number of periods for which the rewards are stored
+     * @param stakePeriodMins the duration of a stake period
+     * @param areRewardsActive whether the rewards are active
+     * @param account the account
+     * @param readableStakingInfoStore the readable staking info store
+     * @param stakingInfo the staking info builder
+     */
     static void addNodeStakeMeta(
             final int numStoredPeriods,
             final long stakePeriodMins,
             final boolean areRewardsActive,
             @NonNull final Account account,
             @NonNull final ReadableStakingInfoStore readableStakingInfoStore,
-            @NonNull final StakingInfo.Builder stakingInfo) {
+            @NonNull final StakingInfo.Builder stakingInfo,
+            @NonNull final Instant estimatedConsensusNow) {
         stakingInfo
                 .stakePeriodStart(Timestamp.newBuilder()
                         .seconds(epochSecondAtStartOfPeriod(account.stakePeriodStart(), stakePeriodMins)))
                 .pendingReward(estimatePendingReward(
-                        numStoredPeriods, stakePeriodMins, areRewardsActive, account, readableStakingInfoStore));
+                        numStoredPeriods,
+                        stakePeriodMins,
+                        areRewardsActive,
+                        account,
+                        readableStakingInfoStore,
+                        estimatedConsensusNow));
     }
 }

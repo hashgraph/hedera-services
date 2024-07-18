@@ -17,7 +17,6 @@
 package com.swirlds.platform.gui.hashgraph.internal;
 
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.PlatformEvent;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.util.List;
@@ -89,7 +88,7 @@ public class PictureMetadata {
     }
 
     /** find x position on the screen for event e2 which has an other-parent of e1 (or null if none) */
-    public int xpos(final PlatformEvent e1, final PlatformEvent e2) {
+    public int xpos(final EventImpl e1, final EventImpl e2) {
         // the gap between left side of screen and leftmost column
         // is marginFraction times the gap between columns (and similarly for right side)
         final double marginFraction = 0.5;
@@ -105,12 +104,15 @@ public class PictureMetadata {
     /**
      * find y position on the screen for an event
      */
-    public int ypos(final PlatformEvent event) {
+    public int ypos(final EventImpl event) {
         return (event == null) ? -100 : (int) (ymax - r * (1 + 2 * (event.getGeneration() - minGen)));
     }
 
-    public double getR() {
-        return r;
+    /**
+     * @return the diameter of a circle representing an event
+     */
+    public int getD() {
+        return (int) (2 * r);
     }
 
     public int getYmax() {

@@ -25,12 +25,12 @@ import static org.mockito.BDDMockito.given;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.burn.BurnTranslator;
-import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.hts.HtsCallTestBase;
+import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
 import java.math.BigInteger;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-public class BurnDecoderTest extends HtsCallTestBase {
+public class BurnDecoderTest extends CallTestBase {
 
     @Mock
     private HtsCallAttempt attempt;

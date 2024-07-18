@@ -21,7 +21,6 @@ import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.metrics.SwirldStateMetrics;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -52,7 +51,7 @@ public class TransactionHandler {
      * @param state
      * 		the state to apply {@code round} to
      */
-    public void handleRound(final ConsensusRound round, final State state) {
+    public void handleRound(final ConsensusRound round, final MerkleRoot state) {
         try {
             final Instant timeOfHandle = Instant.now();
             final long startTime = System.nanoTime();
@@ -68,15 +67,8 @@ public class TransactionHandler {
                 stats.consensusTransHandleTime(secondsElapsed / round.getNumAppTransactions());
             }
             stats.consensusTransHandled(round.getNumAppTransactions());
-
-            for (final EventImpl event : round.getConsensusEvents()) {
-                // events being played back from stream file do not have reachedConsTimestamp set,
-                // since reachedConsTimestamp is not serialized and saved to stream file
-                if (event.getReachedConsTimestamp() != null) {
-                    stats.consensusToHandleTime(event.getReachedConsTimestamp().until(timeOfHandle, ChronoUnit.NANOS)
-                            * NANOSECONDS_TO_SECONDS);
-                }
-            }
+            stats.consensusToHandleTime(
+                    round.getReachedConsTimestamp().until(timeOfHandle, ChronoUnit.NANOS) * NANOSECONDS_TO_SECONDS);
         } catch (final Throwable t) {
             logger.error(
                     EXCEPTION.getMarker(),

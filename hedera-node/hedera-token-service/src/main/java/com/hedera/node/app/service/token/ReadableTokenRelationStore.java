@@ -34,6 +34,7 @@ public interface ReadableTokenRelationStore {
      *
      * @param accountId - the id of the account in the token-relation to be retrieved
      * @param tokenId   - the id of the token in the token-relation to be retrieved
+     * @return the token-relation with the given IDs, or {@code null} if no such token-relation exists
      */
     @Nullable
     TokenRelation get(@NonNull final AccountID accountId, @NonNull final TokenID tokenId);
@@ -50,6 +51,7 @@ public interface ReadableTokenRelationStore {
      * <p>The default implementation is empty because preloading data into memory is only used for some implementations.
      *
      * @param accountID the account id
+     * @param tokenId the token id
      */
     default void warm(@NonNull final AccountID accountID, @NonNull final TokenID tokenId) {}
 }

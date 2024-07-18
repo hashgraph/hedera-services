@@ -20,16 +20,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
-import static com.hedera.node.app.service.token.impl.test.handlers.util.AdapterUtils.txnFrom;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.KNOWN_TOKEN_WITH_KYC;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_KYC_KT;
+import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_WIPE_KT;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
-import static com.hedera.test.factories.scenarios.TokenKycGrantScenarios.VALID_GRANT_WITH_EXTANT_TOKEN;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.KNOWN_TOKEN_WITH_KYC;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_KYC_KT;
-import static com.hedera.test.factories.scenarios.TxnHandlingScenario.TOKEN_WIPE_KT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.given;
@@ -56,14 +51,15 @@ import com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.service.token.impl.handlers.TokenGrantKycToAccountHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.EntityType;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
 import java.util.Collections;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,21 +76,6 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
 
     @Mock
     private ReadableAccountStore accountStore;
-
-    @Test
-    void tokenValidGrantWithExtantTokenScenario() throws PreCheckException {
-        final var payerAcct = newPayerAccount();
-        given(accountStore.getAccountById(TEST_DEFAULT_PAYER)).willReturn(payerAcct);
-        final var theTxn = txnFrom(VALID_GRANT_WITH_EXTANT_TOKEN);
-        final var readableStore = mockKnownKycTokenStore();
-
-        final var context = new FakePreHandleContext(accountStore, theTxn);
-        context.registerStore(ReadableTokenStore.class, readableStore);
-        subject.preHandle(context);
-
-        assertEquals(1, context.requiredNonPayerKeys().size());
-        assertThat(context.requiredNonPayerKeys(), contains(TOKEN_KYC_KT.asPbjKey()));
-    }
 
     @Test
     void txnHasNoToken() throws PreCheckException {
@@ -183,6 +164,9 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
         @Mock
         private ExpiryValidator expiryValidator;
 
+        @Mock(strictness = LENIENT)
+        private StoreFactory storeFactory;
+
         private static final AccountID TREASURY_ACCOUNT_9876 = BaseCryptoHandler.asAccount(9876);
         private static final TokenID TOKEN_531 = BaseTokenHandler.asToken(531);
 
@@ -199,9 +183,10 @@ class TokenGrantKycToAccountHandlerTest extends TokenHandlerTestBase {
 
         @BeforeEach
         void setup() {
-            given(handleContext.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
-            given(handleContext.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
-            given(handleContext.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
+            given(handleContext.storeFactory()).willReturn(storeFactory);
+            given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(tokenRelStore);
+            given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(readableTokenStore);
+            given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
             given(handleContext.expiryValidator()).willReturn(expiryValidator);
         }
 

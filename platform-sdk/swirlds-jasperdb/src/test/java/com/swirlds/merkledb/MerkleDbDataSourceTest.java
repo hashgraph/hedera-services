@@ -37,11 +37,14 @@ import com.swirlds.base.function.CheckedConsumer;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
+import com.swirlds.metrics.api.IntegerGauge;
+import com.swirlds.metrics.api.Metric.ValueType;
+import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
@@ -77,7 +80,7 @@ class MerkleDbDataSourceTest {
 
     @BeforeAll
     static void setup() throws Exception {
-        testDirectory = TemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceTest");
+        testDirectory = LegacyTemporaryFileBuilder.buildTemporaryFile("MerkleDbDataSourceTest");
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds.merkledb");
     }
 
@@ -648,6 +651,49 @@ class MerkleDbDataSourceTest {
         });
     }
 
+    @Test
+    void copyStatisticsTest() throws Exception {
+        // This test simulates what happens on reconnect and makes sure that MerkleDb stats are reported
+        // for the copy correctly
+        final String label = "copyStatisticsTest";
+        final TestType testType = TestType.variable_variable;
+        final Metrics metrics = testType.getMetrics();
+        createAndApplyDataSource(testDirectory, label, testType, 16, dataSource -> {
+            dataSource.registerMetrics(metrics);
+            assertEquals(
+                    1L,
+                    metrics.getMetric(MerkleDbStatistics.STAT_CATEGORY, "merkledb_count")
+                            .get(ValueType.VALUE));
+            final List<VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue>> dirtyLeaves = IntStream.range(
+                            15, 30)
+                    .mapToObj(t -> new VirtualLeafRecord<>(
+                            t,
+                            testType.dataType().createVirtualLongKey(t),
+                            testType.dataType().createVirtualValue(t)))
+                    .toList();
+            // No dirty/deleted leaves - no new files created
+            dataSource.saveRecords(15, 30, Stream.empty(), Stream.empty(), Stream.empty(), false);
+            final IntegerGauge sourceCounter = (IntegerGauge)
+                    metrics.getMetric(MerkleDbStatistics.STAT_CATEGORY, "ds_files_leavesStoreFileCount_" + label);
+            assertEquals(0L, sourceCounter.get());
+            // Now save some dirty leaves
+            dataSource.saveRecords(15, 30, Stream.empty(), dirtyLeaves.stream(), Stream.empty(), false);
+            assertEquals(1L, sourceCounter.get());
+            final var copy = dataSource.getDatabase().copyDataSource(dataSource, true);
+            try {
+                assertEquals(
+                        2L, metrics.getMetric("merkle_db", "merkledb_count").get(ValueType.VALUE));
+                copy.copyStatisticsFrom(dataSource);
+                copy.saveRecords(4, 8, Stream.empty(), Stream.of(dirtyLeaves.get(1)), Stream.empty(), false);
+                final IntegerGauge copyCounter = (IntegerGauge)
+                        metrics.getMetric(MerkleDbStatistics.STAT_CATEGORY, "ds_files_leavesStoreFileCount_" + label);
+                assertEquals(2L, copyCounter.get());
+            } finally {
+                copy.close();
+            }
+        });
+    }
+
     // =================================================================================================================
     // Helper Methods
 
@@ -763,7 +809,7 @@ class MerkleDbDataSourceTest {
                             sleepUnchecked(50L);
                             return createVirtualInternalRecord(i);
                         }),
-                        null,
+                        Stream.empty(),
                         Stream.empty());
             } catch (final IOException impossible) {
                 /* We don't throw this */

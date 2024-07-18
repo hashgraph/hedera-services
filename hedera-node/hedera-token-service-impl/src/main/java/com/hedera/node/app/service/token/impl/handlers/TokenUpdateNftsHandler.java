@@ -56,6 +56,10 @@ import javax.inject.Singleton;
 public class TokenUpdateNftsHandler implements TransactionHandler {
     private final TokenAttributesValidator validator;
 
+    /**
+     * Create a new {@link TokenUpdateNftsHandler} instance.
+     * @param validator The {@link TokenAttributesValidator} to use.
+     */
     @Inject
     public TokenUpdateNftsHandler(@NonNull final TokenAttributesValidator validator) {
         this.validator = validator;
@@ -90,12 +94,13 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
         final var tokenId = op.tokenOrThrow();
 
         // Ensure that the token has metadataKey
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
+        final var storeFactory = context.storeFactory();
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
         final var token = getIfUsable(tokenId, tokenStore);
         validateTrue(token.hasMetadataKey(), TOKEN_HAS_NO_METADATA_KEY);
 
         validateSemantics(context, op);
-        final var nftStore = context.writableStore(WritableNftStore.class);
+        final var nftStore = storeFactory.writableStore(WritableNftStore.class);
 
         // Wrap in Set to de-duplicate serial numbers
         final var nftSerialNums = new LinkedHashSet<>(op.serialNumbers());
@@ -132,7 +137,7 @@ public class TokenUpdateNftsHandler implements TransactionHandler {
     public Fees calculateFees(@NonNull final FeeContext feeContext) {
         final var op = feeContext.body();
         final var serials = op.tokenUpdateNftsOrThrow().serialNumbers();
-        final var feeCalculator = feeContext.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
+        final var feeCalculator = feeContext.feeCalculatorFactory().feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE);
         feeCalculator.resetUsage();
         return feeCalculator.addBytesPerTransaction(serials.size()).calculate();
     }

@@ -18,8 +18,13 @@ package com.swirlds.platform.test.fixtures.event;
 
 import static java.lang.Integer.max;
 
+import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,7 +34,27 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
-public abstract class EventUtils {
+public final class EventUtils {
+    /**
+     * Hidden constructor
+     */
+    private EventUtils() {}
+
+    /**
+     * Serialize a platform event to a byte array.
+     *
+     * @param event the event to serialize
+     * @return the serialized event
+     */
+    public static byte[] serializePlatformEvent(@NonNull final PlatformEvent event) {
+        final ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        try {
+            event.serialize(new SerializableDataOutputStream(stream));
+        } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return stream.toByteArray();
+    }
 
     /**
      * Choose a random integer given a list of probabilistic weights.

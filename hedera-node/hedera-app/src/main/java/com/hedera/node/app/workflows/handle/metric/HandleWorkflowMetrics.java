@@ -92,6 +92,9 @@ public class HandleWorkflowMetrics {
      */
     public void updateTransactionDuration(@NonNull final HederaFunctionality functionality, final int duration) {
         requireNonNull(functionality, "functionality must not be null");
+        if (functionality == HederaFunctionality.NONE) {
+            return;
+        }
         final var metric = transactionMetrics.get(functionality);
         if (metric != null) {
             // We do not synchronize the update of the metrics. This may lead to a situation where the max value is

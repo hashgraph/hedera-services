@@ -20,23 +20,20 @@ import static com.swirlds.common.io.streams.SerializableDataOutputStream.getInst
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHashBytes;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomSignatureBytes;
 import static com.swirlds.common.test.fixtures.io.SerializationUtils.serializeDeserialize;
-import static com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags.TIME_CONSUMING;
-import static com.swirlds.platform.system.transaction.SystemTransactionType.SYS_TRANS_STATE_SIG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.SerializableWithKnownLength;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.test.fixtures.crypto.SignaturePool;
 import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.system.transaction.SwirldTransaction;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -59,12 +56,15 @@ class TransactionSerializationTest {
         }
         final Bytes signature = randomSignatureBytes(random);
         final Bytes stateHash = randomHashBytes(random);
-        final Bytes epochHash = random.nextBoolean() ? randomHashBytes(random) : Bytes.EMPTY;
         final StateSignatureTransaction systemTransactionSignature =
-                new StateSignatureTransaction(random.nextLong(), signature, stateHash, epochHash);
+                new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+                        .round(random.nextLong())
+                        .signature(signature)
+                        .hash(stateHash)
+                        .build());
         final StateSignatureTransaction deserialized = serializeDeserialize(systemTransactionSignature);
 
-        assertEquals(systemTransactionSignature.signature(), deserialized.signature());
+        assertEquals(systemTransactionSignature.getPayload(), deserialized.getPayload());
         assertEquals(systemTransactionSignature.isSystem(), deserialized.isSystem());
         assertEquals(systemTransactionSignature.getVersion(), deserialized.getVersion());
         assertEquals(systemTransactionSignature.getClassId(), deserialized.getClassId());
@@ -72,8 +72,6 @@ class TransactionSerializationTest {
                 systemTransactionSignature.getMinimumSupportedVersion(), deserialized.getMinimumSupportedVersion());
 
         assertEquals(systemTransactionSignature, deserialized);
-        assertEquals(systemTransactionSignature.getType(), SYS_TRANS_STATE_SIG);
-        assertEquals(deserialized.getType(), SYS_TRANS_STATE_SIG);
 
         TestExpectedSerializationLength(systemTransactionSignature, true);
         TestExpectedSerializationLength(deserialized, true);
@@ -112,42 +110,6 @@ class TransactionSerializationTest {
 
         TestExpectedSerializationLength(applicationTransaction, false);
         TestExpectedSerializationLength(deserialized, false);
-    }
-
-    @ParameterizedTest
-    @Tag(TIME_CONSUMING)
-    @ValueSource(ints = {1, 1024})
-    void ApplicationWithSignatures(final int contentSize) throws IOException {
-        byte[] nbyte = null;
-        if (contentSize > 0) {
-            nbyte = new byte[contentSize];
-            random.nextBytes(nbyte);
-        }
-        final SignaturePool signaturePool = new SignaturePool(1024, 4096, true);
-
-        final SwirldTransaction applicationTransaction;
-        if (contentSize == 0) {
-            // should throw NPE error
-            try {
-                applicationTransaction = new SwirldTransaction(nbyte);
-            } catch (final NullPointerException e) {
-                assertEquals("contents", e.getMessage());
-                return;
-            }
-        } else {
-            applicationTransaction = new SwirldTransaction(nbyte);
-        }
-
-        TestExpectedSerializationLength(applicationTransaction, true);
-        TestExpectedSerializationLength(applicationTransaction, false);
-
-        applicationTransaction.add(signaturePool.next());
-        TestExpectedSerializationLength(applicationTransaction, true);
-        TestExpectedSerializationLength(applicationTransaction, false);
-
-        applicationTransaction.add(signaturePool.next());
-        TestExpectedSerializationLength(applicationTransaction, true);
-        TestExpectedSerializationLength(applicationTransaction, false);
     }
 
     static void TestExpectedSerializationLength(

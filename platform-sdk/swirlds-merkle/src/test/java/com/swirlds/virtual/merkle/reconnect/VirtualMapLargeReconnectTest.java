@@ -24,11 +24,12 @@ import com.swirlds.virtual.merkle.TestKey;
 import com.swirlds.virtual.merkle.TestValue;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Tags;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -42,8 +43,6 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-003"), @Tag("VMAP-003.14")})
     @Tag(TIME_CONSUMING)
     @DisplayName("Permutations of very large trees reconnecting")
-    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11507
-    @Disabled
     void largeTeacherLargerLearnerPermutations(int teacherStart, int teacherEnd, int learnerStart, int learnerEnd) {
 
         for (int i = teacherStart; i < teacherEnd; i++) {
@@ -62,8 +61,6 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
     @Tags({@Tag("VirtualMerkle"), @Tag("Reconnect"), @Tag("VMAP-005"), @Tag("VMAP-006")})
     @Tag(TIME_CONSUMING)
     @DisplayName("Reconnect aborts 3 times before success")
-    // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11507
-    @Disabled
     void multipleAbortedReconnectsCanSucceed(int teacherStart, int teacherEnd, int learnerStart, int learnerEnd) {
         for (int i = teacherStart; i < teacherEnd; i++) {
             teacherMap.put(new TestKey(i), new TestValue(i));
@@ -77,6 +74,33 @@ class VirtualMapLargeReconnectTest extends VirtualMapReconnectTestBase {
         learnerBuilder.setNumTimesToBreak(2);
 
         reconnectMultipleTimes(3);
+    }
+
+    @Test
+    @Tag(TIME_CONSUMING)
+    void reconnectBench() {
+        final long N = 1_000_000;
+        final long U = 10_000;
+
+        final Random rand = new Random(N / 2);
+
+        for (long i = 0; i < N; i++) {
+            teacherMap.put(new TestKey(i), new TestValue(i));
+            learnerMap.put(new TestKey(i), new TestValue(i));
+        }
+
+        for (long i = 0; i < U; i++) {
+            final long toUpdate = rand.nextLong(N);
+            teacherMap.put(new TestKey(toUpdate), new TestValue(toUpdate + N)); // update
+            teacherMap.put(new TestKey(i + N), new TestValue(i + N)); // add
+            final long toDelete = rand.nextLong(N + i);
+            teacherMap.remove(new TestKey(toDelete));
+        }
+
+        long start = System.currentTimeMillis();
+        assertDoesNotThrow(this::reconnect, "Should not throw a Exception");
+        long end = System.currentTimeMillis();
+        System.err.println("Time: " + (end - start) / 1000.0);
     }
 
     static Stream<Arguments> provideLargeTreePermutations() {

@@ -73,7 +73,7 @@ public class SwirldsLogFineGrainBenchmark extends SwirldsLogBaseBenchmark {
             time = MEASUREMENT_TIME_IN_SECONDS_PER_ITERATION,
             timeUnit = TimeUnit.MILLISECONDS)
     public void logOffStatement() {
-        logger.log(com.swirlds.logging.api.Level.OFF, "logSimpleStatement, Hello world!");
+        logger.log(com.swirlds.logging.api.Level.OFF, "logOffStatement, Hello world!");
     }
 
     @Benchmark

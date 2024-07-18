@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.components;
 
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -30,8 +30,8 @@ public class DefaultEventWindowManager implements EventWindowManager {
      */
     @Override
     @NonNull
-    public NonAncientEventWindow extractEventWindow(@NonNull final ConsensusRound round) {
-        return round.getNonAncientEventWindow();
+    public EventWindow extractEventWindow(@NonNull final ConsensusRound round) {
+        return round.getEventWindow();
     }
 
     /**
@@ -39,7 +39,7 @@ public class DefaultEventWindowManager implements EventWindowManager {
      */
     @Override
     @NonNull
-    public NonAncientEventWindow updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    public EventWindow updateEventWindow(@NonNull final EventWindow eventWindow) {
         return eventWindow;
     }
 }

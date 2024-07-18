@@ -30,18 +30,17 @@ import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hedera.hapi.node.base.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hedera.hapi.node.base.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.hapi.fees.usage.SingletonUsageProperties.USAGE_PROPERTIES;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.LONG_ACCOUNT_AMOUNT_BYTES;
 import static com.hedera.node.app.hapi.fees.usage.token.TokenOpsUsage.LONG_BASIC_ENTITY_ID_SIZE;
 import static com.hedera.node.app.hapi.fees.usage.token.entities.TokenEntitySizes.TOKEN_ENTITY_SIZES;
 import static com.hedera.node.app.service.token.AliasUtils.isAlias;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
-import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -54,6 +53,7 @@ import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -103,11 +103,20 @@ public class CryptoTransferHandler implements TransactionHandler {
     private final CryptoTransferValidator validator;
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
+    /**
+     * Default constructor for injection.
+     * @param validator the validator to use to validate the transaction
+     */
     @Inject
     public CryptoTransferHandler(@NonNull final CryptoTransferValidator validator) {
         this(validator, true);
     }
 
+    /**
+     * Constructor for injection with the option to enforce mono-service restrictions on auto-creation custom fee
+     * @param validator the validator to use to validate the transaction
+     * @param enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments whether to enforce mono-service restrictions
+     */
     public CryptoTransferHandler(
             @NonNull final CryptoTransferValidator validator,
             final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
@@ -124,14 +133,14 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var op = context.body().cryptoTransferOrThrow();
         final var accountStore = context.createStore(ReadableAccountStore.class);
         final var tokenStore = context.createStore(ReadableTokenStore.class);
-        for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
+        for (final var transfers : op.tokenTransfers()) {
             final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
             if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-            checkFungibleTokenTransfers(transfers.transfersOrElse(emptyList()), context, accountStore, false);
-            checkNftTransfers(transfers.nftTransfersOrElse(emptyList()), context, tokenMeta, op, accountStore);
+            checkFungibleTokenTransfers(transfers.transfers(), context, accountStore, false);
+            checkNftTransfers(transfers.nftTransfers(), context, tokenMeta, op, accountStore);
         }
 
-        final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList());
+        final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT).accountAmounts();
         checkFungibleTokenTransfers(hbarTransfers, context, accountStore, true);
     }
 
@@ -155,35 +164,39 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         // warm all accounts from the transfer list
         final TransferList transferList = op.transfersOrElse(TransferList.DEFAULT);
-        transferList.accountAmountsOrElse(emptyList()).parallelStream()
+        transferList.accountAmounts().stream()
                 .map(AccountAmount::accountID)
                 .filter(Objects::nonNull)
                 .forEach(accountStore::warm);
 
         // warm all token-data from the token transfer list
-        final List<TokenTransferList> tokenTransfers = op.tokenTransfersOrElse(emptyList());
-        tokenTransfers.parallelStream()
-                .filter(TokenTransferList::hasToken)
-                .filter(TokenTransferList::hasNftTransfers)
-                .forEach(tokenTransferList -> {
-                    final TokenID tokenID = tokenTransferList.tokenOrThrow();
-                    tokenStore.warm(tokenID);
-                    final List<NftTransfer> nftTransfers = tokenTransferList.nftTransfersOrThrow();
-                    for (final NftTransfer nftTransfer : nftTransfers) {
-                        warmNftTransfer(accountStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
-                    }
-                });
+        final List<TokenTransferList> tokenTransfers = op.tokenTransfers();
+        tokenTransfers.stream().filter(TokenTransferList::hasToken).forEach(tokenTransferList -> {
+            final TokenID tokenID = tokenTransferList.tokenOrThrow();
+            final Token token = tokenStore.get(tokenID);
+            final AccountID treasuryID = token == null ? null : token.treasuryAccountId();
+            if (treasuryID != null) {
+                accountStore.warm(treasuryID);
+            }
+            for (final AccountAmount amount : tokenTransferList.transfers()) {
+                amount.ifAccountID(accountID -> tokenRelationStore.warm(accountID, tokenID));
+            }
+            for (final NftTransfer nftTransfer : tokenTransferList.nftTransfers()) {
+                warmNftTransfer(accountStore, tokenStore, nftStore, tokenRelationStore, tokenID, nftTransfer);
+            }
+        });
     }
 
     private void warmNftTransfer(
             @NonNull final ReadableAccountStore accountStore,
+            @NonNull final ReadableTokenStore tokenStore,
             @NonNull final ReadableNftStore nftStore,
             @NonNull final ReadableTokenRelationStore tokenRelationStore,
             @NonNull final TokenID tokenID,
             @NonNull final NftTransfer nftTransfer) {
         // warm sender
         nftTransfer.ifSenderAccountID(senderAccountID -> {
-            final Account sender = accountStore.getAccountById(senderAccountID);
+            final Account sender = accountStore.getAliasedAccountById(senderAccountID);
             if (sender != null) {
                 sender.ifHeadNftId(nftStore::warm);
             }
@@ -192,9 +205,12 @@ public class CryptoTransferHandler implements TransactionHandler {
 
         // warm receiver
         nftTransfer.ifReceiverAccountID(receiverAccountID -> {
-            final Account receiver = accountStore.getAccountById(receiverAccountID);
+            final Account receiver = accountStore.getAliasedAccountById(receiverAccountID);
             if (receiver != null) {
-                receiver.ifHeadTokenId(headTokenID -> tokenRelationStore.warm(receiverAccountID, headTokenID));
+                receiver.ifHeadTokenId(headTokenID -> {
+                    tokenRelationStore.warm(receiverAccountID, headTokenID);
+                    tokenStore.warm(headTokenID);
+                });
                 receiver.ifHeadNftId(nftStore::warm);
             }
             tokenRelationStore.warm(receiverAccountID, tokenID);
@@ -236,7 +252,7 @@ public class CryptoTransferHandler implements TransactionHandler {
             step.doIn(transferContext);
         }
 
-        final var recordBuilder = context.recordBuilder(CryptoTransferRecordBuilder.class);
+        final var recordBuilder = context.recordBuilders().getOrCreate(CryptoTransferRecordBuilder.class);
         if (!transferContext.getAutomaticAssociations().isEmpty()) {
             transferContext.getAutomaticAssociations().forEach(recordBuilder::addAutomaticTokenAssociation);
         }
@@ -258,7 +274,9 @@ public class CryptoTransferHandler implements TransactionHandler {
      * @throws HandleException if any error occurs during the process
      */
     private CryptoTransferTransactionBody ensureAndReplaceAliasesInOp(
-            final TransactionBody txn, final TransferContextImpl transferContext, final HandleContext context)
+            @NonNull final TransactionBody txn,
+            @NonNull final TransferContextImpl transferContext,
+            @NonNull final HandleContext context)
             throws HandleException {
         final var op = txn.cryptoTransferOrThrow();
 
@@ -330,13 +348,14 @@ public class CryptoTransferHandler implements TransactionHandler {
             steps.add(assessHbarTransfers);
 
             // Step 4: Charge token transfers with an approval. Modify the allowances map on account
-            final var assessFungibleTokenTransfers = new AdjustFungibleTokenChangesStep(txn, topLevelPayer);
+            final var assessFungibleTokenTransfers =
+                    new AdjustFungibleTokenChangesStep(txn.tokenTransfers(), topLevelPayer);
             steps.add(assessFungibleTokenTransfers);
 
             // Step 5: Change NFT owners and also ones with isApproval. Clear the spender on NFT.
             // Will be a no-op for every txn except possibly the first (i.e., the top-level txn).
             // This is because assessed custom fees never change NFT owners
-            final var changeNftOwners = new NFTOwnersChangeStep(txn, topLevelPayer);
+            final var changeNftOwners = new NFTOwnersChangeStep(txn.tokenTransfers(), topLevelPayer);
             steps.add(changeNftOwners);
         }
 
@@ -363,7 +382,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         for (final var accountAmount : transfers) {
             // Given an accountId, we need to look up the associated account.
             final var accountId = validateAccountID(accountAmount.accountIDOrElse(AccountID.DEFAULT), null);
-            final var account = accountStore.getAccountById(accountId);
+            final var account = accountStore.getAliasedAccountById(accountId);
             final var isCredit = accountAmount.amount() > 0;
             final var isDebit = accountAmount.amount() < 0;
             if (account != null) {
@@ -443,7 +462,7 @@ public class CryptoTransferHandler implements TransactionHandler {
             throws PreCheckException {
 
         // Lookup the receiver account and verify it.
-        final var receiverAccount = accountStore.getAccountById(receiverId);
+        final var receiverAccount = accountStore.getAliasedAccountById(receiverId);
         if (receiverAccount == null) {
             // It may be that the receiver account does not yet exist. If it is being addressed by alias,
             // then this is OK, as we will automatically create the account. Otherwise, fail.
@@ -484,7 +503,7 @@ public class CryptoTransferHandler implements TransactionHandler {
             throws PreCheckException {
 
         // Lookup the sender account and verify it.
-        final var senderAccount = accountStore.getAccountById(senderId);
+        final var senderAccount = accountStore.getAliasedAccountById(senderId);
         if (senderAccount == null) {
             throw new PreCheckException(INVALID_ACCOUNT_ID);
         }
@@ -492,9 +511,13 @@ public class CryptoTransferHandler implements TransactionHandler {
         // If the sender account is immutable, then we throw an exception.
         final var key = senderAccount.key();
         if (key == null || !isValid(key)) {
-            // If the sender account has no key, then fail with INVALID_ACCOUNT_ID.
-            // NOTE: should change to ACCOUNT_IS_IMMUTABLE
-            throw new PreCheckException(INVALID_ACCOUNT_ID);
+            if (isHollow(senderAccount)) {
+                meta.requireSignatureForHollowAccount(senderAccount);
+            } else {
+                // If the sender account has no key, then fail with INVALID_ACCOUNT_ID.
+                // NOTE: should change to ACCOUNT_IS_IMMUTABLE
+                throw new PreCheckException(INVALID_ACCOUNT_ID);
+            }
         } else if (!nftTransfer.isApproval()) {
             meta.requireKey(key);
         }
@@ -502,9 +525,9 @@ public class CryptoTransferHandler implements TransactionHandler {
 
     private boolean receivesFungibleValue(
             final AccountID target, final CryptoTransferTransactionBody op, final ReadableAccountStore accountStore) {
-        for (final var adjust : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
-            final var unaliasedAccount = accountStore.getAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
-            final var unaliasedTarget = accountStore.getAccountById(target);
+        for (final var adjust : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
+            final var unaliasedAccount = accountStore.getAliasedAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
+            final var unaliasedTarget = accountStore.getAliasedAccountById(target);
             if (unaliasedAccount != null
                     && unaliasedTarget != null
                     && adjust.amount() > 0
@@ -512,10 +535,11 @@ public class CryptoTransferHandler implements TransactionHandler {
                 return true;
             }
         }
-        for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
-            for (final var adjust : transfers.transfersOrElse(emptyList())) {
-                final var unaliasedAccount = accountStore.getAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
-                final var unaliasedTarget = accountStore.getAccountById(target);
+        for (final var transfers : op.tokenTransfers()) {
+            for (final var adjust : transfers.transfers()) {
+                final var unaliasedAccount =
+                        accountStore.getAliasedAccountById(adjust.accountIDOrElse(AccountID.DEFAULT));
+                final var unaliasedTarget = accountStore.getAliasedAccountById(target);
                 if (unaliasedAccount != null
                         && unaliasedTarget != null
                         && adjust.amount() > 0
@@ -536,18 +560,16 @@ public class CryptoTransferHandler implements TransactionHandler {
         final var tokenMultiplier = config.getConfigData(FeesConfig.class).tokenTransferUsageMultiplier();
 
         /* BPT calculations shouldn't include any custom fee payment usage */
-        int totalXfers = op.transfersOrElse(TransferList.DEFAULT)
-                .accountAmountsOrElse(emptyList())
-                .size();
+        int totalXfers =
+                op.transfersOrElse(TransferList.DEFAULT).accountAmounts().size();
 
         var totalTokensInvolved = 0;
         var totalTokenTransfers = 0;
         var numNftOwnershipChanges = 0;
-        for (final var tokenTransfers : op.tokenTransfersOrElse(emptyList())) {
+        for (final var tokenTransfers : op.tokenTransfers()) {
             totalTokensInvolved++;
-            totalTokenTransfers += tokenTransfers.transfersOrElse(emptyList()).size();
-            numNftOwnershipChanges +=
-                    tokenTransfers.nftTransfersOrElse(emptyList()).size();
+            totalTokenTransfers += tokenTransfers.transfers().size();
+            numNftOwnershipChanges += tokenTransfers.nftTransfers().size();
         }
 
         int weightedTokensInvolved = tokenMultiplier * totalTokensInvolved;
@@ -597,6 +619,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 customFeeTokenTransfers,
                 triedAndFailedToUseCustomFees);
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(subType)
                 .addBytesPerTransaction(bpt)
                 .addRamByteSeconds(rbs * USAGE_PROPERTIES.legacyReceiptStorageSecs())

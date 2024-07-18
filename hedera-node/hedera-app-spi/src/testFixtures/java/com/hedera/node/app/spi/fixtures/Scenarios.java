@@ -21,10 +21,10 @@ import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.fixtures.state.MapReadableStates;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapReadableStates;
 import java.util.Map;
 
 /**

@@ -31,6 +31,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
@@ -41,8 +42,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 
 public class SplittingThrottlesWorks extends HapiSuite {
     private static final Logger log = LogManager.getLogger(SplittingThrottlesWorks.class);
@@ -58,13 +61,11 @@ public class SplittingThrottlesWorks extends HapiSuite {
     }
 
     @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            setNewLimits(), tryCreations(),
-        });
+    public List<Stream<DynamicTest>> getSpecsInSuite() {
+        return List.of(setNewLimits(), tryCreations());
     }
 
-    final HapiSpec setNewLimits() {
+    final Stream<DynamicTest> setNewLimits() {
         var artificialLimits = protoDefsFromResource("testSystemFiles/split-throttles.json");
 
         return defaultHapiSpec("SetNewLimits")
@@ -75,7 +76,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
                         .contents(artificialLimits.toByteArray()));
     }
 
-    final HapiSpec tryCreations() {
+    final Stream<DynamicTest> tryCreations() {
         return defaultHapiSpec("TryCreations")
                 .given()
                 .when(runWithProvider(cryptoCreateOps())
@@ -97,7 +98,7 @@ public class SplittingThrottlesWorks extends HapiSuite {
 
         return spec -> new OpProvider() {
             @Override
-            public List<HapiSpecOperation> suggestedInitializers() {
+            public List<SpecOperation> suggestedInitializers() {
                 return List.of(cryptoCreate(CIVILIAN)
                         .payingWith(GENESIS)
                         .balance(ONE_MILLION_HBARS)

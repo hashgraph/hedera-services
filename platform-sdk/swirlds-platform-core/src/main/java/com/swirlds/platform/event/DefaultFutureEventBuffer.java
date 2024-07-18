@@ -20,11 +20,11 @@ import static com.swirlds.platform.consensus.ConsensusConstants.ROUND_FIRST;
 
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.metrics.FunctionGauge;
-import com.swirlds.common.sequence.map.SequenceMap;
-import com.swirlds.common.sequence.map.StandardSequenceMap;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.eventhandling.EventConfig;
-import com.swirlds.platform.wiring.ClearTrigger;
+import com.swirlds.platform.sequence.map.SequenceMap;
+import com.swirlds.platform.sequence.map.StandardSequenceMap;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -42,11 +42,11 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
      * A little lambda that builds a new array list. Cache this here so we don't have to create a new lambda each time
      * we buffer a future event.
      */
-    private static final Function<Long, List<GossipEvent>> BUILD_LIST = x -> new ArrayList<>();
+    private static final Function<Long, List<PlatformEvent>> BUILD_LIST = x -> new ArrayList<>();
 
-    private NonAncientEventWindow eventWindow;
+    private EventWindow eventWindow;
 
-    private final SequenceMap<Long /* birth round */, List<GossipEvent>> futureEvents =
+    private final SequenceMap<Long /* birth round */, List<PlatformEvent>> futureEvents =
             new StandardSequenceMap<>(ROUND_FIRST, 8, true, x -> x);
 
     private final AtomicLong bufferedEventCount = new AtomicLong(0);
@@ -62,7 +62,7 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
                 .getConfigData(EventConfig.class)
                 .getAncientMode();
 
-        eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
 
         platformContext
                 .getMetrics()
@@ -77,19 +77,17 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
      */
     @Override
     @Nullable
-    public List<GossipEvent> addEvent(@NonNull final GossipEvent event) {
+    public List<PlatformEvent> addEvent(@NonNull final PlatformEvent event) {
         if (eventWindow.isAncient(event)) {
             // we can safely ignore ancient events
             return null;
-        } else if (event.getHashedData().getBirthRound() <= eventWindow.getPendingConsensusRound()) {
+        } else if (event.getBirthRound() <= eventWindow.getPendingConsensusRound()) {
             // this is not a future event, no need to buffer it
             return List.of(event);
         }
 
         // this is a future event, buffer it
-        futureEvents
-                .computeIfAbsent(event.getHashedData().getBirthRound(), BUILD_LIST)
-                .add(event);
+        futureEvents.computeIfAbsent(event.getBirthRound(), BUILD_LIST).add(event);
         bufferedEventCount.incrementAndGet();
         return null;
     }
@@ -99,7 +97,7 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
      */
     @Override
     @Nullable
-    public List<GossipEvent> updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    public List<PlatformEvent> updateEventWindow(@NonNull final EventWindow eventWindow) {
         this.eventWindow = Objects.requireNonNull(eventWindow);
 
         // We want to release all events with birth rounds less than or equal to the pending consensus round.
@@ -107,9 +105,9 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
         // to keep within the buffer.
         final long oldestRoundToBuffer = eventWindow.getPendingConsensusRound() + 1;
 
-        final List<GossipEvent> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         futureEvents.shiftWindow(oldestRoundToBuffer, (round, roundEvents) -> {
-            for (final GossipEvent event : roundEvents) {
+            for (final PlatformEvent event : roundEvents) {
                 if (!eventWindow.isAncient(event)) {
                     events.add(event);
                 }
@@ -124,7 +122,7 @@ public class DefaultFutureEventBuffer implements FutureEventBuffer {
      * {@inheritDoc}
      */
     @Override
-    public void clear(@NonNull final ClearTrigger clearTrigger) {
+    public void clear(@NonNull final NoInput ignored) {
         futureEvents.clear();
     }
 }

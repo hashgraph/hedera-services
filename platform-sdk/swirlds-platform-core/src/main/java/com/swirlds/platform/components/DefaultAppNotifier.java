@@ -22,13 +22,12 @@ import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.ReconnectCompleteNotification;
-import com.swirlds.platform.listeners.StateLoadedFromDiskCompleteListener;
-import com.swirlds.platform.listeners.StateLoadedFromDiskNotification;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteNotification;
 import com.swirlds.platform.system.state.notifications.IssListener;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.NewSignedStateListener;
+import com.swirlds.platform.system.status.PlatformStatus;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -47,14 +46,6 @@ public record DefaultAppNotifier(@NonNull NotificationEngine notificationEngine)
      * {@inheritDoc}
      */
     @Override
-    public void sendStateLoadedFromDiskNotification(@NonNull final StateLoadedFromDiskNotification notification) {
-        notificationEngine.dispatch(StateLoadedFromDiskCompleteListener.class, notification);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void sendReconnectCompleteNotification(@NonNull final ReconnectCompleteNotification notification) {
         notificationEngine.dispatch(ReconnectCompleteListener.class, notification);
     }
@@ -63,8 +54,9 @@ public record DefaultAppNotifier(@NonNull NotificationEngine notificationEngine)
      * {@inheritDoc}
      */
     @Override
-    public void sendPlatformStatusChangeNotification(@NonNull final PlatformStatusChangeNotification notification) {
-        notificationEngine.dispatch(PlatformStatusChangeListener.class, notification);
+    public void sendPlatformStatusChangeNotification(@NonNull final PlatformStatus newStatus) {
+        notificationEngine.dispatch(
+                PlatformStatusChangeListener.class, new PlatformStatusChangeNotification(newStatus));
     }
 
     /**

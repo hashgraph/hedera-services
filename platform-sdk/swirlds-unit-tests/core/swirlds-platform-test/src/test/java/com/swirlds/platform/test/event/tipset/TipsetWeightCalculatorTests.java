@@ -33,7 +33,7 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
 import com.swirlds.platform.event.creation.tipset.Tipset;
@@ -44,8 +44,8 @@ import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.EventConstants;
 import com.swirlds.platform.system.events.EventDescriptor;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator;
-import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookGenerator.WeightDistributionStrategy;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
+import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder.WeightDistributionStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -83,7 +83,7 @@ class TipsetWeightCalculatorTests {
         final Map<NodeId, EventDescriptor> latestEvents = new HashMap<>();
 
         final AddressBook addressBook =
-                new RandomAddressBookGenerator(random).setSize(nodeCount).build();
+                RandomAddressBookBuilder.create(random).withSize(nodeCount).build();
 
         final Map<NodeId, Long> weightMap = new HashMap<>();
         long totalWeight = 0;
@@ -215,10 +215,10 @@ class TipsetWeightCalculatorTests {
         final Random random = getRandomPrintSeed();
         final int nodeCount = 4;
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(nodeCount)
-                .setAverageWeight(1)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(nodeCount)
+                .withAverageWeight(1)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         // In this test, we simulate from the perspective of node A. All nodes have 1 weight.
@@ -428,10 +428,10 @@ class TipsetWeightCalculatorTests {
         final Random random = getRandomPrintSeed();
         final int nodeCount = 4;
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(nodeCount)
-                .setAverageWeight(1)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(nodeCount)
+                .withAverageWeight(1)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         // In this test, we simulate from the perspective of node A.
@@ -506,10 +506,10 @@ class TipsetWeightCalculatorTests {
         final Random random = getRandomPrintSeed();
         final int nodeCount = 4;
 
-        final AddressBook addressBook = new RandomAddressBookGenerator(random)
-                .setSize(nodeCount)
-                .setAverageWeight(1)
-                .setWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
+        final AddressBook addressBook = RandomAddressBookBuilder.create(random)
+                .withSize(nodeCount)
+                .withAverageWeight(1)
+                .withWeightDistributionStrategy(WeightDistributionStrategy.BALANCED)
                 .build();
 
         final NodeId nodeA = addressBook.getNodeId(0);
@@ -547,10 +547,10 @@ class TipsetWeightCalculatorTests {
 
         // FUTURE WORK: Change the test to use birthRound instead of generation for ancient.
         // Mark generation 1 as ancient.
-        final NonAncientEventWindow nonAncientEventWindow =
-                new NonAncientEventWindow(1, 2, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD);
-        builder.setNonAncientEventWindow(nonAncientEventWindow);
-        childlessEventTracker.pruneOldEvents(nonAncientEventWindow);
+        final EventWindow eventWindow =
+                new EventWindow(1, 2, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD);
+        builder.setEventWindow(eventWindow);
+        childlessEventTracker.pruneOldEvents(eventWindow);
 
         // We shouldn't be able to find tipsets for ancient events.
         assertNull(builder.getTipset(eventA1));

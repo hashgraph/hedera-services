@@ -18,17 +18,18 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
+import javax.inject.Inject;
 
 /**
  * The default implementation of {@link SavepointStack}.
@@ -45,6 +46,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @param root the root state
      * @throws NullPointerException if {@code root} is {@code null}
      */
+    @Inject
     public SavepointStackImpl(@NonNull final HederaState root) {
         this.root = requireNonNull(root, "root must not be null");
         setupSavepoint(root);

@@ -52,7 +52,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -383,7 +382,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
             final String from, final String to, final long amount) {
         return spec -> {
             final var fromId = asId(from, spec);
-            final var toId = spec.registry().aliasIdFor(to);
+            final var toId = spec.registry().keyAliasIdFor(to);
             return xFromTo(fromId, toId, amount);
         };
     }
@@ -402,7 +401,7 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
                         .build();
                 return xFromTo(fromId, toAccId, amount);
             }
-            final var toId = spec.registry().aliasIdFor(to);
+            final var toId = spec.registry().keyAliasIdFor(to);
             return xFromTo(fromId, toId, amount);
         };
     }
@@ -629,11 +628,6 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
 
         final var feeData = AdapterUtils.feeDataFrom(accumulator);
         return feeData.toBuilder().setSubType(xferUsageMeta.getSubType()).build();
-    }
-
-    @Override
-    protected Function<Transaction, TransactionResponse> callToUse(final HapiSpec spec) {
-        return spec.clients().getCryptoSvcStub(targetNodeFor(spec), useTls)::cryptoTransfer;
     }
 
     @Override

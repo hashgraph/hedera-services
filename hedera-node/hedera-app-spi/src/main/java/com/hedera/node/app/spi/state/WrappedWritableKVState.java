@@ -16,7 +16,9 @@
 
 package com.hedera.node.app.spi.state;
 
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableKVStateBase;
+import com.swirlds.state.spi.metrics.StoreMetrics;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Iterator;
 import java.util.Objects;
@@ -88,7 +90,7 @@ public class WrappedWritableKVState<K, V> extends WritableKVStateBase<K, V> {
 
     /** {@inheritDoc} */
     @Override
-    public void setupMetrics(@NonNull Metrics metrics, @NonNull String name, @NonNull String label, long maxCapacity) {
-        delegate.setupMetrics(metrics, name, label, maxCapacity);
+    public void setMetrics(@NonNull StoreMetrics storeMetrics) {
+        delegate.setMetrics(storeMetrics);
     }
 }

@@ -35,15 +35,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.io.config.RecycleBinConfig_;
 import com.swirlds.common.io.utility.FileUtils;
 import com.swirlds.common.io.utility.RecycleBin;
 import com.swirlds.common.io.utility.RecycleBinImpl;
 import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.RandomUtils;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.common.test.fixtures.TestRecycleBin;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.preconsensus.PcesFile;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -321,16 +318,15 @@ class PcesFileTests {
         final Instant now = Instant.now();
 
         final Path streamDirectory = testDirectory.resolve("data");
-        final NodeId selfId = new NodeId(0);
         final Path recycleDirectory = testDirectory.resolve("recycle");
-        final Path actualRecycleDirectory = recycleDirectory.resolve(selfId.toString());
 
-        final Configuration configuration = new TestConfigBuilder()
-                .withValue(RecycleBinConfig_.RECYCLE_BIN_PATH, recycleDirectory.toString())
-                .getOrCreateConfig();
-
-        final RecycleBin recycleBin = new RecycleBinImpl(
-                configuration, new NoOpMetrics(), getStaticThreadManager(), Time.getCurrent(), new NodeId(0));
+        RecycleBin bin = new RecycleBinImpl(
+                new NoOpMetrics(),
+                getStaticThreadManager(),
+                Time.getCurrent(),
+                recycleDirectory,
+                TestRecycleBin.MAXIMUM_FILE_AGE,
+                TestRecycleBin.MINIMUM_PERIOD);
 
         Files.createDirectories(streamDirectory);
         Files.createDirectories(recycleDirectory);
@@ -373,11 +369,11 @@ class PcesFileTests {
                 }
             }
 
-            file.deleteFile(streamDirectory, recycleBin);
+            file.deleteFile(streamDirectory, bin);
 
             if (random.nextBoolean()) {
                 // Deleting twice shouldn't have any ill effects
-                file.deleteFile(streamDirectory, recycleBin);
+                file.deleteFile(streamDirectory, bin);
             }
 
             deletedFiles.add(file);
@@ -388,8 +384,7 @@ class PcesFileTests {
 
         // All files should have been moved to the recycle directory
         for (final PcesFile file : files) {
-            assertTrue(
-                    Files.exists(actualRecycleDirectory.resolve(file.getPath().getFileName())));
+            assertTrue(Files.exists(recycleDirectory.resolve(file.getPath().getFileName())));
         }
     }
 

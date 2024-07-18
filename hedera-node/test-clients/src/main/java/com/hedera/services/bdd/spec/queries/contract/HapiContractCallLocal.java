@@ -21,6 +21,7 @@ import static com.hedera.services.bdd.spec.queries.QueryUtils.answerCostHeader;
 import static com.hedera.services.bdd.spec.queries.QueryUtils.answerHeader;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiContractCall.HEXED_EVM_ADDRESS_LEN;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.encodeParametersForCall;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
@@ -36,10 +37,11 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.swirlds.common.utility.CommonUtils;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Arrays;
 import java.util.List;
@@ -75,6 +77,9 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     private Consumer<ContractFunctionResult> resultsObs;
 
     @Nullable
+    private Object[] expectedResults;
+
+    @Nullable
     private BiConsumer<ResponseCodeEnum, ContractFunctionResult> fullResultsObs;
 
     @Override
@@ -106,12 +111,6 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
         this.explicitRawParams = rawParams;
     }
 
-    public HapiContractCallLocal(String contract) {
-        this.abi = FALLBACK_ABI;
-        this.params = new Object[0];
-        this.contract = contract;
-    }
-
     public HapiContractCallLocal has(ContractFnResultAsserts provider) {
         expectations = Optional.of(provider);
         return this;
@@ -120,6 +119,10 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     public HapiContractCallLocal exposingResultTo(final Consumer<ContractFunctionResult> resultsObs) {
         this.resultsObs = resultsObs;
         return this;
+    }
+
+    public HapiContractCallLocal hasResult(@NonNull final Object... expected) {
+        return exposingTypedResultsTo(actual -> assertArrayEquals(expected, actual));
     }
 
     public HapiContractCallLocal exposingFullResultTo(
@@ -173,10 +176,11 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getContractCallLocal(spec, payment, false);
-        response = spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractCallLocalMethod(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         if (verboseLoggingOn) {
             LOG.info(
                     "{}{} result = {}",
@@ -210,12 +214,15 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getContractCallLocal(spec, payment, true);
-        Response response =
-                spec.clients().getScSvcStub(targetNodeFor(spec), useTls).contractCallLocalMethod(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getContractCallLocal(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getContractCallLocal(HapiSpec spec, Transaction payment, boolean costOnly) {
@@ -241,9 +248,10 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
                 .setGas(gas.orElse(spec.setup().defaultCallGas()))
                 .setMaxResultSize(maxResultSize.orElse(spec.setup().defaultMaxLocalCallRetBytes()));
 
-        if (contract.length() == HEXED_EVM_ADDRESS_LEN) {
+        final var effContract = contract.startsWith("0x") ? contract.substring(2) : contract;
+        if (effContract.length() == HEXED_EVM_ADDRESS_LEN) {
             opBuilder.setContractID(
-                    ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(contract))));
+                    ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(CommonUtils.unhex(effContract))));
         } else {
             opBuilder.setContractID(TxnUtils.asContractId(contract, spec));
         }
@@ -251,7 +259,7 @@ public class HapiContractCallLocal extends HapiQueryOp<HapiContractCallLocal> {
     }
 
     @Override
-    protected long costOnlyNodePayment(HapiSpec spec) throws Throwable {
+    protected long costOnlyNodePayment(HapiSpec spec) {
         return spec.fees().forOp(HederaFunctionality.ContractCallLocal, FeeBuilder.getCostForQueryByIdOnly());
     }
 

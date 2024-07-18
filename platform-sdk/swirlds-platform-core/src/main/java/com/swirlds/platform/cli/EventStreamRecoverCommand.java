@@ -19,14 +19,10 @@ package com.swirlds.platform.cli;
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.platform.recovery.EventRecoveryWorkflow.recoverState;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.cli.commands.EventStreamCommand;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.ConfigurationBuilder;
@@ -128,8 +124,7 @@ public final class EventStreamRecoverCommand extends AbstractCommand {
     public Integer call() throws Exception {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(
                 ConfigurationBuilder.create(), getAbsolutePath("settings.txt"), configurationPaths);
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+        final PlatformContext platformContext = PlatformContext.create(configuration);
 
         recoverState(
                 platformContext,

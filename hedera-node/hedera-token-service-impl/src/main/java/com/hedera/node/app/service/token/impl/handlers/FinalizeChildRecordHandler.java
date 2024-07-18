@@ -22,9 +22,7 @@ import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRew
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenTransferList;
-import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.RecordFinalizerBase;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
@@ -33,6 +31,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.records.ChildFinalizeContext;
 import com.hedera.node.app.service.token.records.ChildRecordFinalizer;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
+import com.hedera.node.config.data.LedgerConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import javax.inject.Inject;
@@ -43,6 +42,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class FinalizeChildRecordHandler extends RecordFinalizerBase implements ChildRecordFinalizer {
+    /**
+     * Constructs a {@link FinalizeChildRecordHandler} instance.
+     */
     @Inject
     public FinalizeChildRecordHandler() {
         // For Dagger Injection
@@ -58,11 +60,12 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         final var writableAccountStore = context.writableStore(WritableAccountStore.class);
         final var writableTokenRelStore = context.writableStore(WritableTokenRelationStore.class);
         final var writableNftStore = context.writableStore(WritableNftStore.class);
-        final var readableTokenStore = context.readableStore(ReadableTokenStore.class);
         final var writableTokenStore = context.writableStore(WritableTokenStore.class);
 
         /* ------------------------- Hbar changes from child transaction  ------------------------- */
-        final var hbarChanges = hbarChangesFrom(writableAccountStore);
+        final var maxLegalBalance =
+                context.configuration().getConfigData(LedgerConfig.class).totalTinyBarFloat();
+        final var hbarChanges = hbarChangesFrom(writableAccountStore, maxLegalBalance);
         if (!hbarChanges.isEmpty()) {
             // Save the modified hbar amounts so records can be written
             recordBuilder.transferList(TransferList.newBuilder()
@@ -85,15 +88,21 @@ public class FinalizeChildRecordHandler extends RecordFinalizerBase implements C
         // If the function is not a crypto transfer, then we filter all zero amounts from token transfer list.
         // To be compatible with mono-service records, we _don't_ filter zero token transfers in the record
         final var isCryptoTransfer = function == HederaFunctionality.CRYPTO_TRANSFER;
-        final var fungibleChanges = tokenRelChangesFrom(
-                writableTokenRelStore, readableTokenStore, TokenType.FUNGIBLE_COMMON, !isCryptoTransfer);
+        final var fungibleChanges = tokenRelChangesFrom(writableTokenRelStore, !isCryptoTransfer);
+        // get all the NFT changes. Go through the nft changes and see if there are any token relation changes
+        // for the sender and receiver of the NFTs. If there are, then reduce the balance change for that relation
+        // by 1 for receiver and increment the balance change for sender by 1. This is to ensure that the NFT
+        // transfer is not double counted in the token relation changes and the NFT changes
+        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore, fungibleChanges);
+
         final var fungibleTokenTransferLists = asTokenTransferListFrom(fungibleChanges, !isCryptoTransfer);
         tokenTransferLists = new ArrayList<>(fungibleTokenTransferLists);
 
         // ---------- nft transfers -------------------------
-        final var nftChanges = nftChangesFrom(writableNftStore, writableTokenStore);
-        final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
-        tokenTransferLists.addAll(nftTokenTransferLists);
+        if (!nftChanges.isEmpty()) {
+            final var nftTokenTransferLists = asTokenTransferListFromNftChanges(nftChanges);
+            tokenTransferLists.addAll(nftTokenTransferLists);
+        }
 
         // Record the modified fungible and non-fungible changes so records can be written
         if (!tokenTransferLists.isEmpty()) {

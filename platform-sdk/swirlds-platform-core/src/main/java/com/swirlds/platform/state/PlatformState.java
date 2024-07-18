@@ -51,6 +51,18 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
          * Added state to allow for birth round migration.
          */
         public static final int BIRTH_ROUND_MIGRATION_PATHWAY = 2;
+        /**
+         * Added the new running event hash algorithm.
+         */
+        public static final int RUNNING_EVENT_HASH = 3;
+        /**
+         * Removed the running event hash algorithm.
+         */
+        public static final int REMOVED_EVENT_HASH = 4;
+        /**
+         * Removed epoch hash fields.
+         */
+        public static final int REMOVED_EPOCH_HASH = 5;
     }
 
     /**
@@ -72,10 +84,10 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     private long round = GENESIS_ROUND;
 
     /**
-     * The running hash of the hashes of all events have reached consensus up through the round that this SignedState
-     * represents.
+     * The running event hash computed by the consensus event stream. This should be deleted once the consensus event
+     * stream is retired.
      */
-    private Hash runningEventHash;
+    private Hash legacyRunningEventHash;
 
     /**
      * the consensus timestamp for this signed state
@@ -86,17 +98,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * The version of the application software that was responsible for creating this state.
      */
     private SoftwareVersion creationSoftwareVersion;
-
-    /**
-     * The epoch hash of this state. Updated every time emergency recovery is performed.
-     */
-    private Hash epochHash;
-
-    /**
-     * The next epoch hash, used to update the epoch hash at the next round boundary. This field is not part of the hash
-     * and is not serialized.
-     */
-    private Hash nextEpochHash;
 
     /**
      * The number of non-ancient rounds.
@@ -152,11 +153,9 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         this.addressBook = that.addressBook == null ? null : that.addressBook.copy();
         this.previousAddressBook = that.previousAddressBook == null ? null : that.previousAddressBook.copy();
         this.round = that.round;
-        this.runningEventHash = that.runningEventHash;
+        this.legacyRunningEventHash = that.legacyRunningEventHash;
         this.consensusTimestamp = that.consensusTimestamp;
         this.creationSoftwareVersion = that.creationSoftwareVersion;
-        this.epochHash = that.epochHash;
-        this.nextEpochHash = that.nextEpochHash;
         this.roundsNonAncient = that.roundsNonAncient;
         this.snapshot = that.snapshot;
         this.freezeTime = that.freezeTime;
@@ -165,22 +164,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         this.firstVersionInBirthRoundMode = that.firstVersionInBirthRoundMode;
         this.lastRoundBeforeBirthRoundMode = that.lastRoundBeforeBirthRoundMode;
         this.lowestJudgeGenerationBeforeBirthRoundMode = that.lowestJudgeGenerationBeforeBirthRoundMode;
-    }
-
-    /**
-     * Update the epoch hash if the next epoch hash is non-null and different from the current epoch hash.
-     */
-    public void updateEpochHash() {
-        throwIfImmutable();
-        if (nextEpochHash != null && !nextEpochHash.equals(epochHash)) {
-            // This is the first round after an emergency recovery round
-            // Set the epoch hash to the next value
-            epochHash = nextEpochHash;
-
-            // set this to null so the value is consistent with a
-            // state loaded from disk or received via reconnect
-            nextEpochHash = null;
-        }
     }
 
     /**
@@ -199,10 +182,9 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeSerializable(addressBook, false);
         out.writeSerializable(previousAddressBook, true);
         out.writeLong(round);
-        out.writeSerializable(runningEventHash, false);
+        out.writeSerializable(legacyRunningEventHash, false);
         out.writeInstant(consensusTimestamp);
         out.writeSerializable(creationSoftwareVersion, true);
-        out.writeSerializable(epochHash, false);
         out.writeInt(roundsNonAncient);
         out.writeSerializable(snapshot, false);
         out.writeInstant(freezeTime);
@@ -221,10 +203,12 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         addressBook = in.readSerializable(false, AddressBook::new);
         previousAddressBook = in.readSerializable(true, AddressBook::new);
         round = in.readLong();
-        runningEventHash = in.readSerializable(false, Hash::new);
+        legacyRunningEventHash = in.readSerializable(false, Hash::new);
         consensusTimestamp = in.readInstant();
         creationSoftwareVersion = in.readSerializable();
-        epochHash = in.readSerializable(false, Hash::new);
+        if (version < ClassVersion.REMOVED_EPOCH_HASH) {
+            in.readSerializable(false, Hash::new);
+        }
         roundsNonAncient = in.readInt();
         snapshot = in.readSerializable(false, ConsensusSnapshot::new);
         freezeTime = in.readInstant();
@@ -235,6 +219,9 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
             lastRoundBeforeBirthRoundMode = in.readLong();
             lowestJudgeGenerationBeforeBirthRoundMode = in.readLong();
         }
+        if (version == ClassVersion.RUNNING_EVENT_HASH) {
+            in.readSerializable(false, Hash::new);
+        }
     }
 
     /**
@@ -242,7 +229,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.BIRTH_ROUND_MIGRATION_PATHWAY;
+        return ClassVersion.REMOVED_EPOCH_HASH;
     }
 
     /**
@@ -325,22 +312,22 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Get the running hash of all events that have been applied to this state since the beginning of time.
+     * Get the legacy running event hash. Used by the consensus event stream.
      *
      * @return a running hash of events
      */
     @Nullable
-    public Hash getRunningEventHash() {
-        return runningEventHash;
+    public Hash getLegacyRunningEventHash() {
+        return legacyRunningEventHash;
     }
 
     /**
-     * Set the running hash of all events that have been applied to this state since the beginning of time.
+     * Set the legacy running event hash. Used by the consensus event stream.
      *
-     * @param runningEventHash a running hash of events
+     * @param legacyRunningEventHash a running hash of events
      */
-    public void setRunningEventHash(@Nullable final Hash runningEventHash) {
-        this.runningEventHash = runningEventHash;
+    public void setLegacyRunningEventHash(@Nullable final Hash legacyRunningEventHash) {
+        this.legacyRunningEventHash = legacyRunningEventHash;
     }
 
     /**
@@ -390,44 +377,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         }
 
         return minimumJudgeInfo.getFirst().minimumJudgeAncientThreshold();
-    }
-
-    /**
-     * Sets the epoch hash of this state.
-     *
-     * @param epochHash the epoch hash of this state
-     */
-    public void setEpochHash(@Nullable final Hash epochHash) {
-        this.epochHash = epochHash;
-    }
-
-    /**
-     * Gets the epoch hash of this state.
-     *
-     * @return the epoch hash of this state
-     */
-    @Nullable
-    public Hash getEpochHash() {
-        return epochHash;
-    }
-
-    /**
-     * Sets the next epoch hash of this state.
-     *
-     * @param nextEpochHash the next epoch hash of this state
-     */
-    public void setNextEpochHash(@Nullable final Hash nextEpochHash) {
-        this.nextEpochHash = nextEpochHash;
-    }
-
-    /**
-     * Gets the next epoch hash of this state.
-     *
-     * @return the next epoch hash of this state
-     */
-    @Nullable
-    public Hash getNextEpochHash() {
-        return nextEpochHash;
     }
 
     /**

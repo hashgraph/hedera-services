@@ -31,8 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.io.utility.FileUtils;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.platform.recovery.internal.EventStreamSingleFileIterator;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
@@ -63,9 +62,9 @@ class EventStreamSingleFileIteratorTest {
         StaticSoftwareVersion.reset();
     }
 
-    public static void assertEventsAreEqual(final EventImpl expected, final EventImpl actual) {
-        assertEquals(expected.getBaseEvent(), actual.getBaseEvent());
-        assertEquals(expected.getConsensusData(), actual.getConsensusData());
+    public static void assertEventsAreEqual(
+            final DetailedConsensusEvent expected, final DetailedConsensusEvent actual) {
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -75,9 +74,9 @@ class EventStreamSingleFileIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
-        final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<DetailedConsensusEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -92,11 +91,7 @@ class EventStreamSingleFileIteratorTest {
                 final DetailedConsensusEvent peekObject = iterator.peek();
                 final DetailedConsensusEvent event = iterator.next();
                 assertSame(event, peekObject, "invalid peek behavior");
-
-                // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEventsAreEqual(e, events.get(eventIndex));
+                assertEventsAreEqual(event, events.get(eventIndex));
                 eventIndex++;
             }
 
@@ -118,9 +113,9 @@ class EventStreamSingleFileIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
-        final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<DetailedConsensusEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -137,11 +132,7 @@ class EventStreamSingleFileIteratorTest {
                 final DetailedConsensusEvent peekObject = iterator.peek();
                 final DetailedConsensusEvent event = iterator.next();
                 assertSame(event, peekObject, "invalid peek behavior");
-
-                // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEquals(e, events.get(eventIndex), "event should match input event");
+                assertEquals(event, events.get(eventIndex), "event should match input event");
                 eventIndex++;
             }
 
@@ -162,9 +153,9 @@ class EventStreamSingleFileIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
-        final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<DetailedConsensusEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -184,11 +175,7 @@ class EventStreamSingleFileIteratorTest {
                 final DetailedConsensusEvent peekObject = iterator.peek();
                 final DetailedConsensusEvent event = iterator.next();
                 assertSame(event, peekObject, "invalid peek behavior");
-
-                // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEventsAreEqual(e, events.get(eventIndex));
+                assertEventsAreEqual(event, events.get(eventIndex));
                 eventIndex++;
             }
 
@@ -215,9 +202,9 @@ class EventStreamSingleFileIteratorTest {
         ConstructableRegistry.getInstance().registerConstructables("com.swirlds");
 
         final Random random = getRandomPrintSeed();
-        final Path directory = TemporaryFileBuilder.buildTemporaryDirectory();
+        final Path directory = LegacyTemporaryFileBuilder.buildTemporaryDirectory();
 
-        final List<EventImpl> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
+        final List<DetailedConsensusEvent> events = generateRandomEvents(random, 0L, Duration.ofSeconds(4), 1, 20);
 
         writeRandomEventStream(random, directory, 2, events);
         final Path eventStreamFile = getFirstEventStreamFile(directory);
@@ -237,11 +224,7 @@ class EventStreamSingleFileIteratorTest {
                 final DetailedConsensusEvent peekObject = iterator.peek();
                 final DetailedConsensusEvent event = iterator.next();
                 assertSame(event, peekObject, "invalid peek behavior");
-
-                // Convert to event impl to allow comparison
-                final EventImpl e = new EventImpl(
-                        event.getBaseEventHashedData(), event.getBaseEventUnhashedData(), event.getConsensusData());
-                assertEventsAreEqual(e, events.get(eventIndex));
+                assertEventsAreEqual(event, events.get(eventIndex));
                 eventIndex++;
             }
 

@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.contract.impl.exec;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
-import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion.EVM_VERSIONS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ContractID;
@@ -30,7 +29,6 @@ import com.hedera.node.app.service.contract.impl.hevm.ActionSidecarContentTracer
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransactionResult;
-import com.hedera.node.app.service.contract.impl.hevm.HederaEvmVersion;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.contract.impl.infra.HevmTransactionFactory;
@@ -41,7 +39,6 @@ import com.hedera.node.config.data.ContractsConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
@@ -62,11 +59,11 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
     @Nullable
     private final HydratedEthTxData hydratedEthTxData;
 
+    private final TransactionProcessor processor;
     private final ActionSidecarContentTracer tracer;
     private final RootProxyWorldUpdater rootProxyWorldUpdater;
     public final HevmTransactionFactory hevmTransactionFactory;
     private final Supplier<HederaWorldUpdater> feesOnlyUpdater;
-    private final Map<HederaEvmVersion, TransactionProcessor> processors;
     private final CustomGasCharging gasCharging;
 
     @Inject
@@ -80,13 +77,13 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
             @NonNull final RootProxyWorldUpdater worldUpdater,
             @NonNull final HevmTransactionFactory hevmTransactionFactory,
             @NonNull final Supplier<HederaWorldUpdater> feesOnlyUpdater,
-            @NonNull final Map<HederaEvmVersion, TransactionProcessor> processors,
+            @NonNull final TransactionProcessor processor,
             @NonNull final CustomGasCharging customGasCharging) {
         this.context = Objects.requireNonNull(context);
         this.hydratedEthTxData = hydratedEthTxData;
         this.tracer = Objects.requireNonNull(tracer);
         this.feesOnlyUpdater = Objects.requireNonNull(feesOnlyUpdater);
-        this.processors = Objects.requireNonNull(processors);
+        this.processor = Objects.requireNonNull(processor);
         this.rootProxyWorldUpdater = Objects.requireNonNull(worldUpdater);
         this.configuration = Objects.requireNonNull(configuration);
         this.contractsConfig = Objects.requireNonNull(contractsConfig);
@@ -107,9 +104,6 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         if (hevmTransaction.isException() && contractsConfig.chargeGasOnPreEvmException()) {
             return chargeFeesAndReturnOutcome(hevmTransaction);
         }
-
-        // Get the appropriate processor for the EVM version
-        final var processor = processors.get(EVM_VERSIONS.get(contractsConfig.evmVersion()));
 
         // Process the transaction and return its outcome
         try {
@@ -166,7 +160,7 @@ public class ContextTransactionProcessor implements Callable<CallOutcome> {
         }
     }
 
-    private CallOutcome chargeFeesAndReturnOutcome(HederaEvmTransaction hevmTransaction) {
+    private CallOutcome chargeFeesAndReturnOutcome(@NonNull final HederaEvmTransaction hevmTransaction) {
         // If there was an exception while creating the HederaEvmTransaction and the transaction is a ContractCall
         // charge fees to the sender and return a CallOutcome reflecting the error.
         final var senderId = context.body().transactionIDOrThrow().accountIDOrThrow();

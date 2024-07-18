@@ -16,7 +16,7 @@
 
 package com.swirlds.platform.state.iss;
 
-import com.swirlds.common.scratchpad.ScratchpadType;
+import com.swirlds.platform.scratchpad.ScratchpadType;
 
 /**
  * Describes the data held in the ISS scratchpad.

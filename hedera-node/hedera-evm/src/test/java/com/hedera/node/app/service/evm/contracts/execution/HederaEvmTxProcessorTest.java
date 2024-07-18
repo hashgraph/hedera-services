@@ -36,7 +36,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -50,7 +49,6 @@ import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
-import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
@@ -67,6 +65,7 @@ class HederaEvmTxProcessorTest {
     private static final int MAX_STACK_SIZE = 1024;
     private final String EVM_VERSION_0_30 = "v0.30";
     private final String EVM_VERSION_0_34 = "v0.34";
+    private final String EVM_VERSION_0_50 = "v0.50";
 
     @Mock
     private PricesAndFeesProvider livePricesSource;
@@ -79,9 +78,6 @@ class HederaEvmTxProcessorTest {
 
     @Mock
     private GasCalculator gasCalculator;
-
-    @Mock
-    private Set<Operation> operations;
 
     @Mock
     private HederaEvmWorldUpdater updater;
@@ -111,19 +107,23 @@ class HederaEvmTxProcessorTest {
     private final long GAS_LIMIT = 300_000L;
     private final String INSUFFICIENT_GAS = "INSUFFICIENT_GAS";
 
-    private MockHederaEvmTxProcessor evmTxProcessor;
+    private SpyHederaEvmTxProcessor evmTxProcessor;
+    private MessageCallProcessor msgCallProcessor050;
     private String mcpVersion;
     private String ccpVersion;
 
     @BeforeEach
     void setup() {
+        final var testChainId = BigInteger.ZERO;
         final var operationRegistry = new OperationRegistry();
-        MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
-        operations.forEach(operationRegistry::put);
+        final var operationRegistry50 = new OperationRegistry();
+        MainnetEVMs.registerLondonOperations(operationRegistry, gasCalculator, testChainId);
+        MainnetEVMs.registerCancunOperations(operationRegistry, gasCalculator, testChainId);
         when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
         when(evmConfiguration.getJumpDestCacheWeightBytes())
                 .thenReturn(EvmConfiguration.DEFAULT.getJumpDestCacheWeightBytes());
         final var evm30 = new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.LONDON);
+        final var evm50 = new EVM(operationRegistry, gasCalculator, evmConfiguration, EvmSpecVersion.CANCUN);
         final Map<String, Provider<MessageCallProcessor>> mcps = Map.of(
                 EVM_VERSION_0_30,
                 () -> {
@@ -134,6 +134,11 @@ class HederaEvmTxProcessorTest {
                 () -> {
                     mcpVersion = EVM_VERSION_0_34;
                     return new MessageCallProcessor(evm30, new PrecompileContractRegistry());
+                },
+                EVM_VERSION_0_50,
+                () -> {
+                    mcpVersion = EVM_VERSION_0_50;
+                    return msgCallProcessor050 = new MessageCallProcessor(evm50, new PrecompileContractRegistry());
                 });
         final Map<String, Provider<ContractCreationProcessor>> ccps = Map.of(
                 EVM_VERSION_0_30,
@@ -146,9 +151,14 @@ class HederaEvmTxProcessorTest {
                 () -> {
                     ccpVersion = EVM_VERSION_0_34;
                     return new ContractCreationProcessor(gasCalculator, evm30, true, List.of(), 1);
+                },
+                EVM_VERSION_0_50,
+                () -> {
+                    ccpVersion = EVM_VERSION_0_50;
+                    return new ContractCreationProcessor(gasCalculator, evm50, true, List.of(), 1);
                 });
 
-        evmTxProcessor = new MockHederaEvmTxProcessor(
+        evmTxProcessor = new SpyHederaEvmTxProcessor(
                 worldState, livePricesSource, globalDynamicProperties, gasCalculator, mcps, ccps, blockMetaSource);
 
         final var hederaEvmOperationTracer = new DefaultHederaTracer();
@@ -164,6 +174,34 @@ class HederaEvmTxProcessorTest {
         final var result =
                 evmTxProcessor.execute(sender, receiver, 33_333L, 1234L, 1L, Bytes.EMPTY, true, mirrorReceiver);
         assertTrue(result.isSuccessful());
+    }
+
+    @Test
+    void assertSuccessExecution050() {
+        // Force EVM 0.50
+        when(globalDynamicProperties.dynamicEvmVersion()).thenReturn(true);
+        when(globalDynamicProperties.evmVersion()).thenReturn(EVM_VERSION_0_50);
+        givenValidMock(0L);
+        given(globalDynamicProperties.fundingAccountAddress()).willReturn(fundingAccount);
+
+        final var spyOpTracer = new DefaultHederaTracer() {
+            public MessageFrame frame;
+
+            @Override
+            public void init(final MessageFrame initialFrame) {
+                frame = initialFrame;
+            }
+        };
+        evmTxProcessor.setOperationTracer(spyOpTracer);
+        evmTxProcessor.setupFields(Bytes.EMPTY, false);
+        final var result =
+                evmTxProcessor.execute(sender, receiver, 33_333L, 1234L, 1L, Bytes.EMPTY, true, mirrorReceiver);
+        assertTrue(result.isSuccessful());
+        assertEquals(msgCallProcessor050, evmTxProcessor.getMessageCallProcessor(), "Confirming using EVM 0.50");
+
+        // Given EVM 0.50, check Cancun semantics
+        assertTrue(() -> spyOpTracer.frame.getVersionedHashes().orElseThrow().isEmpty());
+        assertEquals(Wei.ONE, spyOpTracer.frame.getBlobGasPrice());
     }
 
     @Test

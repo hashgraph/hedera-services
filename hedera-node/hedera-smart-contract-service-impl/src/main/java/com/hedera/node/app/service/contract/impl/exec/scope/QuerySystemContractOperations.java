@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.scope;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
@@ -29,7 +31,7 @@ import com.hedera.node.app.service.contract.impl.records.ContractCallRecordBuild
 import com.hedera.node.app.spi.workflows.QueryContext;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
+import java.time.InstantSource;
 import java.util.function.Predicate;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
@@ -43,12 +45,14 @@ import org.apache.tuweni.bytes.Bytes;
  */
 @QueryScope
 public class QuerySystemContractOperations implements SystemContractOperations {
-
     private final QueryContext context;
+    private final InstantSource instantSource;
 
     @Inject
-    public QuerySystemContractOperations(@NonNull final QueryContext queryContext) {
-        this.context = queryContext;
+    public QuerySystemContractOperations(
+            @NonNull final QueryContext queryContext, @NonNull final InstantSource instantSource) {
+        this.context = requireNonNull(queryContext);
+        this.instantSource = requireNonNull(instantSource);
     }
 
     /**
@@ -95,7 +99,7 @@ public class QuerySystemContractOperations implements SystemContractOperations {
      * {@inheritDoc}
      */
     @Override
-    public Transaction syntheticTransactionForHtsCall(Bytes input, ContractID contractID, boolean isViewCall) {
+    public Transaction syntheticTransactionForNativeCall(Bytes input, ContractID contractID, boolean isViewCall) {
         // no-op
         return null;
     }
@@ -106,6 +110,6 @@ public class QuerySystemContractOperations implements SystemContractOperations {
     @Override
     @NonNull
     public ExchangeRate currentExchangeRate() {
-        return context.exchangeRateInfo().activeRate(Instant.now());
+        return context.exchangeRateInfo().activeRate(instantSource.instant());
     }
 }

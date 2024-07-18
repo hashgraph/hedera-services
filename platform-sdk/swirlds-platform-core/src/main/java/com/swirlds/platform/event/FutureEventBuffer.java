@@ -17,8 +17,8 @@
 package com.swirlds.platform.event;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.wiring.ClearTrigger;
+import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.wiring.NoInput;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
@@ -42,7 +42,7 @@ public interface FutureEventBuffer {
      */
     @InputWireLabel("preconsensus event")
     @Nullable
-    List<GossipEvent> addEvent(@NonNull GossipEvent event);
+    List<PlatformEvent> addEvent(@NonNull PlatformEvent event);
 
     /**
      * Update the current event window. As the event window advances, time catches up to time travelers, and events that
@@ -51,15 +51,15 @@ public interface FutureEventBuffer {
      * @param eventWindow the new event window
      * @return a list of events that were previously from the future but are now from the present
      */
-    @InputWireLabel("non-ancient event window")
+    @InputWireLabel("event window")
     @Nullable
-    List<GossipEvent> updateEventWindow(@NonNull NonAncientEventWindow eventWindow);
+    List<PlatformEvent> updateEventWindow(@NonNull EventWindow eventWindow);
 
     /**
      * Clear all data from the future event buffer.
      *
-     * @param clearTrigger placeholder clearTrigger object
+     * @param ignored ignored trigger object
      */
     @InputWireLabel("clear")
-    void clear(@NonNull ClearTrigger clearTrigger);
+    void clear(@NonNull NoInput ignored);
 }

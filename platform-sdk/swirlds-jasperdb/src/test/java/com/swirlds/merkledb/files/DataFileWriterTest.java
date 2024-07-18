@@ -19,9 +19,9 @@ package com.swirlds.merkledb.files;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
-import com.swirlds.merkledb.serialize.DataItemSerializer;
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
+import com.swirlds.merkledb.serialize.BaseSerializer;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -42,7 +42,7 @@ class DataFileWriterTest {
     private DataFileWriter<Object> dataFileWriter;
 
     @Mock
-    private DataItemSerializer<Object> dataItemSerializer;
+    private BaseSerializer<Object> dataItemSerializer;
 
     private final CountDownLatch serializeLatch = new CountDownLatch(1);
     private final AtomicInteger callCount = new AtomicInteger(0);
@@ -74,7 +74,7 @@ class DataFileWriterTest {
         */
 
         Path dataFileWriterPath = Files.createTempDirectory("dataFileWriter");
-        dataFileWriter = new DataFileWriterJdb<>("test", dataFileWriterPath, 1, dataItemSerializer, Instant.now(), 1);
+        dataFileWriter = new DataFileWriter<>("test", dataFileWriterPath, 1, dataItemSerializer, Instant.now(), 1);
     }
 
     /**
@@ -87,8 +87,8 @@ class DataFileWriterTest {
         ExecutorService writeExecutor = Executors.newSingleThreadExecutor();
         Future<?> writeFuture = writeExecutor.submit(() -> {
             try {
-                ByteBuffer allocate = ByteBuffer.allocate(10);
-                allocate.put("test".getBytes());
+                BufferedData allocate = BufferedData.allocate(10);
+                allocate.writeBytes("test".getBytes());
                 allocate.flip();
                 dataFileWriter.writeCopiedDataItem(allocate);
             } catch (IOException e) {

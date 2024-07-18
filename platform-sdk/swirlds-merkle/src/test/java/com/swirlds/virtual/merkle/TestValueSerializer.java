@@ -20,7 +20,6 @@ import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.merkledb.serialize.ValueSerializer;
-import java.nio.ByteBuffer;
 
 public class TestValueSerializer implements ValueSerializer<TestValue> {
 
@@ -67,23 +66,11 @@ public class TestValueSerializer implements ValueSerializer<TestValue> {
     }
 
     @Override
-    public void serialize(TestValue data, ByteBuffer buffer) {
-        data.serialize(buffer);
-    }
-
-    @Override
     public TestValue deserialize(final ReadableSequentialData in) {
         final int size = in.readInt();
         final byte[] bytes = new byte[size];
         in.readBytes(bytes);
         final String value = CommonUtils.getNormalisedStringFromBytes(bytes);
         return new TestValue(value);
-    }
-
-    @Override
-    public TestValue deserialize(ByteBuffer buffer, long dataVersion) {
-        final TestValue value = new TestValue();
-        value.deserialize(buffer, (int) dataVersion);
-        return value;
     }
 }

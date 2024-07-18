@@ -38,7 +38,7 @@ import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.consensus.ConsensusConstants;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.gossip.shadowgraph.ShadowEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
@@ -695,13 +695,13 @@ public class SyncTests {
 
         executor.setCustomPreSyncConfiguration((c, l) -> {
             c.getShadowGraph()
-                    .updateEventWindow(new NonAncientEventWindow(
+                    .updateEventWindow(new EventWindow(
                             0 /* ignored by shadowgraph */,
                             callerMaximumIndicator,
                             callerExpiredThreshold,
                             GENERATION_THRESHOLD));
             l.getShadowGraph()
-                    .updateEventWindow(new NonAncientEventWindow(
+                    .updateEventWindow(new EventWindow(
                             0 /* ignored by shadowgraph */,
                             listenerMaximumIndicator,
                             listenerExpiredThreshold,
@@ -745,14 +745,14 @@ public class SyncTests {
             long callerMinIndicator = listenerNonAncientThreshold - 1;
 
             listener.getShadowGraph()
-                    .updateEventWindow(new NonAncientEventWindow(
+                    .updateEventWindow(new EventWindow(
                             ROUND_FIRST /* ignored */,
                             Math.max(ancientMode.getGenesisIndicator(), listenerNonAncientThreshold),
                             Math.max(ancientMode.getGenesisIndicator(), listenerMinIndicator),
                             ancientMode));
 
             caller.getShadowGraph()
-                    .updateEventWindow(new NonAncientEventWindow(
+                    .updateEventWindow(new EventWindow(
                             ROUND_FIRST /* ignored */,
                             Math.max(ancientMode.getGenesisIndicator(), callerNonAncientThreshold),
                             Math.max(ancientMode.getGenesisIndicator(), callerMinIndicator),
@@ -788,7 +788,7 @@ public class SyncTests {
                     allCallerEvents.forEach(e -> e.getEvent().clear());
 
                     // Expire the events from the shadow graph
-                    final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+                    final EventWindow eventWindow = new EventWindow(
                             0 /* ignored by shadowgraph */,
                             ancientMode.getGenesisIndicator(),
                             indicatorToExpire.get() + 1,
@@ -852,13 +852,13 @@ public class SyncTests {
         // before the sync, expire the tip on the listener
         executor.setCustomPreSyncConfiguration((c, l) -> {
             l.getShadowGraph()
-                    .updateEventWindow(new NonAncientEventWindow(
+                    .updateEventWindow(new EventWindow(
                             0 /* ignored by shadowgraph */,
                             maximumIndicator.get() + 2,
                             maximumIndicator.get() + 1,
                             params.getAncientMode()));
 
-            c.updateEventWindow(new NonAncientEventWindow(
+            c.updateEventWindow(new EventWindow(
                     0 /* ignored by shadowgraph */,
                     maximumIndicator.get() + 2,
                     max(params.getAncientMode().getGenesisIndicator(), maximumIndicator.get() - 1),
@@ -869,7 +869,7 @@ public class SyncTests {
         final SyncPhaseParallelExecutor parallelExecutor = new SyncPhaseParallelExecutor(
                 getStaticThreadManager(),
                 () -> executor.getCaller()
-                        .updateEventWindow(new NonAncientEventWindow(
+                        .updateEventWindow(new EventWindow(
                                 0 /* ignored by shadowgraph */,
                                 maximumIndicator.get() + 2,
                                 maximumIndicator.get() + 1,
@@ -983,7 +983,7 @@ public class SyncTests {
         executor.setCustomPreSyncConfiguration((c, l) ->
                 indicatorToExpire.set(l.getEmitter().getGraphGenerator().getMaxGeneration(creatorId) / 2));
 
-        final NonAncientEventWindow eventWindow = new NonAncientEventWindow(
+        final EventWindow eventWindow = new EventWindow(
                 0 /* ignored by shadowgraph */,
                 params.getAncientMode().getGenesisIndicator(),
                 Math.max(params.getAncientMode().getGenesisIndicator(), indicatorToExpire.get()),
@@ -1126,14 +1126,14 @@ public class SyncTests {
                     ancientMode);
 
             listener.getShadowGraph()
-                    .updateEventWindow(new NonAncientEventWindow(
+                    .updateEventWindow(new EventWindow(
                             ROUND_FIRST /* ignored */,
                             callerMaximumIndicator / 2,
                             callerAncientIndicator,
                             ancientMode));
 
             listener.getShadowGraph()
-                    .updateEventWindow(new NonAncientEventWindow(
+                    .updateEventWindow(new EventWindow(
                             ROUND_FIRST /* ignored */,
                             callerMaximumIndicator / 2,
                             callerAncientIndicator,

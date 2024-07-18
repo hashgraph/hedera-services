@@ -28,6 +28,7 @@ import com.swirlds.logging.benchmark.log4j2.plain.Log4JConfig;
 import com.swirlds.logging.benchmark.log4j2.rolling.Log4JRollingConfig;
 import com.swirlds.logging.benchmark.util.LogFiles;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.spi.LoggerContext;
 import org.openjdk.jmh.annotations.Level;
@@ -70,6 +71,7 @@ public class Log4J2BaseBenchmark {
 
     @TearDown(Level.Trial)
     public void tearDown() {
+        LogManager.shutdown();
         config.tearDown();
     }
 }

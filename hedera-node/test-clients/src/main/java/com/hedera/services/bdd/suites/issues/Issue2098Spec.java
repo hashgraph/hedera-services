@@ -16,6 +16,7 @@
 
 package com.hedera.services.bdd.suites.issues;
 
+import static com.hedera.services.bdd.junit.ContextRequirement.PERMISSION_OVERRIDES;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
@@ -23,42 +24,26 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
+import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
+import static com.hedera.services.bdd.suites.HapiSuite.API_PERMISSIONS;
+import static com.hedera.services.bdd.suites.HapiSuite.FUNDING;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
-import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class Issue2098Spec extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(Issue2098Spec.class);
+public class Issue2098Spec {
     private static final String CIVILIAN = "civilian";
     private static final String CRYPTO_TRANSFER = "cryptoTransfer";
     private static final String GET_TOPIC_INFO = "getTopicInfo";
 
-    public static void main(String... args) {
-        new Issue2098Spec().runSuiteSync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(new HapiSpec[] {
-            queryApiPermissionsChangeImmediately(),
-            txnApiPermissionsChangeImmediately(),
-            adminsCanQueryNoMatterPermissions(),
-            adminsCanTransactNoMatterPermissions(),
-        });
-    }
-
-    @HapiTest
-    final HapiSpec txnApiPermissionsChangeImmediately() {
+    @LeakyHapiTest(requirement = PERMISSION_OVERRIDES)
+    final Stream<DynamicTest> txnApiPermissionsChangeImmediately() {
         return defaultHapiSpec("TxnApiPermissionsChangeImmediately")
                 .given(cryptoCreate(CIVILIAN))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -75,8 +60,8 @@ public class Issue2098Spec extends HapiSuite {
                         cryptoTransfer(tinyBarsFromTo(CIVILIAN, FUNDING, 1L)).payingWith(CIVILIAN));
     }
 
-    @HapiTest
-    final HapiSpec queryApiPermissionsChangeImmediately() {
+    @LeakyHapiTest(requirement = PERMISSION_OVERRIDES)
+    final Stream<DynamicTest> queryApiPermissionsChangeImmediately() {
         return defaultHapiSpec("QueryApiPermissionsChangeImmediately")
                 .given(cryptoCreate(CIVILIAN), createTopic("misc"))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -90,8 +75,8 @@ public class Issue2098Spec extends HapiSuite {
                         getTopicInfo("misc").payingWith(CIVILIAN));
     }
 
-    @HapiTest
-    final HapiSpec adminsCanQueryNoMatterPermissions() {
+    @LeakyHapiTest(requirement = PERMISSION_OVERRIDES)
+    final Stream<DynamicTest> adminsCanQueryNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanQueryNoMatterPermissions")
                 .given(cryptoCreate(CIVILIAN), createTopic("misc"))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -105,8 +90,8 @@ public class Issue2098Spec extends HapiSuite {
                                 .overridingProps(Map.of(GET_TOPIC_INFO, "0-*")));
     }
 
-    @HapiTest
-    final HapiSpec adminsCanTransactNoMatterPermissions() {
+    @LeakyHapiTest(requirement = PERMISSION_OVERRIDES)
+    final Stream<DynamicTest> adminsCanTransactNoMatterPermissions() {
         return defaultHapiSpec("AdminsCanTransactNoMatterPermissions")
                 .given(cryptoCreate(CIVILIAN))
                 .when(fileUpdate(API_PERMISSIONS)
@@ -121,10 +106,5 @@ public class Issue2098Spec extends HapiSuite {
                         fileUpdate(API_PERMISSIONS)
                                 .payingWith(ADDRESS_BOOK_CONTROL)
                                 .overridingProps(Map.of(CRYPTO_TRANSFER, "0-*")));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

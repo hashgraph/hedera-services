@@ -151,6 +151,11 @@ public final class Path {
         return path == 0 || (path & 0x1) == 1;
     }
 
+    public static boolean isRight(long path) {
+        assert path != INVALID_PATH;
+        return (path & 0x1) == 0;
+    }
+
     public static boolean isFarRight(long path) {
         // It turns out, all 0's followed by all 1's followed by a single 0 is always the far right node.
         // Given a valid far right like 0b0000000_00111110, -1L << (64 - numLeadingZeros) will produce a complimentary
@@ -222,6 +227,23 @@ public final class Path {
      */
     public static long getRightChildPath(long path) {
         return (path << 1) + 2;
+    }
+
+    public static long getRightGrandChildPath(final long path, final int levels) {
+        return (path << levels) + (2L << levels) - 2;
+    }
+
+    public static boolean isInSubTree(final long parentPath, final long pathToCheck) {
+        if (parentPath == pathToCheck) {
+            return true;
+        }
+        final int parentPathRank = getRank(parentPath);
+        final int pathToCheckRank = getRank(pathToCheck);
+        if (pathToCheckRank <= parentPathRank) {
+            return false;
+        }
+        final long pathToCheckParent = getGrandParentPath(pathToCheck, pathToCheckRank - parentPathRank);
+        return parentPath == pathToCheckParent;
     }
 
     /**

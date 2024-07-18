@@ -47,6 +47,10 @@ public class CustomRoyaltyFeeAssessor {
 
     private final CustomFixedFeeAssessor fixedFeeAssessor;
 
+    /**
+     * Constructs a {@link CustomRoyaltyFeeAssessor} instance.
+     * @param fixedFeeAssessor the fixed fee assessor
+     */
     @Inject
     public CustomRoyaltyFeeAssessor(final CustomFixedFeeAssessor fixedFeeAssessor) {
         this.fixedFeeAssessor = fixedFeeAssessor;
@@ -98,17 +102,23 @@ public class CustomRoyaltyFeeAssessor {
                 fixedFeeAssessor.assessFixedFee(feeMeta, receiver, fallbackFee, result);
             } else {
                 if (!isPayerExempt(feeMeta, fee, sender)) {
-                    chargeRoyalty(exchangedValue, feeMeta, fee, result);
+                    chargeRoyalty(exchangedValue, fee, result);
                 }
             }
         }
+        // We check this outside the for loop above because a sender should only be marked as paid royalty, after
+        // assessing
+        // all the fees for the given token. If a sender is sending multiple NFTs of the same token, royalty fee
+        // should be paid only once.
         // We don't want to charge the fallback fee for each nft transfer, if the receiver has already
-        // paid it for this token
+        // paid it for this token.
+
         if (exchangedValue.isEmpty()) {
             // Receiver pays fallback fees
             result.addToRoyaltiesPaid(Pair.of(receiver, tokenId));
         } else {
-            // Sender effectively pays percent royalties
+            // Sender effectively pays percent royalties. Here we don't check isPayerExempt because
+            // the sender could be exempt for one fee on token, but not other fees(if any) on the same token.
             result.addToRoyaltiesPaid(Pair.of(sender, tokenId));
         }
     }
@@ -118,13 +128,11 @@ public class CustomRoyaltyFeeAssessor {
      * then the fallback fee is charged to the receiver balance. Otherwise, the royalty fee is charged to the
      * credit value of the receiver.
      * @param exchangedValues fungible values exchanged to the receiver
-     * @param feeMeta custom fee meta
      * @param fee royalty fee
      * @param result assessment result
      */
     private void chargeRoyalty(
             @NonNull List<AdjustmentUtils.ExchangedValue> exchangedValues,
-            @NonNull final CustomFeeMeta feeMeta,
             @NonNull final CustomFee fee,
             @NonNull final AssessmentResult result) {
         for (final var exchange : exchangedValues) {
@@ -188,8 +196,8 @@ public class CustomRoyaltyFeeAssessor {
         final var htsAdjustments = result.getHtsAdjustments().computeIfAbsent(denom, ADJUSTMENTS_MAP_FACTORY);
         final var mutableInputHtsAdjustments =
                 result.getMutableInputBalanceAdjustments().get(denom);
-        mutableInputHtsAdjustments.merge(account, -royalty, Long::sum);
-        htsAdjustments.merge(feeCollector, royalty, Long::sum);
+        mutableInputHtsAdjustments.merge(account, -royalty, AdjustmentUtils::addExactOrThrow);
+        htsAdjustments.merge(feeCollector, royalty, AdjustmentUtils::addExactOrThrow);
     }
 
     /**
@@ -207,7 +215,7 @@ public class CustomRoyaltyFeeAssessor {
         final var hbarAdjustments = result.getHbarAdjustments();
         final var mutableHbarAdjustments =
                 result.getMutableInputBalanceAdjustments().get(HBAR_TOKEN_ID);
-        mutableHbarAdjustments.merge(account, -royalty, Long::sum);
-        hbarAdjustments.merge(feeCollector, royalty, Long::sum);
+        mutableHbarAdjustments.merge(account, -royalty, AdjustmentUtils::addExactOrThrow);
+        hbarAdjustments.merge(feeCollector, royalty, AdjustmentUtils::addExactOrThrow);
     }
 }

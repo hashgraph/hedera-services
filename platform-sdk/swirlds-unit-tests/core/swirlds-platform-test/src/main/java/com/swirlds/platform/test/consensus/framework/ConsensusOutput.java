@@ -17,14 +17,13 @@
 package com.swirlds.platform.test.consensus.framework;
 
 import com.swirlds.base.time.Time;
-import com.swirlds.common.sequence.set.SequenceSet;
-import com.swirlds.common.sequence.set.StandardSequenceSet;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.sequence.set.SequenceSet;
+import com.swirlds.platform.sequence.set.StandardSequenceSet;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -38,16 +37,15 @@ import java.util.List;
 public class ConsensusOutput implements Clearable {
     private final Time time;
     private final LinkedList<ConsensusRound> consensusRounds;
-    private final LinkedList<GossipEvent> addedEvents;
-    private final LinkedList<GossipEvent> staleEvents;
+    private final LinkedList<PlatformEvent> addedEvents;
+    private final LinkedList<PlatformEvent> staleEvents;
 
-    private final SequenceSet<GossipEvent> nonAncientEvents;
+    private final SequenceSet<PlatformEvent> nonAncientEvents;
     private final SequenceSet<EventDescriptor> nonAncientConsensusEvents;
 
     private long latestRound;
 
-    private NonAncientEventWindow eventWindow =
-            NonAncientEventWindow.getGenesisNonAncientEventWindow(AncientMode.GENERATION_THRESHOLD);
+    private EventWindow eventWindow = EventWindow.getGenesisEventWindow(AncientMode.GENERATION_THRESHOLD);
 
     /**
      * Creates a new instance.
@@ -61,27 +59,23 @@ public class ConsensusOutput implements Clearable {
         staleEvents = new LinkedList<>();
 
         // FUTURE WORK: birth round compatibility
-        nonAncientEvents = new StandardSequenceSet<>(0, 1024, true, GossipEvent::getGeneration);
+        nonAncientEvents = new StandardSequenceSet<>(0, 1024, true, PlatformEvent::getGeneration);
         nonAncientConsensusEvents = new StandardSequenceSet<>(0, 1024, true, EventDescriptor::getGeneration);
     }
 
-    public void eventAdded(@NonNull final GossipEvent event) {
+    public void eventAdded(@NonNull final PlatformEvent event) {
         addedEvents.add(event);
         nonAncientEvents.add(event);
     }
 
     public void consensusRound(@NonNull final ConsensusRound consensusRound) {
-        for (final EventImpl event : consensusRound.getConsensusEvents()) {
-            // this a workaround until Consensus starts using a clock that is provided
-            event.setReachedConsTimestamp(time.now());
-        }
         consensusRounds.add(consensusRound);
 
         // Look for stale events
-        for (final EventImpl consensusEvent : consensusRound.getConsensusEvents()) {
-            nonAncientConsensusEvents.add(consensusEvent.getBaseEvent().getDescriptor());
+        for (final PlatformEvent consensusEvent : consensusRound.getConsensusEvents()) {
+            nonAncientConsensusEvents.add(consensusEvent.getDescriptor());
         }
-        final long ancientThreshold = consensusRound.getNonAncientEventWindow().getAncientThreshold();
+        final long ancientThreshold = consensusRound.getEventWindow().getAncientThreshold();
         nonAncientEvents.shiftWindow(ancientThreshold, e -> {
             if (!nonAncientConsensusEvents.contains(e.getDescriptor())) {
                 staleEvents.add(e);
@@ -89,13 +83,13 @@ public class ConsensusOutput implements Clearable {
         });
         nonAncientConsensusEvents.shiftWindow(ancientThreshold);
 
-        eventWindow = consensusRound.getNonAncientEventWindow();
+        eventWindow = consensusRound.getEventWindow();
     }
 
     /**
      * @return a queue of all events that have been marked as stale
      */
-    public @NonNull LinkedList<GossipEvent> getStaleEvents() {
+    public @NonNull LinkedList<PlatformEvent> getStaleEvents() {
         return staleEvents;
     }
 
@@ -106,15 +100,15 @@ public class ConsensusOutput implements Clearable {
         return consensusRounds;
     }
 
-    public @NonNull LinkedList<GossipEvent> getAddedEvents() {
+    public @NonNull LinkedList<PlatformEvent> getAddedEvents() {
         return addedEvents;
     }
 
-    public @NonNull List<GossipEvent> sortedAddedEvents() {
-        final List<GossipEvent> sortedEvents = new ArrayList<>(addedEvents);
-        sortedEvents.sort(Comparator.comparingLong(GossipEvent::getGeneration)
-                .thenComparingLong(e -> e.getHashedData().getCreatorId().id())
-                .thenComparing(e -> e.getHashedData().getHash()));
+    public @NonNull List<PlatformEvent> sortedAddedEvents() {
+        final List<PlatformEvent> sortedEvents = new ArrayList<>(addedEvents);
+        sortedEvents.sort(Comparator.comparingLong(PlatformEvent::getGeneration)
+                .thenComparingLong(e -> e.getCreatorId().id())
+                .thenComparing(PlatformEvent::getHash));
         return sortedEvents;
     }
 
@@ -132,7 +126,7 @@ public class ConsensusOutput implements Clearable {
      * @return the current event window
      */
     @NonNull
-    public NonAncientEventWindow getEventWindow() {
+    public EventWindow getEventWindow() {
         return eventWindow;
     }
 
@@ -144,6 +138,6 @@ public class ConsensusOutput implements Clearable {
         nonAncientEvents.clear();
         nonAncientConsensusEvents.clear();
         latestRound = 0;
-        eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(AncientMode.GENERATION_THRESHOLD);
+        eventWindow = EventWindow.getGenesisEventWindow(AncientMode.GENERATION_THRESHOLD);
     }
 }

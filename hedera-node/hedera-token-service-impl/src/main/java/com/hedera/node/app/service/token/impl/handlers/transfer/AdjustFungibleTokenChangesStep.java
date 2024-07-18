@@ -25,14 +25,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_A
 import static com.hedera.hapi.node.base.ResponseCodeEnum.UNEXPECTED_TOKEN_DECIMALS;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
@@ -42,7 +41,6 @@ import com.hedera.node.app.service.token.impl.util.TokenHandlerHelper;
 import com.hedera.node.app.spi.workflows.HandleException;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,17 +49,21 @@ import java.util.Map;
  * Puts all fungible token changes from CryptoTransfer into state's modifications map.
  */
 public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements TransferStep {
-    // The CryptoTransferTransactionBody here is obtained by replacing aliases with their
-    // corresponding accountIds.
-    private final CryptoTransferTransactionBody op;
+
+    private final List<TokenTransferList> tokenTransferLists;
     private final AccountID topLevelPayer;
 
+    /**
+     * Constructs the step with token transfer lists and the payer account.
+     * @param tokenTransferLists the token transfer lists
+     * @param topLevelPayer the payer account
+     */
     public AdjustFungibleTokenChangesStep(
-            @NonNull final CryptoTransferTransactionBody op, @NonNull final AccountID topLevelPayer) {
-        requireNonNull(op);
+            @NonNull final List<TokenTransferList> tokenTransferLists, @NonNull final AccountID topLevelPayer) {
+        requireNonNull(tokenTransferLists);
         requireNonNull(topLevelPayer);
 
-        this.op = op;
+        this.tokenTransferLists = tokenTransferLists;
         this.topLevelPayer = topLevelPayer;
     }
 
@@ -70,9 +72,10 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
         requireNonNull(transferContext);
 
         final var handleContext = transferContext.getHandleContext();
-        final var tokenStore = handleContext.writableStore(WritableTokenStore.class);
-        final var tokenRelStore = handleContext.writableStore(WritableTokenRelationStore.class);
-        final var accountStore = handleContext.writableStore(WritableAccountStore.class);
+        final var storeFactory = handleContext.storeFactory();
+        final var tokenStore = storeFactory.writableStore(WritableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
 
         // two maps for aggregating the changes to the token balances and allowances.
         final Map<EntityIDPair, Long> aggregatedFungibleTokenChanges = new LinkedHashMap<>();
@@ -80,7 +83,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
 
         // Look at all fungible token transfers and put into aggregatedFungibleTokenChanges map.
         // Also, put any transfers happening with allowances in allowanceTransfers map.
-        for (final var transfers : op.tokenTransfersOrElse(emptyList())) {
+        for (final var transfers : tokenTransferLists) {
             final var tokenId = transfers.tokenOrThrow();
             final var token = TokenHandlerHelper.getIfUsable(tokenId, tokenStore);
 
@@ -88,7 +91,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
                 validateTrue(token.decimals() == transfers.expectedDecimalsOrThrow(), UNEXPECTED_TOKEN_DECIMALS);
             }
 
-            for (final var aa : transfers.transfersOrElse(emptyList())) {
+            for (final var aa : transfers.transfers()) {
                 validateTrue(
                         token.tokenType() == TokenType.FUNGIBLE_COMMON,
                         ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON);
@@ -144,7 +147,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
                     accountId, accountStore, transferContext.getHandleContext().expiryValidator(), INVALID_ACCOUNT_ID);
             final var accountCopy = account.copyBuilder();
 
-            final var tokenAllowances = new ArrayList<>(account.tokenAllowancesOrElse(Collections.emptyList()));
+            final var tokenAllowances = new ArrayList<>(account.tokenAllowances());
             var haveExistingAllowance = false;
             for (int i = 0; i < tokenAllowances.size(); i++) {
                 final var allowance = tokenAllowances.get(i);
@@ -216,8 +219,7 @@ public class AdjustFungibleTokenChangesStep extends BaseTokenHandler implements 
             @NonNull final TokenID denom,
             @NonNull final List<AssessedCustomFee> assessedCustomFees) {
         for (final var fee : assessedCustomFees) {
-            if (denom.equals(fee.tokenId())
-                    && fee.effectivePayerAccountIdOrElse(emptyList()).contains(payer)) {
+            if (denom.equals(fee.tokenId()) && fee.effectivePayerAccountId().contains(payer)) {
                 return true;
             }
         }

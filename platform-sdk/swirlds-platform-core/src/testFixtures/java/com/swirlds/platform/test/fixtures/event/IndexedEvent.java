@@ -16,9 +16,8 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.system.events.BaseEventHashedData;
-import com.swirlds.platform.system.events.BaseEventUnhashedData;
 
 /**
  * An event with the same behavior as a standard event but with the addition of some debugging
@@ -30,24 +29,12 @@ public class IndexedEvent extends EventImpl {
 
     private long generatorIndex;
 
-    private static final long CLASS_ID = 0x284d35dc6f9265d0L;
-
-    public IndexedEvent() {}
-
-    public IndexedEvent(
-            final BaseEventHashedData baseEventHashedData,
-            final BaseEventUnhashedData baseEventUnhashedData,
-            final EventImpl selfParent,
-            final EventImpl otherParent) {
-        super(baseEventHashedData, baseEventUnhashedData, selfParent, otherParent);
+    public IndexedEvent(final PlatformEvent platformEvent) {
+        super(platformEvent, null, null);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
+    public IndexedEvent(final PlatformEvent platformEvent, final EventImpl selfParent, final EventImpl otherParent) {
+        super(platformEvent, selfParent, otherParent);
     }
 
     /** Get the index of this event with respect to the generator that created it. */

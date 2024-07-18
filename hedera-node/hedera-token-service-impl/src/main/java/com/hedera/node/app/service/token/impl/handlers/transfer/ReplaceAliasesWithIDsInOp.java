@@ -17,7 +17,6 @@
 package com.hedera.node.app.service.token.impl.handlers.transfer;
 
 import static com.hedera.node.app.service.token.impl.handlers.transfer.EnsureAliasesStep.isAlias;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
@@ -52,9 +51,9 @@ public class ReplaceAliasesWithIDsInOp {
         final var tokenTransfersList = new ArrayList<TokenTransferList>();
         final var accountAmounts = new ArrayList<AccountAmount>();
         // replace all aliases in hbar transfers
-        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmountsOrElse(emptyList())) {
+        for (final var aa : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
             if (isAlias(aa.accountIDOrThrow())) {
-                final var resolvedId = resolutions.get(aa.accountID().alias());
+                final var resolvedId = resolutions.get(aa.accountIDOrThrow().alias());
                 accountAmounts.add(aa.copyBuilder().accountID(resolvedId).build());
             } else {
                 accountAmounts.add(aa);
@@ -64,13 +63,13 @@ public class ReplaceAliasesWithIDsInOp {
         replacedAliasesOp.transfers(transferList);
 
         // replace all aliases in token transfers
-        for (final var adjust : op.tokenTransfersOrElse(emptyList())) {
+        for (final var adjust : op.tokenTransfers()) {
             final var tokenTransferList = TokenTransferList.newBuilder().token(adjust.token());
             if (adjust.hasExpectedDecimals()) {
                 tokenTransferList.expectedDecimals(adjust.expectedDecimals());
             }
             final List<AccountAmount> replacedTokenAdjusts = new ArrayList<>();
-            for (final var tokenAdjust : adjust.transfersOrElse(emptyList())) {
+            for (final var tokenAdjust : adjust.transfers()) {
                 if (isAlias(tokenAdjust.accountIDOrThrow())) {
                     final var resolvedId =
                             resolutions.get(tokenAdjust.accountID().alias());
@@ -85,7 +84,7 @@ public class ReplaceAliasesWithIDsInOp {
             }
             // replace aliases in nft adjusts
             final List<NftTransfer> replacedNftAdjusts = new ArrayList<>();
-            for (final var nftAdjust : adjust.nftTransfersOrElse(emptyList())) {
+            for (final var nftAdjust : adjust.nftTransfers()) {
                 final var nftAdjustCopy = nftAdjust.copyBuilder();
                 final var isReceiverAlias = isAlias(nftAdjust.receiverAccountIDOrThrow());
                 final var isSenderAlias = isAlias(nftAdjust.senderAccountIDOrThrow());

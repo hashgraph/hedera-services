@@ -18,7 +18,6 @@ package com.swirlds.demo.virtualmerkle;
 
 import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
 import static com.swirlds.common.merkle.iterators.MerkleIterationOrder.BREADTH_FIRST;
-import static com.swirlds.common.utility.CommonUtils.hex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -27,7 +26,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.CryptographyHolder;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.common.io.utility.TemporaryFileBuilder;
+import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapKey;
 import com.swirlds.demo.virtualmerkle.map.account.AccountVirtualMapValue;
@@ -109,7 +108,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
 
             if (prevHash != null) {
                 // add Previous Hash
-                out.write(prevHash.getValue());
+                prevHash.getBytes().writeTo(out);
             }
             // add leaf key
             leaf.getKey().serialize(out);
@@ -162,7 +161,7 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
         // different file system than the file(s) used to deserialize the maps. In such case, builders will fail
         // to create hard file links when constructing new data sources. To fix it, let's override the default
         // temp location to the same file system as the files to load
-        TemporaryFileBuilder.overrideTemporaryFileLocation(classFolder.resolve("tmp"));
+        LegacyTemporaryFileBuilder.overrideTemporaryFileLocation(classFolder.resolve("tmp"));
 
         for (final Path roundFolder : roundsFolders) {
             // reset the default instance path to force creation of a new MerkleDB instance
@@ -211,19 +210,19 @@ public class VirtualMerkleLeafHasher<K extends VirtualKey, V extends VirtualValu
 
                 // add content to json
                 if (accountsHash != null) {
-                    rootNode.put("accounts", hex(accountsHash.getValue()));
+                    rootNode.put("accounts", accountsHash.toHex());
                 } else {
                     rootNode.put("accounts", "empty");
                 }
 
                 if (scHash != null) {
-                    rootNode.put("sc", hex(scHash.getValue()));
+                    rootNode.put("sc", scHash.toHex());
                 } else {
                     rootNode.put("sc", "empty");
                 }
 
                 if (byteCodeHash != null) {
-                    rootNode.put("byteCode", hex(byteCodeHash.getValue()));
+                    rootNode.put("byteCode", byteCodeHash.toHex());
                 } else {
                     rootNode.put("byteCode", "empty");
                 }

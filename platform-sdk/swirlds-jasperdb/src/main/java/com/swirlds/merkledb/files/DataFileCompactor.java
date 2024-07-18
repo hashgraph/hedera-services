@@ -23,6 +23,7 @@ import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFiles;
 import static com.swirlds.merkledb.files.DataFileCommon.getSizeOfFilesByPath;
 import static com.swirlds.merkledb.files.DataFileCommon.logCompactStats;
 
+import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.base.units.UnitConstants;
 import com.swirlds.merkledb.KeyRange;
 import com.swirlds.merkledb.collections.CASableLongIndex;
@@ -111,9 +112,6 @@ public class DataFileCompactor<D> {
      */
     private final AtomicReference<Instant> currentCompactionStartTime = new AtomicReference<>();
 
-    /** Indicates whether to use PBJ for current compaction */
-    private final AtomicBoolean currentCompactionUsePbj = new AtomicBoolean();
-
     /**
      * Current data file writer during compaction, or null if compaction isn't running. The writer
      * is created at compaction start. If compaction is interrupted by a snapshot, the writer is
@@ -191,16 +189,6 @@ public class DataFileCompactor<D> {
             final List<? extends DataFileReader<D>> filesToCompact,
             final int targetCompactionLevel)
             throws IOException, InterruptedException {
-        return compactFiles(index, filesToCompact, targetCompactionLevel, dbConfig.usePbj());
-    }
-
-    // visible for testing
-    synchronized List<Path> compactFiles(
-            final CASableLongIndex index,
-            final List<? extends DataFileReader<D>> filesToCompact,
-            final int targetCompactionLevel,
-            final boolean usePbj)
-            throws IOException, InterruptedException {
         if (filesToCompact.size() < getMinNumberOfFilesToCompact()) {
             // nothing to do we have merged since the last data update
             logger.debug(MERKLE_DB.getMarker(), "No files were available for merging [{}]", storeName);
@@ -215,7 +203,6 @@ public class DataFileCompactor<D> {
                 .orElseGet(Instant::now);
         snapshotCompactionLock.acquire();
         try {
-            currentCompactionUsePbj.set(usePbj);
             currentCompactionStartTime.set(startTime);
             newCompactedFiles.clear();
             startNewCompactionFile(targetCompactionLevel);
@@ -262,22 +249,11 @@ public class DataFileCompactor<D> {
                 snapshotCompactionLock.acquire();
                 try {
                     final DataFileWriter<D> newFileWriter = currentWriter.get();
-                    long newLocation = -1;
-                    // Check if reader and writer are compatible
-                    if (newFileWriter.getFileType() == reader.getFileType()) {
-                        // Check if reader supports reading raw data item bytes
-                        final Object itemBytes = reader.readDataItemBytes(fileOffset);
-                        assert itemBytes != null;
-                        newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
-                    }
-                    if (newLocation == -1) {
-                        final D item = reader.readDataItem(fileOffset);
-                        assert item != null;
-                        newLocation = newFileWriter.storeDataItem(item);
-                    }
+                    final BufferedData itemBytes = reader.readDataItemBytes(fileOffset);
+                    assert itemBytes != null;
+                    long newLocation = newFileWriter.writeCopiedDataItem(itemBytes);
                     // update the index
                     index.putIfEqual(path, dataLocation, newLocation);
-
                 } catch (final ClosedByInterruptException e) {
                     logger.info(
                             MERKLE_DB.getMarker(),
@@ -333,15 +309,13 @@ public class DataFileCompactor<D> {
     private void startNewCompactionFile(int compactionLevel) throws IOException {
         final Instant startTime = currentCompactionStartTime.get();
         assert startTime != null;
-        // no way to force JDB or PBJ format for compacted files, always get the value from config
-        final DataFileWriter<D> newFileWriter =
-                dataFileCollection.newDataFile(startTime, compactionLevel, currentCompactionUsePbj.get());
+        final DataFileWriter<D> newFileWriter = dataFileCollection.newDataFile(startTime, compactionLevel);
         currentWriter.set(newFileWriter);
         final Path newFileCreated = newFileWriter.getPath();
         newCompactedFiles.add(newFileCreated);
         final DataFileMetadata newFileMetadata = newFileWriter.getMetadata();
         final DataFileReader<D> newFileReader =
-                dataFileCollection.addNewDataFileReader(newFileCreated, newFileMetadata, currentCompactionUsePbj.get());
+                dataFileCollection.addNewDataFileReader(newFileCreated, newFileMetadata);
         currentReader.set(newFileReader);
     }
 

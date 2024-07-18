@@ -49,14 +49,10 @@ public class ConnectionServer implements InterruptableRunnable {
     private final ExecutorService incomingConnPool;
 
     /**
-     *  @param threadManager
-     *  		responsible for managing thread lifecycles
-     * @param port
-     * 		the port ot use
-     * @param socketFactory
-     * 		responsible for creating new sockets
-     * @param newConnectionHandler
-     * 		handles a new connection after it has been created
+     * @param threadManager        responsible for managing thread lifecycles
+     * @param port                 the port ot use
+     * @param socketFactory        responsible for creating new sockets
+     * @param newConnectionHandler handles a new connection after it has been created
      */
     public ConnectionServer(
             final ThreadManager threadManager,
@@ -73,10 +69,10 @@ public class ConnectionServer implements InterruptableRunnable {
 
     @Override
     public void run() throws InterruptedException {
-        try (ServerSocket serverSocket = socketFactory.createServerSocket(port)) {
+        try (final ServerSocket serverSocket = socketFactory.createServerSocket(port)) {
             listen(serverSocket);
         } catch (final RuntimeException | IOException e) {
-            logger.error(EXCEPTION.getMarker(), "Cannot bind ServerSocket", e);
+            logger.error(EXCEPTION.getMarker(), "Cannot bind ServerSocket on port {}", port, e);
         }
         // if the above fails, sleep a while before trying again
         Thread.sleep(SLEEP_AFTER_BIND_FAILED_MS);

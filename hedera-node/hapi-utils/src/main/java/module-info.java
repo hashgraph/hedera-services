@@ -17,18 +17,19 @@ module com.hedera.node.app.hapi.utils {
     exports com.hedera.node.app.hapi.utils.sysfiles.validation;
 
     requires transitive com.hedera.node.hapi;
-    requires transitive com.google.protobuf;
     requires transitive com.swirlds.common;
+    requires transitive com.google.protobuf;
+    requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
     requires transitive headlong;
     requires transitive javax.inject;
     requires transitive net.i2p.crypto.eddsa;
     requires transitive org.apache.commons.lang3;
-    requires com.hedera.node.app.service.evm;
+    requires com.swirlds.base;
     requires com.fasterxml.jackson.databind;
     requires com.google.common;
+    requires com.hedera.evm;
     requires com.sun.jna;
-    requires com.swirlds.base;
     requires org.apache.commons.codec;
     requires org.apache.logging.log4j.core;
     requires org.apache.logging.log4j;

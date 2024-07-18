@@ -16,11 +16,11 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
-import static com.hedera.node.app.service.mono.ledger.accounts.staking.StakingUtils.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakeIdChangeType.FROM_ACCOUNT_TO_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.getAllRewardReceivers;
+import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.NOT_REWARDED_SINCE_LAST_STAKING_META_CHANGE;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.hasStakeMetaChanges;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.roundedToHbar;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.totalStake;
@@ -49,6 +49,9 @@ import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * This handler manages the paying staking rewards for the accounts.
+ */
 @Singleton
 public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
     private static final Logger log = LogManager.getLogger(StakingRewardsHandlerImpl.class);
@@ -56,6 +59,12 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
     private final StakePeriodManager stakePeriodManager;
     private final StakeInfoHelper stakeInfoHelper;
 
+    /**
+     * Default constructor for injection.
+     * @param rewardsPayer the rewards payer
+     * @param stakePeriodManager the stake period manager
+     * @param stakeInfoHelper the stake info helper
+     */
     @Inject
     public StakingRewardsHandlerImpl(
             @NonNull final StakingRewardsDistributor rewardsPayer,
@@ -95,6 +104,9 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
         final var rewardsPaid = rewardsPayer.payRewardsIfPending(
                 rewardReceivers, writableStore, stakingRewardsStore, stakingInfoStore, consensusNow, recordBuilder);
 
+        // Decrease staking reward account balance by rewardPaid amount
+        decreaseStakeRewardAccountBalance(rewardsPaid, stakingRewardAccountId, writableStore);
+
         if (!context.isScheduleDispatch()) {
             // We only manage stake metadata once, at the end of a transaction; but to do
             // this correctly, we need to include information about any rewards paid during
@@ -107,10 +119,15 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
             // Adjust stakes for nodes and account's staking metadata
             adjustStakeMetadata(
                     writableStore, stakingInfoStore, stakingRewardsStore, consensusNow, rewardsPaid, rewardReceivers);
+
+            // Don't double-report prepaid rewards in the parent record
+            if (!prePaidRewards.isEmpty()) {
+                for (AccountID accountID : prePaidRewards.keySet()) {
+                    rewardsPaid.remove(accountID);
+                }
+            }
         }
 
-        // Decrease staking reward account balance by rewardPaid amount
-        decreaseStakeRewardAccountBalance(rewardsPaid, stakingRewardAccountId, writableStore);
         return rewardsPaid;
     }
 
@@ -124,23 +141,25 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
      * @param writableStore The store to write to for updated values
      */
     public void adjustStakedToMeForAccountStakees(@NonNull final WritableAccountStore writableStore) {
-        // If there is a FROM_ACCOUNT_ or _TO_ACCOUNT stake change scenario, the set of modified
-        // accounts in the writable store can change inside the body of the for loop below; so we
-        // create a new ArrayList to iterate through just the accounts modified by the initial
+        // If there is a FROM_ACCOUNT_TO_* or FROM_*_TO_ACCOUNT stake change scenario, the set of
+        // modified accounts in the writable store can change inside the body of the for loop below;
+        // so we create a new ArrayList to iterate through just the accounts modified by the initial
         // transaction
-        final var modifiedAccounts = new ArrayList<>(writableStore.modifiedAccountsInState());
-        for (final var id : modifiedAccounts) {
+        final var modifiedAccountIds = new ArrayList<>(writableStore.modifiedAccountsInState());
+        for (final var id : modifiedAccountIds) {
             final var originalAccount = writableStore.getOriginalValue(id);
-            final var modifiedAccount = writableStore.get(id);
-
+            // In the current system, it is impossible for a user transaction to remove an account;
+            // it can only be marked deleted
+            final var modifiedAccount = requireNonNull(writableStore.get(id));
             // check if stakedId has changed
             final var scenario = StakeIdChangeType.forCase(originalAccount, modifiedAccount);
-
             // If the stakedId is changed from account or to account. Then we need to update the
             // stakedToMe balance of new account. This is needed in order to trigger next level rewards
             // if the account is staked to node
             if (scenario.equals(FROM_ACCOUNT_TO_ACCOUNT)
-                    && originalAccount.stakedAccountId().equals(modifiedAccount.stakedAccountId())) {
+                    && requireNonNull(originalAccount)
+                            .stakedAccountIdOrThrow()
+                            .equals(modifiedAccount.stakedAccountId())) {
                 final var roundedFinalBalance = roundedToHbar(modifiedAccount.tinybarBalance());
                 final var roundedInitialBalance = roundedToHbar(originalAccount.tinybarBalance());
                 final var delta = roundedFinalBalance - roundedInitialBalance;
@@ -151,7 +170,8 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
                 }
             } else {
                 if (scenario.withdrawsFromAccount()) {
-                    final var curStakedAccountId = originalAccount.stakedAccountId();
+                    final var curStakedAccountId =
+                            requireNonNull(originalAccount).stakedAccountId();
                     final var roundedInitialBalance = roundedToHbar(originalAccount.tinybarBalance());
                     updateStakedToMeFor(curStakedAccountId, -roundedInitialBalance, writableStore);
                 }
@@ -495,18 +515,24 @@ public class StakingRewardsHandlerImpl implements StakingRewardsHandler {
     }
 
     private void updateStakedToMeFor(
-            @NonNull final AccountID stakee,
+            @Nullable final AccountID stakeeId,
             final long roundedFinalBalance,
             @NonNull final WritableAccountStore writableStore) {
-        // stakee is null when SENTINEL_ACCOUNT_ID sent as staked_account_id in update crypto transaction
-        if (stakee != null) {
-            final var account = writableStore.get(stakee);
-            final var initialStakedToMe = account.stakedToMe();
+        // stakeeId is null when SENTINEL_ACCOUNT_ID sent as staked_account_id in update crypto transaction
+        if (stakeeId != null) {
+            final var stakee = writableStore.get(stakeeId);
+            if (stakee == null) {
+                // This should be impossible, we try to enforce staking only to existing accounts; but
+                // it doesn't justify failing a user transaction, so we just log it
+                log.error("Stakee account {} not found in the store", stakeeId);
+                return;
+            }
+            final var initialStakedToMe = stakee.stakedToMe();
             final var finalStakedToMe = initialStakedToMe + roundedFinalBalance;
             if (finalStakedToMe < 0) {
-                log.error("StakedToMe for account {} is negative after reward distribution, set it to 0", stakee);
+                log.error("StakedToMe for account {} is negative after reward distribution, set it to 0", stakeeId);
             }
-            final var copy = account.copyBuilder()
+            final var copy = stakee.copyBuilder()
                     .stakedToMe(finalStakedToMe < 0 ? 0 : finalStakedToMe)
                     .build();
             writableStore.put(copy);

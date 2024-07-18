@@ -32,9 +32,9 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.pool.ParallelExecutionException;
 import com.swirlds.common.threading.pool.ParallelExecutor;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.FallenBehindManager;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -91,7 +91,7 @@ public class ShadowgraphSynchronizer {
     /**
      * consumes events received by the peer
      */
-    private final Consumer<GossipEvent> eventHandler;
+    private final Consumer<PlatformEvent> eventHandler;
 
     /**
      * manages sync related decisions
@@ -151,7 +151,7 @@ public class ShadowgraphSynchronizer {
             @NonNull final Shadowgraph shadowGraph,
             final int numberOfNodes,
             @NonNull final SyncMetrics syncMetrics,
-            @NonNull final Consumer<GossipEvent> receivedEventHandler,
+            @NonNull final Consumer<PlatformEvent> receivedEventHandler,
             @NonNull final FallenBehindManager fallenBehindManager,
             @NonNull final IntakeEventCounter intakeEventCounter,
             @NonNull final ParallelExecutor executor) {
@@ -218,7 +218,7 @@ public class ShadowgraphSynchronizer {
 
             // Step 1: each peer tells the other about its tips and event windows
 
-            final NonAncientEventWindow myWindow = reservation.getEventWindow();
+            final EventWindow myWindow = reservation.getEventWindow();
 
             final List<ShadowEvent> myTips = getTips();
             // READ and WRITE event windows numbers & tip hashes
@@ -289,9 +289,7 @@ public class ShadowgraphSynchronizer {
      * @return true if we have fallen behind, false otherwise
      */
     private boolean fallenBehind(
-            @NonNull final NonAncientEventWindow self,
-            @NonNull final NonAncientEventWindow other,
-            @NonNull final Connection connection) {
+            @NonNull final EventWindow self, @NonNull final EventWindow other, @NonNull final Connection connection) {
         Objects.requireNonNull(self);
         Objects.requireNonNull(other);
         Objects.requireNonNull(connection);
@@ -322,8 +320,8 @@ public class ShadowgraphSynchronizer {
     private List<EventImpl> createSendList(
             @NonNull final NodeId selfId,
             @NonNull final Set<ShadowEvent> knownSet,
-            @NonNull final NonAncientEventWindow myEventWindow,
-            @NonNull final NonAncientEventWindow theirEventWindow) {
+            @NonNull final EventWindow myEventWindow,
+            @NonNull final EventWindow theirEventWindow) {
 
         Objects.requireNonNull(selfId);
         Objects.requireNonNull(knownSet);

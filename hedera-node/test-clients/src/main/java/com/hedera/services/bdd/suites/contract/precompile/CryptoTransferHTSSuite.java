@@ -59,13 +59,24 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferList;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.tokenTransferLists;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
+import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.EXPECT_STREAMLINED_INGEST_RECORDS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONTRACT_CALL_RESULTS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_FUNCTION_PARAMETERS;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.eventSignatureOf;
+import static com.hedera.services.bdd.suites.contract.Utils.mirrorAddrWith;
 import static com.hedera.services.bdd.suites.contract.Utils.parsedToByteString;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.existingSystemAccounts;
+import static com.hedera.services.bdd.suites.contract.evm.Evm46ValidationSuite.nonExistingSystemAccounts;
 import static com.hedera.services.bdd.suites.contract.precompile.ERCPrecompileSuite.TRANSFER_SIGNATURE;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.GAS_TO_OFFER;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
@@ -85,27 +96,26 @@ import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ByteStringUtils;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.OptionalLong;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class CryptoTransferHTSSuite extends HapiSuite {
+public class CryptoTransferHTSSuite {
 
     private static final Logger log = LogManager.getLogger(CryptoTransferHTSSuite.class);
 
@@ -125,7 +135,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     private static final String CONTRACT = "CryptoTransfer";
     private static final String MULTI_KEY = "purpose";
     private static final String HTS_TRANSFER_FROM_CONTRACT = "HtsTransferFrom";
-    private static final String NEGATIVE_HTS_TRANSFER_FROM_CONTRACT = "NegativeHTSTransferFrom";
+    private static final String NEGATIVE_HTS_TRANSFER_FROM_CONTRACT = "NegativeHtsTransferFrom";
     private static final String OWNER = "Owner";
     private static final String HTS_TRANSFER_FROM = "htsTransferFrom";
     private static final String HTS_TRANSFER_FROM_NFT = "htsTransferFromNFT";
@@ -150,37 +160,8 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     private static final String CRYPTO_TRANSFER_TXN = "cryptoTransferTxn";
     private static final String SPENDER = "spender";
 
-    public static void main(final String... args) {
-        new CryptoTransferHTSSuite().runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers(),
-                nonNestedCryptoTransferForNonFungibleToken(),
-                nonNestedCryptoTransferForMultipleNonFungibleTokens(),
-                nonNestedCryptoTransferForFungibleAndNonFungibleToken(),
-                nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens(),
-                repeatedTokenIdsAreAutomaticallyConsolidated(),
-                hapiTransferFromForFungibleToken(),
-                hapiTransferFromForFungibleTokenToSystemAccountsFails(),
-                hapiTransferFromForNFT(),
-                hapiTransferFromForNFTWithCustomFeesWithoutApproveFails(),
-                hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails(),
-                hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender(),
-                hapiTransferFromForNFTWithInvalidAddressesFails(),
-                hapiTransferFromForFungibleTokenWithInvalidAddressesFails(),
-                hapiTransferFromForFungibleTokenWithInvalidAmountsFails());
-    }
-
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleToken() {
+    final Stream<DynamicTest> hapiTransferFromForFungibleToken() {
         final var allowance = 10L;
         final var successfulTransferFromTxn = "txn";
         final var successfulTransferFromTxn2 = "txn2";
@@ -286,6 +267,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                         childRecordsCheck(
                                 successfulTransferFromTxn,
                                 SUCCESS,
+                                recordWith().status(SUCCESS),
                                 recordWith()
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
@@ -363,12 +345,14 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleTokenToSystemAccountsFails() {
+    final Stream<DynamicTest> hapiTransferFromForFungibleTokenToSystemAccountsFails() {
         final var UPPER_BOUND_SYSTEM_ADDRESS = 750L;
         final var ADDRESS_ONE = 1L;
         final var NON_EXISTING_SYSTEM_ADDRESS = 345L;
+        final var NON_EXISTING_SYSTEM_ADDRESS_360 = 360L;
         final var TXN_TO_FIRST_ADDRESS = "TXN_TO_FIRST_ADDRESS";
         final var TXN_TO_NON_EXISTING_ADDRESS = "TXN_TO_NON_EXISTING_ADDRESS";
+        final var TXN_TO_SYSTEM_ADDRESS_360 = "TXN_TO_SYSTEM_ADDRESS_360";
         final var TXN_TO_UPPER_BOUND_ADDRESS = "TXN_TO_UPPER_BOUND_ADDRESS";
 
         final var allowance = 10L;
@@ -433,6 +417,21 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 .via(TXN_TO_NON_EXISTING_ADDRESS)
                                 .gas(100_000_00L)
                                 .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
+                        // transfer to system account 0.0.360
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(FUNGIBLE_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        HapiParserUtil.asHeadlongAddress(asAddress(AccountID.newBuilder()
+                                                .setAccountNum(NON_EXISTING_SYSTEM_ADDRESS_360)
+                                                .build())),
+                                        BigInteger.valueOf(allowance / 2))
+                                .via(TXN_TO_SYSTEM_ADDRESS_360)
+                                .gas(100_000_00L)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED),
                         // transfer to system account 0.0.0 lower bound
                         contractCall(
                                         HTS_TRANSFER_FROM_CONTRACT,
@@ -458,13 +457,17 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT)),
                         childRecordsCheck(
+                                TXN_TO_SYSTEM_ADDRESS_360,
+                                CONTRACT_REVERT_EXECUTED,
+                                recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT)),
+                        childRecordsCheck(
                                 TXN_TO_NON_EXISTING_ADDRESS,
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT)));
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForNFTWithInvalidAddressesFails() {
+    final Stream<DynamicTest> hapiTransferFromForNFTWithInvalidAddressesFails() {
         final var NON_EXISTING_ADDRESS = "0x0000000000000000000000000000000000123456";
         final var TXN_TO_NON_EXISTING_ADDRESS = "TXN_TO_NON_EXISTING_ADDRESS";
         final var TXN_FROM_NON_EXISTING_ADDRESS = "TXN_FROM_NON_EXISTING_ADDRESS";
@@ -551,7 +554,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleTokenWithInvalidAddressesFails() {
+    final Stream<DynamicTest> hapiTransferFromForFungibleTokenWithInvalidAddressesFails() {
         final var NON_EXISTING_ADDRESS = "0x0000000000000000000000000000000000123456";
         final var TXN_TO_NON_EXISTING_ADDRESS = "TXN_TO_NON_EXISTING_ADDRESS";
         final var TXN_FROM_NON_EXISTING_ADDRESS = "TXN_FROM_NON_EXISTING_ADDRESS";
@@ -631,7 +634,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleTokenWithInvalidAmountsFails() {
+    final Stream<DynamicTest> hapiTransferFromForFungibleTokenWithInvalidAmountsFails() {
         final var TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE = "TXN_WITH_AMOUNT_BIGGER_THAN_BALANCE";
         final var TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE = "TXN_WITH_AMOUNT_BIGGER_THAN_ALLOWANCE";
         final var TXN_WITH_AMOUNT_UNDERFLOW_UINT = "TXN_WITH_AMOUNT_UNDERFLOW_UINT";
@@ -741,7 +744,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForNFT() {
+    final Stream<DynamicTest> hapiTransferFromForNFT() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxn = "revertWhenMoreThanAllowance";
         return defaultHapiSpec(
@@ -809,6 +812,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                         childRecordsCheck(
                                 successfulTransferFromTxn,
                                 SUCCESS,
+                                recordWith().status(SUCCESS),
                                 recordWith()
                                         .status(SUCCESS)
                                         .contractCallResult(resultWith()
@@ -841,7 +845,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec repeatedTokenIdsAreAutomaticallyConsolidated() {
+    final Stream<DynamicTest> repeatedTokenIdsAreAutomaticallyConsolidated() {
         final var repeatedIdsPrecompileXferTxn = "repeatedIdsPrecompileXfer";
         final var senderStartBalance = 200L;
         final var receiverStartBalance = 0L;
@@ -921,7 +925,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
+    final Stream<DynamicTest> nonNestedCryptoTransferForFungibleTokenWithMultipleReceivers() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -994,7 +998,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonNestedCryptoTransferForNonFungibleToken() {
+    final Stream<DynamicTest> nonNestedCryptoTransferForNonFungibleToken() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -1064,7 +1068,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonNestedCryptoTransferForMultipleNonFungibleTokens() {
+    final Stream<DynamicTest> nonNestedCryptoTransferForMultipleNonFungibleTokens() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -1151,7 +1155,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
+    final Stream<DynamicTest> nonNestedCryptoTransferForFungibleAndNonFungibleToken() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -1258,7 +1262,8 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
+    final Stream<DynamicTest>
+            nonNestedCryptoTransferForFungibleTokenWithMultipleSendersAndReceiversAndNonFungibleTokens() {
         final var cryptoTransferTxn = CRYPTO_TRANSFER_TXN;
 
         return defaultHapiSpec(
@@ -1382,7 +1387,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForNFTWithCustomFeesWithoutApproveFails() {
+    final Stream<DynamicTest> hapiTransferFromForNFTWithCustomFeesWithoutApproveFails() {
         return defaultHapiSpec(
                         "HapiTransferFromForNFTWithCustomFeesWithoutApproveFails",
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
@@ -1529,7 +1534,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails() {
+    final Stream<DynamicTest> hapiTransferFromForFungibleTokenWithCustomFeesWithoutApproveFails() {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
@@ -1629,7 +1634,7 @@ public class CryptoTransferHTSSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
+    final Stream<DynamicTest> hapiTransferFromForFungibleTokenWithCustomFeesWithBothApproveForAllAndAssignedSpender() {
         final var FUNGIBLE_TOKEN_WITH_FIXED_HBAR_FEE = "fungibleTokenWithFixedHbarFee";
         final var FUNGIBLE_TOKEN_WITH_FIXED_TOKEN_FEE = "fungibleTokenWithFixedTokenFee";
         final var FUNGIBLE_TOKEN_WITH_FRACTIONAL_FEE = "fungibleTokenWithFractionalTokenFee";
@@ -1736,8 +1741,162 @@ public class CryptoTransferHTSSuite extends HapiSuite {
                 .then();
     }
 
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
+    @HapiTest
+    final Stream<DynamicTest> testHtsTokenTransferToNonExistingSystemAccount() {
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[nonExistingSystemAccounts.size()];
+        final HapiSpecOperation[] childRecordsChecks = new HapiSpecOperation[nonExistingSystemAccounts.size()];
+        final var contract = "CryptoTransfer";
+        final var toSendEachTuple = 50L;
+        for (int i = 0; i < nonExistingSystemAccounts.size(); i++) {
+            int finalI = i;
+            opsArray[i] = withOpContext((spec, opLog) -> {
+                final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
+                final var sender = spec.registry().getAccountID(SENDER);
+                final var receiver = AccountID.newBuilder()
+                        .setAccountNum(nonExistingSystemAccounts.get(finalI))
+                        .build();
+
+                allRunFor(
+                        spec,
+                        newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, contract))),
+                        cryptoUpdate(SENDER).key(DELEGATE_KEY),
+                        contractCall(contract, TRANSFER_MULTIPLE_TOKENS, (Object) new Tuple[] {
+                                    tokenTransferList()
+                                            .forToken(token)
+                                            .withAccountAmounts(
+                                                    accountAmount(sender, -toSendEachTuple),
+                                                    accountAmount(receiver, toSendEachTuple))
+                                            .build(),
+                                    tokenTransferList()
+                                            .forToken(token)
+                                            .withAccountAmounts(
+                                                    accountAmount(sender, -toSendEachTuple),
+                                                    accountAmount(receiver, toSendEachTuple))
+                                            .build()
+                                })
+                                .payingWith(GENESIS)
+                                .gas(GAS_TO_OFFER)
+                                .via("htsTransfer" + finalI)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+            });
+            childRecordsChecks[i] = childRecordsCheck(
+                    "htsTransfer" + i, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_RECEIVING_NODE_ACCOUNT));
+        }
+        return defaultHapiSpec("testHtsTokenTransferToNonExistingSystemAccount", EXPECT_STREAMLINED_INGEST_RECORDS)
+                .given(
+                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(TOTAL_SUPPLY)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
+                        cryptoTransfer(moving(200L, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)))
+                .when(opsArray)
+                .then(childRecordsChecks);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> testNftTransferToNonExistingSystemAccount() {
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[nonExistingSystemAccounts.size()];
+        final HapiSpecOperation[] childRecordsChecks = new HapiSpecOperation[nonExistingSystemAccounts.size()];
+        for (int i = 0; i < nonExistingSystemAccounts.size(); i++) {
+            int finalI = i;
+            opsArray[i] = withOpContext((spec, opLog) -> {
+                allRunFor(
+                        spec,
+                        contractCall(
+                                        HTS_TRANSFER_FROM_CONTRACT,
+                                        HTS_TRANSFER_FROM_NFT,
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NFT_TOKEN))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(OWNER))),
+                                        mirrorAddrWith(nonExistingSystemAccounts.get(finalI)),
+                                        BigInteger.TWO)
+                                .via("nftTransfer" + finalI)
+                                .gas(1000000)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+            });
+            childRecordsChecks[i] = childRecordsCheck(
+                    "nftTransfer" + i, CONTRACT_REVERT_EXECUTED, recordWith().status(INVALID_ALIAS_KEY));
+        }
+        return defaultHapiSpec("testNftTransferToNonExistingSystemAccount", EXPECT_STREAMLINED_INGEST_RECORDS)
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(OWNER).balance(ONE_MILLION_HBARS).maxAutomaticTokenAssociations(5),
+                        cryptoCreate(SPENDER).maxAutomaticTokenAssociations(5),
+                        tokenCreate(NFT_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .treasury(OWNER)
+                                .initialSupply(0L)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(HTS_TRANSFER_FROM_CONTRACT),
+                        contractCreate(HTS_TRANSFER_FROM_CONTRACT),
+                        mintToken(NFT_TOKEN, List.of(META1, META2)),
+                        cryptoApproveAllowance()
+                                .payingWith(DEFAULT_PAYER)
+                                .addNftAllowance(OWNER, NFT_TOKEN, HTS_TRANSFER_FROM_CONTRACT, false, List.of(2L))
+                                .via("baseApproveTxn")
+                                .signedBy(DEFAULT_PAYER, OWNER)
+                                .fee(ONE_HBAR))
+                .when(opsArray)
+                .then(childRecordsChecks);
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> testHtsTokenTransferToExistingSystemAccount() {
+        final HapiSpecOperation[] opsArray = new HapiSpecOperation[existingSystemAccounts.size()];
+        final var contract = "CryptoTransfer";
+        final var toSendEachTuple = 50L;
+
+        for (int i = 0; i < existingSystemAccounts.size(); i++) {
+            int finalI = i;
+            opsArray[i] = withOpContext((spec, opLog) -> {
+                final var token = spec.registry().getTokenID(FUNGIBLE_TOKEN);
+                final var sender = spec.registry().getAccountID(SENDER);
+                final var receiver = AccountID.newBuilder()
+                        .setAccountNum(existingSystemAccounts.get(finalI))
+                        .build();
+
+                allRunFor(
+                        spec,
+                        newKeyNamed(DELEGATE_KEY).shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, contract))),
+                        cryptoUpdate(SENDER).key(DELEGATE_KEY),
+                        contractCall(contract, TRANSFER_MULTIPLE_TOKENS, (Object) new Tuple[] {
+                                    tokenTransferList()
+                                            .forToken(token)
+                                            .withAccountAmounts(
+                                                    accountAmount(sender, -toSendEachTuple),
+                                                    accountAmount(receiver, toSendEachTuple))
+                                            .build(),
+                                    tokenTransferList()
+                                            .forToken(token)
+                                            .withAccountAmounts(
+                                                    accountAmount(sender, -toSendEachTuple),
+                                                    accountAmount(receiver, toSendEachTuple))
+                                            .build()
+                                })
+                                .payingWith(GENESIS)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(CONTRACT_REVERT_EXECUTED));
+            });
+        }
+        return defaultHapiSpec("testHtsTokenTransferToExistingSystemAccount", EXPECT_STREAMLINED_INGEST_RECORDS)
+                .given(
+                        cryptoCreate(SENDER).balance(10 * ONE_HUNDRED_HBARS),
+                        uploadInitCode(contract),
+                        contractCreate(contract),
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate(FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.FUNGIBLE_COMMON)
+                                .initialSupply(TOTAL_SUPPLY)
+                                .treasury(TOKEN_TREASURY),
+                        tokenAssociate(SENDER, List.of(FUNGIBLE_TOKEN)),
+                        cryptoTransfer(moving(200L, FUNGIBLE_TOKEN).between(TOKEN_TREASURY, SENDER)))
+                .when()
+                .then(opsArray);
     }
 }

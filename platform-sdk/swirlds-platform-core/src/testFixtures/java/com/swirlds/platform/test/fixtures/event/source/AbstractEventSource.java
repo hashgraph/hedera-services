@@ -22,11 +22,11 @@ import static com.swirlds.platform.test.fixtures.event.EventUtils.staticDynamicV
 
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.test.fixtures.TransactionGenerator;
-import com.swirlds.common.test.fixtures.TransactionUtils;
 import com.swirlds.platform.test.fixtures.event.DynamicValue;
 import com.swirlds.platform.test.fixtures.event.DynamicValueGenerator;
 import com.swirlds.platform.test.fixtures.event.IndexedEvent;
 import com.swirlds.platform.test.fixtures.event.RandomEventUtils;
+import com.swirlds.platform.test.fixtures.event.TransactionUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;

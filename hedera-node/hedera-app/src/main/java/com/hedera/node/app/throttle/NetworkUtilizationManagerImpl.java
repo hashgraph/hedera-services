@@ -24,22 +24,25 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.SignatureMap;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Implementation of {@link NetworkUtilizationManager}  that delegates to injected
  * {@link ThrottleAccumulator} and {@link CongestionMultipliers}.
  */
+@Singleton
 public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager {
     private final ThrottleAccumulator backendThrottle;
     private final CongestionMultipliers congestionMultipliers;
@@ -100,14 +103,14 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     }
 
     @Override
-    public List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots() {
+    public List<ThrottleUsageSnapshot> getUsageSnapshots() {
         return backendThrottle.allActiveThrottles().stream()
                 .map(DeterministicThrottle::usageSnapshot)
                 .toList();
     }
 
     @Override
-    public void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots) {
+    public void resetUsageThrottlesTo(@NonNull final List<ThrottleUsageSnapshot> snapshots) {
         backendThrottle.resetUsageThrottlesTo(snapshots);
     }
 }

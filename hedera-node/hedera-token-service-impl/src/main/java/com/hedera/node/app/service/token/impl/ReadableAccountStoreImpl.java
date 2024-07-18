@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.token.impl;
 
+import static com.hedera.hapi.node.base.AccountID.AccountOneOfType.ACCOUNT_NUM;
 import static com.hedera.node.app.service.token.AliasUtils.asKeyFromAliasOrElse;
 import static com.hedera.node.app.service.token.AliasUtils.extractEvmAddress;
 import static com.hedera.node.app.service.token.AliasUtils.extractIdFromAddressAlias;
@@ -26,9 +27,9 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.service.token.ReadableAccountStore;
-import com.hedera.node.app.spi.state.ReadableKVState;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
@@ -92,7 +93,8 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
     }
 
     /**
-     * Returns the {@link Account} for a given {@link AccountID}
+     * Returns the {@link Account} for a given {@link AccountID}. If the account has an alias
+     * set on it, it doesn't look in the alias map to find the account ID and returns null
      *
      * @param accountID the {@code AccountID} which {@code Account is requested}
      * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
@@ -133,7 +135,37 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
     protected Account getAccountLeaf(@NonNull final AccountID id) {
         // The Account ID may be aliased, in which case we need to convert it to a number-based account ID first.
         requireNonNull(id);
-        final var accountId = unaliasedAccountId(id);
+        final var accountOneOf = id.account();
+        return accountOneOf.kind() == ACCOUNT_NUM ? accountState.get(id) : null;
+    }
+
+    /**
+     * Returns the {@link Account} for a given {@link AccountID}. If the account has an alias
+     * set on it, looks in the alias map to find the account ID. This method should only be used in
+     * {@code CryptoTransfer} since aliases are allowed only for auto-created accounts.
+     *
+     * @param accountID the {@code AccountID} which {@code Account is requested}
+     * @return an {@link Optional} with the {@code Account}, if it was found, an empty {@code
+     * Optional} otherwise
+     */
+    @Override
+    @Nullable
+    public Account getAliasedAccountById(@NonNull final AccountID accountID) {
+        return getAliasedAccountLeaf(accountID);
+    }
+
+    /**
+     * Returns the account leaf for the given account id. If the account doesn't exist, returns
+     * {@link Optional}.
+     *
+     * @param id given account number
+     * @return merkle leaf for the given account number
+     */
+    @Nullable
+    protected Account getAliasedAccountLeaf(@NonNull final AccountID id) {
+        // The Account ID may be aliased, in which case we need to convert it to a number-based account ID first.
+        requireNonNull(id);
+        final var accountId = lookupAliasedAccountId(id);
         return accountId == null ? null : accountState.get(accountId);
     }
 
@@ -151,7 +183,7 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
      * @return The result, or null if the id is invalid or there is no known alias-to-account mapping for it.
      */
     @Nullable
-    protected AccountID unaliasedAccountId(@NonNull final AccountID id) {
+    protected AccountID lookupAliasedAccountId(@NonNull final AccountID id) {
         final var accountOneOf = id.account();
         return switch (accountOneOf.kind()) {
             case ACCOUNT_NUM -> id;
@@ -187,6 +219,9 @@ public class ReadableAccountStoreImpl implements ReadableAccountStore {
 
     @Override
     public void warm(@NonNull final AccountID accountID) {
-        accountState.warm(accountID);
+        final var unaliasedId = lookupAliasedAccountId(accountID);
+        if (unaliasedId != null) {
+            accountState.warm(unaliasedId);
+        }
     }
 }

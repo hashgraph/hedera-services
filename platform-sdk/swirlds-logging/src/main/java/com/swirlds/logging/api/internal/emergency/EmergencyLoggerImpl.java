@@ -42,7 +42,8 @@ import java.util.function.Supplier;
  * The logger is defined as a singleton.
  */
 public class EmergencyLoggerImpl implements EmergencyLogger {
-    private static class InstanceHolder {
+
+    private static final class InstanceHolder {
         /**
          * The singleton instance of the logger.
          */
@@ -249,7 +250,9 @@ public class EmergencyLoggerImpl implements EmergencyLogger {
         if (printStream != null) {
             handleLock.lock();
             try {
-                getLinePrinter().print(printStream, logEvent);
+                final StringBuilder stringBuilder = new StringBuilder();
+                getLinePrinter().print(stringBuilder, logEvent);
+                printStream.print(stringBuilder);
             } finally {
                 handleLock.unlock();
             }

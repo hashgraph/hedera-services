@@ -41,13 +41,17 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.freeze.FreezeTransactionBody;
 import com.hedera.hapi.node.freeze.FreezeType;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.file.File;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeHandler;
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
+import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
@@ -55,6 +59,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,7 +85,16 @@ class FreezeHandlerTest {
     private HandleContext handleContext;
 
     @Mock(strictness = LENIENT)
+    private StoreFactory storeFactory;
+
+    @Mock(strictness = LENIENT)
     private Account account;
+
+    @Mock
+    private ReadableNodeStore nodeStore;
+
+    @Mock
+    private ReadableStakingInfoStore stakingInfoStore;
 
     private final FileID fileUpgradeFileId = FileID.newBuilder().fileNum(150L).build();
     private final FileID anotherFileUpgradeFileId =
@@ -106,10 +120,15 @@ class FreezeHandlerTest {
 
         given(preHandleContext.createStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(preHandleContext.createStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
+        given(preHandleContext.createStore(ReadableNodeStore.class)).willReturn(nodeStore);
+        given(preHandleContext.createStore(ReadableStakingInfoStore.class)).willReturn(stakingInfoStore);
 
         given(handleContext.configuration()).willReturn(config);
-        given(handleContext.readableStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
-        given(handleContext.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
+        given(handleContext.storeFactory()).willReturn(storeFactory);
+        given(storeFactory.readableStore(ReadableUpgradeFileStore.class)).willReturn(upgradeFileStore);
+        given(storeFactory.writableStore(WritableFreezeStore.class)).willReturn(freezeStore);
+        given(storeFactory.readableStore(ReadableNodeStore.class)).willReturn(nodeStore);
+        given(storeFactory.readableStore(ReadableStakingInfoStore.class)).willReturn(stakingInfoStore);
     }
 
     @Test
@@ -145,8 +164,7 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .build())
                     .build();
-            given(preHandleContext.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_FREEZE_TRANSACTION_BODY);
+            assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
         }
     }
 
@@ -166,8 +184,7 @@ class FreezeHandlerTest {
                             .freezeType(freezeType)
                             .startTime(Timestamp.newBuilder().seconds(1000).build()))
                     .build();
-            given(preHandleContext.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), FREEZE_START_TIME_MUST_BE_FUTURE);
+            assertThrowsPreCheck(() -> subject.pureChecks(txn), FREEZE_START_TIME_MUST_BE_FUTURE);
         }
     }
 
@@ -255,8 +272,7 @@ class FreezeHandlerTest {
                             .updateFile(FileID.newBuilder().fileNum(150L))
                             .build())
                     .build();
-            given(preHandleContext.body()).willReturn(txn);
-            assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
+            assertThrowsPreCheck(() -> subject.pureChecks(txn), FREEZE_UPDATE_FILE_HASH_DOES_NOT_MATCH);
         }
     }
 
@@ -378,6 +394,7 @@ class FreezeHandlerTest {
         given(upgradeFileStore.peek(fileUpgradeFileId))
                 .willReturn(File.newBuilder().build());
         given(upgradeFileStore.getFull(fileUpgradeFileId)).willReturn(Bytes.wrap("Upgrade file bytes"));
+        given(nodeStore.keys()).willReturn(List.of(new EntityNumber(0)).iterator());
 
         TransactionID txnId = TransactionID.newBuilder()
                 .accountID(nonAdminAccount)
@@ -406,6 +423,7 @@ class FreezeHandlerTest {
         given(upgradeFileStore.peek(anotherFileUpgradeFileId))
                 .willReturn(File.newBuilder().build());
         given(upgradeFileStore.getFull(anotherFileUpgradeFileId)).willReturn(Bytes.wrap("Upgrade file bytes"));
+        given(nodeStore.keys()).willReturn(List.of(new EntityNumber(0)).iterator());
 
         TransactionID txnId = TransactionID.newBuilder()
                 .accountID(nonAdminAccount)
@@ -458,8 +476,7 @@ class FreezeHandlerTest {
                 .freeze(FreezeTransactionBody.newBuilder().build())
                 // do not set freeze start time
                 .build();
-        given(preHandleContext.body()).willReturn(txn);
-        assertThrowsPreCheck(() -> subject.preHandle(preHandleContext), INVALID_FREEZE_TRANSACTION_BODY);
+        assertThrowsPreCheck(() -> subject.pureChecks(txn), INVALID_FREEZE_TRANSACTION_BODY);
     }
 
     @Test

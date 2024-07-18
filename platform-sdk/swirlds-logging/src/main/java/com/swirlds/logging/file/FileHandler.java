@@ -19,7 +19,7 @@ package com.swirlds.logging.file;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.extensions.event.LogEvent;
-import com.swirlds.logging.api.extensions.handler.AbstractSyncedHandler;
+import com.swirlds.logging.api.extensions.handler.AbstractLogHandler;
 import com.swirlds.logging.api.internal.format.FormattedLinePrinter;
 import com.swirlds.logging.io.OutputStreamFactory;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,10 +48,10 @@ import java.nio.file.Path;
  *     <li>{@code append} - Determines whether to append to an existing file or overwrite it.</li>
  *     <li>{@code formatTimestamp} - If set to true, epoch values are formatted as human-readable strings.</li>
  *     <li>{@code file-rolling.maxFileSize} - Maximum size of the file for size-based rolling.</li>
- *     <li>{@code file-rolling.maxRollover} - Maximum number of files used for rolling.</li>
+ *     <li>{@code file-rolling.maxFiles} - Maximum number of files used for rolling.</li>
  * </ul>
  */
-public class FileHandler extends AbstractSyncedHandler {
+public class FileHandler extends AbstractLogHandler {
 
     private static final int EVENT_LOG_PRINTER_SIZE = 4 * 1024;
     private final OutputStream outputStream;
@@ -85,7 +85,7 @@ public class FileHandler extends AbstractSyncedHandler {
      * @param event The log event to be printed.
      */
     @Override
-    protected void handleEvent(@NonNull final LogEvent event) {
+    public void handle(@NonNull final LogEvent event) {
         final StringBuilder writer = new StringBuilder(EVENT_LOG_PRINTER_SIZE);
         format.print(writer, event);
         try {
@@ -98,11 +98,23 @@ public class FileHandler extends AbstractSyncedHandler {
     }
 
     /**
+     * All content for this handler that has been buffered will be written to destination.
+     */
+    @Override
+    public void flush() {
+        try {
+            this.outputStream.flush();
+        } catch (IOException e) {
+            EMERGENCY_LOGGER.log(Level.WARN, "Failed to flush to file output stream " + this.getName(), e);
+        }
+    }
+
+    /**
      * Stops the handler and no further events are processed
      */
     @Override
-    protected void handleStopAndFinalize() {
-        super.handleStopAndFinalize();
+    public void stopAndFinalize() {
+        super.stopAndFinalize();
         try {
             outputStream.close();
         } catch (final Exception exception) {

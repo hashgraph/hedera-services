@@ -44,6 +44,11 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.metadata;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
@@ -57,31 +62,21 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.assertions.BaseErroringAssertsProvider;
 import com.hedera.services.bdd.spec.assertions.ErroringAsserts;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.suites.HapiSuite;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public final class TokenPauseSpecs extends HapiSuite {
-
-    private static final Logger LOG = LogManager.getLogger(TokenPauseSpecs.class);
-    public static final String LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION = "ledger.autoRenewPeriod.minDuration";
-    public static final String DEFAULT_MIN_AUTO_RENEW_PERIOD =
-            HapiSpecSetup.getDefaultNodeProps().get(LEDGER_AUTO_RENEW_PERIOD_MIN_DURATION);
-
+public class TokenPauseSpecs {
     private static final String PAUSE_KEY = "pauseKey";
     private static final String SUPPLY_KEY = "supplyKey";
     private static final String FREEZE_KEY = "freezeKey";
@@ -97,45 +92,21 @@ public final class TokenPauseSpecs extends HapiSuite {
     private static final String THIRD_USER = "thirdUser";
     private static final String NON_FUNGIBLE_UNIQUE_PRIMARY = "non-fungible-unique-primary";
 
-    public static void main(String... args) {
-        new TokenPauseSpecs().runSuiteAsync();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return LOG;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                cannotPauseWithInvalidPauseKey(),
-                cannotChangePauseStatusIfMissingPauseKey(),
-                pausedFungibleTokenCannotBeUsed(),
-                pausedNonFungibleUniqueCannotBeUsed(),
-                unpauseWorks(),
-                basePauseAndUnpauseHaveExpectedPrices(),
-                pausedTokenInCustomFeeCaseStudy(),
-                cannotAddPauseKeyViaTokenUpdate());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
     @HapiTest
-    final HapiSpec cannotAddPauseKeyViaTokenUpdate() {
+    final Stream<DynamicTest> cannotAddPauseKeyViaTokenUpdate() {
         return defaultHapiSpec("CannotAddPauseKeyViaTokenUpdate")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(ADMIN_KEY))
                 .when(tokenCreate(PRIMARY), tokenCreate(SECONDARY).adminKey(ADMIN_KEY))
                 .then(
                         tokenUpdate(PRIMARY).pauseKey(PAUSE_KEY).hasKnownStatus(TOKEN_IS_IMMUTABLE),
-                        tokenUpdate(SECONDARY).pauseKey(PAUSE_KEY).hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
+                        tokenUpdate(SECONDARY)
+                                .pauseKey(PAUSE_KEY)
+                                .signedByPayerAnd(ADMIN_KEY)
+                                .hasKnownStatus(TOKEN_HAS_NO_PAUSE_KEY));
     }
 
     @HapiTest
-    final HapiSpec cannotPauseWithInvalidPauseKey() {
+    final Stream<DynamicTest> cannotPauseWithInvalidPauseKey() {
         return defaultHapiSpec("cannotPauseWithInvalidPauseKey")
                 .given(newKeyNamed(PAUSE_KEY), newKeyNamed(OTHER_KEY))
                 .when(tokenCreate(PRIMARY).pauseKey(PAUSE_KEY))
@@ -143,7 +114,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    HapiSpec pausedTokenInCustomFeeCaseStudy() {
+    final Stream<DynamicTest> pausedTokenInCustomFeeCaseStudy() {
         return defaultHapiSpec("PausedTokenInCustomFeeCaseStudy", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given(
                         cryptoCreate(TOKEN_TREASURY),
@@ -188,7 +159,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec unpauseWorks() {
+    final Stream<DynamicTest> unpauseWorks() {
         final String firstUser = FIRST_USER;
         final String token = PRIMARY;
 
@@ -223,7 +194,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec pausedNonFungibleUniqueCannotBeUsed() {
+    final Stream<DynamicTest> pausedNonFungibleUniqueCannotBeUsed() {
         final String uniqueToken = "nonFungibleUnique";
         final String firstUser = FIRST_USER;
         final String secondUser = SECOND_USER;
@@ -293,7 +264,10 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .withCustom(fixedHbarFee(100, TOKEN_TREASURY))
                                 .hasKnownStatus(TOKEN_IS_PAUSED),
                         wipeTokenAccount(uniqueToken, firstUser, List.of(1L)).hasKnownStatus(TOKEN_IS_PAUSED),
-                        tokenUpdate(uniqueToken).name("newName").hasKnownStatus(TOKEN_IS_PAUSED),
+                        tokenUpdate(uniqueToken)
+                                .name("newName")
+                                .signedByPayerAnd(ADMIN_KEY)
+                                .hasKnownStatus(TOKEN_IS_PAUSED),
                         tokenDelete(uniqueToken).hasKnownStatus(TOKEN_IS_PAUSED),
                         cryptoTransfer(
                                         moving(100, otherToken).between(TOKEN_TREASURY, thirdUser),
@@ -305,7 +279,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec pausedFungibleTokenCannotBeUsed() {
+    final Stream<DynamicTest> pausedFungibleTokenCannotBeUsed() {
         final String token = PRIMARY;
         final String otherToken = SECONDARY;
         final String firstUser = FIRST_USER;
@@ -373,7 +347,10 @@ public final class TokenPauseSpecs extends HapiSuite {
                                 .withCustom(fixedHbarFee(100, TOKEN_TREASURY))
                                 .hasKnownStatus(TOKEN_IS_PAUSED),
                         wipeTokenAccount(token, firstUser, 10).hasKnownStatus(TOKEN_IS_PAUSED),
-                        tokenUpdate(token).name("newName").hasKnownStatus(TOKEN_IS_PAUSED),
+                        tokenUpdate(token)
+                                .name("newName")
+                                .signedByPayerAnd(ADMIN_KEY)
+                                .hasKnownStatus(TOKEN_IS_PAUSED),
                         tokenDelete(token).hasKnownStatus(TOKEN_IS_PAUSED),
                         cryptoTransfer(
                                         moving(100, otherToken).between(TOKEN_TREASURY, thirdUser),
@@ -385,7 +362,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec cannotChangePauseStatusIfMissingPauseKey() {
+    final Stream<DynamicTest> cannotChangePauseStatusIfMissingPauseKey() {
         return defaultHapiSpec("CannotChangePauseStatusIfMissingPauseKey")
                 .given(cryptoCreate(TOKEN_TREASURY))
                 .when(
@@ -415,7 +392,7 @@ public final class TokenPauseSpecs extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec basePauseAndUnpauseHaveExpectedPrices() {
+    final Stream<DynamicTest> basePauseAndUnpauseHaveExpectedPrices() {
         final var expectedBaseFee = 0.001;
         final var token = "token";
         final var tokenPauseTransaction = "tokenPauseTxn";

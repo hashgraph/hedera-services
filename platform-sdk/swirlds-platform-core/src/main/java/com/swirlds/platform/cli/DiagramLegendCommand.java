@@ -16,17 +16,14 @@
 
 package com.swirlds.platform.cli;
 
-import com.swirlds.base.time.Time;
 import com.swirlds.cli.utility.AbstractCommand;
 import com.swirlds.cli.utility.SubcommandOf;
-import com.swirlds.common.context.DefaultPlatformContext;
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.CryptographyHolder;
-import com.swirlds.common.metrics.noop.NoOpMetrics;
-import com.swirlds.common.wiring.model.ModelEdgeSubstitution;
-import com.swirlds.common.wiring.model.ModelGroup;
-import com.swirlds.common.wiring.model.ModelManualLink;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
+import com.swirlds.common.wiring.model.diagram.ModelEdgeSubstitution;
+import com.swirlds.common.wiring.model.diagram.ModelGroup;
+import com.swirlds.common.wiring.model.diagram.ModelManualLink;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.SolderType;
@@ -38,7 +35,6 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ForkJoinPool;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -58,10 +54,9 @@ public final class DiagramLegendCommand extends AbstractCommand {
         final Configuration configuration = DefaultConfiguration.buildBasicConfiguration(ConfigurationBuilder.create());
         BootstrapUtils.setupConstructableRegistry();
 
-        final PlatformContext platformContext = new DefaultPlatformContext(
-                configuration, new NoOpMetrics(), CryptographyHolder.get(), Time.getCurrent());
+        final PlatformContext platformContext = PlatformContext.create(configuration);
 
-        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel model = WiringModelBuilder.create(platformContext).build();
 
         final TaskScheduler<Integer> sequentialScheduler = model.schedulerBuilder("SequentialScheduler")
                 .withType(TaskSchedulerType.SEQUENTIAL)

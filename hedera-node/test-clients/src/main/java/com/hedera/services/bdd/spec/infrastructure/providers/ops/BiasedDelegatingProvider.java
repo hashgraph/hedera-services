@@ -20,6 +20,7 @@ import static java.util.Collections.binarySearch;
 import static java.util.stream.Collectors.toList;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
 import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
@@ -84,7 +85,7 @@ public class BiasedDelegatingProvider implements OpProvider {
     }
 
     @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
+    public List<SpecOperation> suggestedInitializers() {
         return Stream.concat(
                         globalInitializers.stream(),
                         delegates.stream().flatMap(d -> d.suggestedInitializers().stream()))

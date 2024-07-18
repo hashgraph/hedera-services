@@ -42,19 +42,39 @@ import com.hedera.hapi.node.token.TokenUpdateTransactionBody;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
+import com.hedera.node.app.service.token.impl.util.TokenKey;
 import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Provides common functionality for token handlers.
+ */
 public class BaseTokenHandler {
     private static final Logger log = LogManager.getLogger(BaseTokenHandler.class);
+    /**
+     * The set of token keys that are not admin keys.
+     */
+    protected static final Set<TokenKey> NON_ADMIN_TOKEN_KEYS = EnumSet.complementOf(EnumSet.of(TokenKey.ADMIN_KEY));
+    /**
+     * The set of all token keys.
+     */
+    protected static final Set<TokenKey> TOKEN_KEYS = EnumSet.allOf(TokenKey.class);
+
+    /**
+     * The value for unlimited automatic associations
+     */
+    public static final int UNLIMITED_AUTOMATIC_ASSOCIATIONS = -1;
+
     /**
      * Mints fungible tokens. This method is called in both token create and mint.
      * @param token the new or existing token to mint
@@ -321,8 +341,11 @@ public class BaseTokenHandler {
 
         final var maxAutoAssociations = account.maxAutoAssociations();
         final var usedAutoAssociations = account.usedAutoAssociations();
-        validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
 
+        // only validate remaining associations if unlimitedAutoAssociations is disabled for the account
+        if (!hasUnlimitedAutoAssociations(account, entitiesConfig)) {
+            validateFalse(usedAutoAssociations >= maxAutoAssociations, NO_REMAINING_AUTOMATIC_ASSOCIATIONS);
+        }
         // Create new token relation and commit to store
         final var newTokenRel = TokenRelation.newBuilder()
                 .tokenId(tokenId)
@@ -403,44 +426,22 @@ public class BaseTokenHandler {
     }
 
     /* ------------------------- Helper functions ------------------------- */
-
     /**
-     * Returns true if the given token update op is an expiry-only update op.
-     * This is needed for validating whether a token update op has admin key present on the token,
-     * to update any other fields other than expiry.
+     * Checks if the given op updates any of the non-key token properties that can only be
+     * changed given the admin key signature.
+     *
      * @param op the token update op to check
-     * @return true if the given token update op is an expiry-only update op
+     * @return true if it requires admin key signature
      */
-    public static boolean isExpiryOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
-        if (!op.hasExpiry()) {
-            return false;
-        }
-        final var defaultWithExpiry = TokenUpdateTransactionBody.newBuilder()
-                .expiry(op.expiry())
-                .token(op.token())
-                .build();
-        return op.equals(defaultWithExpiry);
+    protected static boolean updatesAdminOnlyNonKeyTokenProperty(@NonNull final TokenUpdateTransactionBody op) {
+        return !op.symbol().isEmpty() || !op.name().isEmpty() || op.hasAutoRenewPeriod() || op.hasMemo();
     }
 
     /**
-     * Returns true if the given token update op is a metadata-only update op.
-     * This is needed for validating whether a token update op has admin key present on the token,
-     * to update any other fields other than metadata.
-     * For updating metadata we need signature from either admin key or metadata key
-     * @param op the token update op to check
-     * @return true if the given token update op is an metadata-only update op
+     * Returns a new {@link TokenID} with the given number.
+     * @param num the token number
+     * @return the new token ID
      */
-    public static boolean isMetadataOnlyUpdateOp(@NonNull final TokenUpdateTransactionBody op) {
-        if (!op.hasMetadata()) {
-            return false;
-        }
-        final var defaultWithMetadata = TokenUpdateTransactionBody.newBuilder()
-                .metadata(op.metadata())
-                .token(op.token())
-                .build();
-        return op.equals(defaultWithMetadata);
-    }
-
     @NonNull
     public static TokenID asToken(final long num) {
         return TokenID.newBuilder().tokenNum(num).build();
@@ -468,5 +469,21 @@ public class BaseTokenHandler {
                 .tokenId(tokenId)
                 .accountId(accountId)
                 .build();
+    }
+
+    /**
+     * Checks if the given account has unlimited auto-associations enabled.
+     *
+     * @param account        the account to check; must not be null
+     * @param entitiesConfig the configuration settings to check against; must not be null
+     * @return               {@code true} if unlimited auto-associations is enabled and the account's
+     *                       max auto-associations is set to {@code UNLIMITED_AUTOMATIC_ASSOCIATIONS},
+     *                       otherwise {@code false}
+     * @throws NullPointerException if either {@code account} or {@code entitiesConfig} is null
+     */
+    public static boolean hasUnlimitedAutoAssociations(
+            @NonNull final Account account, @NonNull EntitiesConfig entitiesConfig) {
+        return entitiesConfig.unlimitedAutoAssociationsEnabled()
+                && account.maxAutoAssociations() == UNLIMITED_AUTOMATIC_ASSOCIATIONS;
     }
 }

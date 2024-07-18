@@ -26,9 +26,9 @@ import com.hedera.hapi.node.base.TopicID;
 import com.hedera.hapi.node.state.consensus.Topic;
 import com.hedera.node.app.service.consensus.impl.WritableTopicStore;
 import com.hedera.node.app.service.consensus.impl.test.handlers.ConsensusTestBase;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -40,21 +40,23 @@ class WritableTopicStoreTest extends ConsensusTestBase {
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
 
     @Mock
-    private Metrics metrics;
+    private StoreMetricsService storeMetricsService;
 
     private Topic topic;
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableTopicStore(null, CONFIGURATION, metrics));
-        assertThrows(NullPointerException.class, () -> new WritableTopicStore(writableStates, null, metrics));
+        assertThrows(
+                NullPointerException.class, () -> new WritableTopicStore(null, CONFIGURATION, storeMetricsService));
+        assertThrows(
+                NullPointerException.class, () -> new WritableTopicStore(writableStates, null, storeMetricsService));
         assertThrows(NullPointerException.class, () -> new WritableTopicStore(writableStates, CONFIGURATION, null));
         assertThrows(NullPointerException.class, () -> writableStore.put(null));
     }
 
     @Test
     void constructorCreatesTopicState() {
-        final var store = new WritableTopicStore(writableStates, CONFIGURATION, metrics);
+        final var store = new WritableTopicStore(writableStates, CONFIGURATION, storeMetricsService);
         assertNotNull(store);
     }
 
@@ -75,11 +77,10 @@ class WritableTopicStoreTest extends ConsensusTestBase {
         topic = createTopic();
         writableStore.put(topic);
 
-        final var maybeReadTopic = writableStore.get(
-                TopicID.newBuilder().topicNum(topicEntityNum.longValue()).build());
+        final var maybeReadTopic = writableStore.getTopic(
+                TopicID.newBuilder().topicNum(topicEntityNum).build());
 
-        assertTrue(maybeReadTopic.isPresent());
-        final var readTopic = maybeReadTopic.get();
-        assertEquals(topic, readTopic);
+        assertNotNull(maybeReadTopic);
+        assertEquals(topic, maybeReadTopic);
     }
 }

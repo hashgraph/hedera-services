@@ -21,6 +21,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.COST_ANSWER;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
@@ -29,11 +30,13 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.QueryHeader;
 import com.hedera.hapi.node.base.ResponseHeader;
+import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.token.TokenGetNftInfoResponse;
 import com.hedera.hapi.node.token.TokenNftInfo;
 import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
-import com.hedera.node.app.service.mono.fees.calculation.token.queries.GetTokenNftInfoResourceUsage;
+import com.hedera.node.app.hapi.fees.usage.token.TokenGetNftInfoUsage;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.spi.fees.Fees;
@@ -41,6 +44,7 @@ import com.hedera.node.app.spi.workflows.PaidQueryHandler;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.data.LedgerConfig;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -52,6 +56,9 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class TokenGetNftInfoHandler extends PaidQueryHandler {
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenGetNftInfoHandler() {
         // Exists for injection
@@ -160,7 +167,16 @@ public class TokenGetNftInfoHandler extends PaidQueryHandler {
         final var nftId = op.nftIDOrThrow();
         final var nft = nftStore.get(nftId);
 
-        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> new GetTokenNftInfoResourceUsage()
-                .usageGiven(query, nft));
+        return queryContext.feeCalculator().legacyCalculate(sigValueObj -> usageGiven(query, nft));
+    }
+
+    private FeeData usageGiven(final com.hedera.hapi.node.transaction.Query query, final Nft nft) {
+        if (nft != null) {
+            final var estimate = TokenGetNftInfoUsage.newEstimate(CommonPbjConverters.fromPbj(query))
+                    .givenMetadata(nft.metadata().toString());
+            return estimate.get();
+        } else {
+            return CONSTANT_FEE_DATA;
+        }
     }
 }

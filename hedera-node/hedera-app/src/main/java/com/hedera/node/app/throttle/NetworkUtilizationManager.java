@@ -17,9 +17,9 @@
 package com.hedera.node.app.throttle;
 
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
-import com.hedera.node.app.state.HederaState;
+import com.hedera.hapi.node.state.throttles.ThrottleUsageSnapshot;
 import com.hedera.node.app.workflows.TransactionInfo;
+import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
@@ -45,7 +45,6 @@ public interface NetworkUtilizationManager {
     /**
      * Updates the throttle usage and congestion pricing for cases where the transaction is not valid, but we want to track the fee payments related to it.
      *
-     * @param payer - the payer of the transaction.
      * @param consensusNow - the consensus time of the transaction.
      * @param state - the state of the node.
      */
@@ -96,12 +95,12 @@ public interface NetworkUtilizationManager {
      * Returns a list of snapshots of the current usage of all active throttles.
      * @return the active snapshots
      */
-    List<DeterministicThrottle.UsageSnapshot> getUsageSnapshots();
+    List<ThrottleUsageSnapshot> getUsageSnapshots();
 
     /**
      * Resets the current usage of all active throttles to the given snapshots.
      *
      * @param snapshots the snapshots to reset to
      */
-    void resetUsageThrottlesTo(List<DeterministicThrottle.UsageSnapshot> snapshots);
+    void resetUsageThrottlesTo(List<ThrottleUsageSnapshot> snapshots);
 }

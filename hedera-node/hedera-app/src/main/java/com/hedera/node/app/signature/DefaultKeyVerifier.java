@@ -18,7 +18,6 @@ package com.hedera.node.app.signature;
 
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.failedVerification;
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
@@ -37,13 +36,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
+import javax.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Base implementation of {@link KeyVerifier}
+ * Base implementation of {@link AppKeyVerifier}
  */
-public class DefaultKeyVerifier implements KeyVerifier {
+public class DefaultKeyVerifier implements AppKeyVerifier {
 
     private static final Logger logger = LogManager.getLogger(DefaultKeyVerifier.class);
 
@@ -55,8 +55,10 @@ public class DefaultKeyVerifier implements KeyVerifier {
      * Creates a {@link DefaultKeyVerifier}
      *
      * @param legacyFeeCalcNetworkVpt the number of verifications to report for temporary mono-service parity
+     * @param config configuration for the node
      * @param keyVerifications A {@link Map} with all data to verify signatures
      */
+    @Inject
     public DefaultKeyVerifier(
             final int legacyFeeCalcNetworkVpt,
             @NonNull final HederaConfig config,
@@ -87,7 +89,7 @@ public class DefaultKeyVerifier implements KeyVerifier {
                 yield callback.test(key, result) ? passedVerification(key) : failedVerification(key);
             }
             case KEY_LIST -> {
-                final var keys = key.keyListOrThrow().keysOrElse(emptyList());
+                final var keys = key.keyListOrThrow().keys();
                 var failed = keys.isEmpty();
                 for (final var childKey : keys) {
                     failed |= verificationFor(childKey, callback).failed();
@@ -97,7 +99,7 @@ public class DefaultKeyVerifier implements KeyVerifier {
             case THRESHOLD_KEY -> {
                 final var thresholdKey = key.thresholdKeyOrThrow();
                 final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
-                final var keys = keyList.keysOrElse(emptyList());
+                final var keys = keyList.keys();
                 final var threshold = thresholdKey.threshold();
                 final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
                 var passed = 0;
@@ -162,13 +164,13 @@ public class DefaultKeyVerifier implements KeyVerifier {
                 yield result == null ? completedFuture(failedVerification(key)) : result;
             }
             case KEY_LIST -> {
-                final var keys = key.keyListOrThrow().keysOrElse(emptyList());
+                final var keys = key.keyListOrThrow().keys();
                 yield verificationFutureFor(key, keys, 0);
             }
             case THRESHOLD_KEY -> {
                 final var thresholdKey = key.thresholdKeyOrThrow();
                 final var keyList = thresholdKey.keysOrElse(KeyList.DEFAULT);
-                final var keys = keyList.keysOrElse(emptyList());
+                final var keys = keyList.keys();
                 final var threshold = thresholdKey.threshold();
                 final var clampedThreshold = Math.max(1, Math.min(threshold, keys.size()));
                 yield verificationFutureFor(key, keys, keys.size() - clampedThreshold);

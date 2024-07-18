@@ -19,7 +19,7 @@ package com.swirlds.platform.wiring.components;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.input.InputWire;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.gossip.shadowgraph.Shadowgraph;
 import com.swirlds.platform.internal.EventImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -33,7 +33,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record ShadowgraphWiring(
         @NonNull InputWire<EventImpl> eventInput,
-        @NonNull InputWire<NonAncientEventWindow> eventWindowInput,
+        @NonNull InputWire<EventWindow> eventWindowInput,
         @NonNull Runnable flushRunnable) {
 
     /**
@@ -46,7 +46,7 @@ public record ShadowgraphWiring(
 
         return new ShadowgraphWiring(
                 taskScheduler.buildInputWire("EventImpl"),
-                taskScheduler.buildInputWire("non-ancient event window"),
+                taskScheduler.buildInputWire("event window"),
                 taskScheduler::flush);
     }
 
@@ -57,7 +57,6 @@ public record ShadowgraphWiring(
      */
     public void bind(@NonNull final Shadowgraph shadowgraph) {
         ((BindableInputWire<EventImpl, Void>) eventInput).bindConsumer(shadowgraph::addEvent);
-        ((BindableInputWire<NonAncientEventWindow, Void>) eventWindowInput)
-                .bindConsumer(shadowgraph::updateEventWindow);
+        ((BindableInputWire<EventWindow, Void>) eventWindowInput).bindConsumer(shadowgraph::updateEventWindow);
     }
 }

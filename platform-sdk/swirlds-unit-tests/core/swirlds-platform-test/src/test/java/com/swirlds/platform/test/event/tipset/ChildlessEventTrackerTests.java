@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.creation.tipset.ChildlessEventTracker;
 import com.swirlds.platform.system.events.EventDescriptor;
@@ -104,7 +104,7 @@ class ChildlessEventTrackerTests {
         // Increase the minimum generation non-ancient to 1, all events from batch1 should be removed
         // FUTURE WORK: Change the test to use round instead of generation for ancient.
         tracker.pruneOldEvents(
-                new NonAncientEventWindow(1, 1, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD));
+                new EventWindow(1, 1, 0 /* ignored in this context */, AncientMode.GENERATION_THRESHOLD));
 
         assertEquals(removeBranches(batch2), new HashSet<>(tracker.getChildlessEvents()));
     }

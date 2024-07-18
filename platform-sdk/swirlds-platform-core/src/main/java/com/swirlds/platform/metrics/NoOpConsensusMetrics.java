@@ -60,6 +60,11 @@ public class NoOpConsensusMetrics implements ConsensusMetrics {
     }
 
     @Override
+    public void judgeWeights(long weight) {
+        // no-op
+    }
+
+    @Override
     public void witnessesStronglySeen(final int numSeen) {
         // no-op
     }

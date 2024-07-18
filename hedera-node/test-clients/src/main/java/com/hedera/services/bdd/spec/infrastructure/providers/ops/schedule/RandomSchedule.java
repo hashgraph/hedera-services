@@ -16,47 +16,37 @@
 
 package com.hedera.services.bdd.spec.infrastructure.providers.ops.schedule;
 
-import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomAccount.INITIAL_BALANCE;
-import static com.hedera.services.bdd.spec.infrastructure.providers.ops.crypto.RandomTransfer.stableAccounts;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.scheduleCreate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
+import static com.hedera.services.bdd.suites.crypto.AutoAccountCreationSuite.CRYPTO_TRANSFER_RECEIVER;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNRESOLVABLE_REQUIRED_SIGNERS;
-import static java.util.stream.Collectors.toList;
 
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.infrastructure.EntityNameProvider;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
-import com.hedera.services.bdd.spec.infrastructure.providers.LookupUtils;
 import com.hedera.services.bdd.spec.infrastructure.providers.names.RegistrySourcedNameProvider;
-import com.hedera.services.bdd.spec.transactions.schedule.HapiScheduleCreate;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ScheduleID;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RandomSchedule implements OpProvider {
     private final AtomicInteger opNo = new AtomicInteger();
     private final RegistrySourcedNameProvider<ScheduleID> schedules;
-    private final EntityNameProvider<AccountID> accounts;
-    public final ResponseCodeEnum[] permissibleOutcomes = standardOutcomesAnd(UNRESOLVABLE_REQUIRED_SIGNERS);
+    private final EntityNameProvider accounts;
 
-    private final ResponseCodeEnum[] outcomesForTransfer =
-            standardOutcomesAnd(ACCOUNT_DELETED, INSUFFICIENT_ACCOUNT_BALANCE);
+    public final ResponseCodeEnum[] permissibleOutcomes =
+            standardOutcomesAnd(UNRESOLVABLE_REQUIRED_SIGNERS, IDENTICAL_SCHEDULE_ALREADY_CREATED);
 
     public static final int DEFAULT_CEILING_NUM = 100;
     private int ceilingNum = DEFAULT_CEILING_NUM;
     static final String ADMIN_KEY = DEFAULT_PAYER;
-    static final String STABLE_RECEIVER = "stable-receiver";
 
-    public RandomSchedule(RegistrySourcedNameProvider<ScheduleID> schedules, EntityNameProvider<AccountID> accounts) {
+    public RandomSchedule(RegistrySourcedNameProvider<ScheduleID> schedules, EntityNameProvider accounts) {
         this.schedules = schedules;
         this.accounts = accounts;
     }
@@ -67,37 +57,22 @@ public class RandomSchedule implements OpProvider {
     }
 
     @Override
-    public List<HapiSpecOperation> suggestedInitializers() {
-        return stableAccounts(1).stream()
-                .map(account -> cryptoCreate(STABLE_RECEIVER)
-                        .noLogging()
-                        .balance(INITIAL_BALANCE)
-                        .deferStatusResolution()
-                        .payingWith(UNIQUE_PAYER_ACCOUNT)
-                        .receiverSigRequired(true))
-                .collect(toList());
-    }
-
-    @Override
     public Optional<HapiSpecOperation> get() {
         if (schedules.numPresent() >= ceilingNum) {
             return Optional.empty();
         }
-        final var involved = LookupUtils.twoDistinct(accounts);
-        if (involved.isEmpty()) {
+        final var from = accounts.getQualifying();
+        if (from.isEmpty()) {
             return Optional.empty();
         }
         int id = opNo.getAndIncrement();
 
-        String from = involved.get().getKey(), to = involved.get().getValue();
-
-        HapiScheduleCreate op = scheduleCreate(
+        var op = scheduleCreate(
                         "schedule" + id,
-                        cryptoTransfer(tinyBarsFromTo(from, STABLE_RECEIVER, 1))
+                        cryptoTransfer(tinyBarsFromTo(from.get(), CRYPTO_TRANSFER_RECEIVER, 1))
                                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS))
-                .signedBy(DEFAULT_PAYER)
+                .alsoSigningWith(from.get())
                 .fee(ONE_HUNDRED_HBARS)
-                .alsoSigningWith(from)
                 .memo("randomlycreated" + id)
                 .hasPrecheckFrom(STANDARD_PERMISSIBLE_PRECHECKS)
                 .hasKnownStatusFrom(permissibleOutcomes)

@@ -28,28 +28,24 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.blockingOrder;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.logIt;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(CRYPTO)
-public class NftTransferSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(NftTransferSuite.class);
-
+public class NftTransferSuite {
     private static final String KEY = "multipurpose";
     private static final String USER_ACCOUNT_PREFIX = "party-";
     private static final String FEE_COLLECTOR = "feeCollector";
@@ -60,23 +56,6 @@ public class NftTransferSuite extends HapiSuite {
     private static final int NUM_TOKEN_TYPES = 10;
     private static final int NUM_ROUNDS = 100;
 
-    private static void runTestTask() {
-        final long startTimeMillis = System.currentTimeMillis();
-        new NftTransferSuite().runSuiteSync();
-        final long endTimeMillis = System.currentTimeMillis();
-        final long deltaMillis = endTimeMillis - startTimeMillis;
-        System.out.printf("Total time: %.3f%n", deltaMillis / 1000f);
-    }
-
-    public static void main(String... args) throws ExecutionException, InterruptedException {
-        runTestTask();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(transferNfts());
-    }
-
     private static HapiSpecOperation mintTokensFor(String tokenName, int numTokens) {
         return mintToken(
                         tokenName,
@@ -86,7 +65,7 @@ public class NftTransferSuite extends HapiSuite {
                 .noLogging();
     }
 
-    private static HapiSpecOperation createAccounts(String prefix, int numAccounts) {
+    private static SpecOperation createAccounts(String prefix, int numAccounts) {
         // Create user accounts to partake in crypto transfers
         return parFor(
                 0, numAccounts, id -> cryptoCreate(prefix + id).noLogging().balance(ONE_HUNDRED_HBARS));
@@ -121,7 +100,7 @@ public class NftTransferSuite extends HapiSuite {
                 newKeyNamed(KEY), cryptoCreate(FEE_COLLECTOR).noLogging().balance(0L));
     }
 
-    private static HapiSpecOperation associateAccountsWithTokenTypes() {
+    private static SpecOperation associateAccountsWithTokenTypes() {
         String[] tokenNames = IntStream.range(0, NftTransferSuite.NUM_TOKEN_TYPES)
                 .mapToObj(NftTransferSuite::tokenTypeName)
                 .toArray(String[]::new);
@@ -145,15 +124,15 @@ public class NftTransferSuite extends HapiSuite {
         return IntStream.range(from, to).mapToObj(functionToRun).toList();
     }
 
-    private static HapiSpecOperation parFor(int from, int to, IntFunction<HapiSpecOperation> functionToRun) {
-        return inParallel(IntStream.range(from, to).mapToObj(functionToRun).toArray(HapiSpecOperation[]::new));
+    private static SpecOperation parFor(int from, int to, IntFunction<HapiSpecOperation> functionToRun) {
+        return inParallel(IntStream.range(from, to).mapToObj(functionToRun).toArray(SpecOperation[]::new));
     }
 
     private static HapiSpecOperation seqFor(int from, int to, IntFunction<HapiSpecOperation> functionToRun) {
         return blockingOrder(IntStream.range(from, to).mapToObj(functionToRun).toArray(HapiSpecOperation[]::new));
     }
 
-    private static HapiSpecOperation transferInitial() {
+    private static SpecOperation transferInitial() {
         return inParallel(IntStream.range(0, NUM_ACCOUNTS)
                 .mapToObj(accountId -> opsFor(0, NftTransferSuite.NUM_TOKEN_TYPES, tokenId -> cryptoTransfer(
                                 TokenMovement.movingUnique(tokenTypeName(tokenId), accountId + 1)
@@ -161,7 +140,7 @@ public class NftTransferSuite extends HapiSuite {
                         .payingWith(GENESIS)
                         .noLogging()))
                 .flatMap(List::stream)
-                .toArray(HapiSpecOperation[]::new));
+                .toArray(SpecOperation[]::new));
     }
 
     private static HapiSpecOperation transferRound(int roundNum) {
@@ -196,15 +175,10 @@ public class NftTransferSuite extends HapiSuite {
     }
 
     @HapiTest
-    final HapiSpec transferNfts() {
+    final Stream<DynamicTest> transferNfts() {
         return defaultHapiSpec("TransferNfts")
                 .given(setupNftTest(), transferInitial())
                 .when(seqFor(0, NUM_ROUNDS, NftTransferSuite::transferRound))
                 .then();
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

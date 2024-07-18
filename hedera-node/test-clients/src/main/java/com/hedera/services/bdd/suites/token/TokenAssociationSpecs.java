@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.NoTokenTransfers.emptyTokenTransfers;
 import static com.hedera.services.bdd.spec.assertions.SomeFungibleTransfers.changingFungibleBalances;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
@@ -41,17 +42,30 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
+import static com.hedera.services.bdd.spec.transactions.token.HapiTokenAssociate.DEFAULT_FEE;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_IS_TREASURY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.FreezeNotApplicable;
 import static com.hederahashgraph.api.proto.java.TokenFreezeStatus.Unfrozen;
@@ -61,25 +75,19 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite(fuzzyMatch = true)
 @Tag(TOKEN)
-public class TokenAssociationSpecs extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(TokenAssociationSpecs.class);
-
+public class TokenAssociationSpecs {
     public static final String FREEZABLE_TOKEN_ON_BY_DEFAULT = "TokenA";
     public static final String FREEZABLE_TOKEN_OFF_BY_DEFAULT = "TokenB";
     public static final String KNOWABLE_TOKEN = "TokenC";
@@ -91,44 +99,80 @@ public class TokenAssociationSpecs extends HapiSuite {
     public static final String FREEZE_KEY = "freezeKey";
     public static final String KYC_KEY = "kycKey";
 
-    public static void main(String... args) {
-        final var spec = new TokenAssociationSpecs();
-
-        spec.deferResultsSummary();
-        spec.runSuiteAsync();
-        spec.summarizeDeferredResults();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                treasuryAssociationIsAutomatic(),
-                dissociateHasExpectedSemantics(),
-                associatedContractsMustHaveAdminKeys(),
-                expiredAndDeletedTokensStillAppearInContractInfo(),
-                accountInfoQueriesAsExpected(),
-                handlesUseOfDefaultTokenId(),
-                contractInfoQueriesAsExpected(),
-                dissociateHasExpectedSemanticsForDeletedTokens(),
-                dissociateHasExpectedSemanticsForDissociatedContracts(),
-                canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
+    @HapiTest
+    final Stream<DynamicTest> canHandleInvalidAssociateTransactions() {
+        final String alice = "ALICE";
+        final String bob = "BOB";
+        final String unknownID = "0.0." + Long.MAX_VALUE;
+        return defaultHapiSpec("CanHandleInvalidAssociateTransactions")
+                .given(
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(alice),
+                        cryptoCreate(bob),
+                        cryptoDelete(bob),
+                        tokenCreate(VANILLA_TOKEN),
+                        tokenCreate(KNOWABLE_TOKEN),
+                        tokenAssociate(alice, KNOWABLE_TOKEN),
+                        tokenCreate(TBD_TOKEN).adminKey(MULTI_KEY),
+                        tokenDelete(TBD_TOKEN))
+                .when()
+                .then(
+                        tokenAssociate(null, VANILLA_TOKEN)
+                                .fee(DEFAULT_FEE)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasPrecheck(INVALID_ACCOUNT_ID),
+                        tokenAssociate(unknownID, VANILLA_TOKEN)
+                                .fee(DEFAULT_FEE)
+                                .signedBy(DEFAULT_PAYER)
+                                .hasPrecheck(INVALID_ACCOUNT_ID),
+                        tokenAssociate(bob, VANILLA_TOKEN).fee(DEFAULT_FEE).hasKnownStatus(ACCOUNT_DELETED),
+                        tokenAssociate(alice, List.of()).hasKnownStatus(SUCCESS),
+                        tokenAssociate(alice, VANILLA_TOKEN, VANILLA_TOKEN)
+                                .hasPrecheck(TOKEN_ID_REPEATED_IN_TOKEN_LIST),
+                        tokenAssociate(alice, unknownID).hasKnownStatus(INVALID_TOKEN_ID),
+                        tokenAssociate(alice, TBD_TOKEN).hasKnownStatus(TOKEN_WAS_DELETED),
+                        tokenAssociate(alice, KNOWABLE_TOKEN).hasKnownStatus(TOKEN_ALREADY_ASSOCIATED_TO_ACCOUNT));
     }
 
     @HapiTest
-    public HapiSpec handlesUseOfDefaultTokenId() {
+    final Stream<DynamicTest> idVariantsTreatedAsExpected() {
+        return defaultHapiSpec("idVariantsTreatedAsExpected")
+                .given(
+                        cryptoCreate(TOKEN_TREASURY),
+                        tokenCreate("a").treasury(TOKEN_TREASURY),
+                        tokenCreate("b").treasury(TOKEN_TREASURY))
+                .when()
+                .then(
+                        submitModified(withSuccessivelyVariedBodyIds(), () -> tokenAssociate(DEFAULT_PAYER, "a", "b")),
+                        submitModified(
+                                withSuccessivelyVariedBodyIds(), () -> tokenDissociate(DEFAULT_PAYER, "a", "b")));
+    }
+
+    @LeakyHapiTest(overrides = {"tokens.maxPerAccount", "entities.limitTokenAssociations"})
+    final Stream<DynamicTest> canLimitMaxTokensPerAccountTransactions() {
+        final String alice = "ALICE";
+        final String treasury2 = "TREASURY_2";
+        return hapiTest(
+                overridingTwo("tokens.maxPerAccount", "1", "entities.limitTokenAssociations", "true"),
+                cryptoCreate(alice),
+                cryptoCreate(TOKEN_TREASURY),
+                cryptoCreate(treasury2),
+                tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY),
+                tokenCreate(KNOWABLE_TOKEN).treasury(treasury2),
+                tokenAssociate(alice, KNOWABLE_TOKEN),
+                tokenAssociate(alice, VANILLA_TOKEN).hasKnownStatus(TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED));
+    }
+
+    @HapiTest
+    final Stream<DynamicTest> handlesUseOfDefaultTokenId() {
         return defaultHapiSpec("HandlesUseOfDefaultTokenId", SnapshotMatchMode.NONDETERMINISTIC_TRANSACTION_FEES)
                 .given()
                 .when()
-                .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasKnownStatus(INVALID_TOKEN_ID));
+                .then(tokenAssociate(DEFAULT_PAYER, "0.0.0").hasPrecheck(INVALID_TOKEN_ID));
     }
 
     @HapiTest
-    public HapiSpec canDeleteNonFungibleTokenTreasuryAfterUpdate() {
+    final Stream<DynamicTest> canDeleteNonFungibleTokenTreasuryAfterUpdate() {
         return defaultHapiSpec("canDeleteNonFungibleTokenTreasuryAfterUpdate")
                 .given(
                         newKeyNamed(MULTI_KEY),
@@ -144,7 +188,9 @@ public class TokenAssociationSpecs extends HapiSuite {
                 .when(
                         cryptoDelete(TOKEN_TREASURY).hasKnownStatus(ACCOUNT_IS_TREASURY),
                         tokenAssociate("replacementTreasury", TBD_TOKEN),
-                        tokenUpdate(TBD_TOKEN).treasury("replacementTreasury"))
+                        tokenUpdate(TBD_TOKEN)
+                                .treasury("replacementTreasury")
+                                .signedByPayerAnd(MULTI_KEY, "replacementTreasury"))
                 .then(
                         // Updating the treasury transfers the 2 NFTs to the new
                         // treasury; hence the old treasury has numPositiveBalances=0
@@ -152,7 +198,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec canDeleteNonFungibleTokenTreasuryBurnsAndTokenDeletion() {
+    final Stream<DynamicTest> canDeleteNonFungibleTokenTreasuryBurnsAndTokenDeletion() {
         final var firstTbdToken = "firstTbdToken";
         final var secondTbdToken = "secondTbdToken";
         final var treasuryWithoutAllPiecesBurned = "treasuryWithoutAllPiecesBurned";
@@ -195,7 +241,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec associatedContractsMustHaveAdminKeys() {
+    final Stream<DynamicTest> associatedContractsMustHaveAdminKeys() {
         String misc = "someToken";
         String contract = "defaultContract";
 
@@ -206,7 +252,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec contractInfoQueriesAsExpected() {
+    final Stream<DynamicTest> contractInfoQueriesAsExpected() {
         final var contract = "contract";
         return defaultHapiSpec("ContractInfoQueriesAsExpected")
                 .given(
@@ -234,7 +280,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec accountInfoQueriesAsExpected() {
+    final Stream<DynamicTest> accountInfoQueriesAsExpected() {
         final var account = "account";
         return defaultHapiSpec("accountInfoQueriesAsExpected")
                 .given(
@@ -262,7 +308,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec expiredAndDeletedTokensStillAppearInContractInfo() {
+    final Stream<DynamicTest> expiredAndDeletedTokensStillAppearInContractInfo() {
         final String contract = "Fuse";
         final String treasury = "something";
         final String expiringToken = "expiringToken";
@@ -306,7 +352,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury() {
+    final Stream<DynamicTest> canDissociateFromDeletedTokenWithAlreadyDissociatedTreasury() {
         final String aNonTreasuryAcquaintance = "aNonTreasuryAcquaintance";
         final String bNonTreasuryAcquaintance = "bNonTreasuryAcquaintance";
         final long initialSupply = 100L;
@@ -352,7 +398,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec dissociateHasExpectedSemanticsForDeletedTokens() {
+    final Stream<DynamicTest> dissociateHasExpectedSemanticsForDeletedTokens() {
         final String tbdUniqToken = "UniqToBeDeleted";
         final String zeroBalanceFrozen = "0bFrozen";
         final String zeroBalanceUnfrozen = "0bUnfrozen";
@@ -423,7 +469,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec dissociateHasExpectedSemantics() {
+    final Stream<DynamicTest> dissociateHasExpectedSemantics() {
         return defaultHapiSpec("DissociateHasExpectedSemantics")
                 .given(basicKeysAndTokens())
                 .when(
@@ -447,7 +493,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec dissociateHasExpectedSemanticsForDissociatedContracts() {
+    final Stream<DynamicTest> dissociateHasExpectedSemanticsForDissociatedContracts() {
         final var uniqToken = "UniqToken";
         final var contract = "Fuse";
         final var firstMeta = ByteString.copyFrom("FIRST".getBytes(StandardCharsets.UTF_8));
@@ -473,7 +519,7 @@ public class TokenAssociationSpecs extends HapiSuite {
     }
 
     @HapiTest
-    public HapiSpec treasuryAssociationIsAutomatic() {
+    final Stream<DynamicTest> treasuryAssociationIsAutomatic() {
         return defaultHapiSpec("TreasuryAssociationIsAutomatic")
                 .given(basicKeysAndTokens())
                 .when()
@@ -504,6 +550,22 @@ public class TokenAssociationSpecs extends HapiSuite {
                         getAccountInfo("test").logged());
     }
 
+    @HapiTest
+    final Stream<DynamicTest> associateAndDissociateNeedsValidAccountAndToken() {
+        final var account = "account";
+        return defaultHapiSpec("dissociationNeedsAccount")
+                .given(
+                        newKeyNamed(SIMPLE),
+                        tokenCreate("a").decimals(1),
+                        cryptoCreate(account).key(SIMPLE).balance(0L))
+                .when(
+                        tokenAssociate("0.0.0", "a").signedBy(DEFAULT_PAYER).hasPrecheck(INVALID_ACCOUNT_ID),
+                        tokenDissociate("0.0.0", "a").signedBy(DEFAULT_PAYER).hasPrecheck(INVALID_ACCOUNT_ID))
+                .then(
+                        tokenAssociate(account, "0.0.0").hasPrecheck(INVALID_TOKEN_ID),
+                        tokenDissociate(account, "0.0.0").hasPrecheck(INVALID_TOKEN_ID));
+    }
+
     public static HapiSpecOperation[] basicKeysAndTokens() {
         return new HapiSpecOperation[] {
             newKeyNamed(KYC_KEY),
@@ -520,10 +582,5 @@ public class TokenAssociationSpecs extends HapiSuite {
             tokenCreate(KNOWABLE_TOKEN).treasury(TOKEN_TREASURY).kycKey(KYC_KEY),
             tokenCreate(VANILLA_TOKEN).treasury(TOKEN_TREASURY)
         };
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

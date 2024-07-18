@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.proof;
 
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.Signature;
 import com.swirlds.common.io.SelfSerializable;
@@ -110,7 +111,7 @@ public class StateProof implements SelfSerializable {
                 addressBook,
                 threshold,
                 (signature, bytes, publicKey) ->
-                        CryptoStatic.verifySignature(bytes, signature.getSignatureBytes(), publicKey));
+                        CryptoStatic.verifySignature(Bytes.wrap(bytes), signature.getBytes(), publicKey));
     }
 
     /**

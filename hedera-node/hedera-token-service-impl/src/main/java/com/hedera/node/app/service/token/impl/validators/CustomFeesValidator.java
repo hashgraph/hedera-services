@@ -50,10 +50,15 @@ import javax.inject.Inject;
  * to validate custom fees for token creation and fee schedule updates.
  */
 public class CustomFeesValidator {
-    // Sentinel token id used to denote that the fee is denominated in the same token as the token being created.
+    /**
+     * Sentinel token id used to denote that the fee is denominated in the same token as the token being created.
+     */
     public static final TokenID SENTINEL_TOKEN_ID =
             TokenID.newBuilder().shardNum(0L).realmNum(0L).tokenNum(0L).build();
 
+    /**
+     * Constructs a {@link CustomFeesValidator} instance.
+     */
     @Inject
     public CustomFeesValidator() {
         // Needed for Dagger injection

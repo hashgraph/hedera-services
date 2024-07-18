@@ -20,25 +20,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
 
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.Map;
+import com.swirlds.state.spi.WritableKVStateBase;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
+import com.swirlds.state.test.fixtures.StateTestBase;
+import java.util.HashMap;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 /**
- * This test extends the {@link WritableKVStateBaseTest}, getting all the test methods used there,
- * but this time executed on a {@link WrappedWritableKVState}.
+ * This test verifies the behavior of {@link WrappedWritableKVState}.
  */
-class WrappedWritableKVStateTest extends WritableKVStateBaseTest {
+class WrappedWritableKVStateTest extends StateTestBase {
     private WritableKVStateBase<String, String> delegate;
+    private WrappedWritableKVState<String, String> state;
 
-    protected WritableKVStateBase<String, String> createFruitState(@NonNull final Map<String, String> map) {
+    @BeforeEach
+    public void setUp() {
+        final var map = new HashMap<String, String>();
+        map.put(A_KEY, APPLE);
+        map.put(B_KEY, BANANA);
         this.delegate = new MapWritableKVState<>(FRUIT_STATE_KEY, map);
         this.state = Mockito.spy(new WrappedWritableKVState<>(delegate));
-        return this.state;
     }
 
     @Test

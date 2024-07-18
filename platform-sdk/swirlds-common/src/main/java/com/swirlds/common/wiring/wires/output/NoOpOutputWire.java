@@ -16,7 +16,7 @@
 
 package com.swirlds.common.wiring.wires.output;
 
-import com.swirlds.common.wiring.model.internal.StandardWiringModel;
+import com.swirlds.common.wiring.model.TraceableWiringModel;
 import com.swirlds.common.wiring.transformers.AdvancedTransformation;
 import com.swirlds.common.wiring.wires.SolderType;
 import com.swirlds.common.wiring.wires.input.InputWire;
@@ -39,7 +39,7 @@ public class NoOpOutputWire<OUT> extends StandardOutputWire<OUT> {
      * @param model the wiring model containing this output wire
      * @param name  the name of the output wire
      */
-    public NoOpOutputWire(@NonNull final StandardWiringModel model, @NonNull final String name) {
+    public NoOpOutputWire(@NonNull final TraceableWiringModel model, @NonNull final String name) {
         super(model, name);
     }
 

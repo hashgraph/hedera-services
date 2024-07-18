@@ -28,6 +28,7 @@ public interface NodeStakeUpdateRecordBuilder {
      * Sets the status.
      *
      * @param status the status
+     * @return the builder
      */
     NodeStakeUpdateRecordBuilder status(@NonNull ResponseCodeEnum status);
 

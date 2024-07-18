@@ -27,11 +27,15 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 class BaseExecutorThreadFactory implements ThreadFactory {
 
-    private static final BaseExecutorThreadFactory instance = new BaseExecutorThreadFactory();
-
+    /**
+     * The number of threads created by this factory.
+     */
     private AtomicLong threadNumber = new AtomicLong(1);
 
-    private BaseExecutorThreadFactory() {}
+    /**
+     * Constructs a new factory.
+     */
+    protected BaseExecutorThreadFactory() {}
 
     @Override
     public Thread newThread(@NonNull final Runnable runnable) {
@@ -41,15 +45,5 @@ class BaseExecutorThreadFactory implements ThreadFactory {
         thread.setPriority(Thread.MIN_PRIORITY);
         thread.setDaemon(true);
         return thread;
-    }
-
-    /**
-     * Returns the singleton instance of this factory.
-     *
-     * @return the instance
-     */
-    @NonNull
-    public static BaseExecutorThreadFactory getInstance() {
-        return instance;
     }
 }

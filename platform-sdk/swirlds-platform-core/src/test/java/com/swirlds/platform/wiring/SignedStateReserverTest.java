@@ -24,18 +24,16 @@ import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.utility.ValueReference;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.TaskScheduler;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerType;
 import com.swirlds.common.wiring.wires.input.BindableInputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
-import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
-import com.swirlds.platform.config.StateConfig;
 import com.swirlds.platform.crypto.SignatureVerifier;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -46,17 +44,20 @@ class SignedStateReserverTest {
     @Test
     void basicTest() {
         final int numConsumers = 3;
-        final SignedState signedState = new SignedState(
-                new TestConfigBuilder(StateConfig.class).getOrCreateConfig().getConfigData(StateConfig.class),
-                Mockito.mock(SignatureVerifier.class),
-                Mockito.mock(State.class),
-                "create",
-                false);
 
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel model = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final SignedState signedState = new SignedState(
+                platformContext,
+                Mockito.mock(SignatureVerifier.class),
+                Mockito.mock(State.class),
+                "create",
+                false,
+                false,
+                false);
+
+        final WiringModel model = WiringModelBuilder.create(platformContext).build();
         final TaskScheduler<ReservedSignedState> taskScheduler = model.schedulerBuilder("scheduler")
                 .withType(TaskSchedulerType.DIRECT)
                 .build()

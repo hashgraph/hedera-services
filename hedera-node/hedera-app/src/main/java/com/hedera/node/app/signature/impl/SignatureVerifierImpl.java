@@ -21,7 +21,7 @@ import static com.hedera.hapi.node.base.SignaturePair.SignatureOneOfType.ED25519
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Key;
-import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
+import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureVerificationFuture;
 import com.hedera.node.app.signature.SignatureVerifier;
@@ -30,7 +30,6 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.SignatureType;
 import com.swirlds.common.crypto.TransactionSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -75,8 +74,7 @@ public final class SignatureVerifierImpl implements SignatureVerifier {
         }
 
         // Gather each TransactionSignature to send to the platform and the resulting SignatureVerificationFutures
-        final var platformSigs = new ArrayList<TransactionSignature>(sigs.size());
-        final var futures = new HashMap<Key, SignatureVerificationFuture>(sigs.size());
+        final var futures = HashMap.<Key, SignatureVerificationFuture>newHashMap(sigs.size());
         for (ExpandedSignaturePair sigPair : sigs) {
             final var kind = sigPair.sigPair().signature().kind();
             final var preparer =
@@ -92,14 +90,13 @@ public final class SignatureVerifierImpl implements SignatureVerifier {
             }
             preparer.addSignature(sigPair.signature());
             preparer.addKey(sigPair.keyBytes());
-            final var txSig = preparer.prepareTransactionSignature();
-            platformSigs.add(txSig);
-            futures.put(sigPair.key(), new SignatureVerificationFutureImpl(sigPair.key(), sigPair.evmAlias(), txSig));
+            final TransactionSignature txSig = preparer.prepareTransactionSignature();
+            cryptoEngine.verifySync(txSig);
+            final SignatureVerificationFuture future =
+                    new SignatureVerificationFutureImpl(sigPair.key(), sigPair.evmAlias(), txSig);
+            futures.put(sigPair.key(), future);
         }
 
-        // Submit to the crypto engine. We do it as a single list of objects to try to cut down on temporary object
-        // creation. If you call the platform for a single TransactionSignature at a time, it wraps each in a List.
-        cryptoEngine.verifyAsync(platformSigs);
         return futures;
     }
 

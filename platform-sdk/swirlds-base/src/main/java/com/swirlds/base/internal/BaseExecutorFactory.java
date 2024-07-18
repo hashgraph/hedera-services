@@ -17,12 +17,17 @@
 package com.swirlds.base.internal;
 
 import com.swirlds.base.internal.impl.BaseExecutorFactoryImpl;
+import com.swirlds.base.internal.impl.BaseScheduledExecutorService;
+import com.swirlds.base.internal.observe.BaseExecutorObserver;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Delayed;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * This factory creates / provides executors for the base modules. The factory should only be used by code in the base
@@ -76,9 +81,11 @@ public interface BaseExecutorFactory {
      * @see java.util.concurrent.ScheduledExecutorService#scheduleAtFixedRate(Runnable, long, long, TimeUnit)
      */
     @NonNull
-    default ScheduledFuture<?> scheduleAtFixedRate(
+    default ScheduledFuture<Void> scheduleAtFixedRate(
             @NonNull final Runnable task, long initialDelay, long period, @NonNull final TimeUnit unit) {
-        return getScheduledExecutor().scheduleAtFixedRate(task, initialDelay, period, unit);
+        final ScheduledFuture<?> scheduledFuture =
+                getScheduledExecutor().scheduleAtFixedRate(task, initialDelay, period, unit);
+        return wrap(scheduledFuture);
     }
 
     /**
@@ -90,8 +97,53 @@ public interface BaseExecutorFactory {
      * @return a ScheduledFuture representing pending completion of the task.
      */
     @NonNull
-    default ScheduledFuture<?> schedule(@NonNull final Runnable command, long delay, @NonNull final TimeUnit unit) {
-        return getScheduledExecutor().schedule(command, delay, unit);
+    default ScheduledFuture<Void> schedule(
+            @NonNull final Runnable command, final long delay, @NonNull final TimeUnit unit) {
+        final ScheduledFuture<?> scheduledFuture = getScheduledExecutor().schedule(command, delay, unit);
+        return wrap(scheduledFuture);
+    }
+
+    @NonNull
+    private static ScheduledFuture<Void> wrap(@NonNull final ScheduledFuture<?> scheduledFuture) {
+        return new ScheduledFuture<Void>() {
+            @Override
+            public long getDelay(TimeUnit unit) {
+                return scheduledFuture.getDelay(unit);
+            }
+
+            @Override
+            public int compareTo(Delayed o) {
+                return scheduledFuture.compareTo(o);
+            }
+
+            @Override
+            public boolean cancel(boolean mayInterruptIfRunning) {
+                return scheduledFuture.cancel(mayInterruptIfRunning);
+            }
+
+            @Override
+            public boolean isCancelled() {
+                return scheduledFuture.isCancelled();
+            }
+
+            @Override
+            public boolean isDone() {
+                return scheduledFuture.isDone();
+            }
+
+            @Override
+            public Void get() throws InterruptedException, ExecutionException {
+                scheduledFuture.get();
+                return null;
+            }
+
+            @Override
+            public Void get(long timeout, TimeUnit unit)
+                    throws InterruptedException, ExecutionException, TimeoutException {
+                scheduledFuture.get(timeout, unit);
+                return null;
+            }
+        };
     }
 
     /**
@@ -102,5 +154,23 @@ public interface BaseExecutorFactory {
     @NonNull
     static BaseExecutorFactory getInstance() {
         return BaseExecutorFactoryImpl.getInstance();
+    }
+
+    /**
+     * Adds an observer to the executor.
+     *
+     * @param observer the observer to add
+     */
+    static void addObserver(@NonNull final BaseExecutorObserver observer) {
+        BaseScheduledExecutorService.getInstance().addObserver(observer);
+    }
+
+    /**
+     * Removes an observer from the executor.
+     *
+     * @param observer the observer to remove
+     */
+    static void removeObserver(@NonNull final BaseExecutorObserver observer) {
+        BaseScheduledExecutorService.getInstance().removeObserver(observer);
     }
 }

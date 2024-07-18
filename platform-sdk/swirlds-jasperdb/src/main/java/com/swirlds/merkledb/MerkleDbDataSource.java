@@ -58,16 +58,15 @@ import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -86,12 +85,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
     /** Count of open database instances */
     private static final LongAdder COUNT_OF_OPEN_DATABASES = new LongAdder();
-
-    /** The version number for format of current data files */
-    private static class MetadataFileFormatVersion {
-        public static final int ORIGINAL = 1;
-        public static final int KEYRANGE_ONLY = 2;
-    }
 
     /** Data source metadata fields */
     private static final FieldDefinition FIELD_DSMETADATA_MINVALIDKEY =
@@ -292,11 +285,11 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             hashStoreRam = null;
         }
 
-        statisticsUpdater = new MerkleDbStatisticsUpdater(this);
+        statisticsUpdater = new MerkleDbStatisticsUpdater(database.getConfig(), tableName);
 
         final Runnable updateTotalStatsFunction = () -> {
-            statisticsUpdater.updateStoreFileStats();
-            statisticsUpdater.updateOffHeapStats();
+            statisticsUpdater.updateStoreFileStats(this);
+            statisticsUpdater.updateOffHeapStats(this);
         };
 
         // internal node hashes store, on disk
@@ -503,9 +496,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualHashRecord> hashRecordsToUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+            @NonNull final Stream<VirtualHashRecord> hashRecordsToUpdate,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
             final boolean isReconnectContext)
             throws IOException {
         try {
@@ -548,9 +541,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             // Report total size on disk as sum of all store files. All metadata and other helper files
             // are considered small enough to be ignored. If/when we decide to use on-disk long lists
             // for indices, they should be added here
-            statisticsUpdater.updateStoreFileStats();
+            statisticsUpdater.updateStoreFileStats(this);
             // update off-heap stats
-            statisticsUpdater.updateOffHeapStats();
+            statisticsUpdater.updateOffHeapStats(this);
         }
     }
 
@@ -736,18 +729,12 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             }
             hash.serialize(out);
         } else {
-            final Object hashBytes = hashStoreDisk.getBytes(path);
+            final BufferedData hashBytes = hashStoreDisk.getBytes(path);
             if (hashBytes == null) {
                 return false;
             }
             // Hash.serialize() format is: digest ID (4 bytes) + size (4 bytes) + hash (48 bytes)
-            if (hashBytes instanceof ByteBuffer byteBufferBytes) {
-                virtualHashRecordSerializer.extractAndWriteHashBytes(byteBufferBytes, out);
-            } else if (hashBytes instanceof BufferedData bufferedDataBytes) {
-                virtualHashRecordSerializer.extractAndWriteHashBytes(bufferedDataBytes, out);
-            } else {
-                throw new RuntimeException("Unknown data item bytes format");
-            }
+            virtualHashRecordSerializer.extractAndWriteHashBytes(hashBytes, out);
         }
         return true;
     }
@@ -980,30 +967,19 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
     private void saveMetadata(final MerkleDbPaths targetDir) throws IOException {
         final KeyRange leafRange = validLeafPathRange;
-        if (database.getConfig().usePbj()) {
-            final Path targetFile = targetDir.metadataFile;
-            try (final OutputStream fileOut =
-                    Files.newOutputStream(targetFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
-                final WritableSequentialData out = new WritableStreamingData(fileOut);
-                if (leafRange.getMinValidKey() != 0) {
-                    ProtoWriterTools.writeTag(out, FIELD_DSMETADATA_MINVALIDKEY);
-                    out.writeVarLong(leafRange.getMinValidKey(), false);
-                }
-                if (leafRange.getMaxValidKey() != 0) {
-                    ProtoWriterTools.writeTag(out, FIELD_DSMETADATA_MAXVALIDKEY);
-                    out.writeVarLong(leafRange.getMaxValidKey(), false);
-                }
-                fileOut.flush();
+        final Path targetFile = targetDir.metadataFile;
+        try (final OutputStream fileOut =
+                Files.newOutputStream(targetFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+            final WritableSequentialData out = new WritableStreamingData(fileOut);
+            if (leafRange.getMinValidKey() != 0) {
+                ProtoWriterTools.writeTag(out, FIELD_DSMETADATA_MINVALIDKEY);
+                out.writeVarLong(leafRange.getMinValidKey(), false);
             }
-        } else {
-            final Path targetFile = targetDir.metadataFileOld;
-            try (final DataOutputStream metaOut = new DataOutputStream(
-                    Files.newOutputStream(targetFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE))) {
-                metaOut.writeInt(MetadataFileFormatVersion.KEYRANGE_ONLY); // serialization version
-                metaOut.writeLong(leafRange.getMinValidKey());
-                metaOut.writeLong(leafRange.getMaxValidKey());
-                metaOut.flush();
+            if (leafRange.getMaxValidKey() != 0) {
+                ProtoWriterTools.writeTag(out, FIELD_DSMETADATA_MAXVALIDKEY);
+                out.writeVarLong(leafRange.getMaxValidKey(), false);
             }
+            fileOut.flush();
         }
     }
 
@@ -1025,20 +1001,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     }
                 }
                 validLeafPathRange = new KeyRange(minValidKey, maxValidKey);
-            }
-            Files.delete(sourceFile);
-            return true;
-        } else if (Files.exists(sourceDir.metadataFileOld)) {
-            final Path sourceFile = sourceDir.metadataFileOld;
-            try (final DataInputStream metaIn = new DataInputStream(Files.newInputStream(sourceFile))) {
-                final int fileVersion = metaIn.readInt();
-                if (fileVersion == MetadataFileFormatVersion.ORIGINAL) {
-                    metaIn.readLong(); // skip hashesRamToDiskThreshold
-                } else if (fileVersion != MetadataFileFormatVersion.KEYRANGE_ONLY) {
-                    throw new IOException(
-                            "Tried to read a file with incompatible file format version [" + fileVersion + "].");
-                }
-                validLeafPathRange = new KeyRange(metaIn.readLong(), metaIn.readLong());
             }
             Files.delete(sourceFile);
             return true;
@@ -1164,23 +1126,30 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     private void writeLeavesToPathToKeyValue(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualLeafRecord<K, V>> dirtyLeaves,
-            final Stream<VirtualLeafRecord<K, V>> deletedLeaves,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> dirtyLeaves,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> deletedLeaves,
             boolean isReconnect)
             throws IOException {
-        if ((dirtyLeaves == null) || (firstLeafPath <= 0)) {
-            // nothing to do
+        // If both streams are empty, no new data files should be created. One simple way to
+        // check emptiness is to use iterators. The streams aren't processed in parallel anyway
+        final Iterator<VirtualLeafRecord<K, V>> dirtyIterator = dirtyLeaves
+                .sorted(Comparator.comparingLong(VirtualLeafRecord::getPath))
+                .iterator();
+        final Iterator<VirtualLeafRecord<K, V>> deletedIterator = deletedLeaves.iterator();
+
+        if (!dirtyIterator.hasNext() && !deletedIterator.hasNext()) {
+            // Nothing to do
             return;
         }
 
-        // start writing
         pathToKeyValue.startWriting(firstLeafPath, lastLeafPath);
         if (!isLongKeyMode) {
             objectKeyToPath.startWriting();
         }
 
         // Iterate over leaf records
-        dirtyLeaves.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath)).forEachOrdered(leafRecord -> {
+        while (dirtyIterator.hasNext()) {
+            final VirtualLeafRecord<K, V> leafRecord = dirtyIterator.next();
             final long path = leafRecord.getPath();
             // Update key to path index
             if (isLongKeyMode) {
@@ -1202,10 +1171,11 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
             // cache the record
             invalidateReadCache(leafRecord.getKey());
-        });
+        }
 
         // Iterate over leaf records to delete
-        deletedLeaves.forEach(leafRecord -> {
+        while (deletedIterator.hasNext()) {
+            final VirtualLeafRecord<K, V> leafRecord = deletedIterator.next();
             final long path = leafRecord.getPath();
             // Update key to path index. In some cases (e.g. during reconnect), some leaves in the
             // deletedLeaves stream have been moved to different paths in the tree. This is good
@@ -1236,7 +1206,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
             // delete the record from the cache
             invalidateReadCache(leafRecord.getKey());
-        });
+        }
 
         // end writing
         final DataFileReader<VirtualLeafRecord<K, V>> pathToKeyValueReader = pathToKeyValue.endWriting();

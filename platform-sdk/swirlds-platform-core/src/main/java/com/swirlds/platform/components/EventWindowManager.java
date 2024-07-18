@@ -17,30 +17,30 @@
 package com.swirlds.platform.components;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.internal.ConsensusRound;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * The gateway for disseminating {@link NonAncientEventWindow} instances to the rest of the platform.
+ * The gateway for disseminating {@link EventWindow} instances to the rest of the platform.
  */
 public interface EventWindowManager {
 
     /**
-     * Extracts the {@link NonAncientEventWindow} from the given {@link ConsensusRound}.
+     * Extracts the {@link EventWindow} from the given {@link ConsensusRound}.
      *
      * @param round the {@link ConsensusRound}
-     * @return the {@link NonAncientEventWindow}
+     * @return the {@link EventWindow}
      */
     @InputWireLabel("consensus round")
-    NonAncientEventWindow extractEventWindow(@NonNull final ConsensusRound round);
+    EventWindow extractEventWindow(@NonNull final ConsensusRound round);
 
     /**
-     * Set the {@link NonAncientEventWindow}.
+     * Set the {@link EventWindow}.
      *
-     * @param eventWindow the {@link NonAncientEventWindow}
-     * @return the {@link NonAncientEventWindow} that was set.
+     * @param eventWindow the {@link EventWindow}
+     * @return the {@link EventWindow} that was set.
      */
     @InputWireLabel("override event window")
-    NonAncientEventWindow updateEventWindow(@NonNull final NonAncientEventWindow eventWindow);
+    EventWindow updateEventWindow(@NonNull final EventWindow eventWindow);
 }

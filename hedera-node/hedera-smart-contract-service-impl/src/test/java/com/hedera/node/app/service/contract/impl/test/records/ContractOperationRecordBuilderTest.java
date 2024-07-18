@@ -31,13 +31,13 @@ import com.hedera.hapi.streams.ContractStateChange;
 import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 class ContractOperationRecordBuilderTest {
@@ -45,7 +45,7 @@ class ContractOperationRecordBuilderTest {
     void withGasFeeWorksAsExpected() {
         final var subject = new ContractOperationRecordBuilder() {
             @Override
-            public void trackExplicitRewardSituation(@NotNull AccountID accountId) {}
+            public void trackExplicitRewardSituation(@NonNull AccountID accountId) {}
 
             @Override
             public Set<AccountID> explicitRewardSituationIds() {
@@ -61,7 +61,7 @@ class ContractOperationRecordBuilderTest {
                 return totalFee;
             }
 
-            @NotNull
+            @NonNull
             @Override
             public TransactionBody transactionBody() {
                 return TransactionBody.DEFAULT;
@@ -122,6 +122,11 @@ class ContractOperationRecordBuilderTest {
             @Override
             public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
                 return this;
+            }
+
+            @Override
+            public HandleContext.TransactionCategory category() {
+                return HandleContext.TransactionCategory.USER;
             }
         };
 

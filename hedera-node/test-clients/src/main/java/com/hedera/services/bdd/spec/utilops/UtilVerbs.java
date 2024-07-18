@@ -16,8 +16,15 @@
 
 package com.hedera.services.bdd.spec.utilops;
 
+import static com.hedera.node.app.hapi.utils.CommonUtils.asEvmAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.explicitFromHeadlong;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.isLongZeroAddress;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.numberOfLongZero;
+import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.APPLICATION_LOG;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccount;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asAccountString;
+import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
 import static com.hedera.services.bdd.spec.assertions.ContractInfoAsserts.contractWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountBalance;
@@ -28,32 +35,34 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.timeUntilNextPeriod;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenDissociate;
+import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateInitCodeWithConstructorArgs;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate.getUpdated121;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.log;
-import static com.hedera.services.bdd.spec.utilops.lifecycle.selectors.NodeSelector.allNodes;
-import static com.hedera.services.bdd.spec.utilops.lifecycle.selectors.NodeSelector.byName;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilJustBeforeStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextAdhocPeriod;
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
+import static com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp.Containment.CONTAINS;
+import static com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp.Containment.DOES_NOT_CONTAIN;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
-import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
-import static com.hedera.services.bdd.suites.TargetNetworkType.HAPI_TEST_NETWORK;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.STAKING_REWARD;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
-import static com.hedera.services.bdd.suites.contract.traceability.TraceabilitySuite.SIDECARS_PROP;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ABORT;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_ONLY;
 import static com.hederahashgraph.api.proto.java.FreezeType.FREEZE_UPGRADE;
@@ -63,11 +72,15 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.BUSY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
-import static com.swirlds.common.stream.LinkedObjectStreamUtilities.generateStreamFileNameFromInstant;
+import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
+import static com.swirlds.platform.system.status.PlatformStatus.BEHIND;
+import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
+import static com.swirlds.platform.system.status.PlatformStatus.RECONNECT_COMPLETE;
 import static java.util.Objects.requireNonNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -75,18 +88,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
-import com.hedera.services.bdd.junit.RecordStreamValidator;
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.hapi.utils.forensics.RecordStreamEntry;
+import com.hedera.services.bdd.junit.hedera.MarkerFile;
+import com.hedera.services.bdd.junit.hedera.NodeSelector;
+import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
+import com.hedera.services.bdd.junit.hedera.embedded.SyntheticVersion;
 import com.hedera.services.bdd.spec.HapiPropertySource;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts;
 import com.hedera.services.bdd.spec.infrastructure.OpProvider;
+import com.hedera.services.bdd.spec.queries.HapiQueryOp;
 import com.hedera.services.bdd.spec.queries.meta.HapiGetTxnRecord;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiMessageSubmit;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumCall;
+import com.hedera.services.bdd.spec.transactions.contract.HapiEthereumContractCreate;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileAppend;
@@ -94,17 +116,22 @@ import com.hedera.services.bdd.spec.transactions.file.HapiFileCreate;
 import com.hedera.services.bdd.spec.transactions.file.HapiFileUpdate;
 import com.hedera.services.bdd.spec.transactions.file.UploadProgress;
 import com.hedera.services.bdd.spec.transactions.system.HapiFreeze;
+import com.hedera.services.bdd.spec.utilops.checks.VerifyAddLiveHashNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetAccountNftInfosNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetBySolidityIdNotSupported;
+import com.hedera.services.bdd.spec.utilops.checks.VerifyGetExecutionTimeNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetFastRecordNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetLiveHashNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetStakersNotSupported;
 import com.hedera.services.bdd.spec.utilops.checks.VerifyGetTokenNftInfosNotSupported;
+import com.hedera.services.bdd.spec.utilops.checks.VerifyUserFreezeNotAuthorized;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateAccountOp;
+import com.hedera.services.bdd.spec.utilops.embedded.MutateNodeOp;
+import com.hedera.services.bdd.spec.utilops.grouping.GroupedOps;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import com.hedera.services.bdd.spec.utilops.grouping.ParallelSpecOps;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKey;
 import com.hedera.services.bdd.spec.utilops.inventory.NewSpecKeyList;
-import com.hedera.services.bdd.spec.utilops.inventory.RecordSystemProperty;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromEcdsaFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromFile;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromLiteral;
@@ -112,22 +139,22 @@ import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMnemonic;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromMutation;
 import com.hedera.services.bdd.spec.utilops.inventory.SpecKeyFromPem;
 import com.hedera.services.bdd.spec.utilops.inventory.UsableTxnId;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ShutDownNodesOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.StartNodesOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForActiveOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForBehindOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForFreezeOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForReconnectOp;
-import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForShutdownOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.ConfigTxtValidationOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.PurgeUpgradeArtifactsOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForMarkerFileOp;
+import com.hedera.services.bdd.spec.utilops.lifecycle.ops.WaitForStatusOp;
+import com.hedera.services.bdd.spec.utilops.mod.QueryModification;
+import com.hedera.services.bdd.spec.utilops.mod.QueryModificationsOp;
+import com.hedera.services.bdd.spec.utilops.mod.SubmitModificationsOp;
+import com.hedera.services.bdd.spec.utilops.mod.TxnModification;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecSleep;
 import com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil;
-import com.hedera.services.bdd.spec.utilops.pauses.NodeLivenessTimeout;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotMode;
 import com.hedera.services.bdd.spec.utilops.records.SnapshotModeOp;
-import com.hedera.services.bdd.spec.utilops.streams.RecordAssertions;
-import com.hedera.services.bdd.spec.utilops.streams.RecordFileChecker;
-import com.hedera.services.bdd.spec.utilops.streams.RecordStreamVerification;
+import com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp;
+import com.hedera.services.bdd.spec.utilops.streams.LogValidationOp;
+import com.hedera.services.bdd.spec.utilops.streams.StreamValidationOp;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.AssertingBiConsumer;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.CryptoCreateAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualAssertion;
@@ -135,34 +162,39 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStr
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
-import com.hedera.services.bdd.spec.utilops.throughput.FinishThroughputObs;
-import com.hedera.services.bdd.spec.utilops.throughput.StartThroughputObs;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
+import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
 import com.hedera.services.bdd.suites.perf.PerfTestLoadSettings;
-import com.hedera.services.bdd.suites.perf.topic.HCSChunkingRealisticPerfSuite;
-import com.hedera.services.bdd.suites.utils.RecordStreamType;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.FeesJsonToGrpcBytes;
 import com.hedera.services.bdd.suites.utils.sysfiles.serdes.SysFileSerde;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Setting;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.time.Duration;
@@ -171,6 +203,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -183,19 +216,41 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.ObjIntConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Logger;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.junit.jupiter.api.Assertions;
 
 public class UtilVerbs {
+    private static final long FIRST_NODE_ACCOUNT_NUM = 3L;
+    private static final int NUM_IN_USE_NODE_ACCOUNTS = 4;
+    private static final TransferList DEFAULT_NODE_BALANCE_FUNDING = TransferList.newBuilder()
+            .addAllAccountAmounts(Stream.concat(
+                            Stream.of(AccountAmount.newBuilder()
+                                    .setAmount(-NUM_IN_USE_NODE_ACCOUNTS * ONE_HBAR)
+                                    .setAccountID(AccountID.newBuilder().setAccountNum(2L))
+                                    .build()),
+                            LongStream.range(FIRST_NODE_ACCOUNT_NUM, FIRST_NODE_ACCOUNT_NUM + NUM_IN_USE_NODE_ACCOUNTS)
+                                    .mapToObj(number -> AccountAmount.newBuilder()
+                                            .setAmount(ONE_HBAR)
+                                            .setAccountID(AccountID.newBuilder().setAccountNum(number))
+                                            .build()))
+                    .toList())
+            .build();
+
+    public static final int DEFAULT_COLLISION_AVOIDANCE_FACTOR = 2;
 
     /**
      * Private constructor to prevent instantiation.
@@ -218,6 +273,84 @@ public class UtilVerbs {
         return new HapiFreeze(TELEMETRY_UPGRADE);
     }
 
+    /**
+     * Returns an operation that ensures staking is activated. In general this is the one
+     * property override that doesn't need default values to be preserved, since all production
+     * network behavior must work with staking active in any case.
+     *
+     * @return the operation that ensures staking is activated
+     */
+    public static HapiSpecOperation ensureStakingActivated() {
+        return blockingOrder(
+                overridingTwo(
+                        "staking.startThreshold", "" + 0,
+                        "staking.rewardBalanceThreshold", "" + 0),
+                cryptoTransfer(tinyBarsFromTo(GENESIS, STAKING_REWARD, ONE_MILLION_HBARS)));
+    }
+
+    /**
+     * Returns an operation that, when executed, will compute a delegate operation by calling the given factory
+     * with the startup value of the given property on the target network; and execute its delegate.
+     *
+     * @param property the property whose startup value is needed for the delegate operation
+     * @param factory the factory for the delegate operation
+     * @return the operation that will execute the delegate created from the target network's startup value
+     */
+    public static SpecOperation doWithStartupConfig(
+            @NonNull final String property, @NonNull final Function<String, SpecOperation> factory) {
+        return doSeveralWithStartupConfig(property, startupValue -> new SpecOperation[] {factory.apply(startupValue)});
+    }
+
+    /**
+     * Returns an operation that, when executed, will compute a delegate operation by calling the given factory
+     * with the startup value of the given property on the target network and its current consensus time; and
+     * execute its delegate.
+     *
+     * @param property the property whose startup value is needed for the delegate operation
+     * @param factory the factory for the delegate operation
+     * @return the operation that will execute the delegate created from the target network's startup value
+     */
+    public static SpecOperation doWithStartupConfigNow(
+            @NonNull final String property, @NonNull final BiFunction<String, Instant, SpecOperation> factory) {
+        return doSeveralWithStartupConfigNow(property, (startupValue, consensusTime) ->
+                new SpecOperation[] {factory.apply(startupValue, consensusTime)});
+    }
+
+    /**
+     * Returns an operation that, when executed, will compute a sequence of delegate operation by calling the
+     * given factory with the startup value of the given property on the target network and its current consensus time;
+     * and execute the delegates in order.
+     *
+     * @param property the property whose startup value is needed for the delegate operation
+     * @param factory the factory for the delegate operations
+     * @return the operation that will execute the delegate created from the target network's startup value
+     */
+    public static SpecOperation doSeveralWithStartupConfigNow(
+            @NonNull final String property, @NonNull final BiFunction<String, Instant, SpecOperation[]> factory) {
+        return withOpContext((spec, opLog) -> {
+            final var startupValue =
+                    spec.targetNetworkOrThrow().startupProperties().get(property);
+            allRunFor(spec, factory.apply(startupValue, spec.consensusTime()));
+        });
+    }
+
+    /**
+     * Returns an operation that, when executed, will compute a delegate operation by calling the given factory
+     * with the startup value of the given property on the target network; and execute its delegate.
+     *
+     * @param property the property whose startup value is needed for the delegate operation
+     * @param factory the factory for the delegate operation
+     * @return the operation that will execute the delegate created from the target network's startup value
+     */
+    public static SpecOperation doSeveralWithStartupConfig(
+            @NonNull final String property, @NonNull final Function<String, SpecOperation[]> factory) {
+        return withOpContext((spec, opLog) -> {
+            final var startupValue =
+                    spec.targetNetworkOrThrow().startupProperties().get(property);
+            allRunFor(spec, factory.apply(startupValue));
+        });
+    }
+
     public static HapiFreeze freezeOnly() {
         return new HapiFreeze(FREEZE_ONLY);
     }
@@ -230,26 +363,70 @@ public class UtilVerbs {
         return new HapiFreeze(FREEZE_ABORT);
     }
 
+    /**
+     * Returns an operation that validates the streams of the target network.
+     *
+     * @return the operation that validates the streams
+     */
+    public static StreamValidationOp validateStreams() {
+        return new StreamValidationOp();
+    }
+
+    /**
+     * Returns an operation that delays for the given time and then validates
+     * any of the target network node application logs.
+     *
+     * @return the operation that validates the logs of a node
+     */
+    public static HapiSpecOperation validateAnyLogAfter(@NonNull final Duration delay) {
+        return new LogValidationOp(LogValidationOp.Scope.ANY_NODE, delay);
+    }
+
+    /**
+     * Returns an operation that delays for the given time and then validates that the selected nodes'
+     * application logs contain the given pattern.
+     *
+     * @param selector the selector for the node whose log to validate
+     * @param pattern the pattern that must be present
+     * @param delay the delay before validation
+     * @return the operation that validates the logs of the target network
+     */
+    public static LogContainmentOp assertHgcaaLogContains(
+            @NonNull final NodeSelector selector, @NonNull final String pattern, @NonNull final Duration delay) {
+        return new LogContainmentOp(selector, APPLICATION_LOG, CONTAINS, pattern, delay);
+    }
+
+    /**
+     * Returns an operation that delays for the given time and then validates that the selected nodes'
+     * application logs do not contain the given pattern.
+     *
+     * @param selector the selector for the node whose log to validate
+     * @param pattern the pattern that must be present
+     * @param delay the delay before validation
+     * @return the operation that validates the logs of the target network
+     */
+    public static LogContainmentOp assertHgcaaLogDoesNotContain(
+            @NonNull final NodeSelector selector, @NonNull final String pattern, @NonNull final Duration delay) {
+        return new LogContainmentOp(selector, APPLICATION_LOG, DOES_NOT_CONTAIN, pattern, delay);
+    }
+
+    /**
+     * Returns an operation that delays for the given time and then validates
+     * all of the target network node application logs.
+     *
+     * @return the operation that validates the logs of the target network
+     */
+    public static HapiSpecOperation validateAllLogsAfter(@NonNull final Duration delay) {
+        return new LogValidationOp(LogValidationOp.Scope.ALL_NODES, delay);
+    }
+
     /* Some fairly simple utility ops */
-    public static InBlockingOrder blockingOrder(HapiSpecOperation... ops) {
+    public static InBlockingOrder blockingOrder(SpecOperation... ops) {
         return new InBlockingOrder(ops);
     }
 
-    public static NodeLivenessTimeout withLiveNode(String node) {
-        return new NodeLivenessTimeout(node);
-    }
-
-    public static <T> RecordSystemProperty<T> recordSystemProperty(
-            String property, Function<String, T> converter, Consumer<T> historian) {
-        return new RecordSystemProperty<>(property, converter, historian);
-    }
-
-    public static NetworkTypeFilterOp ifHapiTest(@NonNull final HapiSpecOperation... ops) {
-        return new NetworkTypeFilterOp(EnumSet.of(HAPI_TEST_NETWORK), ops);
-    }
-
-    public static NetworkTypeFilterOp ifNotHapiTest(@NonNull final HapiSpecOperation... ops) {
-        return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(HAPI_TEST_NETWORK)), ops);
+    public static NetworkTypeFilterOp ifNotEmbeddedTest(@NonNull final HapiSpecOperation... ops) {
+        return new NetworkTypeFilterOp(EnumSet.complementOf(EnumSet.of(EMBEDDED_NETWORK)), ops);
     }
 
     public static EnvFilterOp ifCi(@NonNull final HapiSpecOperation... ops) {
@@ -260,6 +437,56 @@ public class UtilVerbs {
     public static EnvFilterOp ifNotCi(@NonNull final HapiSpecOperation... ops) {
         requireNonNull(ops);
         return new EnvFilterOp(EnvFilterOp.EnvType.NOT_CI, ops);
+    }
+
+    /**
+     * Returns an operation that repeatedly submits a transaction from the given
+     * supplier, but each time after modifying its body with one of the
+     * {@link TxnModification}'s computed by the given function.
+     *
+     * <p>This function will be called with the <b>unmodified</b> transaction,
+     * so that the modifications are all made relative to the same initial
+     * transaction.
+     *
+     * @param modificationsFn the function that computes modifications to apply
+     * @param txnOpSupplier the supplier of the transaction to submit
+     * @return the operation that submits the modified transactions
+     */
+    public static SubmitModificationsOp submitModified(
+            @NonNull final Function<Transaction, List<TxnModification>> modificationsFn,
+            @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier) {
+        return new SubmitModificationsOp(txnOpSupplier, modificationsFn);
+    }
+
+    public static SubmitModificationsOp submitModifiedWithFixedPayer(
+            @NonNull final Function<Transaction, List<TxnModification>> modificationsFn,
+            @NonNull final Supplier<HapiTxnOp<?>> txnOpSupplier) {
+        return new SubmitModificationsOp(false, txnOpSupplier, modificationsFn);
+    }
+
+    /**
+     * Returns an operation that repeatedly sends a query from the given
+     * supplier, but each time after modifying the query with one of the
+     * {@link QueryModification}'s computed by the given function.
+     *
+     * <p>This function will be called with the <b>unmodified</b> query,
+     * so that the modifications are all made relative to the same initial
+     * query.
+     *
+     * @param modificationsFn the function that computes modifications to apply
+     * @param queryOpSupplier the supplier of the query to send
+     * @return the operation that sends the modified queries
+     */
+    public static QueryModificationsOp sendModified(
+            @NonNull final Function<Query, List<QueryModification>> modificationsFn,
+            @NonNull final Supplier<HapiQueryOp<?>> queryOpSupplier) {
+        return new QueryModificationsOp(queryOpSupplier, modificationsFn);
+    }
+
+    public static QueryModificationsOp sendModifiedWithFixedPayer(
+            @NonNull final Function<Query, List<QueryModification>> modificationsFn,
+            @NonNull final Supplier<HapiQueryOp<?>> queryOpSupplier) {
+        return new QueryModificationsOp(false, queryOpSupplier, modificationsFn);
     }
 
     public static SourcedOp sourcing(Supplier<HapiSpecOperation> source) {
@@ -274,56 +501,48 @@ public class UtilVerbs {
         return new ContextualActionOp(action);
     }
 
-    public static WaitForActiveOp waitForNodeToBecomeActive(String name, int waitSeconds) {
-        return new WaitForActiveOp(byName(name), waitSeconds);
+    public static WaitForStatusOp waitForActive(String name, Duration timeout) {
+        return waitForActive(NodeSelector.byName(name), timeout);
     }
 
-    public static WaitForActiveOp waitForNodesToBecomeActive(int waitSeconds) {
-        return new WaitForActiveOp(allNodes(), waitSeconds);
+    public static WaitForStatusOp waitForActive(@NonNull final NodeSelector selector, @NonNull final Duration timeout) {
+        return new WaitForStatusOp(selector, ACTIVE, timeout);
     }
 
-    public static WaitForActiveOp waitForNodeToBecomeBehind(String name, int waitSeconds) {
-        return new WaitForActiveOp(byName(name), waitSeconds);
+    public static WaitForStatusOp waitForBehind(String name, Duration timeout) {
+        return new WaitForStatusOp(NodeSelector.byName(name), BEHIND, timeout);
     }
 
-    public static WaitForFreezeOp waitForNodeToFreeze(String name, int waitSeconds) {
-        return new WaitForFreezeOp(byName(name), waitSeconds);
+    public static WaitForStatusOp waitForReconnectComplete(String name, Duration timeout) {
+        return new WaitForStatusOp(NodeSelector.byName(name), RECONNECT_COMPLETE, timeout);
     }
 
-    public static StartNodesOp startAllNodes() {
-        return new StartNodesOp(allNodes());
+    public static WaitForStatusOp waitForFreezeComplete(String name, Duration timeout) {
+        return new WaitForStatusOp(NodeSelector.byName(name), FREEZE_COMPLETE, timeout);
     }
 
-    public static StartNodesOp startNode(String name) {
-        return new StartNodesOp(byName(name));
+    public static WaitForStatusOp waitForActiveNetwork(@NonNull final Duration timeout) {
+        return new WaitForStatusOp(NodeSelector.allNodes(), ACTIVE, timeout);
     }
 
-    public static ShutDownNodesOp shutDownAllNodes() {
-        return new ShutDownNodesOp(allNodes());
+    /**
+     * Returns a submission strategy that requires an embedded network and given one submits a transaction with
+     * the given synthetic version.
+     *
+     * @param syntheticVersion the synthetic version to use
+     * @return the submission strategy
+     */
+    public static HapiTxnOp.SubmissionStrategy usingVersion(@NonNull final SyntheticVersion syntheticVersion) {
+        return (network, transaction, functionality, target, nodeAccountId) -> {
+            if (!(network instanceof EmbeddedNetwork embeddedNetwork)) {
+                throw new IllegalArgumentException("Expected an EmbeddedNetwork");
+            }
+            return embeddedNetwork.embeddedHederaOrThrow().submit(transaction, nodeAccountId, syntheticVersion);
+        };
     }
 
-    public static ShutDownNodesOp shutDownNode(String name) {
-        return new ShutDownNodesOp(byName(name));
-    }
-
-    public static WaitForFreezeOp waitForNodesToFreeze(int waitSeconds) {
-        return new WaitForFreezeOp(allNodes(), waitSeconds);
-    }
-
-    public static WaitForBehindOp waitForNodeToBeBehind(String name, int waitSeconds) {
-        return new WaitForBehindOp(byName(name), waitSeconds);
-    }
-
-    public static WaitForReconnectOp waitForNodeToFinishReconnect(String name, int waitSeconds) {
-        return new WaitForReconnectOp(byName(name), waitSeconds);
-    }
-
-    public static WaitForShutdownOp waitForNodeToShutDown(String name, int waitSeconds) {
-        return new WaitForShutdownOp(byName(name), waitSeconds);
-    }
-
-    public static WaitForShutdownOp waitForNodesToShutDown(int waitSeconds) {
-        return new WaitForShutdownOp(allNodes(), waitSeconds);
+    public static WaitForStatusOp waitForFrozenNetwork(@NonNull final Duration timeout) {
+        return new WaitForStatusOp(NodeSelector.allNodes(), FREEZE_COMPLETE, timeout);
     }
 
     public static HapiSpecSleep sleepFor(long timeMs) {
@@ -336,6 +555,85 @@ public class UtilVerbs {
 
     public static HapiSpecWaitUntil waitUntilStartOfNextStakingPeriod(final long stakePeriodMins) {
         return untilStartOfNextStakingPeriod(stakePeriodMins);
+    }
+
+    public static BuildUpgradeZipOp buildUpgradeZipFrom(@NonNull final Path path) {
+        return new BuildUpgradeZipOp(path);
+    }
+
+    public static WaitForMarkerFileOp waitForMf(@NonNull final MarkerFile markerFile, @NonNull final Duration timeout) {
+        return new WaitForMarkerFileOp(NodeSelector.allNodes(), markerFile, timeout);
+    }
+
+    /**
+     * Returns an operation that validates that each node's generated <i>config.txt</i> in its upgrade
+     * artifacts directory passes the given validator.
+     *
+     * @param bookValidator the validator to apply to each node's <i>config.txt</i>
+     * @return the operation that validates the <i>config.txt</i> files
+     */
+    public static ConfigTxtValidationOp validateUpgradeAddressBooks(
+            @NonNull final Consumer<AddressBook> bookValidator) {
+        return validateUpgradeAddressBooks(NodeSelector.allNodes(), bookValidator);
+    }
+
+    /**
+     * Returns an operation that validates that each node's generated <i>config.txt</i> in its upgrade
+     * artifacts directory passes the given validator.
+     *
+     * @param selector the selector for the nodes to validate
+     * @param bookValidator the validator to apply to each node's <i>config.txt</i>
+     * @return the operation that validates the <i>config.txt</i> files
+     */
+    public static ConfigTxtValidationOp validateUpgradeAddressBooks(
+            @NonNull final NodeSelector selector, @NonNull final Consumer<AddressBook> bookValidator) {
+        return new ConfigTxtValidationOp(selector, bookValidator);
+    }
+
+    /**
+     * Returns an operation that purges the upgrade artifacts directory on each node.
+     *
+     * @return the operation that purges the upgrade artifacts directory
+     */
+    public static PurgeUpgradeArtifactsOp purgeUpgradeArtifacts() {
+        return new PurgeUpgradeArtifactsOp(NodeSelector.allNodes());
+    }
+
+    /**
+     * Returns an operation that, if the current time is "too close" to
+     * the next staking period start (as measured by a given window),
+     * performs a given {@code then} operation.
+     *
+     * <p>Useful when you want to perform consecutive operations to,
+     * <ol>
+     *     <Li>Create a staking account; then</Li>
+     *     <Li>Wait until the start of a staking period; then</Li>
+     *     <Li>Wait until one more staking period starts so that
+     *     the account is eligible for one period of rewards.</Li>
+     * </ol>
+     * To be sure your account will be eligible for only one period of
+     * rewards, you need to ensure that the first two operations occur
+     * <b>in the same period</b>.
+     *
+     * <p>By giving a {@link HapiSpecWaitUntil} operation as {@code then},
+     * and a conservative window, you can ensure that the first two operations
+     * occur in the same period without adding a full period of delay to
+     * every test execution.
+     *
+     * @param window the minimum time until the next period start that will trigger the wait
+     * @param stakePeriodMins the length of the staking period in minutes
+     * @param then the operation to perform if the current time is within the window
+     * @return the operation that conditionally does the {@code then} operation
+     */
+    public static HapiSpecOperation ifNextStakePeriodStartsWithin(
+            @NonNull final Duration window, final long stakePeriodMins, @NonNull final HapiSpecOperation then) {
+        return withOpContext((spec, opLog) -> {
+            final var buffer = timeUntilNextPeriod(spec.consensusTime(), stakePeriodMins);
+            if (buffer.compareTo(window) < 0) {
+                opLog.info("Waiting for next staking period, buffer {} less than window {}", buffer, window);
+                allRunFor(spec, then);
+            }
+        });
     }
 
     /**
@@ -375,10 +673,6 @@ public class UtilVerbs {
         return new SpecKeyFromLiteral(name, hexEncodedPrivateKey);
     }
 
-    public static HapiSpecOperation expectedEntitiesExist() {
-        return withOpContext((spec, opLog) -> spec.persistentEntities().runExistenceChecks());
-    }
-
     public static SpecKeyFromEcdsaFile keyFromEcdsaFile(String loc, String name) {
         return new SpecKeyFromEcdsaFile(loc, name);
     }
@@ -407,8 +701,18 @@ public class UtilVerbs {
         return new NewSpecKeyList(key, childKeys);
     }
 
-    public static ParallelSpecOps inParallel(HapiSpecOperation... subs) {
-        return new ParallelSpecOps(subs);
+    /**
+     * Unless the {@link HapiSpec} is in a repeatable mode, returns an operation that will
+     * run the given sub-operations in parallel.
+     *
+     * <p>If in repeatable mode, instead returns an operation that will run the sub-operations
+     * in blocking order, since parallelism can lead to non-deterministic outcomes.
+     *
+     * @param subs the sub-operations to run in parallel
+     * @return the operation that runs the sub-operations in parallel
+     */
+    public static GroupedOps<?> inParallel(@NonNull final SpecOperation... subs) {
+        return repeatableModeRequested() ? blockingOrder(subs) : new ParallelSpecOps(subs);
     }
 
     public static CustomSpecAssert assertionsHold(CustomSpecAssert.ThrowingConsumer custom) {
@@ -470,20 +774,25 @@ public class UtilVerbs {
         return new BalanceSnapshot(forAccount, name);
     }
 
+    public static MutateAccountOp mutateAccount(
+            @NonNull final String name, @NonNull final Consumer<Account.Builder> mutation) {
+        return new MutateAccountOp(name, mutation);
+    }
+
+    public static MutateNodeOp mutateNode(@NonNull final String name, @NonNull final Consumer<Node.Builder> mutation) {
+        return new MutateNodeOp(name, mutation);
+    }
+
     public static BalanceSnapshot balanceSnapshot(Function<HapiSpec, String> nameFn, String forAccount) {
         return new BalanceSnapshot(forAccount, nameFn);
     }
 
-    public static StartThroughputObs startThroughputObs(String name) {
-        return new StartThroughputObs(name);
-    }
-
-    public static FinishThroughputObs finishThroughputObs(String name) {
-        return new FinishThroughputObs(name);
-    }
-
     public static VerifyGetLiveHashNotSupported getClaimNotSupported() {
         return new VerifyGetLiveHashNotSupported();
+    }
+
+    public static VerifyGetExecutionTimeNotSupported getExecutionTimeNotSupported() {
+        return new VerifyGetExecutionTimeNotSupported();
     }
 
     public static VerifyGetStakersNotSupported getStakersNotSupported() {
@@ -506,22 +815,19 @@ public class UtilVerbs {
         return new VerifyGetTokenNftInfosNotSupported();
     }
 
+    public static VerifyAddLiveHashNotSupported verifyAddLiveHashNotSupported() {
+        return new VerifyAddLiveHashNotSupported();
+    }
+
+    public static VerifyUserFreezeNotAuthorized verifyUserFreezeNotAuthorized() {
+        return new VerifyUserFreezeNotAuthorized();
+    }
+
     public static RunLoadTest runLoadTest(Supplier<HapiSpecOperation[]> opSource) {
         return new RunLoadTest(opSource);
     }
 
     public static NoOp noOp() {
-        return new NoOp();
-    }
-
-    /**
-     * A different name for {@link NoOp} that express the intent of a spec author to end by letting
-     * {@link HapiSpec} automatically waits for the streamMustInclude() assertions to pass, fail, or
-     * time out while ensuring enough background traffic to keep closing record stream files
-     *
-     * @return a {@link NoOp} instance
-     */
-    public static NoOp awaitStreamAssertions() {
         return new NoOp();
     }
 
@@ -541,31 +847,13 @@ public class UtilVerbs {
         return overridingAllOf(Map.of(property, value));
     }
 
-    public static HapiSpecOperation overridingAllOfDeferred(Supplier<Map<String, String>> explicit) {
-        return sourcing(() -> overridingAllOf(explicit.get()));
-    }
-
-    public static HapiSpecOperation resetToDefault(String... properties) {
-        var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
-        final Map<String, String> defaultValues = new HashMap<>();
-        for (final var prop : properties) {
-            final var defaultValue = defaultNodeProps.get(prop);
-            defaultValues.put(prop, defaultValue);
-        }
-        return overridingAllOf(defaultValues);
-    }
-
-    public static HapiSpecOperation enableAllFeatureFlagsAndDisableContractThrottles(
-            @NonNull final String... exceptFeatures) {
-        final Map<String, String> allOverrides = new HashMap<>(FeatureFlags.FEATURE_FLAGS.allEnabled(exceptFeatures));
-        allOverrides.putAll(Map.of(
-                "contracts.throttle.throttleByGas",
-                FALSE_VALUE,
-                "contracts.enforceCreationThrottle",
-                FALSE_VALUE,
-                SIDECARS_PROP,
-                "CONTRACT_STATE_CHANGE,CONTRACT_ACTION,CONTRACT_BYTECODE"));
-        return overridingAllOf(allOverrides);
+    /**
+     * Returns an operation that restores the given property to its startup value on the target network.
+     * @param property the property to restore
+     * @return the operation that restores the property
+     */
+    public static SpecOperation restoreDefault(@NonNull final String property) {
+        return doWithStartupConfig(property, value -> overriding(property, value));
     }
 
     /**
@@ -579,7 +867,7 @@ public class UtilVerbs {
      */
     public static HapiSpecOperation withHeadlongAddressesFor(
             @NonNull final List<String> accountOrTokens,
-            @NonNull final Function<Map<String, Address>, List<HapiSpecOperation>> opFn) {
+            @NonNull final Function<Map<String, Address>, List<SpecOperation>> opFn) {
         return withOpContext((spec, opLog) -> {
             final Map<String, Address> addresses = new HashMap<>();
             // FUTURE - populate this map
@@ -597,8 +885,7 @@ public class UtilVerbs {
      * @return the operation that computes and executes the list of operations
      */
     public static HapiSpecOperation withKeyValuesFor(
-            @NonNull final List<String> keys,
-            @NonNull final Function<Map<String, Tuple>, List<HapiSpecOperation>> opFn) {
+            @NonNull final List<String> keys, @NonNull final Function<Map<String, Tuple>, List<SpecOperation>> opFn) {
         return withOpContext((spec, opLog) -> {
             final Map<String, Tuple> keyValues = new HashMap<>();
             // FUTURE - populate this map
@@ -640,7 +927,6 @@ public class UtilVerbs {
     }
 
     public static HapiSpecOperation remembering(final Map<String, String> props, final List<String> ofInterest) {
-        final var defaultNodeProps = HapiSpecSetup.getDefaultNodeProps();
         final Predicate<String> filter = new HashSet<>(ofInterest)::contains;
         return blockingOrder(
                 getFileContents(APP_PROPERTIES)
@@ -648,26 +934,14 @@ public class UtilVerbs {
                         .nodePayment(ONE_HBAR)
                         .fee(ONE_HBAR)
                         .addingFilteredConfigListTo(props, filter),
-                sourcing(() -> {
-                    ofInterest.forEach(prop -> props.computeIfAbsent(prop, defaultNodeProps::get));
-                    return logIt("Remembered props: " + props);
+                withOpContext((spec, opLog) -> {
+                    final var defaultProperties = spec.targetNetworkOrThrow().startupProperties();
+                    ofInterest.forEach(prop -> props.computeIfAbsent(prop, defaultProperties::get));
+                    allRunFor(spec, logIt("Remembered props: " + props));
                 }));
     }
 
-    public static CustomSpecAssert exportAccountBalances(Supplier<String> acctBalanceFile) {
-        return new CustomSpecAssert((spec, log) -> spec.exportAccountBalances(acctBalanceFile));
-    }
-
     /* Stream validation. */
-    public static RecordStreamVerification verifyRecordStreams(Supplier<String> baseDir) {
-        return new RecordStreamVerification(baseDir);
-    }
-
-    public static HapiSpecOperation assertEventuallyPasses(
-            final RecordStreamValidator validator, final Duration timeout) {
-        return new RecordAssertions(timeout, validator);
-    }
-
     public static EventualAssertion streamMustInclude(final Function<HapiSpec, RecordStreamAssertion> assertion) {
         return new EventualRecordStreamAssertion(assertion);
     }
@@ -677,12 +951,62 @@ public class UtilVerbs {
         return EventualRecordStreamAssertion.eventuallyAssertingNoFailures(assertion);
     }
 
-    public static Function<HapiSpec, RecordStreamAssertion> recordedCryptoCreate(final String name) {
-        return recordedCryptoCreate(name, assertion -> {});
+    /**
+     * Returns an operation that validates the visible items captured by the given assertion with
+     * the given validator.
+     *
+     * @param assertion the assertion that captures the visible items
+     * @param validator the validator to use
+     * @return the operation that validates the visible items
+     */
+    public static SpecOperation validateVisibleItems(
+            @NonNull final AtomicReference<VisibleItemsAssertion> assertion,
+            @NonNull final BiConsumer<HapiSpec, Map<String, List<RecordStreamEntry>>> validator) {
+        requireNonNull(assertion);
+        requireNonNull(validator);
+        return withOpContext((spec, opLog) -> {
+            triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
+            final var entries =
+                    assertion.get().entriesWithin(Duration.ofSeconds(2)).join();
+            validator.accept(spec, entries);
+        });
     }
 
+    public static RunnableOp verify(@NonNull final Runnable runnable) {
+        return new RunnableOp(runnable);
+    }
+
+    public static RunnableOp given(@NonNull final Runnable runnable) {
+        return new RunnableOp(runnable);
+    }
+
+    public static RunnableOp doAdhoc(@NonNull final Runnable runnable) {
+        return new RunnableOp(runnable);
+    }
+
+    public static HapiSpecOperation[] nOps(final int n, @NonNull final IntFunction<HapiSpecOperation> source) {
+        return IntStream.range(0, n).mapToObj(source).toArray(HapiSpecOperation[]::new);
+    }
+
+    /**
+     * Returns the given varags as a {@link SpecOperation} array.
+     * @param ops the varargs to return as an array
+     * @return the array of varargs
+     */
+    public static SpecOperation[] specOps(@NonNull final SpecOperation... ops) {
+        return requireNonNull(ops);
+    }
+
+    /**
+     * "Hello world" example of a custom record stream assertion that validates a named
+     * account has a creation record in the record stream.
+     *
+     * @param name the name of the account
+     * @param config the configuration of the custom record stream assertion
+     * @return the custom record stream assertion
+     */
     public static Function<HapiSpec, RecordStreamAssertion> recordedCryptoCreate(
-            final String name, final Consumer<CryptoCreateAssertion> config) {
+            @NonNull final String name, @NonNull final Consumer<CryptoCreateAssertion> config) {
         return spec -> {
             final var assertion = new CryptoCreateAssertion(spec, name);
             config.accept(assertion);
@@ -694,17 +1018,24 @@ public class UtilVerbs {
         return spec -> new ValidContractIdsAssertion();
     }
 
-    public static Function<HapiSpec, RecordStreamAssertion> recordedChildBodyWithId(
-            final String specTxnId, final int nonce, final AssertingBiConsumer<HapiSpec, TransactionBody> assertion) {
-        return spec -> new TransactionBodyAssertion(specTxnId, spec, txnId -> txnId.getNonce() == nonce, assertion);
+    public static Function<HapiSpec, RecordStreamAssertion> visibleItems(
+            @NonNull final AtomicReference<VisibleItemsAssertion> ref, @NonNull final String... specTxnIds) {
+        requireNonNull(ref);
+        requireNonNull(specTxnIds);
+        return spec -> {
+            final var assertion = new VisibleItemsAssertion(spec, specTxnIds);
+            ref.set(assertion);
+            return assertion;
+        };
     }
 
-    public static RecordFileChecker verifyRecordFile(
-            Timestamp timestamp, List<Transaction> transactions, TransactionRecord... transactionRecord) {
-        var recordFileName = generateStreamFileNameFromInstant(
-                Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos()), new RecordStreamType());
-
-        return new RecordFileChecker(recordFileName, transactions, transactionRecord);
+    public static Function<HapiSpec, RecordStreamAssertion> recordedChildBodyWithId(
+            @NonNull final String specTxnId,
+            final int nonce,
+            @NonNull final AssertingBiConsumer<HapiSpec, TransactionBody> assertion) {
+        requireNonNull(specTxnId);
+        requireNonNull(assertion);
+        return spec -> new TransactionBodyAssertion(specTxnId, spec, txnId -> txnId.getNonce() == nonce, assertion);
     }
 
     /* Some more complicated ops built from primitive sub-ops */
@@ -725,6 +1056,17 @@ public class UtilVerbs {
                 CustomSpecAssert.allRunFor(spec, subOp);
             }
         });
+    }
+
+    /**
+     * Returns a transfer that funds all node accounts with one hbar to cover any penalty payments.
+     *
+     * @return the operation that funds all node accounts
+     */
+    public static HapiCryptoTransfer fundHapiTestNodeAccounts() {
+        return cryptoTransfer((ignore, builder) -> builder.setTransfers(DEFAULT_NODE_BALANCE_FUNDING))
+                .deferStatusResolution()
+                .hasAnyStatusAtAll();
     }
 
     public static HapiSpecOperation emptyChildRecordsCheck(String parentTxnId, ResponseCodeEnum parentalStatus) {
@@ -770,7 +1112,7 @@ public class UtilVerbs {
     public static HapiSpecOperation chunkAFile(
             String filePath, int chunkSize, String payer, String topic, AtomicLong count) {
         return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> opsList = new ArrayList<>();
+            List<SpecOperation> opsList = new ArrayList<>();
             String overriddenFile = filePath;
             int overriddenChunkSize = chunkSize;
             String overriddenTopic = topic;
@@ -793,7 +1135,7 @@ public class UtilVerbs {
                     if (ciProperties.has("threads")) {
                         threads = ciProperties.getInteger("threads");
                     }
-                    int factor = HCSChunkingRealisticPerfSuite.DEFAULT_COLLISION_AVOIDANCE_FACTOR;
+                    int factor = DEFAULT_COLLISION_AVOIDANCE_FACTOR;
                     if (ciProperties.has("collisionAvoidanceFactor")) {
                         factor = ciProperties.getInteger("collisionAvoidanceFactor");
                     }
@@ -821,8 +1163,7 @@ public class UtilVerbs {
                                 DUPLICATE_TRANSACTION,
                                 PLATFORM_TRANSACTION_NOT_CREATED,
                                 INSUFFICIENT_PAYER_BALANCE)
-                        .noLogging()
-                        .suppressStats(true);
+                        .noLogging();
                 if (1 == currentChunk) {
                     subOp = subOp.usePresetTimestamp();
                 }
@@ -875,10 +1216,6 @@ public class UtilVerbs {
         });
     }
 
-    public static HapiSpecOperation makeFree(HederaFunctionality function) {
-        return reduceFeeFor(function, 0L, 0L, 0L);
-    }
-
     public static HapiSpecOperation reduceFeeFor(
             HederaFunctionality function,
             long tinyBarMaxNodeFee,
@@ -898,8 +1235,6 @@ public class UtilVerbs {
                 Thread.sleep(20000);
                 return;
             }
-            opLog.info("Sleeping so not to spoil/fail the fee initializations on other" + " clients...");
-            Thread.sleep(10000);
             opLog.info("Reducing fee for {}...", functions);
             var query = getFileContents(FEE_SCHEDULE).payingWith(GENESIS);
             allRunFor(spec, query);
@@ -958,20 +1293,29 @@ public class UtilVerbs {
 
     public static HapiSpecOperation uploadDefaultFeeSchedules(String payer) {
         return withOpContext((spec, opLog) -> {
-            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, defaultFeeSchedules()));
+            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, feeSchedulesWith("FeeSchedule.json")));
             if (!spec.tryReinitializingFees()) {
                 throw new IllegalStateException("New fee schedules won't be available, dying!");
             }
         });
     }
 
-    private static ByteString defaultFeeSchedules() {
+    public static HapiSpecOperation uploadGivenFeeSchedules(String payer, String feeSchedules) {
+        return withOpContext((spec, opLog) -> {
+            allRunFor(spec, updateLargeFile(payer, FEE_SCHEDULE, feeSchedulesWith(feeSchedules)));
+            if (!spec.tryReinitializingFees()) {
+                throw new IllegalStateException("New fee schedules won't be available, dying!");
+            }
+        });
+    }
+
+    private static ByteString feeSchedulesWith(String feeSchedules) {
         SysFileSerde<String> serde = new FeesJsonToGrpcBytes();
         var baos = new ByteArrayOutputStream();
         try {
-            var schedulesIn = HapiFileCreate.class.getClassLoader().getResourceAsStream("FeeSchedule.json");
+            var schedulesIn = HapiFileCreate.class.getClassLoader().getResourceAsStream(feeSchedules);
             if (schedulesIn == null) {
-                throw new IllegalStateException("No FeeSchedule.json resource available!");
+                throw new IllegalStateException("No " + feeSchedules + " resource available!");
             }
             schedulesIn.transferTo(baos);
             baos.close();
@@ -1001,6 +1345,21 @@ public class UtilVerbs {
             OptionalLong tinyBarsToOffer) {
         return updateLargeFile(
                 payer, fileName, byteString, signOnlyWithPayer, tinyBarsToOffer, op -> {}, (op, i) -> {});
+    }
+
+    public static HapiSpecOperation updateSpecialFile(
+            final String payer,
+            final String fileName,
+            final Path path,
+            final int bytesPerOp,
+            final int appendsPerBurst) {
+        final ByteString contents;
+        try {
+            contents = ByteString.copyFrom(Files.readAllBytes(path));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return updateSpecialFile(payer, fileName, contents, bytesPerOp, appendsPerBurst, 0);
     }
 
     public static HapiSpecOperation updateSpecialFile(
@@ -1109,7 +1468,7 @@ public class UtilVerbs {
             final var appendsLeft = totalBytesLeft / bytesPerOp + Math.min(1, totalBytesLeft % bytesPerOp);
             final var appendsHere = new AtomicInteger(Math.min(appendsPerBurst, appendsLeft));
             boolean isFirstAppend = true;
-            final List<HapiSpecOperation> theBurst = new ArrayList<>();
+            final List<SpecOperation> theBurst = new ArrayList<>();
             final CountDownLatch burstLatch = new CountDownLatch(1);
             final AtomicReference<Instant> burstStart = new AtomicReference<>();
             while (appendsHere.getAndDecrement() > 0) {
@@ -1185,7 +1544,7 @@ public class UtilVerbs {
             Consumer<HapiFileUpdate> updateCustomizer,
             ObjIntConsumer<HapiFileAppend> appendCustomizer) {
         return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> opsList = new ArrayList<>();
+            List<SpecOperation> opsList = new ArrayList<>();
 
             int fileSize = byteString.size();
             int position = Math.min(BYTES_4K, fileSize);
@@ -1238,19 +1597,69 @@ public class UtilVerbs {
         });
     }
 
-    public static HapiSpecOperation saveFileToRegistry(String fileName, String registryEntry) {
-        return getFileContents(fileName).payingWith(GENESIS).saveToRegistry(registryEntry);
+    public static HapiSpecOperation updateLargeFileWithZeroOfferedFee(
+            String payer, String fileName, String registryEntry) {
+        return withOpContext((spec, ctxLog) -> {
+            ByteString bt = ByteString.copyFrom(spec.registry().getBytes(registryEntry));
+            CustomSpecAssert.allRunFor(spec, updateLargeFile(payer, fileName, bt, false, OptionalLong.of(0L)));
+        });
     }
 
-    public static HapiSpecOperation restoreFileFromRegistry(String fileName, String registryEntry) {
-        return updateLargeFile(GENESIS, fileName, registryEntry);
+    /**
+     * Returns a {@link CustomSpecAssert} that asserts that the provided contract creation has the
+     * expected maxAutoAssociations value.
+     *
+     * @param txn the contract create transaction which resulted in contract creation.
+     * @param creationNum the index of the contract creation in the transaction. If we have nested contract create, the top-level contract creation is at index 0.
+     * @param maxAutoAssociations the expected maxAutoAssociations value.
+     * @return a {@link CustomSpecAssert}
+     */
+    public static CustomSpecAssert assertCreationMaxAssociations(
+            final String txn, final int creationNum, final int maxAutoAssociations) {
+        return assertCreationMaxAssociationsCommon(
+                txn, creationNum, maxAutoAssociations, TransactionRecord::getContractCreateResult);
+    }
+
+    /**
+     * Returns a {@link CustomSpecAssert} that asserts that the provided contract creation has the
+     * expected maxAutoAssociations value.
+     *
+     * @param txn the contract call transaction which resulted in contract creation.
+     * @param creationNum the index of the contract creation in the transaction.
+     * @param maxAutoAssociations the expected maxAutoAssociations value.
+     * @return a {@link CustomSpecAssert}
+     */
+    public static CustomSpecAssert assertCreationViaCallMaxAssociations(
+            final String txn, final int creationNum, final int maxAutoAssociations) {
+        return assertCreationMaxAssociationsCommon(
+                txn, creationNum, maxAutoAssociations, TransactionRecord::getContractCallResult);
+    }
+
+    private static CustomSpecAssert assertCreationMaxAssociationsCommon(
+            final String txn,
+            final int creationNum,
+            final int maxAutoAssociations,
+            final Function<TransactionRecord, ContractFunctionResult> resultExtractor) {
+        return assertionsHold((spec, opLog) -> {
+            final var op = getTxnRecord(txn);
+            allRunFor(spec, op);
+            final var creationResult = resultExtractor.apply(op.getResponseRecord());
+            final var createdIds = creationResult.getCreatedContractIDsList().stream()
+                    .sorted(Comparator.comparing(ContractID::getContractNum))
+                    .toList();
+            final var accDetails = getContractInfo(CommonUtils.hex(
+                            asEvmAddress(createdIds.get(creationNum).getContractNum())))
+                    .has(contractWith().maxAutoAssociations(maxAutoAssociations))
+                    .logged();
+            allRunFor(spec, accDetails);
+        });
     }
 
     @SuppressWarnings("java:S5960")
     public static HapiSpecOperation contractListWithPropertiesInheritedFrom(
             final String contractList, final long expectedSize, final String parent) {
         return withOpContext((spec, ctxLog) -> {
-            List<HapiSpecOperation> opsList = new ArrayList<>();
+            List<SpecOperation> opsList = new ArrayList<>();
             long contractListSize = spec.registry().getAmount(contractList + "Size");
             Assertions.assertEquals(expectedSize, contractListSize, contractList + " has bad size!");
             if (contractListSize > 1) {
@@ -1289,6 +1698,20 @@ public class UtilVerbs {
 
     public static CustomSpecAssert validateChargedUsd(String txn, double expectedUsd, double allowedPercentDiff) {
         return validateChargedUsdWithin(txn, expectedUsd, allowedPercentDiff);
+    }
+
+    public static CustomSpecAssert validateChargedUsdWithChild(
+            String txn, double expectedUsd, double allowedPercentDiff) {
+        return assertionsHold((spec, assertLog) -> {
+            final var actualUsdCharged = getChargedUsdFromChild(spec, txn);
+            assertEquals(
+                    expectedUsd,
+                    actualUsdCharged,
+                    (allowedPercentDiff / 100.0) * expectedUsd,
+                    String.format(
+                            "%s fee (%s) more than %.2f percent different than expected!",
+                            CryptoTransferSuite.sdec(actualUsdCharged, 4), txn, allowedPercentDiff));
+        });
     }
 
     public static CustomSpecAssert validateChargedUsdWithin(String txn, double expectedUsd, double allowedPercentDiff) {
@@ -1359,13 +1782,31 @@ public class UtilVerbs {
                         HapiPropertySource.asAccount("0.0.801")));
     }
 
+    /**
+     * Returns an operation that validates the node payment returned by the {@link ResponseType#COST_ANSWER}
+     * version of the query returned by the given factory is <b>exact</b> in the sense that offering even
+     * 1 tinybar less as node payment results in a {@link ResponseCodeEnum#INSUFFICIENT_TX_FEE} precheck.
+     *
+     * @param queryOp the query operation factory
+     * @return the cost validation operation
+     */
+    public static HapiSpecOperation withStrictCostAnswerValidation(@NonNull final Supplier<HapiQueryOp<?>> queryOp) {
+        final var requiredNodePayment = new AtomicLong();
+        return blockingOrder(
+                sourcing(() -> queryOp.get().exposingNodePaymentTo(requiredNodePayment::set)),
+                sourcing(() -> queryOp.get()
+                        .nodePayment(requiredNodePayment.get() - 1)
+                        .hasAnswerOnlyPrecheck(INSUFFICIENT_TX_FEE)));
+    }
+
     public static HapiSpecOperation validateRecordTransactionFees(String txn, Set<AccountID> feeRecipients) {
         return assertionsHold((spec, assertLog) -> {
-            HapiGetTxnRecord subOp =
-                    getTxnRecord(txn).logged().payingWith(EXCHANGE_RATE_CONTROL).expectStrictCostAnswer();
-            allRunFor(spec, subOp);
-            TransactionRecord rcd =
-                    subOp.getResponse().getTransactionGetRecord().getTransactionRecord();
+            final AtomicReference<TransactionRecord> txnRecord = new AtomicReference<>();
+            allRunFor(spec, withStrictCostAnswerValidation(() -> getTxnRecord(txn)
+                    .payingWith(EXCHANGE_RATE_CONTROL)
+                    .exposingTo(txnRecord::set)
+                    .logged()));
+            final var rcd = txnRecord.get();
             long realFee = rcd.getTransferList().getAccountAmountsList().stream()
                     .filter(aa -> feeRecipients.contains(aa.getAccountID()))
                     .mapToLong(AccountAmount::getAmount)
@@ -1526,11 +1967,6 @@ public class UtilVerbs {
             return this;
         }
 
-        public TokenTransferListBuilder forTokenAddress(final Address token) {
-            this.token = token;
-            return this;
-        }
-
         public TokenTransferListBuilder withAccountAmounts(final Tuple... accountAmounts) {
             this.tokenTransferList = Tuple.of(token, accountAmounts, new Tuple[] {});
             return this;
@@ -1563,10 +1999,6 @@ public class UtilVerbs {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount);
     }
 
-    public static Tuple addressedAccountAmount(final Address address, final Long amount) {
-        return Tuple.of(address, amount);
-    }
-
     public static Tuple accountAmount(final AccountID account, final Long amount, final boolean isApproval) {
         return Tuple.of(HapiParserUtil.asHeadlongAddress(asAddress(account)), amount, isApproval);
     }
@@ -1587,22 +2019,6 @@ public class UtilVerbs {
                 serialNumber);
     }
 
-    public static Tuple nftTransferToAlias(final AccountID sender, final byte[] alias, final Long serialNumber) {
-        return Tuple.of(
-                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
-                HapiParserUtil.asHeadlongAddress(alias),
-                serialNumber);
-    }
-
-    public static Tuple nftTransferToAlias(
-            final AccountID sender, final byte[] alias, final Long serialNumber, final boolean isApproval) {
-        return Tuple.of(
-                HapiParserUtil.asHeadlongAddress(asAddress(sender)),
-                HapiParserUtil.asHeadlongAddress(alias),
-                serialNumber,
-                isApproval);
-    }
-
     public static Tuple nftTransfer(
             final AccountID sender, final AccountID receiver, final Long serialNumber, final boolean isApproval) {
         return Tuple.of(
@@ -1612,11 +2028,49 @@ public class UtilVerbs {
                 isApproval);
     }
 
-    public static List<HapiSpecOperation> convertHapiCallsToEthereumCalls(final List<HapiSpecOperation> ops) {
-        final var convertedOps = new ArrayList<HapiSpecOperation>(ops.size());
+    public static List<SpecOperation> convertHapiCallsToEthereumCalls(
+            final List<SpecOperation> ops,
+            final String privateKeyRef,
+            final Key adminKey,
+            final long defaultGas,
+            final HapiSpec spec) {
+        final var convertedOps = new ArrayList<SpecOperation>(ops.size());
         for (final var op : ops) {
-            if (op instanceof HapiContractCall callOp && callOp.isConvertableToEthCall()) {
+            if (op instanceof HapiContractCall callOp
+                    && callOp.isConvertableToEthCall()
+                    && callOp.isKeySECP256K1(spec)) {
+                // if we have function params, try to swap the long zero address with the EVM address
+                if (callOp.getParams().length > 0 && callOp.getAbi() != null) {
+                    var convertedParams = tryToSwapLongZeroToEVMAddresses(callOp.getParams(), spec);
+                    callOp.setParams(convertedParams);
+                }
                 convertedOps.add(new HapiEthereumCall(callOp));
+
+            } else if (op instanceof HapiContractCreate callOp && callOp.isConvertableToEthCreate()) {
+                // if we have constructor args, update the bytecode file with one containing the args
+                if (callOp.getArgs().isPresent() && callOp.getAbi().isPresent()) {
+                    var convertedArgs =
+                            tryToSwapLongZeroToEVMAddresses(callOp.getArgs().get(), spec);
+                    callOp.args(Optional.of(convertedArgs));
+                    convertedOps.add(updateInitCodeWithConstructorArgs(
+                            Optional.empty(),
+                            callOp.getContract(),
+                            callOp.getAbi().get(),
+                            callOp.getArgs().get()));
+                }
+
+                var createEthereum = withOpContext((spec1, logger) -> {
+                    var createTxn = new HapiEthereumContractCreate(callOp, privateKeyRef, adminKey, defaultGas);
+                    allRunFor(spec1, createTxn);
+                    // if create was successful, save the EVM address to the registry, so we can use it in future calls
+                    if (spec1.registry().hasContractId(callOp.getContract())) {
+                        allRunFor(
+                                spec1,
+                                getContractInfo(callOp.getContract()).saveEVMAddressToRegistry(callOp.getContract()));
+                    }
+                });
+                convertedOps.add(createEthereum);
+
             } else {
                 convertedOps.add(op);
             }
@@ -1624,10 +2078,32 @@ public class UtilVerbs {
         return convertedOps;
     }
 
-    public static byte[] getPrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {
+    private static Object[] tryToSwapLongZeroToEVMAddresses(Object[] args, HapiSpec spec) {
+        return Arrays.stream(args)
+                .map(arg -> {
+                    if (arg instanceof Address address) {
+                        return swapLongZeroToEVMAddresses(spec, arg, address);
+                    }
+                    return arg;
+                })
+                .toArray();
+    }
+
+    private static Object swapLongZeroToEVMAddresses(HapiSpec spec, Object arg, Address address) {
+        var explicitFromHeadlong = explicitFromHeadlong(address);
+        if (isLongZeroAddress(explicitFromHeadlong)) {
+            var contractNum = numberOfLongZero(explicitFromHeadlong(address));
+            if (spec.registry().hasEVMAddress(String.valueOf(contractNum))) {
+                return HapiParserUtil.asHeadlongAddress(spec.registry().getEVMAddress(String.valueOf(contractNum)));
+            }
+        }
+        return arg;
+    }
+
+    public static byte[] getEcdsaPrivateKeyFromSpec(final HapiSpec spec, final String privateKeyRef) {
         var key = spec.registry().getKey(privateKeyRef);
         final var privateKey = spec.keys()
-                .getPrivateKey(com.swirlds.common.utility.CommonUtils.hex(
+                .getEcdsaPrivateKey(com.swirlds.common.utility.CommonUtils.hex(
                         key.getECDSASecp256K1().toByteArray()));
 
         byte[] privateKeyByteArray;
@@ -1652,6 +2128,24 @@ public class UtilVerbs {
         allRunFor(spec, subOp);
         final var rcd = subOp.getResponseRecord();
         return (1.0 * rcd.getTransactionFee())
+                / ONE_HBAR
+                / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
+                * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()
+                / 100;
+    }
+
+    private static double getChargedUsdFromChild(@NonNull final HapiSpec spec, @NonNull final String txn) {
+        requireNonNull(spec);
+        requireNonNull(txn);
+        var subOp = getTxnRecord(txn).andAllChildRecords();
+        allRunFor(spec, subOp);
+        final var rcd = subOp.getResponseRecord();
+        final var fees = subOp.getChildRecords().isEmpty()
+                ? 0L
+                : subOp.getChildRecords().stream()
+                        .mapToLong(TransactionRecord::getTransactionFee)
+                        .sum();
+        return (1.0 * (rcd.getTransactionFee() + fees))
                 / ONE_HBAR
                 / rcd.getReceipt().getExchangeRate().getCurrentRate().getHbarEquiv()
                 * rcd.getReceipt().getExchangeRate().getCurrentRate().getCentEquiv()

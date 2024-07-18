@@ -25,9 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TokenHandlerTestBase;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
 import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -41,14 +41,16 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
     private static final Configuration CONFIGURATION = HederaTestConfigBuilder.createConfig();
 
     @Mock
-    private Metrics metrics;
+    private StoreMetricsService storeMetricsService;
 
     private Token token;
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableTokenStore(null, CONFIGURATION, metrics));
-        assertThrows(NullPointerException.class, () -> new WritableTokenStore(writableStates, null, metrics));
+        assertThrows(
+                NullPointerException.class, () -> new WritableTokenStore(null, CONFIGURATION, storeMetricsService));
+        assertThrows(
+                NullPointerException.class, () -> new WritableTokenStore(writableStates, null, storeMetricsService));
         assertThrows(NullPointerException.class, () -> new WritableTokenStore(writableStates, CONFIGURATION, null));
         assertThrows(NullPointerException.class, () -> writableTokenStore.put(null));
         assertThrows(NullPointerException.class, () -> writableTokenStore.put(null));
@@ -56,7 +58,7 @@ class WritableTokenStoreTest extends TokenHandlerTestBase {
 
     @Test
     void constructorCreatesTokenState() {
-        final var store = new WritableTokenStore(writableStates, CONFIGURATION, metrics);
+        final var store = new WritableTokenStore(writableStates, CONFIGURATION, storeMetricsService);
         assertNotNull(store);
     }
 

@@ -20,10 +20,13 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.*;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
 import static com.hedera.hapi.node.base.TokenType.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.node.app.hapi.fees.usage.SingletonEstimatorUtils.ESTIMATOR_UTILS;
 import static com.hedera.node.app.hapi.fees.usage.crypto.CryptoOpsUsage.txnEstimateFactory;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.hasAccountNumOrAlias;
+import static com.hedera.node.app.spi.fees.Fees.CONSTANT_FEE_DATA;
 import static com.hedera.node.app.spi.workflows.HandleException.validateFalse;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
+import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
@@ -36,7 +39,10 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenDissociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.mono.fees.calculation.token.txns.TokenDissociateResourceUsage;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
+import com.hedera.node.app.hapi.fees.usage.token.TokenDissociateUsage;
+import com.hedera.node.app.hapi.utils.CommonPbjConverters;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
 import com.hedera.node.app.service.token.impl.WritableAccountStore;
@@ -48,12 +54,13 @@ import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
+import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
@@ -69,6 +76,9 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     private static final TokenID NO_ASSOCIATED_TOKENS =
             TokenID.newBuilder().tokenNum(-1).build();
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public TokenDissociateFromAccountHandler() {}
 
@@ -98,13 +108,14 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
      */
     public void handle(@NonNull final HandleContext context) {
         requireNonNull(context);
-        final var accountStore = context.writableStore(WritableAccountStore.class);
-        final var tokenStore = context.readableStore(ReadableTokenStore.class);
-        final var tokenRelStore = context.writableStore(WritableTokenRelationStore.class);
+        final var storeFactory = context.storeFactory();
+        final var accountStore = storeFactory.writableStore(WritableAccountStore.class);
+        final var tokenStore = storeFactory.readableStore(ReadableTokenStore.class);
+        final var tokenRelStore = storeFactory.writableStore(WritableTokenRelationStore.class);
         final var expiryValidator = context.expiryValidator();
         final var txn = context.body();
         final var op = txn.tokenDissociateOrThrow();
-        final var tokenIds = op.tokensOrThrow();
+        final var tokenIds = op.tokens();
         final var validated = validateSemantics(
                 op.accountOrThrow(), tokenIds, accountStore, tokenStore, tokenRelStore, expiryValidator);
 
@@ -145,20 +156,10 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
                 validateFalse(tokenRel.frozen(), ACCOUNT_FROZEN_FOR_TOKEN);
 
                 if (tokenRelBalance > 0) {
-                    validateFalse(token.tokenType() == NON_FUNGIBLE_UNIQUE, ACCOUNT_STILL_OWNS_NFTS);
-
-                    final var tokenIsExpired = tokenIsExpired(token, context.consensusNow());
-                    validateTrue(tokenIsExpired, TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
-
-                    // If the fungible common token is expired, we automatically transfer the
-                    // dissociating account's balance back to the token's treasury
-                    final var treasuryTokenRel = dissociation.treasuryTokenRel();
-                    if (treasuryTokenRel != null) {
-                        final var updatedTreasuryBalanceTokenRel = treasuryTokenRel.balance() + tokenRelBalance;
-                        treasuryBalancesToUpdate.add(treasuryTokenRel
-                                .copyBuilder()
-                                .balance(updatedTreasuryBalanceTokenRel)
-                                .build());
+                    if (token.tokenType() == NON_FUNGIBLE_UNIQUE) {
+                        throw new HandleException(ACCOUNT_STILL_OWNS_NFTS);
+                    } else {
+                        throw new HandleException(TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES);
                     }
                 }
             }
@@ -205,9 +206,10 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
     public void pureChecks(@NonNull final TransactionBody txn) throws PreCheckException {
         final TokenDissociateTransactionBody op = txn.tokenDissociateOrThrow();
 
-        validateTruePreCheck(op.hasAccount(), INVALID_ACCOUNT_ID);
+        validateTruePreCheck(hasAccountNumOrAlias(op.account()), INVALID_ACCOUNT_ID);
+        validateFalsePreCheck(op.tokens().contains(TokenID.DEFAULT), INVALID_TOKEN_ID);
 
-        validateTruePreCheck(!TokenListChecks.repeatsItself(op.tokensOrThrow()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
+        validateTruePreCheck(!TokenListChecks.repeatsItself(op.tokens()), TOKEN_ID_REPEATED_IN_TOKEN_LIST);
     }
 
     /**
@@ -232,6 +234,7 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
 
             // Here we check/retrieve a token that may not be "usable," but since we are dissociating token relations,
             // we don't require a usable token (or even an existing token). We only need to update the token relation
+            validateTrue(tokenId.tokenNum() > 0, INVALID_TOKEN_ID);
             final var possiblyUnusableToken = tokenStore.get(tokenId);
             final TokenRelation dissociatedTokenTreasuryRel;
             if (possiblyUnusableToken != null) {
@@ -257,10 +260,6 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         return new ValidatedResult(acct, dissociations);
     }
 
-    private boolean tokenIsExpired(final Token token, final Instant consensusNow) {
-        return token.expirationSecond() <= consensusNow.getEpochSecond();
-    }
-
     private record ValidatedResult(@NonNull Account account, @NonNull List<Dissociation> dissociations) {}
 
     private record Dissociation(
@@ -282,8 +281,23 @@ public class TokenDissociateFromAccountHandler implements TransactionHandler {
         final var account = readableAccountStore.getAccountById(accountId);
 
         return feeContext
+                .feeCalculatorFactory()
                 .feeCalculator(SubType.DEFAULT)
-                .legacyCalculate(sigValueObj -> new TokenDissociateResourceUsage(txnEstimateFactory)
-                        .usageGiven(fromPbj(body), sigValueObj, account));
+                .legacyCalculate(sigValueObj -> usageGiven(CommonPbjConverters.fromPbj(body), sigValueObj, account));
+    }
+
+    public FeeData usageGiven(
+            final com.hederahashgraph.api.proto.java.TransactionBody txn,
+            final SigValueObj svo,
+            final Account account) {
+        if (account == null) {
+            return CONSTANT_FEE_DATA;
+        } else {
+            final var sigUsage =
+                    new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+            final var estimate =
+                    TokenDissociateUsage.newEstimate(txn, txnEstimateFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
+            return estimate.get();
+        }
     }
 }

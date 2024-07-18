@@ -38,7 +38,6 @@ import com.hedera.hapi.node.transaction.Query;
 import com.hedera.hapi.node.transaction.Response;
 import com.hedera.hapi.node.transaction.TransactionGetRecordQuery;
 import com.hedera.hapi.node.transaction.TransactionGetRecordResponse;
-import com.hedera.node.app.service.mono.fees.calculation.FeeCalcUtils;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.spi.workflows.PaidQueryHandler;
@@ -107,7 +106,10 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         final var responseType = op.headerOrElse(QueryHeader.DEFAULT).responseType();
         responseBuilder.header(header);
         if (header.nodeTransactionPrecheckCode() == ResponseCodeEnum.OK && responseType != COST_ANSWER) {
-            final var history = recordCache.getHistory(transactionId);
+            final var topLevelTxnId = transactionId.nonce() > 0
+                    ? transactionId.copyBuilder().nonce(0).build()
+                    : transactionId;
+            final var history = recordCache.getHistory(topLevelTxnId);
             if (history == null || history.records().isEmpty()) {
                 // Can we even ever hit this case? Doesn't the validate method make sure this doesn't happen?
                 // If we do not yet have a record, then we return this. This has some asymmetry with the call to get
@@ -117,19 +119,33 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
                         .nodeTransactionPrecheckCode(RECORD_NOT_FOUND)
                         .build());
             } else {
-                // There was definitely a record, so we can return it.
-                responseBuilder.transactionRecord(history.userTransactionRecord());
-                if (op.includeDuplicates()) {
-                    responseBuilder.duplicateTransactionRecords(history.duplicateRecords());
-                }
-                if (op.includeChildRecords()) {
-                    // Sort the transaction records based on nonce, so that the user transaction is always first,
-                    // followed by any preceding transactions, followed by any child transactions.
-                    final var sortedRecords = history.childRecords().stream()
-                            .sorted(Comparator.comparingLong(
-                                    a -> a.transactionIDOrThrow().nonce()))
-                            .toList();
-                    responseBuilder.childTransactionRecords(sortedRecords);
+                // Only top-level transactions can have children and duplicates
+                if (transactionId == topLevelTxnId) {
+                    // There was definitely a record, so we can return it.
+                    responseBuilder.transactionRecord(history.userTransactionRecord());
+                    if (op.includeDuplicates()) {
+                        responseBuilder.duplicateTransactionRecords(history.duplicateRecords());
+                    }
+                    if (op.includeChildRecords()) {
+                        // Sort the transaction records based on nonce, so that the user transaction is always first,
+                        // followed by any preceding transactions, followed by any child transactions.
+                        final var sortedRecords = history.childRecords().stream()
+                                .sorted(Comparator.comparingLong(
+                                        a -> a.transactionIDOrThrow().nonce()))
+                                .toList();
+                        responseBuilder.childTransactionRecords(sortedRecords);
+                    }
+                } else {
+                    final var maybeRecord = history.childRecords().stream()
+                            .filter(record -> transactionId.equals(record.transactionID()))
+                            .findFirst();
+                    if (maybeRecord.isEmpty()) {
+                        responseBuilder.header(header.copyBuilder()
+                                .nodeTransactionPrecheckCode(RECORD_NOT_FOUND)
+                                .build());
+                    } else {
+                        responseBuilder.transactionRecord(maybeRecord.get());
+                    }
                 }
             }
         }
@@ -173,7 +189,31 @@ public class NetworkTransactionGetRecordHandler extends PaidQueryHandler {
         }
 
         // multiply node fees to include duplicate and/or child records
-        final FeeData feeData = FeeCalcUtils.multiplierOfUsages(perRecordFeeData, recordCount);
+        final FeeData feeData = multiplierOfUsages(perRecordFeeData, recordCount);
         return queryContext.feeCalculator().legacyCalculate(sigValueObj -> feeData);
+    }
+
+    private static FeeData multiplierOfUsages(final FeeData a, final int multiplier) {
+        return FeeData.newBuilder()
+                .setNodedata(multiplierOfScopedUsages(a.getNodedata(), multiplier))
+                .setNetworkdata(multiplierOfScopedUsages(a.getNetworkdata(), multiplier))
+                .setServicedata(multiplierOfScopedUsages(a.getServicedata(), multiplier))
+                .build();
+    }
+
+    private static FeeComponents multiplierOfScopedUsages(final FeeComponents a, final int multiplier) {
+        return FeeComponents.newBuilder()
+                .setMin(a.getMin())
+                .setMax(a.getMax())
+                .setConstant(a.getConstant() * multiplier)
+                .setBpt(a.getBpt() * multiplier)
+                .setVpt(a.getVpt() * multiplier)
+                .setRbh(a.getRbh() * multiplier)
+                .setSbh(a.getSbh() * multiplier)
+                .setGas(a.getGas() * multiplier)
+                .setTv(a.getTv() * multiplier)
+                .setBpr(a.getBpr() * multiplier)
+                .setSbpr(a.getSbpr() * multiplier)
+                .build();
     }
 }

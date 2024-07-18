@@ -25,10 +25,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.service.mono.sigs.utils.MiscCryptoUtils;
+import com.hedera.node.app.hapi.utils.MiscCryptoUtils;
 import com.hedera.node.app.signature.ExpandedSignaturePair;
 import com.hedera.node.app.signature.SignatureVerifier;
 import com.hedera.node.app.spi.fixtures.Scenarios;
@@ -37,7 +38,6 @@ import com.swirlds.common.crypto.Cryptography;
 import com.swirlds.common.crypto.TransactionSignature;
 import com.swirlds.common.crypto.VerificationStatus;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +62,7 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
     private Cryptography cryptoEngine;
     /** Captures the args sent to the crypto engine. */
     @Captor
-    ArgumentCaptor<List<TransactionSignature>> sigsCaptor;
+    ArgumentCaptor<TransactionSignature> sigsCaptor;
     /** The verifier under test. */
     private SignatureVerifierImpl verifier;
 
@@ -90,8 +90,8 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
     }
 
     /**
-     * If we are asked to verify the keys for an empty signature map, then we get back an empty map, since there
-     * was nothing to verify.
+     * If we are asked to verify the keys for an empty signature map, then we get back an empty map, since there was
+     * nothing to verify.
      */
     @Test
     @DisplayName("If there are no signatures then the map is empty")
@@ -101,8 +101,7 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
     }
 
     /**
-     * Each {@link ExpandedSignaturePair} sent to the {@link SignatureVerifier} will be included in the
-     * returned map.
+     * Each {@link ExpandedSignaturePair} sent to the {@link SignatureVerifier} will be included in the returned map.
      */
     @Test
     @DisplayName("All signatures are included in the result")
@@ -116,15 +115,13 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
 
         //noinspection unchecked
         doAnswer((Answer<Void>) invocation -> {
-                    final List<TransactionSignature> signatures = invocation.getArgument(0);
-                    for (TransactionSignature signature : signatures) {
-                        signature.setSignatureStatus(VerificationStatus.VALID);
-                        signature.setFuture(completedFuture(null));
-                    }
+                    final TransactionSignature signature = invocation.getArgument(0);
+                    signature.setSignatureStatus(VerificationStatus.VALID);
+                    signature.setFuture(completedFuture(null));
                     return null;
                 })
                 .when(cryptoEngine)
-                .verifyAsync(any(List.class));
+                .verifySync(any(TransactionSignature.class));
 
         // When we verify them
         final var map = verifier.verify(signedBytes, sigs);
@@ -148,7 +145,6 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
         sigs.add(ecdsaPair(ALICE.keyInfo().publicKey()));
         sigs.add(ed25519Pair(BOB.keyInfo().publicKey()));
         sigs.add(hollowPair(ERIN.keyInfo().publicKey(), ERIN.account()));
-        doNothing().when(cryptoEngine).verifyAsync(sigsCaptor.capture());
 
         // The signed bytes for ECDSA keys are keccak hashes
         final var signedBytesArray = new byte[(int) signedBytes.length()];
@@ -159,8 +155,8 @@ final class SignatureVerifierImplTest extends AppTestBase implements Scenarios {
         verifier.verify(signedBytes, sigs);
 
         // Then we find the crypto engine was given an array with all the data
-        final var txSigs = sigsCaptor.getValue();
-        assertThat(txSigs).hasSize(3);
+        verify(cryptoEngine, times(3)).verifySync(sigsCaptor.capture());
+        final var txSigs = sigsCaptor.getAllValues();
 
         final var itr = sigs.iterator();
         for (int i = 0; i < 3; i++) {

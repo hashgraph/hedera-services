@@ -31,8 +31,9 @@ import com.hederahashgraph.api.proto.java.ConsensusGetTopicInfoQuery;
 import com.hederahashgraph.api.proto.java.ConsensusTopicInfo;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.Response;
+import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.Transaction;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -149,9 +150,7 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
     }
 
     @Override
-    protected void submitWith(HapiSpec spec, Transaction payment) {
-        Query query = getTopicInfoQuery(spec, payment, false);
-        response = spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
+    protected void processAnswerOnlyResponse(@NonNull final HapiSpec spec) {
         if (verboseLoggingOn) {
             String message = String.format(
                     "Info: %s", response.getConsensusGetTopicInfo().getTopicInfo());
@@ -203,12 +202,15 @@ public class HapiGetTopicInfo extends HapiQueryOp<HapiGetTopicInfo> {
         return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    protected long lookupCostWith(HapiSpec spec, Transaction payment) throws Throwable {
-        Query query = getTopicInfoQuery(spec, payment, true);
-        Response response =
-                spec.clients().getConsSvcStub(targetNodeFor(spec), useTls).getTopicInfo(query);
-        return costFrom(response);
+    protected Query queryFor(
+            @NonNull final HapiSpec spec,
+            @NonNull final Transaction payment,
+            @NonNull final ResponseType responseType) {
+        return getTopicInfoQuery(spec, payment, responseType == ResponseType.COST_ANSWER);
     }
 
     private Query getTopicInfoQuery(HapiSpec spec, Transaction payment, boolean costOnly) {

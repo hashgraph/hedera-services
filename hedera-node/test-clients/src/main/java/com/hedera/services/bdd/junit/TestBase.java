@@ -16,20 +16,19 @@
 
 package com.hedera.services.bdd.junit;
 
-import static com.hedera.services.bdd.junit.RecordStreamAccess.RECORD_STREAM_ACCESS;
+import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.suites.HapiSuite.ETH_SUFFIX;
 import static com.hedera.services.bdd.suites.SuiteRunner.SUITE_NAME_WIDTH;
 import static com.hedera.services.bdd.suites.SuiteRunner.rightPadded;
-import static com.hedera.services.bdd.suites.TargetNetworkType.CI_DOCKER_NETWORK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.DynamicContainer.dynamicContainer;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 
-import com.hedera.services.bdd.junit.validators.HgcaaLogValidator;
-import com.hedera.services.bdd.junit.validators.QueryLogValidator;
+import com.hedera.services.bdd.junit.support.RecordStreamValidator;
+import com.hedera.services.bdd.junit.support.validators.HgcaaLogValidator;
+import com.hedera.services.bdd.junit.support.validators.QueryLogValidator;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.suites.HapiSuite;
-import com.hedera.services.bdd.suites.records.ClosingTime;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -102,16 +101,6 @@ public abstract class TestBase {
 
     protected final DynamicTest queriesLogValidation(final String loc) {
         return dynamicTest("queriesLogValidation", () -> new QueryLogValidator(loc).validate());
-    }
-
-    @SuppressWarnings("java:S1181")
-    protected final DynamicTest recordStreamValidation(final String loc, final RecordStreamValidator... validators) {
-        return dynamicTest("recordStreamValidation", () -> {
-            final var closingTimeSpecs = TestBase.extractContextualizedSpecsFrom(
-                    List.of(ClosingTime::new), TestBase::contextualizedSpecsFromConcurrent);
-            concurrentExecutionOf(closingTimeSpecs);
-            assertValidatorsPass(loc, Arrays.asList(validators));
-        });
     }
 
     @SuppressWarnings("java:S1181")
@@ -189,8 +178,7 @@ public abstract class TestBase {
         suite.skipClientTearDown();
         // Don't log unnecessary detail
         suite.setOnlyLogHeader();
-        return suite.getSpecsInSuiteWithOverrides().stream()
-                .map(spec -> spec.setSuitePrefix(suite.name() + suffix).setTargetNetworkType(CI_DOCKER_NETWORK));
+        return suite.getSpecsInSuiteWithOverrides().stream().map(spec -> spec.setSuitePrefix(suite.name() + suffix));
     }
 
     /**
@@ -213,7 +201,6 @@ public abstract class TestBase {
             final Supplier<HapiSuite> suiteSupplier, final String filter) {
         final var suite = suiteSupplier.get();
         final var tests = suite.getSpecsInSuiteWithOverrides().stream()
-                .map(s -> s.setTargetNetworkType(CI_DOCKER_NETWORK))
                 .map(s -> dynamicTest(s.getName(), () -> {
                     s.run();
                     assertEquals(
@@ -235,7 +222,6 @@ public abstract class TestBase {
     protected final DynamicContainer extractSpecsFromSuiteForEth(final Supplier<HapiSuite> suiteSupplier) {
         final var suite = suiteSupplier.get();
         final var tests = suite.getSpecsInSuiteWithOverrides().stream()
-                .map(s -> s.setTargetNetworkType(CI_DOCKER_NETWORK))
                 .map(s -> dynamicTest(s.getName() + ETH_SUFFIX, () -> {
                     s.setSuitePrefix(suite.getClass().getSimpleName() + ETH_SUFFIX);
                     s.run();

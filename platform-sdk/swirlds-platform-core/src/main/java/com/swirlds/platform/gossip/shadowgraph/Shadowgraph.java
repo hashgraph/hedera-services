@@ -23,8 +23,7 @@ import static com.swirlds.logging.legacy.LogMarker.SYNC_INFO;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.Clearable;
-import com.swirlds.platform.EventStrings;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.gossip.IntakeEventCounter;
@@ -106,7 +105,7 @@ public class Shadowgraph implements Clearable {
     /**
      * The most recent event window we know about.
      */
-    private NonAncientEventWindow eventWindow;
+    private EventWindow eventWindow;
 
     /**
      * For each peer, track the number of events in the intake pipeline prior to the shadowgraph.
@@ -133,8 +132,6 @@ public class Shadowgraph implements Clearable {
         this.metrics = new ShadowgraphMetrics(platformContext);
         this.numberOfNodes = addressBook.getSize();
         this.intakeEventCounter = Objects.requireNonNull(intakeEventCounter);
-        eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
-        oldestUnexpiredIndicator = ancientMode.getGenesisIndicator();
         tips = new HashSet<>();
         hashToShadowEvent = new HashMap<>();
         indicatorToShadowEvent = new HashMap<>();
@@ -146,7 +143,7 @@ public class Shadowgraph implements Clearable {
      *
      * @param eventWindow the starting event window
      */
-    public synchronized void startWithEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    private void startWithEventWindow(@NonNull final EventWindow eventWindow) {
         this.eventWindow = eventWindow;
         oldestUnexpiredIndicator = eventWindow.getExpiredThreshold();
         logger.info(
@@ -159,7 +156,7 @@ public class Shadowgraph implements Clearable {
      * Reset the shadowgraph manager to its constructed state.
      */
     public synchronized void clear() {
-        eventWindow = NonAncientEventWindow.getGenesisNonAncientEventWindow(ancientMode);
+        eventWindow = null;
         oldestUnexpiredIndicator = ancientMode.getGenesisIndicator();
         disconnectShadowEvents();
         tips.clear();
@@ -219,7 +216,7 @@ public class Shadowgraph implements Clearable {
      * Get the latest event window known to the shadowgraph.
      */
     @NonNull
-    public synchronized NonAncientEventWindow getEventWindow() {
+    public synchronized EventWindow getEventWindow() {
         return eventWindow;
     }
 
@@ -352,7 +349,12 @@ public class Shadowgraph implements Clearable {
      *
      * @param eventWindow describes the current window of non-expired events
      */
-    public synchronized void updateEventWindow(@NonNull final NonAncientEventWindow eventWindow) {
+    public synchronized void updateEventWindow(@NonNull final EventWindow eventWindow) {
+        if (this.eventWindow == null) {
+            startWithEventWindow(eventWindow);
+            return;
+        }
+
         final long expiredThreshold = eventWindow.getExpiredThreshold();
 
         if (expiredThreshold < eventWindow.getExpiredThreshold()) {
@@ -509,6 +511,10 @@ public class Shadowgraph implements Clearable {
      * @throws ShadowgraphInsertionException if the event was unable to be added to the shadowgraph
      */
     public synchronized boolean addEvent(@NonNull final EventImpl e) throws ShadowgraphInsertionException {
+        if (eventWindow == null) {
+            throw new IllegalStateException("Initial event window not set");
+        }
+
         Objects.requireNonNull(e);
         try {
             final InsertableStatus status = insertable(e);
@@ -528,13 +534,16 @@ public class Shadowgraph implements Clearable {
                                     + "eventWindow.getExpiredThreshold: {} oldestUnexpiredIndicator: {}\n"
                                     + "current tips:{}",
                             tips::size,
-                            () -> EventStrings.toMediumString(e),
+                            () -> e,
                             () -> e.getSelfParent() == null,
                             () -> s.getSelfParent() == null,
                             () -> eventWindow.getExpiredThreshold(),
                             () -> oldestUnexpiredIndicator,
                             () -> tips.stream()
-                                    .map(sh -> EventStrings.toShortString(sh.getEvent()))
+                                    .map(sh -> sh.getEvent()
+                                            .getBaseEvent()
+                                            .getDescriptor()
+                                            .toString())
                                     .collect(Collectors.joining(",")));
                 }
 
@@ -545,7 +554,7 @@ public class Shadowgraph implements Clearable {
                     throw new ShadowgraphInsertionException(
                             String.format(
                                     "`addEvent`: did not insert, status is %s for event %s, oldestUnexpiredIndicator = %s",
-                                    status, EventStrings.toMediumString(e), oldestUnexpiredIndicator),
+                                    status, e, oldestUnexpiredIndicator),
                             status);
                 } else if (status == InsertableStatus.NULL_EVENT) {
                     throw new ShadowgraphInsertionException(
@@ -554,7 +563,7 @@ public class Shadowgraph implements Clearable {
                     throw new ShadowgraphInsertionException(
                             String.format(
                                     "`addEvent`: did not insert, status is %s for event %s, oldestUnexpiredIndicator = %s",
-                                    status, EventStrings.toMediumString(e), oldestUnexpiredIndicator),
+                                    status, e, oldestUnexpiredIndicator),
                             status);
                 }
             }
@@ -682,7 +691,7 @@ public class Shadowgraph implements Clearable {
             final boolean knownOP = shadow(e.getOtherParent()) != null;
             final boolean expiredOP = expired(e.getOtherParent());
             if (!knownOP && !expiredOP) {
-                logger.warn(STARTUP.getMarker(), "Missing non-expired other parent for {}", e::toMediumString);
+                logger.warn(STARTUP.getMarker(), "Missing non-expired other parent for {}", e);
             }
         }
 
@@ -690,7 +699,7 @@ public class Shadowgraph implements Clearable {
             final boolean knownSP = shadow(e.getSelfParent()) != null;
             final boolean expiredSP = expired(e.getSelfParent());
             if (!knownSP && !expiredSP) {
-                logger.warn(STARTUP.getMarker(), "Missing non-expired self parent for {}", e::toMediumString);
+                logger.warn(STARTUP.getMarker(), "Missing non-expired self parent for {}", e);
             }
         }
 

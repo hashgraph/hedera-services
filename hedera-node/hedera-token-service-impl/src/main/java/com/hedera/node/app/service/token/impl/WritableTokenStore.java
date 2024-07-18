@@ -20,12 +20,13 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Token;
-import com.hedera.node.app.service.mono.state.merkle.MerkleToken;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.hedera.node.app.spi.state.WritableStates;
+import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.metrics.StoreMetricsService.StoreType;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.metrics.api.Metrics;
+import com.swirlds.state.spi.WritableKVState;
+import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Objects;
@@ -48,25 +49,25 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
      *
      * @param states The state to use.
      * @param configuration The configuration used to read the maximum capacity.
-     * @param metrics The metrics-API used to report utilization.
+     * @param storeMetricsService Service that provides utilization metrics.
      */
     public WritableTokenStore(
             @NonNull final WritableStates states,
             @NonNull final Configuration configuration,
-            @NonNull final Metrics metrics) {
+            @NonNull final StoreMetricsService storeMetricsService) {
         super(states);
-        this.tokenState = states.get(TokenServiceImpl.TOKENS_KEY);
-        requireNonNull(metrics);
+        this.tokenState = states.get(V0490TokenSchema.TOKENS_KEY);
 
         final long maxCapacity = configuration.getConfigData(TokensConfig.class).maxNumber();
-        tokenState.setupMetrics(metrics, "tokens", maxCapacity);
+        final var storeMetrics = storeMetricsService.get(StoreType.TOKEN, maxCapacity);
+        tokenState.setMetrics(storeMetrics);
     }
 
     /**
      * Persists a new {@link Token} into the state, as well as exporting its ID to the transaction
      * receipt.
      *
-     * @param token - the token to be mapped onto a new {@link MerkleToken} and persisted.
+     * @param token - the token persisted
      */
     public void put(@NonNull final Token token) {
         Objects.requireNonNull(token);
@@ -78,6 +79,7 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
      * Returns the {@link Token} with the given number using {@link WritableKVState#getForModify}.
      * If no such token exists, returns {@code Optional.empty()}
      * @param tokenId - the id of the token to be retrieved.
+     * @return the token with the given tokenId, or {@code Optional.empty()} if no such token exists.
      */
     @NonNull
     public Optional<Token> getForModify(final TokenID tokenId) {
@@ -116,6 +118,10 @@ public class WritableTokenStore extends ReadableTokenStoreImpl {
         return tokenState.getOriginalValue(tokenId);
     }
 
+    /**
+     * Checks if the given tokenId is not the default tokenId. If it is, throws an {@link IllegalArgumentException}.
+     * @param tokenId The tokenId to check.
+     */
     public static void requireNotDefault(@NonNull final TokenID tokenId) {
         if (tokenId.equals(TokenID.DEFAULT)) {
             throw new IllegalArgumentException("Token ID cannot be default");

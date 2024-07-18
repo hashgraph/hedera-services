@@ -16,20 +16,55 @@
 
 package com.hedera.node.app.spi.state;
 
-import java.util.Map;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.openMocks;
+
+import com.swirlds.state.spi.ReadableKVState;
+import com.swirlds.state.test.fixtures.StateTestBase;
+import java.util.Iterator;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 /**
- * This test extends the {@link ReadableKVStateBaseTest}, getting all the test methods used there,
- * but this time executed on a {@link WrappedReadableKVState}.
+ * This test verifies behavior of a {@link WrappedReadableKVState}.
  */
-class WrappedReadableKVStateTest extends ReadableKVStateBaseTest {
-    @Override
-    protected ReadableKVStateBase<String, String> createFruitState(Map<String, String> backingMap) {
-        final var delegate = super.createFruitState(backingMap);
-        return new WrappedReadableKVState<>(delegate);
+class WrappedReadableKVStateTest extends StateTestBase {
+    @Mock
+    private ReadableKVState<String, String> delegate;
+
+    @Mock
+    private Iterator<String> keys;
+
+    private WrappedReadableKVState<String, String> state;
+
+    @BeforeEach
+    void setUp() {
+        openMocks(this);
+        when(delegate.getStateKey()).thenReturn(FRUIT_STATE_KEY);
+        state = new WrappedReadableKVState<>(delegate);
     }
 
-    protected ReadableKVStateBase<String, String> createFruitState() {
-        return new WrappedReadableKVState<>(readableFruitState());
+    @Test
+    void testReadFromDelegate() {
+        when(delegate.get(A_KEY)).thenReturn(APPLE);
+
+        assertThat(state.get(A_KEY)).isEqualTo(APPLE);
+    }
+
+    @Test
+    void testIterateFromDataSource() {
+        when(delegate.keys()).thenReturn(keys);
+
+        assertThat(state.keys()).isEqualTo(keys);
+    }
+
+    @Test
+    void testSize() {
+        long size = random().nextLong();
+        when(delegate.size()).thenReturn(size);
+
+        assertThat(state.size()).isEqualTo(size);
     }
 }

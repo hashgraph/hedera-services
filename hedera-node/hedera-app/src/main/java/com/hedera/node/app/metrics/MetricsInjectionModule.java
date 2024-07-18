@@ -16,19 +16,16 @@
 
 package com.hedera.node.app.metrics;
 
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.system.Platform;
+import dagger.Binds;
 import dagger.Module;
-import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Singleton;
 
 /** A Dagger module for providing dependencies based on {@link Metrics}. */
 @Module
 public interface MetricsInjectionModule {
-    @Provides
-    @Singleton
-    static Metrics provideMetrics(@NonNull final Platform platform) {
-        return platform.getContext().getMetrics();
-    }
+
+    @Binds
+    StoreMetricsService bindStoreMetricsService(@NonNull StoreMetricsServiceImpl storeMetricsService);
 }

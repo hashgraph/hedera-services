@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-plugins { id("com.hedera.hashgraph.application") }
+plugins { id("com.hedera.gradle.application") }
 
 application.mainClass.set("com.swirlds.demo.consistency.ConsistencyTestingToolMain")
 
 mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
 
 testModuleInfo {
+    requires("com.hedera.node.hapi")
+    requires("com.swirlds.common.test.fixtures")
+    requires("com.swirlds.platform.core.test.fixtures")
     requires("org.junit.jupiter.api")
     requires("org.mockito")
 }

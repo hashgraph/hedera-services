@@ -18,25 +18,24 @@ package com.hedera.node.app.spi.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableSingletonStateBase;
+import com.swirlds.state.test.fixtures.StateTestBase;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * This test extends the {@link WritableKVStateBaseTest}, getting all the test methods used there,
- * but this time executed on a {@link WrappedWritableKVState}.
+ * This test verifies behavior specific to a {@link WrappedWritableKVState}.
  */
-class WrappedWritableSingletonTest extends WritableSingletonStateBaseTest {
+class WrappedWritableSingletonTest extends StateTestBase {
     private WritableSingletonState<String> delegate;
 
-    @Override
-    protected WritableSingletonStateBase<String> createState() {
-        this.delegate = new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, backingStore::get, backingStore::set);
-        return new WrappedWritableSingletonState<>(delegate);
-    }
+    protected AtomicReference<String> backingStore = new AtomicReference<>(AUSTRALIA);
 
-    @Override
-    protected String getBackingStoreValue() {
-        return delegate.get();
+    private WritableSingletonStateBase<String> createState() {
+        delegate = new WritableSingletonStateBase<>(COUNTRY_STATE_KEY, backingStore::get, backingStore::set);
+        return new WrappedWritableSingletonState<>(delegate);
     }
 
     @Test

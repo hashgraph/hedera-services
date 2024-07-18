@@ -15,11 +15,15 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.conventions")
-    id("com.hedera.hashgraph.shadow-jar")
+    id("com.hedera.gradle.services")
+    id("com.hedera.gradle.shadow-jar")
 }
 
 description = "Hedera Services Command-Line Clients"
+
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports,-varargs") }
 
 testModuleInfo {
     requires("org.junit.jupiter.api")

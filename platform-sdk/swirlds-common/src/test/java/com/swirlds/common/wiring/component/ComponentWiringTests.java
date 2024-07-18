@@ -23,13 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
 import com.swirlds.common.wiring.model.WiringModel;
+import com.swirlds.common.wiring.model.WiringModelBuilder;
 import com.swirlds.common.wiring.schedulers.builders.TaskSchedulerConfiguration;
 import com.swirlds.common.wiring.wires.input.InputWire;
 import com.swirlds.common.wiring.wires.output.OutputWire;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -152,7 +152,8 @@ public class ComponentWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel wiringModel =
+                WiringModelBuilder.create(platformContext).build();
 
         final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
@@ -173,7 +174,8 @@ public class ComponentWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel wiringModel =
+                WiringModelBuilder.create(platformContext).build();
 
         final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
@@ -262,7 +264,8 @@ public class ComponentWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel wiringModel =
+                WiringModelBuilder.create(platformContext).build();
 
         final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
@@ -331,7 +334,8 @@ public class ComponentWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel wiringModel =
+                WiringModelBuilder.create(platformContext).build();
 
         final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
@@ -402,7 +406,8 @@ public class ComponentWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel wiringModel =
+                WiringModelBuilder.create(platformContext).build();
 
         final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
@@ -441,7 +446,8 @@ public class ComponentWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel wiringModel =
+                WiringModelBuilder.create(platformContext).build();
 
         final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 
@@ -489,7 +495,8 @@ public class ComponentWiringTests {
         final PlatformContext platformContext =
                 TestPlatformContextBuilder.create().build();
 
-        final WiringModel wiringModel = WiringModel.create(platformContext, ForkJoinPool.commonPool());
+        final WiringModel wiringModel =
+                WiringModelBuilder.create(platformContext).build();
 
         final TaskSchedulerConfiguration schedulerConfiguration = TaskSchedulerConfiguration.parse("DIRECT");
 

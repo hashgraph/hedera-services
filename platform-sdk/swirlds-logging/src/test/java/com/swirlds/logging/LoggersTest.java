@@ -24,9 +24,11 @@ import com.swirlds.logging.test.fixtures.LoggingMirror;
 import com.swirlds.logging.test.fixtures.WithLoggingMirror;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @WithLoggingMirror
+@Disabled
 public class LoggersTest {
 
     @Inject

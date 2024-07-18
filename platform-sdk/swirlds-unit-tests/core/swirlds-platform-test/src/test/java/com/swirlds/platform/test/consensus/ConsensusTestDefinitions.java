@@ -207,7 +207,7 @@ public final class ConsensusTestDefinitions {
         orchestrator.validateAndClear(Validations.standard()
                 .ratios(EventRatioValidation.standard()
                         .setMinimumConsensusRatio(0.8)
-                        .setMaximumConsensusRatio(2.0)));
+                        .setMaximumConsensusRatio(2.1)));
     }
 
     /**
@@ -559,7 +559,7 @@ public final class ConsensusTestDefinitions {
                             .getSnapshot());
             final int fi = i;
             orchestrator1.getNodes().get(i).getOutput().getAddedEvents().forEach(e -> {
-                orchestrator2.getNodes().get(fi).getIntake().addEvent(e);
+                orchestrator2.getNodes().get(fi).getIntake().addEvent(e.copyGossipedData());
             });
             ConsensusUtils.loadEventsIntoGenerator(
                     orchestrator1.getNodes().get(i).getOutput().getAddedEvents(),

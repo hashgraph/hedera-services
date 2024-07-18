@@ -29,11 +29,9 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig_;
-import com.swirlds.common.merkle.synchronization.internal.QueryResponse;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleInternal;
 import com.swirlds.common.test.fixtures.merkle.dummy.DummyMerkleLeaf;
 import com.swirlds.common.test.fixtures.merkle.util.MerkleTestUtils;
-import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualMap;
@@ -43,12 +41,12 @@ import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualMapState;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,8 +82,12 @@ public abstract class VirtualMapReconnectTestBase {
     protected BrokenBuilder teacherBuilder;
     protected BrokenBuilder learnerBuilder;
 
-    protected final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
-    protected final ReconnectConfig reconnectConfig = configuration.getConfigData(ReconnectConfig.class);
+    protected final ReconnectConfig reconnectConfig = new TestConfigBuilder()
+            // This is lower than the default, helps test that is supposed to fail to finish faster.
+            .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5s")
+            .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
+            .getOrCreateConfig()
+            .getConfigData(ReconnectConfig.class);
 
     protected abstract VirtualDataSourceBuilder<TestKey, TestValue> createBuilder() throws IOException;
 
@@ -107,7 +109,6 @@ public abstract class VirtualMapReconnectTestBase {
         final ConstructableRegistry registry = ConstructableRegistry.getInstance();
         registry.registerConstructables("com.swirlds.common");
         registry.registerConstructables("com.swirlds.virtualmap");
-        registry.registerConstructable(new ClassConstructorPair(QueryResponse.class, QueryResponse::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleInternal.class, DummyMerkleInternal::new));
         registry.registerConstructable(new ClassConstructorPair(DummyMerkleLeaf.class, DummyMerkleLeaf::new));
         registry.registerConstructable(new ClassConstructorPair(VirtualLeafRecord.class, VirtualLeafRecord::new));
@@ -117,13 +118,6 @@ public abstract class VirtualMapReconnectTestBase {
         registry.registerConstructable(new ClassConstructorPair(TestKey.class, TestKey::new));
         registry.registerConstructable(new ClassConstructorPair(TestValue.class, TestValue::new));
         registry.registerConstructable(new ClassConstructorPair(BrokenBuilder.class, BrokenBuilder::new));
-
-        new TestConfigBuilder()
-                .withValue(ReconnectConfig_.ACTIVE, "true")
-                // This is lower than the default, helps test that is supposed to fail to finish faster.
-                .withValue(ReconnectConfig_.ASYNC_STREAM_TIMEOUT, "5000ms")
-                .withValue(ReconnectConfig_.MAX_ACK_DELAY, "1000ms")
-                .getOrCreateConfig();
     }
 
     protected MerkleInternal createTreeForMap(VirtualMap<TestKey, TestValue> map) {
@@ -249,13 +243,12 @@ public abstract class VirtualMapReconnectTestBase {
         public void saveRecords(
                 final long firstLeafPath,
                 final long lastLeafPath,
-                final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
-                final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
+                @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToAddOrUpdate,
+                @NonNull final Stream<VirtualLeafRecord<TestKey, TestValue>> leafRecordsToDelete,
                 final boolean isReconnectContext)
                 throws IOException {
-            final List<VirtualLeafRecord<TestKey, TestValue>> leaves =
-                    leafRecordsToAddOrUpdate.collect(Collectors.toList());
+            final List<VirtualLeafRecord<TestKey, TestValue>> leaves = leafRecordsToAddOrUpdate.toList();
 
             if (builder.numTimesBroken < builder.numTimesToBreak) {
                 builder.numCalls += leaves.size();

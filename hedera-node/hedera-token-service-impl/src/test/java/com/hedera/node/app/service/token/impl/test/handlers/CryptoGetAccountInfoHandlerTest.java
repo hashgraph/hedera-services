@@ -20,11 +20,11 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
 import static com.hedera.hapi.node.base.TokenFreezeStatus.FREEZE_NOT_APPLICABLE;
 import static com.hedera.hapi.node.base.TokenKycStatus.KYC_NOT_APPLICABLE;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.ACCOUNTS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_INFO_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKENS_KEY;
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKENS_KEY;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.TOKEN_RELS_KEY;
 import static com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil.NETWORK_REWARDS;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -68,16 +68,17 @@ import com.hedera.node.app.service.token.impl.ReadableTokenRelationStoreImpl;
 import com.hedera.node.app.service.token.impl.ReadableTokenStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.CryptoGetAccountInfoHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.ReadableSingletonStateBase;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.QueryContext;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableSingletonStateBase;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -101,6 +102,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     @Mock
     private ReadableStates readableStates1, readableStates2, readableStates3, readableStates4;
     private CryptoOpsUsage cryptoOpsUsage;
+    private final InstantSource instantSource = InstantSource.system();
 
     private CryptoGetAccountInfoHandler subject;
 
@@ -111,7 +113,7 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     public void setUp() {
         super.setUp();
         cryptoOpsUsage = new CryptoOpsUsage();
-        subject = new CryptoGetAccountInfoHandler(cryptoOpsUsage);
+        subject = new CryptoGetAccountInfoHandler(cryptoOpsUsage, instantSource);
     }
 
     @Test
@@ -484,10 +486,8 @@ class CryptoGetAccountInfoHandlerTest extends CryptoHandlerTestBase {
     private void setupConfig(boolean balancesInQueriesEnabled) {
         final var configBuilder = HederaTestConfigBuilder.create()
                 .withValue("tokens.maxRelsPerInfoQuery", 2)
-                .withValue("ledger.id", "0x03");
-        if (balancesInQueriesEnabled) {
-            configBuilder.withValue("tokens.balancesInQueries.enabled", true);
-        }
+                .withValue("ledger.id", "0x03")
+                .withValue("tokens.balancesInQueries.enabled", balancesInQueriesEnabled);
         given(context.configuration()).willReturn(configBuilder.getOrCreateConfig());
     }
 

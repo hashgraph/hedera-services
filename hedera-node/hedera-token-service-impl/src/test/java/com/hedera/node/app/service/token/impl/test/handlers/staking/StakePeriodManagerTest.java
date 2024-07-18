@@ -16,26 +16,26 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.staking;
 
-import static com.hedera.node.app.service.token.impl.TokenServiceImpl.STAKING_NETWORK_REWARDS_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager.ZONE_UTC;
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_NETWORK_REWARDS_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
-import com.hedera.node.app.service.mono.utils.Units;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.impl.ReadableNetworkStakingRewardsStoreImpl;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
-import com.hedera.node.app.spi.state.WritableSingletonState;
-import com.hedera.node.app.spi.state.WritableSingletonStateBase;
-import com.hedera.node.app.spi.state.WritableStates;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableSingletonStateBase;
+import com.swirlds.state.spi.WritableStates;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,6 +53,8 @@ class StakePeriodManagerTest {
     @Mock(strictness = Mock.Strictness.LENIENT)
     private WritableStates states;
 
+    private final InstantSource instantSource = InstantSource.system();
+
     private StakePeriodManager subject;
     private ReadableNetworkStakingRewardsStore stakingRewardsStore;
 
@@ -62,7 +64,7 @@ class StakePeriodManagerTest {
     @BeforeEach
     public void setUp() {
         given(configProvider.getConfiguration()).willReturn(versionConfig);
-        subject = new StakePeriodManager(configProvider);
+        subject = new StakePeriodManager(configProvider, instantSource);
     }
 
     @Test
@@ -81,11 +83,11 @@ class StakePeriodManagerTest {
     void stakePeriodStartForDevEnvIsPeriodTimesSeconds() {
         givenStakingRewardsActivated();
         givenStakePeriodMins(2);
-        subject = new StakePeriodManager(configProvider);
+        subject = new StakePeriodManager(configProvider, instantSource);
 
         final var somePeriod = 1_234_567L;
 
-        assertEquals(somePeriod * 2 * Units.MINUTES_TO_SECONDS, subject.epochSecondAtStartOfPeriod(somePeriod));
+        assertEquals(somePeriod * 2 * 60L, subject.epochSecondAtStartOfPeriod(somePeriod));
     }
 
     @Test
@@ -110,7 +112,7 @@ class StakePeriodManagerTest {
     void estimatesBasedOnWallClockTimeForDevProperty() {
         givenStakingRewardsNotActivated();
         givenStakePeriodMins(1);
-        subject = new StakePeriodManager(configProvider);
+        subject = new StakePeriodManager(configProvider, instantSource);
         // When staking rewards are not activated the estimated period is Long.MIN_VALUE
         final var approx = Instant.now().getEpochSecond() / 60;
         assertTrue(Math.abs(approx - subject.estimatedCurrentStakePeriod()) <= 1);
@@ -203,7 +205,7 @@ class StakePeriodManagerTest {
     @Test
     void calculatesCurrentStakingPeriodForCustomStakingPeriodProperty() {
         givenStakePeriodMins(2880);
-        subject = new StakePeriodManager(configProvider);
+        subject = new StakePeriodManager(configProvider, instantSource);
 
         final var consensusNow = Instant.ofEpochSecond(12345L);
         final var expectedPeriod = LocalDate.ofInstant(consensusNow, ZONE_UTC).toEpochDay() / 2;
@@ -212,7 +214,7 @@ class StakePeriodManagerTest {
 
         // Use a different staking period
         givenStakePeriodMins(10);
-        subject = new StakePeriodManager(configProvider);
+        subject = new StakePeriodManager(configProvider, instantSource);
         final var diffConsensusNow = consensusNow.plusSeconds(12345L);
         assertEquals(41L, subject.currentStakePeriod(diffConsensusNow));
     }

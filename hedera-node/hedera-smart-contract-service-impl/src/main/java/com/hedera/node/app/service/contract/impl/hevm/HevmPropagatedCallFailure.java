@@ -16,9 +16,6 @@
 
 package com.hedera.node.app.service.contract.impl.hevm;
 
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
-
 import com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.Optional;
@@ -37,11 +34,19 @@ public enum HevmPropagatedCallFailure {
     /**
      * The call failed due to a missing signature on the receiver account.
      */
-    MISSING_RECEIVER_SIGNATURE(INVALID_SIGNATURE),
+    MISSING_RECEIVER_SIGNATURE(CustomExceptionalHaltReason.INVALID_SIGNATURE),
     /**
      * The call failed because its externalizing its result would exceed the maximum number of child records.
      */
-    RESULT_CANNOT_BE_EXTERNALIZED(INSUFFICIENT_CHILD_RECORDS);
+    RESULT_CANNOT_BE_EXTERNALIZED(CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS),
+    /**
+     * The call failed because invalid fee was submitted for an EVM call
+     */
+    INVALID_FEE_SUBMITTED(CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED),
+    /**
+     * The call failed because the contract id submitted for an EVM call was invalid
+     */
+    INVALID_CONTRACT_ID(CustomExceptionalHaltReason.INVALID_CONTRACT_ID);
 
     private final @Nullable CustomExceptionalHaltReason exceptionalHaltReason;
 

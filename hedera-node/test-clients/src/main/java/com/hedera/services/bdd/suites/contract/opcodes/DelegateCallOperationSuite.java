@@ -24,40 +24,19 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.uploadInitCode;
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpec;
-import com.hedera.services.bdd.suites.HapiSuite;
-import java.util.List;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
-@HapiTestSuite
 @Tag(SMART_CONTRACT)
-public class DelegateCallOperationSuite extends HapiSuite {
-
-    private static final Logger log = LogManager.getLogger(DelegateCallOperationSuite.class);
-
-    public static void main(String[] args) {
-        new DelegateCallOperationSuite().runSuiteAsync();
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(verifiesExistence());
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
+public class DelegateCallOperationSuite {
     @HapiTest
-    HapiSpec verifiesExistence() {
+    final Stream<DynamicTest> verifiesExistence() {
         final var contract = "CallOperationsChecker";
         final var INVALID_ADDRESS = "0x0000000000000000000000000000000000123456";
         return defaultHapiSpec("VerifiesExistence")
@@ -76,10 +55,5 @@ public class DelegateCallOperationSuite extends HapiSuite {
 
                             allRunFor(spec, contractCall);
                         }));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

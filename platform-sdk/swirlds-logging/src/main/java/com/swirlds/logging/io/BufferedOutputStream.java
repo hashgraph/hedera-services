@@ -19,7 +19,6 @@ package com.swirlds.logging.io;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -127,7 +126,7 @@ public class BufferedOutputStream extends OutputStream {
     }
 
     private void flushBuffer(final ByteBuffer buf) throws IOException {
-        ((Buffer) buf).flip();
+        buf.flip();
         try {
             if (buf.remaining() > 0) {
                 writeToDestination(buf.array(), buf.arrayOffset() + buf.position(), buf.remaining());

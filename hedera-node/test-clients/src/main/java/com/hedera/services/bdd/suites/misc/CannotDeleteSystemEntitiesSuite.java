@@ -22,150 +22,101 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.systemFileDelete;
-import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.inParallel;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
+import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_ADMIN;
+import static com.hedera.services.bdd.suites.HapiSuite.SYSTEM_DELETE_ADMIN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ENTITY_NOT_ALLOWED_TO_DELETE;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.junit.HapiTestSuite;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
-import com.hedera.services.bdd.suites.BddMethodIsNotATest;
-import com.hedera.services.bdd.suites.HapiSuite;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.IntStream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
 
-@HapiTestSuite
-public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
-    private static final Logger log = LogManager.getLogger(CannotDeleteSystemEntitiesSuite.class);
-
+public class CannotDeleteSystemEntitiesSuite {
     final int[] sysFileIds = {101, 102, 111, 112, 121, 122, 150};
 
-    public static void main(String... args) {
-        CannotDeleteSystemEntitiesSuite suite = new CannotDeleteSystemEntitiesSuite();
-        suite.runSuiteAsync();
-    }
-
-    @Override
-    public boolean canRunConcurrent() {
-        return true;
-    }
-
-    @Override
-    public List<HapiSpec> getSpecsInSuite() {
-        return List.of(
-                genesisCannotDeleteSystemAccountsFrom1To100(),
-                genesisCannotDeleteSystemAccountsFrom700To750(),
-                systemAdminCannotDeleteSystemAccountsFrom1To100(),
-                systemAdminCannotDeleteSystemAccountsFrom700To750(),
-                systemDeleteAdminCannotDeleteSystemAccountsFrom1To100(),
-                systemDeleteAdminCannotDeleteSystemAccountsFrom700To750(),
-                normalUserCannotDeleteSystemAccountsFrom1To100(),
-                normalUserCannotDeleteSystemAccountsFrom700To750(),
-                genesisCannotDeleteSystemFileIds(),
-                systemAdminCannotDeleteSystemFileIds(),
-                systemDeleteAdminCannotDeleteSystemFileIds(),
-                normalUserCannotDeleteSystemFileIds(),
-                genesisCannotSystemFileDeleteFileIds(),
-                systemAdminCannotSystemFileDeleteFileIds(),
-                systemDeleteAdminCannotSystemFileDeleteFileIds());
-    }
-
     @HapiTest
-    final HapiSpec ensureSystemAccountsHaveSomeFunds() {
-        return defaultHapiSpec("EnsureSystemAccountsHaveSomeFunds")
-                .given()
-                .when()
-                .then(
-                        cryptoTransfer(movingHbar(100 * ONE_HUNDRED_HBARS)
-                                        .distributing(GENESIS, SYSTEM_ADMIN, SYSTEM_DELETE_ADMIN))
-                                .payingWith(GENESIS),
-                        cryptoTransfer(tinyBarsFromTo(GENESIS, SYSTEM_DELETE_ADMIN, 10 * ONE_HUNDRED_HBARS))
-                                .payingWith(GENESIS));
-    }
-
-    @HapiTest
-    final HapiSpec genesisCannotDeleteSystemAccountsFrom1To100() {
+    final Stream<DynamicTest> genesisCannotDeleteSystemAccountsFrom1To100() {
         return systemUserCannotDeleteSystemAccounts(1, 100, GENESIS);
     }
 
     @HapiTest
-    final HapiSpec genesisCannotDeleteSystemAccountsFrom700To750() {
+    final Stream<DynamicTest> genesisCannotDeleteSystemAccountsFrom700To750() {
         return systemUserCannotDeleteSystemAccounts(700, 750, GENESIS);
     }
 
     @HapiTest
-    final HapiSpec systemAdminCannotDeleteSystemAccountsFrom1To100() {
+    final Stream<DynamicTest> systemAdminCannotDeleteSystemAccountsFrom1To100() {
         return systemUserCannotDeleteSystemAccounts(1, 100, SYSTEM_ADMIN);
     }
 
     @HapiTest
-    final HapiSpec systemAdminCannotDeleteSystemAccountsFrom700To750() {
+    final Stream<DynamicTest> systemAdminCannotDeleteSystemAccountsFrom700To750() {
         return systemUserCannotDeleteSystemAccounts(700, 750, SYSTEM_ADMIN);
     }
 
     @HapiTest
-    final HapiSpec systemDeleteAdminCannotDeleteSystemAccountsFrom1To100() {
+    final Stream<DynamicTest> systemDeleteAdminCannotDeleteSystemAccountsFrom1To100() {
         return systemUserCannotDeleteSystemAccounts(1, 100, SYSTEM_DELETE_ADMIN);
     }
 
     @HapiTest
-    final HapiSpec systemDeleteAdminCannotDeleteSystemAccountsFrom700To750() {
+    final Stream<DynamicTest> systemDeleteAdminCannotDeleteSystemAccountsFrom700To750() {
         return systemUserCannotDeleteSystemAccounts(700, 750, SYSTEM_DELETE_ADMIN);
     }
 
     @HapiTest
-    final HapiSpec normalUserCannotDeleteSystemAccountsFrom1To100() {
+    final Stream<DynamicTest> normalUserCannotDeleteSystemAccountsFrom1To100() {
         return normalUserCannotDeleteSystemAccounts(1, 100);
     }
 
     @HapiTest
-    final HapiSpec normalUserCannotDeleteSystemAccountsFrom700To750() {
+    final Stream<DynamicTest> normalUserCannotDeleteSystemAccountsFrom700To750() {
         return normalUserCannotDeleteSystemAccounts(700, 750);
     }
 
     @HapiTest
-    final HapiSpec genesisCannotDeleteSystemFileIds() {
+    final Stream<DynamicTest> genesisCannotDeleteSystemFileIds() {
         return systemUserCannotDeleteSystemFiles(sysFileIds, GENESIS);
     }
 
     @HapiTest
-    final HapiSpec systemAdminCannotDeleteSystemFileIds() {
+    final Stream<DynamicTest> systemAdminCannotDeleteSystemFileIds() {
         return systemUserCannotDeleteSystemFiles(sysFileIds, SYSTEM_ADMIN);
     }
 
     @HapiTest
-    final HapiSpec systemDeleteAdminCannotDeleteSystemFileIds() {
+    final Stream<DynamicTest> systemDeleteAdminCannotDeleteSystemFileIds() {
         return systemUserCannotDeleteSystemFiles(sysFileIds, SYSTEM_DELETE_ADMIN);
     }
 
     @HapiTest
-    final HapiSpec normalUserCannotDeleteSystemFileIds() {
+    final Stream<DynamicTest> normalUserCannotDeleteSystemFileIds() {
         return normalUserCannotDeleteSystemFiles(sysFileIds);
     }
 
     @HapiTest
-    final HapiSpec genesisCannotSystemFileDeleteFileIds() {
+    final Stream<DynamicTest> genesisCannotSystemFileDeleteFileIds() {
         return systemDeleteCannotDeleteSystemFiles(sysFileIds, GENESIS);
     }
 
     @HapiTest
-    final HapiSpec systemAdminCannotSystemFileDeleteFileIds() {
+    final Stream<DynamicTest> systemAdminCannotSystemFileDeleteFileIds() {
         return systemDeleteCannotDeleteSystemFiles(sysFileIds, SYSTEM_ADMIN);
     }
 
     @HapiTest
-    final HapiSpec systemDeleteAdminCannotSystemFileDeleteFileIds() {
+    final Stream<DynamicTest> systemDeleteAdminCannotSystemFileDeleteFileIds() {
         return systemDeleteCannotDeleteSystemFiles(sysFileIds, SYSTEM_DELETE_ADMIN);
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec systemUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount, String sysUser) {
+    final Stream<DynamicTest> systemUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount, String sysUser) {
         return defaultHapiSpec("systemUserCannotDeleteSystemAccounts")
                 .given(
                         cryptoCreate("unluckyReceiver").balance(0L),
@@ -182,8 +133,7 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec normalUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount) {
+    final Stream<DynamicTest> normalUserCannotDeleteSystemAccounts(int firstAccount, int lastAccount) {
         return defaultHapiSpec("normalUserCannotDeleteSystemAccounts")
                 .given(newKeyNamed("normalKey"), cryptoCreate("unluckyReceiver").balance(0L))
                 .when(cryptoCreate("normalUser").key("normalKey").balance(1_000_000_000L))
@@ -196,10 +146,11 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec systemUserCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
+    final Stream<DynamicTest> systemUserCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
         return defaultHapiSpec("systemUserCannotDeleteSystemFiles")
-                .given()
+                .given(cryptoTransfer(movingHbar(100 * ONE_HUNDRED_HBARS)
+                                .distributing(GENESIS, SYSTEM_ADMIN, SYSTEM_DELETE_ADMIN))
+                        .payingWith(GENESIS))
                 .when()
                 .then(inParallel(Arrays.stream(fileIds)
                         .mapToObj(id -> cryptoDelete("0.0." + id)
@@ -209,8 +160,7 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec normalUserCannotDeleteSystemFiles(int[] fileIds) {
+    final Stream<DynamicTest> normalUserCannotDeleteSystemFiles(int[] fileIds) {
         return defaultHapiSpec("normalUserCannotDeleteSystemFiles")
                 .given(newKeyNamed("normalKey"))
                 .when(cryptoCreate("normalUser").key("normalKey").balance(1_000_000_000L))
@@ -222,10 +172,11 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                         .toArray(HapiSpecOperation[]::new)));
     }
 
-    @BddMethodIsNotATest
-    final HapiSpec systemDeleteCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
+    final Stream<DynamicTest> systemDeleteCannotDeleteSystemFiles(int[] fileIds, String sysUser) {
         return defaultHapiSpec("systemDeleteCannotDeleteSystemFiles")
-                .given()
+                .given(cryptoTransfer(movingHbar(100 * ONE_HUNDRED_HBARS)
+                                .distributing(GENESIS, SYSTEM_ADMIN, SYSTEM_DELETE_ADMIN))
+                        .payingWith(GENESIS))
                 .when()
                 .then(inParallel(Arrays.stream(fileIds)
                         .mapToObj(id -> systemFileDelete("0.0." + id)
@@ -233,10 +184,5 @@ public class CannotDeleteSystemEntitiesSuite extends HapiSuite {
                                 .signedBy(sysUser)
                                 .hasPrecheck(ENTITY_NOT_ALLOWED_TO_DELETE))
                         .toArray(HapiSpecOperation[]::new)));
-    }
-
-    @Override
-    protected Logger getResultsLogger() {
-        return log;
     }
 }

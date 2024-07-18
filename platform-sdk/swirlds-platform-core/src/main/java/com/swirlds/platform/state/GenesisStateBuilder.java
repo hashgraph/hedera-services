@@ -22,7 +22,6 @@ import com.swirlds.platform.crypto.CryptoStatic;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -47,8 +46,7 @@ public final class GenesisStateBuilder {
 
         platformState.setCreationSoftwareVersion(appVersion);
         platformState.setRound(0);
-        platformState.setRunningEventHash(null);
-        platformState.setEpochHash(null);
+        platformState.setLegacyRunningEventHash(null);
         platformState.setConsensusTimestamp(Instant.ofEpochSecond(0L));
 
         return platformState;
@@ -60,27 +58,25 @@ public final class GenesisStateBuilder {
      * @param platformContext the platform context
      * @param addressBook     the current address book
      * @param appVersion      the software version of the app
-     * @param swirldState     the application's genesis state
+     * @param stateRoot       the merkle root node of the state
      * @return a reserved genesis signed state
      */
     public static ReservedSignedState buildGenesisState(
             @NonNull final PlatformContext platformContext,
             @NonNull final AddressBook addressBook,
             @NonNull final SoftwareVersion appVersion,
-            @NonNull final SwirldState swirldState) {
+            @NonNull final MerkleRoot stateRoot) {
 
         final BasicConfig basicConfig = platformContext.getConfiguration().getConfigData(BasicConfig.class);
-        final State state = new State();
-        state.setPlatformState(buildGenesisPlatformState(addressBook, appVersion));
-        state.setSwirldState(swirldState);
+        stateRoot.setPlatformState(buildGenesisPlatformState(addressBook, appVersion));
 
         final long genesisFreezeTime = basicConfig.genesisFreezeTime();
         if (genesisFreezeTime > 0) {
-            state.getPlatformState().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
+            stateRoot.getPlatformState().setFreezeTime(Instant.ofEpochSecond(genesisFreezeTime));
         }
 
-        final SignedState signedState =
-                new SignedState(platformContext, CryptoStatic::verifySignature, state, "genesis state", false);
+        final SignedState signedState = new SignedState(
+                platformContext, CryptoStatic::verifySignature, stateRoot, "genesis state", false, false, false);
         return signedState.reserve("initial reservation on genesis state");
     }
 }

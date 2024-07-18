@@ -18,12 +18,9 @@ package com.swirlds.benchmark;
 
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
-import com.swirlds.merkledb.serialize.DataItemHeader;
-import com.swirlds.merkledb.serialize.DataItemSerializer;
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import com.swirlds.merkledb.serialize.BaseSerializer;
 
-public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRecord> {
+public class BenchmarkRecordSerializer implements BaseSerializer<BenchmarkRecord> {
 
     @Override
     public int getSerializedSize() {
@@ -36,23 +33,8 @@ public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRe
     }
 
     @Override
-    public int getHeaderSize() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    @Override
-    public DataItemHeader deserializeHeader(ByteBuffer buffer) {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
-    @Override
     public void serialize(final BenchmarkRecord data, final WritableSequentialData out) {
         data.serialize(out);
-    }
-
-    @Override
-    public void serialize(BenchmarkRecord data, ByteBuffer buffer) {
-        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
@@ -60,10 +42,5 @@ public class BenchmarkRecordSerializer implements DataItemSerializer<BenchmarkRe
         BenchmarkRecord data = new BenchmarkRecord();
         data.deserialize(in);
         return data;
-    }
-
-    @Override
-    public BenchmarkRecord deserialize(ByteBuffer buffer, long dataVersion) throws IOException {
-        throw new UnsupportedOperationException("Not implemented");
     }
 }

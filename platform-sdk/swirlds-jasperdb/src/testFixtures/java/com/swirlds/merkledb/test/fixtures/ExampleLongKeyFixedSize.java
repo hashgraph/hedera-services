@@ -26,7 +26,6 @@ import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
 
@@ -130,34 +129,10 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
             return CURRENT_SERIALIZATION_VERSION;
         }
 
-        /**
-         * Deserialize a data item from a byte buffer, that was written with given data version
-         *
-         * @param buffer The buffer to read from containing the data item including its header
-         * @return Deserialized data item
-         */
-        @Override
-        public ExampleLongKeyFixedSize deserialize(final ByteBuffer buffer, final long dataVersion) {
-            final long value = buffer.getLong();
-            return new ExampleLongKeyFixedSize(value);
-        }
-
         @Override
         public ExampleLongKeyFixedSize deserialize(ReadableSequentialData in) {
             final long value = in.readLong();
             return new ExampleLongKeyFixedSize(value);
-        }
-
-        /**
-         * Serialize a data item including header to the byte buffer returning the size of the data
-         * written
-         *
-         * @param data The data item to serialize
-         * @param buffer Byte buffer to write to
-         */
-        @Override
-        public void serialize(final ExampleLongKeyFixedSize data, final ByteBuffer buffer) throws IOException {
-            buffer.putLong(data.getKeyAsLong());
         }
 
         @Override
@@ -180,13 +155,6 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
         @Override
         public boolean equals(BufferedData buffer, ExampleLongKeyFixedSize keyToCompare) {
             final long readKey = buffer.readLong();
-            return readKey == keyToCompare.getKeyAsLong();
-        }
-
-        @Override
-        public boolean equals(ByteBuffer buffer, int dataVersion, ExampleLongKeyFixedSize keyToCompare)
-                throws IOException {
-            final long readKey = buffer.getLong();
             return readKey == keyToCompare.getKeyAsLong();
         }
 

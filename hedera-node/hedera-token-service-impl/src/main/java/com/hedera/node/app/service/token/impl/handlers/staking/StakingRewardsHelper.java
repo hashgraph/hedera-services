@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.handlers.staking;
 
-import static com.hedera.node.app.service.mono.utils.Units.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.SENTINEL_NODE_ID;
+import static com.hedera.node.app.service.token.impl.TokenServiceImpl.HBARS_TO_TINYBARS;
 import static com.hedera.node.app.service.token.impl.comparator.TokenComparators.ACCOUNT_AMOUNT_COMPARATOR;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingUtilities.hasStakeMetaChanges;
 import static java.util.Objects.requireNonNull;
@@ -48,8 +48,14 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class StakingRewardsHelper {
     private static final Logger log = LogManager.getLogger(StakingRewardsHelper.class);
+    /**
+     * The maximum pending rewards that can be paid out in a single staking period, which is 50B hbar.
+     */
     public static final long MAX_PENDING_REWARDS = 50_000_000_000L * HBARS_TO_TINYBARS;
 
+    /**
+     * Default constructor for injection.
+     */
     @Inject
     public StakingRewardsHelper() {
         // Exists for Dagger injection
@@ -168,7 +174,8 @@ public class StakingRewardsHelper {
             log.error(
                     "Pending rewards decreased by {} to a meaningless {}, fixing to zero hbar",
                     amount,
-                    newPendingRewards);
+                    newPendingRewards,
+                    nodeId);
             newPendingRewards = 0;
         }
         final var stakingRewards = stakingRewardsStore.get();
@@ -203,7 +210,7 @@ public class StakingRewardsHelper {
      * @param currStakingInfo    The current staking info
      * @return The clamped pending rewards
      */
-    StakingNodeInfo increasePendingRewardsBy(
+    public StakingNodeInfo increasePendingRewardsBy(
             final WritableNetworkStakingRewardsStore stakingRewardsStore,
             long amount,
             final StakingNodeInfo currStakingInfo) {
@@ -214,8 +221,8 @@ public class StakingRewardsHelper {
         long newNodePendingRewards;
         // Only increase the pending rewards if the node is not deleted
         if (!currStakingInfo.deleted()) {
-            newNetworkPendingRewards = currentPendingRewards + amount;
-            newNodePendingRewards = nodePendingRewards + amount;
+            newNetworkPendingRewards = clampedAdd(currentPendingRewards, amount);
+            newNodePendingRewards = clampedAdd(nodePendingRewards, amount);
         } else {
             newNetworkPendingRewards = currentPendingRewards;
             newNodePendingRewards = 0L;
@@ -231,8 +238,8 @@ public class StakingRewardsHelper {
             log.error(
                     "Pending rewards increased by {} to an un-payable {} for node {}, fixing to 50B hbar",
                     amount,
-                    newNetworkPendingRewards,
-                    nodePendingRewards);
+                    newNodePendingRewards,
+                    currStakingInfo.nodeNumber());
             newNodePendingRewards = MAX_PENDING_REWARDS;
         }
         final var stakingRewards = stakingRewardsStore.get();
@@ -273,5 +280,13 @@ public class StakingRewardsHelper {
         // list the id of an account that doesn't exist in the store, but was created
         // and then reverted inside an overall successful transaction
         return account != null && account.stakedNodeIdOrElse(SENTINEL_NODE_ID) != SENTINEL_NODE_ID;
+    }
+
+    private static long clampedAdd(final long a, final long b) {
+        try {
+            return Math.addExact(a, b);
+        } catch (final ArithmeticException ae) {
+            return a > 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
+        }
     }
 }

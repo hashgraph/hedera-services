@@ -26,16 +26,18 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.FILE_DELETED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_FILE_ID;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_MAX_AUTO_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_RENEWAL_PERIOD;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
+import static com.hedera.node.app.service.contract.impl.handlers.ContractUpdateHandler.UNLIMITED_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction.NOT_APPLICABLE;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asPriorityId;
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.removeIfAnyLeading0x;
 import static com.hedera.node.app.service.contract.impl.utils.SynthTxnUtils.synthEthTxCreation;
 import static com.hedera.node.app.spi.key.KeyUtils.isEmpty;
 import static com.hedera.node.app.spi.validation.ExpiryMeta.NA;
@@ -59,21 +61,24 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.service.contract.impl.ContractServiceImpl;
 import com.hedera.node.app.service.contract.impl.annotations.InitialState;
 import com.hedera.node.app.service.contract.impl.annotations.TransactionScope;
+import com.hedera.node.app.service.contract.impl.exec.FeatureFlags;
+import com.hedera.node.app.service.contract.impl.hevm.HederaEvmContext;
 import com.hedera.node.app.service.contract.impl.hevm.HederaEvmTransaction;
 import com.hedera.node.app.service.contract.impl.hevm.HydratedEthTxData;
 import com.hedera.node.app.service.file.ReadableFileStore;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.spi.info.NetworkInfo;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.config.data.ContractsConfig;
+import com.hedera.node.config.data.EntitiesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import javax.inject.Inject;
@@ -85,9 +90,11 @@ public class HevmTransactionFactory {
     private final NetworkInfo networkInfo;
     private final LedgerConfig ledgerConfig;
     private final HederaConfig hederaConfig;
+    private final FeatureFlags featureFlags;
     private final GasCalculator gasCalculator;
     private final StakingConfig stakingConfig;
     private final ContractsConfig contractsConfig;
+    private final EntitiesConfig entitiesConfig;
     private final ReadableFileStore fileStore;
     private final TokenServiceApi tokenServiceApi;
     private final ReadableAccountStore accountStore;
@@ -95,22 +102,27 @@ public class HevmTransactionFactory {
     private final AttributeValidator attributeValidator;
     private final HydratedEthTxData hydratedEthTxData;
     private final EthTxSigsCache ethereumSignatures;
+    private final HederaEvmContext hederaEvmContext;
 
     @Inject
     public HevmTransactionFactory(
             @NonNull final NetworkInfo networkInfo,
             @NonNull final LedgerConfig ledgerConfig,
             @NonNull final HederaConfig hederaConfig,
+            @NonNull final FeatureFlags featureFlags,
             @NonNull final GasCalculator gasCalculator,
             @NonNull final StakingConfig stakingConfig,
             @NonNull final ContractsConfig contractsConfig,
+            @NonNull final EntitiesConfig entitiesConfig,
             @Nullable final HydratedEthTxData hydratedEthTxData,
             @NonNull @InitialState final ReadableAccountStore accountStore,
             @NonNull final ExpiryValidator expiryValidator,
             @NonNull @InitialState final ReadableFileStore fileStore,
             @NonNull final AttributeValidator attributeValidator,
             @NonNull @InitialState final TokenServiceApi tokenServiceApi,
-            @NonNull final EthTxSigsCache ethereumSignatures) {
+            @NonNull final EthTxSigsCache ethereumSignatures,
+            @NonNull final HederaEvmContext hederaEvmContext) {
+        this.featureFlags = featureFlags;
         this.hydratedEthTxData = hydratedEthTxData;
         this.gasCalculator = requireNonNull(gasCalculator);
         this.fileStore = requireNonNull(fileStore);
@@ -120,10 +132,12 @@ public class HevmTransactionFactory {
         this.hederaConfig = requireNonNull(hederaConfig);
         this.stakingConfig = requireNonNull(stakingConfig);
         this.contractsConfig = requireNonNull(contractsConfig);
+        this.entitiesConfig = requireNonNull(entitiesConfig);
         this.tokenServiceApi = requireNonNull(tokenServiceApi);
         this.expiryValidator = requireNonNull(expiryValidator);
         this.attributeValidator = requireNonNull(attributeValidator);
-        this.ethereumSignatures = ethereumSignatures;
+        this.ethereumSignatures = requireNonNull(ethereumSignatures);
+        this.hederaEvmContext = requireNonNull(hederaEvmContext);
     }
 
     /**
@@ -198,6 +212,7 @@ public class HevmTransactionFactory {
             @NonNull final AccountID senderId,
             @NonNull final EthTxData ethTxData,
             final long maxGasAllowance) {
+        validateTrue(ethTxData.getAmount() >= 0, CONTRACT_NEGATIVE_VALUE);
         return new HederaEvmTransaction(
                 senderId,
                 relayerId,
@@ -211,7 +226,7 @@ public class HevmTransactionFactory {
                 Bytes.wrap(ethTxData.chainId()),
                 ethTxData.effectiveTinybarValue(),
                 ethTxData.gasLimit(),
-                ethTxData.effectiveOfferedGasPriceInTinybars(),
+                ethTxData.effectiveOfferedGasPriceInTinybars(hederaEvmContext.gasPrice()),
                 maxGasAllowance,
                 null,
                 null);
@@ -231,7 +246,7 @@ public class HevmTransactionFactory {
                 Bytes.wrap(ethTxData.chainId()),
                 ethTxData.effectiveTinybarValue(),
                 ethTxData.gasLimit(),
-                ethTxData.effectiveOfferedGasPriceInTinybars(),
+                ethTxData.effectiveOfferedGasPriceInTinybars(hederaEvmContext.gasPrice()),
                 maxGasAllowance,
                 synthEthTxCreation(ledgerConfig.autoRenewPeriodMinDuration(), ethTxData),
                 null);
@@ -291,8 +306,10 @@ public class HevmTransactionFactory {
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
 
         final var contract = accountStore.getContractById(body.contractIDOrThrow());
-        if (contract != null && !contractsConfig.evmAllowCallsToNonContractAccounts()) {
-            validateFalse(contract.deleted(), CONTRACT_DELETED);
+        if (contract != null) {
+            final var contractNum = contract.accountIdOrThrow().accountNumOrThrow();
+            final var mayNotExist = featureFlags.isAllowCallsToNonContractAccountsEnabled(contractsConfig, contractNum);
+            validateTrue(mayNotExist || !contract.deleted(), CONTRACT_DELETED);
         }
     }
 
@@ -306,9 +323,9 @@ public class HevmTransactionFactory {
         validateTrue(body.gas() >= 0, CONTRACT_NEGATIVE_GAS);
         validateTrue(body.initialBalance() >= 0, CONTRACT_NEGATIVE_VALUE);
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
-        final var usesUnsupportedAutoAssociations =
-                body.maxAutomaticTokenAssociations() > 0 && !contractsConfig.allowAutoAssociations();
-        validateFalse(usesUnsupportedAutoAssociations, NOT_SUPPORTED);
+        final var usesInvalidAutoAssociations = body.maxAutomaticTokenAssociations() < UNLIMITED_AUTOMATIC_ASSOCIATIONS
+                && entitiesConfig.unlimitedAutoAssociationsEnabled();
+        validateFalse(usesInvalidAutoAssociations, INVALID_MAX_AUTO_ASSOCIATIONS);
         validateTrue(
                 body.maxAutomaticTokenAssociations() <= ledgerConfig.maxAutoAssociations(),
                 REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT);
@@ -348,14 +365,7 @@ public class HevmTransactionFactory {
             validateFalse(initcode.deleted(), FILE_DELETED);
             validateTrue(initcode.contents().length() > 0, CONTRACT_FILE_EMPTY);
             try {
-                final var initcodeBytes = initcode.contents().toByteArray();
-                // Bytes.fromHex() doesn't appreciate a leading '0x' but we supported it in mono-service
-                final String hexedInitcode;
-                if (initcodeBytes[0] == (byte) '0' && initcodeBytes[1] == (byte) 'x') {
-                    hexedInitcode = new String(initcodeBytes, 2, initcodeBytes.length - 2);
-                } else {
-                    hexedInitcode = new String(initcodeBytes);
-                }
+                final var hexedInitcode = new String(removeIfAnyLeading0x(initcode.contents()));
                 return Bytes.fromHex(
                         hexedInitcode + body.constructorParameters().toHex());
             } catch (IllegalArgumentException | NullPointerException ignore) {

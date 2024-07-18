@@ -16,16 +16,17 @@
 
 package com.hedera.node.app.service.networkadmin.impl;
 
-import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.FREEZE_TIME_KEY;
-import static com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl.UPGRADE_FILE_HASH_KEY;
+import static com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore.effectiveUpdateFileHash;
+import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.FREEZE_TIME_KEY;
+import static com.hedera.node.app.service.networkadmin.impl.schemas.V0490FreezeSchema.UPGRADE_FILE_HASH_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
-import com.hedera.node.app.spi.state.ReadableSingletonState;
-import com.hedera.node.app.spi.state.ReadableStates;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.state.spi.ReadableSingletonState;
+import com.swirlds.state.spi.ReadableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -59,7 +60,6 @@ public class ReadableFreezeStoreImpl implements ReadableFreezeStore {
     @Override
     @Nullable
     public Bytes updateFileHash() {
-        ProtoBytes hash = updateFileHash.get();
-        return (hash == null ? null : hash.value());
+        return effectiveUpdateFileHash(updateFileHash.get());
     }
 }

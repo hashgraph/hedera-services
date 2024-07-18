@@ -16,9 +16,9 @@
 
 package com.hedera.node.app.workflows.prehandle;
 
+import static com.hedera.hapi.util.HapiUtils.EMPTY_KEY_LIST;
+import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.verifyNotEmptyKey;
-import static com.hedera.node.app.spi.HapiUtils.EMPTY_KEY_LIST;
-import static com.hedera.node.app.spi.HapiUtils.isHollow;
 import static com.hedera.node.app.spi.key.KeyUtils.isValid;
 import static com.hedera.node.app.spi.validation.Validations.mustExist;
 import static java.util.Objects.requireNonNull;
@@ -35,7 +35,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
-import com.hedera.node.app.workflows.dispatcher.ReadableStoreFactory;
+import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;

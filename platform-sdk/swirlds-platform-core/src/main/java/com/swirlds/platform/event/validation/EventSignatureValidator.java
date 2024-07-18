@@ -17,8 +17,8 @@
 package com.swirlds.platform.event.validation;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
-import com.swirlds.platform.event.GossipEvent;
+import com.swirlds.platform.consensus.EventWindow;
+import com.swirlds.platform.event.PlatformEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -33,17 +33,17 @@ public interface EventSignatureValidator {
      * @param event the event to verify the signature of
      * @return the event if the signature is valid, otherwise null
      */
-    @InputWireLabel("GossipEvent")
+    @InputWireLabel("PlatformEvent")
     @Nullable
-    GossipEvent validateSignature(@NonNull final GossipEvent event);
+    PlatformEvent validateSignature(@NonNull final PlatformEvent event);
 
     /**
-     * Set the non-ancient event window that defines the minimum threshold required for an event to be non-ancient
+     * Set the event window that defines the minimum threshold required for an event to be non-ancient
      *
-     * @param nonAncientEventWindow the non-ancient event window
+     * @param eventWindow the event window
      */
-    @InputWireLabel("non-ancient event window")
-    void setNonAncientEventWindow(@NonNull final NonAncientEventWindow nonAncientEventWindow);
+    @InputWireLabel("event window")
+    void setEventWindow(@NonNull final EventWindow eventWindow);
 
     /**
      * Set the previous and current address books

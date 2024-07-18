@@ -45,6 +45,11 @@ public class StakingRewardsDistributor {
     private StakingRewardsHelper stakingRewardHelper;
     private StakeRewardCalculatorImpl rewardCalculator;
 
+    /**
+     * Default constructor for injection.
+     * @param stakingRewardHelper the staking rewards helper
+     * @param rewardCalculator the reward calculator
+     */
     @Inject
     public StakingRewardsDistributor(
             @NonNull final StakingRewardsHelper stakingRewardHelper,
@@ -53,6 +58,16 @@ public class StakingRewardsDistributor {
         this.rewardCalculator = rewardCalculator;
     }
 
+    /**
+     * Pays out rewards to the possible reward receivers by updating the receiver's balance.
+     * @param possibleRewardReceivers The accounts that are possible reward receivers.
+     * @param writableStore The store to update the receiver's balance in.
+     * @param stakingRewardsStore The store to update the staking rewards in.
+     * @param stakingInfoStore The store to update the staking info in.
+     * @param consensusNow The current consensus time.
+     * @param recordBuilder The record builder to use for deleted account beneficiaries.
+     * @return The map of rewards paid to each receiver, which includes zero rewards if the calculated reward is zero.
+     */
     public Map<AccountID, Long> payRewardsIfPending(
             @NonNull final Set<AccountID> possibleRewardReceivers,
             @NonNull final WritableAccountStore writableStore,

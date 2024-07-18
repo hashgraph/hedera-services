@@ -24,46 +24,43 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakePlatform;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.info.NetworkInfoImpl;
 import com.hedera.node.app.info.SelfNodeInfoImpl;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.spi.Service;
 import com.hedera.node.app.spi.fixtures.Scenarios;
-import com.hedera.node.app.spi.fixtures.TestBase;
 import com.hedera.node.app.spi.fixtures.TransactionFactory;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.info.NetworkInfo;
-import com.hedera.node.app.spi.info.NodeInfo;
-import com.hedera.node.app.spi.info.SelfNodeInfo;
-import com.hedera.node.app.spi.state.ReadableStates;
-import com.hedera.node.app.spi.state.WritableStates;
-import com.hedera.node.app.state.HederaState;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.version.HederaSoftwareVersion;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
-import com.swirlds.common.context.PlatformContext;
-import com.swirlds.common.crypto.Signature;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.metrics.SpeedometerMetric;
 import com.swirlds.common.metrics.config.MetricsConfig;
-import com.swirlds.common.metrics.platform.DefaultMetrics;
-import com.swirlds.common.metrics.platform.DefaultMetricsFactory;
+import com.swirlds.common.metrics.platform.DefaultPlatformMetrics;
 import com.swirlds.common.metrics.platform.MetricKeyRegistry;
-import com.swirlds.common.notification.NotificationEngine;
+import com.swirlds.common.metrics.platform.PlatformMetricsFactoryImpl;
 import com.swirlds.common.platform.NodeId;
-import com.swirlds.common.utility.AutoCloseableWrapper;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.api.source.ConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Counter;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.Platform;
-import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.Service;
+import com.swirlds.state.spi.WritableStates;
+import com.swirlds.state.spi.info.NetworkInfo;
+import com.swirlds.state.spi.info.NodeInfo;
+import com.swirlds.state.spi.info.SelfNodeInfo;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
+import com.swirlds.state.test.fixtures.TestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.LinkedHashSet;
@@ -96,7 +93,9 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     // For many of our tests we need to have metrics available, and an easy way to test the metrics
     // are being set appropriately.
     /** Used as a dependency to the {@link Metrics} system. */
-    private static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+    public static final ScheduledExecutorService METRIC_EXECUTOR = Executors.newSingleThreadScheduledExecutor();
+
+    public static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
 
     private static final String ACCOUNTS_KEY = "ACCOUNTS";
     private static final String ALIASES_KEY = "ALIASES";
@@ -156,9 +155,13 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             10,
             "127.0.0.1",
             50211,
+            "127.0.0.4",
+            23456,
             "0123456789012345678901234567890123456789012345678901234567890123",
             "Node7",
-            softwareVersion);
+            Bytes.wrap("cert7"),
+            softwareVersion,
+            "Node7");
 
     /**
      * The gRPC system has extensive metrics. This object allows us to inspect them and make sure they are being set
@@ -169,11 +172,11 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
     public AppTestBase() {
         final Configuration configuration = HederaTestConfigBuilder.createConfig();
         final MetricsConfig metricsConfig = configuration.getConfigData(MetricsConfig.class);
-        this.metrics = new DefaultMetrics(
+        this.metrics = new DefaultPlatformMetrics(
                 nodeSelfId,
                 new MetricKeyRegistry(),
                 METRIC_EXECUTOR,
-                new DefaultMetricsFactory(metricsConfig),
+                new PlatformMetricsFactoryImpl(metricsConfig),
                 metricsConfig);
     }
 
@@ -330,9 +333,13 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                         10,
                         "127.0.0.1",
                         50211,
+                        "127.0.0.4",
+                        23456,
                         "0123456789012345678901234567890123456789012345678901234567890123",
                         "Node7",
-                        hederaSoftwareVersion);
+                        Bytes.wrap("cert7"),
+                        hederaSoftwareVersion,
+                        "Node7");
             } else {
                 realSelfNodeInfo = new SelfNodeInfoImpl(
                         selfNodeInfo.nodeId(),
@@ -340,9 +347,13 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                         selfNodeInfo.stake(),
                         selfNodeInfo.externalHostName(),
                         selfNodeInfo.externalPort(),
+                        selfNodeInfo.internalHostName(),
+                        selfNodeInfo.internalPort(),
                         selfNodeInfo.hexEncodedPublicKey(),
                         selfNodeInfo.memo(),
-                        hederaSoftwareVersion);
+                        selfNodeInfo.sigCertBytes(),
+                        hederaSoftwareVersion,
+                        selfNodeInfo.selfName());
             }
 
             final var workingStateAccessor = new WorkingStateAccessor();
@@ -361,7 +372,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
             final var initialState = new FakeHederaState();
             services.forEach(svc -> {
                 final var reg = new FakeSchemaRegistry();
-                svc.registerSchemas(reg, hederaSoftwareVersion.getServicesVersion());
+                svc.registerSchemas(reg);
                 reg.migrate(svc.getServiceName(), initialState, networkInfo);
             });
             workingStateAccessor.setHederaState(initialState);
@@ -406,53 +417,5 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                 }
             };
         }
-    }
-
-    private static final class FakePlatform implements Platform {
-        private final NodeId selfNodeId;
-        private final AddressBook addressBook;
-
-        private FakePlatform(long selfNodeId, AddressBook addressBook) {
-            this.selfNodeId = new NodeId(selfNodeId);
-            this.addressBook = addressBook;
-        }
-
-        @Override
-        public PlatformContext getContext() {
-            return null;
-        }
-
-        @Override
-        public NotificationEngine getNotificationEngine() {
-            return null;
-        }
-
-        @Override
-        public Signature sign(byte[] bytes) {
-            return null;
-        }
-
-        @Override
-        public AddressBook getAddressBook() {
-            return addressBook;
-        }
-
-        @Override
-        public NodeId getSelfId() {
-            return selfNodeId;
-        }
-
-        @Override
-        public <T extends SwirldState> AutoCloseableWrapper<T> getLatestImmutableState(@NonNull String s) {
-            return null;
-        }
-
-        @Override
-        public boolean createTransaction(@NonNull byte[] bytes) {
-            return false;
-        }
-
-        @Override
-        public void start() {}
     }
 }

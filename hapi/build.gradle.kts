@@ -15,19 +15,24 @@
  */
 
 plugins {
-    id("com.hedera.hashgraph.hapi")
-    id("com.hedera.hashgraph.evm-maven-publish")
-    @Suppress("DSL_SCOPE_VIOLATION") alias(libs.plugins.pbj)
-    id("com.hedera.hashgraph.java-test-fixtures")
+    id("com.hedera.gradle.protobuf")
+    id("com.hedera.gradle.services-publish")
+    id("com.hedera.gradle.java-test-fixtures")
+    alias(libs.plugins.pbj)
 }
 
 description = "Hedera API"
 
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach { options.compilerArgs.add("-Xlint:-exports") }
+
 // Add downloaded HAPI repo protobuf files into build directory and add to sources to build them
 tasks.cloneHederaProtobufs {
-    branchOrTag = "tmp-hip796-protos"
-    // As long as the 'branchOrTag' above is not stable, run always:
-    outputs.upToDateWhen { false }
+    // uncomment below to use a specific tag
+    //    tag = "v0.51.0"
+    // uncomment below to use a specific branch
+    branch = "tmp-hip796-protos-test"
 }
 
 sourceSets {
@@ -35,10 +40,12 @@ sourceSets {
         pbj {
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("platform") })
         }
         proto {
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("services") })
             srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("streams") })
+            srcDir(tasks.cloneHederaProtobufs.flatMap { it.localCloneDirectory.dir("platform") })
         }
     }
 }

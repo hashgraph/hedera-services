@@ -18,9 +18,14 @@ package com.swirlds.logging.util;
 
 import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
+import com.swirlds.logging.api.Level;
 import com.swirlds.logging.api.Logger;
+import com.swirlds.logging.api.extensions.event.LogEvent;
+import com.swirlds.logging.api.extensions.handler.LogHandler;
+import com.swirlds.logging.api.internal.LoggingSystem;
 import com.swirlds.logging.api.internal.configuration.ConfigLevelConverter;
 import com.swirlds.logging.api.internal.configuration.MarkerStateConverter;
+import com.swirlds.logging.api.internal.emergency.EmergencyLoggerImpl;
 import com.swirlds.logging.api.internal.format.FormattedLinePrinter;
 import com.swirlds.logging.api.internal.level.ConfigLevel;
 import com.swirlds.logging.api.internal.level.MarkerState;
@@ -164,9 +169,7 @@ public final class LoggingTestUtils {
     }
 
     public static Configuration prepareConfiguration(final String logFile, final String fileHandlerName) {
-        return new TestConfigBuilder()
-                .withConverter(ConfigLevel.class, new ConfigLevelConverter())
-                .withConverter(MarkerState.class, new MarkerStateConverter())
+        return getConfigBuilder()
                 .withValue("logging.level", "trace")
                 .withValue("logging.handler.%s.type".formatted(fileHandlerName), "file")
                 .withValue("logging.handler.%s.enabled".formatted(fileHandlerName), "true")
@@ -180,5 +183,26 @@ public final class LoggingTestUtils {
         final File testMultipleLoggersInParallel = new File(logFile);
         Files.deleteIfExists(testMultipleLoggersInParallel.toPath());
         return testMultipleLoggersInParallel.getAbsolutePath();
+    }
+
+    public static TestConfigBuilder getConfigBuilder() {
+        return new TestConfigBuilder()
+                .withConverter(MarkerState.class, new MarkerStateConverter())
+                .withConverter(ConfigLevel.class, new ConfigLevelConverter());
+    }
+
+    public static List<LogEvent> getEmergencyLoggerEvents(final Level level) {
+        return EmergencyLoggerImpl.getInstance().publishLoggedEvents().stream()
+                .filter(event -> event.level() == level)
+                .collect(Collectors.toList());
+    }
+
+    public static LoggingSystem loggingSystemWithHandlers(final Configuration configuration, LogHandler... handlers) {
+        final LoggingSystem loggingSystem = new LoggingSystem(configuration);
+        loggingSystem.installHandlers();
+        for (LogHandler handler : handlers) {
+            loggingSystem.addHandler(handler);
+        }
+        return loggingSystem;
     }
 }

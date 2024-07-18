@@ -32,8 +32,8 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.node.app.service.token.impl.WritableNftStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHandlerTestBase;
-import com.hedera.node.app.spi.state.WritableKVState;
-import com.swirlds.metrics.api.Metrics;
+import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.swirlds.state.spi.WritableKVState;
 import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,20 +46,20 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
 
     @Mock
-    private Metrics metrics;
+    private StoreMetricsService storeMetricsService;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
         writableNftState = emptyWritableNftStateBuilder().build();
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore = new WritableNftStore(writableStates, configuration, metrics);
+        writableNftStore = new WritableNftStore(writableStates, configuration, storeMetricsService);
     }
 
     @Test
     void throwsIfNullValuesAsArgs() {
-        assertThrows(NullPointerException.class, () -> new WritableNftStore(null, configuration, metrics));
-        assertThrows(NullPointerException.class, () -> new WritableNftStore(writableStates, null, metrics));
+        assertThrows(NullPointerException.class, () -> new WritableNftStore(null, configuration, storeMetricsService));
+        assertThrows(NullPointerException.class, () -> new WritableNftStore(writableStates, null, storeMetricsService));
         assertThrows(NullPointerException.class, () -> new WritableNftStore(writableStates, configuration, null));
         assertThrows(NullPointerException.class, () -> writableNftStore.put(null));
         assertThrows(NullPointerException.class, () -> writableNftStore.get(null));
@@ -68,7 +68,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
 
     @Test
     void constructorCreatesTokenState() {
-        final var store = new WritableNftStore(writableStates, configuration, metrics);
+        final var store = new WritableNftStore(writableStates, configuration, storeMetricsService);
         assertNotNull(store);
     }
 
@@ -147,7 +147,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
                 .build();
         assertTrue(writableNftState.contains(nftToRemove));
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore = new WritableNftStore(writableStates, configuration, metrics);
+        writableNftStore = new WritableNftStore(writableStates, configuration, storeMetricsService);
         assertNotNull(writableNftStore.get(nftToRemove));
 
         writableNftStore.remove(nftToRemove);
@@ -170,7 +170,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
                 .build();
         assertTrue(writableNftState.contains(nftToRemove));
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(writableNftState);
-        writableNftStore = new WritableNftStore(writableStates, configuration, metrics);
+        writableNftStore = new WritableNftStore(writableStates, configuration, storeMetricsService);
         assertNotNull(writableNftStore.get(nftToRemove));
 
         writableNftStore.remove(nftToRemove.tokenId(), nftToRemove.serialNumber());
@@ -182,7 +182,7 @@ class WritableNftStoreTest extends CryptoTokenHandlerTestBase {
     @Test
     void warmWarmsUnderlyingState(@Mock WritableKVState<NftID, Nft> nfts) {
         given(writableStates.<NftID, Nft>get(NFTS)).willReturn(nfts);
-        final var nftStore = new WritableNftStore(writableStates, configuration, metrics);
+        final var nftStore = new WritableNftStore(writableStates, configuration, storeMetricsService);
         final var id =
                 NftID.newBuilder().tokenId(fungibleTokenId).serialNumber(1).build();
         nftStore.warm(id);

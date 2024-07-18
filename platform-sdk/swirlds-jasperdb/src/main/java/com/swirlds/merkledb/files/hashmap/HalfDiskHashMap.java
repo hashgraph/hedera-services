@@ -184,7 +184,7 @@ public class HalfDiskHashMap<K extends VirtualKey>
         this.storeName = storeName;
         Path indexFile = storeDir.resolve(storeName + BUCKET_INDEX_FILENAME_SUFFIX);
         // create bucket serializer
-        this.bucketSerializer = new BucketSerializer<>(config, keySerializer);
+        this.bucketSerializer = new BucketSerializer<>(keySerializer);
         // load or create new
         LoadedDataCallback<Bucket<K>> loadedDataCallback;
         if (Files.exists(storeDir)) {

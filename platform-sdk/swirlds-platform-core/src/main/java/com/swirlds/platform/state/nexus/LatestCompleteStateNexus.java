@@ -17,7 +17,7 @@
 package com.swirlds.platform.state.nexus;
 
 import com.swirlds.common.wiring.component.InputWireLabel;
-import com.swirlds.platform.consensus.NonAncientEventWindow;
+import com.swirlds.platform.consensus.EventWindow;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -30,8 +30,8 @@ public interface LatestCompleteStateNexus extends SignedStateNexus {
      * Update the current event window. May cause the latest complete state to be thrown away if it has been a long
      * time since a state has been completely signed.
      */
-    @InputWireLabel("non-ancient event window")
-    void updateEventWindow(@NonNull NonAncientEventWindow eventWindow);
+    @InputWireLabel("event window")
+    void updateEventWindow(@NonNull EventWindow eventWindow);
 
     /**
      * Replace the current state with the given state if the given state is newer than the current state.

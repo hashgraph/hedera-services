@@ -17,28 +17,38 @@
 package com.hedera.node.app.service.networkadmin.impl.handlers;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
-import static com.hedera.node.app.service.mono.context.properties.StaticPropertiesHolder.STATIC_PROPERTIES;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.toPbj;
-import static com.hedera.node.app.service.mono.utils.EntityIdUtils.readableId;
+import static com.swirlds.common.io.utility.FileUtils.getAbsolutePath;
+import static com.swirlds.common.utility.CommonUtils.nameToAlias;
 import static java.util.Objects.requireNonNull;
+import static java.util.Spliterator.DISTINCT;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.Timestamp;
+import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.ReadableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.ReadableFreezeStore;
+import com.hedera.node.app.service.token.ReadableStakingInfoStore;
 import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.File;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.stream.StreamSupport;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,9 +58,17 @@ import org.apache.logging.log4j.Logger;
  */
 public class ReadableFreezeUpgradeActions {
     private static final Logger log = LogManager.getLogger(ReadableFreezeUpgradeActions.class);
+
+    private static final com.hedera.hapi.node.base.FileID UPGRADE_FILE_ID =
+            com.hedera.hapi.node.base.FileID.newBuilder().fileNum(150L).build();
+
     private final NetworkAdminConfig adminServiceConfig;
     private final ReadableFreezeStore freezeStore;
     private final ReadableUpgradeFileStore upgradeFileStore;
+
+    private final ReadableNodeStore nodeStore;
+
+    private final ReadableStakingInfoStore stakingInfoStore;
 
     private final Executor executor;
 
@@ -70,16 +88,22 @@ public class ReadableFreezeUpgradeActions {
             @NonNull final NetworkAdminConfig adminServiceConfig,
             @NonNull final ReadableFreezeStore freezeStore,
             @NonNull final Executor executor,
-            @NonNull final ReadableUpgradeFileStore upgradeFileStore) {
+            @NonNull final ReadableUpgradeFileStore upgradeFileStore,
+            @NonNull final ReadableNodeStore nodeStore,
+            @NonNull final ReadableStakingInfoStore stakingInfoStore) {
         requireNonNull(adminServiceConfig, "Admin service config is required for freeze upgrade actions");
         requireNonNull(freezeStore, "Freeze store is required for freeze upgrade actions");
         requireNonNull(executor, "Executor is required for freeze upgrade actions");
         requireNonNull(upgradeFileStore, "Upgrade file store is required for freeze upgrade actions");
+        requireNonNull(nodeStore, "Node store is required for freeze upgrade actions");
+        requireNonNull(stakingInfoStore, "Staking info store is required for freeze upgrade actions");
 
         this.adminServiceConfig = adminServiceConfig;
         this.freezeStore = freezeStore;
         this.executor = executor;
         this.upgradeFileStore = upgradeFileStore;
+        this.nodeStore = nodeStore;
+        this.stakingInfoStore = stakingInfoStore;
     }
 
     public void externalizeFreezeIfUpgradePending() {
@@ -94,7 +118,7 @@ public class ReadableFreezeUpgradeActions {
 
     protected void writeMarker(@NonNull final String file, @Nullable final Timestamp now) {
         requireNonNull(file);
-        final Path artifactsDirPath = Paths.get(adminServiceConfig.upgradeArtifactsPath());
+        final Path artifactsDirPath = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
         final var filePath = artifactsDirPath.resolve(file);
         try {
             if (!artifactsDirPath.toFile().exists()) {
@@ -122,48 +146,6 @@ public class ReadableFreezeUpgradeActions {
     public void catchUpOnMissedSideEffects(final PlatformState platformState) {
         catchUpOnMissedFreezeScheduling(platformState);
         catchUpOnMissedUpgradePrep();
-    }
-
-    private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {
-        final var isUpgradePrepared = freezeStore.updateFileHash() != null;
-        if (isFreezeScheduled(platformState) && isUpgradePrepared) {
-            final var freezeTime = platformState.getFreezeTime();
-            writeMarker(
-                    FREEZE_SCHEDULED_MARKER,
-                    Timestamp.newBuilder()
-                            .nanos(freezeTime.getNano())
-                            .seconds(freezeTime.getEpochSecond())
-                            .build());
-        }
-        /* If we missed a FREEZE_ABORT, we are at risk of having a problem down the road.
-        But writing a "defensive" freeze_aborted.mf is itself too risky, as it will keep
-        us from correctly (1) catching up on a missed PREPARE_UPGRADE; or (2) handling an
-        imminent PREPARE_UPGRADE. */
-    }
-
-    private void catchUpOnMissedUpgradePrep() {
-        if (freezeStore.updateFileHash() == null) {
-            return;
-        }
-
-        final var upgradeFileId = STATIC_PROPERTIES.scopedFileWith(150);
-        try {
-            final var curSpecialFileContents = upgradeFileStore.getFull(toPbj(upgradeFileId));
-            if (!isPreparedFileHashValidGiven(
-                    noThrowSha384HashOf(curSpecialFileContents.toByteArray()),
-                    freezeStore.updateFileHash().toByteArray())) {
-                log.error(
-                        "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE",
-                        () -> readableId(upgradeFileId));
-                log.error(MANUAL_REMEDIATION_ALERT);
-                return;
-            }
-            extractSoftwareUpgrade(curSpecialFileContents).join();
-        } catch (final IOException e) {
-            log.error(
-                    "Cannot redo NMT upgrade prep, file {} changed since FREEZE_UPGRADE", readableId(upgradeFileId), e);
-            log.error(MANUAL_REMEDIATION_ALERT);
-        }
     }
 
     public boolean isPreparedFileHashValidGiven(final byte[] curSpecialFilesHash, final byte[] hashFromTxnBody) {
@@ -197,27 +179,208 @@ public class ReadableFreezeUpgradeActions {
         requireNonNull(desc);
         requireNonNull(marker);
 
-        final long size = archiveData.length();
-        final String artifactsLoc = adminServiceConfig.upgradeArtifactsPath();
+        final Path artifactsLoc = getAbsolutePath(adminServiceConfig.upgradeArtifactsPath());
         requireNonNull(artifactsLoc);
+        final long size = archiveData.length();
         log.info("About to unzip {} bytes for {} update into {}", size, desc, artifactsLoc);
         // we spin off a separate thread to avoid blocking handleTransaction
         // if we block handle, there could be a dramatic spike in E2E latency at the time of PREPARE_UPGRADE
-        return runAsync(() -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now), executor);
+        final var activeNodes = desc.equals(PREPARE_UPGRADE_DESC) ? allActiveNodes() : null;
+        return runAsync(
+                () -> extractAndReplaceArtifacts(artifactsLoc, archiveData, size, desc, marker, now, activeNodes),
+                executor);
+    }
+
+    private record ActiveNode(@NonNull Node node, @Nullable StakingNodeInfo stakingInfo) {}
+
+    private List<ActiveNode> allActiveNodes() {
+        return StreamSupport.stream(
+                        Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
+                .mapToLong(EntityNumber::number)
+                .mapToObj(nodeStore::get)
+                .filter(node -> node != null && !node.deleted())
+                .sorted(Comparator.comparing(Node::nodeId))
+                .map(node -> new ActiveNode(node, stakingInfoStore.get(node.nodeId())))
+                .toList();
     }
 
     private void extractAndReplaceArtifacts(
-            String artifactsLoc, Bytes archiveData, long size, String desc, String marker, Timestamp now) {
+            @NonNull final Path artifactsLoc,
+            @NonNull final Bytes archiveData,
+            final long size,
+            @NonNull final String desc,
+            @NonNull final String marker,
+            @Nullable final Timestamp now,
+            @Nullable List<ActiveNode> nodes) {
         try {
-            FileUtils.cleanDirectory(new File(artifactsLoc));
-            UnzipUtility.unzip(archiveData.toByteArray(), Paths.get(artifactsLoc));
+            final var artifactsDir = artifactsLoc.toFile();
+            if (!FileUtils.isDirectory(artifactsDir)) {
+                FileUtils.forceMkdir(artifactsDir);
+            }
+            FileUtils.cleanDirectory(artifactsDir);
+            UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
+            if (desc.equals(PREPARE_UPGRADE_DESC)) {
+                requireNonNull(nodes, "Cannot generate config.txt without a valid list of active nodes");
+                generateConfigPem(artifactsLoc, nodes);
+                log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
+            }
             writeSecondMarker(marker, now);
-        } catch (final IOException e) {
+        } catch (final Throwable t) {
             // catch and log instead of throwing because upgrade process looks at the presence or absence
             // of marker files to determine whether to proceed with the upgrade
             // if second marker is present, that means the zip file was successfully extracted
-            log.error("Failed to unzip archive for NMT consumption", e);
+            log.error("Failed to unzip archive for NMT consumption", t);
+            log.error(MANUAL_REMEDIATION_ALERT);
+        }
+    }
+
+    private void generateConfigPem(@NonNull final Path artifactsLoc, @NonNull final List<ActiveNode> activeNodes) {
+        requireNonNull(artifactsLoc, "Cannot generate config.txt without a valid artifacts location");
+        requireNonNull(activeNodes, "Cannot generate config.txt without a valid list of active nodes");
+        final var configTxt = artifactsLoc.resolve("config.txt");
+
+        if (activeNodes.isEmpty()) {
+            log.error("Node state is empty, which should be impossible");
+            return;
+        }
+
+        try (final var fw = new FileWriter(configTxt.toFile());
+                final var bw = new BufferedWriter(fw)) {
+            activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
+            writeNextNodeId(activeNodes, bw);
+            bw.flush();
+        } catch (final IOException e) {
+            log.error("Failed to generate {} with exception : {}", configTxt, e);
+        }
+    }
+
+    private void writeNextNodeId(final List<ActiveNode> activeNodes, final BufferedWriter bw) {
+        requireNonNull(activeNodes);
+        requireNonNull(bw);
+        // find max nodeId of all nodes and write nextNodeId as maxNodeId + 1
+        final var maxNodeId = activeNodes.stream()
+                .map(ActiveNode::node)
+                .map(Node::nodeId)
+                .max(Long::compareTo)
+                .orElseThrow();
+        try {
+            bw.write("nextNodeId, " + (maxNodeId + 1));
+        } catch (IOException e) {
+            log.error("Failed to write nextNodeId {} with exception : {}", maxNodeId, e);
+        }
+    }
+
+    private void writeConfigLineAndPem(
+            @NonNull final ActiveNode activeNode, @NonNull final BufferedWriter bw, @NonNull final Path pathToWrite) {
+        requireNonNull(activeNode);
+        requireNonNull(bw);
+        requireNonNull(pathToWrite);
+
+        var line = new StringBuilder();
+        int weight = 0;
+        final var node = activeNode.node();
+        final var alias = nameToAlias(node.description());
+        final var pemFile = pathToWrite.resolve("s-public-" + alias + ".pem");
+        final int INT = 0;
+        final int EXT = 1;
+
+        final var stakingNodeInfo = activeNode.stakingInfo();
+        if (stakingNodeInfo != null) {
+            weight = stakingNodeInfo.weight();
+        }
+
+        final var gossipEndpoints = node.gossipEndpoint();
+        if (gossipEndpoints.size() > 1) {
+            line.append("address, ")
+                    .append(node.nodeId())
+                    .append(", ")
+                    .append(node.nodeId())
+                    .append(", ")
+                    .append(node.description())
+                    .append(", ")
+                    .append(weight)
+                    .append(", ")
+                    .append(hostNameFor(gossipEndpoints.get(INT)))
+                    .append(", ")
+                    .append(gossipEndpoints.get(INT).port())
+                    .append(", ")
+                    .append(hostNameFor(gossipEndpoints.get(EXT)))
+                    .append(", ")
+                    .append(gossipEndpoints.get(EXT).port())
+                    .append(", ")
+                    .append(node.accountId().shardNum() + "." + node.accountId().realmNum() + "."
+                            + node.accountId().accountNum())
+                    .append("\n");
+            try {
+                bw.write(line.toString());
+            } catch (IOException e) {
+                log.error("Failed to write line {} with exception : {}", line, e);
+            }
+            try {
+                Files.write(pemFile, node.gossipCaCertificate().toByteArray());
+            } catch (IOException e) {
+                log.error("Failed to write to {} with exception : {}", pemFile, e);
+            }
+        } else {
+            log.error("Node has {} gossip endpoints, expected greater than 1", gossipEndpoints.size());
+        }
+    }
+
+    private String hostNameFor(@NonNull final ServiceEndpoint endpoint) {
+        return endpoint.ipAddressV4().length() == 4
+                ? ipV4AddressFromOctets(endpoint.ipAddressV4())
+                : endpoint.domainName();
+    }
+
+    private String ipV4AddressFromOctets(@NonNull final Bytes encoded) {
+        return (encoded.getByte(0) & 0xFF) + "."
+                + (encoded.getByte(1) & 0xFF)
+                + "."
+                + (encoded.getByte(2) & 0xFF)
+                + "."
+                + (encoded.getByte(3) & 0xFF);
+    }
+
+    private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {
+        final var isUpgradePrepared = freezeStore.updateFileHash() != null;
+        if (isFreezeScheduled(platformState) && isUpgradePrepared) {
+            final var freezeTime = requireNonNull(platformState.getFreezeTime());
+            writeMarker(
+                    FREEZE_SCHEDULED_MARKER,
+                    Timestamp.newBuilder()
+                            .nanos(freezeTime.getNano())
+                            .seconds(freezeTime.getEpochSecond())
+                            .build());
+        }
+        /* If we missed a FREEZE_ABORT, we are at risk of having a problem down the road.
+        But writing a "defensive" freeze_aborted.mf is itself too risky, as it will keep
+        us from correctly (1) catching up on a missed PREPARE_UPGRADE; or (2) handling an
+        imminent PREPARE_UPGRADE. */
+    }
+
+    private void catchUpOnMissedUpgradePrep() {
+        if (freezeStore.updateFileHash() == null) {
+            return;
+        }
+
+        try {
+            final var curSpecialFileContents = upgradeFileStore.getFull(UPGRADE_FILE_ID);
+            if (!isPreparedFileHashValidGiven(
+                    noThrowSha384HashOf(curSpecialFileContents.toByteArray()),
+                    freezeStore.updateFileHash().toByteArray())) {
+                log.error(
+                        "Cannot redo NMT upgrade prep, file 0.0.{} changed since FREEZE_UPGRADE",
+                        UPGRADE_FILE_ID.fileNum());
+                log.error(MANUAL_REMEDIATION_ALERT);
+                return;
+            }
+            extractSoftwareUpgrade(curSpecialFileContents).join();
+        } catch (final IOException e) {
+            log.error(
+                    "Cannot redo NMT upgrade prep, file 0.0.{} changed since FREEZE_UPGRADE",
+                    UPGRADE_FILE_ID.fileNum(),
+                    e);
             log.error(MANUAL_REMEDIATION_ALERT);
         }
     }

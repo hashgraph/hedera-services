@@ -25,18 +25,42 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
-import com.hedera.node.app.spi.fixtures.state.MapReadableKVState;
-import com.hedera.node.app.spi.fixtures.state.MapWritableKVState;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
+import com.swirlds.state.test.fixtures.MapWritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * Utility class for building state for tests.
+ *
+ */
 public class StateBuilderUtil {
-
+    /**
+     * The state key for accounts.
+     */
     public static final String ACCOUNTS = "ACCOUNTS";
+    /**
+     * The state key for aliases.
+     */
     public static final String ALIASES = "ALIASES";
+    /**
+     * The state key for tokens.
+     */
     public static final String TOKENS = "TOKENS";
+    /**
+     * The state key for token relations.
+     */
     public static final String TOKEN_RELS = "TOKEN_RELS";
+    /**
+     * The state key for NFTs.
+     */
     public static final String NFTS = "NFTS";
+    /**
+     * The state key for staking infos.
+     */
     public static final String STAKING_INFO = "STAKING_INFOS";
+    /**
+     * The state key for network rewards.
+     */
     public static final String NETWORK_REWARDS = "STAKING_NETWORK_REWARDS";
 
     @NonNull
