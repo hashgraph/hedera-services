@@ -50,6 +50,7 @@ import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.workflows.ComputeDispatchFeesAsTopLevel;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.EntitiesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -194,14 +195,18 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
 
-            final var unlimitedAssociationsEnabled =
-                    config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
-            if (unlimitedAssociationsEnabled) {
-                final var autoAssociationFee = associationFeeFor(context, PLACEHOLDER_SYNTHETIC_ASSOCIATION);
-                try {
-                    context.chargePayerFee(autoAssociationFee);
-                } catch (IllegalArgumentException ignore) {
-                    throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
+            // We only charge auto-association fees inline if this is not an internal dispatch, since in that case the
+            // contract service will take the auto-association costs from the remaining EVM gas
+            if (!context.recordBuilders()
+                    .getOrCreate(SingleTransactionRecordBuilder.class)
+                    .isInternalDispatch()) {
+                final var unlimitedAssociationsEnabled =
+                        config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
+                if (unlimitedAssociationsEnabled) {
+                    final var autoAssociationFee = associationFeeFor(context, PLACEHOLDER_SYNTHETIC_ASSOCIATION);
+                    if (!context.tryToChargePayer(autoAssociationFee)) {
+                        throw new HandleException(INSUFFICIENT_PAYER_BALANCE);
+                    }
                 }
             }
             final var newRelation = autoAssociate(account, token, accountStore, tokenRelStore, config);

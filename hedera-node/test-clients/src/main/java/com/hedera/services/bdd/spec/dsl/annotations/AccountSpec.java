@@ -36,4 +36,10 @@ public @interface AccountSpec {
      * @return the spec name of the account
      */
     String name() default "";
+
+    /**
+     * If set, the maximum number of auto-associations to allow for the account.
+     * @return the maximum number of auto-associations
+     */
+    int maxAutoAssociations() default 0;
 }

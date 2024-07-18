@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.spi.workflows.record;
 
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
@@ -63,8 +64,13 @@ public interface SingleTransactionRecordBuilder {
 
     HandleContext.TransactionCategory category();
 
+    /**
+     * Returns true if this transaction originated from inside another handler or workflow; and not
+     * a user transaction (or scheduled user transaction).
+     * @return true if this transaction is internal
+     */
     default boolean isInternalDispatch() {
-        return !category().equals(USER);
+        return category() == CHILD || category() == PRECEDING;
     }
 
     /**

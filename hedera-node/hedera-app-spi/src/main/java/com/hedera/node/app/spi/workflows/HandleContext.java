@@ -124,7 +124,7 @@ public interface HandleContext {
      * @param amount the amount to charge
      * @throws IllegalArgumentException if the payer cannot afford the fee
      */
-    void chargePayerFee(long amount);
+    boolean tryToChargePayer(long amount);
 
     /**
      * Returns the current {@link Configuration} for the node.
