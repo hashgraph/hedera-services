@@ -37,6 +37,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithChild;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -57,12 +58,16 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
+import com.hedera.services.bdd.junit.support.SpecManager;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
@@ -80,6 +85,16 @@ class UnlimitedAutoAssociationSuite {
     private static final String BOB = "BOB";
     private static final String CAROL = "CAROL";
     private static final String DAVE = "DAVE";
+
+    @BeforeAll
+    static void setUp(@NonNull final SpecManager manager) throws Throwable {
+        manager.setup(overriding("entities.unlimitedAutoAssociationsEnabled", "true"));
+    }
+
+    @AfterAll
+    static void tearDown(@NonNull final SpecManager manager) throws Throwable {
+        manager.setup(overriding("entities.unlimitedAutoAssociationsEnabled", "false"));
+    }
 
     @DisplayName("Auto-associate tokens will create a child record for association")
     @HapiTest
