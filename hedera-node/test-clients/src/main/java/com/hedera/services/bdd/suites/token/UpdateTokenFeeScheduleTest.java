@@ -23,6 +23,7 @@ import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.FEE_SCHEDUL
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -38,6 +39,7 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.OptionalLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -50,7 +52,7 @@ import org.junit.jupiter.api.Tag;
 @HapiTestLifecycle
 // To avoid race conditions; it is very fast regardless
 @OrderedInIsolation
-public class UpdateTokenFeeScheduleSuite {
+public class UpdateTokenFeeScheduleTest {
 
     @Contract(contract = "UpdateTokenFeeSchedules", creationGas = 4_000_000L)
     static SpecContract updateTokenFeeSchedules;
@@ -60,7 +62,9 @@ public class UpdateTokenFeeScheduleSuite {
             keys = {ADMIN_KEY, FEE_SCHEDULE_KEY})
     static SpecFungibleToken fungibleToken;
 
-    @FungibleToken(name = "feeToken")
+    @FungibleToken(
+            name = "feeToken",
+            keys = {ADMIN_KEY, FEE_SCHEDULE_KEY})
     static SpecFungibleToken feeToken;
 
     @NonFungibleToken(
@@ -74,6 +78,7 @@ public class UpdateTokenFeeScheduleSuite {
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         testLifecycle.doAdhoc(
+                feeToken.authorizeContracts(updateTokenFeeSchedules),
                 fungibleToken.authorizeContracts(updateTokenFeeSchedules),
                 nonFungibleToken.authorizeContracts(updateTokenFeeSchedules),
                 feeCollector.associateTokens(feeToken));
@@ -124,5 +129,39 @@ public class UpdateTokenFeeScheduleSuite {
                         .getInfo()
                         .andAssert(info ->
                                 info.hasCustom(fixedHtsFeeInSchedule(1L, feeToken.name(), feeCollector.name()))));
+    }
+
+    @Order(4)
+    @HapiTest
+    @DisplayName("fungible token with current token fixed fee")
+    public Stream<DynamicTest> updateFungibleTokenWithCurrentTokenFixedFee() {
+        return hapiTest(
+                updateTokenFeeSchedules.call("updateFungibleFixedTokenFee", feeToken, 1L, feeCollector),
+                feeToken.getInfo()
+                        .andAssert(info ->
+                                info.hasCustom(fixedHtsFeeInSchedule(1L, feeToken.name(), feeCollector.name()))));
+    }
+
+    @Order(5)
+    @HapiTest
+    @DisplayName("fungible token with fractional fee")
+    public Stream<DynamicTest> updateFungibleTokenWithFractionalFee() {
+        return hapiTest(
+                updateTokenFeeSchedules.call("updateFungibleFractionalFee", feeToken, 1L, 10L, false, feeCollector),
+                feeToken.getInfo()
+                        .andAssert(info -> info.hasCustom(
+                                fractionalFeeInSchedule(1L, 10L, 0L, OptionalLong.of(0), false, feeCollector.name()))));
+    }
+
+    @Order(6)
+    @HapiTest
+    @DisplayName("fungible token with fractional fee with min and max")
+    public Stream<DynamicTest> updateFungibleTokenWithFractionalFeeWithMinAndMax() {
+        return hapiTest(
+                updateTokenFeeSchedules.call(
+                        "updateFungibleFractionalFeeMinAndMax", feeToken, 1L, 10L, 10L, 20L, false, feeCollector),
+                feeToken.getInfo()
+                        .andAssert(info -> info.hasCustom(fractionalFeeInSchedule(
+                                1L, 10L, 10L, OptionalLong.of(20), false, feeCollector.name()))));
     }
 }
