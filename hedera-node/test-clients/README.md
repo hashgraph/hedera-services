@@ -50,7 +50,7 @@ Most operations are subclasses of `HapiSpecOperation`, which provides implementa
 submitting transactions and sending queries to the target network. The below diagram is a schematic
 of a `HapiSpec`.
 
-<img src="./docs/assets/hapispec-schematic.png" width="900">
+![embedded-network](./docs/assets/embedded-network.png)
 
 Operations share context through their spec's `HapiSpecRegistry`. The registry maps from `String`
 names to arbitrary values; which are themselves usually references to entities on the target
@@ -98,7 +98,7 @@ messages. While the `RemoteNetwork` provides the most realistic testing environm
 is also the most limited in terms of what the test can observe and manipulate. Network latency also
 makes it the slowest way to execute a spec.
 
-<img src="./docs/assets/remote-network.png" width="900">
+![remote-network](./docs/assets/remote-network.png)
 
 ### `SubProcessNetwork`
 
@@ -107,7 +107,7 @@ When a `HapiSpec` executes as a `@HapiTest` in a JUnit test executor, the defaul
 running a Hedera node. Gossip and consensus happen over the loopback interface, as does gRPC
 communication between the `HapiSpec` and its target network.
 
-<img src="./docs/assets/subprocess-network.png" width="900">
+![subprocess-network](./docs/assets/subprocess-network.png)
 
 A significant advantage is the spec now has complete visibility into each node's logs, block stream,
 and upgrade artifacts. Even more importantly, because the nodes are child processes, the spec can
@@ -157,7 +157,7 @@ submit transactions that would be rejected by a real network. Furthermore, in re
 time the requested amount. This lets us test staking rewards, contract expiration, and other
 time-dependent behaviors orders of magnitude faster than we could otherwise.
 
-<img src="./docs/assets/embedded-network.png" width="900">
+![embedded-network](./docs/assets/embedded-network.png)
 
 ## Style guide
 

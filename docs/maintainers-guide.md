@@ -56,9 +56,7 @@ workflow incorporates a consistent tagging strategy.
 [GitFlow branching model](https://nvie.com/posts/a-successful-git-branching-model/) is elected
 pattern for the development life cycle.
 
-<p>
-    <img src="./assets/gitflow-branching-model.png"/>
-</p>
+![gitflow-branching-model](./assets/gitflow-branching-model.png)
 
 Note especially the roles of the `main` and `develop` branches:
 
@@ -92,9 +90,7 @@ associated to [Services Sprint Tracking](https://github.com/orgs/hashgraph/proje
 [Documentation](https://github.com/hashgraph/hedera-services/projects/32#card-85521291) projects,
 with 0.30 milestone on it.
 
-<p>
-    <img src="./assets/labels-on-issue.png"/>
-</p>
+![labels-on-issue](./assets/labels-on-issue.png)
 
 ### Release Engineering Responsibilities
 
