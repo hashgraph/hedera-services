@@ -27,10 +27,16 @@ import java.util.Objects;
  * we can only support a limited amount of curves (128).
  */
 public class SignatureSchema {
-    private GroupAssignment groupAssignment;
-    private Curve cure;
+    private final GroupAssignment groupAssignment;
+    private final Curve cure;
 
-    public SignatureSchema(GroupAssignment groupAssignment, Curve curve) {
+    /**
+     * Constructor
+     *
+     * @param groupAssignment the group assignment
+     * @param curve           the curve
+     */
+    private SignatureSchema(GroupAssignment groupAssignment, Curve curve) {
         this.groupAssignment = Objects.requireNonNull(groupAssignment, "groupAssignment must not be null");
         this.cure = Objects.requireNonNull(curve, "curve must not be null");
     }

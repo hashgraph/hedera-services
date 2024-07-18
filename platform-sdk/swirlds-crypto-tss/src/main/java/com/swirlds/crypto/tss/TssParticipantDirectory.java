@@ -101,6 +101,8 @@ public class TssParticipantDirectory {
     }
 
     /**
+     * Returns the shares owned by the participant represented as self.
+     *
      * @return the shares owned by the participant represented as self.
      */
     public List<TssShareId> getOwnedShareIds() {
@@ -108,6 +110,8 @@ public class TssParticipantDirectory {
     }
 
     /**
+     * Return the list of all the shareIds.
+     *
      * @return the list of all the shareIds
      */
     public List<TssShareId> getShareIds() {

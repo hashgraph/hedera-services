@@ -23,6 +23,22 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public record PairingSignature() {
 
+    /**
+     * Verify a signed message with the known public key.
+     * <p>
+     * To verify a signature, we need to ensure that the message m was signed with the corresponding private key “sk”
+     * for the given public key “pk”.
+     * <p>
+     * The signature is considered valid only if the pairing between the generator of the public key group and the
+     * signature “σ” is equal to the pairing between the public key and the message hashed to the signature key group.
+     * <p>
+     * Mathematically, this verification can be expressed like this:
+     * e(pk, H(m)) = e([sk]g1, H(m)) = e(g1, H(m))^(sk) = e(g1, [sk]H(m)) = e(g1, σ).
+     *
+     * @param publicKey the public key to verify with
+     * @param message   the message that was signed
+     * @return true if the signature is valid, false otherwise
+     */
     public boolean verifySignature(@NonNull final PairingPublicKey publicKey, @NonNull final byte[] message) {
         return true;
     }

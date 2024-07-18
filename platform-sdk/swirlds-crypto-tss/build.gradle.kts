@@ -19,6 +19,14 @@ plugins {
     id("com.hedera.gradle.platform-publish")
 }
 
+// Remove the following line to enable all 'javac' lint checks that we have turned on by default
+// and then fix the reported issues.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add(
+        "-Xlint:-exports,-lossy-conversions,-overloads,-dep-ann,-text-blocks,-varargs"
+    )
+}
+
 testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.mockito")
