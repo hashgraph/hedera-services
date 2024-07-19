@@ -97,6 +97,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Tag;
 
+// CREATE2
 @Tag(SMART_CONTRACT)
 public class CreateOperationSuite {
     private static final String CONTRACT = "FactoryContract";
