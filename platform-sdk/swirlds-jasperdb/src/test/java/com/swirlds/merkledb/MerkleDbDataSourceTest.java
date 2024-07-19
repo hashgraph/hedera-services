@@ -39,13 +39,12 @@ import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
-import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
+import com.swirlds.merkledb.test.fixtures.VirtualLongKey;
 import com.swirlds.metrics.api.IntegerGauge;
 import com.swirlds.metrics.api.Metric.ValueType;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
@@ -460,9 +459,8 @@ class MerkleDbDataSourceTest {
             // Delete all indices
             Files.delete(snapshotPaths.pathToDiskLocationLeafNodesFile);
             Files.delete(snapshotPaths.pathToDiskLocationInternalNodesFile);
-            Files.deleteIfExists(snapshotPaths.longKeyToPathFile);
             // There is no way to use MerkleDbPaths to get bucket index file path
-            Files.deleteIfExists(snapshotPaths.objectKeyToPathDirectory.resolve(tableName + "_bucket_index.ll"));
+            Files.deleteIfExists(snapshotPaths.keyToPathDirectory.resolve(tableName + "_bucket_index.ll"));
 
             final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> snapshotDataSource =
                     snapshotDb.getDataSource(tableName, false);
@@ -542,18 +540,6 @@ class MerkleDbDataSourceTest {
         // check db count
         assertEventuallyEquals(
                 0L, MerkleDbDataSource::getCountOfOpenDatabases, Duration.ofSeconds(1), "Expected no open dbs");
-    }
-
-    @ParameterizedTest
-    @Tag(TIMING_SENSITIVE)
-    @EnumSource(TestType.class)
-    void testKeyIndexTypes(final TestType testType) throws Exception {
-        createAndApplyDataSource(testDirectory, "test11", testType, 1, dataSource -> {
-            assertEquals(
-                    testType.dataType().getKeySerializer().getIndexType() == KeyIndexType.SEQUENTIAL_INCREMENTING_LONGS,
-                    dataSource.isLongKeyMode(),
-                    "Data source in expected long key mode.");
-        });
     }
 
     @ParameterizedTest

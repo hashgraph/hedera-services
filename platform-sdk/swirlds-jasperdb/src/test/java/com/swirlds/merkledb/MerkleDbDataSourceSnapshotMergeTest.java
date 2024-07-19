@@ -36,9 +36,9 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils;
 import com.swirlds.merkledb.test.fixtures.TestType;
+import com.swirlds.merkledb.test.fixtures.VirtualLongKey;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
@@ -193,7 +193,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
                     }
                 } else { // thread 1 initiates compaction and waits for its completion
                     dataSource.compactionCoordinator.compactPathToKeyValueAsync();
-                    dataSource.compactionCoordinator.compactDiskStoreForObjectKeyToPathAsync();
+                    dataSource.compactionCoordinator.compactDiskStoreForKeyToPathAsync();
                     dataSource.compactionCoordinator.compactPathToKeyValueAsync();
 
                     assertEventuallyTrue(

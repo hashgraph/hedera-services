@@ -31,7 +31,7 @@ import com.swirlds.merkledb.serialize.ValueSerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.ExampleFixedSizeVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.merkledb.test.fixtures.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeAll;

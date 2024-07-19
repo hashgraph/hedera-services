@@ -25,7 +25,6 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 
 @SuppressWarnings("unused")

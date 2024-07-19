@@ -22,7 +22,6 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
-import com.swirlds.virtualmap.VirtualLongKey;
 import java.io.IOException;
 
 public class ExampleLongKeyVariableSize implements VirtualLongKey {

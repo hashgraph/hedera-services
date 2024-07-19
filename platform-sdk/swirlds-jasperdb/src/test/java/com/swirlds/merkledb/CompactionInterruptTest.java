@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.merkledb.test.fixtures.VirtualLongKey;
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
@@ -90,7 +90,7 @@ class CompactionInterruptTest {
             coordinator.enableBackgroundCompaction();
             // start compaction
             coordinator.compactDiskStoreForHashesAsync();
-            coordinator.compactDiskStoreForObjectKeyToPathAsync();
+            coordinator.compactDiskStoreForKeyToPathAsync();
             coordinator.compactPathToKeyValueAsync();
             // wait a small-time for merging to start
             MILLISECONDS.sleep(20);
@@ -147,7 +147,7 @@ class CompactionInterruptTest {
             long initTaskCount = compactingExecutor.getTaskCount();
             // start compaction for all three storages
             coordinator.compactDiskStoreForHashesAsync();
-            coordinator.compactDiskStoreForObjectKeyToPathAsync();
+            coordinator.compactDiskStoreForKeyToPathAsync();
             coordinator.compactPathToKeyValueAsync();
 
             assertEventuallyEquals(

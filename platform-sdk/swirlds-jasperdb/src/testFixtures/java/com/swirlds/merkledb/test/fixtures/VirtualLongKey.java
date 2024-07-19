@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package com.swirlds.virtualmap;
+package com.swirlds.merkledb.test.fixtures;
+
+import com.swirlds.virtualmap.VirtualKey;
 
 /**
- * Special form of a VirtualKey which is a simple long. This allows much faster special paths in data stores.
+ * Special form of a VirtualKey which is a simple long. Handy to compare keys in tests.
  */
 public interface VirtualLongKey extends VirtualKey {
 

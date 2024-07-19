@@ -24,7 +24,7 @@ import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyVariableSize;
 import com.swirlds.merkledb.test.fixtures.ExampleLongLongKeyFixedSize;
 import com.swirlds.merkledb.test.fixtures.ExampleLongLongKeyVariableSize;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.merkledb.test.fixtures.VirtualLongKey;
 
 /**
  * Supports parameterized testing of {@link MerkleDbDataSource} with both fixed- and variable-size

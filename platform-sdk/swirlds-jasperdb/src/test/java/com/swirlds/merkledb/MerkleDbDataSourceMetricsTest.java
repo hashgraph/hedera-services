@@ -32,9 +32,9 @@ import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
+import com.swirlds.merkledb.test.fixtures.VirtualLongKey;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -140,9 +140,7 @@ class MerkleDbDataSourceMetricsTest {
 
         // only one 8 MB memory is reserved despite the fact that leaves reside in [COUNT, COUNT * 2] interval
         assertMetricValue("ds_offheap_leavesIndexMb_" + TABLE_NAME, 8);
-        assertMetricValue("ds_offheap_longKeysIndexMb_" + TABLE_NAME, 8);
-        // no leaf keys store in long keys mode
-        assertMetricValue("ds_offheap_objectKeyBucketsIndexMb_" + TABLE_NAME, 0);
+        assertMetricValue("ds_offheap_objectKeyBucketsIndexMb_" + TABLE_NAME, 8);
         assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 16);
         assertNoMemoryForInternalList();
 
@@ -156,8 +154,8 @@ class MerkleDbDataSourceMetricsTest {
 
         // reserved additional memory chunk for a value that didn't fit into the previous chunk
         assertMetricValue("ds_offheap_leavesIndexMb_" + TABLE_NAME, 16);
-        assertMetricValue("ds_offheap_longKeysIndexMb_" + TABLE_NAME, 16);
-        assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 32);
+        assertMetricValue("ds_offheap_objectKeyBucketsIndexMb_" + TABLE_NAME, 8);
+        assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 24);
         assertNoMemoryForInternalList();
 
         dataSource.saveRecords(
@@ -172,9 +170,8 @@ class MerkleDbDataSourceMetricsTest {
         // shrink the list by one chunk
         assertMetricValue("ds_offheap_leavesIndexMb_" + TABLE_NAME, 8);
 
-        // longKeyToPath list doesn't shrink
-        assertMetricValue("ds_offheap_longKeysIndexMb_" + TABLE_NAME, 16);
-        assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 24);
+        assertMetricValue("ds_offheap_objectKeyBucketsIndexMb_" + TABLE_NAME, 8);
+        assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 16);
         assertNoMemoryForInternalList();
     }
 
@@ -199,7 +196,6 @@ class MerkleDbDataSourceMetricsTest {
 
     private void assertNoMemoryForLeafAndKeyToPathLists() {
         assertMetricValue("ds_offheap_leavesIndexMb_" + TABLE_NAME, 0);
-        assertMetricValue("ds_offheap_longKeysIndexMb_" + TABLE_NAME, 0);
         assertMetricValue("ds_offheap_objectKeyBucketsIndexMb_" + TABLE_NAME, 0);
     }
 
