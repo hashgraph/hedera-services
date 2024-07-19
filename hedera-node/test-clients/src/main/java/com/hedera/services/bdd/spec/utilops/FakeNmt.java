@@ -47,7 +47,7 @@ public class FakeNmt {
      * @param configVersion the config version to use
      * @return the operation that restarts the network
      */
-    public static TryToStartNodesOp restartNetworkWithConfigVersion(final int configVersion) {
+    public static TryToStartNodesOp restartNetwork(final int configVersion) {
         return new TryToStartNodesOp(NodeSelector.allNodes(), configVersion, TryToStartNodesOp.ReassignPorts.YES);
     }
 
@@ -59,7 +59,7 @@ public class FakeNmt {
      * @param upgradeConfigTxt the source of the new <i>config.txt</i> file
      * @return the operation that removes the node
      */
-    public static RemoveNodeOp removeNodeAndRefreshConfigTxt(
+    public static RemoveNodeOp removeNode(
             @NonNull final NodeSelector selector, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
         return new RemoveNodeOp(selector, upgradeConfigTxt);
     }
@@ -72,8 +72,7 @@ public class FakeNmt {
      * @param upgradeConfigTxt the source of the new <i>config.txt</i> file
      * @return the operation that removes the node
      */
-    public static AddNodeOp addNodeAndRefreshConfigTxt(
-            @NonNull final long nodeId, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
+    public static AddNodeOp addNode(@NonNull final long nodeId, @NonNull final UpgradeConfigTxt upgradeConfigTxt) {
         return new AddNodeOp(nodeId, upgradeConfigTxt);
     }
 

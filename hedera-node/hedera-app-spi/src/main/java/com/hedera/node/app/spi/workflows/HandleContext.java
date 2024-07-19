@@ -276,7 +276,7 @@ public interface HandleContext {
             @NonNull TransactionBody txBody,
             @NonNull Class<T> recordBuilderClass,
             @Nullable Predicate<Key> verifier,
-            AccountID syntheticPayer);
+            @NonNull AccountID syntheticPayer);
 
     /**
      * Dispatches a preceding transaction that already has an ID.

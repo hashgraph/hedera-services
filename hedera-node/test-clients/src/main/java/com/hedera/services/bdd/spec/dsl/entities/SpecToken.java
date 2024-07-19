@@ -30,8 +30,11 @@ import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
+import com.hedera.services.bdd.spec.dsl.contracts.TokenRedirectContract;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetTokenInfoOperation;
+import com.hedera.services.bdd.spec.dsl.operations.queries.StaticCallTokenOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContractOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.CallTokenOperation;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.transactions.token.HapiTokenCreate;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -65,6 +68,28 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
         super(name);
         builder.tokenType(tokenType);
         treasuryAccount = new SpecAccount(name + DEFAULT_TREASURY_NAME_SUFFIX);
+    }
+
+    /**
+     * Returns an operation that calls a redirect function on the token "contract".
+     *
+     * @param redirectContract the redirect contract
+     * @param function the function name
+     * @param parameters the function parameters
+     * @return the operation
+     */
+    public CallTokenOperation call(
+            @NonNull final TokenRedirectContract redirectContract,
+            @NonNull final String function,
+            @NonNull final Object... parameters) {
+        return new CallTokenOperation(this, redirectContract, function, parameters);
+    }
+
+    public StaticCallTokenOperation staticCall(
+            @NonNull final TokenRedirectContract redirectContract,
+            @NonNull final String function,
+            @NonNull final Object... parameters) {
+        return new StaticCallTokenOperation(this, redirectContract, function, parameters);
     }
 
     /**
@@ -144,6 +169,15 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
     }
 
     /**
+     * Gets the auto-renew account.
+     *
+     * @return the auto-renew account
+     */
+    public SpecAccount autoRenewAccount() {
+        return autoRenewAccount;
+    }
+
+    /**
      * Returns an operation to authorize the given contracts to act on behalf of this token.
      *
      * @param contracts the contracts to authorize
@@ -161,6 +195,15 @@ public class SpecToken extends AbstractSpecEntity<HapiTokenCreate, Token> implem
      */
     public void setTreasury(@NonNull final SpecAccount treasuryAccount) {
         this.treasuryAccount = requireNonNull(treasuryAccount);
+    }
+
+    /**
+     * Sets the initial supply of the token.
+     *
+     * @param initialSupply the initial supply
+     */
+    public void setInitialSupply(final long initialSupply) {
+        this.initialSupply = initialSupply;
     }
 
     /**

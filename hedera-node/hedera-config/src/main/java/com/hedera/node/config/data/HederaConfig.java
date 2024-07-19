@@ -28,8 +28,6 @@ public record HederaConfig(
         @ConfigProperty(defaultValue = "0") @NodeProperty long realm,
         @ConfigProperty(defaultValue = "0") @NodeProperty long shard,
         @ConfigProperty(value = "config.version", defaultValue = "0") @NetworkProperty int configVersion,
-        @ConfigProperty(value = "recordStream.sidecarMaxSizeMb", defaultValue = "256") @NetworkProperty
-                int recordStreamSidecarMaxSizeMb,
         @ConfigProperty(value = "transaction.eip2930.enabled", defaultValue = "true") @NetworkProperty
                 boolean eip2930Enabled,
         @ConfigProperty(value = "transaction.maxMemoUtf8Bytes", defaultValue = "100") @NetworkProperty

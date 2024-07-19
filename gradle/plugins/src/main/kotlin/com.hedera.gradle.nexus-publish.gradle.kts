@@ -37,20 +37,10 @@ nexusPublishing {
     }
 }
 
-// 'platform' and 'services' need to be published separately as they use different credentials
-val platformPublishTasks =
-    subprojects.filter { it.name.startsWith("swirlds") }.map { ":${it.name}:releaseMavenCentral" }
-val servicesPublishTasks =
-    subprojects.filter { !it.name.startsWith("swirlds") }.map { ":${it.name}:releaseMavenCentral" }
-
 tasks.named("closeSonatypeStagingRepository") {
-    // The publishing of all components to Maven Central is automatically done before close
-    // (which is done before release).
-    if (isPlatformPublish) {
-        dependsOn(platformPublishTasks)
-    } else {
-        dependsOn(servicesPublishTasks)
-    }
+    // The publishing of all components to Maven Central is automatically done before close (which
+    // is done before release).
+    dependsOn(subprojects.map { ":${it.name}:releaseMavenCentral" })
 }
 
 tasks.named("releaseMavenCentral") {
@@ -60,9 +50,5 @@ tasks.named("releaseMavenCentral") {
 
 tasks.register("releaseMavenCentralSnapshot") {
     group = "release"
-    if (isPlatformPublish) {
-        dependsOn(platformPublishTasks)
-    } else {
-        dependsOn(servicesPublishTasks)
-    }
+    dependsOn(subprojects.map { ":${it.name}:releaseMavenCentral" })
 }

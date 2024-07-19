@@ -16,8 +16,8 @@
 
 package com.hedera.node.app.spi.state;
 
-import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.WritableSingletonState;
+import com.swirlds.state.spi.WritableSingletonStateBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**

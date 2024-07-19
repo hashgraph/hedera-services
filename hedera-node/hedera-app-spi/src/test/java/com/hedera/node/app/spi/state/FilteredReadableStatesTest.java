@@ -19,9 +19,9 @@ package com.hedera.node.app.spi.state;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.swirlds.platform.test.fixtures.state.MapReadableStates;
-import com.swirlds.platform.test.fixtures.state.StateTestBase;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.test.fixtures.MapReadableStates;
+import com.swirlds.state.test.fixtures.StateTestBase;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
 import java.util.HashSet;

@@ -53,7 +53,7 @@ import org.apache.logging.log4j.Logger;
 public enum RecordStreamAccess {
     RECORD_STREAM_ACCESS;
 
-    private static final Logger LOGGER = LogManager.getLogger(RecordStreamAccess.class);
+    private static final Logger log = LogManager.getLogger(RecordStreamAccess.class);
 
     private static final int MONITOR_INTERVAL_MS = 250;
 
@@ -90,7 +90,7 @@ public enum RecordStreamAccess {
                     unsubscribe.run();
                     stopMonitorIfNoSubscribers();
                 } catch (final Exception e) {
-                    LOGGER.error("Failed to unregister listener for " + path, e);
+                    log.error("Failed to unregister listener for " + path, e);
                 }
             };
         } catch (final Exception e) {
@@ -109,8 +109,7 @@ public enum RecordStreamAccess {
         if (numSubscribers == 0) {
             try {
                 if (!validatingListeners.isEmpty()) {
-                    LOGGER.info(
-                            "Stopping record stream access monitor (locations were {})", validatingListeners.keySet());
+                    log.info("Stopping record stream access monitor (locations were {})", validatingListeners.keySet());
                     validatingListeners.clear();
                 }
                 // Remove all observers and stop the monitor
@@ -137,6 +136,7 @@ public enum RecordStreamAccess {
                 Files.createDirectories(fAtLoc.toPath());
             }
             validatingListeners.put(loc, newValidatingListener(fAtLoc.getAbsolutePath()));
+            log.info("Started record stream listener for {}", loc);
         }
         return validatingListeners.get(loc);
     }

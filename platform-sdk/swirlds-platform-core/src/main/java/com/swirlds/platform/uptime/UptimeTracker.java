@@ -18,7 +18,7 @@ package com.swirlds.platform.uptime;
 
 import static com.swirlds.common.units.TimeUnit.UNIT_MICROSECONDS;
 import static com.swirlds.common.units.TimeUnit.UNIT_NANOSECONDS;
-import static com.swirlds.platform.system.UptimeData.NO_ROUND;
+import static com.swirlds.platform.uptime.UptimeData.NO_ROUND;
 
 import com.swirlds.base.time.Time;
 import com.swirlds.common.context.PlatformContext;
@@ -32,6 +32,7 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.status.StatusActionSubmitter;
 import com.swirlds.platform.system.status.actions.SelfEventReachedConsensusAction;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -63,6 +64,12 @@ public class UptimeTracker {
     private final StatusActionSubmitter statusActionSubmitter;
 
     /**
+     * The uptime data for all the nodes.
+     * It's package-private for testing purposes.
+     */
+    final UptimeData uptimeData;
+
+    /**
      * Construct a new uptime detector.
      *
      * @param platformContext       the platform context
@@ -87,21 +94,22 @@ public class UptimeTracker {
                 .getConfigData(UptimeConfig.class)
                 .degradationThreshold();
         this.uptimeMetrics = new UptimeMetrics(platformContext.getMetrics(), addressBook, this::isSelfDegraded);
+        this.uptimeData = new UptimeData();
     }
 
     /**
      * Look at the events in a round to determine which nodes are up and which nodes are down.
      *
      * @param round       the round to analyze
-     * @param uptimeData  the uptime data that is in the current round's state, is modified by this method
      * @param addressBook the address book for this round
      */
-    public void handleRound(
-            @NonNull final ConsensusRound round,
-            @NonNull final MutableUptimeData uptimeData,
-            @NonNull final AddressBook addressBook) {
+    public void handleRound(@NonNull final ConsensusRound round, @Nullable final AddressBook addressBook) {
 
         if (round.isEmpty()) {
+            return;
+        }
+
+        if (addressBook == null) {
             return;
         }
 
@@ -111,7 +119,7 @@ public class UptimeTracker {
         final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator = new HashMap<>();
         final Map<NodeId, ConsensusEvent> judgesByCreator = new HashMap<>();
         scanRound(round, lastEventsInRoundByCreator, judgesByCreator);
-        updateState(addressBook, uptimeData, lastEventsInRoundByCreator, judgesByCreator, round.getRoundNum());
+        updateUptimeData(addressBook, uptimeData, lastEventsInRoundByCreator, judgesByCreator, round.getRoundNum());
         reportUptime(uptimeData, round.getConsensusTimestamp(), round.getRoundNum());
 
         final Instant end = time.now();
@@ -128,8 +136,7 @@ public class UptimeTracker {
      * @param uptimeData  the uptime data
      * @param addressBook the current address book
      */
-    private void addAndRemoveNodes(
-            @NonNull final MutableUptimeData uptimeData, @NonNull final AddressBook addressBook) {
+    private void addAndRemoveNodes(@NonNull final UptimeData uptimeData, @NonNull final AddressBook addressBook) {
         final Set<NodeId> addressBookNodes = addressBook.getNodeIdSet();
         final Set<NodeId> trackedNodes = uptimeData.getTrackedNodes();
         for (final NodeId nodeId : addressBookNodes) {
@@ -210,9 +217,9 @@ public class UptimeTracker {
      * @param judgesByCreator            the judges by creator
      * @param roundNum                   the round number
      */
-    private void updateState(
+    private void updateUptimeData(
             @NonNull final AddressBook addressBook,
-            @NonNull final MutableUptimeData uptimeData,
+            @NonNull final UptimeData uptimeData,
             @NonNull final Map<NodeId, ConsensusEvent> lastEventsInRoundByCreator,
             @NonNull final Map<NodeId, ConsensusEvent> judgesByCreator,
             final long roundNum) {
@@ -237,9 +244,7 @@ public class UptimeTracker {
      * @param uptimeData the uptime data
      */
     private void reportUptime(
-            @NonNull final MutableUptimeData uptimeData,
-            @NonNull final Instant lastRoundEndTime,
-            final long currentRound) {
+            @NonNull final UptimeData uptimeData, @NonNull final Instant lastRoundEndTime, final long currentRound) {
 
         long nonDegradedConsensusWeight = 0;
 

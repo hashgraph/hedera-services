@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.suites.contract.Utils.getInitcodeOf;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
+import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
@@ -38,11 +39,16 @@ import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.operations.queries.GetContractInfoOperation;
 import com.hedera.services.bdd.spec.dsl.operations.queries.StaticCallContractOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.CallContractOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.DissociateTokensOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.TransferTokenOperation;
 import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import org.bouncycastle.util.encoders.Hex;
 
 /**
  * Represents a Hedera account that may exist on one or more target networks and be
@@ -98,6 +104,43 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
     }
 
     /**
+     * Returns an operation to associate the contract with the given tokens. Will ultimately fail if the contract
+     * does not have an admin key.
+     *
+     * @param tokens the tokens to associate
+     * @return the operation
+     */
+    public AssociateTokensOperation associateTokens(@NonNull final SpecToken... tokens) {
+        requireNonNull(tokens);
+        return new AssociateTokensOperation(this, List.of(tokens));
+    }
+
+    /**
+     * Returns an operation to dissociate the contract with the given tokens.
+     *
+     * @param tokens the tokens to dissociate
+     * @return the operation
+     */
+    public DissociateTokensOperation dissociateTokens(@NonNull final SpecToken... tokens) {
+        requireNonNull(tokens);
+        return new DissociateTokensOperation(this, List.of(tokens));
+    }
+
+    /**
+     * Returns an operation to associate the contract with the given tokens. Will ultimately fail if the contract
+     * does not have an admin key.
+     *
+     * @param tokens the tokens to associate
+     * @return the operation
+     */
+    public TransferTokenOperation transferToken(
+            @NonNull final SpecToken token, final long amount, @NonNull final SpecAccount sender) {
+        requireNonNull(token);
+        requireNonNull(sender);
+        return new TransferTokenOperation(amount, token, sender, this);
+    }
+
+    /**
      * Returns an operation that calls a function on the contract.
      *
      * @param function the function name
@@ -148,7 +191,10 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
         final SpecOperation op;
         constructorArgs = withSubstitutedTypes(spec.targetNetworkOrThrow(), constructorArgs);
         if (initcode.size() < MAX_INLINE_INITCODE_SIZE) {
-            op = contractCreate(name, constructorArgs).inlineInitCode(initcode);
+            final var unhexedBytecode = Hex.decode(initcode.toByteArray());
+            op = contractCreate(name, constructorArgs)
+                    .gas(creationGas)
+                    .inlineInitCode(ByteString.copyFrom(unhexedBytecode));
         } else {
             op = blockingOrder(
                     createLargeFile(GENESIS, contractName, initcode),
