@@ -123,8 +123,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         subject.warm(warmupContext);
 
-        verify(readableAccountStore, times(1)).warm(ACCOUNT_3333);
-        verify(readableAccountStore, times(1)).warm(ACCOUNT_4444);
+        verify(readableAccountStore, times(1)).warm(ACCOUNT_ID_3333);
+        verify(readableAccountStore, times(1)).warm(ACCOUNT_ID_4444);
     }
 
     @Test
@@ -155,7 +155,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         subject.warm(warmupContext);
 
-        verify(readableTokenRelationStore, times(1)).warm(ACCOUNT_3333, TOKEN_2468);
+        verify(readableTokenRelationStore, times(1)).warm(ACCOUNT_ID_3333, TOKEN_2468);
         verify(readableNftStore, times(1)).warm(any());
     }
 
@@ -166,8 +166,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .getOrCreateConfig();
         List<AccountAmount> acctAmounts = new ArrayList<>();
         List<TokenTransferList> tokenTransferLists = new ArrayList<>();
-        acctAmounts.add(aaWith(ACCOUNT_3333, -5));
-        acctAmounts.add(aaWith(ACCOUNT_4444, 5));
+        acctAmounts.add(aaWith(ACCOUNT_ID_3333, -5));
+        acctAmounts.add(aaWith(ACCOUNT_ID_4444, 5));
 
         CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
                 .transfers(TransferList.newBuilder().accountAmounts(acctAmounts))
@@ -181,7 +181,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         when(feeContext.body())
                 .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                         .cryptoTransfer(cryptoTransfer)
                         .build());
         when(feeContext.configuration()).thenReturn(config);
@@ -212,11 +212,11 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                 .token(fungibleTokenId)
                 .transfers(
                         AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_3333)
+                                .accountID(ACCOUNT_ID_3333)
                                 .amount(-5)
                                 .build(),
                         AccountAmount.newBuilder()
-                                .accountID(ACCOUNT_4444)
+                                .accountID(ACCOUNT_ID_4444)
                                 .amount(5)
                                 .build())
                 .build());
@@ -233,7 +233,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         when(feeContext.body())
                 .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                         .cryptoTransfer(cryptoTransfer)
                         .build());
         when(feeContext.configuration()).thenReturn(config);
@@ -280,7 +280,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
 
         when(feeContext.body())
                 .thenReturn(TransactionBody.newBuilder()
-                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_3333))
+                        .transactionID(TransactionID.newBuilder().accountID(ACCOUNT_ID_3333))
                         .cryptoTransfer(cryptoTransfer)
                         .build());
         when(feeContext.configuration()).thenReturn(config);
