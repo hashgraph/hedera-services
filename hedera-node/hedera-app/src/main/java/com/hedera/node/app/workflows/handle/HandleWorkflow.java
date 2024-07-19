@@ -354,11 +354,12 @@ public class HandleWorkflow {
         initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
                 .status(FAIL_INVALID)
                 .consensusTimestamp(userTxn.consensusNow());
+        final var failInvalidRecord = failInvalidBuilder.build();
         recordCache.add(
                 userTxn.creatorInfo().nodeId(),
                 requireNonNull(userTxn.txnInfo().payerID()),
-                List.of(failInvalidBuilder.build()));
-        return Stream.of(failInvalidBuilder.build());
+                List.of(failInvalidRecord));
+        return Stream.of(failInvalidRecord);
     }
 
     /**
