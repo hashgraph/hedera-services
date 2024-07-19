@@ -1,12 +1,16 @@
 # EVM Transaction Response Codes in Hedera
 
-When executing an EVM transaction to a smart contract using `contractCall` in Hedera, different response codes may be present for the top-level status after the transaction is finished. These responses are found in the transaction receipt.
+When executing an EVM transaction to a smart contract using `contractCall` in Hedera and it fails, a response code is present in the transaction receipt to indicate the top-level status.
 
-The errors listed below could occur for a `contractCall` which creates child transactions, and the revertReason or haltReason which is set when operation fails is propagated to the top-level call.
-There are other errors that could occur in the childs, but the ones listed below are the specific ones that are propagated to the top-level call, which currently happens [here](https://github.com/hashgraph/hedera-services/blob/774ed309600e4b4acd9e1ca72fcd87d354c8b9ff/hedera-node/hedera-smart-contract-service-impl/src/main/java/com/hedera/node/app/service/contract/impl/hevm/HederaEvmTransactionResult.java#L141-L169), in the `HederaEvmTransactionResult` in the `finalStatus()` method.
-Other revert/halt reasons from the child should default to CONTRACT_REVERT_EXECUTED for the top-level status.
+The default status for a failing `contractCall` is CONTRACT_REVERT_EXECUTED, which is included in the receipt. Child transactions might have more specific errors.
+In certain cases, the top-level status may differ from CONTRACT_REVERT_EXECUTED. The errors listed below are those special cases that can occur during the execution of a transaction and will be propagated as the top-level status.
+
+The handling of those cases currently happens [here](https://github.com/hashgraph/hedera-services/blob/774ed309600e4b4acd9e1ca72fcd87d354c8b9ff/hedera-node/hedera-smart-contract-service-impl/src/main/java/com/hedera/node/app/service/contract/impl/hevm/HederaEvmTransactionResult.java#L141-L169), in the `HederaEvmTransactionResult` in the `finalStatus()` method.
+
 
 ## Possible Propagated Response Codes
+
+Note: The description for the statuses is copied from [protobuf repo](https://github.com/hashgraph/hedera-protobufs/blob/main/services/response_code.proto)
 
 - **INVALID_SOLIDITY_ADDRESS**
     -  The system is not able to find the user’s Solidity address.
