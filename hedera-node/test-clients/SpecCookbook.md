@@ -42,7 +42,7 @@ needs to be toggled due to tradeoffs in the release schedule, further complicati
 
 Let's address each category individually.
 
-First, place every new test that requires `feature.isEnabled=true` in a `@HapiTestLifecycle` test class with a
+First, place every new test that requires `feature.isEnabled=true` in `@HapiTestLifecycle` test classes each with a
 `@BeforeAll` method that enables the feature and then restores the default after the test class finishes:
 ```java
 @BeforeAll
