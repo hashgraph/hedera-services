@@ -24,6 +24,9 @@ import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInHbarsInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInTokenInSchedule;
+import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithoutFallbackInSchedule;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 
 import com.hedera.services.bdd.junit.HapiTest;
@@ -163,5 +166,49 @@ public class UpdateTokenFeeScheduleTest {
                 feeToken.getInfo()
                         .andAssert(info -> info.hasCustom(fractionalFeeInSchedule(
                                 1L, 10L, 10L, OptionalLong.of(20), false, feeCollector.name()))));
+    }
+
+    @Order(7)
+    @HapiTest
+    @DisplayName("non fungible token with royalty fee")
+    public Stream<DynamicTest> updateNonFungibleTokenWithRoyaltyFee() {
+        return hapiTest(
+                updateTokenFeeSchedules.call("updateNonFungibleRoyaltyFee", nonFungibleToken, 1L, 10L, feeCollector),
+                nonFungibleToken
+                        .getInfo()
+                        .andAssert(info ->
+                                info.hasCustom(royaltyFeeWithoutFallbackInSchedule(1L, 10L, feeCollector.name()))));
+    }
+
+    @Order(8)
+    @HapiTest
+    @DisplayName("non fungible token with royalty fee ℏ fallback")
+    public Stream<DynamicTest> updateNonFungibleTokenWithRoyaltyFeeHbarFallback() {
+        return hapiTest(
+                updateTokenFeeSchedules.call(
+                        "updateNonFungibleRoyaltyFeeHbarFallback", nonFungibleToken, 1L, 10L, 20L, feeCollector),
+                nonFungibleToken
+                        .getInfo()
+                        .andAssert(info -> info.hasCustom(
+                                royaltyFeeWithFallbackInHbarsInSchedule(1L, 10L, 20L, feeCollector.name()))));
+    }
+
+    @Order(9)
+    @HapiTest
+    @DisplayName("non fungible token with royalty fee token fallback")
+    public Stream<DynamicTest> updateNonFungibleTokenWithRoyaltyFeeTokenFallback() {
+        return hapiTest(
+                updateTokenFeeSchedules.call(
+                        "updateNonFungibleRoyaltyFeeHtsFallback",
+                        nonFungibleToken,
+                        feeToken,
+                        1L,
+                        10L,
+                        20L,
+                        feeCollector),
+                nonFungibleToken
+                        .getInfo()
+                        .andAssert(info -> info.hasCustom(royaltyFeeWithFallbackInTokenInSchedule(
+                                1L, 10L, 20L, feeToken.name(), feeCollector.name()))));
     }
 }
