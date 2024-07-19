@@ -15,6 +15,7 @@ The cookbook contains mostly concrete examples; but it is good to keep the princ
 
 ## Table of contents
 - [Patterns](#patterns)
+  * [DO minimize the impact of feature flag rollouts](#do-minimize-the-impact-of-feature-flag-rollouts)
   * [DO create template objects to enumerate families of related tests](#do-create-template-objects-to-enumerate-families-of-related-tests)
   * [DO fully validate a transaction's record before submitting the next one](#do-fully-validate-a-transactions-record-before-submitting-the-next-one)
   * [DO prefer the object-oriented DSL when working with contract-managed entities](#do-prefer-the-object-oriented-dsl-when-working-with-contract-managed-entities)
