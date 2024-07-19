@@ -209,7 +209,7 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         snapshot = in.readSerializable(false, ConsensusSnapshot::new);
         freezeTime = in.readInstant();
         lastFrozenTime = in.readInstant();
-        if (version < ClassVersion.REMOVED_UPTIME_DATA) {
+        if (version >= ClassVersion.REMOVED_UPTIME_DATA) {
             skipUptimeData(in);
         }
         if (version >= ClassVersion.BIRTH_ROUND_MIGRATION_PATHWAY) {
