@@ -311,19 +311,29 @@ The current startup procedure will be altered as follows
 - The `config.txt` file will no longer be used by the platform for storing the address book in existing networks. It
   will no longer be used by the platform code
 - Designating `config.txt` introduces inversion of control. It will be at the exclusive prerogative of Services (the
-  app) going forward. All the platform code that builds an AddressBook from `config.txt` will be removed or refactored
+  app) going forward. Platform will no longer be responsible for it, and all the platform code that builds an
+  AddressBook from `config.txt` will be removed or refactored
   and moved into the Services codebase.
 
 #### DevOps Workflow changes
-
 (See Roster Startup Behavior diagram above)
-When adding new nodes to existing networks, DevOps will be given a state after the network has upgraded.
-The state contains a combination of optional State data and Roster with the new node in it. Devops will no longer
+Current network Transplant procedure is manual.
+DevOps get given a State and `config.txt` file on disk. This is then followed by a software-only upgrade to adopt
+the `config.txt` file using that state. This will change.
+
+The implementation of this proposal changes this DevOps workflow as follows:
+When adding new nodes to an existing network, DevOps will be given a combination of optional State data and Roster with
+the new node in it. Devops will no longer
 need `config.txt` on new nodes to existing networks.
-Although the State and Roster are tagged as optional, one of them must exist for the network to start.
+One of the State or Roster or both must exist for the network to start.
+
+The app will decide a startup sequence based on the following heuristics:
+
+* Keep Network Settings (Normal restart) == No Active Roster AND State provided
+* Genesis Network process == Active Roster, No State provided
+* Network Transplant process == Active Roster AND State provided
 
 ### Core Behaviors, in summary
-
 - Roster Creation: App will create a Candidate Roster from the Candidate Address Book (CAB).
 - Roster Submission: App will trigger roster submission by setting the `candidate_roster_hash` field in the
   PlatformState.
