@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-plugins { id("com.diffplug.spotless") }
+plugins { id("com.hedera.gradle.spotless") }
 
 spotless {
-    // Disable the automatic application of Spotless to all source sets when the check task is run.
-    isEnforceCheck = false
-
-    // optional: limit format enforcement to just the files changed by this feature branch
-    ratchetFrom("origin/develop")
-
     flexmark {
         target("**/*.md", ".gitignore")
         flexmark()
