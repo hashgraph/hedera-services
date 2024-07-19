@@ -28,6 +28,43 @@ The cookbook contains mostly concrete examples; but it is good to keep the princ
 
 ## Patterns
 
+### DO minimize the impact of feature flag rollouts
+
+When adding a feature controlled by a `feature.isEnabled` config, consider three categories of tests:
+1. New tests that require `feature.isEnabled=true` to pass.
+2. New tests that require `feature.isEnabled=false` to pass.
+3. Existing tests that require `feature.isEnabled=false` to pass.
+
+We must ensure that all three categories of tests can run and pass _regardless of whether the feature flag's default
+value is `true` or `false`_. Tests that assume a default value can create complications if the flag needs to be toggled
+due to tradeoffs in the release schedule, further complicating scheduling challenges.
+
+Let's address each category individually.
+
+First, place every new test that requires `feature.isEnabled=true` in a `@HapiTestLifecycle` test class with a
+`@BeforeAll` method that enables the feature and then restores the default after the test class finishes:
+```java
+@BeforeAll
+static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+  testLifecycle.overrideInClass(Map.of("feature.isEnabled", "true"));
+}
+```
+
+Second, if there are any new tests that require `feature.isEnabled=false`, place them in a test class with a
+`@BeforeAll` method that disables the feature and then restores the default after the test class finishes:
+```java
+@BeforeAll
+static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
+  testLifecycle.overrideInClass(Map.of("feature.isEnabled", "false"));
+}
+```
+
+Third, consider existing tests that require `feature.isEnabled=false` to pass. By default, move all such tests into an
+appropriate `@HapiTestLifecycle` test class as above. (The one exception is if there is only one such test; in that
+case, just use `@LeakyHapiTest(overrides = {"feature.isEnabled"})` and start the test by toggling the flag off.) Then
+for each such test, carefully evaluate why it fails with `feature.isEnabled=true`. If there is no test already in the
+first category that covers this behavior, add one to a test class there.
+
 ### DO create template objects to enumerate families of related tests
 
 When working with tokens, we often need to repeat the same basic test for each type of token key; or for each
