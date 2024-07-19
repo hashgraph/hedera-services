@@ -219,6 +219,7 @@ public class DispatchForResponseCodeHtsCall extends AbstractCall {
         if (status != SUCCESS) {
             status = failureCustomizer.customize(syntheticBody, status, enhancement);
             recordBuilder.status(status);
+            return reversionWith(gasRequirement, recordBuilder);
         }
         return completionWith(gasRequirement, recordBuilder, outputFn.apply(recordBuilder));
     }
