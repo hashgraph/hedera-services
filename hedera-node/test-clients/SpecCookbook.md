@@ -36,9 +36,9 @@ When adding a feature controlled by a `feature.isEnabled` config, consider three
 2. New tests that require `feature.isEnabled=false` to pass.
 3. Existing tests that require `feature.isEnabled=false` to pass.
 
-We must ensure that all three categories of tests can run and pass _regardless of whether the feature flag's default
-value is `true` or `false`_. Tests that assume a default value can create complications if the flag needs to be toggled
-due to tradeoffs in the release schedule, further complicating scheduling challenges.
+We must ensure that all three categories of tests can run and pass **no matter if the feature flag's default
+value is `true` or `false`**. Tests that assume a default value can create complications if the flag's default value
+needs to be toggled due to tradeoffs in the release schedule, further complicating scheduling challenges.
 
 Let's address each category individually.
 
