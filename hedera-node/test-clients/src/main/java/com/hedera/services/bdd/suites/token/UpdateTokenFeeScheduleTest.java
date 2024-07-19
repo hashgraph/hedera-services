@@ -84,7 +84,7 @@ public class UpdateTokenFeeScheduleTest {
                 feeToken.authorizeContracts(updateTokenFeeSchedules),
                 fungibleToken.authorizeContracts(updateTokenFeeSchedules),
                 nonFungibleToken.authorizeContracts(updateTokenFeeSchedules),
-                feeCollector.associateTokens(feeToken));
+                feeCollector.associateTokens(feeToken, fungibleToken));
     }
 
     @Order(0)
@@ -210,5 +210,58 @@ public class UpdateTokenFeeScheduleTest {
                         .getInfo()
                         .andAssert(info -> info.hasCustom(royaltyFeeWithFallbackInTokenInSchedule(
                                 1L, 10L, 20L, feeToken.name(), feeCollector.name()))));
+    }
+
+    @Order(10)
+    @HapiTest
+    @DisplayName("fungible token with n fixed ℏ fee")
+    public Stream<DynamicTest> updateFungibleTokenWithNHbarFixedFee() {
+        return hapiTest(
+                updateTokenFeeSchedules.call("updateFungibleFixedHbarFees", fungibleToken, 3, 10L, feeCollector),
+                fungibleToken.getInfo().andAssert(info -> info.hasCustom(
+                                fixedHbarFeeInSchedule(10L, feeCollector.name()))
+                        .hasCustom(fixedHbarFeeInSchedule(10L, feeCollector.name()))
+                        .hasCustom(fixedHbarFeeInSchedule(10L, feeCollector.name()))));
+    }
+
+    @Order(11)
+    @HapiTest
+    @DisplayName("fungible token with n fractional fee")
+    public Stream<DynamicTest> updateFungibleTokenWithNFractionaldFee() {
+        return hapiTest(
+                updateTokenFeeSchedules.call("updateFungibleFractionalFees", feeToken, 3, 1L, 10L, false, feeCollector),
+                feeToken.getInfo().andAssert(info -> info.hasCustom(
+                                fractionalFeeInSchedule(1L, 10L, 0L, OptionalLong.of(0), false, feeCollector.name()))
+                        .hasCustom(fractionalFeeInSchedule(1L, 10L, 0L, OptionalLong.of(0), false, feeCollector.name()))
+                        .hasCustom(
+                                fractionalFeeInSchedule(1L, 10L, 0L, OptionalLong.of(0), false, feeCollector.name()))));
+    }
+
+    @Order(12)
+    @HapiTest
+    @DisplayName("non fungible token with n royalty fee")
+    public Stream<DynamicTest> updateNonFungibleTokenWithNRoyaltyFee() {
+        return hapiTest(
+                updateTokenFeeSchedules.call(
+                        "updateNonFungibleRoyaltyFees", nonFungibleToken, 3, 1L, 10L, feeCollector),
+                nonFungibleToken.getInfo().andAssert(info -> info.hasCustom(
+                                royaltyFeeWithoutFallbackInSchedule(1L, 10L, feeCollector.name()))
+                        .hasCustom(royaltyFeeWithoutFallbackInSchedule(1L, 10L, feeCollector.name()))
+                        .hasCustom(royaltyFeeWithoutFallbackInSchedule(1L, 10L, feeCollector.name()))));
+    }
+
+    @Order(13)
+    @HapiTest
+    @DisplayName("fungible token fees")
+    public Stream<DynamicTest> updateFungibleTokenFees() {
+        return hapiTest(
+                updateTokenFeeSchedules.call(
+                        "updateFungibleFees", fungibleToken, 3L, feeToken, 1L, 10L, false, feeCollector),
+                fungibleToken.getInfo().andAssert(info -> info.hasCustom(
+                                fixedHtsFeeInSchedule(3L, feeToken.name(), feeCollector.name()))
+                        .hasCustom(fixedHbarFeeInSchedule(6L, feeCollector.name()))
+                        .hasCustom(fixedHtsFeeInSchedule(12L, fungibleToken.name(), feeCollector.name()))
+                        .hasCustom(
+                                fractionalFeeInSchedule(1L, 10L, 0L, OptionalLong.of(0), false, feeCollector.name()))));
     }
 }
