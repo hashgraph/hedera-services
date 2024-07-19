@@ -63,9 +63,9 @@ static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
 
 Third, consider existing tests that require `feature.isEnabled=false` to pass. By default, move all such tests into an
 appropriate `@HapiTestLifecycle` test class as above. The only exception is if there is just one such test; in that
-case, use `@LeakyHapiTest(overrides = {"feature.isEnabled"})` and start the test overriding the flag to `false`. In 
-any case, for each such test, carefully evaluate why it fails with `feature.isEnabled=true`. If there is no test already 
-in the first category that covers this behavior, add one to a test class there.
+case, use `@LeakyHapiTest(overrides = {"feature.isEnabled"})` and start the test by overriding the flag to `false`. No 
+matter how many such tests exist, carefully evaluate for each one why it fails with `feature.isEnabled=true`. If there 
+is no test already in the first category that covers this behavior, add one to a test class there.
 
 ### DO create template objects to enumerate families of related tests
 
