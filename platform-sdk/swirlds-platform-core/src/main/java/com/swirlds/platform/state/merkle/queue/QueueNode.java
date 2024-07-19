@@ -29,6 +29,7 @@ import com.swirlds.common.merkle.utility.DebugIterationEndpoint;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.fcqueue.FCQueue;
 import com.swirlds.platform.state.merkle.StateUtils;
+import com.swirlds.platform.state.merkle.disk.blockstream.StateChangesObserverSingleton;
 import com.swirlds.platform.state.merkle.singleton.StringLeaf;
 import com.swirlds.platform.state.merkle.singleton.ValueLeaf;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -117,8 +118,11 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     /** Adds an element to this queue. */
     public void add(E element) {
         getQueue().add(new ValueLeaf<>(leafClassId, codec, element));
+        final var label = getLabel();
         // Log to transaction state log, what was added
-        logQueueAdd(getLabel(), element);
+        logQueueAdd(label, element);
+        // Notify the observer.
+        StateChangesObserverSingleton.getInstanceOrThrow().queuePushChange(label, element);
     }
 
     /** Peek an element */
@@ -132,8 +136,11 @@ public class QueueNode<E> extends PartialBinaryMerkleInternal implements Labeled
     /** Retrieve and remove an element */
     public E remove() {
         final var valueLeaf = getQueue().remove();
+        final var label = getLabel();
         // Log to transaction state log, what was added
-        logQueueRemove(getLabel(), valueLeaf);
+        logQueueRemove(label, valueLeaf);
+        // Notify the observer.
+        StateChangesObserverSingleton.getInstanceOrThrow().queuePopChange(label);
         return valueLeaf == null ? null : valueLeaf.getValue();
     }
 
