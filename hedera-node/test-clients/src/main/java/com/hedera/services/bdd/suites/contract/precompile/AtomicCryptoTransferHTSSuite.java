@@ -1022,7 +1022,6 @@ public class AtomicCryptoTransferHTSSuite {
         return propertyPreservingHapiSpec("cryptoTransferAllowanceToContractFT")
                 .preserving(
                         "entities.unlimitedAutoAssociationsEnabled",
-                        "true",
                         "contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
                         overriding("entities.unlimitedAutoAssociationsEnabled", "true"),

@@ -83,7 +83,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadGivenFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
@@ -864,9 +864,9 @@ public class LeakyCryptoTestsSuite {
                             op7FeeAssertion,
                             op8,
                             op9,
-                            uploadDefaultFeeSchedules(GENESIS));
+                            uploadGivenFeeSchedules(GENESIS, "limited-associations-fee-schedules.json"));
                 }))
-                .then(uploadDefaultFeeSchedules(GENESIS));
+                .then();
     }
 
     @HapiTest

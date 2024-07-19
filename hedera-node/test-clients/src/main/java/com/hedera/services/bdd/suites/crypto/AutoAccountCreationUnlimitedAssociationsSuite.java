@@ -20,7 +20,7 @@ import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressF
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asSolidityAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.TrieSigMapGenerator.uniqueWithFullPrefixesFor;
@@ -294,29 +294,26 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
         final AtomicReference<ByteString> counterAlias = new AtomicReference<>();
         final AtomicReference<TokenID> ftId = new AtomicReference<>();
 
-        return propertyPreservingHapiSpec("transferTokensToEVMAddressAliasUnlimitedAssociations")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
-                .given(
-                        overriding("entities.unlimitedAutoAssociationsEnabled", TRUE),
-                        cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
-                        tokenCreate(VANILLA_TOKEN)
-                                .tokenType(FUNGIBLE_COMMON)
-                                .treasury(PARTY)
-                                .initialSupply(1_000),
-                        newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
-                        withOpContext((spec, opLog) -> {
-                            final var registry = spec.registry();
-                            final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
-                            final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
-                            final var addressBytes = recoverAddressFromPubKey(tmp);
-                            assert addressBytes != null;
-                            final var evmAddressBytes = ByteString.copyFrom(addressBytes);
-                            ftId.set(registry.getTokenID(VANILLA_TOKEN));
-                            partyId.set(registry.getAccountID(PARTY));
-                            partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
-                            counterAlias.set(evmAddressBytes);
-                        }))
-                .when(withOpContext((spec, opLog) -> {
+        return hapiTest(
+                cryptoCreate(PARTY).maxAutomaticTokenAssociations(2),
+                tokenCreate(VANILLA_TOKEN)
+                        .tokenType(FUNGIBLE_COMMON)
+                        .treasury(PARTY)
+                        .initialSupply(1_000),
+                newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
+                withOpContext((spec, opLog) -> {
+                    final var registry = spec.registry();
+                    final var ecdsaKey = registry.getKey(SECP_256K1_SOURCE_KEY);
+                    final var tmp = ecdsaKey.getECDSASecp256K1().toByteArray();
+                    final var addressBytes = recoverAddressFromPubKey(tmp);
+                    assert addressBytes != null;
+                    final var evmAddressBytes = ByteString.copyFrom(addressBytes);
+                    ftId.set(registry.getTokenID(VANILLA_TOKEN));
+                    partyId.set(registry.getAccountID(PARTY));
+                    partyAlias.set(ByteString.copyFrom(asSolidityAddress(partyId.get())));
+                    counterAlias.set(evmAddressBytes);
+                }),
+                withOpContext((spec, opLog) -> {
 
                     // account create with key than delete account
                     var accountCreate = cryptoCreate("testAccount")
@@ -382,12 +379,7 @@ public class AutoAccountCreationUnlimitedAssociationsSuite {
                             .has(accountWith().maxAutoAssociations(-1).memo(LAZY_MEMO));
 
                     allRunFor(spec, hollowAccountTransfer, completion, completed);
-                }))
-                .then(
-                        // verify fees of first transfer
-                        // add this assertion after transfer changes are integrated
-                        // validateChargedUsd(FT_XFER, v13PriceUsdOneAutoAssociation)
-                        );
+                }));
     }
 
     @HapiTest
