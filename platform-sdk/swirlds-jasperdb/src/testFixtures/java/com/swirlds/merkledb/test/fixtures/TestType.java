@@ -104,7 +104,7 @@ public enum TestType {
     public class DataTypeConfig<K extends VirtualKey, V extends VirtualValue> {
 
         private final TestType testType;
-        private final KeySerializer<? extends VirtualLongKey> keySerializer;
+        private final KeySerializer<? extends VirtualKey> keySerializer;
         private final ValueSerializer<? extends ExampleByteArrayVirtualValue> valueSerializer;
 
         public DataTypeConfig(TestType testType) {
@@ -113,7 +113,7 @@ public enum TestType {
             this.valueSerializer = createValueSerializer();
         }
 
-        public KeySerializer<? extends VirtualLongKey> getKeySerializer() {
+        public KeySerializer<? extends VirtualKey> getKeySerializer() {
             return keySerializer;
         }
 
@@ -121,7 +121,7 @@ public enum TestType {
             return valueSerializer;
         }
 
-        private KeySerializer<? extends VirtualLongKey> createKeySerializer() {
+        private KeySerializer<? extends VirtualKey> createKeySerializer() {
             switch (testType) {
                 default:
                 case fixed_fixed:
@@ -155,7 +155,7 @@ public enum TestType {
             }
         }
 
-        public VirtualLongKey createVirtualLongKey(final int i) {
+        public VirtualKey createVirtualLongKey(final int i) {
             switch (testType) {
                 default:
                 case fixed_fixed:
@@ -212,7 +212,7 @@ public enum TestType {
             return (keySerializer.getSerializedSize() != Long.BYTES);
         }
 
-        public MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> createDataSource(
+        public MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> createDataSource(
                 final Path dbPath,
                 final String name,
                 final int size,
@@ -221,7 +221,7 @@ public enum TestType {
                 boolean preferDiskBasedIndexes)
                 throws IOException {
             final MerkleDb database = MerkleDb.getInstance(dbPath);
-            final MerkleDbTableConfig<? extends VirtualLongKey, ? extends ExampleByteArrayVirtualValue> tableConfig =
+            final MerkleDbTableConfig<? extends VirtualKey, ? extends ExampleByteArrayVirtualValue> tableConfig =
                     new MerkleDbTableConfig<>(
                                     (short) 1, DigestType.SHA_384,
                                     (short) keySerializer.getCurrentDataVersion(), keySerializer,
@@ -235,7 +235,7 @@ public enum TestType {
             return dataSource;
         }
 
-        public MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> getDataSource(
+        public MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> getDataSource(
                 final Path dbPath, final String name, final boolean enableMerging) throws IOException {
             final MerkleDb database = MerkleDb.getInstance(dbPath);
             return database.getDataSource(name, enableMerging);
@@ -245,11 +245,11 @@ public enum TestType {
             return new VirtualHashRecord(i, MerkleDbTestUtils.hash(i));
         }
 
-        public VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> createVirtualLeafRecord(final int i) {
+        public VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue> createVirtualLeafRecord(final int i) {
             return createVirtualLeafRecord(i, i, i);
         }
 
-        public VirtualLeafRecord<VirtualLongKey, ExampleByteArrayVirtualValue> createVirtualLeafRecord(
+        public VirtualLeafRecord<VirtualKey, ExampleByteArrayVirtualValue> createVirtualLeafRecord(
                 final long path, final int i, final int valueIndex) {
 
             switch (testType) {

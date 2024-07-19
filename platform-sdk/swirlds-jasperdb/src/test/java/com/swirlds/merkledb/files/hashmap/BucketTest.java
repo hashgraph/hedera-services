@@ -24,7 +24,7 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyVariableSize;
-import com.swirlds.merkledb.test.fixtures.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.Function;
@@ -36,22 +36,37 @@ import org.junit.jupiter.params.provider.EnumSource;
 class BucketTest {
 
     private enum KeyType {
-        fixed(ExampleLongKeyFixedSize::new, new ExampleLongKeyFixedSize.Serializer()),
-        variable(ExampleLongKeyVariableSize::new, new ExampleLongKeyVariableSize.Serializer());
+        fixed(
+                ExampleLongKeyFixedSize::new,
+                new ExampleLongKeyFixedSize.Serializer(),
+                (ExampleLongKeyFixedSize t) -> t.getValue()),
+        variable(
+                ExampleLongKeyVariableSize::new,
+                new ExampleLongKeyVariableSize.Serializer(),
+                (ExampleLongKeyVariableSize t) -> t.getValue());
 
-        final Function<Long, VirtualLongKey> keyConstructor;
-        final KeySerializer<VirtualLongKey> keySerializer;
+        final Function<Long, VirtualKey> keyConstructor;
+        final KeySerializer<VirtualKey> keySerializer;
+        final Function<VirtualKey, Long> keyValueReader;
 
-        KeyType(Function<Long, VirtualLongKey> keyConstructor, final KeySerializer keySerializer) {
+        KeyType(
+                final Function<Long, VirtualKey> keyConstructor,
+                final KeySerializer keySerializer,
+                final Function<?, Long> keyValueReader) {
             this.keyConstructor = keyConstructor;
-            this.keySerializer = (KeySerializer<VirtualLongKey>) ((Object) keySerializer);
+            this.keySerializer = (KeySerializer<VirtualKey>) ((Object) keySerializer);
+            this.keyValueReader = (Function<VirtualKey, Long>) keyValueReader;
+        }
+
+        long getKeyAsLong(final VirtualKey key) {
+            return keyValueReader.apply(key);
         }
     }
 
     @ParameterizedTest
     @EnumSource(KeyType.class)
     void canSetAndGetBucketIndex(KeyType keyType) {
-        final Bucket<VirtualLongKey> subject = new Bucket<>(keyType.keySerializer);
+        final Bucket<VirtualKey> subject = new Bucket<>(keyType.keySerializer);
         final int pretendIndex = 123;
         subject.setBucketIndex(pretendIndex);
         assertEquals(pretendIndex, subject.getBucketIndex(), "Should be able to get the set index");
@@ -60,7 +75,7 @@ class BucketTest {
     @ParameterizedTest
     @EnumSource(KeyType.class)
     void returnsNotFoundValueFromEmptyBucket(KeyType keyType) throws IOException {
-        final Bucket<VirtualLongKey> subject = new Bucket<>(keyType.keySerializer);
+        final Bucket<VirtualKey> subject = new Bucket<>(keyType.keySerializer);
         final long notFoundValue = 123;
         final ExampleLongKeyFixedSize missingKey = new ExampleLongKeyFixedSize(321);
 
@@ -74,22 +89,21 @@ class BucketTest {
     @EnumSource(KeyType.class)
     void testBucketAddAndDelete(KeyType keyType) throws IOException {
         // create some keys to test with
-        final VirtualLongKey[] testKeys = new VirtualLongKey[20];
+        final VirtualKey[] testKeys = new VirtualKey[20];
         for (int i = 0; i < testKeys.length; i++) {
-            //			testKeys[i] = new ExampleLongKeyFixedSize(i+10);
             testKeys[i] = keyType.keyConstructor.apply((long) (i + 10));
         }
         // create a bucket
-        final Bucket<VirtualLongKey> bucket = new Bucket<>(keyType.keySerializer);
+        final Bucket<VirtualKey> bucket = new Bucket<>(keyType.keySerializer);
         assertEquals(0, bucket.getBucketEntryCount(), "Check we start with empty bucket");
         // insert keys and check
         for (int i = 0; i < 10; i++) {
-            final VirtualLongKey key = testKeys[i];
-            bucket.putValue(key, key.getKeyAsLong() + 100);
+            final VirtualKey key = testKeys[i];
+            bucket.putValue(key, keyType.getKeyAsLong(key) + 100);
             assertEquals(i + 1, bucket.getBucketEntryCount(), "Check we have correct count");
             // check that all keys added so far are there
             for (int j = 0; j <= i; j++) {
-                checkKey(bucket, testKeys[j]);
+                checkKey(keyType, bucket, testKeys[j]);
             }
         }
         assertEquals(10, bucket.getBucketEntryCount(), "Check we have correct count");
@@ -99,13 +113,13 @@ class BucketTest {
                 1234, bucket.findValue(testKeys[5].hashCode(), testKeys[5], -1), "Should get expected value of 1234");
         bucket.putValue(testKeys[5], 115);
         for (int j = 0; j < 10; j++) {
-            checkKey(bucket, testKeys[j]);
+            checkKey(keyType, bucket, testKeys[j]);
         }
         // now delete last key and check
         bucket.putValue(testKeys[9], INVALID_VALUE);
         assertEquals(9, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 0; j < 9; j++) {
-            checkKey(bucket, testKeys[j]);
+            checkKey(keyType, bucket, testKeys[j]);
         }
         assertEquals(
                 -1,
@@ -115,10 +129,10 @@ class BucketTest {
         bucket.putValue(testKeys[5], INVALID_VALUE);
         assertEquals(8, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 0; j < 5; j++) {
-            checkKey(bucket, testKeys[j]);
+            checkKey(keyType, bucket, testKeys[j]);
         }
         for (int j = 6; j < 9; j++) {
-            checkKey(bucket, testKeys[j]);
+            checkKey(keyType, bucket, testKeys[j]);
         }
         assertEquals(
                 -1,
@@ -128,10 +142,10 @@ class BucketTest {
         bucket.putValue(testKeys[0], INVALID_VALUE);
         assertEquals(7, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 1; j < 5; j++) {
-            checkKey(bucket, testKeys[j]);
+            checkKey(keyType, bucket, testKeys[j]);
         }
         for (int j = 6; j < 9; j++) {
-            checkKey(bucket, testKeys[j]);
+            checkKey(keyType, bucket, testKeys[j]);
         }
         assertEquals(
                 -1,
@@ -142,13 +156,13 @@ class BucketTest {
         bucket.putValue(testKeys[11], 121);
         assertEquals(9, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 1; j < 5; j++) {
-            checkKey(bucket, testKeys[j]);
+            checkKey(keyType, bucket, testKeys[j]);
         }
         for (int j = 6; j < 9; j++) {
-            checkKey(bucket, testKeys[j]);
+            checkKey(keyType, bucket, testKeys[j]);
         }
         for (int j = 10; j < 12; j++) {
-            checkKey(bucket, testKeys[j]);
+            checkKey(keyType, bucket, testKeys[j]);
         }
         // put 0, 5 and 9 back in, and check we have full range
         bucket.putValue(testKeys[0], 110);
@@ -156,7 +170,7 @@ class BucketTest {
         bucket.putValue(testKeys[9], 119);
         assertEquals(12, bucket.getBucketEntryCount(), "Check we have correct count");
         for (int j = 0; j < 12; j++) {
-            checkKey(bucket, testKeys[j]);
+            checkKey(keyType, bucket, testKeys[j]);
         }
     }
 
@@ -164,22 +178,21 @@ class BucketTest {
     @EnumSource(KeyType.class)
     void testBucketGrowing(KeyType keyType) {
         // create some keys to test with
-        final VirtualLongKey[] testKeys = new VirtualLongKey[420];
+        final VirtualKey[] testKeys = new VirtualKey[420];
         for (int i = 0; i < testKeys.length; i++) {
-            //			testKeys[i] = new ExampleLongKeyFixedSize(i+10);
             testKeys[i] = keyType.keyConstructor.apply((long) (i + 10));
         }
         // create a bucket
-        final Bucket<VirtualLongKey> bucket = new Bucket<>(keyType.keySerializer);
+        final Bucket<VirtualKey> bucket = new Bucket<>(keyType.keySerializer);
         assertEquals(0, bucket.getBucketEntryCount(), "Check we start with empty bucket");
         // insert keys and check
         for (int i = 0; i < testKeys.length; i++) {
-            final VirtualLongKey key = testKeys[i];
-            bucket.putValue(key, key.getKeyAsLong() + 100);
+            final VirtualKey key = testKeys[i];
+            bucket.putValue(key, keyType.getKeyAsLong(key) + 100);
             assertEquals(i + 1, bucket.getBucketEntryCount(), "Check we have correct count");
             // check that all keys added so far are there
             for (int j = 0; j <= i; j++) {
-                checkKey(bucket, testKeys[j]);
+                checkKey(keyType, bucket, testKeys[j]);
             }
         }
         assertEquals(testKeys.length, bucket.getBucketEntryCount(), "Check we have correct count");
@@ -189,22 +202,21 @@ class BucketTest {
     @EnumSource(KeyType.class)
     void testBucketImportExportClear(KeyType keyType) throws IOException {
         // create some keys to test with
-        final VirtualLongKey[] testKeys = new VirtualLongKey[50];
+        final VirtualKey[] testKeys = new VirtualKey[50];
         for (int i = 0; i < testKeys.length; i++) {
-            //			testKeys[i] = new ExampleLongKeyFixedSize(i+10);
             testKeys[i] = keyType.keyConstructor.apply((long) (i + 10));
         }
         // create a bucket
-        final Bucket<VirtualLongKey> bucket = new Bucket<>(keyType.keySerializer);
+        final Bucket<VirtualKey> bucket = new Bucket<>(keyType.keySerializer);
         assertEquals(0, bucket.getBucketEntryCount(), "Check we start with empty bucket");
         // insert keys and check
         for (int i = 0; i < testKeys.length; i++) {
-            final VirtualLongKey key = testKeys[i];
-            bucket.putValue(key, key.getKeyAsLong() + 100);
+            final VirtualKey key = testKeys[i];
+            bucket.putValue(key, keyType.getKeyAsLong(key) + 100);
             assertEquals(i + 1, bucket.getBucketEntryCount(), "Check we have correct count");
             // check that all keys added so far are there
             for (int j = 0; j <= i; j++) {
-                checkKey(bucket, testKeys[j]);
+                checkKey(keyType, bucket, testKeys[j]);
             }
         }
         assertEquals(testKeys.length, bucket.getBucketEntryCount(), "Check we have correct count");
@@ -222,12 +234,12 @@ class BucketTest {
                 goodBytesStr, Arrays.toString(bbuf.getBytes(0, bbuf.length()).toByteArray()), "Expect bytes to match");
 
         // create new bucket with good bytes and check it is the same
-        final Bucket<VirtualLongKey> bucket2 = new Bucket<>(keyType.keySerializer);
+        final Bucket<VirtualKey> bucket2 = new Bucket<>(keyType.keySerializer);
         bucket2.readFrom(BufferedData.wrap(goodBytes));
         assertEquals(bucket.toString(), bucket2.toString(), "Expect bucket toStrings to match");
 
         // test clear
-        final Bucket<VirtualLongKey> bucket3 = new Bucket<>(keyType.keySerializer);
+        final Bucket<VirtualKey> bucket3 = new Bucket<>(keyType.keySerializer);
         bucket.clear();
         assertEquals(bucket3.toString(), bucket.toString(), "Expect bucket toStrings to match");
     }
@@ -258,16 +270,16 @@ class BucketTest {
     @ParameterizedTest
     @EnumSource(KeyType.class)
     void emptyParsedBucketToBucketIndexZero(final KeyType keyType) throws IOException {
-        final Bucket<VirtualLongKey> inBucket = new ParsedBucket<>(keyType.keySerializer);
-        final VirtualLongKey key1 = keyType.keyConstructor.apply(1L);
-        final VirtualLongKey key2 = keyType.keyConstructor.apply(2L);
+        final Bucket<VirtualKey> inBucket = new ParsedBucket<>(keyType.keySerializer);
+        final VirtualKey key1 = keyType.keyConstructor.apply(1L);
+        final VirtualKey key2 = keyType.keyConstructor.apply(2L);
         inBucket.setBucketIndex(0);
         inBucket.putValue(key1, 2);
         inBucket.putValue(key2, 1);
         final BufferedData buf = BufferedData.allocate(inBucket.sizeInBytes());
         inBucket.writeTo(buf);
         buf.reset();
-        final Bucket<VirtualLongKey> outBucket = new Bucket<>(keyType.keySerializer);
+        final Bucket<VirtualKey> outBucket = new Bucket<>(keyType.keySerializer);
         outBucket.readFrom(buf);
         outBucket.putValue(key1, INVALID_VALUE);
         outBucket.putValue(key2, INVALID_VALUE);
@@ -280,14 +292,14 @@ class BucketTest {
     @ParameterizedTest
     @EnumSource(KeyType.class)
     void parsedBucketPutIfEqual(final KeyType keyType) throws IOException {
-        final VirtualLongKey key1 = keyType.keyConstructor.apply(1L);
-        final Bucket<VirtualLongKey> bucket = new ParsedBucket<>(keyType.keySerializer, null);
+        final VirtualKey key1 = keyType.keyConstructor.apply(1L);
+        final Bucket<VirtualKey> bucket = new ParsedBucket<>(keyType.keySerializer, null);
         assertDoesNotThrow(() -> bucket.putValue(key1, INVALID_VALUE, 1));
     }
 
-    private void checkKey(Bucket<VirtualLongKey> bucket, VirtualLongKey key) {
+    private void checkKey(KeyType keyType, Bucket<VirtualKey> bucket, VirtualKey key) {
         var findResult =
                 assertDoesNotThrow(() -> bucket.findValue(key.hashCode(), key, -1), "No exception should be thrown");
-        assertEquals(key.getKeyAsLong() + 100, findResult, "Should get expected value");
+        assertEquals(keyType.getKeyAsLong(key) + 100, findResult, "Should get expected value");
     }
 }

@@ -24,7 +24,7 @@ import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyVariableSize;
 import com.swirlds.merkledb.test.fixtures.ExampleLongLongKeyFixedSize;
 import com.swirlds.merkledb.test.fixtures.ExampleLongLongKeyVariableSize;
-import com.swirlds.merkledb.test.fixtures.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualKey;
 
 /**
  * Supports parameterized testing of {@link MerkleDbDataSource} with both fixed- and variable-size
@@ -45,15 +45,14 @@ public enum FilesTestType {
     /** used by files package level tests */
     public final BaseSerializer<long[]> dataItemSerializer;
 
-    public final KeySerializer<? extends VirtualLongKey> keySerializer;
+    public final KeySerializer<? extends VirtualKey> keySerializer;
 
-    FilesTestType(
-            final BaseSerializer<long[]> dataItemSerializer, KeySerializer<? extends VirtualLongKey> keySerializer) {
+    FilesTestType(final BaseSerializer<long[]> dataItemSerializer, KeySerializer<? extends VirtualKey> keySerializer) {
         this.dataItemSerializer = dataItemSerializer;
         this.keySerializer = keySerializer;
     }
 
-    public VirtualLongKey createVirtualLongKey(final int i) {
+    public VirtualKey createVirtualLongKey(final int i) {
         switch (this) {
             case fixed:
             default:

@@ -32,9 +32,9 @@ import com.swirlds.common.io.utility.LegacyTemporaryFileBuilder;
 import com.swirlds.common.test.fixtures.junit.tags.TestComponentTags;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
-import com.swirlds.merkledb.test.fixtures.VirtualLongKey;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -55,7 +55,7 @@ class MerkleDbDataSourceMetricsTest {
     private static final int COUNT = 1_048_576;
     private static final int HASHES_RAM_THRESHOLD = COUNT / 2;
     private static Path testDirectory;
-    private MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource;
+    private MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource;
     private Metrics metrics;
 
     @BeforeAll
@@ -206,7 +206,7 @@ class MerkleDbDataSourceMetricsTest {
                 Integer.valueOf(metric.get(Metric.ValueType.VALUE).toString()));
     }
 
-    public static MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> createDataSource(
+    public static MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> createDataSource(
             final Path testDirectory,
             final String name,
             final TestType testType,

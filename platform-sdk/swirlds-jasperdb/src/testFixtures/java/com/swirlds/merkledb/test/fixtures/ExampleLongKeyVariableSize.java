@@ -22,9 +22,10 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 
-public class ExampleLongKeyVariableSize implements VirtualLongKey {
+public class ExampleLongKeyVariableSize implements VirtualKey {
 
     /** random so that for testing we are sure we are getting same version */
     private static final int CURRENT_SERIALIZATION_VERSION = 8483;
@@ -124,16 +125,6 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
     }
 
     /**
-     * Direct access to the value of this key in its raw long format
-     *
-     * @return the long value of this key
-     */
-    @Override
-    public long getKeyAsLong() {
-        return value;
-    }
-
-    /**
      * Compute number of bytes of non-zero data are there from the least significant side of a long.
      *
      * @param num the long to count non-zero bits for
@@ -197,7 +188,7 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
 
         @Override
         public int getSerializedSize(ExampleLongKeyVariableSize data) {
-            return 1 + computeNonZeroBytes(data.getKeyAsLong());
+            return 1 + computeNonZeroBytes(data.getValue());
         }
 
         @Override
@@ -236,7 +227,7 @@ public class ExampleLongKeyVariableSize implements VirtualLongKey {
             if (numOfBytes >= 3) value |= ((long) buffer.readByte() & 255) << 16;
             if (numOfBytes >= 2) value |= ((long) buffer.readByte() & 255) << 8;
             if (numOfBytes >= 1) value |= ((long) buffer.readByte() & 255);
-            return value == keyToCompare.getKeyAsLong();
+            return value == keyToCompare.getValue();
         }
 
         /** {@inheritDoc} */

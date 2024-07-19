@@ -24,9 +24,10 @@ import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 
-public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
+public class ExampleLongLongKeyVariableSize implements VirtualKey {
 
     /** random so that for testing we are sure we are getting same version */
     private static final int CURRENT_SERIALIZATION_VERSION = 1235;
@@ -165,16 +166,6 @@ public class ExampleLongLongKeyVariableSize implements VirtualLongKey {
     @Override
     public String toString() {
         return "ExampleLongLongKeyVariableSize{" + "value1=" + value1 + ", value2=" + value2 + '}';
-    }
-
-    /**
-     * Direct access to the value of this key in its raw long format
-     *
-     * @return the long value of this key
-     */
-    @Override
-    public long getKeyAsLong() {
-        return value1;
     }
 
     /**

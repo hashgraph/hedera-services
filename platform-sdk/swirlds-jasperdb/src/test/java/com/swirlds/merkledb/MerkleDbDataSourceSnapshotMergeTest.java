@@ -36,9 +36,9 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.MerkleDbTestUtils;
 import com.swirlds.merkledb.test.fixtures.TestType;
-import com.swirlds.merkledb.test.fixtures.VirtualLongKey;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
@@ -107,7 +107,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
             throws IOException, InterruptedException {
         final Path storeDir = Files.createTempDirectory("createMergeSnapshotReadBackImpl");
         final String tableName = "mergeSnapshotReadBack";
-        final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource = testType.dataType()
+        final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource = testType.dataType()
                 .createDataSource(storeDir, tableName, COUNT, hashesRamToDiskThreshold, false, preferDiskBasedIndexes);
         final ExecutorService exec = Executors.newCachedThreadPool();
         try {
@@ -169,11 +169,11 @@ class MerkleDbDataSourceSnapshotMergeTest {
             // the snapshot
             checkData(COUNT2, testType, dataSource);
             // load snapshot and check data
-            final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> snapshotDataSource =
+            final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> snapshotDataSource =
                     testType.dataType().getDataSource(snapshotDir, tableName, false);
             checkData(COUNT, testType, snapshotDataSource);
             // validate all data in the snapshot
-            final DataSourceValidator<VirtualLongKey, ExampleByteArrayVirtualValue> dataSourceValidator =
+            final DataSourceValidator<VirtualKey, ExampleByteArrayVirtualValue> dataSourceValidator =
                     new DataSourceValidator<>(snapshotDataSource);
             assertTrue(dataSourceValidator.validate(), "Validation of snapshot data failed.");
             // close and cleanup snapshot
@@ -319,7 +319,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
     }
 
     private static void populateDataSource(
-            TestType testType, MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource)
+            TestType testType, MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource)
             throws IOException {
         final int count = COUNT / 10;
         for (int batch = 0; batch < 10; batch++) {
@@ -354,7 +354,7 @@ class MerkleDbDataSourceSnapshotMergeTest {
     private static void checkData(
             final int count,
             final TestType testType,
-            final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource)
+            final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource)
             throws IOException {
         System.out.println("checking internal nodes 0 to " + (count - 1) + " and leaves from " + count + " to "
                 + ((count * 2) - 1));

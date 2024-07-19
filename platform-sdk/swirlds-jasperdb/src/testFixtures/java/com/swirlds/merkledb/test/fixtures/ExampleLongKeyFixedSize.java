@@ -23,9 +23,10 @@ import com.swirlds.common.FastCopyable;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.merkledb.serialize.KeySerializer;
+import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 
-public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
+public class ExampleLongKeyFixedSize implements VirtualKey, FastCopyable {
 
     private static final long CLASS_ID = 0x6ec21ff5ab56811fL;
 
@@ -79,10 +80,9 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
     public boolean equals(final Object o) {
         if (this == o) {
             return true;
-        } else if (!(o instanceof ExampleLongKeyFixedSize)) {
+        } else if (!(o instanceof ExampleLongKeyFixedSize that)) {
             return false;
         } else {
-            final ExampleLongKeyFixedSize that = (ExampleLongKeyFixedSize) o;
             return this.value == that.value;
         }
     }
@@ -90,11 +90,6 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
     @Override
     public String toString() {
         return "LongVirtualKey{" + "value=" + value + ", hashCode=" + hashCode + '}';
-    }
-
-    @Override
-    public long getKeyAsLong() {
-        return value;
     }
 
     public static class Serializer implements KeySerializer<ExampleLongKeyFixedSize> {
@@ -129,7 +124,7 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
 
         @Override
         public void serialize(ExampleLongKeyFixedSize data, WritableSequentialData out) {
-            out.writeLong(data.getKeyAsLong());
+            out.writeLong(data.getValue());
         }
 
         /**
@@ -147,7 +142,7 @@ public class ExampleLongKeyFixedSize implements VirtualLongKey, FastCopyable {
         @Override
         public boolean equals(BufferedData buffer, ExampleLongKeyFixedSize keyToCompare) {
             final long readKey = buffer.readLong();
-            return readKey == keyToCompare.getKeyAsLong();
+            return readKey == keyToCompare.getValue();
         }
 
         /** {@inheritDoc} */
