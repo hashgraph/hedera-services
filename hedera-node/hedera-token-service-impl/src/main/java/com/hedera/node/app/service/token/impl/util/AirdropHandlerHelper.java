@@ -27,7 +27,7 @@ import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.AccountAirdrop;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -192,26 +192,26 @@ public class AirdropHandlerHelper {
     }
 
     /**
-     * Creates a {@link AccountAirdrop} for a fungible token.
+     * Creates a {@link AccountPendingAirdrop} for a fungible token.
      *
      * @param pendingAirdropValue the amount of fungible token
-     * @return {@link AccountAirdrop} for storing in the state
+     * @return {@link AccountPendingAirdrop} for storing in the state
      */
-    public static AccountAirdrop createAccountAirdrop(
+    public static AccountPendingAirdrop createAccountAirdrop(
             PendingAirdropId pendingAirdropId, PendingAirdropValue pendingAirdropValue) {
         return createAccountAirdrop(pendingAirdropId, pendingAirdropValue, null);
     }
 
     /**
-     * Creates a {@link AccountAirdrop} for a fungible token.
+     * Creates a {@link AccountPendingAirdrop} for a fungible token.
      *
      * @param pendingAirdropValue the amount of fungible token
-     * @return {@link AccountAirdrop} for storing in the state
+     * @return {@link AccountPendingAirdrop} for storing in the state
      */
-    public static AccountAirdrop createAccountAirdrop(
+    public static AccountPendingAirdrop createAccountAirdrop(
             PendingAirdropId pendingAirdropId, PendingAirdropValue pendingAirdropValue, PendingAirdropId next) {
-        return AccountAirdrop.newBuilder()
-                .pendingAirdropId(pendingAirdropId)
+        return AccountPendingAirdrop.newBuilder()
+                // .pendingAirdropId(pendingAirdropId)
                 .pendingAirdropValue(pendingAirdropValue)
                 .nextAirdrop(next)
                 .build();

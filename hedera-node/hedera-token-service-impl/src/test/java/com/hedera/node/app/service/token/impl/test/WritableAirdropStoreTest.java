@@ -27,7 +27,7 @@ import com.hedera.hapi.node.base.NftID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.state.token.AccountAirdrop;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.test.handlers.util.StateBuilderUtil;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
@@ -54,14 +54,15 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
     @Mock
     private StoreMetricsService storeMetricsService;
 
-    private MapWritableKVState<PendingAirdropId, AccountAirdrop> writableAirdropState;
+    private MapWritableKVState<PendingAirdropId, AccountPendingAirdrop> writableAirdropState;
 
     private WritableAirdropStore subject;
 
     @BeforeEach
     public void setUp() {
         writableAirdropState = emptyWritableAirdropStateBuilder().build();
-        given(writableStates.<PendingAirdropId, AccountAirdrop>get(AIRDROPS)).willReturn(writableAirdropState);
+        given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(writableAirdropState);
         subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
     }
 
@@ -90,7 +91,8 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
         writableAirdropState = emptyWritableAirdropStateBuilder()
                 .value(airdropId, accountAirdrop)
                 .build();
-        given(writableStates.<PendingAirdropId, AccountAirdrop>get(AIRDROPS)).willReturn(writableAirdropState);
+        given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(writableAirdropState);
         subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
 
         final var newAirdropValue = airdropWithValue(20);
@@ -118,7 +120,8 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
                 writableAirdropState = emptyWritableAirdropStateBuilder()
                         .value(nftId, accountAirdrop)
                         .build());
-        given(writableStates.<PendingAirdropId, AccountAirdrop>get(AIRDROPS)).willReturn(writableAirdropState);
+        given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(writableAirdropState);
         subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
 
         assertThat(writableAirdropState.contains(nftId)).isTrue();
@@ -147,7 +150,8 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
         assertThat(writableAirdropState.contains(fungibleAirdropToRemove)).isTrue();
         assertThat(writableAirdropState.contains(nftToRemove)).isTrue();
 
-        given(writableStates.<PendingAirdropId, AccountAirdrop>get(AIRDROPS)).willReturn(writableAirdropState);
+        given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(writableAirdropState);
         subject = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
 
         assertThat(subject.exists(fungibleAirdropToRemove)).isTrue();
@@ -231,10 +235,10 @@ class WritableAirdropStoreTest extends StateBuilderUtil {
         return PendingAirdropValue.newBuilder().amount(value).build();
     }
 
-    private AccountAirdrop accountAirdropWith(
+    private AccountPendingAirdrop accountAirdropWith(
             PendingAirdropId pendingAirdropId, PendingAirdropValue pendingAirdropValue) {
-        return AccountAirdrop.newBuilder()
-                .pendingAirdropId(pendingAirdropId)
+        return AccountPendingAirdrop.newBuilder()
+                // .pendingAirdropId(pendingAirdropId)
                 .pendingAirdropValue(pendingAirdropValue)
                 .build();
     }

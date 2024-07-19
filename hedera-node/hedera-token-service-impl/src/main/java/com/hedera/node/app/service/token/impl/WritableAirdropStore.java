@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
-import com.hedera.hapi.node.state.token.AccountAirdrop;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.config.data.TokensConfig;
 import com.swirlds.config.api.Configuration;
@@ -41,7 +41,7 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     /**
      * The underlying data storage class that holds the Pending Airdrops data.
      */
-    private final WritableKVState<PendingAirdropId, AccountAirdrop> airdropState;
+    private final WritableKVState<PendingAirdropId, AccountPendingAirdrop> airdropState;
 
     /**
      * Create a new {@link WritableAirdropStore} instance.
@@ -61,14 +61,14 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     }
 
     /**
-     * Persists a new {@link PendingAirdropId} with given {@link AccountAirdrop} into the state,
+     * Persists a new {@link PendingAirdropId} with given {@link AccountPendingAirdrop} into the state,
      * as well as exporting its ID to the transaction receipt. If there is existing
      * airdrop with the same id we add the value to the existing drop.
      *
      * @param airdropId    - the airdropId to be persisted.
      * @param accountAirdrop - the account airdrop mapping for the given airdropId to be persisted.
      */
-    public void put(@NonNull final PendingAirdropId airdropId, @NonNull final AccountAirdrop accountAirdrop) {
+    public void put(@NonNull final PendingAirdropId airdropId, @NonNull final AccountPendingAirdrop accountAirdrop) {
         requireNonNull(airdropId);
         requireNonNull(accountAirdrop);
 
@@ -94,14 +94,14 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     }
 
     /**
-     * Updates given {@link PendingAirdropId} with new {@link AccountAirdrop} value the state,
+     * Updates given {@link PendingAirdropId} with new {@link AccountPendingAirdrop} value the state,
      * as well as exporting its ID to the transaction receipt. If there is no existing
      * airdrop with the same id do nothing.
      *
      * @param airdropId    - the airdropId to be updated.
      * @param accountAirdrop - the account airdrop mapping for the given airdropId to be updated.
      */
-    public void patch(@NonNull final PendingAirdropId airdropId, @NonNull final AccountAirdrop accountAirdrop) {
+    public void patch(@NonNull final PendingAirdropId airdropId, @NonNull final AccountPendingAirdrop accountAirdrop) {
         requireNonNull(airdropId);
         requireNonNull(accountAirdrop);
 
@@ -120,7 +120,7 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
     }
 
     /**
-     * Returns the {@link AccountAirdrop} with the given airdrop id. If the airdrop contains only NFT return {@code null}.
+     * Returns the {@link AccountPendingAirdrop} with the given airdrop id. If the airdrop contains only NFT return {@code null}.
      * If no such airdrop exists, returns {@code null}
      *
      * @param airdropId - the id of the airdrop, which value should be retrieved
@@ -128,7 +128,7 @@ public class WritableAirdropStore extends ReadableAirdropStoreImpl {
      * airdrop exists
      */
     @Nullable
-    public AccountAirdrop getForModify(@NonNull final PendingAirdropId airdropId) {
+    public AccountPendingAirdrop getForModify(@NonNull final PendingAirdropId airdropId) {
         requireNonNull(airdropId);
         return airdropState.getForModify(airdropId);
     }
