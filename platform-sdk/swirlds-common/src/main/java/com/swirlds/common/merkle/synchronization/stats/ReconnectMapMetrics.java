@@ -29,6 +29,10 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
 
     private static final String RECONNECT_MAP_CATEGORY = "reconnect_vmap";
 
+    /** A map label as passed to the constructor, w/o any normalization. */
+    @Nullable
+    private final String originalLabel;
+
     private final ReconnectMapStats aggregateStats;
 
     private final Counter transfersFromTeacher;
@@ -57,6 +61,7 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
             @Nullable final String originalLabel,
             @Nullable final ReconnectMapStats aggregateStats) {
         Objects.requireNonNull(metrics, "metrics must not be null");
+        this.originalLabel = originalLabel;
         this.aggregateStats = aggregateStats;
         // Normalize the label
         final String label = originalLabel == null ? null : originalLabel.replace('.', '_');
@@ -166,5 +171,31 @@ public class ReconnectMapMetrics implements ReconnectMapStats {
         if (aggregateStats != null) {
             aggregateStats.incrementLeafData(dataNum, cleanDataNum);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String format() {
+        final StringBuilder sb = new StringBuilder("ReconnectMapMetrics: ");
+
+        if (originalLabel != null) {
+            sb.append("label=").append(originalLabel).append("; ");
+        }
+
+        sb.append("transfersFromTeacher=").append(transfersFromTeacher.get()).append("; ");
+        sb.append("transfersFromLearner=").append(transfersFromLearner.get()).append("; ");
+
+        sb.append("internalHashes=").append(internalHashes.get()).append("; ");
+        sb.append("internalCleanHashes=").append(internalCleanHashes.get()).append("; ");
+        sb.append("internalData=").append(internalData.get()).append("; ");
+        sb.append("internalCleanData=").append(internalCleanData.get()).append("; ");
+        sb.append("leafHashes=").append(leafHashes.get()).append("; ");
+        sb.append("leafCleanHashes=").append(leafCleanHashes.get()).append("; ");
+        sb.append("leafData=").append(leafData.get()).append("; ");
+        sb.append("leafCleanData=").append(leafCleanData.get());
+
+        return sb.toString();
     }
 }

@@ -427,8 +427,7 @@ class CryptoDeleteHandlerTest extends CryptoHandlerTestBase {
         final var txn = deleteAccountTransaction(deleteAccountId, transferAccountId);
         given(handleContext.body()).willReturn(txn);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
-        final var impl = new TokenServiceApiImpl(
-                configuration, storeMetricsService, stakingValidator, writableStates, op -> false);
+        final var impl = new TokenServiceApiImpl(configuration, storeMetricsService, writableStates, op -> false);
         given(serviceApiFactory.serviceApi(TokenServiceApi.class)).willReturn(impl);
     }
 }

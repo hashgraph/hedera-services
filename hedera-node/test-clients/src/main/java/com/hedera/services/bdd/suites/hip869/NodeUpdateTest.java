@@ -21,7 +21,7 @@ import static com.hedera.services.bdd.junit.EmbeddedReason.NEEDS_STATE_ACCESS;
 import static com.hedera.services.bdd.spec.HapiPropertySource.asServiceEndpoint;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.ALL_ZEROS_INVALID_KEY;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.WRONG_LENGTH_EDDSA_KEY;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
@@ -77,7 +77,7 @@ public class NodeUpdateTest {
     final Stream<DynamicTest> updateDeletedNodeFail() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeDelete("testNode"),
                 nodeUpdate("testNode").hasPrecheck(INVALID_NODE_ID));
     }
@@ -86,10 +86,10 @@ public class NodeUpdateTest {
     final Stream<DynamicTest> validateAdminKey() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode").adminKey(NONSENSE_KEY).hasPrecheck(KEY_REQUIRED),
                 nodeUpdate("testNode")
-                        .adminKey(ALL_ZEROS_INVALID_KEY)
+                        .adminKey(WRONG_LENGTH_EDDSA_KEY)
                         .signedBy(GENESIS)
                         .hasPrecheck(INVALID_ADMIN_KEY));
     }
@@ -98,7 +98,7 @@ public class NodeUpdateTest {
     final Stream<DynamicTest> updateEmptyGossipCaCertificateFail() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode").gossipCaCertificate("").hasPrecheck(INVALID_GOSSIP_CA_CERTIFICATE));
     }
 
@@ -106,7 +106,7 @@ public class NodeUpdateTest {
     final Stream<DynamicTest> updateAccountIdNotAllowed() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode").accountId("0.0.100").hasPrecheck(UPDATE_NODE_ACCOUNT_NOT_ALLOWED));
     }
 
@@ -114,7 +114,7 @@ public class NodeUpdateTest {
     final Stream<DynamicTest> validateGossipEndpoint() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .gossipEndpoint(List.of(asServiceEndpoint("127.0.0.1:80")))
@@ -143,7 +143,7 @@ public class NodeUpdateTest {
     final Stream<DynamicTest> validateServiceEndpoint() {
         return hapiTest(
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .serviceEndpoint(List.of(
@@ -160,7 +160,7 @@ public class NodeUpdateTest {
         return hapiTest(
                 newKeyNamed("adminKey"),
                 newKeyNamed("adminKey2"),
-                nodeCreate("testNode").description("description to be changed").adminKeyName("adminKey"),
+                nodeCreate("testNode").description("description to be changed").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .description("updated description")
@@ -203,7 +203,7 @@ public class NodeUpdateTest {
                         newKeyNamed("adminKey"),
                         cryptoCreate("payer").balance(10_000_000_000L),
                         nodeCreate("ntb")
-                                .adminKeyName("adminKey")
+                                .adminKey("adminKey")
                                 .description(description)
                                 .fee(ONE_HBAR)
                                 .via("nodeCreation"),
@@ -222,7 +222,7 @@ public class NodeUpdateTest {
         return hapiTest(
                 overriding("nodes.maxServiceEndpoint", "2"),
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .serviceEndpoint(List.of(
@@ -237,7 +237,7 @@ public class NodeUpdateTest {
         return hapiTest(
                 overriding("nodes.maxGossipEndpoint", "2"),
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .gossipEndpoint(List.of(
@@ -252,7 +252,7 @@ public class NodeUpdateTest {
         return hapiTest(
                 overriding("nodes.nodeMaxDescriptionUtf8Bytes", "3"),
                 newKeyNamed("adminKey"),
-                nodeCreate("testNode").adminKeyName("adminKey"),
+                nodeCreate("testNode").adminKey("adminKey"),
                 nodeUpdate("testNode")
                         .adminKey("adminKey")
                         .description("toolarge")
