@@ -18,6 +18,7 @@ module com.swirlds.platform.base.example {
     requires com.swirlds.metrics.api;
     requires com.fasterxml.jackson.databind;
     requires com.google.common;
+    requires com.hedera.nativesupport;
     requires jdk.httpserver;
     requires jdk.management;
     requires org.apache.logging.log4j;
