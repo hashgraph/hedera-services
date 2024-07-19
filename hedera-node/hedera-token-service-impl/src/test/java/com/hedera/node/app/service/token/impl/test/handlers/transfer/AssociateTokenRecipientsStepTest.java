@@ -22,8 +22,6 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -96,17 +94,6 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         assertThat(writableTokenRelStore.get(ownerId, nonFungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, fungibleTokenId)).isNotNull();
         assertThat(writableTokenRelStore.get(spenderId, nonFungibleTokenId)).isNotNull();
-    }
-
-    @Test
-    void autoAssociationsDispatchSyntheticTransaction() {
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        final var modifiedConfiguration = HederaTestConfigBuilder.create().getOrCreateConfig();
-        given(handleContext.configuration()).willReturn(modifiedConfiguration);
-        given(handleContext.storeFactory()).willReturn(storeFactory);
-        subject.doIn(transferContext);
-
-        verify(handleContext, times(1)).dispatchRemovablePrecedingTransaction(any(), any(), any(), any());
     }
 
     void givenValidTxn() {

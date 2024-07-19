@@ -19,6 +19,7 @@ package com.hedera.services.bdd.suites.contract.precompile;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiPropertySource.idAsHeadlongAddress;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
 import static com.hedera.services.bdd.spec.assertions.ContractFnResultAsserts.resultWith;
 import static com.hedera.services.bdd.spec.assertions.TransactionRecordAsserts.recordWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.CONTRACT;
@@ -45,7 +46,7 @@ import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.childRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.emptyChildRecordsCheck;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS;
@@ -54,12 +55,16 @@ import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.NON
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
+import static com.hedera.services.bdd.suites.HapiSuite.TOKEN_TREASURY;
 import static com.hedera.services.bdd.suites.contract.Utils.asAddress;
 import static com.hedera.services.bdd.suites.contract.Utils.assertTxnRecordHasNoTraceabilityEnrichedContractFnResult;
 import static com.hedera.services.bdd.suites.contract.Utils.expectedPrecompileGasFor;
 import static com.hedera.services.bdd.suites.contract.Utils.getNestedContractAddress;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS;
 import static com.hedera.services.bdd.suites.contract.precompile.V1SecurityModelOverrides.CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF;
+import static com.hedera.services.bdd.suites.crypto.CryptoApproveAllowanceSuite.NON_FUNGIBLE_TOKEN;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.GAS_TO_OFFER;
+import static com.hedera.services.bdd.suites.leaky.LeakyContractTestsSuite.RECIPIENT;
 import static com.hedera.services.bdd.suites.utils.MiscEETUtils.genRandomBytes;
 import static com.hedera.services.bdd.suites.utils.contracts.FunctionParameters.functionParameters;
 import static com.hedera.services.bdd.suites.utils.contracts.precompile.HTSPrecompileResult.htsPrecompileResult;
@@ -72,8 +77,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.REVERTED_SUCCE
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 
+import com.hedera.node.app.hapi.utils.contracts.ParsingConstants;
 import com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FunctionType;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.assertions.NonFungibleTransfers;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil;
@@ -92,22 +99,157 @@ public class ContractMintHTSSuite {
     private static final long TOTAL_SUPPLY = 1_000;
     private static final String CONTRACT_KEY = "ContractKey";
     private static final String TOKEN_TREASURY = "treasury";
-    private static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE =
-            KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
+    public static final KeyShape DELEGATE_CONTRACT_KEY_SHAPE = KeyShape.threshOf(1, KeyShape.SIMPLE, DELEGATE_CONTRACT);
     private static final String DELEGATE_KEY = "DelegateKey";
     private static final String MULTI_KEY = "purpose";
 
     public static final String MINT_CONTRACT = "MintContract";
     public static final String NEGATIVE_MINT_CONTRACT = "NegativeMintContract";
     public static final String MINT_NFT_CONTRACT = "MintNFTContract";
-    private static final String NESTED_MINT_CONTRACT = "NestedMint";
+    public static final String NESTED_MINT_CONTRACT = "NestedMint";
     private static final String ACCOUNT = "anybody";
-    private static final String DELEGATE_CONTRACT_KEY_NAME = "contractKey";
+    public static final String DELEGATE_CONTRACT_KEY_NAME = "contractKey";
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
     private static final String NON_FUNGIBLE_TOKEN = "nonFungibleToken";
-    private static final String TEST_METADATA_1 = "Test metadata 1";
-    private static final String TEST_METADATA_2 = "Test metadata 2";
+    public static final String TEST_METADATA_1 = "Test metadata 1";
+    public static final String TEST_METADATA_2 = "Test metadata 2";
     private static final String RECIPIENT = "recipient";
+
+    @LeakyHapiTest
+    final Stream<DynamicTest> transferNftAfterNestedMint() {
+        final var nestedTransferTxn = "nestedTransferTxn";
+        final var v2SecuritySendNftAfterNestedMint = "v2SecuritySendNftAfterNestedMint";
+
+        return propertyPreservingHapiSpec(
+                        "TransferNftAfterNestedMint",
+                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
+                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(
+                        overridingTwo(
+                                "entities.unlimitedAutoAssociationsEnabled",
+                                "true",
+                                CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS,
+                                CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
+                        newKeyNamed(MULTI_KEY),
+                        cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
+                        cryptoCreate(RECIPIENT).maxAutomaticTokenAssociations(1),
+                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
+                        tokenCreate(NON_FUNGIBLE_TOKEN)
+                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
+                                .supplyType(TokenSupplyType.INFINITE)
+                                .initialSupply(0)
+                                .treasury(TOKEN_TREASURY)
+                                .adminKey(MULTI_KEY)
+                                .supplyKey(MULTI_KEY),
+                        uploadInitCode(NESTED_MINT_CONTRACT, MINT_NFT_CONTRACT),
+                        contractCreate(MINT_NFT_CONTRACT).gas(GAS_TO_OFFER))
+                .when(withOpContext((spec, opLog) -> allRunFor(
+                        spec,
+                        contractCreate(
+                                        NESTED_MINT_CONTRACT,
+                                        asHeadlongAddress(getNestedContractAddress(MINT_NFT_CONTRACT, spec)),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
+                                .gas(GAS_TO_OFFER),
+                        newKeyNamed(DELEGATE_CONTRACT_KEY_NAME)
+                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, NESTED_MINT_CONTRACT))),
+                        cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_CONTRACT_KEY_NAME),
+                        tokenUpdate(NON_FUNGIBLE_TOKEN)
+                                .supplyKey(DELEGATE_CONTRACT_KEY_NAME)
+                                .signedByPayerAnd(MULTI_KEY),
+                        contractCall(
+                                        NESTED_MINT_CONTRACT,
+                                        "sendNFTAfterMint",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(TOKEN_TREASURY))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                        new byte[][] {TEST_METADATA_1.getBytes()},
+                                        1L)
+                                .payingWith(GENESIS)
+                                .alsoSigningWithFullPrefix(MULTI_KEY)
+                                .via(nestedTransferTxn)
+                                .gas(GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTxnRecord(nestedTransferTxn).andAllChildRecords().logged(),
+                        // Test Case: Account paying and signing a non fungible TOKEN MINT TRANSACTION,
+                        // when the token is minted in the token treasury account
+                        // SIGNER → call → CONTRACT A → delegatecall → CONTRACT B → call → PRECOMPILE
+                        cryptoUpdate(ACCOUNT).key(DELEGATE_CONTRACT_KEY_NAME),
+                        contractCall(
+                                        NESTED_MINT_CONTRACT,
+                                        "sendNFTAfterMint",
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(TOKEN_TREASURY))),
+                                        HapiParserUtil.asHeadlongAddress(
+                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
+                                        new byte[][] {TEST_METADATA_2.getBytes()},
+                                        2L)
+                                .payingWith(TOKEN_TREASURY)
+                                .signedBy(TOKEN_TREASURY)
+                                .via(v2SecuritySendNftAfterNestedMint)
+                                .gas(3 * GAS_TO_OFFER)
+                                .hasKnownStatus(SUCCESS),
+                        getTxnRecord(v2SecuritySendNftAfterNestedMint)
+                                .andAllChildRecords()
+                                .logged(),
+                        // Token total supply should be now 2, both transferred to the RECIPIENT account
+                        getAccountBalance(RECIPIENT).hasTokenBalance(NON_FUNGIBLE_TOKEN, 2L),
+                        getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(2))))
+                .then(
+                        withOpContext((spec, opLog) -> {
+                            if (!spec.isUsingEthCalls()) {
+                                allRunFor(
+                                        spec,
+                                        assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(nestedTransferTxn));
+                            }
+                        }),
+                        withOpContext((spec, opLog) -> {
+                            final var expectedGasUsage =
+                                    expectedPrecompileGasFor(spec, TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
+                            allRunFor(
+                                    spec,
+                                    childRecordsCheck(
+                                            nestedTransferTxn,
+                                            SUCCESS,
+                                            recordWith().status(SUCCESS),
+                                            recordWith()
+                                                    .status(SUCCESS)
+                                                    .contractCallResult(resultWith()
+                                                            .approxGasUsed(expectedGasUsage, 5)
+                                                            .contractCallResult(htsPrecompileResult()
+                                                                    .forFunction(
+                                                                            ParsingConstants.FunctionType.HAPI_MINT)
+                                                                    .withStatus(SUCCESS)
+                                                                    .withTotalSupply(1L)
+                                                                    .withSerialNumbers(1L))
+                                                            .gas(3_836_587L)
+                                                            .amount(0L)
+                                                            .functionParameters(functionParameters()
+                                                                    .forFunction(
+                                                                            FunctionParameters.PrecompileFunction.MINT)
+                                                                    .withTokenAddress(
+                                                                            asAddress(
+                                                                                    spec.registry()
+                                                                                            .getTokenID(
+                                                                                                    NON_FUNGIBLE_TOKEN)))
+                                                                    .withAmount(0L)
+                                                                    .withMetadata(List.of("Test metadata" + " 1"))
+                                                                    .build())),
+                                            recordWith()
+                                                    .status(SUCCESS)
+                                                    .contractCallResult(resultWith()
+                                                            .contractCallResult(htsPrecompileResult()
+                                                                    .withStatus(SUCCESS)))
+                                                    .tokenTransfers(NonFungibleTransfers.changingNFTBalances()
+                                                            .including(
+                                                                    NON_FUNGIBLE_TOKEN,
+                                                                    TOKEN_TREASURY,
+                                                                    RECIPIENT,
+                                                                    1))));
+                        }));
+    }
 
     @HapiTest
     final Stream<DynamicTest> mintTokensWithExtremeValues() {
@@ -326,136 +468,6 @@ public class ContractMintHTSSuite {
                                     getTxnRecord(childTxnId)
                                             .assertingNothingAboutHashes()
                                             .hasPriority(recordWith().status(INVALID_TOKEN_ID)));
-                        }));
-    }
-
-    @HapiTest
-    final Stream<DynamicTest> transferNftAfterNestedMint() {
-        final var nestedTransferTxn = "nestedTransferTxn";
-        final var v2SecuritySendNftAfterNestedMint = "v2SecuritySendNftAfterNestedMint";
-
-        return defaultHapiSpec(
-                        "TransferNftAfterNestedMint",
-                        NONDETERMINISTIC_CONSTRUCTOR_PARAMETERS,
-                        NONDETERMINISTIC_FUNCTION_PARAMETERS)
-                .given(
-                        overriding(CONTRACTS_MAX_NUM_WITH_HAPI_SIGS_ACCESS, CONTRACTS_V2_SECURITY_MODEL_BLOCK_CUTOFF),
-                        newKeyNamed(MULTI_KEY),
-                        cryptoCreate(ACCOUNT).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(RECIPIENT).maxAutomaticTokenAssociations(1),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_MILLION_HBARS),
-                        tokenCreate(NON_FUNGIBLE_TOKEN)
-                                .tokenType(TokenType.NON_FUNGIBLE_UNIQUE)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .initialSupply(0)
-                                .treasury(TOKEN_TREASURY)
-                                .adminKey(MULTI_KEY)
-                                .supplyKey(MULTI_KEY),
-                        uploadInitCode(NESTED_MINT_CONTRACT, MINT_NFT_CONTRACT),
-                        contractCreate(MINT_NFT_CONTRACT).gas(GAS_TO_OFFER))
-                .when(withOpContext((spec, opLog) -> allRunFor(
-                        spec,
-                        contractCreate(
-                                        NESTED_MINT_CONTRACT,
-                                        asHeadlongAddress(getNestedContractAddress(MINT_NFT_CONTRACT, spec)),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getTokenID(NON_FUNGIBLE_TOKEN))))
-                                .gas(GAS_TO_OFFER),
-                        newKeyNamed(DELEGATE_CONTRACT_KEY_NAME)
-                                .shape(DELEGATE_CONTRACT_KEY_SHAPE.signedWith(sigs(ON, NESTED_MINT_CONTRACT))),
-                        cryptoUpdate(TOKEN_TREASURY).key(DELEGATE_CONTRACT_KEY_NAME),
-                        tokenUpdate(NON_FUNGIBLE_TOKEN)
-                                .supplyKey(DELEGATE_CONTRACT_KEY_NAME)
-                                .signedByPayerAnd(MULTI_KEY),
-                        contractCall(
-                                        NESTED_MINT_CONTRACT,
-                                        "sendNFTAfterMint",
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(TOKEN_TREASURY))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                        new byte[][] {TEST_METADATA_1.getBytes()},
-                                        1L)
-                                .payingWith(GENESIS)
-                                .alsoSigningWithFullPrefix(MULTI_KEY)
-                                .via(nestedTransferTxn)
-                                .gas(GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS),
-                        getTxnRecord(nestedTransferTxn).andAllChildRecords().logged(),
-                        // Test Case: Account paying and signing a non fungible TOKEN MINT TRANSACTION,
-                        // when the token is minted in the token treasury account
-                        // SIGNER → call → CONTRACT A → delegatecall → CONTRACT B → call → PRECOMPILE
-                        cryptoUpdate(ACCOUNT).key(DELEGATE_CONTRACT_KEY_NAME),
-                        contractCall(
-                                        NESTED_MINT_CONTRACT,
-                                        "sendNFTAfterMint",
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(TOKEN_TREASURY))),
-                                        HapiParserUtil.asHeadlongAddress(
-                                                asAddress(spec.registry().getAccountID(RECIPIENT))),
-                                        new byte[][] {TEST_METADATA_2.getBytes()},
-                                        2L)
-                                .payingWith(TOKEN_TREASURY)
-                                .signedBy(TOKEN_TREASURY)
-                                .via(v2SecuritySendNftAfterNestedMint)
-                                .gas(3 * GAS_TO_OFFER)
-                                .hasKnownStatus(SUCCESS),
-                        getTxnRecord(v2SecuritySendNftAfterNestedMint)
-                                .andAllChildRecords()
-                                .logged(),
-                        // Token total supply should be now 2, both transferred to the RECIPIENT account
-                        getAccountBalance(RECIPIENT).hasTokenBalance(NON_FUNGIBLE_TOKEN, 2L),
-                        getTokenInfo(NON_FUNGIBLE_TOKEN).hasTotalSupply(2))))
-                .then(
-                        withOpContext((spec, opLog) -> {
-                            if (!spec.isUsingEthCalls()) {
-                                allRunFor(
-                                        spec,
-                                        assertTxnRecordHasNoTraceabilityEnrichedContractFnResult(nestedTransferTxn));
-                            }
-                        }),
-                        withOpContext((spec, opLog) -> {
-                            final var expectedGasUsage =
-                                    expectedPrecompileGasFor(spec, TokenMint, TOKEN_NON_FUNGIBLE_UNIQUE);
-                            allRunFor(
-                                    spec,
-                                    childRecordsCheck(
-                                            nestedTransferTxn,
-                                            SUCCESS,
-                                            recordWith().status(SUCCESS),
-                                            recordWith()
-                                                    .status(SUCCESS)
-                                                    .contractCallResult(resultWith()
-                                                            .approxGasUsed(expectedGasUsage, 5)
-                                                            .contractCallResult(htsPrecompileResult()
-                                                                    .forFunction(FunctionType.HAPI_MINT)
-                                                                    .withStatus(SUCCESS)
-                                                                    .withTotalSupply(1L)
-                                                                    .withSerialNumbers(1L))
-                                                            .gas(3_836_587L)
-                                                            .amount(0L)
-                                                            .functionParameters(functionParameters()
-                                                                    .forFunction(
-                                                                            FunctionParameters.PrecompileFunction.MINT)
-                                                                    .withTokenAddress(
-                                                                            asAddress(
-                                                                                    spec.registry()
-                                                                                            .getTokenID(
-                                                                                                    NON_FUNGIBLE_TOKEN)))
-                                                                    .withAmount(0L)
-                                                                    .withMetadata(List.of("Test metadata" + " 1"))
-                                                                    .build())),
-                                            recordWith()
-                                                    .status(SUCCESS)
-                                                    .contractCallResult(resultWith()
-                                                            .contractCallResult(htsPrecompileResult()
-                                                                    .withStatus(SUCCESS)))
-                                                    .tokenTransfers(NonFungibleTransfers.changingNFTBalances()
-                                                            .including(
-                                                                    NON_FUNGIBLE_TOKEN,
-                                                                    TOKEN_TREASURY,
-                                                                    RECIPIENT,
-                                                                    1))));
                         }));
     }
 

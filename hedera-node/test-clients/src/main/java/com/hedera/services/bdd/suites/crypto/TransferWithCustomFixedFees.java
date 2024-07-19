@@ -1761,6 +1761,7 @@ public class TransferWithCustomFixedFees {
                             tokenAssociate(hollowAccountCollector, feeDenom)
                                     .payingWith(SECP_256K1_SOURCE_KEY)
                                     .sigMapPrefixes(uniqueWithFullPrefixesFor(SECP_256K1_SOURCE_KEY))
+                                    .fee(ONE_HBAR)
                                     .via(TRANSFER_TXN_2),
                             tokenCreate(nonFungibleToken)
                                     .treasury(tokenTreasury)

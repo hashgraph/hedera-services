@@ -25,4 +25,4 @@ public record EntitiesConfig(
         @ConfigProperty(defaultValue = "8000001") @NetworkProperty long maxLifetime,
         // @ConfigProperty(defaultValue = "FILE") Set<EntityType> systemDeletable
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean limitTokenAssociations,
-        @ConfigProperty(defaultValue = "true") @NetworkProperty boolean unlimitedAutoAssociationsEnabled) {}
+        @ConfigProperty(defaultValue = "false") @NetworkProperty boolean unlimitedAutoAssociationsEnabled) {}

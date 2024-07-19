@@ -45,7 +45,7 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewAccount;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingThree;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
@@ -53,7 +53,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
 import static com.hedera.services.bdd.suites.HapiSuite.CRYPTO_CREATE_WITH_ALIAS_ENABLED;
-import static com.hedera.services.bdd.suites.HapiSuite.FALSE_VALUE;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -215,7 +214,7 @@ public class CryptoCreateSuite {
     }
 
     /* Prior to 0.13.0, a "canonical" CryptoCreate (one sig, 3 month auto-renew) cost 1¢. */
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
+    @HapiTest
     final Stream<DynamicTest> usdFeeAsExpected() {
         double preV13PriceUsd = 0.01;
         double v13PriceUsd = 0.05;
@@ -226,15 +225,12 @@ public class CryptoCreateSuite {
         final var noAutoAssocSlots = "noAutoAssocSlots";
         final var oneAutoAssocSlot = "oneAutoAssocSlot";
         final var tenAutoAssocSlots = "tenAutoAssocSlots";
-        final var negativeAutoAssocSlots = "negativeAutoAssocSlots";
-        final var positiveOverflowAutoAssocSlots = "positiveOverflowAutoAssocSlots";
-        final var unlimitedAutoAssocSlots = "unlimitedAutoAssocSlots";
         final var token = "token";
 
         return defaultHapiSpec("usdFeeAsExpected")
                 .given(
-                        cryptoCreate(CIVILIAN).balance(5 * ONE_HUNDRED_HBARS),
-                        getAccountBalance(CIVILIAN).hasTinyBars(5 * ONE_HUNDRED_HBARS))
+                        cryptoCreate(CIVILIAN).balance(ONE_HUNDRED_HBARS),
+                        getAccountBalance(CIVILIAN).hasTinyBars(ONE_HUNDRED_HBARS))
                 .when(
                         tokenCreate(token).autoRenewPeriod(THREE_MONTHS_IN_SECONDS),
                         cryptoCreate("neverToBe")
@@ -245,8 +241,8 @@ public class CryptoCreateSuite {
                                 .payingWith(CIVILIAN)
                                 .feeUsd(preV13PriceUsd)
                                 .hasPrecheck(INSUFFICIENT_TX_FEE),
-                        getAccountBalance(CIVILIAN).hasTinyBars(5 * ONE_HUNDRED_HBARS),
-                        cryptoCreate(noAutoAssocSlots)
+                        getAccountBalance(CIVILIAN).hasTinyBars(ONE_HUNDRED_HBARS),
+                        cryptoCreate("noAutoAssoc")
                                 .key(CIVILIAN)
                                 .balance(0L)
                                 .via(noAutoAssocSlots)
@@ -254,51 +250,22 @@ public class CryptoCreateSuite {
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                                 .signedBy(CIVILIAN)
                                 .payingWith(CIVILIAN),
-                        cryptoCreate(oneAutoAssocSlot)
+                        cryptoCreate("oneAutoAssoc")
                                 .key(CIVILIAN)
                                 .balance(0L)
                                 .maxAutomaticTokenAssociations(1)
                                 .via(oneAutoAssocSlot)
                                 .blankMemo()
+                                .fee(ONE_HBAR)
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                                 .signedBy(CIVILIAN)
                                 .payingWith(CIVILIAN),
-                        cryptoCreate(tenAutoAssocSlots)
+                        cryptoCreate("tenAutoAssoc")
                                 .key(CIVILIAN)
                                 .balance(0L)
                                 .maxAutomaticTokenAssociations(10)
                                 .via(tenAutoAssocSlots)
-                                .blankMemo()
-                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                                .signedBy(CIVILIAN)
-                                .payingWith(CIVILIAN),
-                        cryptoCreate(negativeAutoAssocSlots)
-                                .key(CIVILIAN)
-                                .balance(0L)
-                                .maxAutomaticTokenAssociations(-2)
-                                .via(negativeAutoAssocSlots)
-                                .blankMemo()
-                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                                .signedBy(CIVILIAN)
-                                .payingWith(CIVILIAN)
-                                .logged()
-                                .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        cryptoCreate(positiveOverflowAutoAssocSlots)
-                                .key(CIVILIAN)
-                                .balance(0L)
-                                .maxAutomaticTokenAssociations(5001)
-                                .via(positiveOverflowAutoAssocSlots)
-                                .blankMemo()
-                                .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
-                                .signedBy(CIVILIAN)
-                                .payingWith(CIVILIAN)
-                                .logged()
-                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        cryptoCreate(unlimitedAutoAssocSlots)
-                                .key(CIVILIAN)
-                                .balance(0L)
-                                .maxAutomaticTokenAssociations(-1)
-                                .via(unlimitedAutoAssocSlots)
+                                .fee(ONE_HBAR)
                                 .blankMemo()
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS)
                                 .signedBy(CIVILIAN)
@@ -306,38 +273,8 @@ public class CryptoCreateSuite {
                         getTxnRecord(tenAutoAssocSlots).logged())
                 .then(
                         validateChargedUsd(noAutoAssocSlots, v13PriceUsd),
-                        getAccountInfo(noAutoAssocSlots).hasMaxAutomaticAssociations(0),
-                        validateChargedUsd(oneAutoAssocSlot, v13PriceUsd),
-                        getAccountInfo(oneAutoAssocSlot).hasMaxAutomaticAssociations(1),
-                        validateChargedUsd(tenAutoAssocSlots, v13PriceUsd),
-                        getAccountInfo(tenAutoAssocSlots).hasMaxAutomaticAssociations(10),
-                        validateChargedUsd(unlimitedAutoAssocSlots, v13PriceUsd),
-                        getAccountInfo(unlimitedAutoAssocSlots).hasMaxAutomaticAssociations(-1));
-    }
-
-    @LeakyHapiTest(PROPERTY_OVERRIDES)
-    final Stream<DynamicTest> createFailsIfMaxAutoAssocIsNegativeAndUnlimitedFlagDisabled() {
-        return propertyPreservingHapiSpec("createFailsIfMaxAutoIsNegativeAndNoUnlimitedAutoAssoc")
-                .preserving("entities.unlimitedAutoAssociationsEnabled")
-                .given(overriding("entities.unlimitedAutoAssociationsEnabled", FALSE_VALUE))
-                .when()
-                .then(
-                        cryptoCreate(CIVILIAN)
-                                .balance(0L)
-                                .maxAutomaticTokenAssociations(-1)
-                                .hasKnownStatus(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        cryptoCreate(CIVILIAN)
-                                .balance(0L)
-                                .maxAutomaticTokenAssociations(-2)
-                                .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        cryptoCreate(CIVILIAN)
-                                .balance(0L)
-                                .maxAutomaticTokenAssociations(-1000)
-                                .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS),
-                        cryptoCreate(CIVILIAN)
-                                .balance(0L)
-                                .maxAutomaticTokenAssociations(Integer.MIN_VALUE)
-                                .hasPrecheck(INVALID_MAX_AUTO_ASSOCIATIONS));
+                        validateChargedUsd(oneAutoAssocSlot, v13PriceUsdOneAutoAssociation),
+                        validateChargedUsd(tenAutoAssocSlots, v13PriceUsdTenAutoAssociations));
     }
 
     @HapiTest
@@ -924,9 +861,19 @@ public class CryptoCreateSuite {
     final Stream<DynamicTest> createAnAccountWithNegativeMaxAutoAssocAndBalance() {
         double v13PriceUsd = 0.05;
         final var negativeAutoAssocSlots = "negativeAutoAssocSlots";
-        return defaultHapiSpec("createAnAccountWithNoMaxAutoAssocAndBalance")
+        return propertyPreservingHapiSpec("createAnAccountWithNoMaxAutoAssocAndBalance")
+                .preserving(
+                        "entities.unlimitedAutoAssociationsEnabled",
+                        CRYPTO_CREATE_WITH_ALIAS_ENABLED,
+                        LAZY_CREATION_ENABLED)
                 .given(
-                        overridingTwo(LAZY_CREATION_ENABLED, TRUE_VALUE, CRYPTO_CREATE_WITH_ALIAS_ENABLED, TRUE_VALUE),
+                        overridingThree(
+                                "entities.unlimitedAutoAssociationsEnabled",
+                                "true",
+                                LAZY_CREATION_ENABLED,
+                                TRUE_VALUE,
+                                CRYPTO_CREATE_WITH_ALIAS_ENABLED,
+                                TRUE_VALUE),
                         newKeyNamed(SECP_256K1_SOURCE_KEY).shape(SECP_256K1_SHAPE),
                         newKeyNamed(ED_KEY).shape(ED25519),
                         cryptoCreate(ED_KEY).balance(ONE_HUNDRED_HBARS),
