@@ -16,7 +16,9 @@
 
 package com.swirlds.crypto.tss;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.swirlds.crypto.signaturescheme.api.PairingPrivateKey;
@@ -28,9 +30,9 @@ class TssParticipantDirectoryTest {
 
     @Test
     void testInvalidThreshold() {
-        TssParticipantDirectory.Builder builder = TssParticipantDirectory.createBuilder();
-        PairingPrivateKey privateKey = mock(PairingPrivateKey.class);
-        PairingPublicKey publicKey = mock(PairingPublicKey.class);
+        final TssParticipantDirectory.Builder builder = TssParticipantDirectory.createBuilder();
+        final PairingPrivateKey privateKey = mock(PairingPrivateKey.class);
+        final PairingPublicKey publicKey = mock(PairingPublicKey.class);
 
         builder.withSelf(1, privateKey);
         builder.withParticipant(1, 1, publicKey);
@@ -38,64 +40,82 @@ class TssParticipantDirectoryTest {
         // Test threshold too low
 
         Exception exception = assertThrows(IllegalArgumentException.class, () -> builder.withThreshold(0));
-        assertTrue(exception.getMessage().contains("Invalid threshold: 0"));
+        assertTrue(exception.getMessage().contains("Invalid threshold: 0"), "threshold check did not work");
 
         exception = assertThrows(IllegalArgumentException.class, () -> builder.withThreshold(-1));
-        assertTrue(exception.getMessage().contains("Invalid threshold: -1"));
+        assertTrue(exception.getMessage().contains("Invalid threshold: -1"), "threshold check did not work");
 
         // Test threshold too high
         builder.withThreshold(3);
         exception = assertThrows(IllegalStateException.class, () -> builder.build(mock(SignatureSchema.class)));
-        assertTrue(exception.getMessage().contains("Threshold exceeds the number of shares"));
+        assertTrue(
+                exception.getMessage().contains("Threshold exceeds the number of shares"),
+                "threshold check did not work");
 
         exception = assertThrows(IllegalArgumentException.class, () -> builder.withParticipant(1, 1, publicKey));
-        assertTrue(exception.getMessage().contains("Participant with id 1 was previously added to the directory"));
+        assertTrue(
+                exception.getMessage().contains("Participant with id 1 was previously added to the directory"),
+                "participant check did not work");
     }
 
     @Test
     void testEmptyBuilder() {
-        TssParticipantDirectory.Builder builder = TssParticipantDirectory.createBuilder();
-        Exception exception =
-                assertThrows(IllegalStateException.class, () -> builder.build(mock(SignatureSchema.class)));
-        assertTrue(exception.getMessage().contains("There should be an entry for the current participant"));
+        final TssParticipantDirectory.Builder builder = TssParticipantDirectory.createBuilder();
+        final Exception exception = assertThrows(
+                IllegalStateException.class,
+                () -> builder.build(mock(SignatureSchema.class)),
+                "participant check did not work");
+        assertTrue(
+                exception.getMessage().contains("There should be an entry for the current participant"),
+                "participant check did not work");
     }
 
     @Test
     void testEmptyParticipants() {
-        PairingPrivateKey privateKey = mock(PairingPrivateKey.class);
-        Exception exception = assertThrows(IllegalStateException.class, () -> TssParticipantDirectory.createBuilder()
-                .withSelf(1, privateKey)
-                .withThreshold(1)
-                .build(mock(SignatureSchema.class)));
+        final PairingPrivateKey privateKey = mock(PairingPrivateKey.class);
+        final Exception exception = assertThrows(
+                IllegalStateException.class,
+                () -> TssParticipantDirectory.createBuilder()
+                        .withSelf(1, privateKey)
+                        .withThreshold(1)
+                        .build(mock(SignatureSchema.class)),
+                "participant check did not work");
 
-        assertTrue(exception.getMessage().contains("There should be at least one participant in the protocol"));
+        assertTrue(
+                exception.getMessage().contains("There should be at least one participant in the protocol"),
+                "participant check did not work");
     }
 
     @Test
     void testParticipantsDoesNotContainSelf() {
-        PairingPrivateKey privateKey = mock(PairingPrivateKey.class);
-        PairingPublicKey publicKey = mock(PairingPublicKey.class);
-        Exception exception = assertThrows(IllegalStateException.class, () -> TssParticipantDirectory.createBuilder()
-                .withSelf(1, privateKey)
-                .withParticipant(2, 1, publicKey)
-                .withThreshold(1)
-                .build(mock(SignatureSchema.class)));
+        final PairingPrivateKey privateKey = mock(PairingPrivateKey.class);
+        final PairingPublicKey publicKey = mock(PairingPublicKey.class);
+        final Exception exception = assertThrows(
+                IllegalStateException.class,
+                () -> TssParticipantDirectory.createBuilder()
+                        .withSelf(1, privateKey)
+                        .withParticipant(2, 1, publicKey)
+                        .withThreshold(1)
+                        .build(mock(SignatureSchema.class)),
+                "participant check did not work");
 
-        assertTrue(exception
-                .getMessage()
-                .contains("The participant list does not contain a reference to the current participant"));
+        assertTrue(
+                exception
+                        .getMessage()
+                        .contains("The participant list does not contain a reference to the current participant"),
+                "participant check did not work");
     }
 
     @Test
     void testValidConstruction() {
-        PairingPrivateKey privateKey = mock(PairingPrivateKey.class);
-        PairingPublicKey publicKey = mock(PairingPublicKey.class);
-        TssParticipantDirectory directory = TssParticipantDirectory.createBuilder()
+        final PairingPrivateKey privateKey = mock(PairingPrivateKey.class);
+        final PairingPublicKey publicKey = mock(PairingPublicKey.class);
+        final TssParticipantDirectory directory = TssParticipantDirectory.createBuilder()
                 .withSelf(1, privateKey)
                 .withParticipant(1, 1, publicKey)
                 .withThreshold(1)
                 .build(mock(SignatureSchema.class));
 
-        assertNotNull(directory);
+        assertNotNull(directory, "directory should not be null");
     }
 }

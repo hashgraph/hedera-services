@@ -48,7 +48,7 @@ public interface TssService {
      * @return a TSSMessage produced out of a random share.
      */
     @NonNull
-    TssMessage generateTssMessage(@NonNull final TssParticipantDirectory pendingParticipantDirectory);
+    TssMessage generateTssMessage(@NonNull TssParticipantDirectory pendingParticipantDirectory);
 
     /**
      * Generate a TSS message for a pendingParticipantDirectory, for the specified {@link TssPrivateShare}.
@@ -59,8 +59,7 @@ public interface TssService {
      */
     @NonNull
     TssMessage generateTssMessages(
-            @NonNull final TssParticipantDirectory pendingParticipantDirectory,
-            @NonNull final TssPrivateShare privateShare);
+            @NonNull TssParticipantDirectory pendingParticipantDirectory, @NonNull TssPrivateShare privateShare);
 
     /**
      * Verify that a {@link TssMessage} is valid.
@@ -69,8 +68,7 @@ public interface TssService {
      * @param tssMessages the TSS messages to validate
      * @return true if the message is valid, false otherwise
      */
-    boolean verifyTssMessage(
-            @NonNull final TssParticipantDirectory participantDirectory, @NonNull final TssMessage tssMessages);
+    boolean verifyTssMessage(@NonNull TssParticipantDirectory participantDirectory, @NonNull TssMessage tssMessages);
 
     /**
      * Compute all private shares that belongs to this participant from a threshold minimum number of {@link TssMessage}s.
@@ -82,8 +80,7 @@ public interface TssService {
      */
     @Nullable
     List<TssPrivateShare> decryptPrivateShares(
-            @NonNull final TssParticipantDirectory participantDirectory,
-            @NonNull final List<TssMessage> validTssMessages);
+            @NonNull TssParticipantDirectory participantDirectory, @NonNull List<TssMessage> validTssMessages);
 
     /**
      * Aggregate a threshold number of {@link TssPrivateShare}s.
@@ -94,7 +91,7 @@ public interface TssService {
      * @return the aggregate private key
      */
     @NonNull
-    PairingPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares);
+    PairingPrivateKey aggregatePrivateShares(@NonNull List<TssPrivateShare> privateShares);
 
     /**
      * Compute all public shares for all the participants in the scheme.
@@ -105,8 +102,7 @@ public interface TssService {
      */
     @Nullable
     List<TssPublicShare> computePublicShares(
-            @NonNull final TssParticipantDirectory participantDirectory,
-            @NonNull final List<TssMessage> validTssMessages);
+            @NonNull TssParticipantDirectory participantDirectory, @NonNull List<TssMessage> validTssMessages);
 
     /**
      * Aggregate a threshold number of {@link TssPublicShare}s.
@@ -122,7 +118,7 @@ public interface TssService {
      * @return the interpolated public key
      */
     @NonNull
-    PairingPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares);
+    PairingPublicKey aggregatePublicShares(@NonNull List<TssPublicShare> publicShares);
 
     /**
      * Sign a message using the private share's key.
@@ -131,7 +127,7 @@ public interface TssService {
      * @return the signature, which will be in the group opposite to the group of the public key
      */
     @NonNull
-    TssShareSignature sign(@NonNull final TssPrivateShare privateShare, @NonNull final byte[] message);
+    TssShareSignature sign(@NonNull TssPrivateShare privateShare, @NonNull byte[] message);
 
     /**
      * verifies a signature using the participantDirectory and the list of public shares.
@@ -141,9 +137,9 @@ public interface TssService {
      * @return true if the signature is valid, false otherwise.
      */
     boolean verifySignature(
-            @NonNull final TssParticipantDirectory participantDirectory,
-            @NonNull final List<TssPublicShare> publicShares,
-            @NonNull final TssShareSignature signature);
+            @NonNull TssParticipantDirectory participantDirectory,
+            @NonNull List<TssPublicShare> publicShares,
+            @NonNull TssShareSignature signature);
 
     /**
      * Aggregate a threshold number of {@link TssShareSignature}s.
@@ -154,5 +150,5 @@ public interface TssService {
      * @return the interpolated signature
      */
     @NonNull
-    PairingSignature aggregateSignatures(@NonNull final List<TssShareSignature> partialSignatures);
+    PairingSignature aggregateSignatures(@NonNull List<TssShareSignature> partialSignatures);
 }

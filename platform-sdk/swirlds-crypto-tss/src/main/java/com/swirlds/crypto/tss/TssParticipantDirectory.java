@@ -136,16 +136,16 @@ public class TssParticipantDirectory {
         /**
          * Sets the self entry for the builder.
          *
-         * @param id the participant ID
+         * @param participantId the participant ID
          * @param tssEncryptionPrivateKey the pairing private key used to decrypt tss share portions
          * @return the builder instance
          */
         @NonNull
-        public Builder withSelf(final int id, @NonNull final PairingPrivateKey tssEncryptionPrivateKey) {
+        public Builder withSelf(final int participantId, @NonNull final PairingPrivateKey tssEncryptionPrivateKey) {
             if (selfEntry != null) {
                 throw new IllegalArgumentException("There is already an for the current participant");
             }
-            selfEntry = new SelfEntry(id, tssEncryptionPrivateKey);
+            selfEntry = new SelfEntry(participantId, tssEncryptionPrivateKey);
             return this;
         }
 
@@ -209,7 +209,7 @@ public class TssParticipantDirectory {
                 throw new IllegalStateException("There should be at least one participant in the protocol");
             }
 
-            if (!participantEntries.containsKey(selfEntry.id)) {
+            if (!participantEntries.containsKey(selfEntry.participantId())) {
                 throw new IllegalStateException(
                         "The participant list does not contain a reference to the current participant");
             }
@@ -222,27 +222,27 @@ public class TssParticipantDirectory {
                 throw new IllegalStateException("Threshold exceeds the number of shares");
             }
 
-            List<TssShareId> ids = IntStream.range(1, totalShares + 1)
+            final List<TssShareId> ids = IntStream.range(1, totalShares + 1)
                     .boxed()
                     // .map(schema.getField()::elementFromLong)
                     .map(TssShareId::new)
                     .toList();
 
-            Iterator<TssShareId> elementIterator = ids.iterator();
-            Map<TssShareId, Integer> shareOwnersMap = new HashMap<>();
-            List<TssShareId> currentParticipantOwnedShareIds = new ArrayList<>();
-            List<Integer> sortedParticipantIds =
+            final Iterator<TssShareId> elementIterator = ids.iterator();
+            final Map<TssShareId, Integer> shareOwnersMap = new HashMap<>();
+            final List<TssShareId> currentParticipantOwnedShareIds = new ArrayList<>();
+            final List<Integer> sortedParticipantIds =
                     participantEntries.keySet().stream().sorted().toList();
-            Map<Integer, PairingPublicKey> tssEncryptionPublicKeyMap = new HashMap<>();
+            final Map<Integer, PairingPublicKey> tssEncryptionPublicKeyMap = new HashMap<>();
 
             for (Integer participantId : sortedParticipantIds) {
-                ParticipantEntry record = participantEntries.get(participantId);
+                final ParticipantEntry record = participantEntries.get(participantId);
                 tssEncryptionPublicKeyMap.put(participantId, record.tssEncryptionPublicKey());
                 for (int i = 0; i < record.shareCount(); i++) {
                     if (elementIterator.hasNext()) {
-                        TssShareId tssShareId = elementIterator.next();
+                        final TssShareId tssShareId = elementIterator.next();
                         shareOwnersMap.put(tssShareId, participantId);
-                        if (participantId == selfEntry.id) {
+                        if (participantId == selfEntry.participantId()) {
                             currentParticipantOwnedShareIds.add(tssShareId);
                         }
                     }
@@ -260,9 +260,9 @@ public class TssParticipantDirectory {
 
     /**
      * Represents an entry for the participant executing the protocol, containing the ID and private key.
-     * @param id identification of the participant
+     * @param participantId identification of the participant
      */
-    private record SelfEntry(int id, @NonNull PairingPrivateKey tssEncryptionPrivateKey) {}
+    private record SelfEntry(int participantId, @NonNull PairingPrivateKey tssEncryptionPrivateKey) {}
 
     /**
      * Represents an entry for a participant, containing the ID, share count, and public key.

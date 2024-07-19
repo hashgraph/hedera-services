@@ -37,26 +37,28 @@ public class TssServiceImpl implements TssService {
     @NonNull
     @Override
     public TssMessage generateTssMessages(
-            @NonNull TssParticipantDirectory pendingParticipantDirectory, @NonNull TssPrivateShare privateShare) {
+            @NonNull final TssParticipantDirectory pendingParticipantDirectory,
+            @NonNull final TssPrivateShare privateShare) {
         return new TssMessage(new byte[] {});
     }
 
     @NonNull
     @Override
-    public TssMessage generateTssMessage(@NonNull TssParticipantDirectory pendingParticipantDirectory) {
+    public TssMessage generateTssMessage(@NonNull final TssParticipantDirectory pendingParticipantDirectory) {
         return new TssMessage(new byte[] {});
     }
 
     @Override
     public boolean verifyTssMessage(
-            @NonNull TssParticipantDirectory participantDirectory, @NonNull TssMessage tssMessages) {
+            @NonNull final TssParticipantDirectory participantDirectory, @NonNull final TssMessage tssMessages) {
         return true;
     }
 
     @Nullable
     @Override
     public List<TssPrivateShare> decryptPrivateShares(
-            @NonNull TssParticipantDirectory participantDirectory, @NonNull List<TssMessage> validTssMessages) {
+            @NonNull final TssParticipantDirectory participantDirectory,
+            @NonNull final List<TssMessage> validTssMessages) {
         return participantDirectory.getOwnedShareIds().stream()
                 .map(sid -> new TssPrivateShare(sid, new PairingPrivateKey()))
                 .toList();
@@ -64,14 +66,14 @@ public class TssServiceImpl implements TssService {
 
     @NonNull
     @Override
-    public PairingPrivateKey aggregatePrivateShares(@NonNull List<TssPrivateShare> privateShares) {
+    public PairingPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares) {
         return new PairingPrivateKey();
     }
 
     @Nullable
     @Override
     public List<TssPublicShare> computePublicShares(
-            @NonNull TssParticipantDirectory participantDirectory, @NonNull List<TssMessage> tssMessages) {
+            @NonNull final TssParticipantDirectory participantDirectory, @NonNull final List<TssMessage> tssMessages) {
         return participantDirectory.getShareIds().stream()
                 .map(sid -> new TssPublicShare(sid, new PairingPublicKey()))
                 .toList();
@@ -79,27 +81,27 @@ public class TssServiceImpl implements TssService {
 
     @NonNull
     @Override
-    public PairingPublicKey aggregatePublicShares(@NonNull List<TssPublicShare> publicShares) {
+    public PairingPublicKey aggregatePublicShares(@NonNull final List<TssPublicShare> publicShares) {
         return new PairingPublicKey();
     }
 
     @NonNull
     @Override
-    public TssShareSignature sign(@NonNull TssPrivateShare privateShare, @NonNull byte[] message) {
+    public TssShareSignature sign(@NonNull final TssPrivateShare privateShare, @NonNull final byte[] message) {
         return new TssShareSignature(privateShare.shareId(), new PairingSignature());
     }
 
     @Override
     public boolean verifySignature(
-            @NonNull TssParticipantDirectory participantDirectory,
-            @NonNull List<TssPublicShare> publicShares,
-            @NonNull TssShareSignature signature) {
+            @NonNull final TssParticipantDirectory participantDirectory,
+            @NonNull final List<TssPublicShare> publicShares,
+            @NonNull final TssShareSignature signature) {
         return true;
     }
 
     @NonNull
     @Override
-    public PairingSignature aggregateSignatures(@NonNull List<TssShareSignature> partialSignatures) {
+    public PairingSignature aggregateSignatures(@NonNull final List<TssShareSignature> partialSignatures) {
         return new PairingSignature();
     }
 }
