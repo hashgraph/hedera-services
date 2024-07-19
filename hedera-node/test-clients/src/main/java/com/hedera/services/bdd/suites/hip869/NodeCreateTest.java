@@ -268,7 +268,7 @@ public class NodeCreateTest {
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
-    final Stream<DynamicTest> allFieldsSetHappyCaseForDomains() {
+    final Stream<DynamicTest> allFieldsSetHappyCaseForIps() {
         return hapiTest(
                 newKeyNamed(ED_25519_KEY).shape(KeyShape.ED25519),
                 nodeCreate("nodeCreate")
@@ -277,7 +277,7 @@ public class NodeCreateTest {
                         .grpcCertificateHash("hash".getBytes())
                         .accountId(asAccount("0.0.100"))
                         .gossipEndpoint(GOSSIP_ENDPOINTS_IPS)
-                        .serviceEndpoint(SERVICES_ENDPOINTS)
+                        .serviceEndpoint(SERVICES_ENDPOINTS_IPS)
                         .adminKey(ED_25519_KEY)
                         .hasPrecheck(OK)
                         .hasKnownStatus(SUCCESS),
@@ -293,7 +293,7 @@ public class NodeCreateTest {
                             "GRPC hash invalid");
                     assertEquals(100, node.accountId().accountNum(), "Account ID invalid");
                     assertEqualServiceEndpoints(GOSSIP_ENDPOINTS_IPS, node.gossipEndpoint());
-                    assertEqualServiceEndpoints(SERVICES_ENDPOINTS, node.serviceEndpoint());
+                    assertEqualServiceEndpoints(SERVICES_ENDPOINTS_IPS, node.serviceEndpoint());
                     assertNotNull(node.adminKey(), "Admin key invalid");
                 }));
     }
@@ -305,14 +305,14 @@ public class NodeCreateTest {
     @LeakyEmbeddedHapiTest(
             reason = NEEDS_STATE_ACCESS,
             overrides = {"nodes.gossipFqdnRestricted"})
-    final Stream<DynamicTest> allFieldsSetHappyCaseForIps() {
+    final Stream<DynamicTest> allFieldsSetHappyCaseForDomains() {
         final var nodeCreate = nodeCreate("nodeCreate")
                 .description("hello")
                 .gossipCaCertificate("gossip".getBytes())
                 .grpcCertificateHash("hash".getBytes())
                 .accountId(asAccount("0.0.100"))
-                .gossipEndpoint(GOSSIP_ENDPOINTS_IPS)
-                .serviceEndpoint(SERVICES_ENDPOINTS_IPS)
+                .gossipEndpoint(GOSSIP_ENDPOINTS)
+                .serviceEndpoint(SERVICES_ENDPOINTS)
                 .adminKey(ED_25519_KEY)
                 .hasPrecheck(OK)
                 .hasKnownStatus(SUCCESS);
@@ -331,8 +331,8 @@ public class NodeCreateTest {
                             ByteString.copyFrom(node.grpcCertificateHash().toByteArray()),
                             "GRPC hash invalid");
                     assertEquals(100, node.accountId().accountNum(), "Account ID invalid");
-                    assertEqualServiceEndpoints(GOSSIP_ENDPOINTS_IPS, node.gossipEndpoint());
-                    assertEqualServiceEndpoints(SERVICES_ENDPOINTS_IPS, node.serviceEndpoint());
+                    assertEqualServiceEndpoints(GOSSIP_ENDPOINTS, node.gossipEndpoint());
+                    assertEqualServiceEndpoints(SERVICES_ENDPOINTS, node.serviceEndpoint());
                     assertEquals(toPbj(nodeCreate.getAdminKey()), node.adminKey(), "Admin key invalid");
                 }));
     }
