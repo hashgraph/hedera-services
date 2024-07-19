@@ -264,4 +264,19 @@ public class UpdateTokenFeeScheduleTest {
                         .hasCustom(
                                 fractionalFeeInSchedule(1L, 10L, 0L, OptionalLong.of(0), false, feeCollector.name()))));
     }
+
+    @Order(14)
+    @HapiTest
+    @DisplayName("non fungible token fees")
+    public Stream<DynamicTest> updateNonFungibleTokenFees() {
+        return hapiTest(
+                updateTokenFeeSchedules.call(
+                        "updateNonFungibleFees", nonFungibleToken, feeToken, 1L, 1L, 10L, feeCollector),
+                nonFungibleToken.getInfo().andAssert(info -> info.hasCustom(
+                                fixedHtsFeeInSchedule(1L, feeToken.name(), feeCollector.name()))
+                        .hasCustom(royaltyFeeWithoutFallbackInSchedule(1L, 10L, feeCollector.name()))
+                        .hasCustom(royaltyFeeWithFallbackInHbarsInSchedule(1L, 10L, 1L, feeCollector.name()))
+                        .hasCustom(royaltyFeeWithFallbackInTokenInSchedule(
+                                1L, 10L, 1L, feeToken.name(), feeCollector.name()))));
+    }
 }
