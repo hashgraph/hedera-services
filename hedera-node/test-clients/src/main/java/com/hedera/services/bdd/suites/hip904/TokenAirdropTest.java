@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.crypto.airdrops;
+package com.hedera.services.bdd.suites.hip904;
 
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
@@ -133,7 +133,6 @@ public class TokenAirdropTest {
         lifecycle.doAdhoc(setUpTokensAndAllReceivers());
     }
 
-    // to existing accounts
     @Nested
     @DisplayName("to existing accounts")
     class AirdropToExistingAccounts {
@@ -141,33 +140,28 @@ public class TokenAirdropTest {
         @Nested
         @DisplayName("with free auto associations slots")
         class AirdropToExistingAccountsWhitFreeAutoAssociations {
+
             @HapiTest
             final Stream<DynamicTest> tokenAirdropToExistingAccountsTransfers() {
-
                 return defaultHapiSpec("should transfer fungible tokens")
                         .given()
-                        .when(
-                                // send token airdrop
+                        .when( // associated receiver and receivers with free auto association slots
                                 tokenAirdrop(
-                                                // associated receiver
                                                 moveFungibleTokensTo(ASSOCIATED_RECEIVER),
-                                                // free auto association slots
                                                 moveFungibleTokensTo(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
                                                 moveFungibleTokensTo(RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS))
                                         .payingWith(OWNER)
                                         .via("fungible airdrop"))
-                        .then(
+                        .then( // assert txn record
                                 getTxnRecord("fungible airdrop")
-                                        // assert record
                                         .hasPriority(recordWith()
                                                 .tokenTransfers(includingFungibleMovement(moving(30, FUNGIBLE_TOKEN)
                                                         .distributing(
                                                                 OWNER,
                                                                 RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS,
                                                                 RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS,
-                                                                ASSOCIATED_RECEIVER))))
-                                        .logged(),
-                                // transferred tokens
+                                                                ASSOCIATED_RECEIVER)))),
+                                // assert balance
                                 getAccountBalance(ASSOCIATED_RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10),
                                 getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
                                         .hasTokenBalance(FUNGIBLE_TOKEN, 10),
@@ -179,32 +173,25 @@ public class TokenAirdropTest {
             final Stream<DynamicTest> nftAirdropToExistingAccountsTransfers() {
                 return defaultHapiSpec("should transfer NFTs")
                         .given()
-                        .when(tokenAirdrop(
-                                        // free auto association slots
-                                        movingUnique(NON_FUNGIBLE_TOKEN, 3L)
-                                                .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
-                                        movingUnique(NON_FUNGIBLE_TOKEN, 4L)
-                                                .between(OWNER, RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS),
-                                        movingUnique(NON_FUNGIBLE_TOKEN, 5L).between(OWNER, ASSOCIATED_RECEIVER))
-                                .payingWith(OWNER)
-                                .via("non fungible airdrop"))
-                        .then(
+                        .when( // receivers with free auto association slots
+                                tokenAirdrop(
+                                                movingUnique(NON_FUNGIBLE_TOKEN, 3L)
+                                                        .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS),
+                                                movingUnique(NON_FUNGIBLE_TOKEN, 4L)
+                                                        .between(OWNER, RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS),
+                                                movingUnique(NON_FUNGIBLE_TOKEN, 5L)
+                                                        .between(OWNER, ASSOCIATED_RECEIVER))
+                                        .payingWith(OWNER)
+                                        .via("non fungible airdrop"))
+                        .then( // assert txn record
                                 getTxnRecord("non fungible airdrop")
-                                        // assert transfer list
-                                        .hasPriority(recordWith()
-                                                .tokenTransfers(includingNonfungibleMovement(movingUnique(
-                                                                NON_FUNGIBLE_TOKEN, 3L)
-                                                        .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))))
                                         .hasPriority(recordWith()
                                                 .tokenTransfers(includingNonfungibleMovement(
-                                                        movingUnique(NON_FUNGIBLE_TOKEN, 4L)
-                                                                .between(OWNER, RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS))))
-                                        .hasPriority(recordWith()
-                                                .tokenTransfers(includingNonfungibleMovement(
-                                                        movingUnique(NON_FUNGIBLE_TOKEN, 5L)
-                                                                .between(OWNER, ASSOCIATED_RECEIVER))))
-                                        .logged(),
-
+                                                        movingUnique(NON_FUNGIBLE_TOKEN, 3L, 4L, 5L)
+                                                                .distributing(
+                                                                        RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS,
+                                                                        RECEIVER_WITH_FREE_AUTO_ASSOCIATIONS,
+                                                                        ASSOCIATED_RECEIVER)))),
                                 // assert account balances
                                 getAccountBalance(ASSOCIATED_RECEIVER).hasTokenBalance(NON_FUNGIBLE_TOKEN, 1),
                                 getAccountBalance(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS)
@@ -221,22 +208,18 @@ public class TokenAirdropTest {
             final Stream<DynamicTest> tokenAirdropToExistingAccountsPending() {
                 return defaultHapiSpec("fungible tokens should be in pending state")
                         .given()
-                        .when(
-                                // send token airdrop
-                                tokenAirdrop(
-                                                // without free auto association slots
-                                                moveFungibleTokensTo(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS),
-                                                moveFungibleTokensTo(RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
-                                        .payingWith(OWNER)
-                                        .via("fungible airdrop"))
-                        .then(
+                        .when(tokenAirdrop(
+                                        moveFungibleTokensTo(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS),
+                                        moveFungibleTokensTo(RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                .payingWith(OWNER)
+                                .via("fungible airdrop"))
+                        .then( // assert txn record
                                 getTxnRecord("fungible airdrop")
-                                        // assert pending airdrops
                                         .hasPriority(recordWith()
                                                 .pendingAirdrops(includingFungiblePendingAirdrop(
                                                         moveFungibleTokensTo(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS),
                                                         moveFungibleTokensTo(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)))),
-                                // pending airdrops
+                                // assert balances
                                 getAccountBalance(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
                                         .hasTokenBalance(FUNGIBLE_TOKEN, 0),
                                 getAccountBalance(RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS)
@@ -247,17 +230,16 @@ public class TokenAirdropTest {
             final Stream<DynamicTest> nftAirdropToExistingAccountsPending() {
                 return defaultHapiSpec("NFTs should be in pending state")
                         .given()
-                        .when(tokenAirdrop(
-                                        // without free auto association slots
-                                        movingUnique(NON_FUNGIBLE_TOKEN, 1L)
-                                                .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
-                                        movingUnique(NON_FUNGIBLE_TOKEN, 2L)
-                                                .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
-                                .payingWith(OWNER)
-                                .via("non fungible airdrop"))
-                        .then(
+                        .when( // without free auto association slots
+                                tokenAirdrop(
+                                                movingUnique(NON_FUNGIBLE_TOKEN, 1L)
+                                                        .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS),
+                                                movingUnique(NON_FUNGIBLE_TOKEN, 2L)
+                                                        .between(OWNER, RECEIVER_WITHOUT_FREE_AUTO_ASSOCIATIONS))
+                                        .payingWith(OWNER)
+                                        .via("non fungible airdrop"))
+                        .then( // assert the pending list
                                 getTxnRecord("non fungible airdrop")
-                                        // assert the pending list
                                         .hasPriority(recordWith()
                                                 .pendingAirdrops(includingNftPendingAirdrop(
                                                         movingUnique(NON_FUNGIBLE_TOKEN, 1L)
@@ -283,8 +265,8 @@ public class TokenAirdropTest {
             // the second airdrop is directly transferred to the recipient and the first airdrop remains in pending
             // state
             return defaultHapiSpec("should be not affected by following airdrops")
-                    .given(cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(0))
-                    .when(
+                    .given(
+                            cryptoCreate(RECEIVER).maxAutomaticTokenAssociations(0),
                             // send first airdrop
                             tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
                                     .payingWith(OWNER)
@@ -293,10 +275,9 @@ public class TokenAirdropTest {
                                     // assert pending airdrops
                                     .hasPriority(recordWith()
                                             .pendingAirdrops(includingFungiblePendingAirdrop(
-                                                    moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))),
-                            tokenAssociate(RECEIVER, FUNGIBLE_TOKEN))
-                    .then(
-                            // this time tokens should be transferred
+                                                    moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))))
+                    .when(tokenAssociate(RECEIVER, FUNGIBLE_TOKEN))
+                    .then( // this time tokens should be transferred
                             tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))
                                     .payingWith(OWNER)
                                     .via("second"),
@@ -305,9 +286,8 @@ public class TokenAirdropTest {
                                     // assert transfers
                                     .hasPriority(recordWith()
                                             .tokenTransfers(includingFungibleMovement(
-                                                    moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER))))
-                                    .logged(),
-                            // since there is noway to check pending airdrop state, we just assert the account balance
+                                                    moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER)))),
+                            // assert the account balance
                             getAccountBalance(RECEIVER).hasTokenBalance(FUNGIBLE_TOKEN, 10));
         }
     }
