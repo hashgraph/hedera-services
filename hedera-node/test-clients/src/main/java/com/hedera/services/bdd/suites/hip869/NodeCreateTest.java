@@ -264,7 +264,7 @@ public class NodeCreateTest {
     }
 
     /**
-     * Check that node creation succeeds with gossip and service endpoints using domain names and all optional fields are recorded.
+     * Check that node creation succeeds with gossip and service endpoints using ips and all optional fields are recorded.
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
@@ -299,7 +299,7 @@ public class NodeCreateTest {
     }
 
     /**
-     * Check that node creation succeeds with gossip and service endpoints using IPs and all optional fields are recorded.
+     * Check that node creation succeeds with gossip and service endpoints using domain names and all optional fields are recorded.
      * @see <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/main/HIP/hip-869.md#specification">HIP-869</a>
      */
     @LeakyEmbeddedHapiTest(
