@@ -21,15 +21,15 @@ The introduction of the Threshold Signature Scheme (TSS) requires a new mechanis
 consensus and block signing.
 The Roster, an immutable subset of the address book, will provide this mechanism, ensuring efficient and secure key
 management for TSS operations.
-This proposal provides a specification for the behavior of rosters starting from their creation from the
-Candidate Address Book (CAB) to their terminal state within the TSS specification.
+This proposal provides a specification for the behavior of rosters starting from their creation from the Address Book to
+their terminal state within the TSS specification.
 A roster reaches a terminal state when it is either adopted by the platform or replaced by a new roster.
 
-The Future Address Book (FAB) is a dynamic list maintained within the App that reflects the desired future state of the
-network's nodes. It will be continuously updated by HAPI transactions, such as those that create, update, or delete
-nodes.
-The CAB is a snapshot of the Future Address Book (FAB), and it is created when the app decides to adopt a new address
-book.
+The app will maintain a version of the Address Book as a dynamic list that reflects the desired future state of the
+network's nodes. This dynamic list of Addresses will be continuously updated by HAPI transactions, such as those that
+create, update, or delete nodes.
+At some point when the app decides to adopt a new address book, it will create something called a `Roster` with
+information from the Address Book and pass it to the app.
 
 This proposal specifies that a Roster will be created from the CAB by the Hedera app and passed to the
 platform code.
@@ -44,27 +44,28 @@ The mechanism for doing so is detailed below.
   platform to manage the lifecycle of submitted rosters.
 - Components update: Platform components that currently rely on the use of the Address book (such as Reconnect, Network,
   Event Validation etc.) must be adapted to use rosters instead.
-    -
 - Address book paradigm discontinued within the platform codebase, only use rosters instead
 
-### Architecture and/or Components
+### Architecture
 
 ###### Roster Lifecycle
 
 ![](TSS%20Roster%20Lifecycle.drawio.svg)
 
+### Data Structure
+
 ###### Roster Public API
 
-A new method will be added to the platform API to allow the App to submit a Candidate Roster to the platform:
+A new method will be added to the platform state to allow the App to submit a Candidate Roster to the platform:
 
 ```java
-//in SwirldState
+//in PlaformState
 
 void setCandidateRoster(@NonNull final Roster candidateRoster);
 ```
 The Hedera app is already responsible for managing the address book.
-We propose that it continues to do so, and when it receives a HAPI transaction, creates a candidate Roster object from
-the CAB and set it in the state via the new API.
+We propose that it continues to do so, and when it receives a HAPI transaction, creates a candidate Roster object
+and set it in the state via the new API.
 The State will contain one map of rosters, keyed by roster’s hash - ```Map<Hash<Roster>, Roster>```.
 
 A Roster has a data structure as follows:
@@ -187,39 +188,8 @@ message RosterEntry {
 }
 ```
 
-The map of rosters will be stored in the state as a virtual map of Key `Hash<Roster>` and value `Roster`.
-The `Hash` object(SHA_384), which is the key of the virtual map, will reuse an existing protobuf that looks as follows:
-```proto
-/**
- * List of hash algorithms
- */
-enum HashAlgorithm {
-  HASH_ALGORITHM_UNKNOWN = 0;
-  SHA_384 = 1;
-}
-
-/**
- * Encapsulates an object hash so that additional hash algorithms
- * can be added in the future without requiring a breaking change.
- */
-message HashObject {
-
-  /**
-   * Specifies the hashing algorithm
-   */
-  HashAlgorithm algorithm = 1;
-
-  /**
-   * Hash length
-   */
-  int32 length = 2;
-
-  /**
-   * Specifies the result of the hashing operation in bytes
-   */
-  bytes hash = 3;
-}
-```
+The map of rosters will be stored in the state as a virtual map of Key `hash` and value `Roster`.
+The `hash` will be an implementation of the `VirtualKey` interface that supports a hash value of type `byte`.
 
 The `Roster` value is modeled as previously shown.
 
@@ -247,7 +217,7 @@ message PlatformState {
      * A Node SHALL NOT, ever, have more than one candidate roster
      * at the same time.
      */
-    HashObject candidate_roster_hash = 6;
+    byte candidate_roster_hash = 6;
 
     /**
      * The SHA-384 hash of an active roster
@@ -256,7 +226,7 @@ message PlatformState {
      * A Node SHALL NOT, ever, have more than one active roster
      * at the same time.
      */
-    HashObject active_roster_hash = 7;
+    byte active_roster_hash = 7;
 }
 ```
 
@@ -295,6 +265,63 @@ Note that a roster can be valid, but not accepted by the platform.
 For example, if a new candidate roster is set via the API, but its hash evaluates to the hash of the existing
 candidate roster, the new roster will be discarded. The operation has no effect.
 
+### Startup procedure, Services and DevOps Workflow changes
+
+#### Startup changes
+
+On startup, the presence or absence of an Active Roster in the state will be used to determine whether the platform
+should keep existing settings,
+start a genesis network process, or start the Network Transplant Process as shown.
+![](TSS%20Roster%20Startup%20Behavior.drawio.svg)
+
+The pseudocode for the startup procedure will look as follows:
+
+```java
+/**
+ * Start the platform.
+ * @param state an initial state. The caller either loads it from disk if the node has run before,
+ *              or constructs a new empty state and stores the genesis roster in there
+ *              as the current active roster.
+ */
+void startPlatform(final State state) {
+    if (the State has Candidate Roster){
+        if (isSoftwareUpgrade) {
+            // This MUST be performed under `isSoftwareUpgrade` to ensure that
+            // the entire network is being restarted, and so every node adopts the Candidate Roster,
+            // and hence no ISSes happen.
+            // Modify the state and put Candidate Roster into Active Roster, effectively clearing the Candidate Roster.
+            makeCRtheAR();
+            // May make a record of the previous Active Roster if necessary (e.g. for PCES replay)
+        }
+    }
+
+    if (the State has no Active Roster){
+        // This should never happen, but we have to check this because we're given a state as an argument.
+        throwFatalErrorAndShutdown();
+    }
+
+    // At this point the Active Roster in the state is what we'll be using as a roster.
+}
+```
+
+#### Services changes (Inversion of control)
+
+The current startup procedure will be altered as follows
+
+- The `config.txt` file will no longer be used by the platform for storing the address book in existing networks. It
+  will no longer be used by the platform code
+- Designating `config.txt` introduces inversion of control. It will be at the exclusive prerogative of Services (the
+  app) going forward. All the platform code that builds an AddressBook from `config.txt` will be removed or refactored
+  and moved into the Services codebase.
+
+#### DevOps Workflow changes
+
+(See Roster Startup Behavior diagram above)
+When adding new nodes to existing networks, DevOps will be given a state after the network has upgraded.
+The state contains a combination of optional State data and Roster with the new node in it. Devops will no longer
+need `config.txt` on new nodes to existing networks.
+Although the State and Roster are tagged as optional, one of them must exist for the network to start.
+
 ### Core Behaviors, in summary
 
 - Roster Creation: App will create a Candidate Roster from the Candidate Address Book (CAB).
@@ -305,11 +332,6 @@ candidate roster, the new roster will be discarded. The operation has no effect.
 - Roster Replacement: If a new candidate roster is submitted before the previous one is adopted, the corresponding new
   Candidate Roster will replace the old one.
 
-
-### Configuration
-
-The `config.txt` file will no longer be used for storing the address book in existing networks. It will only be used for
-the genesis of new networks.
 
 ### Dependencies
 
@@ -330,12 +352,12 @@ There are a few existing technical debts that the team has agreed to tackle as d
 
 
 3. Inversion of Control: The `config.txt` file does not have all the information that the Hedera Address Book needs (
-   proxy
-   endpoints, and in the future Block Nodes). It has verbose information for the platform. Its format could be better,
+   proxy endpoints, and in the future, Block Nodes). It has verbose information for the platform. Its format could be
+   better,
    and it stores the account number in the memo field. Upon the creation and adoption of rosters in the
    state, `config.txt` is no longer useful.
    The resolution is to offload this duty off the platform and allow Services to use whatever file format that suits
-   them.
+   them as described earlier.
 
 ### Data storage
 
@@ -346,37 +368,6 @@ However, it is up to Services to manage the lifecycle of these files, and not th
 
 There will not be any other separate artifacts stored elsewhere (e.g., directly on disk.).
 
-### Startup procedure (pseudo-code)
-
-The pseudocode for the startup procedure will look as follows:
-
-```java
-/**
- * Start the platform.
- * @param state an initial state. The caller either loads it from disk if the node has run before,
- *              or constructs a new empty state and stores the genesis roster in there
- *              as the current active roster.
- */
-void startPlatform(final State state) {
-    if (the State has Candidate Roster) {
-        if (isSoftwareUpgrade) {
-            // This MUST be performed under `isSoftwareUpgrade` to ensure that
-            // the entire network is being restarted, and so every node adopts the Candidate Roster,
-            // and hence no ISSes happen.
-            // Modify the state and put Candidate Roster into Active Roster, effectively clearing the Candidate Roster.
-            makeCRtheAR();
-            // May make a record of the previous Active Roster if necessary (e.g. for PCES replay)
-        }
-    }
-
-    if (the State has no Active Roster) {
-        // This should never happen, but we have to check this because we're given a state as an argument.
-        throwFatalErrorAndShutdown();
-    }
-
-    // At this point the Active Roster in the state is what we'll be using as a roster.
-}
-```
 
 ### Roster changes needed for Components
 
