@@ -152,11 +152,7 @@ public class UpdateTokenCustomFeesDecoder {
                                 .numerator(fee.get(ROYALTY_FEE_NUMERATOR))
                                 .denominator(fee.get(ROYALTY_FEE_DENOMINATOR))
                                 .build())
-                        .fallbackFee(FixedFee.newBuilder()
-                                .amount(fee.get(ROYALTY_FEE_AMOUNT))
-                                .denominatingTokenId(getIfPresent(
-                                        fee.get(ROYALTY_FEE_TOKEN_ID), fee.get(ROYALTY_FEE_USE_HBARS_FOR_PAYMENT)))
-                                .build())
+                        .fallbackFee(getFallbackFee(fee))
                         .build())
                 .feeCollectorAccountId(addressIdConverter.convert(fee.get(ROYALTY_FEE_FEE_COLLECTOR)))
                 .build());
@@ -173,6 +169,18 @@ public class UpdateTokenCustomFeesDecoder {
     }
 
     private TokenID getIfPresent(@NonNull final Address address, final boolean useHbarsForPayment) {
-        return useHbarsForPayment ? null : ConversionUtils.asTokenId(address);
+        final var tokenId = ConversionUtils.asTokenId(address);
+        return useHbarsForPayment || tokenId.equals(TokenID.DEFAULT) ? null : tokenId;
+    }
+
+    private FixedFee getFallbackFee(@NonNull Tuple fee) {
+        final Address tokenAddress = fee.get(ROYALTY_FEE_TOKEN_ID);
+        final long amount = fee.get(ROYALTY_FEE_AMOUNT);
+        return ConversionUtils.asTokenId(tokenAddress).equals(TokenID.DEFAULT) && amount == 0
+                ? null
+                : FixedFee.newBuilder()
+                        .amount(amount)
+                        .denominatingTokenId(getIfPresent(tokenAddress, fee.get(ROYALTY_FEE_USE_HBARS_FOR_PAYMENT)))
+                        .build();
     }
 }
