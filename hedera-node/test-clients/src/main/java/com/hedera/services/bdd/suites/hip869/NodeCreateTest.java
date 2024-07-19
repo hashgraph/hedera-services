@@ -65,6 +65,7 @@ import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.DynamicTest;
 
 public class NodeCreateTest {
@@ -451,12 +452,14 @@ public class NodeCreateTest {
     }
 
     @LeakyHapiTest(overrides = {"nodes.maxNumber"})
+    @DisplayName("check error code MAX_NODES_CREATED is returned correctly")
     final Stream<DynamicTest> maxNodesReachedFail() {
         return hapiTest(
                 overriding("nodes.maxNumber", "1"), nodeCreate("testNode").hasKnownStatus(MAX_NODES_CREATED));
     }
 
     @HapiTest
+    @DisplayName("Not existing account as accountId during nodeCreate failed")
     final Stream<DynamicTest> notExistingAccountFail() {
         return hapiTest(nodeCreate("testNode")
                 .accountId(AccountID.newBuilder().setAccountNum(50000).build())
@@ -464,6 +467,7 @@ public class NodeCreateTest {
     }
 
     @LeakyHapiTest(overrides = {"nodes.nodeMaxDescriptionUtf8Bytes"})
+    @DisplayName("Check the max description size")
     final Stream<DynamicTest> updateTooLargeDescriptionFail() {
         return hapiTest(
                 overriding("nodes.nodeMaxDescriptionUtf8Bytes", "3"),
@@ -471,6 +475,7 @@ public class NodeCreateTest {
     }
 
     @HapiTest
+    @DisplayName("Check default setting, gossipEndpoint can not have domain names")
     final Stream<DynamicTest> gossipEndpointHaveDomainNameFail() {
         return hapiTest(nodeCreate("testNode")
                 .gossipEndpoint(GOSSIP_ENDPOINTS)

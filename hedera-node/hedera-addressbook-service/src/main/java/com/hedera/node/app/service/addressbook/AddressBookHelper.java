@@ -24,6 +24,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 
+/**
+ * Utility class that provides static methods and constants to facilitate the Address Book Services functions.
+ */
 public class AddressBookHelper {
     public static final String NODES_KEY = "NODES";
 
