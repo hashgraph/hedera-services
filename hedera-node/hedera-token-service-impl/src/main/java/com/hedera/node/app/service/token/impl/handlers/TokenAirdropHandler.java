@@ -33,7 +33,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO
 import static com.hedera.hapi.util.HapiUtils.isHollow;
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.isStakingAccount;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.customfees.CustomFeeMeta.customFeeMetaFrom;
-import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createAccountAirdrop;
+import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createAccountPendingAirdrop;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createFungibleTokenPendingAirdropId;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createNftPendingAirdropId;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.createPendingAirdropRecord;
@@ -60,8 +60,8 @@ import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
 import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.AccountAirdrop;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
@@ -75,6 +75,7 @@ import com.hedera.node.app.service.token.impl.WritableAccountStore;
 import com.hedera.node.app.service.token.impl.WritableAirdropStore;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
@@ -178,10 +179,10 @@ public class TokenAirdropHandler implements TransactionHandler {
                     var pendingValue = PendingAirdropValue.newBuilder()
                             .amount(accountAmount.amount())
                             .build();
-                    AccountAirdrop newAccountAirdrop = getNewAccountAirdropAndUpdateStores(
+                    AccountPendingAirdrop newAccountPendingAirdrop = getNewAccountPendingAirdropAndUpdateStores(
                             senderAccount, pendingId, pendingValue, accountStore, pendingStore);
-                    var record = createPendingAirdropRecord(pendingId, newAccountAirdrop.pendingAirdropValue());
-                    pendingStore.put(pendingId, newAccountAirdrop);
+                    var record = createPendingAirdropRecord(pendingId, newAccountPendingAirdrop.pendingAirdropValue());
+                    pendingStore.put(pendingId, newAccountPendingAirdrop);
                     recordBuilder.addPendingAirdrop(record);
                 });
 
@@ -220,12 +221,12 @@ public class TokenAirdropHandler implements TransactionHandler {
                     validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
                     var pendingId = createNftPendingAirdropId(
                             tokenId, item.serialNumber(), item.senderAccountID(), item.receiverAccountID());
-                    AccountAirdrop newAccountAirdrop = getNewAccountAirdropAndUpdateStores(
+                    AccountPendingAirdrop newAccountPendingAirdrop = getNewAccountPendingAirdropAndUpdateStores(
                             senderAccount, pendingId, null, accountStore, pendingStore);
                     // check for existence
                     validateTrue(!pendingStore.exists(pendingId), PENDING_NFT_AIRDROP_ALREADY_EXISTS);
-                    pendingStore.put(pendingId, newAccountAirdrop);
-                    var record = createPendingAirdropRecord(pendingId, newAccountAirdrop.pendingAirdropValue());
+                    pendingStore.put(pendingId, newAccountPendingAirdrop);
+                    var record = createPendingAirdropRecord(pendingId, newAccountPendingAirdrop.pendingAirdropValue());
                     recordBuilder.addPendingAirdrop(record);
                 });
 
@@ -275,36 +276,38 @@ public class TokenAirdropHandler implements TransactionHandler {
     }
 
     /**
-     *  Create new {@link AccountAirdrop} and if the sender has already existing pending airdrops
+     *  Create new {@link AccountPendingAirdrop} and if the sender has already existing pending airdrops
      *  link them together and update the account store and the pending airdrop store with the new values
      */
-    private AccountAirdrop getNewAccountAirdropAndUpdateStores(
+    private AccountPendingAirdrop getNewAccountPendingAirdropAndUpdateStores(
             Account senderAccount,
             PendingAirdropId pendingId,
             PendingAirdropValue pendingValue,
             WritableAccountStore accountStore,
             WritableAirdropStore pendingStore) {
 
-        AccountAirdrop newAccountAirdrop;
+        AccountPendingAirdrop newAccountPendingAirdrop;
         if (senderAccount.hasHeadPendingAirdropId()) {
             // Get the previous head pending airdrop and update the previous airdrop ID
             var headAirdropId = senderAccount.headPendingAirdropIdOrThrow();
-            var headAccountAirdrop = pendingStore.getForModify(headAirdropId);
-            validateTrue(headAccountAirdrop != null, INVALID_TOKEN_ID);
-            var updatedAirdrop =
-                    headAccountAirdrop.copyBuilder().previousAirdrop(pendingId).build();
+            var headAccountPendingAirdrop = pendingStore.getForModify(headAirdropId);
+            validateTrue(headAccountPendingAirdrop != null, INVALID_TOKEN_ID);
+            var updatedAirdrop = headAccountPendingAirdrop
+                    .copyBuilder()
+                    .previousAirdrop(pendingId)
+                    .build();
             pendingStore.patch(headAirdropId, updatedAirdrop);
 
             // Create new account airdrop with next airdrop ID the previous head airdrop
-            newAccountAirdrop = createAccountAirdrop(pendingId, pendingValue, headAirdropId);
+            newAccountPendingAirdrop = createAccountPendingAirdrop(pendingId, pendingValue, headAirdropId);
         } else {
-            newAccountAirdrop = createAccountAirdrop(pendingId, pendingValue);
+            newAccountPendingAirdrop = AirdropHandlerHelper.createAccountPendingAirdrop(pendingId, pendingValue);
         }
         // Update the sender account with new head pending airdrop
         var updatedSenderAccount =
                 senderAccount.copyBuilder().headPendingAirdropId(pendingId).build();
         accountStore.put(updatedSenderAccount);
-        return newAccountAirdrop;
+        return newAccountPendingAirdrop;
     }
 
     /**

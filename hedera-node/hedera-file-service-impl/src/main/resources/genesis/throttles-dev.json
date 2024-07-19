@@ -9,7 +9,8 @@
 		  "operations": [
 			"CryptoCreate",
 			"CryptoTransfer",
-		  	"TokenAirdrop",
+            "TokenAirdrop",
+			"TokenReject",
 			"CryptoUpdate",
 			"CryptoDelete",
 			"CryptoGetInfo",

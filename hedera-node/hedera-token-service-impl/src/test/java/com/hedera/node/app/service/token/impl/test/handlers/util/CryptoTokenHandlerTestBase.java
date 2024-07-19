@@ -43,10 +43,10 @@ import com.hedera.hapi.node.state.common.EntityIDPair;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.AccountAirdrop;
 import com.hedera.hapi.node.state.token.AccountApprovalForAllAllowance;
 import com.hedera.hapi.node.state.token.AccountCryptoAllowance;
 import com.hedera.hapi.node.state.token.AccountFungibleTokenAllowance;
+import com.hedera.hapi.node.state.token.AccountPendingAirdrop;
 import com.hedera.hapi.node.state.token.NetworkStakingRewards;
 import com.hedera.hapi.node.state.token.Nft;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
@@ -318,8 +318,8 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
     protected MapWritableKVState<AccountID, Account> writableAccounts;
     protected MapReadableKVState<TokenID, Token> readableTokenState;
     protected MapWritableKVState<TokenID, Token> writableTokenState;
-    protected MapReadableKVState<PendingAirdropId, AccountAirdrop> readableAirdropState;
-    protected MapWritableKVState<PendingAirdropId, AccountAirdrop> writableAirdropState;
+    protected MapReadableKVState<PendingAirdropId, AccountPendingAirdrop> readableAirdropState;
+    protected MapWritableKVState<PendingAirdropId, AccountPendingAirdrop> writableAirdropState;
     protected MapReadableKVState<EntityIDPair, TokenRelation> readableTokenRelState;
     protected MapWritableKVState<EntityIDPair, TokenRelation> writableTokenRelState;
     protected MapReadableKVState<NftID, Nft> readableNftState;
@@ -624,13 +624,15 @@ public class CryptoTokenHandlerTestBase extends StateBuilderUtil {
 
     private void givenReadableAirdropStore() {
         readableAirdropState = emptyReadableAirdropStateBuilder().build();
-        given(readableStates.<PendingAirdropId, AccountAirdrop>get(AIRDROPS)).willReturn(readableAirdropState);
+        given(readableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(readableAirdropState);
         readableAirdropStore = new ReadableAirdropStoreImpl(readableStates);
     }
 
     private void givenWritableAirdropStore() {
         writableAirdropState = emptyWritableAirdropStateBuilder().build();
-        given(writableStates.<PendingAirdropId, AccountAirdrop>get(AIRDROPS)).willReturn(writableAirdropState);
+        given(writableStates.<PendingAirdropId, AccountPendingAirdrop>get(AIRDROPS))
+                .willReturn(writableAirdropState);
         writableAirdropStore = new WritableAirdropStore(writableStates, configuration, storeMetricsService);
     }
 
