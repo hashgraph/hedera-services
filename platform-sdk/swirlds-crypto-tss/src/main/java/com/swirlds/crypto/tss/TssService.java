@@ -87,7 +87,7 @@ public interface TssService {
      * It is the responsibility of the caller to ensure that the list of private shares meets the required threshold.
      * If the threshold is not met, the private key returned by this method will be invalid.
      *
-     * @param privateShares   the private shares to aggregate
+     * @param privateShares the private shares to aggregate
      * @return the aggregate private key
      */
     @NonNull

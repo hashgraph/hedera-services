@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +58,7 @@ class TssTest {
                 .withThreshold(2)
                 .build(SIGNATURE_SCHEMA);
 
-        final TssServiceImpl tssService = new TssServiceImpl();
+        final TssServiceImpl tssService = new TssServiceImpl(SIGNATURE_SCHEMA, new Random());
 
         // this message will contain a random share split in 3 parts
         final TssMessage p0Message = tssService.generateTssMessage(p0sDirectory);
@@ -126,7 +127,7 @@ class TssTest {
                 .withThreshold(2)
                 .build(SIGNATURE_SCHEMA);
 
-        final TssServiceImpl tssService = new TssServiceImpl();
+        final TssServiceImpl tssService = new TssServiceImpl(SIGNATURE_SCHEMA, new Random());
         final List<TssPublicShare> publicShares =
                 List.of(mock(TssPublicShare.class), mock(TssPublicShare.class), mock(TssPublicShare.class));
         final PairingPublicKey ledgerID = tssService.aggregatePublicShares(publicShares);
@@ -180,7 +181,7 @@ class TssTest {
                 .withThreshold(2)
                 .build(SIGNATURE_SCHEMA);
 
-        final TssServiceImpl tssService = new TssServiceImpl();
+        final TssServiceImpl tssService = new TssServiceImpl(SIGNATURE_SCHEMA, new Random());
         final List<TssPublicShare> publicShares =
                 List.of(mock(TssPublicShare.class), mock(TssPublicShare.class), mock(TssPublicShare.class));
         final PairingPublicKey ledgerID = tssService.aggregatePublicShares(publicShares);

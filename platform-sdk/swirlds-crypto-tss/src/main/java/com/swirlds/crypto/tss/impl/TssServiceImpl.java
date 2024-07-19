@@ -19,6 +19,7 @@ package com.swirlds.crypto.tss.impl;
 import com.swirlds.crypto.signaturescheme.api.PairingPrivateKey;
 import com.swirlds.crypto.signaturescheme.api.PairingPublicKey;
 import com.swirlds.crypto.signaturescheme.api.PairingSignature;
+import com.swirlds.crypto.signaturescheme.api.SignatureSchema;
 import com.swirlds.crypto.tss.TssMessage;
 import com.swirlds.crypto.tss.TssParticipantDirectory;
 import com.swirlds.crypto.tss.TssPrivateShare;
@@ -28,11 +29,20 @@ import com.swirlds.crypto.tss.TssShareSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Random;
 
 /**
- * A mock implementation of the TssService.
+ * A prototype implementation of the TssService.
+ * future-work:Complete this implementation.
  */
 public class TssServiceImpl implements TssService {
+    private final SignatureSchema signatureSchema;
+    private final Random random;
+
+    public TssServiceImpl(@NonNull final SignatureSchema signatureSchema, @NonNull final Random random) {
+        this.signatureSchema = signatureSchema;
+        this.random = random;
+    }
 
     @NonNull
     @Override
@@ -67,7 +77,7 @@ public class TssServiceImpl implements TssService {
     @NonNull
     @Override
     public PairingPrivateKey aggregatePrivateShares(@NonNull final List<TssPrivateShare> privateShares) {
-        return new PairingPrivateKey();
+        return PairingPrivateKey.create(this.signatureSchema, this.random);
     }
 
     @Nullable

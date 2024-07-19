@@ -16,7 +16,34 @@
 
 package com.swirlds.crypto.signaturescheme.api;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Random;
+
 /**
- *  A Mock PairingPrivateKey
+ *  A Prototype implementation of PairingPrivateKey.
+ *  This class will live in a different project once the implementation of the pairings-signature-library is completed.
  */
-public record PairingPrivateKey() {}
+public record PairingPrivateKey() {
+
+    /**
+     * Creates a private key out of the CurveType and a random
+     *
+     * @param signatureSchema   The implementing curve type
+     * @param random The environment secureRandom to use
+     * @return a privateKey for that CurveType
+     */
+    @NonNull
+    public static PairingPrivateKey create(
+            @NonNull final SignatureSchema signatureSchema, @NonNull final Random random) {
+        return new PairingPrivateKey();
+    }
+
+    /**
+     * Create a public key from this private key.
+     *
+     * @return the public key
+     */
+    public PairingPublicKey createPublicKey() {
+        return new PairingPublicKey();
+    }
+}

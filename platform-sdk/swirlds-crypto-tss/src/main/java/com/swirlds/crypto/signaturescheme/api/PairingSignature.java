@@ -19,7 +19,9 @@ package com.swirlds.crypto.signaturescheme.api;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- *  A Mock PairingSignature
+ *  A Prototype implementation of PairingSignature.
+ *  This class will live in a different project once the implementation of the pairings-signature-library is completed.
+ *  The package and interface will remain constant.
  */
 public record PairingSignature() {
 

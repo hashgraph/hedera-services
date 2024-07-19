@@ -16,6 +16,8 @@
 
 package com.swirlds.crypto.signaturescheme.api;
 /**
- *  A Mock PairingPublicKey
+ *  A Prototype implementation of PairingPublicKey.
+ *  This class will live in a different project once the implementation of the pairings-signature-library is completed.
+ *  The package and interface will remain constant.
  */
 public record PairingPublicKey() {}
