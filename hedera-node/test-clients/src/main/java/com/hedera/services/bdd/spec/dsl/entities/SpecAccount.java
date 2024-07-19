@@ -84,7 +84,7 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     }
 
     /**
-     * Returns an operation to transfer tokens , transferring its balance to the given beneficiary.
+     * Returns an operation to transfer tokens, transferring its balance to the given beneficiary.
      *
      * @param to the beneficiary
      * @param units the number of units to transfer

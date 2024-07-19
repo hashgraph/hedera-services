@@ -407,8 +407,8 @@ public class HandleWorkflow {
     }
 
     /**
-     * Returns the initializes the base builder of the given user transaction initialized with its transaction
-     * information. The record builder list is initialized with the transaction, transaction bytes, transaction ID,
+     * Initializes the base builder of the given user transaction initialized with its transaction
+     * information. The record builder is initialized with the transaction, transaction bytes, transaction ID,
      * exchange rate, and memo.
      *
      * @param builder the base builder

@@ -20,10 +20,17 @@ import static com.hedera.hapi.node.base.HederaFunctionality.CONSENSUS_SUBMIT_MES
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -42,6 +49,7 @@ import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilde
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -100,6 +108,27 @@ public class RecordFinalizerTest {
         lenient().when(dispatch.recordBuilder()).thenReturn(recordBuilder);
         lenient().when(dispatch.finalizeContext()).thenReturn(finalizeContext);
         lenient().when(dispatch.handleContext()).thenReturn(handleContext);
+    }
+
+    @Test
+    public void testFinalizeRecordUserTransaction() {
+        when(dispatch.txnCategory()).thenReturn(USER);
+
+        when(dispatch.handleContext().dispatchPaidRewards()).thenReturn(Map.of());
+
+        subject.finalizeRecord(dispatch);
+
+        verify(finalizeRecordHandler).finalizeStakingRecord(any(), any(), any(), any());
+        verify(finalizeRecordHandler, never()).finalizeNonStakingRecord(any(), any());
+    }
+
+    @Test
+    public void testFinalizeRecordChildTransaction() {
+        when(dispatch.txnCategory()).thenReturn(CHILD);
+
+        subject.finalizeRecord(dispatch);
+        verify(finalizeRecordHandler, never()).finalizeStakingRecord(any(), any(), any(), any());
+        verify(finalizeRecordHandler, times(1)).finalizeNonStakingRecord(any(), any());
     }
 
     @Test

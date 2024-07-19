@@ -43,7 +43,7 @@ public class BuilderSinkImpl implements BuilderSink {
 
     /**
      * Constructs a {@link BuilderSinkImpl} with the given maximum number of preceding and following builders.
-     * Only the {@link com.hedera.node.app.workflows.handle.stack.savepoints.FirstRootSavepoint} uses this
+     * Only the {@link com.hedera.node.app.workflows.handle.stack.savepoints.FirstRootSavepoint} should use this
      * constructor, since other savepoints are limited by just a total capacity that doesn't discriminate
      * between preceding and following builders.
      * @param maxPreceding the maximum number of preceding builders

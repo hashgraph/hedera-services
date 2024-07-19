@@ -132,7 +132,7 @@ public class ChildDispatchFactory {
 
     /**
      * Creates a child dispatch. This method computes the transaction info and initializes record builder for the child
-     * transaction. This method also computes a synthetic pre-handle result for the child transaction.
+     * transaction. This method also computes a pre-handle result for the child transaction.
      *
      * @param txBody               the transaction body
      * @param callback             the key verifier for child dispatch

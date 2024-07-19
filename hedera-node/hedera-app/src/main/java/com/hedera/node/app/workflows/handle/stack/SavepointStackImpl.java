@@ -378,8 +378,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
     }
 
     /**
-     * Builds and caches the result of the user transaction with
-     * the explicitly provided records.
+     * Builds all the records for the user transaction.
      *
      * @param consensusTime consensus time of the transaction
      * @return the stream of records
