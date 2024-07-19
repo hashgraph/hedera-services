@@ -858,7 +858,7 @@ public class LeakyCryptoTestsSuite {
                             op9,
                             uploadDefaultFeeSchedules(GENESIS));
                 }))
-                .then(uploadDefaultFeeSchedules(GENESIS));
+                .then();
     }
 
     @HapiTest
