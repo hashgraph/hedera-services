@@ -52,7 +52,7 @@ import java.util.stream.IntStream;
  * }</pre>
  *
  */
-public class TssParticipantDirectory {
+public final class TssParticipantDirectory {
     private final List<TssShareId> ownedShareIds;
     private final Map<TssShareId, Integer> shareOwnersMap;
     private final Map<Integer, PairingPublicKey> publicKeyMap;
@@ -75,9 +75,9 @@ public class TssParticipantDirectory {
             @NonNull final Map<Integer, PairingPublicKey> tssEncryptionPublicKeyMap,
             @NonNull final PairingPrivateKey tssEncryptionPrivateKey,
             final int threshold) {
-        this.ownedShareIds = List.copyOf(ownedShareIds);
-        this.shareOwnersMap = Map.copyOf(shareOwnersMap);
-        this.publicKeyMap = Map.copyOf(tssEncryptionPublicKeyMap);
+        this.ownedShareIds = ownedShareIds;
+        this.shareOwnersMap = shareOwnersMap;
+        this.publicKeyMap = tssEncryptionPublicKeyMap;
         this.persistentPairingPrivateKey = tssEncryptionPrivateKey;
         this.threshold = threshold;
     }
@@ -235,10 +235,10 @@ public class TssParticipantDirectory {
                     participantEntries.keySet().stream().sorted().toList();
             final Map<Integer, PairingPublicKey> tssEncryptionPublicKeyMap = new HashMap<>();
 
-            for (Integer participantId : sortedParticipantIds) {
-                final ParticipantEntry record = participantEntries.get(participantId);
-                tssEncryptionPublicKeyMap.put(participantId, record.tssEncryptionPublicKey());
-                for (int i = 0; i < record.shareCount(); i++) {
+            for (final Integer participantId : sortedParticipantIds) {
+                final ParticipantEntry entry = participantEntries.get(participantId);
+                tssEncryptionPublicKeyMap.put(participantId, entry.tssEncryptionPublicKey());
+                for (int i = 0; i < entry.shareCount(); i++) {
                     if (elementIterator.hasNext()) {
                         final TssShareId tssShareId = elementIterator.next();
                         shareOwnersMap.put(tssShareId, participantId);
