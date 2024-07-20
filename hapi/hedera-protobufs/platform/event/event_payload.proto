@@ -1,0 +1,62 @@
+/**
+ * # Event Payload
+ * An Event Payload gossiped between nodes as part of events.
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in [RFC2119](https://www.ietf.org/rfc/rfc2119).
+ */
+syntax = "proto3";
+
+package com.hedera.hapi.platform.event;
+
+/*
+ * Hedera Network Services Protobuf
+ *
+ * Copyright (C) 2018 - 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import "event/state_signature_payload.proto";
+
+option java_package = "com.hedera.hapi.platform.event.legacy";
+// <<<pbj.java_package = "com.hedera.hapi.platform.event">>> This comment is special code for setting PBJ Compiler java package
+option java_multiple_files = true;
+
+/**
+ * An Event Payload gossiped between nodes as part of events.
+ * Each node MUST extract this payload and process according to the type
+ * of payload encoded.
+ * Both the platform and the application built on that platform MAY define event
+ * payloads.
+ * The encoded data SHOULD be a serialized protobuf message.
+ */
+message EventPayload {
+  oneof payload {
+      /**
+       * An application payload.<br/>
+       * The contents of this payload SHALL be defined by the application
+       * subsystem that created the event.<br/>
+       * The contents SHOULD be a serialized protobuf message.
+       */
+      bytes application_payload = 1;
+      /**
+       * A state signature.<br/>
+       * This payload SHALL be a valid state signature for a state snapshot.
+       */
+      StateSignaturePayload state_signature_payload = 2;
+  }
+
+}

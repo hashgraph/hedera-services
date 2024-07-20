@@ -26,7 +26,6 @@ import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.sequence.map.StandardSequenceMap;
 import com.swirlds.platform.system.events.EventDescriptor;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -120,9 +119,9 @@ public class DefaultStaleEventDetector implements StaleEventDetector {
     @Override
     public List<RoutableData<StaleEventDetectorOutput>> addConsensusRound(
             @NonNull final ConsensusRound consensusRound) {
-        for (final EventImpl event : consensusRound.getConsensusEvents()) {
+        for (final PlatformEvent event : consensusRound.getConsensusEvents()) {
             if (event.getCreatorId().equals(selfId)) {
-                selfEvents.remove(event.getBaseEvent().getDescriptor());
+                selfEvents.remove(event.getDescriptor());
             }
         }
 
