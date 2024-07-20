@@ -21,7 +21,6 @@ import static com.hedera.node.app.hapi.utils.forensics.OrderedComparison.statusH
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateVisibleItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.visibleItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.grouping.GroupingVerbs.getSystemFiles;
@@ -37,11 +36,10 @@ import com.hedera.services.bdd.junit.GenesisHapiTest;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.utilops.grouping.SysFileLookups;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItems;
-import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
@@ -55,12 +53,10 @@ public class GenesisSystemFileExportsTest {
     @GenesisHapiTest
     final Stream<DynamicTest> syntheticFileCreationsMatchQueries() {
         final AtomicReference<Map<FileID, Bytes>> preGenesisContents = new AtomicReference<>();
-        final AtomicReference<VisibleItemsAssertion> assertion = new AtomicReference<>();
         return hapiTest(
-                streamMustIncludeNoFailuresFrom(visibleItems(assertion, "genesisTxn")),
+                streamMustIncludeNoFailuresFrom(visibleItems(validatorFor(preGenesisContents), "genesisTxn")),
                 getSystemFiles(preGenesisContents::set),
                 cryptoCreate("firstUser").via("genesisTxn"),
-                validateVisibleItems(assertion, validatorFor(preGenesisContents)),
                 // Assert the first created entity still has the expected number
                 withOpContext((spec, opLog) -> assertEquals(
                         spec.startupProperties().getLong("hedera.firstUserEntity"),
@@ -68,7 +64,7 @@ public class GenesisSystemFileExportsTest {
                         "First user entity num doesn't match config")));
     }
 
-    private static BiConsumer<HapiSpec, Map<String, VisibleItems>> validatorFor(
+    private static VisibleItemsValidator validatorFor(
             @NonNull final AtomicReference<Map<FileID, Bytes>> preGenesisContents) {
         return (spec, records) -> validateSystemFileExports(spec, records, preGenesisContents.get());
     }

@@ -926,6 +926,9 @@ public class HapiSpec implements Runnable, Executable {
             while (true) {
                 try {
                     TxnUtils.triggerAndCloseAtLeastOneFile(this);
+                    if (!quietMode) {
+                        log.info("Closed at least one record file via background traffic");
+                    }
                 } catch (final InterruptedException ignore) {
                     Thread.currentThread().interrupt();
                     return;
