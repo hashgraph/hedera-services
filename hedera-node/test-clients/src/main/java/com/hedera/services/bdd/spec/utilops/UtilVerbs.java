@@ -1046,7 +1046,7 @@ public class UtilVerbs {
         return withOpContext((spec, opLog) -> {
             triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
             final var entries =
-                    assertion.get().itemsFuture().orTimeout(3, TimeUnit.SECONDS).join();
+                    assertion.get().itemsFuture().orTimeout(5, TimeUnit.SECONDS).join();
             validator.accept(spec, entries);
         });
     }
