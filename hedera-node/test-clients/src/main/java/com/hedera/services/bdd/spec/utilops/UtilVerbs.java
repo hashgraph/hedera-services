@@ -39,7 +39,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.BYTES_4K;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asId;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asTransactionID;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.timeUntilNextPeriod;
-import static com.hedera.services.bdd.spec.transactions.TxnUtils.triggerAndCloseAtLeastOneFileIfNotInterrupted;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileAppend;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileCreate;
@@ -58,6 +57,7 @@ import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.unti
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp.Containment.CONTAINS;
 import static com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp.Containment.DOES_NOT_CONTAIN;
+import static com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion.TIMEOUT_TO_VISIBLE;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
@@ -1044,9 +1044,12 @@ public class UtilVerbs {
         requireNonNull(assertion);
         requireNonNull(validator);
         return withOpContext((spec, opLog) -> {
-            triggerAndCloseAtLeastOneFileIfNotInterrupted(spec);
-            final var entries =
-                    assertion.get().itemsFuture().orTimeout(5, TimeUnit.SECONDS).join();
+            opLog.info("Waiting {} for any remaining entries for {}", TIMEOUT_TO_VISIBLE, assertion.get());
+            final var entries = assertion
+                    .get()
+                    .itemsFuture()
+                    .orTimeout(TIMEOUT_TO_VISIBLE.getSeconds(), TimeUnit.SECONDS)
+                    .join();
             validator.accept(spec, entries);
         });
     }

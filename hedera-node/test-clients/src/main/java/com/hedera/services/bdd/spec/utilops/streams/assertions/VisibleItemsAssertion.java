@@ -26,6 +26,8 @@ import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -40,7 +42,9 @@ import org.apache.logging.log4j.Logger;
 public class VisibleItemsAssertion implements RecordStreamAssertion {
     private static final long FIRST_USER_NUM = 1001L;
 
-    static final Logger log = LogManager.getLogger(VisibleItemsAssertion.class);
+    private static final Logger log = LogManager.getLogger(VisibleItemsAssertion.class);
+
+    public static final Duration TIMEOUT_TO_VISIBLE = Duration.ofSeconds(16);
 
     private final HapiSpec spec;
     private final Set<String> unseenIds;
@@ -72,6 +76,11 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
         latch = new CountDownLatch(unseenIds.size());
     }
 
+    @Override
+    public String toString() {
+        return "VisibleItemsAssertion{" + "unseenIds=" + unseenIds + ", seenIds=" + items.keySet() + '}';
+    }
+
     public CompletableFuture<Map<String, VisibleItems>> itemsFuture() {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -86,37 +95,39 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
     }
 
     @Override
-    public boolean isApplicableTo(@NonNull final RecordStreamItem item) {
-        unseenIds.stream()
-                .filter(id -> spec.registry()
-                        .getMaybeTxnId(id)
-                        .filter(txnId -> baseFieldsMatch(txnId, item.getRecord().getTransactionID()))
-                        .isPresent())
-                .findFirst()
-                .ifPresentOrElse(
-                        seenId -> {
-                            final var entry = RecordStreamEntry.from(item);
-                            final var isSynthItem = isSynthItem(entry);
-                            if (skipSynthItems == SkipSynthItems.NO || !isSynthItem) {
-                                if (withLogging) {
-                                    log.info(
-                                            "Saw {} as {}",
-                                            seenId,
-                                            item.getRecord().getTransactionID());
-                                }
-                                items.computeIfAbsent(seenId, ignore -> newVisibleItems())
-                                        .entries()
-                                        .add(entry);
-                                if (!seenId.equals(lastSeenId)) {
-                                    maybeFinishLastSeen();
-                                }
-                                lastSeenId = seenId;
-                            } else {
-                                items.computeIfAbsent(seenId, ignore -> newVisibleItems())
-                                        .trackSkippedSynthItem();
-                            }
-                        },
-                        this::maybeFinishLastSeen);
+    public synchronized boolean isApplicableTo(@NonNull final RecordStreamItem item) {
+        new ArrayList<>(unseenIds)
+                .stream()
+                        .filter(id -> spec.registry()
+                                .getMaybeTxnId(id)
+                                .filter(txnId ->
+                                        baseFieldsMatch(txnId, item.getRecord().getTransactionID()))
+                                .isPresent())
+                        .findFirst()
+                        .ifPresentOrElse(
+                                seenId -> {
+                                    final var entry = RecordStreamEntry.from(item);
+                                    final var isSynthItem = isSynthItem(entry);
+                                    if (skipSynthItems == SkipSynthItems.NO || !isSynthItem) {
+                                        if (withLogging) {
+                                            log.info(
+                                                    "Saw {} as {}",
+                                                    seenId,
+                                                    item.getRecord().getTransactionID());
+                                        }
+                                        items.computeIfAbsent(seenId, ignore -> newVisibleItems())
+                                                .entries()
+                                                .add(entry);
+                                        if (!seenId.equals(lastSeenId)) {
+                                            maybeFinishLastSeen();
+                                        }
+                                        lastSeenId = seenId;
+                                    } else {
+                                        items.computeIfAbsent(seenId, ignore -> newVisibleItems())
+                                                .trackSkippedSynthItem();
+                                    }
+                                },
+                                this::maybeFinishLastSeen);
         return true;
     }
 

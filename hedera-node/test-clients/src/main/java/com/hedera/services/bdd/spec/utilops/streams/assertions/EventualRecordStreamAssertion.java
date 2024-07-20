@@ -129,8 +129,12 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
                     }
                 }
             }
+
+            @Override
+            public String name() {
+                return assertion.toString();
+            }
         });
-        spec.sleepConsensusTime(POST_SUBSCRIPTION_PAUSE);
         return false;
     }
 
