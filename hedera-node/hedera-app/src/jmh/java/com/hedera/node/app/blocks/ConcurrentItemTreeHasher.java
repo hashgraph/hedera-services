@@ -56,22 +56,32 @@ public class ConcurrentItemTreeHasher implements ItemTreeHasher {
             return CompletableFuture.completedFuture(Bytes.wrap(EMPTY_HASH));
         }
         final var n = containingPowerOfTwo(items.size());
-        final var combiner = new HashCombiner(n);
+        final var combiner = new HashCombiner(n, 0);
         for (final var item : items) {
             final var serializedItem = BlockItem.PROTOBUF.toBytes(item).toByteArray();
             final var leafHash = noThrowSha384HashOf(serializedItem);
             combiner.combine(leafHash);
         }
-        for (int i = items.size(); i < n; i++) {
-            combiner.combine(EMPTY_HASH);
-        }
         return combiner.finalCombination();
     }
 
     private class HashCombiner {
+        private static final byte[] EMPTY_HASH = noThrowSha384HashOf(new byte[0]);
+        private static final int MAX_DEPTH = 24;
         private static final int MAX_CHUNK_SIZE = 128;
+        private static final byte[][] EMPTY_HASHES = new byte[MAX_DEPTH][];
+
+        static {
+            EMPTY_HASHES[0] = EMPTY_HASH;
+            for (int i = 1; i < MAX_DEPTH; i++) {
+                EMPTY_HASHES[i] = combine(EMPTY_HASHES[i - 1], EMPTY_HASHES[i - 1]);
+            }
+        }
+
+        private static final int MAX_LEAVES = 1 << MAX_DEPTH;
 
         private final int n;
+        private final int depth;
         private final int chunkSize;
 
         private int numCombined;
@@ -79,11 +89,15 @@ public class ConcurrentItemTreeHasher implements ItemTreeHasher {
         private List<byte[]> pendingHashes = new ArrayList<>();
         private CompletableFuture<Void> combination = CompletableFuture.completedFuture(null);
 
-        private HashCombiner(final int n) {
+        private HashCombiner(final int n, final int depth) {
             if ((n & (n - 1)) != 0) {
                 throw new IllegalArgumentException("Can only combine 2^n hashes");
             }
+            if (n > MAX_LEAVES) {
+                throw new IllegalArgumentException("Cannot combine more than " + MAX_LEAVES + " hashes");
+            }
             this.n = n;
+            this.depth = depth;
             this.chunkSize = Math.min(n, MAX_CHUNK_SIZE);
         }
 
@@ -96,9 +110,6 @@ public class ConcurrentItemTreeHasher implements ItemTreeHasher {
         }
 
         public CompletableFuture<Bytes> finalCombination() {
-            if (numCombined != n) {
-                throw new IllegalStateException("Have seen only " + numCombined + " of " + n + " hashes");
-            }
             if (n == 1) {
                 return CompletableFuture.completedFuture(Bytes.wrap(pendingHashes.getFirst()));
             } else {
@@ -111,15 +122,16 @@ public class ConcurrentItemTreeHasher implements ItemTreeHasher {
 
         private void schedulePendingWork() {
             if (delegate == null) {
-                delegate = new HashCombiner(n / 2);
+                delegate = new HashCombiner(n / 2, depth + 1);
             }
             final var scheduledWork = pendingHashes;
             final var pendingCombination = CompletableFuture.supplyAsync(
                     () -> {
                         final List<byte[]> result = new ArrayList<>();
                         for (int i = 0, m = scheduledWork.size(); i < m; i += 2) {
-                            final var combined = combine(scheduledWork.get(i), scheduledWork.get(i + 1));
-                            result.add(combined);
+                            final var left = scheduledWork.get(i);
+                            final var right = i + 1 < m ? scheduledWork.get(i + 1) : EMPTY_HASHES[depth];
+                            result.add(combine(left, right));
                         }
                         return result;
                     },
