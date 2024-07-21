@@ -30,11 +30,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 public class ConcurrentItemTreeHasher implements ItemTreeHasher {
-    private static final byte[] EMPTY_HASH = noThrowSha384HashOf(new byte[0]);
+    private static final int HASHING_CHUNK_SIZE = 32;
 
+    private final HashCombiner combiner = new HashCombiner(0);
     private final ExecutorService executorService;
-    private final List<BlockItem> items = new ArrayList<>();
+
+    private int numLeaves;
+    private int maxDepth;
     private boolean rootHashRequested = false;
+    private List<BlockItem> pendingItems = new ArrayList<>();
+    private CompletableFuture<Void> hashed = CompletableFuture.completedFuture(null);
 
     public ConcurrentItemTreeHasher(@NonNull final ExecutorService executorService) {
         this.executorService = requireNonNull(executorService);
@@ -46,72 +51,79 @@ public class ConcurrentItemTreeHasher implements ItemTreeHasher {
         if (rootHashRequested) {
             throw new IllegalStateException("Root hash already requested");
         }
-        items.add(item);
+        numLeaves++;
+        pendingItems.add(item);
+        if (pendingItems.size() == HASHING_CHUNK_SIZE) {
+            schedulePendingWork();
+        }
     }
 
     @Override
     public CompletableFuture<Bytes> rootHash() {
         rootHashRequested = true;
-        if (items.isEmpty()) {
-            return CompletableFuture.completedFuture(Bytes.wrap(EMPTY_HASH));
+        if (!pendingItems.isEmpty()) {
+            schedulePendingWork();
         }
-        final var n = containingPowerOfTwo(items.size());
-        final var combiner = new HashCombiner(n, 0);
-        for (final var item : items) {
-            final var serializedItem = BlockItem.PROTOBUF.toBytes(item).toByteArray();
-            final var leafHash = noThrowSha384HashOf(serializedItem);
-            combiner.combine(leafHash);
-        }
-        return combiner.finalCombination();
+        maxDepth = Integer.numberOfTrailingZeros(containingPowerOfTwo(numLeaves));
+        return hashed.thenCompose((ignore) -> combiner.finalCombination());
+    }
+
+    private void schedulePendingWork() {
+        final var scheduledWork = pendingItems;
+        final var pendingHashes = CompletableFuture.supplyAsync(
+                () -> {
+                    final List<byte[]> result = new ArrayList<>();
+                    for (final var item : scheduledWork) {
+                        final var serializedItem =
+                                BlockItem.PROTOBUF.toBytes(item).toByteArray();
+                        result.add(noThrowSha384HashOf(serializedItem));
+                    }
+                    return result;
+                },
+                executorService);
+        hashed = hashed.thenCombine(pendingHashes, (ignore, hashes) -> {
+            hashes.forEach(combiner::combine);
+            return null;
+        });
+        pendingItems = new ArrayList<>();
     }
 
     private class HashCombiner {
-        private static final byte[] EMPTY_HASH = noThrowSha384HashOf(new byte[0]);
         private static final int MAX_DEPTH = 24;
-        private static final int MAX_CHUNK_SIZE = 128;
+        private static final int COMBINATION_CHUNK_SIZE = 32;
         private static final byte[][] EMPTY_HASHES = new byte[MAX_DEPTH][];
 
         static {
-            EMPTY_HASHES[0] = EMPTY_HASH;
+            EMPTY_HASHES[0] = noThrowSha384HashOf(new byte[0]);
             for (int i = 1; i < MAX_DEPTH; i++) {
                 EMPTY_HASHES[i] = combine(EMPTY_HASHES[i - 1], EMPTY_HASHES[i - 1]);
             }
         }
 
-        private static final int MAX_LEAVES = 1 << MAX_DEPTH;
-
-        private final int n;
         private final int depth;
-        private final int chunkSize;
 
-        private int numCombined;
         private HashCombiner delegate;
         private List<byte[]> pendingHashes = new ArrayList<>();
         private CompletableFuture<Void> combination = CompletableFuture.completedFuture(null);
 
-        private HashCombiner(final int n, final int depth) {
-            if ((n & (n - 1)) != 0) {
-                throw new IllegalArgumentException("Can only combine 2^n hashes");
+        private HashCombiner(final int depth) {
+            if (depth >= MAX_DEPTH) {
+                throw new IllegalArgumentException("Cannot combine hashes at depth " + depth);
             }
-            if (n > MAX_LEAVES) {
-                throw new IllegalArgumentException("Cannot combine more than " + MAX_LEAVES + " hashes");
-            }
-            this.n = n;
             this.depth = depth;
-            this.chunkSize = Math.min(n, MAX_CHUNK_SIZE);
         }
 
         public void combine(@NonNull final byte[] hash) {
-            numCombined++;
             pendingHashes.add(hash);
-            if (n > 1 && pendingHashes.size() == chunkSize) {
+            if (pendingHashes.size() == COMBINATION_CHUNK_SIZE) {
                 schedulePendingWork();
             }
         }
 
         public CompletableFuture<Bytes> finalCombination() {
-            if (n == 1) {
-                return CompletableFuture.completedFuture(Bytes.wrap(pendingHashes.getFirst()));
+            if (depth == maxDepth) {
+                final var rootHash = pendingHashes.isEmpty() ? EMPTY_HASHES[0] : pendingHashes.getFirst();
+                return CompletableFuture.completedFuture(Bytes.wrap(rootHash));
             } else {
                 if (!pendingHashes.isEmpty()) {
                     schedulePendingWork();
@@ -122,7 +134,7 @@ public class ConcurrentItemTreeHasher implements ItemTreeHasher {
 
         private void schedulePendingWork() {
             if (delegate == null) {
-                delegate = new HashCombiner(n / 2, depth + 1);
+                delegate = new HashCombiner(depth + 1);
             }
             final var scheduledWork = pendingHashes;
             final var pendingCombination = CompletableFuture.supplyAsync(
