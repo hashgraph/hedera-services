@@ -32,11 +32,13 @@ sourceSets {
         pbj {
             srcDir(layout.projectDirectory.dir("hedera-protobufs/services"))
             srcDir(layout.projectDirectory.dir("hedera-protobufs/streams"))
+            srcDir(layout.projectDirectory.dir("hedera-protobufs/block"))
             srcDir(layout.projectDirectory.dir("hedera-protobufs/platform"))
         }
         proto {
             srcDir(layout.projectDirectory.dir("hedera-protobufs/services"))
             srcDir(layout.projectDirectory.dir("hedera-protobufs/streams"))
+            srcDir(layout.projectDirectory.dir("hedera-protobufs/block"))
             srcDir(layout.projectDirectory.dir("hedera-protobufs/platform"))
         }
     }

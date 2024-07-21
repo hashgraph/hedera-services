@@ -67,6 +67,29 @@ message RealmID {
 }
 
 /**
+ * A specific hash algorithm.
+ *
+ * We did not reuse Record Stream `HashAlgorithm` here because in all cases,
+ * currently, this will be `SHA_384` and if that is the default value then
+ * we can save space by not serializing it, whereas `HASH_ALGORITHM_UNKNOWN`
+ * is the default for Record Stream `HashAlgorithm`.
+ *
+ * Note that enum values here MUST NOT match the name of any other enum value
+ * in the same `package`, as protobuf follows `C++` scope rules and all enum
+ * _names_ are treated as global constants within the `package`.
+ */
+enum BlockHashAlgorithm {
+    /**
+     * A SHA2 algorithm SHA-384 hash.
+     * <p>
+     * This is the default value, if a field of this enumerated type is
+     * not set, then this is the value that will be decoded when the
+     * serialized message is read.
+     */
+    SHA2_384 = 0;
+}
+
+/**
  * The ID for an a cryptocurrency account
  */
 message AccountID {
@@ -647,7 +670,7 @@ message Key {
          * contractID key, which also requires the code in the active message frame belong to the
          * the contract with the given id.)
          */
-        ContractID delegatable_contract_id = 8; 
+        ContractID delegatable_contract_id = 8;
     }
 }
 
