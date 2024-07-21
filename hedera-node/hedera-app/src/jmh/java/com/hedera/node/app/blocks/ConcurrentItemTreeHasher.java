@@ -30,7 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 public class ConcurrentItemTreeHasher implements ItemTreeHasher {
-    private static final int HASHING_CHUNK_SIZE = 32;
+    private static final int HASHING_CHUNK_SIZE = 16;
 
     private final HashCombiner combiner = new HashCombiner(0);
     private final ExecutorService executorService;
