@@ -45,7 +45,6 @@ import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
@@ -76,7 +75,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.logging.log4j.LogManager;
@@ -249,7 +247,8 @@ public class HandleWorkflow {
 
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
         final var streamItems = execute(userTxn);
-        blockRecordManager.endUserTransaction(streamItems, state);
+        // TODO: need to switch with config and send block items to block stream manager
+        blockRecordManager.endUserTransaction(streamItems.records().stream(), state);
 
         handleWorkflowMetrics.updateTransactionDuration(
                 userTxn.functionality(), (int) (System.nanoTime() - handleStart));
@@ -310,7 +309,7 @@ public class HandleWorkflow {
      *
      * @return the stream of records
      */
-    private Stream<SingleTransactionRecord> execute(@NonNull final UserTxn userTxn) {
+    private StreamExecuted execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo()).status(BUSY);
@@ -334,8 +333,8 @@ public class HandleWorkflow {
                 updateWorkflowMetrics(userTxn);
             }
             final var streamItems = userTxn.stack().buildStreamItems(userTxn.consensusNow());
-            recordCache.add(userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), streamItems);
-            return streamItems.stream();
+            recordCache.add(userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), streamItems.records());
+            return streamItems;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
             return failInvalidStreamItems(userTxn);
@@ -348,7 +347,7 @@ public class HandleWorkflow {
      *
      * @return the failure record
      */
-    private Stream<SingleTransactionRecord> failInvalidStreamItems(@NonNull final UserTxn userTxn) {
+    private StreamExecuted failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
         final var failInvalidBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
         initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
@@ -359,7 +358,8 @@ public class HandleWorkflow {
                 userTxn.creatorInfo().nodeId(),
                 requireNonNull(userTxn.txnInfo().payerID()),
                 List.of(failInvalidRecord));
-        return Stream.of(failInvalidRecord);
+        // TODO: Add block items
+        return new StreamExecuted(List.of(), List.of(failInvalidRecord));
     }
 
     /**

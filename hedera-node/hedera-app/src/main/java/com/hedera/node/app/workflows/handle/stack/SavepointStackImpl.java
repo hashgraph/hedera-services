@@ -33,6 +33,7 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.workflows.handle.StreamExecuted;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.BuilderSinkImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstChildSavepoint;
@@ -383,7 +384,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
      * @param consensusTime consensus time of the transaction
      * @return the stream of records
      */
-    public List<SingleTransactionRecord> buildStreamItems(@NonNull final Instant consensusTime) {
+    public StreamExecuted buildStreamItems(@NonNull final Instant consensusTime) {
         final List<SingleTransactionRecord> records = new ArrayList<>();
         final var builders = allStreamBuilders();
         TransactionID.Builder idBuilder = null;
@@ -415,7 +416,8 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
             }
             records.add(((SingleTransactionRecordBuilderImpl) builder).build());
         }
-        return records;
+        // TODO: Add block items
+        return new StreamExecuted(List.of(), records);
     }
 
     private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {
