@@ -52,4 +52,11 @@ public @interface LeakyEmbeddedHapiTest {
      * @return the reasons the test cannot run concurrently with other tests
      */
     ContextRequirement[] requirement() default {};
+
+    /**
+     * If set, the names of properties this test overrides and needs automatically
+     * restored to their original values after the test completes.
+     * @return the names of properties this test overrides
+     */
+    String[] overrides() default {};
 }

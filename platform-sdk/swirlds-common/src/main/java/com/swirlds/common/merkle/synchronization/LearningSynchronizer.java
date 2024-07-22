@@ -247,6 +247,7 @@ public class LearningSynchronizer implements ReconnectNodeCount {
                 .setInternalNodes(internalNodesReceived)
                 .setRedundantInternalNodes(redundantInternalNodes)
                 .toString());
+        logger.info(RECONNECT.getMarker(), () -> mapStats.format());
     }
 
     /**

@@ -599,7 +599,6 @@ public class PlatformWiring {
         // specified ordering, relative to the wire carrying consensus rounds to the round handler
         final WireTransformer<ConsensusRound, Long> keystoneEventSequenceNumberTransformer = new WireTransformer<>(
                 model, "getKeystoneEventSequenceNumber", "rounds", round -> round.getKeystoneEvent()
-                        .getBaseEvent()
                         .getStreamSequenceNumber());
         keystoneEventSequenceNumberTransformer
                 .getOutputWire()
