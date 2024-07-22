@@ -32,11 +32,12 @@ import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
-import com.hedera.node.app.spi.workflows.GenesisContext;
+import com.hedera.node.app.spi.workflows.SystemContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.config.data.AccountsConfig;
@@ -64,8 +65,8 @@ import org.apache.logging.log4j.Logger;
  * the corresponding synthetic records when a consensus time becomes available.
  */
 @Singleton
-public class GenesisSetup {
-    private static final Logger log = LogManager.getLogger(GenesisSetup.class);
+public class SystemSetup {
+    private static final Logger log = LogManager.getLogger(SystemSetup.class);
     private static final String SYSTEM_ACCOUNT_CREATION_MEMO = "Synthetic system creation";
     private static final String STAKING_MEMO = "Release 0.24.1 migration record";
     private static final String TREASURY_CLONE_MEMO = "Synthetic zero-balance treasury clone";
@@ -82,10 +83,10 @@ public class GenesisSetup {
     private final SyntheticAccountCreator syntheticAccountCreator;
 
     /**
-     * Constructs a new {@link GenesisSetup}.
+     * Constructs a new {@link SystemSetup}.
      */
     @Inject
-    public GenesisSetup(
+    public SystemSetup(
             @NonNull final FileServiceImpl fileService,
             @NonNull final SyntheticAccountCreator syntheticAccountCreator) {
         this.fileService = requireNonNull(fileService);
@@ -96,8 +97,9 @@ public class GenesisSetup {
      * Creates the system entities within the given dispatch.
      *
      * @param dispatch the genesis dispatch
+     * @param isFirstTransactionAfterFreezeRestart the first transaction we're handling after a freeze restart.
      */
-    public void createSystemEntities(@NonNull final Dispatch dispatch) {
+    public void createSystemEntities(@NonNull final Dispatch dispatch, boolean isFirstTransactionAfterFreezeRestart) {
         final var config = dispatch.config();
         final var hederaConfig = config.getConfigData(HederaConfig.class);
         final var firstUserNum = config.getConfigData(HederaConfig.class).firstUserEntity();
@@ -106,7 +108,8 @@ public class GenesisSetup {
                 .realmNum(hederaConfig.realm())
                 .accountNum(config.getConfigData(AccountsConfig.class).systemAdmin())
                 .build();
-        final var genesisContext = new GenesisContext() {
+        final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
+        final var systemContext = new SystemContext() {
             @Override
             public void dispatchCreation(@NonNull final TransactionBody txBody, final long entityNum) {
                 requireNonNull(txBody);
@@ -129,6 +132,17 @@ public class GenesisSetup {
                 }
             }
 
+            @Override
+            public void dispatchUpdate(@NonNull final TransactionBody txBody) {
+                requireNonNull(txBody);
+                final var recordBuilder = dispatch.handleContext()
+                        .dispatchPrecedingTransaction(
+                                txBody, SingleTransactionRecordBuilder.class, key -> true, systemAdminId);
+                if (recordBuilder.status() != SUCCESS) {
+                    log.error("Failed to dispatch update transaction {} for - {}", txBody, recordBuilder.status());
+                }
+            }
+
             @NonNull
             @Override
             public Configuration configuration() {
@@ -147,12 +161,17 @@ public class GenesisSetup {
                 return dispatch.consensusNow();
             }
         };
-        fileService.createSystemEntities(genesisContext);
-        // Before returning, reset the next entity number to be the first user entity
-        final var controlledNum = dispatch.stack()
-                .getWritableStates(EntityIdService.NAME)
-                .<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY);
-        controlledNum.put(new EntityNumber(firstUserNum - 1));
+
+        if (isFirstTransactionAfterFreezeRestart) {
+            fileService.updateNodeDetailsAfterFreeze(systemContext, nodeStore);
+        } else {
+            fileService.createSystemEntities(systemContext);
+            // Before returning, reset the next entity number to be the first user entity
+            final var controlledNum = dispatch.stack()
+                    .getWritableStates(EntityIdService.NAME)
+                    .<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY);
+            controlledNum.put(new EntityNumber(firstUserNum - 1));
+        }
         dispatch.stack().commitFullStack();
     }
 

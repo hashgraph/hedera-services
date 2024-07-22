@@ -16,10 +16,11 @@
 
 package com.hedera.node.app.service.file.impl;
 
+import com.hedera.node.app.service.addressbook.ReadableNodeStore;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.spi.RpcService;
-import com.hedera.node.app.spi.workflows.GenesisContext;
+import com.hedera.node.app.spi.workflows.SystemContext;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
@@ -52,7 +53,7 @@ public final class FileServiceImpl implements FileService {
      *
      * @param context the genesis context
      */
-    public void createSystemEntities(@NonNull final GenesisContext context) {
+    public void createSystemEntities(@NonNull final SystemContext context) {
         genesisSchema.createGenesisAddressBookAndNodeDetails(context);
         genesisSchema.createGenesisExchangeRate(context);
         genesisSchema.createGenesisFeeSchedule(context);
@@ -69,5 +70,16 @@ public final class FileServiceImpl implements FileService {
      */
     public V0490FileSchema genesisSchema() {
         return genesisSchema;
+    }
+
+    /**
+     * Creates the 102 files in the given genesis context.
+     *
+     * @param context the genesis context
+     * @param nodeStore the ReadableNodeStore
+     */
+    public void updateNodeDetailsAfterFreeze(
+            @NonNull final SystemContext context, @NonNull final ReadableNodeStore nodeStore) {
+        genesisSchema.updateNodeDetailsAfterFreeze(context, nodeStore);
     }
 }

@@ -52,9 +52,9 @@ import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.GenesisSetup;
 import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.SystemSetup;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
 import com.hedera.node.app.workflows.handle.steps.UserTxn;
@@ -106,7 +106,7 @@ public class HandleWorkflow {
     private final SemanticVersion version;
     private final InitTrigger initTrigger;
     private final HollowAccountCompletions hollowAccountCompletions;
-    private final GenesisSetup genesisSetup;
+    private final SystemSetup systemSetup;
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final PreHandleWorkflow preHandleWorkflow;
@@ -131,7 +131,7 @@ public class HandleWorkflow {
             @NonNull final SemanticVersion version,
             @NonNull final InitTrigger initTrigger,
             @NonNull final HollowAccountCompletions hollowAccountCompletions,
-            @NonNull final GenesisSetup genesisSetup,
+            @NonNull final SystemSetup systemSetup,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
             @NonNull final PreHandleWorkflow preHandleWorkflow) {
@@ -153,7 +153,7 @@ public class HandleWorkflow {
         this.version = requireNonNull(version);
         this.initTrigger = requireNonNull(initTrigger);
         this.hollowAccountCompletions = requireNonNull(hollowAccountCompletions);
-        this.genesisSetup = requireNonNull(genesisSetup);
+        this.systemSetup = requireNonNull(systemSetup);
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
@@ -241,8 +241,9 @@ public class HandleWorkflow {
 
         final var consensusNow = txn.getConsensusTimestamp().minusNanos(1000 - 3L);
         final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
+        final var isFirstTransactionAfterFreezeRestart = isFirstTransactionAfterFreezeRestart(platformState);
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var recordStream = execute(userTxn);
+        final var recordStream = execute(userTxn, isFirstTransactionAfterFreezeRestart);
         blockRecordManager.endUserTransaction(recordStream, state);
 
         handleWorkflowMetrics.updateTransactionDuration(
@@ -303,22 +304,23 @@ public class HandleWorkflow {
      *
      * @return the stream of records
      */
-    private Stream<SingleTransactionRecord> execute(@NonNull final UserTxn userTxn) {
+    private Stream<SingleTransactionRecord> execute(
+            @NonNull final UserTxn userTxn, boolean isFirstTransactionAfterFreezeRestart) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 skip(userTxn);
             } else {
                 if (userTxn.isGenesisTxn()) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
-                    genesisSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
+                    systemSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
                 }
                 updateNodeStakes(userTxn);
                 blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);
-                if (userTxn.isGenesisTxn()) {
-                    genesisSetup.createSystemEntities(dispatch);
+                if (userTxn.isGenesisTxn() || isFirstTransactionAfterFreezeRestart) {
+                    systemSetup.createSystemEntities(dispatch, isFirstTransactionAfterFreezeRestart);
                 }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
                 dispatchProcessor.processDispatch(dispatch);
@@ -550,5 +552,15 @@ public class HandleWorkflow {
                 storeMetricsService,
                 blockRecordManager,
                 this);
+    }
+
+    /** check to see if this is the first transaction we're handling after a freeze restart.
+     *
+     * @param platformState the current platform state
+     * @return isFirstTransactionAfterFreezeRestart
+     */
+    private boolean isFirstTransactionAfterFreezeRestart(@NonNull final PlatformState platformState) {
+        return platformState.getFreezeTime() != null
+                && platformState.getFreezeTime().equals(platformState.getLastFrozenTime());
     }
 }
