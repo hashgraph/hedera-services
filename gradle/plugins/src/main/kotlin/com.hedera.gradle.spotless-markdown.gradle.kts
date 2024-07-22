@@ -18,7 +18,7 @@ plugins { id("com.hedera.gradle.spotless") }
 
 spotless {
     flexmark {
-        target("**/*.md", ".gitignore")
+        target("**/*.md")
         flexmark()
         trimTrailingWhitespace()
         indentWithSpaces()
