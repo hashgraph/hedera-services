@@ -315,7 +315,7 @@ myDoubleGauge:,myDoubleGauge,
 ```
 
 The first section of the list is metadata that defines the file name (that includes the `nodeId`) and a list of all metric names.
-The metric category is ignored here. As you can see the 2 gauges with same name but different category are ends in 2 times the same line.
+The metric category is ignored here. As you can see, the two gauges with the same name but different categories are printed twice in the same line.
 This proposal would not change that behavior.
 
 The second section of the list defines the metrics and their values. This part will be changed to include the labels.
