@@ -1,7 +1,7 @@
 # EVM Transaction Response Codes in Hedera
 
 When executing a transaction processed by the EVM (i.e., EVM Transaction) using `ContractCreate`, `ContractCall`, `EthereumTransaction`, and `ContractCallLocal` in Hedera, different response codes may be present for the top-level status after the transaction is finished. 
-These responses are found in the transaction receipt. This document's goal is to list the possible EVM transaction type-specific status codes for failure.
+These responses are found in the transaction receipt. This document's goal is to list the possible EVM transaction type-specific status codes for failure (i.e. different from SUCCESS).
 
 ## Propagated EVM Transaction Response Codes
 These response codes can appear for `ContractCall`, `ContractCreate`, and `EthereumTransaction`.
