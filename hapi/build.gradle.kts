@@ -33,7 +33,7 @@ tasks.cloneHederaProtobufs {
     //    tag = "v0.51.0"
     // uncomment below to use a specific branch
     //     branch = "main"
-    branch = "hip-904-TokenClaimAirdrop"
+    branch = "hip-904-proto-updates"
 }
 
 sourceSets {

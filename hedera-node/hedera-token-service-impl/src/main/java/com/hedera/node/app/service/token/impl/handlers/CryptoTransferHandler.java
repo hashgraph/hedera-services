@@ -145,7 +145,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.cryptoTransfer();
         validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
-        validator.cryptoTransferPureChecks(op);
+        validator.pureChecks(op);
     }
 
     @Override

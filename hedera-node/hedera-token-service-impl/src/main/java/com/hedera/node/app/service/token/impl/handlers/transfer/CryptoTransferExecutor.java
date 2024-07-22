@@ -180,7 +180,7 @@ public class CryptoTransferExecutor {
         final var replacedOp = new ReplaceAliasesWithIDsInOp().replaceAliasesWithIds(op, transferContext);
         // re-run pure checks on this op to see if there are no duplicates
         try {
-            validator.cryptoTransferPureChecks(replacedOp);
+            validator.pureChecks(replacedOp);
         } catch (PreCheckException e) {
             throw new HandleException(e.responseCode());
         }
