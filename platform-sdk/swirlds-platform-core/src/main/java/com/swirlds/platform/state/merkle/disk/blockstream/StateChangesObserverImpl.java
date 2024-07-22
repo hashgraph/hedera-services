@@ -34,9 +34,6 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.schedule.ScheduleList;
@@ -85,7 +82,7 @@ public class StateChangesObserverImpl implements StateChangesObserver {
 
     public void resetEndOfRoundStateChanges() {
         endOfRoundStateChanges = new LinkedList<>();
-        endOfRoundSingletonStateChanges = new HashMap<String, StateChange>();
+        endOfRoundSingletonStateChanges = new HashMap<>();
     }
 
     public boolean hasRecordedStateChanges() {
@@ -170,14 +167,12 @@ public class StateChangesObserverImpl implements StateChangesObserver {
         setMapUpdateChangeValue(builder, value);
         final var change = builder.build();
         final var stateChange = StateChange.newBuilder()
-                // .merkleTreePath() // TODO(nickpoorman): TBD if we need to include this
                 .stateName(stateKey)
                 .mapUpdate(change)
                 .build();
         StateChangesObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
     }
 
-    // TODO(nickpoorman): We should have PBJ generate these.
     private static <K> void setMapUpdateChangeKey(@NonNull final MapUpdateChange.Builder b, @NonNull final K key) {
         switch (key) {
             case AccountID accountID -> b.key(new MapChangeKey.Builder().accountIdKey(accountID));
@@ -185,9 +180,6 @@ public class StateChangesObserverImpl implements StateChangesObserver {
             case EntityNumber entityNumber -> b.key(new MapChangeKey.Builder().entityNumberKey(entityNumber));
             case FileID fileID -> b.key(new MapChangeKey.Builder().filedIdKey(fileID));
             case NftID nftID -> b.key(new MapChangeKey.Builder().nftIdKey(nftID));
-            /*case ProtoBytes protoBytes -> b.key(new MapChangeKey.Builder().protoBytesKey(protoBytes));
-            case ProtoLong protoLong -> b.key(new MapChangeKey.Builder().protoLongKey(protoLong));
-            case ProtoString protoString -> b.key(new MapChangeKey.Builder().protoStringKey(protoString));*/
             case ScheduleID scheduleID -> b.key(new MapChangeKey.Builder().scheduleIdKey(scheduleID));
             case SlotKey slotKey -> b.key(new MapChangeKey.Builder().slotKeyKey(slotKey));
             case TokenID tokenID -> b.key(new MapChangeKey.Builder().tokenIdKey(tokenID));
@@ -207,7 +199,6 @@ public class StateChangesObserverImpl implements StateChangesObserver {
             case Bytecode bytecode -> b.value(new MapChangeValue.Builder().bytecodeValue(bytecode));
             case File file -> b.value(new MapChangeValue.Builder().fileValue(file));
             case Nft nft -> b.value(new MapChangeValue.Builder().nftValue(nft));
-            //case ProtoString protoString -> b.value(new MapChangeValue.Builder().protoStringValue(protoString));
             case Schedule schedule -> b.value(new MapChangeValue.Builder().scheduleValue(schedule));
             case ScheduleList scheduleList -> b.value(new MapChangeValue.Builder().scheduleListValue(scheduleList));
             case SlotValue slotValue -> b.value(new MapChangeValue.Builder().slotValueValue(slotValue));
@@ -228,7 +219,6 @@ public class StateChangesObserverImpl implements StateChangesObserver {
         setQueuePushChangeElement(builder, value);
         final var change = builder.build();
         final var stateChange = StateChange.newBuilder()
-                // .merkleTreePath() // TODO(nickpoorman): TBD if we need to include this
                 .stateName(stateKey)
                 .queuePush(change)
                 .build();
@@ -249,7 +239,6 @@ public class StateChangesObserverImpl implements StateChangesObserver {
 
     public void queuePopChange(@NonNull final String stateKey) {
         final var stateChange = StateChange.newBuilder()
-                // .merkleTreePath() // TODO(nickpoorman): TBD if we need to include this
                 .stateName(stateKey)
                 .queuePop(new QueuePopChange())
                 .build();
@@ -263,7 +252,6 @@ public class StateChangesObserverImpl implements StateChangesObserver {
         setSingletonUpdateChangeValue(builder, value);
         final var change = builder.build();
         final var stateChange = StateChange.newBuilder()
-                // .merkleTreePath() // TODO(nickpoorman): TBD if we need to include this
                 .stateName(stateKey)
                 .singletonUpdate(change)
                 .build();
@@ -278,7 +266,6 @@ public class StateChangesObserverImpl implements StateChangesObserver {
             case ExchangeRateSet exchangeRateSet -> b.exchangeRateSetValue(exchangeRateSet);
             case NetworkStakingRewards networkStakingRewards -> b.networkStakingRewardsValue(networkStakingRewards);
             case Bytes protoBytes -> b.bytesValue(protoBytes);
-            //case ProtoString protoString -> b.protoStringValue(protoString);
             case RunningHashes runningHashes -> b.runningHashesValue(runningHashes);
             case Timestamp timestamp -> b.timestampValue(timestamp);
             case ThrottleUsageSnapshots throttleUsageSnapshots -> b.throttleUsageSnapshotsValue(throttleUsageSnapshots);

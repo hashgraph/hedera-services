@@ -17,9 +17,6 @@
 package com.swirlds.platform.state.merkle.disk.blockstream;
 
 import com.hedera.hapi.block.stream.output.StateChange;
-import com.swirlds.platform.system.Round;
-import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.util.LinkedList;

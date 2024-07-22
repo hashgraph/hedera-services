@@ -23,16 +23,44 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+/**
+ * An interface responsible for recording the state changes on occurrence of particular events
+ * (user, child and system transactions as well as end of an event and end of a round)
+ */
 public interface StateChangesSink {
 
+    /**
+     * Record end of round state changes
+     * @param round the round we record the state changes
+     * @param fn runnable to execute
+     */
     void recordRoundStateChanges(@NonNull final Round round, @NonNull final Runnable fn);
 
+    /**
+     * Record event state changes
+     * @param platformEvent the event we record the state changes
+     * @param fn runnable to execute
+     */
     void recordEventStateChanges(@NonNull final ConsensusEvent platformEvent, @NonNull final Runnable fn);
 
+    /**
+     * Record state changes from a system transaction
+     * @param platformTxn the system transaction we record the state changes
+     * @param fn runnable to execute
+     */
     void recordSystemTransactionStateChanges(@NonNull final ConsensusTransaction platformTxn, @NonNull final Runnable fn);
 
+    /**
+     * Record state changes from a user transaction
+     * @param platformTxn the user transaction we record the state changes
+     * @param fn runnable to execute
+     */
     void recordUserTransactionStateChanges(@NonNull final ConsensusTransaction platformTxn, @NonNull final Runnable fn);
 
+    /**
+     * Record state changes from a child transaction
+     * @param fn runnable to execute
+     */
     void recordUserChildTransactionStateChanges(@NonNull final Runnable fn);
 
     /**

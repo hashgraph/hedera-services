@@ -22,26 +22,85 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * An interface responsible for observing any state changes occurred on state
+ * and some additional helper methods
+ */
 public interface StateChangesObserver {
+
+    /**
+     * Add a state change so that it can be written to the block stream
+     * @param stateChange the state change to be written
+     */
     void addStateChange(@NonNull final StateChange stateChange);
 
+    /**
+     * Return all the state changes currently extracted
+     * @return all state changes
+     */
     List<StateChange> getStateChanges();
 
+    /**
+     * Return state changes from the end of a round
+     * @return end of round state changes
+     */
     LinkedList<StateChange> getEndOfRoundStateChanges();
 
-    <K, V> void mapUpdateChange(@NonNull final String stateKey, @NonNull final K key, @NonNull final V value);
+    /**
+     * Save the state change when an entry is added in to a map.
+     *
+     * @param label The label of the map
+     * @param key The key added to the map
+     * @param value The value added to the map
+     * @param <K> The type of the key
+     * @param <V> The type of the value
+     */
+    <K, V> void mapUpdateChange(@NonNull final String label, @NonNull final K key, @NonNull final V value);
 
-    <V> void queuePushChange(@NonNull final String stateKey, @NonNull final V value);
+    /**
+     * Save the state change when a value is added to a queue
+     *
+     * @param label The label of the queue
+     * @param value The value added to the queue
+     * @param <V> The type of the value
+     */
+    <V> void queuePushChange(@NonNull final String label, @NonNull final V value);
 
-    void queuePopChange(@NonNull final String stateKey);
+    /**
+     * Save the state change when a value is removed from a queue
+     *
+     * @param label The label of the queue
+     */
+    void queuePopChange(@NonNull final String label);
 
-    <V> void singletonUpdateChange(@NonNull final String stateKey, @NonNull final V value);
+    /**
+     * Save the state change when the value of a singleton is written.
+     *
+     * @param label The label of the singleton
+     * @param value The value of the singleton
+     * @param <V> The type of the value
+     */
+    <V> void singletonUpdateChange(@NonNull final String label, @NonNull final V value);
 
+    /**
+     * Reset end of round state changes
+     */
     void resetEndOfRoundStateChanges();
 
+    /**
+     * Reset current state changes
+     */
     void resetStateChanges();
 
+    /**
+     * Check if there are any state changes currently extracted
+     * @return true or false
+     */
     boolean hasRecordedStateChanges();
 
+    /**
+     * Check if there are any end of round state changes currently extracted
+     * @return true or false
+     */
     boolean hasRecordedEndOfRoundStateChanges();
 }
