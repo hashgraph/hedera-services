@@ -53,6 +53,7 @@ public class HashTreeManagerTest {
             "1333c0960fbb9cac040834be1597b45571dae1bc14b3f78281c20dd147826f017ce4f4105d71ecf394bb41db424a637a";
 
     @Test
+    @DisplayName("verify the tree has the correct root after inserting a number of elements")
     public void testHashTreeManager() throws NoSuchAlgorithmException {
         HashTreeManager<String> tree = new HashTreeManager<>(new SimpleStringCodec());
         List<String> elements = Arrays.asList("Event1", "Transaction1", "Transaction2", "Event2", "Transaction3");
