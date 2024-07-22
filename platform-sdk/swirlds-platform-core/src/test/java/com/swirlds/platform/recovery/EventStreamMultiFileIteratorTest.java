@@ -38,7 +38,7 @@ import com.swirlds.platform.recovery.internal.EventStreamRoundLowerBound;
 import com.swirlds.platform.recovery.internal.EventStreamTimestampLowerBound;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -72,7 +72,7 @@ class EventStreamMultiFileIteratorTest {
     }
 
     public static void assertEventsAreEqual(
-            final DetailedConsensusEvent expected, final DetailedConsensusEvent actual) {
+            final CesEvent expected, final CesEvent actual) {
         assertEquals(expected.getPlatformEvent(), actual.getPlatformEvent());
         assertEquals(
                 expected.getPlatformEvent().getConsensusData(),
@@ -88,22 +88,22 @@ class EventStreamMultiFileIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<DetailedConsensusEvent> events =
+        final List<CesEvent> events =
                 generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
-        try (final IOIterator<DetailedConsensusEvent> iterator =
+        try (final IOIterator<CesEvent> iterator =
                 new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
 
-            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
             iterator.forEachRemaining(deserializedEvents::add);
 
             assertEquals(events.size(), deserializedEvents.size(), "unexpected number of events read");
 
             for (int eventIndex = 0; eventIndex < events.size(); eventIndex++) {
 
-                final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
+                final CesEvent event = deserializedEvents.get(eventIndex);
 
                 // Convert to event impl to allow comparison
                 assertEventsAreEqual(event, events.get(eventIndex));
@@ -123,7 +123,7 @@ class EventStreamMultiFileIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<DetailedConsensusEvent> events =
+        final List<CesEvent> events =
                 generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         // Figure out which event is the first one we expect to see
@@ -135,15 +135,15 @@ class EventStreamMultiFileIteratorTest {
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
-        try (final IOIterator<DetailedConsensusEvent> iterator =
+        try (final IOIterator<CesEvent> iterator =
                 new EventStreamMultiFileIterator(directory, new EventStreamRoundLowerBound(readStartingAtRound))) {
 
-            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
             iterator.forEachRemaining(deserializedEvents::add);
 
             for (int eventIndex = 0; eventIndex < events.size() - startingIndex; eventIndex++) {
 
-                final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
+                final CesEvent event = deserializedEvents.get(eventIndex);
                 assertEventsAreEqual(event, events.get(eventIndex + startingIndex));
             }
 
@@ -163,7 +163,7 @@ class EventStreamMultiFileIteratorTest {
         final int secondsPerFile = 2;
         final long firstRound = 50;
 
-        final List<DetailedConsensusEvent> events =
+        final List<CesEvent> events =
                 generateRandomEvents(random, firstRound, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         // Figure out which event is the first one we expect to see
@@ -193,7 +193,7 @@ class EventStreamMultiFileIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<DetailedConsensusEvent> events =
+        final List<CesEvent> events =
                 generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
@@ -202,17 +202,17 @@ class EventStreamMultiFileIteratorTest {
         Files.delete(fileToDelete);
 
         boolean readFailed = false;
-        try (final IOIterator<DetailedConsensusEvent> iterator =
+        try (final IOIterator<CesEvent> iterator =
                 new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
 
-            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
             iterator.forEachRemaining(deserializedEvents::add);
 
             assertEquals(events.size(), deserializedEvents.size(), "unexpected number of events read");
 
             for (int eventIndex = 0; eventIndex < events.size(); eventIndex++) {
 
-                final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
+                final CesEvent event = deserializedEvents.get(eventIndex);
                 assertEquals(event, events.get(eventIndex), "event should match input event");
             }
 
@@ -234,7 +234,7 @@ class EventStreamMultiFileIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<DetailedConsensusEvent> events =
+        final List<CesEvent> events =
                 generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
@@ -242,10 +242,10 @@ class EventStreamMultiFileIteratorTest {
         final Path lastFile = getLastEventStreamFile(directory);
         truncateFile(lastFile, false);
 
-        try (final IOIterator<DetailedConsensusEvent> iterator =
+        try (final IOIterator<CesEvent> iterator =
                 new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
 
-            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
 
             try {
                 iterator.forEachRemaining(deserializedEvents::add);
@@ -265,7 +265,7 @@ class EventStreamMultiFileIteratorTest {
 
             for (int eventIndex = 0; eventIndex < deserializedEvents.size(); eventIndex++) {
 
-                final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
+                final CesEvent event = deserializedEvents.get(eventIndex);
                 assertEventsAreEqual(event, events.get(eventIndex));
             }
 
@@ -283,7 +283,7 @@ class EventStreamMultiFileIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<DetailedConsensusEvent> events =
+        final List<CesEvent> events =
                 generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
@@ -292,17 +292,17 @@ class EventStreamMultiFileIteratorTest {
         truncateFile(fileToTruncate, false);
 
         boolean readFailed = false;
-        try (final IOIterator<DetailedConsensusEvent> iterator =
+        try (final IOIterator<CesEvent> iterator =
                 new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
 
-            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
             iterator.forEachRemaining(deserializedEvents::add);
 
             assertEquals(events.size(), deserializedEvents.size(), "unexpected number of events read");
 
             for (int eventIndex = 0; eventIndex < events.size(); eventIndex++) {
 
-                final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
+                final CesEvent event = deserializedEvents.get(eventIndex);
                 assertEquals(event, events.get(eventIndex), "event should match input event");
             }
 
@@ -329,7 +329,7 @@ class EventStreamMultiFileIteratorTest {
 
         final long firstRound = 100;
 
-        final List<DetailedConsensusEvent> events =
+        final List<CesEvent> events =
                 generateRandomEvents(random, firstRound, Duration.ofSeconds(durationInSeconds), roundsPerSecond, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
@@ -371,7 +371,7 @@ class EventStreamMultiFileIteratorTest {
      */
     private void testEventStreamBound(
             @NonNull final EventStreamLowerBound lowerBound,
-            @NonNull final List<DetailedConsensusEvent> events,
+            @NonNull final List<CesEvent> events,
             @NonNull final Path directory)
             throws IOException {
         Objects.requireNonNull(lowerBound, "lowerBound must not be null");
@@ -383,10 +383,10 @@ class EventStreamMultiFileIteratorTest {
             startingIndex++;
         }
 
-        try (final IOIterator<DetailedConsensusEvent> iterator =
+        try (final IOIterator<CesEvent> iterator =
                 new EventStreamMultiFileIterator(directory, lowerBound)) {
 
-            final List<DetailedConsensusEvent> deserializedEvents = new ArrayList<>();
+            final List<CesEvent> deserializedEvents = new ArrayList<>();
 
             try {
                 iterator.forEachRemaining(deserializedEvents::add);
@@ -403,7 +403,7 @@ class EventStreamMultiFileIteratorTest {
 
             for (int eventIndex = 0; eventIndex < deserializedEvents.size(); eventIndex++) {
 
-                final DetailedConsensusEvent event = deserializedEvents.get(eventIndex);
+                final CesEvent event = deserializedEvents.get(eventIndex);
                 assertEventsAreEqual(event, events.get(startingIndex + eventIndex));
             }
         }

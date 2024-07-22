@@ -64,7 +64,7 @@ import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.events.DetailedConsensusEvent;
+import com.swirlds.platform.system.events.CesEvent;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -357,7 +357,7 @@ public final class EventRecoveryWorkflow {
         platform.close();
 
         return new RecoveredState(
-                signedState, ((DetailedConsensusEvent) Objects.requireNonNull(lastEvent)).getPlatformEvent());
+                signedState, ((CesEvent) Objects.requireNonNull(lastEvent)).getPlatformEvent());
     }
 
     /**
@@ -378,7 +378,7 @@ public final class EventRecoveryWorkflow {
         final Instant currentRoundTimestamp = getRoundTimestamp(round);
         previousState.get().getState().throwIfImmutable();
         final MerkleRoot newState = previousState.get().getState().copy();
-        final PlatformEvent lastEvent = ((DetailedConsensusEvent) getLastEvent(round)).getPlatformEvent();
+        final PlatformEvent lastEvent = ((CesEvent) getLastEvent(round)).getPlatformEvent();
         new StatefulEventHasher().hashEvent(lastEvent);
 
         final PlatformState platformState = newState.getPlatformState();
@@ -429,12 +429,12 @@ public final class EventRecoveryWorkflow {
      * @return the running event hash at the end of the current round
      */
     static Hash getHashEventsCons(final Hash previousRunningHash, final StreamedRound round) {
-        final RunningHashCalculatorForStream<DetailedConsensusEvent> hashCalculator =
+        final RunningHashCalculatorForStream<CesEvent> hashCalculator =
                 new RunningHashCalculatorForStream<>();
         hashCalculator.setRunningHash(previousRunningHash);
 
         for (final ConsensusEvent event : round) {
-            hashCalculator.addObject((DetailedConsensusEvent) event);
+            hashCalculator.addObject((CesEvent) event);
         }
 
         final Hash runningHash = hashCalculator.getRunningHash();
