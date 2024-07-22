@@ -45,7 +45,7 @@ public class DefaultEventHasher implements EventHasher {
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         if (migrateEventHashing
                 && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, event.getSoftwareVersion())
-                == 0) {
+                        == 0) {
             new PbjHasher().hashEvent(event);
             return event;
         }
