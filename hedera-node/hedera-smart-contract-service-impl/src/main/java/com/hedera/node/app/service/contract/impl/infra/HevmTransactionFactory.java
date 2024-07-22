@@ -326,8 +326,8 @@ public class HevmTransactionFactory {
         validateTrue(body.gas() <= contractsConfig.maxGasPerSec(), MAX_GAS_LIMIT_EXCEEDED);
         final var usesUnsupportedAutoAssociations =
                 body.maxAutomaticTokenAssociations() > 0 && !contractsConfig.allowAutoAssociations();
-        final var usesInvalidAutoAssociations = body.maxAutomaticTokenAssociations() < UNLIMITED_AUTOMATIC_ASSOCIATIONS
-                && entitiesConfig.unlimitedAutoAssociationsEnabled();
+        final var usesInvalidAutoAssociations = body.maxAutomaticTokenAssociations()
+                < (entitiesConfig.unlimitedAutoAssociationsEnabled() ? UNLIMITED_AUTOMATIC_ASSOCIATIONS : 0);
         validateFalse(usesUnsupportedAutoAssociations, NOT_SUPPORTED);
         validateFalse(usesInvalidAutoAssociations, INVALID_MAX_AUTO_ASSOCIATIONS);
         validateTrue(

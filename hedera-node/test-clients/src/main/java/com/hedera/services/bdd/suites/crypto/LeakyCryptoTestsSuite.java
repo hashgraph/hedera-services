@@ -83,7 +83,7 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overridingTwo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.reduceFeeFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sleepFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadDefaultFeeSchedules;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.uploadGivenFeeSchedules;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsd;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.spec.utilops.records.SnapshotMatchMode.ALLOW_SKIPPED_ENTITY_IDS;
@@ -176,6 +176,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.junit.OrderedInIsolation;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
@@ -230,7 +231,7 @@ public class LeakyCryptoTestsSuite {
     private static final String SENDER_TXN = "senderTxn";
     private static final long GAS_PRICE = 71L;
 
-    @HapiTest
+    @LeakyHapiTest
     @Order(16)
     final Stream<DynamicTest> autoAssociationPropertiesWorkAsExpected() {
         final var minAutoRenewPeriodPropertyName = "ledger.autoRenewPeriod.minDuration";
@@ -243,11 +244,18 @@ public class LeakyCryptoTestsSuite {
         final var baseFee = 0.000214;
         double plusTenSlotsFee = baseFee + 10 * autoAssocSlotPrice;
         return propertyPreservingHapiSpec("AutoAssociationPropertiesWorkAsExpected")
-                .preserving("ledger.maxAutoAssociations", "ledger.autoRenewPeriod.minDuration")
+                .preserving(
+                        "entities.unlimitedAutoAssociationsEnabled",
+                        "ledger.maxAutoAssociations",
+                        "ledger.autoRenewPeriod.minDuration")
                 .given(
-                        overridingTwo(
-                                maxAssociationsPropertyName, "100",
-                                minAutoRenewPeriodPropertyName, "1"),
+                        overridingThree(
+                                "entities.unlimitedAutoAssociationsEnabled",
+                                "true",
+                                maxAssociationsPropertyName,
+                                "100",
+                                minAutoRenewPeriodPropertyName,
+                                "1"),
                         cryptoCreate(longLivedAutoAssocUser)
                                 .balance(payerBalance)
                                 .autoRenewSecs(THREE_MONTHS_IN_SECONDS),
@@ -856,9 +864,9 @@ public class LeakyCryptoTestsSuite {
                             op7FeeAssertion,
                             op8,
                             op9,
-                            uploadDefaultFeeSchedules(GENESIS));
+                            uploadGivenFeeSchedules(GENESIS, "limited-associations-fee-schedules.json"));
                 }))
-                .then(uploadDefaultFeeSchedules(GENESIS));
+                .then();
     }
 
     @HapiTest

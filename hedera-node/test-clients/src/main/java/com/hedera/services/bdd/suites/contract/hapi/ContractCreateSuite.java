@@ -756,8 +756,9 @@ public class ContractCreateSuite {
     @LeakyHapiTest(PROPERTY_OVERRIDES)
     final Stream<DynamicTest> tryContractCreateWithMaxAutoAssoc() {
         final var contract = "CreateTrivial";
-        return defaultHapiSpec("tryContractCreateWithMaxAutoAssoc")
-                .given(uploadInitCode(contract))
+        return propertyPreservingHapiSpec("tryContractCreateWithMaxAutoAssoc")
+                .preserving("entities.unlimitedAutoAssociationsEnabled")
+                .given(overriding("entities.unlimitedAutoAssociationsEnabled", TRUE_VALUE), uploadInitCode(contract))
                 .when(
                         contractCreate(contract)
                                 .adminKey(THRESHOLD)

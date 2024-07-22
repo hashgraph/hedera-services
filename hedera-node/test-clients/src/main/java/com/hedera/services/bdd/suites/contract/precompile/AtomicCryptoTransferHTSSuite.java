@@ -1011,7 +1011,7 @@ public class AtomicCryptoTransferHTSSuite {
                                                         .withStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     final Stream<DynamicTest> cryptoTransferAllowanceToContractFT() {
         final var allowance = 11L;
         final var successfulTransferFromTxn = "txn";
@@ -1020,8 +1020,11 @@ public class AtomicCryptoTransferHTSSuite {
         final var revertingTransferFromTxnFungible = "revertWhenMoreThanAllowanceFungible";
         final var revertingTransferFromTxn2 = "revertingTxn";
         return propertyPreservingHapiSpec("cryptoTransferAllowanceToContractFT")
-                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
+                .preserving(
+                        "entities.unlimitedAutoAssociationsEnabled",
+                        "contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "true"),
                         overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS),
@@ -1203,7 +1206,7 @@ public class AtomicCryptoTransferHTSSuite {
                                                         .withStatus(SPENDER_DOES_NOT_HAVE_ALLOWANCE)))));
     }
 
-    @HapiTest
+    @LeakyHapiTest
     final Stream<DynamicTest> cryptoTransferAllowanceToContractNFT() {
         final var successfulTransferFromTxn = "txn";
         final var revertingTransferFromTxnNft = "revertWhenMoreThanAllowanceNft";
@@ -1212,8 +1215,11 @@ public class AtomicCryptoTransferHTSSuite {
                         NONDETERMINISTIC_FUNCTION_PARAMETERS,
                         ACCEPTED_MONO_GAS_CALCULATION_DIFFERENCE,
                         NONDETERMINISTIC_TRANSACTION_FEES)
-                .preserving("contracts.precompile.atomicCryptoTransfer.enabled")
+                .preserving(
+                        "entities.unlimitedAutoAssociationsEnabled",
+                        "contracts.precompile.atomicCryptoTransfer.enabled")
                 .given(
+                        overriding("entities.unlimitedAutoAssociationsEnabled", "true"),
                         overriding("contracts.precompile.atomicCryptoTransfer.enabled", "true"),
                         newKeyNamed(MULTI_KEY),
                         cryptoCreate(OWNER).balance(100 * ONE_HUNDRED_HBARS).maxAutomaticTokenAssociations(5),
