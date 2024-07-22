@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.swirlds.common.test.fixtures.junit.tags.TestQualifierTags;
 import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
@@ -80,7 +80,7 @@ class CompactionInterruptTest {
     boolean startMergeThenInterruptImpl() throws IOException, InterruptedException {
         final Path storeDir = tmpFileDir.resolve("startMergeThenInterruptImpl");
         String tableName = "mergeThenInterrupt";
-        final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
+        final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource =
                 TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, false, true);
         final MerkleDbCompactionCoordinator coordinator = dataSource.getCompactionCoordinator();
 
@@ -90,7 +90,7 @@ class CompactionInterruptTest {
             coordinator.enableBackgroundCompaction();
             // start compaction
             coordinator.compactDiskStoreForHashesAsync();
-            coordinator.compactDiskStoreForObjectKeyToPathAsync();
+            coordinator.compactDiskStoreForKeyToPathAsync();
             coordinator.compactPathToKeyValueAsync();
             // wait a small-time for merging to start
             MILLISECONDS.sleep(20);
@@ -125,7 +125,7 @@ class CompactionInterruptTest {
     boolean startMergeWhileSnapshottingThenInterruptImpl(int delayMs) throws IOException, InterruptedException {
         final Path storeDir = tmpFileDir.resolve("startMergeWhileSnapshottingThenInterruptImpl");
         String tableName = "mergeWhileSnapshotting";
-        final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
+        final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource =
                 TestType.variable_variable.dataType().createDataSource(storeDir, tableName, COUNT, 0, false, true);
         final MerkleDbCompactionCoordinator coordinator = dataSource.getCompactionCoordinator();
 
@@ -147,7 +147,7 @@ class CompactionInterruptTest {
             long initTaskCount = compactingExecutor.getTaskCount();
             // start compaction for all three storages
             coordinator.compactDiskStoreForHashesAsync();
-            coordinator.compactDiskStoreForObjectKeyToPathAsync();
+            coordinator.compactDiskStoreForKeyToPathAsync();
             coordinator.compactPathToKeyValueAsync();
 
             assertEventuallyEquals(
@@ -202,7 +202,7 @@ class CompactionInterruptTest {
         assertEventuallyTrue(hashStoreDiskFuture::isCancelled, Duration.ofMillis(10), message);
     }
 
-    private void createData(final MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource)
+    private void createData(final MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource)
             throws IOException {
         final int count = COUNT / 10;
         for (int batch = 0; batch < 10; batch++) {

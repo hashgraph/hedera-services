@@ -29,6 +29,7 @@ mainModuleInfo { annotationProcessor("com.google.auto.service.processor") }
 
 testModuleInfo {
     requires("org.apache.logging.log4j.core")
+    requires("org.apache.commons.lang3")
     requires("com.swirlds.config.extensions.test.fixtures")
     requires("com.swirlds.logging.test.fixtures")
     requires("org.assertj.core")
