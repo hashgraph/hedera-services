@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.addressbook.impl.test;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.asBytes;
-import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
