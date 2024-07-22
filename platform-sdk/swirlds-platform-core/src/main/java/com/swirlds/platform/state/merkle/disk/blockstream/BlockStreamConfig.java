@@ -49,4 +49,4 @@ public record BlockStreamConfig(
         @ConfigProperty(defaultValue = "false") @NetworkProperty boolean collectSignaturesInPreHandle,
         /* [serial|concurrent] */
         @ConfigProperty(defaultValue = "concurrent") @NetworkProperty
-        String streamFileProducer) {} // COULD BE NODE LOCAL PROPERTY OR NETWORK PROPERTY
+                String streamFileProducer) {} // COULD BE NODE LOCAL PROPERTY OR NETWORK PROPERTY

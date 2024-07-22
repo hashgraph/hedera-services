@@ -42,10 +42,12 @@ import com.hedera.hapi.node.state.token.*;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Observer watches a Record and a Stack. It ties the changes in a stack to the transactions that created the state
@@ -103,6 +105,7 @@ public class StateChangesObserverImpl implements StateChangesObserver {
      * @param stateChange the state change to add to be written to the block stream.
      */
     public void addStateChange(@NonNull final StateChange stateChange) {
+        Objects.requireNonNull(stateChange, "stateChange must not be null");
         // We may want to ignore certain state changes if their data is captured elswhere in the block stream.
         if (isIgnoredStateChange(stateChange)) {
             return;
@@ -121,10 +124,12 @@ public class StateChangesObserverImpl implements StateChangesObserver {
         stateChanges.add(stateChange);
     }
 
+    @Nullable
     public List<StateChange> getStateChanges() {
         return stateChanges;
     }
 
+    @Nullable
     public LinkedList<StateChange> getEndOfRoundStateChanges() {
         return endOfRoundStateChanges;
     }
@@ -162,14 +167,16 @@ public class StateChangesObserverImpl implements StateChangesObserver {
     // Map (inMemory / onDisk) State -----------------------------------------------------------------------------------
 
     public <K, V> void mapUpdateChange(@NonNull final String stateKey, @NonNull final K key, @NonNull final V value) {
+        Objects.requireNonNull(stateKey, "stateKey must not be null");
+        Objects.requireNonNull(key, "key must not be null");
+        Objects.requireNonNull(value, "value must not be null");
+
         final var builder = MapUpdateChange.newBuilder();
         setMapUpdateChangeKey(builder, key);
         setMapUpdateChangeValue(builder, value);
         final var change = builder.build();
-        final var stateChange = StateChange.newBuilder()
-                .stateName(stateKey)
-                .mapUpdate(change)
-                .build();
+        final var stateChange =
+                StateChange.newBuilder().stateName(stateKey).mapUpdate(change).build();
         StateChangesObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
     }
 
@@ -202,7 +209,8 @@ public class StateChangesObserverImpl implements StateChangesObserver {
             case Schedule schedule -> b.value(new MapChangeValue.Builder().scheduleValue(schedule));
             case ScheduleList scheduleList -> b.value(new MapChangeValue.Builder().scheduleListValue(scheduleList));
             case SlotValue slotValue -> b.value(new MapChangeValue.Builder().slotValueValue(slotValue));
-            case StakingNodeInfo stakingNodeInfo -> b.value(new MapChangeValue.Builder().stakingNodeInfoValue(stakingNodeInfo));
+            case StakingNodeInfo stakingNodeInfo -> b.value(
+                    new MapChangeValue.Builder().stakingNodeInfoValue(stakingNodeInfo));
             case Token token -> b.value(new MapChangeValue.Builder().tokenValue(token));
             case TokenRelation tokenRelation -> b.value(new MapChangeValue.Builder().tokenRelationValue(tokenRelation));
             case Topic topic -> b.value(new MapChangeValue.Builder().topicValue(topic));
@@ -215,13 +223,14 @@ public class StateChangesObserverImpl implements StateChangesObserver {
     // Queue State -----------------------------------------------------------------------------------------------------
 
     public <V> void queuePushChange(@NonNull final String stateKey, @NonNull final V value) {
+        Objects.requireNonNull(stateKey, "stateKey must not be null");
+        Objects.requireNonNull(value, "value must not be null");
+
         final var builder = QueuePushChange.newBuilder();
         setQueuePushChangeElement(builder, value);
         final var change = builder.build();
-        final var stateChange = StateChange.newBuilder()
-                .stateName(stateKey)
-                .queuePush(change)
-                .build();
+        final var stateChange =
+                StateChange.newBuilder().stateName(stateKey).queuePush(change).build();
         StateChangesObserverSingleton.getInstanceOrThrow().addStateChange(stateChange);
     }
 
@@ -238,6 +247,8 @@ public class StateChangesObserverImpl implements StateChangesObserver {
     }
 
     public void queuePopChange(@NonNull final String stateKey) {
+        Objects.requireNonNull(stateKey, "stateKey must not be null");
+
         final var stateChange = StateChange.newBuilder()
                 .stateName(stateKey)
                 .queuePop(new QueuePopChange())
@@ -248,6 +259,9 @@ public class StateChangesObserverImpl implements StateChangesObserver {
     // Singleton State  ------------------------------------------------------------------------------------------------
 
     public <V> void singletonUpdateChange(@NonNull final String stateKey, @NonNull final V value) {
+        Objects.requireNonNull(stateKey, "stateKey must not be null");
+        Objects.requireNonNull(value, "value must not be null");
+
         final var builder = SingletonUpdateChange.newBuilder();
         setSingletonUpdateChangeValue(builder, value);
         final var change = builder.build();

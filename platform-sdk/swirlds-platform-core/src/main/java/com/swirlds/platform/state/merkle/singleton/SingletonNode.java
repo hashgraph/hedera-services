@@ -26,7 +26,6 @@ import com.swirlds.common.merkle.utility.DebugIterationEndpoint;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.platform.state.merkle.StateUtils;
 import com.swirlds.platform.state.merkle.disk.blockstream.StateChangesObserverSingleton;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 

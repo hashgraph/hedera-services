@@ -18,7 +18,6 @@ package com.swirlds.platform.state.merkle.disk.blockstream;
 
 import com.hedera.hapi.block.stream.output.StateChange;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.LinkedList;
 import java.util.List;
 

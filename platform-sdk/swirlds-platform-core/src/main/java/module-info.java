@@ -147,6 +147,7 @@ module com.swirlds.platform.core {
     requires transitive com.hedera.pbj.runtime;
     requires transitive info.picocli;
     requires transitive org.apache.logging.log4j;
+    requires com.hedera.node.config;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
     requires com.fasterxml.jackson.core;
@@ -160,7 +161,6 @@ module com.swirlds.platform.core {
     requires org.bouncycastle.provider;
     requires static transitive com.github.spotbugs.annotations;
     requires static transitive com.google.auto.service;
-    requires com.hedera.node.config;
 
     provides ConfigurationExtension with
             PlatformConfigurationExtension;

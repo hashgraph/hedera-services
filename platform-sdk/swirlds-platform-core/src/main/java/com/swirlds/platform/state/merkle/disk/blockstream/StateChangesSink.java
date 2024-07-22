@@ -17,7 +17,6 @@
 package com.swirlds.platform.state.merkle.disk.blockstream;
 
 import com.hedera.hapi.block.stream.output.StateChanges;
-
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
@@ -48,7 +47,8 @@ public interface StateChangesSink {
      * @param platformTxn the system transaction we record the state changes
      * @param fn runnable to execute
      */
-    void recordSystemTransactionStateChanges(@NonNull final ConsensusTransaction platformTxn, @NonNull final Runnable fn);
+    void recordSystemTransactionStateChanges(
+            @NonNull final ConsensusTransaction platformTxn, @NonNull final Runnable fn);
 
     /**
      * Record state changes from a user transaction

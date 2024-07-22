@@ -24,6 +24,7 @@ import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapRemove
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.pbj.runtime.Codec;
+import com.swirlds.platform.state.merkle.disk.blockstream.StateChangesObserverSingleton;
 import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.metrics.StoreMetrics;
@@ -114,8 +115,11 @@ public final class OnDiskWritableKVState<K, V> extends WritableKVStateBase<K, V>
         } else {
             virtualMap.put(k, new OnDiskValue<>(valueClassId, valueCodec, value));
         }
+        final var label = getStateKey();
         // Log to transaction state log, what was put
-        logMapPut(getStateKey(), key, value);
+        logMapPut(label, key, value);
+        // Notify the observer.
+        StateChangesObserverSingleton.getInstanceOrThrow().mapUpdateChange(label, key, value);
     }
 
     /** {@inheritDoc} */

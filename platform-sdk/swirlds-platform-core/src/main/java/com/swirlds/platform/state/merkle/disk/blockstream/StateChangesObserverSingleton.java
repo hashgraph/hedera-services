@@ -25,13 +25,13 @@ import java.util.concurrent.atomic.AtomicReference;
  * Singleton instance of the StateChangesObserver.
  */
 public class StateChangesObserverSingleton {
-    private static final AtomicReference<StateChangesObserver> instance = new AtomicReference<>(new NoOpStateChangesObserver());
+    private static final AtomicReference<StateChangesObserver> instance =
+            new AtomicReference<>(new NoOpStateChangesObserver());
 
     public static void initInstance(@NonNull final ConfigProvider configProvider) {
         final var current = instance.get();
 
-        final var recordStreamConfig = configProvider.getConfiguration().getConfigData(
-                BlockRecordStreamConfig.class);
+        final var recordStreamConfig = configProvider.getConfiguration().getConfigData(BlockRecordStreamConfig.class);
         final var recordFileVersion = recordStreamConfig.recordFileVersion();
         if (recordStreamConfig.enabled() && recordFileVersion < 7) {
             // Instantiate NoOpStateChangesObserver for v6 and below.
@@ -39,8 +39,7 @@ public class StateChangesObserverSingleton {
             return;
         }
 
-        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(
-                BlockStreamConfig.class);
+        final var blockStreamConfig = configProvider.getConfiguration().getConfigData(BlockStreamConfig.class);
         final var blockVersion = blockStreamConfig.blockVersion();
         if (blockStreamConfig.enabled() && blockVersion >= 7) {
             // Instantiate StateChangesObserverImpl for v7 and above.
@@ -48,8 +47,9 @@ public class StateChangesObserverSingleton {
             return;
         }
 
-        throw new IllegalArgumentException("StateChangesObserverSingleton: No valid block observer configuration found. "
-                + "Please check the configuration for blockStreamConfig and blockRecordStreamConfig.");
+        throw new IllegalArgumentException(
+                "StateChangesObserverSingleton: No valid block observer configuration found. "
+                        + "Please check the configuration for blockStreamConfig and blockRecordStreamConfig.");
     }
 
     @NonNull
