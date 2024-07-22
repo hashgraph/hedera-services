@@ -36,7 +36,8 @@ public class DefaultEventHasher implements EventHasher {
      * @param migrateEventHashing    if true then use the new event hashing algorithm for new events, events created by
      *                               previous software versions will still need to be hashed using the old algorithm.
      */
-    public DefaultEventHasher(@NonNull final SemanticVersion currentSoftwareVersion, final boolean migrateEventHashing) {
+    public DefaultEventHasher(
+            @NonNull final SemanticVersion currentSoftwareVersion, final boolean migrateEventHashing) {
         this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
         this.migrateEventHashing = migrateEventHashing;
     }
