@@ -41,6 +41,7 @@ public class PbjHasher implements EventHasher, UnsignedEventHasher {
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
         hashUnsignedEvent(event.getUnsignedEvent());
+        event.setHash(event.getUnsignedEvent().getHash());
         return event;
     }
 
