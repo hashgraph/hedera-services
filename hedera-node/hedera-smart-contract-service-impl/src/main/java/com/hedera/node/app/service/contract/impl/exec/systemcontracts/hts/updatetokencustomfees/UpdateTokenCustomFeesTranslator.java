@@ -16,10 +16,8 @@
 
 package com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees;
 
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FIXED_FEE_V2;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.FRACTIONAL_FEE_V2;
-import static com.hedera.node.app.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE_V2;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees.UpdateTokenCustomFeesDecoder.UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_STRING;
+import static com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees.UpdateTokenCustomFeesDecoder.UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_STRING;
 
 import com.esaulpaugh.headlong.abi.Function;
 import com.hedera.hapi.node.base.AccountID;
@@ -39,11 +37,6 @@ import javax.inject.Inject;
 
 public class UpdateTokenCustomFeesTranslator extends AbstractCallTranslator<HtsCallAttempt> {
 
-    private static final String UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_STRING = "updateFungibleTokenCustomFees(address,"
-            + FIXED_FEE_V2 + ARRAY_BRACKETS + "," + FRACTIONAL_FEE_V2 + ARRAY_BRACKETS + ")";
-    private static final String UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_STRING =
-            "updateNonFungibleTokenCustomFees(address," + FIXED_FEE_V2 + ARRAY_BRACKETS + "," + ROYALTY_FEE_V2
-                    + ARRAY_BRACKETS + ")";
     public static final Function UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION =
             new Function(UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_STRING, ReturnTypes.INT);
     public static final Function UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION =

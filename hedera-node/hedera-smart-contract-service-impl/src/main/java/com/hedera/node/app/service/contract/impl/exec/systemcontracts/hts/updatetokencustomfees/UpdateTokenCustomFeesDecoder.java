@@ -36,21 +36,34 @@ import java.util.List;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang3.function.TriFunction;
 
 @Singleton
 public class UpdateTokenCustomFeesDecoder {
 
+    // Function selectors
+    protected static final String UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_STRING =
+            "updateFungibleTokenCustomFees(address,(int64,address,bool,bool,address)[],(int64,int64,int64,int64,bool,address)[])";
+    protected static final String UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_STRING =
+            "updateNonFungibleTokenCustomFees(address,(int64,address,bool,bool,address)[],(int64,int64,int64,address,bool,address)[])";
+
+    // Tuple indexes
+    // The function call for updateFungibleTokenCustomFees and updateNonFungibleTokenCustomFees
+    // share the first two tuple token address and fixed fees
+    // but have different third tuple for fractional or royalty fees respectively
     private static final int TOKEN_ADDRESS = 0;
     private static final int FIXED_FEE = 1;
     private static final int FRACTIONAL_FEE = 2;
     private static final int ROYALTY_FEE = 2;
 
+    // Fixed Fee tuple indexes
     private static final int FIXED_FEE_AMOUNT = 0;
     private static final int FIXED_FEE_TOKEN_ID = 1;
     private static final int FIXED_FEE_USE_HBARS_FOR_PAYMENT = 2;
     private static final int FIXED_FEE_USE_CURRENT_TOKEN_FOR_PAYMENT = 3;
     private static final int FIXED_FEE_FEE_COLLECTOR = 4;
 
+    // Fractional Fee tuple indexes
     private static final int FRACTIONAL_FEE_NUMERATOR = 0;
     private static final int FRACTIONAL_FEE_DENOMINATOR = 1;
     private static final int FRACTIONAL_FEE_MIN_AMOUNT = 2;
@@ -58,6 +71,7 @@ public class UpdateTokenCustomFeesDecoder {
     private static final int FRACTIONAL_FEE_NET_OF_TRANSFERS = 4;
     private static final int FRACTIONAL_FEE_FEE_COLLECTOR = 5;
 
+    // Royalty Fee tuple indexes
     private static final int ROYALTY_FEE_NUMERATOR = 0;
     private static final int ROYALTY_FEE_DENOMINATOR = 1;
     private static final int ROYALTY_FEE_AMOUNT = 2;
@@ -68,32 +82,33 @@ public class UpdateTokenCustomFeesDecoder {
     @Inject
     public UpdateTokenCustomFeesDecoder() {}
 
-    public @Nullable TransactionBody decodeUpdateFungibleTokenCustomFees(final HtsCallAttempt attempt) {
+    public @Nullable TransactionBody decodeUpdateFungibleTokenCustomFees(@NonNull final HtsCallAttempt attempt) {
         final var call = UpdateTokenCustomFeesTranslator.UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.decodeCall(
                 attempt.inputBytes());
         return TransactionBody.newBuilder()
-                .tokenFeeScheduleUpdate(updateTokenCustomFees(call, attempt.addressIdConverter(), true))
+                .tokenFeeScheduleUpdate(
+                        updateTokenCustomFees(call, attempt.addressIdConverter(), this::customFungibleFees))
                 .build();
     }
 
-    public TransactionBody decodeUpdateNonFungibleTokenCustomFees(final HtsCallAttempt attempt) {
+    public TransactionBody decodeUpdateNonFungibleTokenCustomFees(@NonNull final HtsCallAttempt attempt) {
         final var call = UpdateTokenCustomFeesTranslator.UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.decodeCall(
                 attempt.inputBytes());
         return TransactionBody.newBuilder()
-                .tokenFeeScheduleUpdate(updateTokenCustomFees(call, attempt.addressIdConverter(), false))
+                .tokenFeeScheduleUpdate(
+                        updateTokenCustomFees(call, attempt.addressIdConverter(), this::customNonFungibleFees))
                 .build();
     }
 
     private TokenFeeScheduleUpdateTransactionBody updateTokenCustomFees(
-            @NonNull final Tuple call, @NonNull final AddressIdConverter addressIdConverter, final boolean isFungible) {
+            @NonNull final Tuple call,
+            @NonNull final AddressIdConverter addressIdConverter,
+            @NonNull final TriFunction<Tuple, AddressIdConverter, TokenID, List<CustomFee>> customFees) {
         final Address tokenAddress = call.get(TOKEN_ADDRESS);
         final var tokenId = ConversionUtils.asTokenId(tokenAddress);
         return TokenFeeScheduleUpdateTransactionBody.newBuilder()
                 .tokenId(tokenId)
-                .customFees(
-                        isFungible
-                                ? customFungibleFees(call, addressIdConverter, tokenId)
-                                : customNonFungibleFees(call, addressIdConverter, tokenId))
+                .customFees(customFees.apply(call, addressIdConverter, tokenId))
                 .build();
     }
 
@@ -168,12 +183,12 @@ public class UpdateTokenCustomFeesDecoder {
                 : getIfPresent(fee.get(FIXED_FEE_TOKEN_ID), fee.get(FIXED_FEE_USE_HBARS_FOR_PAYMENT));
     }
 
-    private TokenID getIfPresent(@NonNull final Address address, final boolean useHbarsForPayment) {
+    private @Nullable TokenID getIfPresent(@NonNull final Address address, final boolean useHbarsForPayment) {
         final var tokenId = ConversionUtils.asTokenId(address);
         return useHbarsForPayment || tokenId.equals(TokenID.DEFAULT) ? null : tokenId;
     }
 
-    private FixedFee getFallbackFee(@NonNull Tuple fee) {
+    private @Nullable FixedFee getFallbackFee(@NonNull Tuple fee) {
         final Address tokenAddress = fee.get(ROYALTY_FEE_TOKEN_ID);
         final long amount = fee.get(ROYALTY_FEE_AMOUNT);
         return ConversionUtils.asTokenId(tokenAddress).equals(TokenID.DEFAULT) && amount == 0
