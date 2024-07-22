@@ -26,7 +26,6 @@ import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Function;
 import org.junit.jupiter.api.Assertions;
@@ -50,7 +49,6 @@ import org.junit.jupiter.api.Assertions;
  * </ol>
  */
 public class EventualRecordStreamAssertion extends EventualAssertion {
-    private static final Duration POST_SUBSCRIPTION_PAUSE = Duration.ofMillis(250);
     /**
      * The factory for the assertion to be tested.
      */

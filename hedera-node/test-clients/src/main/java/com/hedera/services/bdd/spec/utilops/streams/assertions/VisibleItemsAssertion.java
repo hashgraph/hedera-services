@@ -28,14 +28,11 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -48,7 +45,7 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
 
     private final HapiSpec spec;
     private final Set<String> unseenIds;
-    private final CountDownLatch latch;
+    private final VisibleItemsValidator validator;
     private final Map<String, VisibleItems> items = new ConcurrentHashMap<>();
     private final boolean withLogging = true;
 
@@ -64,34 +61,22 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
 
     public VisibleItemsAssertion(
             @NonNull final HapiSpec spec,
+            @NonNull final VisibleItemsValidator validator,
             @NonNull final SkipSynthItems skipSynthItems,
             @NonNull final String... specTxnIds) {
         this.spec = requireNonNull(spec);
+        this.validator = validator;
         this.skipSynthItems = requireNonNull(skipSynthItems);
         unseenIds = new HashSet<>() {
             {
                 addAll(List.of(specTxnIds));
             }
         };
-        latch = new CountDownLatch(unseenIds.size());
     }
 
     @Override
     public String toString() {
         return "VisibleItemsAssertion{" + "unseenIds=" + unseenIds + ", seenIds=" + items.keySet() + '}';
-    }
-
-    public CompletableFuture<Map<String, VisibleItems>> itemsFuture() {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException("Interrupted while waiting for all expected items");
-            }
-            items.values().forEach(vi -> vi.entries().sort(Comparator.naturalOrder()));
-            return items;
-        });
     }
 
     @Override
@@ -133,14 +118,17 @@ public class VisibleItemsAssertion implements RecordStreamAssertion {
 
     @Override
     public boolean test(@NonNull final RecordStreamItem item) throws AssertionError {
-        return unseenIds.isEmpty();
+        if (unseenIds.isEmpty()) {
+            validator.assertValid(spec, items);
+            return true;
+        }
+        return false;
     }
 
     private void maybeFinishLastSeen() {
         if (lastSeenId != null) {
             unseenIds.remove(lastSeenId);
             lastSeenId = null;
-            latch.countDown();
         }
     }
 

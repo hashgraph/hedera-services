@@ -31,7 +31,6 @@ import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movi
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.createHollow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.streamMustIncludeNoFailuresFrom;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateVisibleItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.visibleNonSyntheticItems;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
@@ -62,7 +61,6 @@ import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
 import com.hedera.services.bdd.junit.support.StreamDataListener;
 import com.hedera.services.bdd.junit.support.TestLifecycle;
-import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.annotations.Account;
 import com.hedera.services.bdd.spec.dsl.annotations.Contract;
 import com.hedera.services.bdd.spec.dsl.annotations.FungibleToken;
@@ -72,15 +70,12 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItems;
-import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.math.BigInteger;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -138,10 +133,9 @@ public class NaturalDispatchOrderingTest {
     @HapiTest
     @DisplayName("reversible user stream items are as expected")
     final Stream<DynamicTest> reversibleUserItemsAsExpected() {
-        final AtomicReference<VisibleItemsAssertion> assertion = new AtomicReference<>();
         return hapiTest(
                 streamMustIncludeNoFailuresFrom(
-                        visibleNonSyntheticItems(assertion, "firstCreation", "duplicateCreation")),
+                        visibleNonSyntheticItems(reversibleUserValidator(), "firstCreation", "duplicateCreation")),
                 scheduleCreate(
                                 "scheduledTxn",
                                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1))
@@ -152,8 +146,7 @@ public class NaturalDispatchOrderingTest {
                                 cryptoTransfer(tinyBarsFromTo(DEFAULT_PAYER, FUNDING, 1))
                                         .fee(ONE_HBAR))
                         .via("duplicateCreation")
-                        .hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED),
-                validateVisibleItems(assertion, reversibleUserValidator()));
+                        .hasKnownStatus(IDENTICAL_SCHEDULE_ALREADY_CREATED));
     }
 
     /**
@@ -179,10 +172,9 @@ public class NaturalDispatchOrderingTest {
             @Contract(contract = "PrecompileAliasXfer", creationGas = 2_000_000) SpecContract transferContract,
             @Contract(contract = "LowLevelCall") SpecContract lowLevelCallContract) {
         final var transferFunction = new Function("transferNFTThanRevertCall(address,address,address,int64)");
-        final AtomicReference<VisibleItemsAssertion> assertion = new AtomicReference<>();
         return hapiTest(
-                streamMustIncludeNoFailuresFrom(
-                        visibleNonSyntheticItems(assertion, "fullSuccess", "containedRevert", "fullRevert")),
+                streamMustIncludeNoFailuresFrom(visibleNonSyntheticItems(
+                        reversibleChildValidator(), "fullSuccess", "containedRevert", "fullRevert")),
                 nonFungibleToken.treasury().authorizeContract(transferContract),
                 transferContract
                         .call("transferNFTCall", nonFungibleToken, nonFungibleToken.treasury(), beneficiary, 1L)
@@ -211,8 +203,7 @@ public class NaturalDispatchOrderingTest {
                                 beneficiary,
                                 2L)
                         .andAssert(txn -> txn.via("fullRevert").hasKnownStatus(CONTRACT_REVERT_EXECUTED)),
-                nonFungibleToken.serialNo(2L).assertOwnerIs(nonFungibleToken.treasury()),
-                validateVisibleItems(assertion, reversibleChildValidator()));
+                nonFungibleToken.serialNo(2L).assertOwnerIs(nonFungibleToken.treasury()));
     }
 
     /**
@@ -240,9 +231,9 @@ public class NaturalDispatchOrderingTest {
                     SpecAccount solventPayer,
             @Account(centBalance = 7, autoAssociationSlots = UNLIMITED_AUTO_ASSOCIATION_SLOTS)
                     SpecAccount insolventPayer) {
-        final AtomicReference<VisibleItemsAssertion> assertion = new AtomicReference<>();
         return hapiTest(
-                streamMustIncludeNoFailuresFrom(visibleNonSyntheticItems(assertion, "committed", "rolledBack")),
+                streamMustIncludeNoFailuresFrom(
+                        visibleNonSyntheticItems(reversibleScheduleValidator(), "committed", "rolledBack")),
                 firstToken.treasury().transferUnitsTo(solventPayer, 10, firstToken),
                 secondToken.treasury().transferUnitsTo(insolventPayer, 10, secondToken),
                 // Ensure the receiver entities exist before switching out object-oriented DSL
@@ -270,8 +261,7 @@ public class NaturalDispatchOrderingTest {
                                         .fee(ONE_HBAR / 10))
                         .designatingPayer(insolventPayer.name())
                         .alsoSigningWith(insolventPayer.name())
-                        .via("rolledBack"),
-                validateVisibleItems(assertion, reversibleScheduleValidator()));
+                        .via("rolledBack"));
     }
 
     /**
@@ -290,11 +280,10 @@ public class NaturalDispatchOrderingTest {
             @Contract(contract = "OuterCreator") SpecContract outerCreatorContract,
             @Contract(contract = "LowLevelCall") SpecContract lowLevelCallContract) {
         final var startChainFn = new Function("startChain(bytes)");
-        final AtomicReference<VisibleItemsAssertion> assertion = new AtomicReference<>();
         final var emptyMessage = new byte[0];
         return hapiTest(
                 streamMustIncludeNoFailuresFrom(
-                        visibleNonSyntheticItems(assertion, "nestedCreations", "revertedCreations")),
+                        visibleNonSyntheticItems(removableChildValidator(), "nestedCreations", "revertedCreations")),
                 outerCreatorContract.call("startChain", emptyMessage).with(txn -> txn.gas(2_000_000)
                         .via("nestedCreations")),
                 withOpContext((spec, opLog) -> {
@@ -310,8 +299,7 @@ public class NaturalDispatchOrderingTest {
                                     .with(txn -> txn.gas(4_000_000)
                                             .hasKnownStatus(CONTRACT_REVERT_EXECUTED)
                                             .via("revertedCreations")));
-                }),
-                validateVisibleItems(assertion, removableChildValidator()));
+                }));
     }
 
     /**
@@ -327,10 +315,9 @@ public class NaturalDispatchOrderingTest {
     @HapiTest
     @DisplayName("irreversible preceding stream items are as expected")
     final Stream<DynamicTest> irreversiblePrecedingItemsAsExpected() {
-        final AtomicReference<VisibleItemsAssertion> assertion = new AtomicReference<>();
         return hapiTest(
-                streamMustIncludeNoFailuresFrom(
-                        visibleNonSyntheticItems(assertion, "finalizationBySuccess", "finalizationByFailure")),
+                streamMustIncludeNoFailuresFrom(visibleNonSyntheticItems(
+                        irreversiblePrecedingValidator(), "finalizationBySuccess", "finalizationByFailure")),
                 tokenCreate("unassociatedToken"),
                 // Create two hollow accounts to finalize, first by a top-level success and second by failure
                 createHollow(2, i -> "hollow" + i),
@@ -346,11 +333,10 @@ public class NaturalDispatchOrderingTest {
                         .signedBy("hollow1")
                         .sigMapPrefixes(uniqueWithFullPrefixesFor("hollow1"))
                         .via("finalizationByFailure")
-                        .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE),
-                validateVisibleItems(assertion, irreversiblePrecedingValidator()));
+                        .hasKnownStatus(INSUFFICIENT_TOKEN_BALANCE));
     }
 
-    private static BiConsumer<HapiSpec, Map<String, VisibleItems>> reversibleUserValidator() {
+    private static VisibleItemsValidator reversibleUserValidator() {
         return (spec, records) -> {
             final var successItems = requireNonNull(records.get("firstCreation"), "firstCreation not found");
             assertScheduledItemsMatch(successItems, 0, 1, ScheduleCreate, CryptoTransfer);
@@ -363,7 +349,7 @@ public class NaturalDispatchOrderingTest {
         };
     }
 
-    private static BiConsumer<HapiSpec, Map<String, VisibleItems>> reversibleScheduleValidator() {
+    private static VisibleItemsValidator reversibleScheduleValidator() {
         return (spec, records) -> {
             final var committedItems = requireNonNull(records.get("committed"), "committed not found");
             assertScheduledItemsMatch(
@@ -381,7 +367,7 @@ public class NaturalDispatchOrderingTest {
         };
     }
 
-    private static BiConsumer<HapiSpec, Map<String, VisibleItems>> reversibleChildValidator() {
+    private static VisibleItemsValidator reversibleChildValidator() {
         return (spec, records) -> {
             final var successItems = requireNonNull(records.get("fullSuccess"), "fullSuccess not found");
             assertItemsMatch(successItems, 0, ContractCall, TokenAssociateToAccount, CryptoTransfer);
@@ -395,10 +381,9 @@ public class NaturalDispatchOrderingTest {
         };
     }
 
-    private static BiConsumer<HapiSpec, Map<String, VisibleItems>> removableChildValidator() {
+    private static VisibleItemsValidator removableChildValidator() {
         return (spec, records) -> {
             final var nestedCreations = requireNonNull(records.get("nestedCreations"), "nestedCreations not found");
-            System.out.println(nestedCreations);
             assertItemsMatch(nestedCreations, 0, ContractCall, ContractCreate, ContractCreate);
             assertStatuses(nestedCreations, SUCCESS, SUCCESS, SUCCESS);
             final var revertedCreations =
@@ -408,11 +393,10 @@ public class NaturalDispatchOrderingTest {
         };
     }
 
-    private static BiConsumer<HapiSpec, Map<String, VisibleItems>> irreversiblePrecedingValidator() {
+    private static VisibleItemsValidator irreversiblePrecedingValidator() {
         return (spec, records) -> {
             final var successFinalization =
                     requireNonNull(records.get("finalizationBySuccess"), "finalizationBySuccess not found");
-            System.out.println(successFinalization);
             assertItemsMatch(successFinalization, 1, CryptoUpdate, CryptoTransfer);
             assertStatuses(successFinalization, SUCCESS, SUCCESS);
             final var failFinalization =

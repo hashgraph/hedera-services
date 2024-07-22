@@ -57,7 +57,6 @@ import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.unti
 import static com.hedera.services.bdd.spec.utilops.pauses.HapiSpecWaitUntil.untilStartOfNextStakingPeriod;
 import static com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp.Containment.CONTAINS;
 import static com.hedera.services.bdd.spec.utilops.streams.LogContainmentOp.Containment.DOES_NOT_CONTAIN;
-import static com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion.TIMEOUT_TO_VISIBLE;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE;
@@ -166,9 +165,9 @@ import com.hedera.services.bdd.spec.utilops.streams.assertions.EventualRecordStr
 import com.hedera.services.bdd.spec.utilops.streams.assertions.RecordStreamAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.TransactionBodyAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.ValidContractIdsAssertion;
-import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItems;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion;
 import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsAssertion.SkipSynthItems;
+import com.hedera.services.bdd.spec.utilops.streams.assertions.VisibleItemsValidator;
 import com.hedera.services.bdd.spec.utilops.upgrade.BuildUpgradeZipOp;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.crypto.CryptoTransferSuite;
@@ -219,11 +218,9 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
@@ -1030,30 +1027,6 @@ public class UtilVerbs {
         return EventualRecordStreamAssertion.eventuallyAssertingNoFailures(assertion);
     }
 
-    /**
-     * Returns an operation that validates the visible items captured by the given assertion with
-     * the given validator.
-     *
-     * @param assertion the assertion that captures the visible items
-     * @param validator the validator to use
-     * @return the operation that validates the visible items
-     */
-    public static SpecOperation validateVisibleItems(
-            @NonNull final AtomicReference<VisibleItemsAssertion> assertion,
-            @NonNull final BiConsumer<HapiSpec, Map<String, VisibleItems>> validator) {
-        requireNonNull(assertion);
-        requireNonNull(validator);
-        return withOpContext((spec, opLog) -> {
-            opLog.info("Waiting {} for any remaining entries for {}", TIMEOUT_TO_VISIBLE, assertion.get());
-            final var entries = assertion
-                    .get()
-                    .itemsFuture()
-                    .orTimeout(TIMEOUT_TO_VISIBLE.getSeconds(), TimeUnit.SECONDS)
-                    .join();
-            validator.accept(spec, entries);
-        });
-    }
-
     public static RunnableOp verify(@NonNull final Runnable runnable) {
         return new RunnableOp(runnable);
     }
@@ -1102,25 +1075,17 @@ public class UtilVerbs {
     }
 
     public static Function<HapiSpec, RecordStreamAssertion> visibleItems(
-            @NonNull final AtomicReference<VisibleItemsAssertion> ref, @NonNull final String... specTxnIds) {
-        requireNonNull(ref);
+            @NonNull final VisibleItemsValidator validator, @NonNull final String... specTxnIds) {
         requireNonNull(specTxnIds);
-        return spec -> {
-            final var assertion = new VisibleItemsAssertion(spec, SkipSynthItems.NO, specTxnIds);
-            ref.set(assertion);
-            return assertion;
-        };
+        requireNonNull(validator);
+        return spec -> new VisibleItemsAssertion(spec, validator, SkipSynthItems.NO, specTxnIds);
     }
 
     public static Function<HapiSpec, RecordStreamAssertion> visibleNonSyntheticItems(
-            @NonNull final AtomicReference<VisibleItemsAssertion> ref, @NonNull final String... specTxnIds) {
-        requireNonNull(ref);
+            @NonNull final VisibleItemsValidator validator, @NonNull final String... specTxnIds) {
         requireNonNull(specTxnIds);
-        return spec -> {
-            final var assertion = new VisibleItemsAssertion(spec, SkipSynthItems.YES, specTxnIds);
-            ref.set(assertion);
-            return assertion;
-        };
+        requireNonNull(validator);
+        return spec -> new VisibleItemsAssertion(spec, validator, SkipSynthItems.YES, specTxnIds);
     }
 
     public static Function<HapiSpec, RecordStreamAssertion> recordedChildBodyWithId(
