@@ -44,7 +44,7 @@ public class HashTreeManager<T> {
     }
 
     /** Add an element to the Tree
-     * @param element The element to add to the tree - This could just be a Block Item
+     * @param element The element to add to the tree
      */
     public void addElement(T element) {
         Bytes encodedElement = codec.toBytes(element); // Use the codec to encode the element
