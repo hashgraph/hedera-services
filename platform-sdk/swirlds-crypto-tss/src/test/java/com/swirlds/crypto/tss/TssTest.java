@@ -17,6 +17,7 @@
 package com.swirlds.crypto.tss;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.swirlds.crypto.pairings.api.Curve;
 import com.swirlds.crypto.signaturescheme.api.GroupAssignment;
@@ -131,7 +132,9 @@ class TssTest {
         final List<TssPublicShare> publicShares =
                 List.of(mock(TssPublicShare.class), mock(TssPublicShare.class), mock(TssPublicShare.class));
         final PairingPublicKey ledgerID = tssService.aggregatePublicShares(publicShares);
-        final List<TssPrivateShare> privateShares = List.of(mock(TssPrivateShare.class));
+        TssPrivateShare mock = mock(TssPrivateShare.class);
+        when(mock.shareId()).thenReturn(mock(TssShareId.class));
+        final List<TssPrivateShare> privateShares = List.of(mock);
 
         final SecureRandom random = new SecureRandom();
         final byte[] messageToSign = new byte[20];
