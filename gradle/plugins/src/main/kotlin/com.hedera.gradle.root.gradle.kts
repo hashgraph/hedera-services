@@ -22,7 +22,6 @@ plugins {
     id("com.hedera.gradle.lifecycle")
     id("com.hedera.gradle.repositories")
     id("com.hedera.gradle.nexus-publish")
-    id("com.hedera.gradle.aggregate-reports")
     id("com.hedera.gradle.spotless-kotlin")
     id("com.hedera.gradle.spotless-markdown")
     id("com.autonomousapps.dependency-analysis")
