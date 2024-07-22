@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Fail.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -114,7 +117,8 @@ public class SingleTransactionRecordBuilderTest {
         final List<AccountAmount> paidStakingRewards = List.of(accountAmount);
         final List<Long> serialNumbers = List.of(1L, 2L, 3L);
 
-        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder = new SingleTransactionRecordBuilderImpl();
+        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
+                new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
 
         singleTransactionRecordBuilder
                 .parentConsensus(PARENT_CONSENSUS_TIME)
@@ -247,7 +251,8 @@ public class SingleTransactionRecordBuilderTest {
 
     @Test
     void testTopLevelRecordBuilder() {
-        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder = new SingleTransactionRecordBuilderImpl();
+        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
+                new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
 
         singleTransactionRecordBuilder.transaction(transaction);
 
@@ -268,7 +273,8 @@ public class SingleTransactionRecordBuilderTest {
 
     @Test
     void testBuilderWithAddMethods() {
-        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder = new SingleTransactionRecordBuilderImpl();
+        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
+                new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
 
         SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder
                 .transaction(transaction)

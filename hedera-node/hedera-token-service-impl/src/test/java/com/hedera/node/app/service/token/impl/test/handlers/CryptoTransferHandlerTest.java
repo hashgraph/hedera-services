@@ -30,6 +30,9 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.a
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.nftTransferWith;
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -525,7 +528,8 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                             new TokenRelation(nonFungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl().status(SUCCESS);
+                    return new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER)
+                            .status(SUCCESS);
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(storeFactory.writableStore(WritableTokenRelationStore.class)).willReturn(writableTokenRelStore);

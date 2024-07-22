@@ -16,6 +16,9 @@
 
 package com.hedera.node.config.types;
 
+/**
+ * Temporarily enumerates the choices of what stream to produce; blocks, records, or both.
+ */
 public enum StreamMode {
     BLOCKS,
     RECORDS,

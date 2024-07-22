@@ -16,6 +16,9 @@
 
 package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -137,7 +140,8 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, spenderId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl().status(ResponseCodeEnum.SUCCESS);
+                    return new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER)
+                            .status(ResponseCodeEnum.SUCCESS);
                 });
     }
 

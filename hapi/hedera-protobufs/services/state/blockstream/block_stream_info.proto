@@ -45,9 +45,9 @@ message BlockStreamInfo {
    */
   Timestamp last_block_time = 3;
   /**
-   * A concatenation of the hashes of several trailing input block item hashes, for use as a PRNG seed.
+   * A concatenation of the hashes of several trailing output block item hashes, for use as a PRNG seed.
    */
-  bytes trailing_input_hashes = 4;
+  bytes trailing_output_hashes = 4;
   /**
    * A concatenation of the hashes of 256 trailing blocks, for use with EVM BLOCKHASH opcode.
    */

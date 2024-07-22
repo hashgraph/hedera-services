@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.node.config.data;
+package com.hedera.node.app.blocks;
 
-import com.hedera.node.config.NetworkProperty;
-import com.hedera.node.config.types.StreamMode;
-import com.swirlds.config.api.ConfigData;
-import com.swirlds.config.api.ConfigProperty;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-@ConfigData("blockStream")
-public record BlockStreamConfig(
-        // Default value of RECORDS disables the block stream; setting BLOCKS or BOTH enables it
-        @ConfigProperty(defaultValue = "RECORDS") @NetworkProperty StreamMode streamMode) {}
+/**
+ * Writes serialized block items to a destination stream.
+ */
+public interface BlockItemWriter {
+    void startBlock(long blockNumber);
+
+    void writeItem(@NonNull Bytes serializedItem);
+
+    void closeStream();
+}

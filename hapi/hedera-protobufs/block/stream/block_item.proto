@@ -80,8 +80,8 @@ import "stream/output/transaction_result.proto";
  *     start_event
  *     repeated {
  *       (optional) repeated system_transaction
- *       transaction
- *       transaction_result
+ *       (optional) transaction
+ *       (optional) transaction_result
  *       (optional) transaction_output
  *       (optional) repeated state_changes
  *     }

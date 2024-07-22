@@ -22,6 +22,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -97,7 +99,8 @@ public class RecordFinalizerTest {
             Bytes.EMPTY,
             HederaFunctionality.CRYPTO_TRANSFER);
 
-    private SingleTransactionRecordBuilderImpl recordBuilder = new SingleTransactionRecordBuilderImpl();
+    private SingleTransactionRecordBuilderImpl recordBuilder =
+            new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
     private RecordFinalizer subject;
 
     @BeforeEach

@@ -27,6 +27,8 @@ import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartU
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP2;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransactionPreHandleResultP3;
 import static com.hedera.node.app.state.merkle.VersionUtils.isSoOrdered;
+import static com.hedera.node.config.types.StreamMode.BLOCKS;
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
@@ -34,6 +36,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -62,6 +65,8 @@ import com.hedera.node.app.workflows.handle.steps.UserTxn;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.node.app.workflows.prehandle.PreHandleWorkflow;
 import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockStreamConfig;
+import com.hedera.node.config.types.StreamMode;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
@@ -88,6 +93,8 @@ public class HandleWorkflow {
     private static final Logger logger = LogManager.getLogger(HandleWorkflow.class);
 
     public static final String ALERT_MESSAGE = "Possibly CATASTROPHIC failure";
+    // Temporary flag to control stream mode during transition to block streams
+    public static StreamMode STREAM_MODE = RECORDS;
 
     private final NetworkInfo networkInfo;
     private final NodeStakeUpdates nodeStakeUpdates;
@@ -101,6 +108,7 @@ public class HandleWorkflow {
     private final ConfigProvider configProvider;
     private final StoreMetricsService storeMetricsService;
     private final BlockRecordManager blockRecordManager;
+    private final BlockStreamManager blockStreamManager;
     private final CacheWarmer cacheWarmer;
     private final HandleWorkflowMetrics handleWorkflowMetrics;
     private final ThrottleServiceManager throttleServiceManager;
@@ -126,6 +134,7 @@ public class HandleWorkflow {
             @NonNull final ConfigProvider configProvider,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final BlockRecordManager blockRecordManager,
+            @NonNull final BlockStreamManager blockStreamManager,
             @NonNull final CacheWarmer cacheWarmer,
             @NonNull final HandleWorkflowMetrics handleWorkflowMetrics,
             @NonNull final ThrottleServiceManager throttleServiceManager,
@@ -148,6 +157,7 @@ public class HandleWorkflow {
         this.configProvider = requireNonNull(configProvider);
         this.storeMetricsService = requireNonNull(storeMetricsService);
         this.blockRecordManager = requireNonNull(blockRecordManager);
+        this.blockStreamManager = requireNonNull(blockStreamManager);
         this.cacheWarmer = requireNonNull(cacheWarmer);
         this.handleWorkflowMetrics = requireNonNull(handleWorkflowMetrics);
         this.throttleServiceManager = requireNonNull(throttleServiceManager);
@@ -158,6 +168,11 @@ public class HandleWorkflow {
         this.recordCache = requireNonNull(recordCache);
         this.exchangeRateManager = requireNonNull(exchangeRateManager);
         this.preHandleWorkflow = requireNonNull(preHandleWorkflow);
+        // Temporary flag to control stream mode during transition to block streams
+        STREAM_MODE = configProvider
+                .getConfiguration()
+                .getConfigData(BlockStreamConfig.class)
+                .streamMode();
     }
 
     /**
@@ -173,7 +188,11 @@ public class HandleWorkflow {
         final var userTransactionsHandled = new AtomicBoolean(false);
         logStartRound(round);
         cacheWarmer.warm(state, round);
+        if (STREAM_MODE != RECORDS) {
+            blockStreamManager.startRound(round, state);
+        }
         for (final var event : round) {
+            // TODO - stream input event metadata if mode != RECORDS
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
                 if (!isSoOrdered(event.getSoftwareVersion(), version)) {
@@ -202,6 +221,9 @@ public class HandleWorkflow {
                     if (!platformTxn.isSystem()) {
                         userTransactionsHandled.set(true);
                         handlePlatformTransaction(state, platformState, event, creator, platformTxn);
+                    } else {
+                        // TODO - handle block signature transaction
+                        // TODO - stream state signature transaction
                     }
                 } catch (final Exception e) {
                     logger.fatal(
@@ -217,8 +239,11 @@ public class HandleWorkflow {
         // that have been being computed in background threads. The running hash has to be included in
         // state, but we want to synchronize with background threads as infrequently as possible. So once per
         // round is the minimum we can do.
-        if (userTransactionsHandled.get()) {
+        if (userTransactionsHandled.get() && STREAM_MODE != BLOCKS) {
             blockRecordManager.endRound(state);
+        }
+        if (STREAM_MODE != RECORDS) {
+            blockStreamManager.endRound(state);
         }
     }
 
@@ -245,10 +270,14 @@ public class HandleWorkflow {
         final var consensusNow = txn.getConsensusTimestamp();
         final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
 
-        blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var streamItems = execute(userTxn);
+        if (STREAM_MODE != BLOCKS) {
+            blockRecordManager.startUserTransaction(consensusNow, state, platformState);
+        }
+        final var outputItems = execute(userTxn);
         // TODO: need to switch with config and send block items to block stream manager
-        blockRecordManager.endUserTransaction(streamItems.recordStreamItems().stream(), state);
+        if (STREAM_MODE != BLOCKS) {
+            blockRecordManager.endUserTransaction(outputItems.recordStreamItems().stream(), state);
+        }
 
         handleWorkflowMetrics.updateTransactionDuration(
                 userTxn.functionality(), (int) (System.nanoTime() - handleStart));
@@ -338,6 +367,8 @@ public class HandleWorkflow {
             return streamItems;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
+            // TODO - build and stream any committed builders and state changes from the stack, with a
+            // FAIL_INVALID for the user transaction record/result
             return failInvalidStreamItems(userTxn);
         }
     }

@@ -27,10 +27,13 @@ import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBu
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.node.app.blocks.IoBlockItemsBuilder;
+import com.hedera.node.app.blocks.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
@@ -93,8 +96,8 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
     public void commit() {
         assertNotFinished();
 
-        state.commit();
         commitBuilders();
+        state.commit();
         status = Status.FINISHED;
     }
 
@@ -117,7 +120,12 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
         requireNonNull(reversingBehavior);
         requireNonNull(txnCategory);
         requireNonNull(customizer);
-        final var builder = new SingleTransactionRecordBuilderImpl(reversingBehavior, customizer, txnCategory);
+        final var builder =
+                switch (HandleWorkflow.STREAM_MODE) {
+                    case RECORDS -> new SingleTransactionRecordBuilderImpl(reversingBehavior, customizer, txnCategory);
+                    case BLOCKS -> new IoBlockItemsBuilder(reversingBehavior, customizer, txnCategory);
+                    case BOTH -> new PairedStreamBuilder(reversingBehavior, customizer, txnCategory);
+                };
         if (!customizer.shouldSuppressRecord()) {
             if (txnCategory == PRECEDING && !isBaseBuilder) {
                 addPrecedingOrThrow(builder);

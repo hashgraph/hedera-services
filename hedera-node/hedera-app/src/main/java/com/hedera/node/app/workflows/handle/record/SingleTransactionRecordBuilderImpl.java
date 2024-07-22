@@ -17,14 +17,11 @@
 package com.hedera.node.app.workflows.handle.record;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
-import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -200,16 +197,6 @@ public class SingleTransactionRecordBuilderImpl
 
     private TokenID tokenID;
     private TokenType tokenType;
-
-    /**
-     * Creates new transaction record builder where reversion will leave its record in the stream
-     * with either a failure status or {@link ResponseCodeEnum#REVERTED_SUCCESS}.
-     *
-     */
-    @VisibleForTesting
-    public SingleTransactionRecordBuilderImpl() {
-        this(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
-    }
 
     public SingleTransactionRecordBuilderImpl(
             @NonNull final ReversingBehavior reversingBehavior,

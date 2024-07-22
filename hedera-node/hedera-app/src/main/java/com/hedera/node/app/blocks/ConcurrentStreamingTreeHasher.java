@@ -28,19 +28,50 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
-public class ConcurrentItemTreeHasher implements StreamingTreeHasher {
+/**
+ * A {@link StreamingTreeHasher} that computes the root hash of a perfect binary Merkle tree of {@link Bytes} leaves
+ * using a concurrent algorithm that hashes leaves in parallel and combines the resulting hashes in parallel.
+ * <p>
+ * <b>Important:</b> This class is not thread-safe, and client code must not make concurrent calls to
+ * {@link #addLeaf(Bytes)} or {@link #rootHash()}.
+ */
+public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
+    /**
+     * The number of leaves to hash in parallel before combining the resulting hashes.
+     */
     private static final int HASHING_CHUNK_SIZE = 16;
 
+    /**
+     * The base {@link HashCombiner} that combines the hashes of the leaves of the tree, at depth zero.
+     */
     private final HashCombiner combiner = new HashCombiner(0);
+    /**
+     * The {@link ExecutorService} used to parallelize the hashing and combining of the leaves of the tree.
+     */
     private final ExecutorService executorService;
 
+    /**
+     * Tracks the number of leaves added to the tree.
+     */
     private int numLeaves;
+    /**
+     * Set once before the root hash is requested, to the depth of the tree implied by the number of leaves.
+     */
     private int maxDepth;
+    /**
+     * Whether the tree has been finalized by requesting the root hash.
+     */
     private boolean rootHashRequested = false;
+    /**
+     * Leaves added but not yet scheduled to be hashed.
+     */
     private List<Bytes> pendingLeaves = new ArrayList<>();
+    /**
+     * A future that completes after all leaves not in the pending list have been hashed and combined.
+     */
     private CompletableFuture<Void> hashed = CompletableFuture.completedFuture(null);
 
-    public ConcurrentItemTreeHasher(@NonNull final ExecutorService executorService) {
+    public ConcurrentStreamingTreeHasher(@NonNull final ExecutorService executorService) {
         this.executorService = requireNonNull(executorService);
     }
 

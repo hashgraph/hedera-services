@@ -27,7 +27,9 @@ import static com.hedera.node.app.spi.authorization.SystemPrivilege.IMPERMISSIBL
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -268,7 +270,8 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             .build();
     private static final TransactionBody txBody = asTxn(transferBody, payerId, CONSENSUS_NOW);
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
-    private SingleTransactionRecordBuilderImpl childRecordBuilder = new SingleTransactionRecordBuilderImpl();
+    private SingleTransactionRecordBuilderImpl childRecordBuilder =
+            new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
     private final TransactionBody txnBodyWithoutId = TransactionBody.newBuilder()
             .consensusSubmitMessage(ConsensusSubmitMessageTransactionBody.DEFAULT)
             .build();

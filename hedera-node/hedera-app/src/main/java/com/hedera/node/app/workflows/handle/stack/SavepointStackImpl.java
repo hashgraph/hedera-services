@@ -26,6 +26,7 @@ import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBu
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -70,6 +71,11 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
     // because child stacks flush their builders into the savepoint at the top of their parent stack
     @Nullable
     private final BuilderSink builderSink;
+    /**
+     * If creating blocks, the K/V and queue state changes committed by the most recent call to commitFullStack().
+     */
+    @Nullable
+    private List<BlockItem> stateChanges;
 
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
@@ -169,6 +175,8 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
      * Commits all state changes captured in this stack.
      */
     public void commitFullStack() {
+        // TODO - traverse the queue and K/V WritableStates in the first savepoint WrappedHederaState's
+        // writableStatesMap and create a StateChanges list
         while (!stack.isEmpty()) {
             stack.pop().commit();
         }
