@@ -31,6 +31,8 @@ import com.hedera.node.config.data.LazyCreationConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * Service class that provides static methods for execution of Crypto transfer transaction. The main purpose of this
@@ -38,7 +40,16 @@ import java.util.List;
  * {@link com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler} It also adds the possibility to separate
  * custom fee assessment steps from other steps (to prepay fees in case of pending airdrops)
  */
+@Singleton
 public class CryptoTransferExecutor {
+
+    /**
+     * Default constructor for injection.
+     */
+    @Inject
+    public CryptoTransferExecutor() {
+        // For Dagger injection
+    }
 
     /**
      * Executes all crypto transfer steps.
@@ -49,7 +60,7 @@ public class CryptoTransferExecutor {
      * @param validator crypto transfer validator
      * @param recordBuilder record builder
      */
-    public static void executeCryptoTransfer(
+    public void executeCryptoTransfer(
             TransactionBody txn,
             TransferContextImpl transferContext,
             HandleContext context,
@@ -65,21 +76,18 @@ public class CryptoTransferExecutor {
      * @param txn             transaction body
      * @param transferContext transfer context
      */
-    public static void chargeCustomFee(TransactionBody txn, TransferContextImpl transferContext) {
+    public void chargeCustomFee(TransactionBody txn, TransferContextImpl transferContext) {
         final var customFeeStep = new CustomFeeAssessmentStep(txn.cryptoTransferOrThrow());
         var transferBodies = customFeeStep.assessCustomFees(transferContext);
         var topLevelPayer = transferContext.getHandleContext().payer();
-        for (var customFeeTransactionBody : transferBodies) {
-            if (customFeeTransactionBody
-                    .tokenTransfers()
-                    .equals(txn.cryptoTransferOrThrow().tokenTransfers())) {
-                continue;
-            }
+        // we skip the origin (first) txn body,
+        // so we can adjust changes, that are related only to the custom fees
+        for (int i = 1, n = transferBodies.size(); i < n; i++) {
             // adjust balances
-            var adjustHbarChangesStep = new AdjustHbarChangesStep(customFeeTransactionBody, topLevelPayer);
+            var adjustHbarChangesStep = new AdjustHbarChangesStep(transferBodies.get(i), topLevelPayer);
             adjustHbarChangesStep.doIn(transferContext);
             var adjustFungibleChangesStep =
-                    new AdjustFungibleTokenChangesStep(customFeeTransactionBody.tokenTransfers(), topLevelPayer);
+                    new AdjustFungibleTokenChangesStep(transferBodies.get(i).tokenTransfers(), topLevelPayer);
             adjustFungibleChangesStep.doIn(transferContext);
         }
     }
@@ -94,7 +102,7 @@ public class CryptoTransferExecutor {
      * @param validator       crypto transfer validator
      * @param recordBuilder   record builder
      */
-    public static void executeCryptoTransferWithoutCustomFee(
+    public void executeCryptoTransferWithoutCustomFee(
             TransactionBody txn,
             TransferContextImpl transferContext,
             HandleContext context,
@@ -113,7 +121,7 @@ public class CryptoTransferExecutor {
      * @param recordBuilder crypto transfer record builder
      * @param skipCustomFee should execute custom fee steps
      */
-    private static void executeCryptoTransfer(
+    private void executeCryptoTransfer(
             TransactionBody txn,
             TransferContextImpl transferContext,
             HandleContext context,
@@ -153,7 +161,7 @@ public class CryptoTransferExecutor {
      * @return the replaced transaction body with all aliases replaced with its account ids
      * @throws HandleException if any error occurs during the process
      */
-    private static CryptoTransferTransactionBody ensureAndReplaceAliasesInOp(
+    private CryptoTransferTransactionBody ensureAndReplaceAliasesInOp(
             @NonNull final TransactionBody txn,
             @NonNull final TransferContextImpl transferContext,
             @NonNull final HandleContext context,
@@ -179,7 +187,7 @@ public class CryptoTransferExecutor {
         return replacedOp;
     }
 
-    private static void ensureExistenceOfAliasesOrCreate(
+    private void ensureExistenceOfAliasesOrCreate(
             @NonNull final CryptoTransferTransactionBody op, @NonNull final TransferContextImpl transferContext) {
         final var ensureAliasExistence = new EnsureAliasesStep(op);
         ensureAliasExistence.doIn(transferContext);
@@ -207,7 +215,7 @@ public class CryptoTransferExecutor {
      * @param transferContext
      * @return A list of steps to execute
      */
-    private static List<TransferStep> decomposeIntoSteps(
+    private List<TransferStep> decomposeIntoSteps(
             final CryptoTransferTransactionBody op,
             final AccountID topLevelPayer,
             final TransferContextImpl transferContext,
