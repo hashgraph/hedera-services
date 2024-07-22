@@ -116,3 +116,5 @@ These are additional response codes that can appear specifically for `EthereumTr
 
 - **INVALID_ETHEREUM_TRANSACTION**
   - The Ethereum transaction either failed parsing or failed signature validation, or some other `EthereumTransaction` error not covered by another response code.
+
+Note: The description for the statuses is copied from [protobuf repo](https://github.com/hashgraph/hedera-protobufs/blob/main/services/response_code.proto)
