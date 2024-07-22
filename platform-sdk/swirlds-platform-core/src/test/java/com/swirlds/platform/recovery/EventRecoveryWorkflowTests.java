@@ -37,7 +37,7 @@ import com.swirlds.common.crypto.RunningHash;
 import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.config.StateConfig;
-import com.swirlds.platform.internal.EventImpl;
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.recovery.emergencyfile.EmergencyRecoveryFile;
 import com.swirlds.platform.recovery.internal.StreamedRound;
 import com.swirlds.platform.state.PlatformState;
@@ -111,13 +111,13 @@ class EventRecoveryWorkflowTests {
 
         final List<ConsensusEvent> events = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
-            events.add(mock(EventImpl.class));
+            events.add(mock(PlatformEvent.class));
         }
 
         final Round round = mock(Round.class);
         when(round.iterator()).thenReturn(events.iterator());
 
-        final List<EventImpl> preHandleList = new ArrayList<>();
+        final List<PlatformEvent> preHandleList = new ArrayList<>();
         final AtomicBoolean roundHandled = new AtomicBoolean(false);
 
         final SwirldState immutableState = mock(SwirldState.class);
@@ -168,7 +168,7 @@ class EventRecoveryWorkflowTests {
 
         final List<ConsensusEvent> events = new ArrayList<>();
         for (int eventIndex = 0; eventIndex < eventCount; eventIndex++) {
-            final EventImpl event = mock(EventImpl.class);
+            final PlatformEvent event = mock(PlatformEvent.class);
             when(event.getConsensusTimestamp()).thenReturn(Instant.ofEpochSecond(eventIndex));
             events.add(event);
         }

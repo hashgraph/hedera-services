@@ -32,6 +32,9 @@ import org.junit.jupiter.api.parallel.ResourceLock;
  * Annotation for a {@link HapiTest} that "leaks" side effects into the test context (or
  * is permeable to such side effects itself). The {@link ContextRequirement} annotation
  * enumerates common types of leakage and permeability.
+ * <p>
+ * If set, the {@link LeakyHapiTest#overrides()} field lists the names of properties that
+ * the test overrides and needs automatically restored to their original values after the test completes.
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
@@ -39,5 +42,16 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 @ExtendWith({NetworkTargetingExtension.class, SpecNamingExtension.class})
 @ResourceLock(value = "NETWORK", mode = READ_WRITE)
 public @interface LeakyHapiTest {
-    ContextRequirement[] value() default {};
+    /**
+     * If set, the types of context requirements that the test is subject to.
+     * @return the context requirements
+     */
+    ContextRequirement[] requirement() default {};
+
+    /**
+     * If set, the names of properties this test overrides and needs automatically
+     * restored to their original values after the test completes.
+     * @return the names of properties this test overrides
+     */
+    String[] overrides() default {};
 }

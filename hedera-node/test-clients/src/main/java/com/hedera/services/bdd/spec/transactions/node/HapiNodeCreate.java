@@ -17,6 +17,7 @@
 package com.hedera.services.bdd.spec.transactions.node;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.endpointFor;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.netOf;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -29,6 +30,7 @@ import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.services.bdd.junit.hedera.subprocess.SubProcessNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.fees.AdapterUtils;
+import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -40,12 +42,11 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.LongConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,17 +58,17 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
     private final String nodeName;
     private Optional<AccountID> accountId = Optional.empty();
     private Optional<String> description = Optional.empty();
-    private List<ServiceEndpoint> gossipEndpoints = Collections.emptyList();
-    private List<ServiceEndpoint> grpcEndpoints = Collections.emptyList();
+    private List<ServiceEndpoint> gossipEndpoints =
+            Arrays.asList(endpointFor("192.168.1.200", 123), endpointFor("192.168.1.201", 123));
+    private List<ServiceEndpoint> grpcEndpoints = Arrays.asList(
+            ServiceEndpoint.newBuilder().setDomainName("test.com").setPort(123).build());
     private Optional<byte[]> gossipCaCertificate = Optional.empty();
     private Optional<byte[]> grpcCertificateHash = Optional.empty();
-    private Optional<LongConsumer> newNumObserver = Optional.empty();
+    private Optional<String> adminKeyName = Optional.empty();
+    private Optional<KeyShape> adminKeyShape = Optional.empty();
 
     @Nullable
-    private Key key;
-
-    @Nullable
-    private String keyName;
+    private Key adminKey;
 
     public HapiNodeCreate(@NonNull final String nodeName) {
         this.nodeName = nodeName;
@@ -75,17 +76,12 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected Key lookupKey(final HapiSpec spec, final String name) {
-        return name.equals(nodeName) ? key : spec.registry().getKey(name);
+        return name.equals(nodeName) ? adminKey : spec.registry().getKey(name);
     }
 
     @Override
     public HederaFunctionality type() {
         return HederaFunctionality.NodeCreate;
-    }
-
-    public HapiNodeCreate exposingNumTo(@NonNull final LongConsumer obs) {
-        newNumObserver = Optional.of(obs);
-        return this;
     }
 
     public HapiNodeCreate advertisingCreation() {
@@ -128,6 +124,20 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
         return this;
     }
 
+    public HapiNodeCreate adminKey(final String name) {
+        adminKeyName = Optional.of(name);
+        return this;
+    }
+
+    public HapiNodeCreate adminKey(final Key key) {
+        adminKey = key;
+        return this;
+    }
+
+    private void genKeysFor(final HapiSpec spec) {
+        adminKey = adminKey == null ? netOf(spec, adminKeyName, adminKeyShape) : adminKey;
+    }
+
     @Override
     protected HapiNodeCreate self() {
         return this;
@@ -147,7 +157,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected Consumer<TransactionBody.Builder> opBodyDef(@NonNull final HapiSpec spec) throws Throwable {
-        key = key != null ? key : netOf(spec, Optional.ofNullable(keyName));
+        genKeysFor(spec);
         if (useAvailableSubProcessPorts) {
             if (!(spec.targetNetworkOrThrow() instanceof SubProcessNetwork subProcessNetwork)) {
                 throw new IllegalStateException("Target is not a SubProcessNetwork");
@@ -160,13 +170,9 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
                         NodeCreateTransactionBody.class, builder -> {
                             accountId.ifPresent(builder::setAccountId);
                             description.ifPresent(builder::setDescription);
-                            builder.setAdminKey(key);
-                            if (!gossipEndpoints.isEmpty()) {
-                                builder.clearGossipEndpoint().addAllGossipEndpoint(gossipEndpoints);
-                            }
-                            if (!grpcEndpoints.isEmpty()) {
-                                builder.clearServiceEndpoint().addAllServiceEndpoint(grpcEndpoints);
-                            }
+                            if (adminKey != null) builder.setAdminKey(adminKey);
+                            builder.clearGossipEndpoint().addAllGossipEndpoint(gossipEndpoints);
+                            builder.clearServiceEndpoint().addAllServiceEndpoint(grpcEndpoints);
                             gossipCaCertificate.ifPresent(s -> builder.setGossipCaCertificate(ByteString.copyFrom(s)));
                             grpcCertificateHash.ifPresent(s -> builder.setGrpcCertificateHash(ByteString.copyFrom(s)));
                         });
@@ -175,7 +181,7 @@ public class HapiNodeCreate extends HapiTxnOp<HapiNodeCreate> {
 
     @Override
     protected List<Function<HapiSpec, Key>> defaultSigners() {
-        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> key);
+        return List.of(spec -> spec.registry().getKey(effectivePayer(spec)), ignore -> adminKey);
     }
 
     @Override

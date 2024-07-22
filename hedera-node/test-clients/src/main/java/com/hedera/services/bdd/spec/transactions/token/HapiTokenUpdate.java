@@ -34,7 +34,15 @@ import com.hedera.services.bdd.spec.transactions.HapiTxnOp;
 import com.hedera.services.bdd.spec.transactions.TxnUtils;
 import com.hedera.services.bdd.suites.HapiSuite;
 import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenInfo;
+import com.hederahashgraph.api.proto.java.TokenKeyValidation;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -240,26 +248,6 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
         return this;
     }
 
-    public HapiTokenUpdate usingInvalidWipeKey() {
-        useInvalidWipeKey = true;
-        return this;
-    }
-
-    public HapiTokenUpdate usingInvalidKycKey() {
-        useInvalidKycKey = true;
-        return this;
-    }
-
-    public HapiTokenUpdate usingInvalidSupplyKey() {
-        useInvalidSupplyKey = true;
-        return this;
-    }
-
-    public HapiTokenUpdate usingInvalidFreezeKey() {
-        useInvalidFreezeKey = true;
-        return this;
-    }
-
     public HapiTokenUpdate usingInvalidFeeScheduleKey() {
         useInvalidFeeScheduleKey = true;
         return this;
@@ -353,7 +341,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                             newMemo.ifPresent(s -> b.setMemo(
                                     StringValue.newBuilder().setValue(s).build()));
                             if (useInvalidAdminKey) {
-                                b.setAdminKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                                b.setAdminKey(TxnUtils.WRONG_LENGTH_EDDSA_KEY);
                             } else if (useEmptyAdminKey) {
                                 b.setAdminKey(TxnUtils.EMPTY_KEY_LIST);
                             } else {
@@ -362,7 +350,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                             }
                             newTreasury.ifPresent(a -> b.setTreasury(asId(a, spec)));
                             if (useInvalidSupplyKey) {
-                                b.setSupplyKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                                b.setSupplyKey(TxnUtils.WRONG_LENGTH_EDDSA_KEY);
                             } else if (useEmptySupplyKey) {
                                 b.setSupplyKey(TxnUtils.EMPTY_KEY_LIST);
                             } else {
@@ -371,7 +359,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                             }
                             newSupplyKeySupplier.ifPresent(s -> b.setSupplyKey(s.get()));
                             if (useInvalidWipeKey) {
-                                b.setWipeKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                                b.setWipeKey(TxnUtils.WRONG_LENGTH_EDDSA_KEY);
                             } else if (useEmptyWipeKey) {
                                 b.setWipeKey(TxnUtils.EMPTY_KEY_LIST);
                             } else {
@@ -379,7 +367,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                         k -> b.setWipeKey(spec.registry().getKey(k)));
                             }
                             if (useInvalidKycKey) {
-                                b.setKycKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                                b.setKycKey(TxnUtils.WRONG_LENGTH_EDDSA_KEY);
                             } else if (useEmptyKycKey) {
                                 b.setKycKey(TxnUtils.EMPTY_KEY_LIST);
                             } else {
@@ -387,7 +375,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                         k -> b.setKycKey(spec.registry().getKey(k)));
                             }
                             if (useInvalidFeeScheduleKey) {
-                                b.setFeeScheduleKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                                b.setFeeScheduleKey(TxnUtils.WRONG_LENGTH_EDDSA_KEY);
                             } else if (useEmptyFeeScheduleKey) {
                                 b.setFeeScheduleKey(TxnUtils.EMPTY_KEY_LIST);
                             } else {
@@ -395,7 +383,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                         k -> b.setFeeScheduleKey(spec.registry().getKey(k)));
                             }
                             if (useInvalidFreezeKey) {
-                                b.setFreezeKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                                b.setFreezeKey(TxnUtils.WRONG_LENGTH_EDDSA_KEY);
                             } else if (useEmptyFreezeKey) {
                                 b.setFreezeKey(TxnUtils.EMPTY_KEY_LIST);
                             } else {
@@ -403,7 +391,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                         k -> b.setFreezeKey(spec.registry().getKey(k)));
                             }
                             if (useInvalidPauseKey) {
-                                b.setPauseKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                                b.setPauseKey(TxnUtils.WRONG_LENGTH_EDDSA_KEY);
                             } else if (useEmptyPauseKey) {
                                 b.setPauseKey(TxnUtils.EMPTY_KEY_LIST);
                             } else {
@@ -411,7 +399,7 @@ public class HapiTokenUpdate extends HapiTxnOp<HapiTokenUpdate> {
                                         k -> b.setPauseKey(spec.registry().getKey(k)));
                             }
                             if (useInvalidMetadataKey) {
-                                b.setMetadataKey(TxnUtils.ALL_ZEROS_INVALID_KEY);
+                                b.setMetadataKey(TxnUtils.WRONG_LENGTH_EDDSA_KEY);
                             } else if (useEmptyMetadataKey) {
                                 b.setMetadataKey(TxnUtils.EMPTY_KEY_LIST);
                             } else {
