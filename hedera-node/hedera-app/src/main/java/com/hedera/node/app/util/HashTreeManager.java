@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.util;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.security.MessageDigest;
@@ -75,6 +76,7 @@ public class HashTreeManager<T> {
     /** Get the list of hashes in the tree
      * @return The list of hashes in the tree
      */
+    @VisibleForTesting
     public List<Bytes> getHashList() {
         return hashList;
     }

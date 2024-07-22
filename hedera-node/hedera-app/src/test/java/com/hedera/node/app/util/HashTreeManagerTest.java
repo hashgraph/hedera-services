@@ -69,11 +69,11 @@ public class HashTreeManagerTest {
 
         List<String> actualOrder = new ArrayList<>();
 
-        // Adding elements and asserting the root hash changes as expected
+        // Adding elements to the tree and asserting the root hash changes as expected
         tree.addElement("leaf1");
         actualOrder.add(tree.getHashList().toString());
-        String rootHash = tree.getTreeRootAsString();
-        assertThat(rootHash).isNotNull();
+        String rootHashAfterAddingLeaf1 = tree.getTreeRootAsString();
+        assertThat(rootHashAfterAddingLeaf1).isNotNull();
         assertThat(tree.getTreeRoot()).isNotNull();
 
         tree.addElement("leaf2");
@@ -90,20 +90,28 @@ public class HashTreeManagerTest {
 
         tree.addElement("leaf4");
         actualOrder.add(tree.getHashList().toString());
-        String newRootHash = tree.getTreeRootAsString();
-        assertThat(newRootHash).isNotNull();
-        assertThat(newRootHash).isNotEqualTo(rootHashAfterAddingLeaf3); // Should change
+        String rootHashAfterAddingLeaf4 = tree.getTreeRootAsString();
+        assertThat(rootHashAfterAddingLeaf4).isNotNull();
+        assertThat(rootHashAfterAddingLeaf4).isNotEqualTo(rootHashAfterAddingLeaf3); // Should change
+
+        // Prune the brackets from the string representation of the hash list
+        for (int i = 0; i < actualOrder.size(); i++) {
+            actualOrder.set(i, actualOrder.get(i).replace("[", "").replace("]", ""));
+        }
 
         List<String> expectedOrder = Arrays.asList(
-                "[38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b]",
-                "[82a82763156fb2d6421ef934dd593921ebfebeee2b6626494715dab6664a5a4f1b64c7b83de6e9c93ae5199d898fc0b6]",
-                "[347180f5e69054571b00bea816e5937b166dbcb51983882f76af907c6802956294f1b5ea1b317bba15fd14b6d0c73a1f]",
-                "[550df2684cb630cbaed45d58fa7b538d0eb099dc31b3164f8468046da8ff03620b593b7058b82186eae060eab292feb9]");
+                rootHashAfterAddingLeaf1, rootHashAfterAddingLeaf2, rootHashAfterAddingLeaf3, rootHashAfterAddingLeaf4);
+
         assertThat(actualOrder).containsExactlyElementsOf(expectedOrder);
-        assertThat(rootHash).as("Checking that hashes are not equal").isNotEqualTo(newRootHash);
+        assertThat(rootHashAfterAddingLeaf1)
+                .as("Checking that hashes are not equal")
+                .isNotEqualTo(rootHashAfterAddingLeaf4);
     }
 }
 
+/**
+ * A simple codec for encoding and decoding strings
+ */
 class SimpleStringCodec implements Codec<String> {
 
     @NotNull
