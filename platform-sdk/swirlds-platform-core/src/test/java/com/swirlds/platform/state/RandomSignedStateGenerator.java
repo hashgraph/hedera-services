@@ -37,6 +37,7 @@ import com.swirlds.platform.state.signed.SignedState;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
+import com.swirlds.platform.test.NoOpMerkleStateLifecycles;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.state.DummySwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -58,7 +59,7 @@ public class RandomSignedStateGenerator {
 
     final Random random;
 
-    private State state;
+    private MerkleStateRoot state;
     private Long round;
     private Hash legacyRunningEventHash;
     private AddressBook addressBook;
@@ -112,11 +113,9 @@ public class RandomSignedStateGenerator {
             addressBookInstance = addressBook;
         }
 
-        final State stateInstance;
+        final MerkleStateRoot stateInstance;
         if (state == null) {
-            stateInstance = new State();
-            final DummySwirldState swirldState = new DummySwirldState(addressBookInstance);
-            stateInstance.setSwirldState(swirldState);
+            stateInstance = new MerkleStateRoot(new NoOpMerkleStateLifecycles());
             PlatformState platformState = new PlatformState();
             platformState.setAddressBook(addressBookInstance);
             stateInstance.setPlatformState(platformState);
@@ -282,7 +281,7 @@ public class RandomSignedStateGenerator {
      *
      * @return this object
      */
-    public RandomSignedStateGenerator setState(final State state) {
+    public RandomSignedStateGenerator setState(final MerkleStateRoot state) {
         this.state = state;
         return this;
     }

@@ -16,18 +16,15 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
+
 import com.swirlds.base.utility.ToStringBuilder;
-import com.swirlds.common.crypto.Hash;
-import com.swirlds.common.formatting.TextTable;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
-import com.swirlds.common.merkle.utility.MerkleTreeVisualizer;
 import com.swirlds.common.utility.RuntimeObjectRecord;
 import com.swirlds.common.utility.RuntimeObjectRegistry;
-import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.system.SwirldState;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +32,11 @@ import org.apache.logging.log4j.Logger;
 /**
  * The root of the merkle tree holding the state of the Swirlds ledger. Contains two children: the state used by the
  * application and the state used by the platform.
+ *
+ * @deprecated This class is deprecated for usage as production code.
+ * It should be only used for testing purposes and will be moved to testFixtures in 0.54.
  */
+@Deprecated(forRemoval = true, since = "0.53.0")
 public class State extends PartialNaryMerkleInternal implements MerkleRoot {
 
     private static final Logger logger = LogManager.getLogger(State.class);
@@ -49,6 +50,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
         public static final int MIGRATE_TO_SERIALIZABLE = 4;
         public static final int ADD_DUAL_STATE = 5;
         public static final int REMOVE_DUAL_STATE = 6;
+        public static final int MIGRATE_PLATFORM_STATE = 7;
     }
 
     private static class ChildIndices {
@@ -98,6 +100,12 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
             throw new UnsupportedOperationException("State migration from version " + version + " is not supported."
                     + " The minimum supported version is " + getMinimumSupportedVersion());
         }
+
+        if (version < ClassVersion.MIGRATE_PLATFORM_STATE
+                && getSwirldState() instanceof MerkleStateRoot merkleStateRoot) {
+            merkleStateRoot.setPlatformState(getPlatformState());
+        }
+
         return this;
     }
 
@@ -163,7 +171,7 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
      */
     @Override
     public int getVersion() {
-        return ClassVersion.REMOVE_DUAL_STATE;
+        return ClassVersion.MIGRATE_PLATFORM_STATE;
     }
 
     /**
@@ -219,43 +227,6 @@ public class State extends PartialNaryMerkleInternal implements MerkleRoot {
     public String getInfoString(final int hashDepth) {
         final PlatformState platformState = getPlatformState();
         return createInfoString(hashDepth, platformState, getHash(), this);
-    }
-
-    /**
-     * Generate a string that describes this state.
-     *
-     * @param hashDepth the depth of the tree to visit and print
-     * @param platformState current platform state
-     * @param state current root node state
-     *
-     */
-    public static String createInfoString(int hashDepth, PlatformState platformState, Hash rootHash, MerkleNode state) {
-        final Hash hashEventsCons = platformState.getLegacyRunningEventHash();
-
-        final ConsensusSnapshot snapshot = platformState.getSnapshot();
-        final List<MinimumJudgeInfo> minimumJudgeInfo = snapshot == null ? null : snapshot.getMinimumJudgeInfoList();
-
-        final StringBuilder sb = new StringBuilder();
-
-        new TextTable()
-                .setBordersEnabled(false)
-                .addRow("Round:", platformState.getRound())
-                .addRow("Timestamp:", platformState.getConsensusTimestamp())
-                .addRow("Next consensus number:", snapshot == null ? "null" : snapshot.nextConsensusNumber())
-                .addRow("Legacy running event hash:", hashEventsCons)
-                .addRow("Legacy running event mnemonic:", hashEventsCons == null ? "null" : hashEventsCons.toMnemonic())
-                .addRow("Rounds non-ancient:", platformState.getRoundsNonAncient())
-                .addRow("Creation version:", platformState.getCreationSoftwareVersion())
-                .addRow("Minimum judge hash code:", minimumJudgeInfo == null ? "null" : minimumJudgeInfo.hashCode())
-                .addRow("Root hash:", rootHash)
-                .addRow("First BR Version:", platformState.getFirstVersionInBirthRoundMode())
-                .addRow("Last round before BR:", platformState.getLastRoundBeforeBirthRoundMode())
-                .addRow("Lowest Judge Gen before BR", platformState.getLowestJudgeGenerationBeforeBirthRoundMode())
-                .render(sb);
-
-        sb.append("\n");
-        new MerkleTreeVisualizer(state).setDepth(hashDepth).render(sb);
-        return sb.toString();
     }
 
     /**
