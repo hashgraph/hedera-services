@@ -215,4 +215,37 @@ public class NumericValidationTest {
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
     }
+
+    @Nested
+    @DisplayName("calls fail to wipe functions with invalid amounts")
+    class WipeTests {
+
+        /*
+         ** We should have a test for wipe function V1 with fungible tokens but all values are either valid or
+         ** the abi definition will block an attempt to send
+         */
+
+        @HapiTest
+        @DisplayName("when using fungible tokens via the V2 version of the wipe function")
+        public Stream<DynamicTest> failToWipeFTV2() {
+            // only negative numbers are invalid. zero is considered valid and the abi definition will block an attempt
+            // to send number greater than Long.MAX_VALUE
+            return hapiTest(numericContract
+                    .call("wipeFungibleV2", fungibleToken, numericContract, -1L)
+                    .gas(1_000_000L)
+                    .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+        }
+
+        @HapiTest
+        @DisplayName("when using nft the wipe function")
+        public Stream<DynamicTest> failToWipeNft() {
+            // only negative number serial numbers are invalid. zero is considered valid and the abi definition will
+            // block an attempt
+            // to send number greater than Long.MAX_VALUE
+            return hapiTest(numericContract
+                    .call("wipeNFT", nft, numericContract, new long[] {-1L})
+                    .gas(1_000_000L)
+                    .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+        }
+    }
 }
