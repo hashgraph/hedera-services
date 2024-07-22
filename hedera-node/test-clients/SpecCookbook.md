@@ -49,16 +49,19 @@ Let's address each category individually.
 
 First, place every new test that requires `feature.isEnabled=true` in a `@HapiTestLifecycle` test class with a
 `@BeforeAll` method that enables the feature and then restores the default after the test class finishes:
+
 ```java
 @BeforeAll
 static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
   testLifecycle.overrideInClass(Map.of("feature.isEnabled", "true"));
 }
 ```
+
 (For a large feature there will be multiple such test classes, of course, each with its own `@BeforeAll` method.)
 
 Second, if there are any new tests that require `feature.isEnabled=false`, place them in a test class with a
 `@BeforeAll` method that disables the feature and then restores the default after the test class finishes:
+
 ```java
 @BeforeAll
 static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
