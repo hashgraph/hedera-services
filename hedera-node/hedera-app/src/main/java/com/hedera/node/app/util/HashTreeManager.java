@@ -28,7 +28,7 @@ import java.util.List;
  * @param <T> The type of elements in the tree
  */
 public class HashTreeManager<T> {
-    private final String HASHING_ALGO = "SHA-384"; // The hashing algorithm used
+
     private List<Bytes> hashList = new ArrayList<>(); // The list of hashes in the tree
     private final Codec<T> codec; // The codec used to encode and decode the elements in the tree
     private final MessageDigest digest; // The message digest
@@ -38,9 +38,9 @@ public class HashTreeManager<T> {
      * @param codec The codec used to encode and decode the elements in the tree
      * @throws NoSuchAlgorithmException If the hashing algorithm is not found
      */
-    public HashTreeManager(Codec<T> codec) throws NoSuchAlgorithmException {
+    public HashTreeManager(Codec<T> codec, MessageDigest digest) throws NoSuchAlgorithmException {
         this.codec = codec;
-        this.digest = MessageDigest.getInstance(HASHING_ALGO);
+        this.digest = digest;
     }
 
     /** Add an element to the Tree
@@ -50,19 +50,6 @@ public class HashTreeManager<T> {
         Bytes encodedElement = codec.toBytes(element); // Use the codec to encode the element
         Bytes hashedElement = Bytes.wrap(digest.digest(encodedElement.toByteArray()));
         hashList.add(hashedElement);
-        rebalanceTree();
-    }
-
-    /** Add a list of elements to the Tree
-     * @param elements The list of elements to add to the tree
-     * @throws NoSuchAlgorithmException If the hashing algorithm is not found
-     */
-    public void addElements(List<T> elements) throws NoSuchAlgorithmException {
-        for (T element : elements) {
-            Bytes encodedElement = codec.toBytes(element);
-            Bytes hashedElement = Bytes.wrap(digest.digest(encodedElement.toByteArray()));
-            hashList.add(hashedElement);
-        }
         rebalanceTree();
     }
 
@@ -85,12 +72,18 @@ public class HashTreeManager<T> {
         }
     }
 
+    /** Get the list of hashes in the tree
+     * @return The list of hashes in the tree
+     */
+    public List<Bytes> getHashList() {
+        return hashList;
+    }
     /** Hash the base bytes using the given message digest
      * @param base The base bytes to hash
      * @param digest The message digest to use
      * @return The hashed bytes
      */
-    public Bytes hash(Bytes base, MessageDigest digest) {
+    static Bytes hash(Bytes base, MessageDigest digest) {
         byte[] encodedHash = digest.digest(base.toByteArray());
         return Bytes.wrap(encodedHash);
     }
@@ -98,7 +91,7 @@ public class HashTreeManager<T> {
     /** Get the root hash of the tree
      * @return The root hash of the tree
      */
-    public Bytes getTreeRoot() {
+    Bytes getTreeRoot() {
         if (hashList.isEmpty()) {
             return null;
         }
@@ -109,7 +102,7 @@ public class HashTreeManager<T> {
     /** Get the root hash of the tree as a string
      * @return The root hash of the tree as a string
      */
-    public String getTreeRootAsString() {
+    String getTreeRootAsString() {
         Bytes treeRoot = getTreeRoot();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < treeRoot.length(); i++) {
@@ -118,8 +111,4 @@ public class HashTreeManager<T> {
         }
         return sb.toString();
     }
-
-    public void setHeader(Bytes bytes) {}
-    // ----------------- part of "closing" the block, implement in separate ticket
-    public void combineTreesAndComputeHash() {}
 }

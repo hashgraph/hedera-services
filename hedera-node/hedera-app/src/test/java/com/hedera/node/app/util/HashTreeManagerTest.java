@@ -18,46 +18,44 @@ package com.hedera.node.app.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.hapi.block.stream.Block;
-import com.hedera.hapi.block.stream.BlockHeader;
-import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.hapi.block.stream.EventMetadata;
-import com.hedera.hapi.block.stream.output.StateChanges;
-import com.hedera.hapi.block.stream.output.TransactionOutput;
-import com.hedera.hapi.block.stream.output.TransactionResult;
-import com.hedera.hapi.node.base.Transaction;
 import com.hedera.pbj.runtime.Codec;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.ReadableSequentialData;
 import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.merkle.MerkleNode;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 public class HashTreeManagerTest {
 
-    private final BlockItem blockItem = BlockItem.newBuilder().build();
-    private final Block block = Block.newBuilder().items().build();
-    private final Map<BlockHeader, MerkleNode> inputRootsByBlock = new HashMap<>();
-    private final Map<BlockHeader, MerkleNode> outputRootsByBlock = new HashMap<>();
     private final String SHA_384_ROOT_HASH =
-            "1333c0960fbb9cac040834be1597b45571dae1bc14b3f78281c20dd147826f017ce4f4105d71ecf394bb41db424a637a";
+            "9ba1f446384813c9416bbedf457c2f1a732c44c9bcbc196017ce3b72767c0cbde0e26652d13032ceb079ee38665c61b1";
+    private final String HASHING_ALGO = "SHA-384";
+    private MessageDigest digest;
+
+    public HashTreeManagerTest() {}
+
+    @BeforeEach
+    void setUp() throws NoSuchAlgorithmException {
+        digest = MessageDigest.getInstance(HASHING_ALGO);
+    }
 
     @Test
     @DisplayName("verify the tree has the correct root after inserting a number of elements")
     public void testHashTreeManager() throws NoSuchAlgorithmException {
-        HashTreeManager<String> tree = new HashTreeManager<>(new SimpleStringCodec());
+        HashTreeManager<String> tree = new HashTreeManager<>(new SimpleStringCodec(), digest);
         List<String> elements = Arrays.asList("Event1", "Transaction1", "Transaction2", "Event2", "Transaction3");
-        tree.addElements(elements);
+        for (String element : elements) {
+            tree.addElement(element);
+        }
 
         // Calculate the root hash
         Bytes rootHash = tree.getTreeRoot();
@@ -67,75 +65,42 @@ public class HashTreeManagerTest {
 
     @Test
     public void testIncrementalConstruction() throws Exception {
-        HashTreeManager<String> tree = new HashTreeManager<>(new SimpleStringCodec());
+        HashTreeManager<String> tree = new HashTreeManager<>(new SimpleStringCodec(), digest);
 
+        List<String> actualOrder = new ArrayList<>();
+
+        // Adding elements and asserting the root hash changes as expected
         tree.addElement("leaf1");
-        // A Merkle tree with a single leaf does have a root hash.
+        actualOrder.add(tree.getHashList().toString());
+        String rootHash = tree.getTreeRootAsString();
+        assertThat(rootHash).isNotNull();
         assertThat(tree.getTreeRoot()).isNotNull();
 
         tree.addElement("leaf2");
-        String rootHash = tree.getTreeRootAsString();
-        assertThat(rootHash)
-                .isEqualTo(tree.getTreeRootAsString()); // Root hash should remain consistent after balancing
+        actualOrder.add(tree.getHashList().toString());
+        String rootHashAfterAddingLeaf2 = tree.getTreeRootAsString();
+        assertThat(rootHashAfterAddingLeaf2).isNotNull();
+        assertThat(rootHashAfterAddingLeaf2).isEqualTo(tree.getTreeRootAsString()); // Should remain consistent
 
         tree.addElement("leaf3");
-        assertThat(tree.getTreeRoot()).isNotNull(); // A tree with three leaves still computes a root hash
+        actualOrder.add(tree.getHashList().toString());
+        String rootHashAfterAddingLeaf3 = tree.getTreeRootAsString();
+        assertThat(rootHashAfterAddingLeaf3).isNotNull();
+        assertThat(rootHashAfterAddingLeaf3).isEqualTo(tree.getTreeRootAsString()); // Should remain consistent
 
         tree.addElement("leaf4");
+        actualOrder.add(tree.getHashList().toString());
         String newRootHash = tree.getTreeRootAsString();
-        // Root hash should change as new leaves are added
+        assertThat(newRootHash).isNotNull();
+        assertThat(newRootHash).isNotEqualTo(rootHashAfterAddingLeaf3); // Should change
+
+        List<String> expectedOrder = Arrays.asList(
+                "[38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b]",
+                "[82a82763156fb2d6421ef934dd593921ebfebeee2b6626494715dab6664a5a4f1b64c7b83de6e9c93ae5199d898fc0b6]",
+                "[347180f5e69054571b00bea816e5937b166dbcb51983882f76af907c6802956294f1b5ea1b317bba15fd14b6d0c73a1f]",
+                "[550df2684cb630cbaed45d58fa7b538d0eb099dc31b3164f8468046da8ff03620b593b7058b82186eae060eab292feb9]");
+        assertThat(actualOrder).containsExactlyElementsOf(expectedOrder);
         assertThat(rootHash).as("Checking that hashes are not equal").isNotEqualTo(newRootHash);
-    }
-
-    @Test
-    public void testHashBlockItem() throws NoSuchAlgorithmException {
-        final String expectedHash =
-                "38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b";
-        var rootHash = testAcceptBlockItem(blockItem);
-        assertThat(rootHash).isNotNull();
-        assertThat(rootHash.toString()).isEqualTo(expectedHash);
-    }
-
-    private String testAcceptBlockItem(@NonNull final BlockItem blockItem) throws NoSuchAlgorithmException {
-        // TODO: Not fully implemented yet
-        MerkleNode outputRoot = null;
-        TransactionOutput transactionOutput = null;
-        TransactionResult transactionResult = null;
-        StateChanges stateChanges = null;
-        HashTreeManager<String> tree = new HashTreeManager<>(new SimpleStringCodec());
-        tree.addElement(String.valueOf(blockItem));
-
-        if (blockItem.hasHeader()) {
-            // A header item signals the end of the previous block so we compute the block hash here
-            // May need to call `state.getRootHash()` on the latest `HederaState` here for State Merkle Tree
-
-            // 1. Previous Block Hash Merkle Tree
-            Bytes previousBlockHash = block.items().getFirst().header().previousBlockProofHash();
-
-        } else if (blockItem.hasTransaction()) {
-            // 2. Input Merkle Tree
-            MerkleNode inputRoot = inputRootsByBlock.get(block.items().getFirst());
-            EventMetadata eventMetadata = block.items().get(1).startEventOrThrow();
-            Transaction transaction = block.items().get(1).transactionOrThrow();
-
-        } else if (blockItem.hasTransactionOutput() || blockItem.hasStateChanges()) {
-            // 3. Output Merkle Tree
-            outputRoot = outputRootsByBlock.get(block.items().getFirst());
-            transactionOutput = block.items().get(1).transactionOutputOrThrow();
-            transactionResult = block.items().get(1).transactionResultOrThrow();
-            stateChanges = block.items().get(1).stateChangesOrThrow();
-
-            // 4. State Merkle Tree
-            // todo: manipulate a node from outputRootsByBlock
-        }
-
-        OutputMerkleTreeData outputMerkleTreeData =
-                new OutputMerkleTreeData(outputRoot, transactionOutput, transactionResult, stateChanges);
-        List<OutputMerkleTreeData> outputMerkleTreeDataList = new ArrayList<>();
-        outputMerkleTreeDataList.add(outputMerkleTreeData);
-
-        var rootHash = tree.getTreeRootAsString();
-        return rootHash;
     }
 }
 
