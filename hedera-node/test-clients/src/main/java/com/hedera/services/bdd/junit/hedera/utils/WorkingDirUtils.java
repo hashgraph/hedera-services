@@ -16,12 +16,12 @@
 
 package com.hedera.services.bdd.junit.hedera.utils;
 
-import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
+import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -309,7 +309,7 @@ public class WorkingDirUtils {
      */
     public static AddressBook loadAddressBook(@NonNull final Path path) {
         requireNonNull(path);
-        final var configFile = loadConfigFile(path.toAbsolutePath());
+        final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
         final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
                 .withSize(1)
                 .withRealKeysEnabled(true)
