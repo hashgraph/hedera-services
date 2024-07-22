@@ -18,6 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers;
 
 import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.asAccount;
 import static com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler.asToken;
+import static com.hedera.node.app.service.token.impl.test.handlers.util.CryptoHandlerTestBase.A_COMPLEX_KEY;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
@@ -52,7 +53,7 @@ class CryptoTransferHandlerTestBase extends StepsBase {
     protected static final NftID NFT_ID =
             NftID.newBuilder().tokenId(TOKEN_2469).serialNumber(1).build();
     protected static final Account ACCOUNT_3333 =
-            Account.newBuilder().accountId(ACCOUNT_ID_3333).build();
+            Account.newBuilder().accountId(ACCOUNT_ID_3333).key(A_COMPLEX_KEY).build();
 
     protected static final AccountAmount ACCT_3333_MINUS_10 =
             AccountAmount.newBuilder().accountID(ACCOUNT_ID_3333).amount(-10).build();

@@ -23,7 +23,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mock.Strictness.LENIENT;
 
-import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.token.TokenClaimAirdropTransactionBody;
@@ -37,8 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
-
-    static final AccountID ACCOUNT_ID_3 = AccountID.newBuilder().accountNum(3L).build();
 
     @Mock(strictness = LENIENT)
     protected PreHandleContext preHandleContext;
@@ -157,7 +154,7 @@ class TokenClaimAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     }
 
     @Test
-    void preHAndleHasValidPath() {
+    void preHandleHasValidPath() {
         final List<PendingAirdropId> pendingAirdropIds = new ArrayList<>();
         final var token9754 = asToken(9754);
         pendingAirdropIds.add(PendingAirdropId.newBuilder()

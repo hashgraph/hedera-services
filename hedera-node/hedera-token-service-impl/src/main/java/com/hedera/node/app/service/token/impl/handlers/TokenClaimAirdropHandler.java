@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
@@ -56,18 +57,18 @@ public class TokenClaimAirdropHandler implements TransactionHandler {
     public void preHandle(@NonNull PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
         final var op = context.body().tokenClaimAirdrop();
+        requireNonNull(op);
         final var pendingAirdrops = op.pendingAirdrops();
 
-        if (pendingAirdrops.isEmpty()) {
-            throw new PreCheckException(EMPTY_PENDING_AIRDROP_ID_LIST);
-        }
         final var accountStore = context.createStore(ReadableAccountStore.class);
 
         for (final var pendingAirdrop : pendingAirdrops) {
             AccountID receiverId = pendingAirdrop.receiverIdOrThrow();
             Account account = accountStore.getAccountById(receiverId);
             requireNonNull(account);
-            context.requireKey(account.key());
+            Key key = account.key();
+            requireNonNull(key);
+            context.requireKey(key);
         }
     }
 
