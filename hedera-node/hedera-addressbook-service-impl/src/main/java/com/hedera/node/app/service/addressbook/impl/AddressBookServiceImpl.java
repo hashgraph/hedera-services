@@ -16,8 +16,9 @@
 
 package com.hedera.node.app.service.addressbook.impl;
 
+import static java.util.Objects.requireNonNull;
+
 import com.hedera.node.app.service.addressbook.AddressBookService;
-import com.hedera.node.app.service.addressbook.impl.schemas.V052AddressBookSchema;
 import com.hedera.node.app.spi.RpcService;
 import com.swirlds.state.spi.SchemaRegistry;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -30,6 +31,8 @@ public final class AddressBookServiceImpl implements AddressBookService {
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new V052AddressBookSchema());
+        requireNonNull(registry);
+        // deleted V052AddressBookSchema class because the schema should not exist in 0.52
+        //        registry.register(new V052AddressBookSchema());
     }
 }
