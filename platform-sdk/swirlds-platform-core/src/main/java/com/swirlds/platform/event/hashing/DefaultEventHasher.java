@@ -20,6 +20,7 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.state.spi.HapiUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Objects;
 
 /**
  * Default implementation of the {@link EventHasher}.
@@ -35,14 +36,15 @@ public class DefaultEventHasher implements EventHasher {
      * @param migrateEventHashing    if true then use the new event hashing algorithm for new events, events created by
      *                               previous software versions will still need to be hashed using the old algorithm.
      */
-    public DefaultEventHasher(final SemanticVersion currentSoftwareVersion, final boolean migrateEventHashing) {
-        this.currentSoftwareVersion = currentSoftwareVersion;
+    public DefaultEventHasher(@NonNull final SemanticVersion currentSoftwareVersion, final boolean migrateEventHashing) {
+        this.currentSoftwareVersion = Objects.requireNonNull(currentSoftwareVersion);
         this.migrateEventHashing = migrateEventHashing;
     }
 
     @Override
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
+        Objects.requireNonNull(event);
         if (migrateEventHashing
                 && HapiUtils.SEMANTIC_VERSION_COMPARATOR.compare(currentSoftwareVersion, event.getSoftwareVersion())
                         == 0) {

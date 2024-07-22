@@ -25,6 +25,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * Hashes the PBJ representation of an event. This hasher double hashes each payload in order to allow redaction of
@@ -40,6 +41,7 @@ public class PbjHasher implements EventHasher, UnsignedEventHasher {
     @Override
     @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
+        Objects.requireNonNull(event);
         hashUnsignedEvent(event.getUnsignedEvent());
         event.setHash(event.getUnsignedEvent().getHash());
         return event;

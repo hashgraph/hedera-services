@@ -23,6 +23,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Hashes unsigned events.
  */
 public interface UnsignedEventHasher {
+
     /**
      * Hashes the event and builds the event descriptor.
      *
