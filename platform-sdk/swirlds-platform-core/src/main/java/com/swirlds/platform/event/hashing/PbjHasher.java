@@ -22,6 +22,7 @@ import com.swirlds.common.crypto.DigestType;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
@@ -29,7 +30,7 @@ import java.io.IOException;
  * Hashes the PBJ representation of an event. This hasher double hashes each payload in order to allow redaction of
  * payloads without invalidating the event hash.
  */
-public class PbjHasher implements EventHasher {
+public class PbjHasher implements EventHasher, UnsignedEventHasher {
 
     /** The hashing stream for the event. */
     private final HashingOutputStream eventHashingStream = new HashingOutputStream(DigestType.SHA_384.buildDigest());
@@ -37,9 +38,20 @@ public class PbjHasher implements EventHasher {
     private final HashingOutputStream payloadHashingStream = new HashingOutputStream(DigestType.SHA_384.buildDigest());
 
     @Override
+    @NonNull
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
-        EventCore.PROTOBUF.toBytes(event.getUnsignedEvent().getEventCore()).writeTo(eventHashingStream);
-        event.getUnsignedEvent().getPayloads().forEach(payload -> {
+        hashUnsignedEvent(event.getUnsignedEvent());
+        return event;
+    }
+
+    /**
+     * Hashes the given {@link UnsignedEvent} and sets the hash on the event.
+     *
+     * @param event the event to hash
+     */
+    public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
+        EventCore.PROTOBUF.toBytes(event.getEventCore()).writeTo(eventHashingStream);
+        event.getPayloads().forEach(payload -> {
             EventPayload.PROTOBUF.toBytes(payload).writeTo(payloadHashingStream);
             try {
                 eventHashingStream.write(payloadHashingStream.getDigest());
@@ -49,7 +61,5 @@ public class PbjHasher implements EventHasher {
         });
 
         event.setHash(new Hash(eventHashingStream.getDigest(), DigestType.SHA_384));
-
-        return event;
     }
 }
