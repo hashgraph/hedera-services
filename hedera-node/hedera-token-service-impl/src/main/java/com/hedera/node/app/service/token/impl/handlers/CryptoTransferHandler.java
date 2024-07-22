@@ -92,15 +92,18 @@ import javax.inject.Singleton;
 @Singleton
 public class CryptoTransferHandler implements TransactionHandler {
     private final CryptoTransferValidator validator;
+    private final CryptoTransferExecutor executor;
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
     /**
      * Default constructor for injection.
      * @param validator the validator to use to validate the transaction
+     * @param executor
      */
     @Inject
-    public CryptoTransferHandler(@NonNull final CryptoTransferValidator validator) {
-        this(validator, true);
+    public CryptoTransferHandler(
+            @NonNull final CryptoTransferValidator validator, @NonNull final CryptoTransferExecutor executor) {
+        this(validator, executor, true);
     }
 
     /**
@@ -110,8 +113,10 @@ public class CryptoTransferHandler implements TransactionHandler {
      */
     public CryptoTransferHandler(
             @NonNull final CryptoTransferValidator validator,
+            @NonNull final CryptoTransferExecutor executor,
             final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
         this.validator = validator;
+        this.executor = executor;
         this.enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments =
                 enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
     }
@@ -232,7 +237,7 @@ public class CryptoTransferHandler implements TransactionHandler {
                 new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
         final var recordBuilder = context.recordBuilders().getOrCreate(CryptoTransferRecordBuilder.class);
 
-        CryptoTransferExecutor.executeCryptoTransfer(txn, transferContext, context, validator, recordBuilder);
+        executor.executeCryptoTransfer(txn, transferContext, context, validator, recordBuilder);
     }
 
     /**
