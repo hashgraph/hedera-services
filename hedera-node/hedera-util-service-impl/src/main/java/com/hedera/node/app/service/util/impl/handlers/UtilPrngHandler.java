@@ -105,7 +105,7 @@ public class UtilPrngHandler implements TransactionHandler {
         // probably not possible, and if we really wanted to defend against that, we could deterministically
         // pre-populate the initial running hashes. Or we can return all zeros. Either way is just as safe, so we'll
         // just return whatever it is we are given. If we *do* happen to get back null, treat as empty zeros.
-        var pseudoRandomBytes = context.blockRecordInfo().getNMinus3RunningHash();
+        var pseudoRandomBytes = context.blockRecordInfo().prngSeed();
         if (pseudoRandomBytes == null || pseudoRandomBytes.length() == 0) {
             log.info("No n-3 record running hash available. Will use all zeros.");
             pseudoRandomBytes = MISSING_N_MINUS_3_RUNNING_HASH;

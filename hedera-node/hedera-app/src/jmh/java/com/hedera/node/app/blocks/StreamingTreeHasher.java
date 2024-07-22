@@ -18,7 +18,6 @@ package com.hedera.node.app.blocks;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.concurrent.CompletableFuture;
 
 /**

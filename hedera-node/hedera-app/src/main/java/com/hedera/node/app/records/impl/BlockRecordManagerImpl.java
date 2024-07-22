@@ -276,45 +276,40 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
         ((WritableSingletonStateBase<RunningHashes>) runningHashesState).commit();
     }
 
-    // ========================================================================================================
-    // Running Hash Getter Methods
+    public long lastBlockNo() {
+        return lastBlockInfo.lastBlockNumber();
+    }
 
-    /**
-     * {@inheritDoc}
-     */
-    @NonNull
-    @Override
+    public Instant firstConsTimeOfLastBlock() {
+        return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
+    }
+
     public Bytes getRunningHash() {
         return streamFileProducer.getRunningHash();
     }
 
+    @Nullable
+    public Bytes lastBlockHash() {
+        return BlockRecordInfoUtils.lastBlockHash(lastBlockInfo);
+    }
+
+    // ========================================================================================================
+    // Running Hash Getter Methods
     /**
      * {@inheritDoc}
      */
     @Nullable
     @Override
-    public Bytes getNMinus3RunningHash() {
+    public Bytes prngSeed() {
         return streamFileProducer.getNMinus3RunningHash();
     }
 
     // ========================================================================================================
     // BlockRecordInfo Implementation
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public long lastBlockNo() {
-        return lastBlockInfo.lastBlockNumber();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Nullable
-    @Override
-    public Instant firstConsTimeOfLastBlock() {
-        return BlockRecordInfoUtils.firstConsTimeOfLastBlock(lastBlockInfo);
+    public long blockNo() {
+        return lastBlockInfo.lastBlockNumber() + 1;
     }
 
     /**
@@ -330,17 +325,8 @@ public final class BlockRecordManagerImpl implements BlockRecordManager {
     }
 
     @Override
-    public @NonNull Timestamp currentBlockTimestamp() {
+    public @NonNull Timestamp blockTimestamp() {
         return lastBlockInfo.firstConsTimeOfCurrentBlockOrThrow();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Nullable
-    @Override
-    public Bytes lastBlockHash() {
-        return BlockRecordInfoUtils.lastBlockHash(lastBlockInfo);
     }
 
     /**

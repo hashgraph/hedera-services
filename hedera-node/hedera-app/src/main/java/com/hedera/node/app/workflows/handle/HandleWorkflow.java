@@ -248,7 +248,7 @@ public class HandleWorkflow {
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
         final var streamItems = execute(userTxn);
         // TODO: need to switch with config and send block items to block stream manager
-        blockRecordManager.endUserTransaction(streamItems.records().stream(), state);
+        blockRecordManager.endUserTransaction(streamItems.recordStreamItems().stream(), state);
 
         handleWorkflowMetrics.updateTransactionDuration(
                 userTxn.functionality(), (int) (System.nanoTime() - handleStart));
@@ -309,7 +309,7 @@ public class HandleWorkflow {
      *
      * @return the stream of records
      */
-    private StreamExecuted execute(@NonNull final UserTxn userTxn) {
+    private OutputItemStream execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo()).status(BUSY);
@@ -333,7 +333,8 @@ public class HandleWorkflow {
                 updateWorkflowMetrics(userTxn);
             }
             final var streamItems = userTxn.stack().buildStreamItems(userTxn.consensusNow());
-            recordCache.add(userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), streamItems.records());
+            recordCache.add(
+                    userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), streamItems.recordStreamItems());
             return streamItems;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
@@ -347,7 +348,7 @@ public class HandleWorkflow {
      *
      * @return the failure record
      */
-    private StreamExecuted failInvalidStreamItems(@NonNull final UserTxn userTxn) {
+    private OutputItemStream failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
         final var failInvalidBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
         initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
@@ -359,7 +360,7 @@ public class HandleWorkflow {
                 requireNonNull(userTxn.txnInfo().payerID()),
                 List.of(failInvalidRecord));
         // TODO: Add block items
-        return new StreamExecuted(List.of(), List.of(failInvalidRecord));
+        return new OutputItemStream(List.of(), List.of(failInvalidRecord));
     }
 
     /**

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.workflows.handle;
+package com.hedera.node.config.types;
 
-import com.hedera.hapi.block.stream.BlockItem;
-import com.hedera.node.app.state.SingleTransactionRecord;
-import java.util.List;
-
-public record StreamExecuted(List<BlockItem> blockItems, List<SingleTransactionRecord> records) {}
+public enum StreamMode {
+    BLOCKS,
+    RECORDS,
+    BOTH
+}

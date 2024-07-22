@@ -182,7 +182,7 @@ final class BlockRecordManagerTest extends AppTestBase {
             if (!startMode.equals("GENESIS")) {
                 blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
-            assertThat(blockRecordManager.currentBlockTimestamp()).isNotNull();
+            assertThat(blockRecordManager.blockTimestamp()).isNotNull();
             assertThat(blockRecordManager.blockNo()).isEqualTo(blockRecordManager.lastBlockNo() + 1);
             // write a blocks & record files
             int transactionCount = 0;
@@ -302,13 +302,10 @@ final class BlockRecordManagerTest extends AppTestBase {
                         if (runningHashNMinus3 != null) {
                             // check running hash N - 3
                             assertThat(runningHashNMinus3.toHex())
-                                    .isEqualTo(blockRecordManager
-                                            .getNMinus3RunningHash()
-                                            .toHex());
+                                    .isEqualTo(blockRecordManager.prngSeed().toHex());
                         } else {
                             // check empty as well
-                            assertThat(blockRecordManager.getNMinus3RunningHash())
-                                    .isEqualTo(Bytes.EMPTY);
+                            assertThat(blockRecordManager.prngSeed()).isEqualTo(Bytes.EMPTY);
                         }
                     }
                     j += batchSize;

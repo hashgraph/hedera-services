@@ -14,25 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks;
+package com.hedera.node.config.data;
 
-import static java.util.Objects.requireNonNull;
+import com.hedera.node.config.NetworkProperty;
+import com.hedera.node.config.types.StreamMode;
+import com.swirlds.config.api.ConfigData;
+import com.swirlds.config.api.ConfigProperty;
 
-import com.swirlds.state.spi.SchemaRegistry;
-import com.swirlds.state.spi.Service;
-import edu.umd.cs.findbugs.annotations.NonNull;
-
-public class BlockStreamService implements Service {
-    public static final String NAME = "BlockStreamService";
-
-    @NonNull
-    @Override
-    public String getServiceName() {
-        return NAME;
-    }
-
-    @Override
-    public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        requireNonNull(registry);
-    }
-}
+@ConfigData("blockStream")
+public record BlockStreamConfig(
+        // Default value of RECORDS disables the block stream; setting BLOCKS or BOTH enables it
+        @ConfigProperty(defaultValue = "RECORDS") @NetworkProperty StreamMode mode) {}
