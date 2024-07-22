@@ -18,6 +18,8 @@ package com.swirlds.crypto.pairings.api;
 
 /**
  * An enumeration of supported pairing curves.
+ *   @implNote Given that we pack the type of the curve in serialized forms in 1 byte alongside other information
+ *   we can only support a limited amount of curves (128).
  */
 public enum Curve {
     /**

@@ -21,10 +21,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 
 /**
- * Represents a threshold signature schema.
- *
- * @implNote Given that we pack the type of the curve in serialized forms in 1 byte alongside other information
- * we can only support a limited amount of curves (128).
+ * Represents a threshold signature schema predefined parameters that define the curve to use and the pairings group usage.
  */
 public final class SignatureSchema {
     private final GroupAssignment groupAssignment;

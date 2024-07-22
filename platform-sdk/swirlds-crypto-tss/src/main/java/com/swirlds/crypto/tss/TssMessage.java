@@ -16,10 +16,21 @@
 
 package com.swirlds.crypto.tss;
 
+import static java.util.Objects.requireNonNull;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A message sent as part of either genesis keying, or rekeying.
  * @param bytes the byte representation of the opaque underlying structure used by the library
  */
-public record TssMessage(@NonNull byte[] bytes) {}
+public record TssMessage(@NonNull byte[] bytes) {
+
+    /**
+     * Constructor
+     * @param bytes bytes the byte representation of the opaque underlying structure used by the library
+     */
+    public TssMessage {
+        requireNonNull(bytes, "bytes must not be null");
+    }
+}

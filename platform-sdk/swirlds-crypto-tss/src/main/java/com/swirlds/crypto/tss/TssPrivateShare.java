@@ -16,13 +16,26 @@
 
 package com.swirlds.crypto.tss;
 
+import static java.util.Objects.requireNonNull;
+
 import com.swirlds.crypto.signaturescheme.api.PairingPrivateKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A record that contains a share ID, and the corresponding private key.
  *
- * @param shareId    the share ID
+ * @param shareId the share ID
  * @param privateKey the private key
  */
-public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull PairingPrivateKey privateKey) {}
+public record TssPrivateShare(@NonNull TssShareId shareId, @NonNull PairingPrivateKey privateKey) {
+    /**
+     * Constructor
+     *
+     * @param shareId the share ID
+     * @param privateKey the private key
+     */
+    public TssPrivateShare {
+        requireNonNull(shareId, "shareId must not be null");
+        requireNonNull(shareId, "privateKey must not be null");
+    }
+}

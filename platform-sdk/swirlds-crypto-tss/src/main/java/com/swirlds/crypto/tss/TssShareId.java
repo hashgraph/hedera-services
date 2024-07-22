@@ -16,6 +16,8 @@
 
 package com.swirlds.crypto.tss;
 
+import static java.util.Objects.requireNonNull;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -23,4 +25,13 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *
  * @param idElement the field element that represents the share ID
  */
-public record TssShareId(@NonNull Integer /*This would be a fieldElement*/ idElement) {}
+public record TssShareId(@NonNull Integer /*This will be a FieldElement from Pairings-Api*/ idElement) {
+    /**
+     * Constructor.
+     *
+     * @param idElement the field element that represents the share ID
+     */
+    public TssShareId {
+        requireNonNull(idElement, "idElement must not be null");
+    }
+}

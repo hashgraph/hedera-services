@@ -17,6 +17,7 @@
 package com.swirlds.crypto.tss;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.requireNonNull;
 
 import com.swirlds.crypto.signaturescheme.api.PairingPrivateKey;
 import com.swirlds.crypto.signaturescheme.api.PairingPublicKey;
@@ -262,12 +263,30 @@ public final class TssParticipantDirectory {
      * Represents an entry for the participant executing the protocol, containing the ID and private key.
      * @param participantId identification of the participant
      */
-    private record SelfEntry(int participantId, @NonNull PairingPrivateKey tssEncryptionPrivateKey) {}
+    private record SelfEntry(int participantId, @NonNull PairingPrivateKey tssEncryptionPrivateKey) {
+        /**
+         * Constructor
+         * @param participantId identification of the participant
+         */
+        public SelfEntry {
+            requireNonNull(tssEncryptionPrivateKey, "tssEncryptionPrivateKey must not be null");
+        }
+    }
 
     /**
      * Represents an entry for a participant, containing the ID, share count, and public key.
      * @param shareCount number of shares owned by the participant represented by this record
      * @param tssEncryptionPublicKey the pairing public key used to encrypt tss share portions designated to the participant represented by this record
      */
-    private record ParticipantEntry(int shareCount, @NonNull PairingPublicKey tssEncryptionPublicKey) {}
+    private record ParticipantEntry(int shareCount, @NonNull PairingPublicKey tssEncryptionPublicKey) {
+        /**
+         * Constructor
+         *
+         * @param shareCount number of shares owned by the participant represented by this record
+         * @param tssEncryptionPublicKey the pairing public key used to encrypt tss share portions designated to the participant represented by this record
+         */
+        public ParticipantEntry {
+            requireNonNull(tssEncryptionPublicKey, "tssEncryptionPublicKey must not be null");
+        }
+    }
 }

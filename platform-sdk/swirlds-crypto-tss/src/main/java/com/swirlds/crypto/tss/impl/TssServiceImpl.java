@@ -29,6 +29,7 @@ import com.swirlds.crypto.tss.TssShareSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 /**
@@ -39,9 +40,15 @@ public class TssServiceImpl implements TssService {
     private final SignatureSchema signatureSchema;
     private final Random random;
 
+    /**
+     * Generates a new instance of this prototype implementation.
+     *
+     * @param signatureSchema the predefined parameters that define the curve and group selection
+     * @param random the RNG
+     */
     public TssServiceImpl(@NonNull final SignatureSchema signatureSchema, @NonNull final Random random) {
-        this.signatureSchema = signatureSchema;
-        this.random = random;
+        this.signatureSchema = Objects.requireNonNull(signatureSchema, "signatureSchema must not be null");
+        this.random = Objects.requireNonNull(random, "random must not be null");
     }
 
     @NonNull
