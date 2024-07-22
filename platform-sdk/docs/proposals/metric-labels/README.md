@@ -84,7 +84,7 @@ A label is a key-value pair that can be defined as a `record`:
 record Label(@NonNull String key, @NonNull String value) {}
 ``` 
 
-The `Metric` interface will be extended by several methpds that allow to define label values to a metric:
+The `Metric` interface will be extended by several methods that allow to define label values to a metric:
 
 ```java
 interface Metric {
