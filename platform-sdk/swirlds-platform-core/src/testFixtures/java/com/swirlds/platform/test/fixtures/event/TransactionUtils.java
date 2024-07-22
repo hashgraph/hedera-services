@@ -25,9 +25,7 @@ import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.transaction.PayloadWrapper;
 import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
@@ -40,19 +38,19 @@ public class TransactionUtils {
     private static final AtomicLong nextLong = new AtomicLong(0);
     private static final Random random = new Random();
 
-    public static SwirldTransaction[] randomSwirldTransactions(final long seed, final int number) {
+    public static PayloadWrapper[] randomSwirldTransactions(final long seed, final int number) {
         return randomSwirldTransactions(new Random(seed), number);
     }
 
-    public static SwirldTransaction[] randomSwirldTransactions(final RandomGenerator random, final int number) {
-        final SwirldTransaction[] transactions = new SwirldTransaction[number];
+    public static PayloadWrapper[] randomSwirldTransactions(final RandomGenerator random, final int number) {
+        final PayloadWrapper[] transactions = new PayloadWrapper[number];
         for (int i = 0; i < transactions.length; i++) {
             transactions[i] = randomSwirldTransaction(random);
         }
         return transactions;
     }
 
-    public static SwirldTransaction[] randomSwirldTransactions(
+    public static PayloadWrapper[] randomSwirldTransactions(
             final RandomGenerator random,
             final double transactionSizeAverage,
             final double transactionSizeStandardDeviation,
@@ -62,7 +60,7 @@ public class TransactionUtils {
         final int transactionCount =
                 (int) Math.max(0, transactionCountAverage + random.nextGaussian() * transactionCountStandardDeviation);
 
-        final SwirldTransaction[] transactions = new SwirldTransaction[transactionCount];
+        final PayloadWrapper[] transactions = new PayloadWrapper[transactionCount];
 
         for (int index = 0; index < transactionCount; index++) {
             transactions[index] =
@@ -72,19 +70,19 @@ public class TransactionUtils {
         return transactions;
     }
 
-    public static SwirldTransaction randomSwirldTransaction(final RandomGenerator random) {
+    public static PayloadWrapper randomSwirldTransaction(final RandomGenerator random) {
         return randomSwirldTransaction(random, DEFAULT_TRANSACTION_MIN_SIZE, DEFAULT_TRANSACTION_MAX_SIZE);
     }
 
-    public static SwirldTransaction randomSwirldTransaction(
+    public static PayloadWrapper randomSwirldTransaction(
             final RandomGenerator random, final int minSize, final int maxSize) {
         final int size = minSize + random.nextInt(maxSize - minSize);
         final byte[] transBytes = new byte[size];
         random.nextBytes(transBytes);
-        return new SwirldTransaction(transBytes);
+        return new PayloadWrapper(new OneOf<>(APPLICATION_PAYLOAD, Bytes.wrap(transBytes)));
     }
 
-    public static SwirldTransaction randomSwirldTransaction(
+    public static PayloadWrapper randomSwirldTransaction(
             final RandomGenerator random,
             final double transactionSizeAverage,
             final double transactionSizeStandardDeviation) {
@@ -92,7 +90,7 @@ public class TransactionUtils {
                 (int) Math.max(1, transactionSizeAverage + random.nextGaussian() * transactionSizeStandardDeviation);
         final byte[] transBytes = new byte[transactionSize];
         random.nextBytes(transBytes);
-        return new SwirldTransaction(transBytes);
+        return new PayloadWrapper(new OneOf<>(APPLICATION_PAYLOAD, Bytes.wrap(transBytes)));
     }
 
     public static OneOf<PayloadOneOfType> incrementingSwirldTransaction() {
@@ -111,19 +109,20 @@ public class TransactionUtils {
                         .build());
     }
 
-    public static StateSignatureTransaction randomStateSignatureTransaction(final RandomGenerator random) {
+    public static PayloadWrapper randomStateSignatureTransaction(final RandomGenerator random) {
         final Random rand = new Random(random.nextLong());
         final Bytes signature = randomSignatureBytes(rand);
         final Bytes hash = randomHashBytes(rand);
-        return new StateSignatureTransaction(StateSignaturePayload.newBuilder()
+        final StateSignaturePayload payload = StateSignaturePayload.newBuilder()
                 .round(rand.nextLong())
                 .signature(signature)
                 .hash(hash)
-                .build());
+                .build();
+        return new PayloadWrapper(new OneOf<>(STATE_SIGNATURE_PAYLOAD, payload));
     }
 
-    public static ConsensusTransactionImpl[] randomMixedTransactions(final RandomGenerator random, final int number) {
-        final ConsensusTransactionImpl[] transactions = new ConsensusTransactionImpl[number];
+    public static PayloadWrapper[] randomMixedTransactions(final RandomGenerator random, final int number) {
+        final PayloadWrapper[] transactions = new PayloadWrapper[number];
         for (int i = 0; i < transactions.length; i++) {
             transactions[i] =
                     random.nextBoolean() ? randomSwirldTransaction(random) : randomStateSignatureTransaction(random);

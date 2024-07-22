@@ -33,7 +33,7 @@ import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.EventDescriptor;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransaction;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
+import com.swirlds.platform.system.transaction.PayloadWrapper;
 import com.swirlds.platform.system.transaction.Transaction;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -353,7 +353,7 @@ public class PlatformEvent extends AbstractSerializableHashable implements Conse
         if (this.consensusData == NO_CONSENSUS) {
             throw new IllegalStateException("Consensus data must be set");
         }
-        final ConsensusTransactionImpl[] transactions = unsignedEvent.getTransactions();
+        final PayloadWrapper[] transactions = unsignedEvent.getTransactions();
         if (transactions == null) {
             return;
         }

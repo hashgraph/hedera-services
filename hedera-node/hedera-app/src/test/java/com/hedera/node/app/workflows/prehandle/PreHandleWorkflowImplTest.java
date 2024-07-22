@@ -39,6 +39,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.node.app.fixtures.AppTestBase;
 import com.hedera.node.app.fixtures.state.FakeHederaState;
 import com.hedera.node.app.service.token.ReadableAccountStore;
@@ -61,8 +62,9 @@ import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.transaction.PayloadWrapper;
 import com.swirlds.platform.system.transaction.Transaction;
 import java.util.Collections;
 import java.util.List;
@@ -191,7 +193,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @DisplayName("Null pre-handle args throw NPE")
     @SuppressWarnings("DataFlowIssue") // Suppress the warning about null args
     void nullPreHandleArgsTest() {
-        final List<Transaction> list = List.of(new SwirldTransaction(new byte[10]));
+        final List<Transaction> list = List.of(
+                new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(new byte[10]))));
         final var transactions = list.stream();
         final var creator = NODE_1.nodeAccountID();
         assertThatThrownBy(() -> workflow.preHandle(null, creator, transactions))
@@ -209,12 +212,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @Test
     @DisplayName("Pre-handle skips system transactions")
     void preHandleSkipsSystemTransactionsTest() {
-        final var platformTx = new SwirldTransaction(new byte[10]) {
-            @Override
-            public boolean isSystem() {
-                return true;
-            }
-        };
+        final var platformTx =
+                new PayloadWrapper(new OneOf<>(PayloadOneOfType.STATE_SIGNATURE_PAYLOAD, Bytes.wrap(new byte[10])));
         final List<Transaction> list = List.of(platformTx);
         final var transactions = list.stream();
         final var creator = NODE_1.nodeAccountID();
@@ -229,7 +228,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
     @Nested
     @DisplayName("Handling of exceptions caused by bugs in our code")
     final class ExceptionTest {
-        private SwirldTransaction platformTx;
+        private PayloadWrapper platformTx;
         private Stream<Transaction> transactions;
         private AccountID creator;
 
@@ -237,7 +236,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         void setUp() throws PreCheckException {
             final var txInfo = scenario().withPayer(ALICE.accountID()).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
-            platformTx = new SwirldTransaction(txBytes);
+            platformTx = new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(txBytes)));
             final List<Transaction> list = List.of(platformTx);
             transactions = list.stream();
             creator = NODE_1.nodeAccountID();
@@ -293,7 +292,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         @DisplayName("Fail pre-handle with an attempt to parse invalid protobuf bytes")
         void preHandleBadBytes() throws PreCheckException {
             // Given a transaction that has bad bytes (and therefore fails to parse)
-            final Transaction platformTx = new SwirldTransaction(randomByteArray(123));
+            final Transaction platformTx = new PayloadWrapper(
+                    new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(randomByteArray(123))));
             when(transactionChecker.parseAndCheck(any(Bytes.class)))
                     .thenThrow(new PreCheckException(INVALID_TRANSACTION));
 
@@ -315,7 +315,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
         @DisplayName("Fail pre-handle with failed syntactic check with an unknown exception")
         void preHandleFailedSyntacticCheckWithUnknownException() throws PreCheckException {
             // Given a transaction that fails due-diligence checks for some random throwable
-            final Transaction platformTx = new SwirldTransaction(randomByteArray(123));
+            final Transaction platformTx = new PayloadWrapper(
+                    new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(randomByteArray(123))));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenThrow(new RuntimeException("Random"));
 
             // When we pre-handle the transaction
@@ -341,7 +342,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             // (Erin doesn't exist yet)
             final var txInfo = scenario().withPayer(FRANK.accountID()).txInfo();
 
-            final Transaction platformTx = new SwirldTransaction(asByteArray(txInfo.transaction()));
+            final Transaction platformTx = new PayloadWrapper(
+                    new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(asByteArray(txInfo.transaction()))));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
 
             // When we pre-handle the transaction
@@ -368,7 +370,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             // Given a transactionID that refers to an account that was deleted
             final var txInfo = scenario().withPayer(BOB.accountID()).txInfo();
 
-            final Transaction platformTx = new SwirldTransaction(asByteArray(txInfo.transaction()));
+            final Transaction platformTx = new PayloadWrapper(
+                    new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(asByteArray(txInfo.transaction()))));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
 
             // When we pre-handle the transaction
@@ -395,7 +398,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             // Given a transaction with a signature that doesn't work out
             final var txInfo = scenario().withPayer(ALICE.accountID()).txInfo();
 
-            final Transaction platformTx = new SwirldTransaction(asByteArray(txInfo.transaction()));
+            final Transaction platformTx = new PayloadWrapper(
+                    new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(asByteArray(txInfo.transaction()))));
             final var key = ALICE.keyInfo().publicKey();
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
             when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(key, sigFuture));
@@ -431,7 +435,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var txInfo =
                     scenario().withNodeAccount(NODE_2.nodeAccountID()).txInfo();
 
-            final Transaction platformTx = new SwirldTransaction(asByteArray(txInfo.transaction()));
+            final Transaction platformTx = new PayloadWrapper(
+                    new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(asByteArray(txInfo.transaction()))));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
 
             // When we pre-handle the transaction
@@ -461,7 +466,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                     NODE_1.nodeAccountID(),
                     storeFactory,
                     storeFactory.getStore(ReadableAccountStore.class),
-                    new SwirldTransaction(new byte[2]),
+                    new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(new byte[2]))),
                     previousResult);
 
             // Then the entire result is re-used
@@ -487,7 +492,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             // (NOTE that INVALID_ACCOUNT_AMOUNTS is one such semantic failure scenario)
             final var txInfo = scenario().withPayer(ALICE.accountID()).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
-            final Transaction platformTx = new SwirldTransaction(txBytes);
+            final Transaction platformTx =
+                    new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(txBytes)));
             final var key = ALICE.keyInfo().publicKey();
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
             when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(key, sigFuture));
@@ -516,7 +522,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             // Given a transaction that fails in pre-handle with some random exception
             final var txInfo = scenario().withPayer(ALICE.accountID()).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
-            final Transaction platformTx = new SwirldTransaction(txBytes);
+            final Transaction platformTx =
+                    new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(txBytes)));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
             doThrow(new RuntimeException()).when(dispatcher).dispatchPreHandle(any());
 
@@ -546,7 +553,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var badKey = BOB.keyInfo().publicKey();
             final var txInfo = scenario().withPayer(payerAccount).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
-            final Transaction platformTx = new SwirldTransaction(txBytes);
+            final Transaction platformTx =
+                    new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(txBytes)));
             when(goodFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(payerKey, null, true));
             when(badFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(badKey, null, false));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
@@ -598,7 +606,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var payerKey = ALICE.keyInfo().publicKey();
             final var txInfo = scenario().withPayer(payerAccount).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
-            final Transaction platformTx = new SwirldTransaction(txBytes);
+            final Transaction platformTx =
+                    new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(txBytes)));
             when(sigFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(payerKey, null, true));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
             when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(payerKey, sigFuture));
@@ -631,7 +640,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var payerKey = ALICE.keyInfo().publicKey();
             final var txInfo = scenario().withPayer(payerAccount).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
-            final Transaction platformTx = new SwirldTransaction(txBytes);
+            final Transaction platformTx =
+                    new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(txBytes)));
             when(sigFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(payerKey, null, true));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
             when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(payerKey, sigFuture));
@@ -679,7 +689,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var payerKey = ALICE.keyInfo().publicKey();
             final var txInfo = scenario().withPayer(payerAccount).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
-            final Transaction platformTx = new SwirldTransaction(txBytes);
+            final Transaction platformTx =
+                    new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(txBytes)));
             when(sigFuture.get(anyLong(), any())).thenReturn(new SignatureVerificationImpl(payerKey, null, true));
             final var previousResult = new PreHandleResult(
                     payerAccount,
@@ -726,7 +737,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var finalizedKey = ERIN.keyInfo().publicKey();
             final var txInfo = scenario().withPayer(hollowAccountID).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
-            final Transaction platformTx = new SwirldTransaction(txBytes);
+            final Transaction platformTx =
+                    new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(txBytes)));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
             when(signatureVerifier.verify(any(), any())).thenReturn(Map.of(finalizedKey, sigFuture));
             when(sigFuture.evmAlias()).thenReturn(hollowAccountAlias);
@@ -767,7 +779,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
             final var finalizedKey = ERIN.keyInfo().publicKey();
             final var txInfo = scenario().withPayer(payerAccountID).txInfo();
             final var txBytes = asByteArray(txInfo.transaction());
-            final Transaction platformTx = new SwirldTransaction(txBytes);
+            final Transaction platformTx =
+                    new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(txBytes)));
             when(transactionChecker.parseAndCheck(any(Bytes.class))).thenReturn(txInfo);
             when(signatureVerifier.verify(any(), any()))
                     .thenReturn(Map.of(payerKey, payerSigFuture, finalizedKey, nonPayerSigFuture));

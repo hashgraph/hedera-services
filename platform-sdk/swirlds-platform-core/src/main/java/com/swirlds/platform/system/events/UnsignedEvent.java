@@ -32,9 +32,7 @@ import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.transaction.PayloadWrapper;
 import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -103,7 +101,7 @@ public class UnsignedEvent extends AbstractHashable {
     /**
      * the payload: an array of transactions
      */
-    private final ConsensusTransactionImpl[] transactions;
+    private final PayloadWrapper[] transactions;
 
     /**
      * The core event data.
@@ -159,14 +157,8 @@ public class UnsignedEvent extends AbstractHashable {
                                 ed.getHash().getBytes(), ed.getCreator().id(), ed.getGeneration(), ed.getBirthRound()))
                         .toList(),
                 softwareVersion.getPbjSemanticVersion());
-        this.transactions = transactions.stream()
-                .map(t -> switch (t.kind()) {
-                    case STATE_SIGNATURE_PAYLOAD -> new StateSignatureTransaction(t.as());
-                    case APPLICATION_PAYLOAD -> new SwirldTransaction((Bytes) t.as());
-                    default -> throw new IllegalArgumentException("Unexpected transaction type: " + t.kind());
-                })
-                .toList()
-                .toArray(new ConsensusTransactionImpl[0]);
+        this.transactions =
+                transactions.stream().map(PayloadWrapper::new).toList().toArray(new PayloadWrapper[0]);
     }
 
     /**
@@ -521,7 +513,7 @@ public class UnsignedEvent extends AbstractHashable {
      * @return array of transactions inside this event instance
      */
     @NonNull
-    public ConsensusTransactionImpl[] getTransactions() {
+    public PayloadWrapper[] getTransactions() {
         return transactions;
     }
 

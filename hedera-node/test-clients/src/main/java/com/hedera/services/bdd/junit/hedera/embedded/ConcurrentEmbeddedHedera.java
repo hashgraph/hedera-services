@@ -20,6 +20,8 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
@@ -31,7 +33,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.transaction.PayloadWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -93,7 +95,8 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                             nodeId,
                             now(),
                             semanticVersion,
-                            new SwirldTransaction(Bytes.wrap(transaction.toByteArray()))));
+                            new PayloadWrapper(new OneOf<>(
+                                    PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(transaction.toByteArray())))));
             return OK_RESPONSE;
         }
     }
@@ -132,7 +135,7 @@ class ConcurrentEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                     defaultNodeId,
                     now(),
                     version.getPbjSemanticVersion(),
-                    new SwirldTransaction(Bytes.wrap(transaction))));
+                    new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(transaction)))));
         }
 
         /**

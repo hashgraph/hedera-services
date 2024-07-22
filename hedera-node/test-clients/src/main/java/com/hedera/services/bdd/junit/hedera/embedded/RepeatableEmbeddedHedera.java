@@ -20,6 +20,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.hedera.embedded.fakes.AbstractFakePlatform;
@@ -35,7 +37,7 @@ import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.SwirldTransaction;
+import com.swirlds.platform.system.transaction.PayloadWrapper;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.time.Instant;
@@ -82,15 +84,19 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
         requireNonNull(nodeAccountId);
         requireNonNull(semanticVersion);
         var response = OK_RESPONSE;
+        final Bytes payload = Bytes.wrap(transaction.toByteArray());
         if (defaultNodeAccountId.equals(nodeAccountId)) {
             final var responseBuffer = BufferedData.allocate(MAX_PLATFORM_TXN_SIZE);
-            hedera.ingestWorkflow().submitTransaction(Bytes.wrap(transaction.toByteArray()), responseBuffer);
+            hedera.ingestWorkflow().submitTransaction(payload, responseBuffer);
             response = parseTransactionResponse(responseBuffer);
         } else {
             final var nodeId = nodeIds.getOrDefault(nodeAccountId, MISSING_NODE_ID);
             warnOfSkippedIngestChecks(nodeAccountId, nodeId);
             platform.lastCreatedEvent = new FakeEvent(
-                    nodeId, time.now(), semanticVersion, new SwirldTransaction(Bytes.wrap(transaction.toByteArray())));
+                    nodeId,
+                    time.now(),
+                    semanticVersion,
+                    new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, payload)));
         }
         if (response.getNodeTransactionPrecheckCode() == OK) {
             hedera.onPreHandle(platform.lastCreatedEvent, state);
@@ -116,7 +122,7 @@ class RepeatableEmbeddedHedera extends AbstractEmbeddedHedera implements Embedde
                     defaultNodeId,
                     time.now(),
                     version.getPbjSemanticVersion(),
-                    new SwirldTransaction(Bytes.wrap(transaction)));
+                    new PayloadWrapper(new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, Bytes.wrap(transaction))));
             return true;
         }
 
