@@ -32,7 +32,7 @@ tasks.cloneHederaProtobufs {
     // uncomment below to use a specific tag
     //    tag = "v0.51.0"
     // uncomment below to use a specific branch
-    branch = "14109-hts-mutable-metadata-in-treasury"
+    branch = "main"
 }
 
 sourceSets {

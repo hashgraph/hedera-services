@@ -21,9 +21,6 @@ plugins {
 dependencies {
     api(enforcedPlatform("io.netty:netty-bom:4.1.110.Final"))
 
-    // Force commons compress version to close a security vulnerability
-    api(javaModuleDependencies.gav("org.apache.commons.compress"))
-
     // forward logging from modules using SLF4J (e.g. 'org.hyperledger.besu.evm') to Log4J
     runtime(javaModuleDependencies.gav("org.apache.logging.log4j.slf4j2.impl"))
 }
