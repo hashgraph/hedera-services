@@ -105,13 +105,15 @@ import javax.inject.Singleton;
 public class TokenAirdropHandler implements TransactionHandler {
 
     private final CryptoTransferValidator validator;
+    private final CryptoTransferExecutor executor;
 
     /**
      * Default constructor for injection.
      */
     @Inject
-    public TokenAirdropHandler(@NonNull final CryptoTransferValidator validator) {
+    public TokenAirdropHandler(@NonNull final CryptoTransferValidator validator, @NonNull final CryptoTransferExecutor executor) {
         this.validator = validator;
+        this.executor = executor;
     }
 
     @Override
@@ -263,7 +265,7 @@ public class TokenAirdropHandler implements TransactionHandler {
         final var transferContext = new TransferContextImpl(context, cryptoTransferBody, true);
 
         // We should skip custom fee steps here, because they must be already prepaid
-        CryptoTransferExecutor.executeCryptoTransferWithoutCustomFee(
+        executor.executeCryptoTransferWithoutCustomFee(
                 syntheticCryptoTransferTxn, transferContext, context, validator, recordBuilder);
     }
 
@@ -272,7 +274,7 @@ public class TokenAirdropHandler implements TransactionHandler {
         final var syntheticCryptoTransferTxn =
                 TransactionBody.newBuilder().cryptoTransfer(body).build();
         final var transferContext = new TransferContextImpl(context, body, true);
-        CryptoTransferExecutor.chargeCustomFee(syntheticCryptoTransferTxn, transferContext);
+        executor.chargeCustomFee(syntheticCryptoTransferTxn, transferContext);
     }
 
     /**
