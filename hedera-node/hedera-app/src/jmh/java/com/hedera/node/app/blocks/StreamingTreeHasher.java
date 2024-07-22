@@ -16,21 +16,23 @@
 
 package com.hedera.node.app.blocks;
 
-import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Defines a streaming hash computation for a tree of {@link BlockItem}s whose given leaves are right-padded with
- * empty leaves as needed to ensure the final tree is a perfect binary tree.
+ * Defines a streaming hash computation for a perfect binary Merkle tree of {@link Bytes} leaves; where the leaves
+ * given before calling {@link #rootHash()} are right-padded with empty leaves as needed to ensure the final tree is
+ * a perfect binary tree.
  */
-public interface ItemTreeHasher {
+public interface StreamingTreeHasher {
     /**
      * Adds a leaf to the implicit tree of items.
-     * @param item the leaf to add
+     * @param leaf the leaf to add
      * @throws IllegalStateException if the root hash has already been requested
      */
-    void addLeaf(BlockItem item);
+    void addLeaf(@NonNull Bytes leaf);
 
     /**
      * Returns a future that completes with the root hash of the tree of items. Once called, this hasher will not accept

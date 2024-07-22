@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.blocks;
 
-import static com.hedera.node.app.blocks.NaiveItemTreeHasher.hashNaively;
+import static com.hedera.node.app.blocks.NaiveStreamingTreeHasher.hashNaively;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.MapChangeKey;
@@ -30,12 +30,14 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SplittableRandom;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -59,31 +61,31 @@ public class HashingBenchmark {
     private static final SplittableRandom RANDOM = new SplittableRandom(1_234_567L);
 
     public static void main(String... args) throws Exception {
-        org.openjdk.jmh.Main.main(new String[] {"com.hedera.node.app.blocks.HashingBenchmark.hashItemTree"});
+        org.openjdk.jmh.Main.main(new String[]{"com.hedera.node.app.blocks.HashingBenchmark.hashItemTree"});
     }
 
     @Param({"10000"})
-    private int numItems;
+    private int numLeaves;
 
-    private List<BlockItem> items;
+    private List<Bytes> leaves;
     private Bytes expectedAnswer;
 
     @Setup(Level.Trial)
     public void setup() {
-        items = new ArrayList<>(numItems);
-        for (int i = 0; i < numItems; i++) {
-            items.add(randomBlockItem());
+        leaves = new ArrayList<>(numLeaves);
+        for (int i = 0; i < numLeaves; i++) {
+            leaves.add(BlockItem.PROTOBUF.toBytes(randomBlockItem()));
         }
-        expectedAnswer = hashNaively(items);
+        expectedAnswer = hashNaively(leaves);
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     @OutputTimeUnit(TimeUnit.SECONDS)
     public void hashItemTree(@NonNull final Blackhole blackhole) {
-        //        final var subject = new NaiveItemTreeHasher();
+//        final var subject = new NaiveStreamingTreeHasher();
         final var subject = new ConcurrentItemTreeHasher(ForkJoinPool.commonPool());
-        for (final var item : items) {
+        for (final var item : leaves) {
             subject.addLeaf(item);
         }
         final var rootHash = subject.rootHash().join();

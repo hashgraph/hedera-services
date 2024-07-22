@@ -19,7 +19,6 @@ package com.hedera.node.app.blocks;
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.security.MessageDigest;
@@ -29,7 +28,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
-public class ConcurrentItemTreeHasher implements ItemTreeHasher {
+public class ConcurrentItemTreeHasher implements StreamingTreeHasher {
     private static final int HASHING_CHUNK_SIZE = 16;
 
     private final HashCombiner combiner = new HashCombiner(0);
@@ -38,7 +37,7 @@ public class ConcurrentItemTreeHasher implements ItemTreeHasher {
     private int numLeaves;
     private int maxDepth;
     private boolean rootHashRequested = false;
-    private List<BlockItem> pendingItems = new ArrayList<>();
+    private List<Bytes> pendingLeaves = new ArrayList<>();
     private CompletableFuture<Void> hashed = CompletableFuture.completedFuture(null);
 
     public ConcurrentItemTreeHasher(@NonNull final ExecutorService executorService) {
@@ -46,14 +45,14 @@ public class ConcurrentItemTreeHasher implements ItemTreeHasher {
     }
 
     @Override
-    public void addLeaf(@NonNull final BlockItem item) {
-        requireNonNull(item);
+    public void addLeaf(@NonNull final Bytes leaf) {
+        requireNonNull(leaf);
         if (rootHashRequested) {
             throw new IllegalStateException("Root hash already requested");
         }
         numLeaves++;
-        pendingItems.add(item);
-        if (pendingItems.size() == HASHING_CHUNK_SIZE) {
+        pendingLeaves.add(leaf);
+        if (pendingLeaves.size() == HASHING_CHUNK_SIZE) {
             schedulePendingWork();
         }
     }
@@ -61,7 +60,7 @@ public class ConcurrentItemTreeHasher implements ItemTreeHasher {
     @Override
     public CompletableFuture<Bytes> rootHash() {
         rootHashRequested = true;
-        if (!pendingItems.isEmpty()) {
+        if (!pendingLeaves.isEmpty()) {
             schedulePendingWork();
         }
         maxDepth = Integer.numberOfTrailingZeros(containingPowerOfTwo(numLeaves));
@@ -69,14 +68,12 @@ public class ConcurrentItemTreeHasher implements ItemTreeHasher {
     }
 
     private void schedulePendingWork() {
-        final var scheduledWork = pendingItems;
+        final var scheduledWork = pendingLeaves;
         final var pendingHashes = CompletableFuture.supplyAsync(
                 () -> {
                     final List<byte[]> result = new ArrayList<>();
-                    for (final var item : scheduledWork) {
-                        final var serializedItem =
-                                BlockItem.PROTOBUF.toBytes(item).toByteArray();
-                        result.add(noThrowSha384HashOf(serializedItem));
+                    for (final var leaf : scheduledWork) {
+                        result.add(noThrowSha384HashOf(leaf.toByteArray()));
                     }
                     return result;
                 },
@@ -85,7 +82,7 @@ public class ConcurrentItemTreeHasher implements ItemTreeHasher {
             hashes.forEach(combiner::combine);
             return null;
         });
-        pendingItems = new ArrayList<>();
+        pendingLeaves = new ArrayList<>();
     }
 
     private class HashCombiner {

@@ -1,0 +1,619 @@
+/**
+ * # State Changes
+ * Serialization of change records which describe the mutation of state
+ * during a block.
+ *
+ * The _ordered_ application of all `StateChanges` in a block to an initial
+ * state that matches network state at the beginning of that block MUST produce
+ * a resultant state that matches the network state at the end of that block.
+ *
+ * > REVIEW NOTE
+ * >> We have quite a few very large bytes values in state (e.g. files,
+ * >> contracts, etc..). Would it be worthwhile to store changes to a bytes
+ * >> value as a simplified difference set? Would it be worthwhile to do the
+ * >> same for repeated items (perhaps only when over some threshold in length)?
+ * >> This might also help with things like the 0.0.98 problem, because we
+ * >> could record an empty difference set for the large repeated items.
+ * >
+ * >> Another thought. Protobuf is pretty good at optimizing a difference/merge
+ * >> entry for a protobuf encoded message. Could we perhaps only write changed
+ * >> fields for state mutations and apply those changed fields to the existing
+ * >> entity to recreate the modified state?
+ *
+ *
+ * ### Keywords
+ * The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+ * "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+ * document are to be interpreted as described in
+ * [RFC2119](https://www.ietf.org/rfc/rfc2119) and clarified in
+ * [RFC8174](https://www.ietf.org/rfc/rfc8174).
+ */
+syntax = "proto3";
+
+package com.hedera.hapi.block.stream.output;
+
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+option java_package = "com.hedera.hapi.block.stream.output.protoc";
+// <<<pbj.java_package = "com.hedera.hapi.block.stream.output">>> This comment is special code for setting PBJ Compiler java package
+option java_multiple_files = true;
+
+import "google/protobuf/wrappers.proto";
+import "basic_types.proto";
+import "exchange_rate.proto";
+import "state/blockrecords/block_info.proto";
+import "state/blockrecords/running_hashes.proto";
+import "state/common.proto";
+import "state/congestion/congestion_level_starts.proto";
+import "state/consensus/topic.proto";
+import "state/contract/bytecode.proto";
+import "state/contract/storage_slot.proto";
+import "state/file/file.proto";
+import "state/recordcache/recordcache.proto";
+import "state/schedule/schedule.proto";
+import "state/throttles/throttle_usage_snapshots.proto";
+import "state/token/account.proto";
+import "state/token/network_staking_rewards.proto";
+import "state/token/nft.proto";
+import "state/token/staking_node_info.proto";
+import "state/token/token.proto";
+import "state/token/token_relation.proto";
+import "timestamp.proto";
+
+/**
+ * The "cause" of a state change.
+ *
+ * What was the network doing that led to the change in state?<br/>
+ * The most common event is, of course, a user transaction.
+ * Other sources of state changes include end-of-block housekeeping changes,
+ * data migration, and "system" transactions.
+ */
+enum StateChangesCause {
+    /**
+     * A set of transaction state changes.<br/>
+     * This is a deliberate default because this is the most common 'cause'
+     * and we wish to minimize serialized size.
+     */
+    STATE_CHANGE_CAUSE_TRANSACTION = 0;
+
+    /**
+     * A system-internal state change.<br/>
+     * System-initiated transactions exist to enable the network to maintain
+     * state signatures and network communication.
+     */
+    STATE_CHANGE_CAUSE_SYSTEM = 1;
+
+    /**
+     * A set of end-of-block state changes.<br/>
+     * The network performs certain processes, such as writing to the block
+     * stream, updating singleton states, or updating queue states at the end
+     * of a block to minimize impacts on consensus nodes.
+     */
+    STATE_CHANGE_CAUSE_END_OF_BLOCK = 2;
+
+    /**
+     * A set of data migration state changes.<br/>
+     * Data migration is typically necessary following a network upgrade to
+     * make required storage format updates and enable new features.
+     */
+    STATE_CHANGE_CAUSE_MIGRATION = 3;
+}
+
+/**
+ * A set of state changes.
+ *
+ * Each set of changes in the network deterministically mutates the
+ * current state to a new state, and all nodes MUST apply the same
+ * changes in the same order.<br/>
+ * Each change set described in the block stream SHALL describe an
+ * ordered set of mutations which mutate the previous valid state to
+ * produce a new valid state.<br/>
+ * The order of state change sets SHALL be determined by the
+ * `consensus_timestamp`, which is a strictly ascending value
+ * determined by network consensus.
+ */
+message StateChanges {
+    /**
+     * The proximate source of this state change set.
+     * <p>
+     * This field describes the source (e.g. user transaction, system
+     * "housekeeping", end of block, etc...) of the changes included
+     * in this change set.
+     */
+    StateChangesCause cause = 1;
+
+    /**
+     * The consensus timestamp of this set of changes.
+     * <p>
+     * This value SHALL be the same value the network used to order
+     * events in this block.
+     */
+    proto.Timestamp consensus_timestamp = 2;
+
+    /**
+     * An ordered list of individual changes.
+     * <p>
+     * These changes MUST be applied in the order listed to produce
+     * a correct modified state.
+     */
+    repeated StateChange state_changes = 3;
+}
+
+/**
+ * A change to any item in the merkle tree.
+ *
+ * A State change SHALL represent one mutation of the network state merkle
+ * tree. The state changes published in the block stream MAY be combined
+ * into an ordered set of state mutations that transform the tree from any
+ * initial state to a destination state.<br/>
+ * When the full set of state change items from the block stream for a round
+ * is applied to the network state at the start of that round the result
+ * SHALL match the network state at the end of the round.
+ * TODO: Need documentation for how the merkle tree is constructed.
+ *       Need to reference that document, stored in platform docs, here.
+ */
+message StateChange {
+    /**
+     * A state name.
+     * <p>
+     * This name SHALL identify the merkle subtree "state" to be modified and
+     * often corresponds to a `VirtualMap` name.
+     */
+    string state_name = 1;
+
+    oneof change_operation {
+        /**
+         * Addition of a new state.<br/>
+         * This may be a singleton, virtual map, or queue state.
+         */
+        NewStateChange state_add = 2;
+
+        /**
+         * Removal of an existing state.<br/>
+         * The entire singleton, virtual map, or queue state is removed,
+         * and not just the contents.
+         */
+        RemovedStateChange state_remove = 3;
+
+        /**
+         * An add or update to a `Singleton` state.
+         */
+        SingletonUpdateChange singleton_update = 4;
+
+        /**
+         * An add or update to a single item in a `VirtualMap`.
+         */
+        MapUpdateChange map_update = 5;
+
+        /**
+         * A removal of a single item from a `VirtualMap`.
+         */
+        MapDeleteChange map_delete = 6;
+
+        /**
+         * Addition of an item to a `Queue` state.
+         */
+        QueuePushChange queue_push = 7;
+
+        /**
+         * Removal of an item from a `Queue` state.
+         */
+        QueuePopChange queue_pop = 8;
+    }
+}
+
+/**
+ * An addition of a new named state.
+ *
+ * Adding a new named state SHALL only require the name and type.<br/>
+ * The content of the new state SHALL be filled in via subsequent
+ * state change items specific to the type of state
+ * (e.g. SingletonUpdateChange or MapUpdateChange).
+ */
+message NewStateChange {
+    /**
+     * The type (e.g. Singleton, Virtual Map, Queue) of state to add.
+     */
+    NewStateType state_type = 1;
+}
+
+/**
+ * An enumeration of the types of named states.<br/>
+ * The default, Singleton, is the type of state most frequently
+ * added and removed.
+ */
+enum NewStateType {
+    SINGLETON = 0;
+    VIRTUAL_MAP = 1;
+    QUEUE = 2;
+}
+
+/**
+ * A removal of a named state.
+ *
+ * Removing a named state does not, currently, require additional
+ * information beyond the state name common to all state changes.<br/>
+ * A named state, other than a singleton, SHOULD be empty before it is removed.
+ */
+message RemovedStateChange {
+}
+
+/**
+ * An update to a `Singleton` state.
+ */
+message SingletonUpdateChange {
+    oneof new_value {
+        /**
+         * A change to the block info singleton.
+         * <p>
+         * The `BlockInfo` SHALL be updated at the end of every block and
+         * SHALL store, among other fields, the last 256 block hash values.
+         * <blockquote>REVIEW NOTE<blockquote>
+         * The full BlockInfo will be in the state proof, and may not be
+         * necessary here.</blockquote></blockquote>
+         */
+        proto.BlockInfo block_info_value = 1;
+
+        /**
+         * A change to the congestion level starts singleton.
+         * <p>
+         * This change SHALL be present if congestion level pricing for
+         * general fees or gas fees started during the current block.
+         */
+        proto.CongestionLevelStarts congestion_level_starts_value = 2;
+
+        /**
+         * A change to the Entity Identifier singleton.
+         * <p>
+         * The Entity Identifier singleton SHALL track the highest entity
+         * identifier used for the current shard and realm and SHALL be used
+         * to issue new entity numbers.
+         */
+        proto.EntityNumber entity_number_value = 3;
+
+        /**
+         * A change to the exchange rates singleton.
+         * <p>
+         * This change SHALL be present if the <tt>HBAR&lt;=&gt;USD</tt> exchange
+         * rate, as stored in the "midnight rates" singleton changed
+         * during the current block.
+         */
+        proto.ExchangeRateSet exchange_rate_set_value = 4;
+
+        /**
+         * A change to the network staking rewards singleton.
+         * <p>
+         * Network staking rewards SHALL be updated for every non-empty block.
+         */
+        proto.NetworkStakingRewards network_staking_rewards_value = 5;
+
+        /**
+         * A change to a raw byte array singleton.
+         * <p>
+         * This change SHALL present a change made to a raw byte array
+         * singleton.<br/>
+         * The "upgrade file hash" state is an example of a raw byte
+         * array singleton.
+         */
+        google.protobuf.BytesValue bytes_value = 6;
+
+        /**
+         * A change to a raw string singleton.
+         * <p>
+         * <dl><dt>Note</dt><dd>There are no current examples of a raw string
+         * singleton state.</dd></dl>
+         */
+        google.protobuf.StringValue string_value = 7;
+
+        /**
+         * A change to the running hashes singleton.
+         * <p>
+         * Running hashes SHALL be updated for each transaction.
+         * <p>
+         * <blockquote>REVIEW NOTE<blockquote>
+         * Running hashes is a record stream item. Can it be elided from
+         * the block stream? It's not written to the record stream, as far
+         * as I can tell. If we do write this it's adding over 144 bytes
+         * for every transaction. It's also not clear how we'll calculate
+         * this, as it's a hash of the records currently, so it would have
+         * to be a hash of the block items, including this one...
+         * </blockquote></blockquote>
+         */
+        proto.RunningHashes running_hashes_value = 8;
+
+        /**
+         * A change to the throttle usage snapshots singleton.
+         * <p>
+         * Throttle usage snapshots SHALL be updated for _every transaction_
+         * to reflect the amount used for each tps throttle and
+         * for the gas throttle.
+         */
+        proto.ThrottleUsageSnapshots throttle_usage_snapshots_value = 9;
+
+        /**
+         * A change to a raw `Timestamp` singleton.<br/>
+         * An example of a raw `Timestamp` singleton is the
+         * "network freeze time" singleton state, which, if set, stores
+         * the time for the next scheduled freeze.
+         */
+        proto.Timestamp timestamp_value = 10;
+    }
+}
+
+/**
+ * An update to a single item in a `VirtualMap`.<br/>
+ * Each update consists of a "key" and a "value".
+ * Keys are often identifiers or scalar values.
+ * Values are generally full messages or byte arrays.
+ *
+ * The key presented here is not mutable, we do not update map keys.<br/>
+ * The value associated to the key provided is updated, or the value is
+ * added and associated with that key.<br/>
+ * A change of key would be expressed as removal of the prior key and
+ * an addition for the new key.
+ */
+message MapUpdateChange {
+    /**
+     * A key in a virtual map.
+     * <p>
+     * This key MUST be mapped to the value added or updated.<br/>
+     * This field is REQUIRED.
+     */
+    MapChangeKey key = 1;
+
+    /**
+     * A value in a virtual map.
+     * <p>
+     * This value MUST correctly represent the state of the map entry
+     * _after_ the asserted update.<br/>
+     * This value MAY be reduced to only transmit fields that differ
+     * from the prior state.<br/>
+     * This field is REQUIRED.
+     */
+    MapChangeValue value = 2;
+}
+
+/**
+ * A removal of a single item from a `VirtualMap`.
+ */
+message MapDeleteChange {
+    /**
+     * A key in a virtual map.
+     * <p>
+     * This key SHALL be removed. The mapped value, also, SHALL be removed.<br/>
+     * This field is REQUIRED.
+     */
+    MapChangeKey key = 1;
+}
+
+/**
+ * A key identifying a specific entry in a key-value "virtual map".
+ */
+message MapChangeKey {
+    oneof key_choice {
+        /**
+         * A key for a change affecting a map keyed by an Account identifier.
+         */
+        proto.AccountID account_id_key = 1;
+
+        /**
+         * A change to the token relationships virtual map.<br/>
+         * This map is keyed by the pair of account identifier and
+         * token identifier.
+         */
+        proto.EntityIDPair entity_id_pair_key = 2;
+
+        /**
+         * A change to a map keyed by an EntityNumber (which is a single int64).
+         * <p>
+         * This SHOULD NOT be used. Virtual maps SHOULD be keyed to
+         * full identifiers that include shard and realm information.
+         */
+        proto.EntityNumber entity_number_key = 3;
+
+        /**
+         * A change to a virtual map keyed by File identifier.
+         */
+        proto.FileID filed_id_key = 4;
+
+        /**
+         * A change to a virtual map keyed by NFT identifier.
+         */
+        proto.NftID nft_id_key = 5;
+
+        /**
+         * A change to a virtual map keyed by a byte array.
+         */
+        google.protobuf.BytesValue proto_bytes_key = 6;
+
+        /**
+         * A change to a virtual map keyed by an int64 value.
+         */
+        google.protobuf.Int64Value proto_long_key = 7;
+
+        /**
+         * A change to a virtual map keyed by a string value.
+         */
+        google.protobuf.StringValue proto_string_key = 8;
+
+        /**
+         * A change to a virtual map keyed by a Schedule identifier.
+         */
+        proto.ScheduleID schedule_id_key = 9;
+
+        /**
+         * A change to the EVM storage "slot" virtual map.
+         */
+        proto.SlotKey slot_key_key = 10;
+
+        /**
+         * A change to a virtual map keyed by a Token identifier.
+         */
+        proto.TokenID token_id_key = 11;
+
+        /**
+         * A change to a virtual map keyed by a Topic identifier.
+         */
+        proto.TopicID topic_id_key = 12;
+    }
+}
+
+/**
+ * A value updated in, or added to, a virtual map.
+ *
+ * > REVIEW NOTE
+ * >> Should we only set the modified fields here, possibly with a field mask
+ * >> protobuf to tell the recipient which fields are _actually_ set?
+ * >> <p>
+ * >> It is not clear if we can easily detect what to send (perhaps we
+ * >> can during record processing in the consensus node, we just don't
+ * >> currently), though. If we can do that the total data volume would
+ * >> probably shrink quite a lot...<br/>
+ * >> It requires a block node to apply to an existing state copy to create
+ * >> a "materialized" block stream (higher cost?) for many consumers, but
+ * >> could save a ton of cost (and shift more cost to consumers of the block
+ * >> nodes, improving "fairness" by moving cost closer to the demand).
+ *
+ */
+message MapChangeValue {
+    oneof value_choice {
+        /**
+         * An account value.
+         */
+        proto.Account account_value = 1;
+
+        /**
+         * An account identifier.<br/>
+         * In some cases a map is used to connect a value or identifier
+         * to another identifier.
+         */
+        proto.AccountID account_id_value = 2;
+
+        /**
+         * Compiled EVM bytecode.
+         */
+        proto.Bytecode bytecode_value = 3;
+
+        /**
+         * An Hedera "file" value.
+         * <p>
+         * <blockquote>REVIEW NOTE<blockquote>
+         * A file can become quite large (up to 1048576 bytes).<br/>
+         * Do we want to structure file changes separately?<br/>
+         * Perhaps a file metadata update and a separate byte array for
+         * just the bytes appended (or initial bytes on create). We only
+         * allow create/append/delete, so the separate byte array would work
+         * and keep the size below 6K per state change.
+         * </blockquote></blockquote>
+         */
+        proto.File file_value = 4;
+
+        /**
+         * A non-fungible/unique token value.
+         */
+        proto.Nft nft_value = 5;
+
+        /**
+         * A string value.
+         */
+        google.protobuf.StringValue proto_string_value = 6;
+
+        /**
+         * A scheduled transaction value.
+         */
+        proto.Schedule schedule_value = 7;
+
+        /**
+         * A list of scheduled transactions.<br/>
+         * An example for this value is the map of consensus second to
+         * scheduled transactions that expire at that consensus time.
+         */
+        proto.ScheduleList schedule_list_value = 8;
+
+        /**
+         * An EVM storage slot value.
+         */
+        proto.SlotValue slot_value_value = 9;
+
+        /**
+         * An updated set of staking information for all nodes in
+         * the address book.
+         */
+        proto.StakingNodeInfo staking_node_info_value = 10;
+
+        /**
+         * An HTS token value.
+         */
+        proto.Token token_value = 11;
+
+        /**
+         * A token relationship value.<br/>
+         * These values track which accounts are willing to transact
+         * in specific HTS tokens.
+         */
+        proto.TokenRelation token_relation_value = 12;
+
+        /**
+         * An HCS topic value.
+         */
+        proto.Topic topic_value = 13;
+    }
+}
+
+/**
+ * Addition of an item to a `Queue` state.<br/>
+ *
+ * The new item SHALL be added after the current "last" element in the
+ * queue.<br/>
+ * The new item MUST be the same type of value as all other items in the queue.
+ */
+message QueuePushChange {
+    oneof value {
+        /**
+         * A byte array added to the queue state.
+         */
+        google.protobuf.BytesValue proto_bytes_element = 1;
+
+        /**
+         * A string added to the queue state.
+         */
+        google.protobuf.StringValue proto_string_element = 2;
+
+        /**
+         * A transaction record entry added to queue state.
+         * <p>
+         * <blockquote>REVIEW NOTE<blockquote>
+         * Do we really intend to push `transaction records` as state
+         * changes in the block stream? I would think that any queue holding
+         * transaction records is temporary storage (e.g. record cache) and
+         * will be removed or replaced with a block item queue as part
+         * of the change over to block stream.
+         * </blockquote></blockquote>
+         */
+        proto.TransactionRecordEntry transaction_record_entry_element = 3;
+    }
+}
+
+/**
+ * Removal of an item from a `Queue` state.<br/>
+ *
+ * The item removed SHALL be the current "front" (or "head") of the queue.<br/>
+ * Removing from a queue "head" does not, currently, require additional
+ * information beyond the state name common to all state changes.
+ */
+message QueuePopChange {
+}

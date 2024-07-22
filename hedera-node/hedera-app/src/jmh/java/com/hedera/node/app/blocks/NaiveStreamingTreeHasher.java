@@ -28,38 +28,37 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 
-public class NaiveItemTreeHasher implements ItemTreeHasher {
+public class NaiveStreamingTreeHasher implements StreamingTreeHasher {
     private static final byte[] EMPTY_HASH = noThrowSha384HashOf(new byte[0]);
 
-    private final List<BlockItem> items = new ArrayList<>();
+    private final List<Bytes> leaves = new ArrayList<>();
     private boolean rootHashRequested = false;
 
-    public static Bytes hashNaively(@NonNull final List<BlockItem> items) {
-        final var hasher = new NaiveItemTreeHasher();
-        for (final var item : items) {
+    public static Bytes hashNaively(@NonNull final List<Bytes> leaves) {
+        final var hasher = new NaiveStreamingTreeHasher();
+        for (final var item : leaves) {
             hasher.addLeaf(item);
         }
         return hasher.rootHash().join();
     }
 
     @Override
-    public void addLeaf(@NonNull final BlockItem item) {
+    public void addLeaf(@NonNull final Bytes leaf) {
         if (rootHashRequested) {
             throw new IllegalStateException("Root hash already requested");
         }
-        items.add(item);
+        leaves.add(leaf);
     }
 
     @Override
     public CompletableFuture<Bytes> rootHash() {
         rootHashRequested = true;
-        if (items.isEmpty()) {
+        if (leaves.isEmpty()) {
             return CompletableFuture.completedFuture(Bytes.wrap(EMPTY_HASH));
         }
         Queue<byte[]> leafHashes = new LinkedList<>();
-        for (final var item : items) {
-            final var serializedItem = BlockItem.PROTOBUF.toBytes(item).toByteArray();
-            leafHashes.add(noThrowSha384HashOf(serializedItem));
+        for (final var leaf : leaves) {
+            leafHashes.add(noThrowSha384HashOf(leaf.toByteArray()));
         }
         final int n = leafHashes.size();
         if ((n & (n - 1)) != 0) {
