@@ -38,7 +38,6 @@ import com.swirlds.platform.internal.ConsensusRound;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.state.MerkleRoot;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.state.SwirldStateManager;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.events.DetailedConsensusEvent;
@@ -109,8 +108,8 @@ class DefaultTransactionHandlerTests {
     }
 
     private static SwirldStateManager mockSwirldStateManager(@NonNull final PlatformState platformState) {
-        final MerkleRoot consensusState = mock(State.class);
-        final MerkleRoot stateForSigning = mock(State.class);
+        final MerkleRoot consensusState = mock(MerkleRoot.class);
+        final MerkleRoot stateForSigning = mock(MerkleRoot.class);
         when(consensusState.getPlatformState()).thenReturn(platformState);
         final SwirldStateManager swirldStateManager = mock(SwirldStateManager.class);
         when(swirldStateManager.getConsensusState()).thenReturn(consensusState);

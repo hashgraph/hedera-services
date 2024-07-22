@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state;
 
+import static com.swirlds.platform.state.MerkleStateUtils.createInfoString;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
@@ -25,6 +26,8 @@ import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
+import com.swirlds.common.utility.RuntimeObjectRecord;
+import com.swirlds.common.utility.RuntimeObjectRegistry;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.platform.system.InitTrigger;
@@ -96,6 +99,8 @@ import org.apache.logging.log4j.Logger;
 @ConstructableIgnored
 public class MerkleStateRoot extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState, State, MerkleRoot {
+
+    private static final int PLATFORM_STATE_INDEX = 0;
     private static final Logger logger = LogManager.getLogger(MerkleStateRoot.class);
 
     /**
@@ -114,8 +119,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     // indices globally, assuming these indices do not change that often. We need to re-think index lookup,
     // but at this point all major rewrites seem to risky.
     private static final Map<String, Integer> INDEX_LOOKUP = new ConcurrentHashMap<>();
-
-    private long classId;
 
     /**
      * The callbacks for Hedera lifecycle events.
@@ -145,13 +148,18 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     private final Map<String, MerkleWritableStates> writableStatesMap = new HashMap<>();
 
     /**
+     * Used to track the lifespan of this state.
+     */
+    private final RuntimeObjectRecord registryRecord;
+
+    /**
      * Create a new instance. This constructor must be used for all creations of this class.
      *
      * @param lifecycles The lifecycle callbacks. Cannot be null.
      */
     public MerkleStateRoot(@NonNull final MerkleStateLifecycles lifecycles) {
         this.lifecycles = requireNonNull(lifecycles);
-        this.classId = CLASS_ID;
+        this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
     }
 
     /**
@@ -166,6 +174,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     public MerkleStateRoot() {
         // ConstructableRegistry requires a "working" no-arg constructor
         this.lifecycles = null;
+        this.registryRecord = null;
     }
 
     /**
@@ -217,8 +226,8 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         // Copy the Merkle route from the source instance
         super(from);
 
-        this.classId = from.classId;
         this.lifecycles = from.lifecycles;
+        this.registryRecord = RuntimeObjectRegistry.createRecord(getClass());
 
         // Copy over the metadata
         for (final var entry : from.services.entrySet()) {
@@ -238,7 +247,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
 
     @Override
     public long getClassId() {
-        return classId;
+        return CLASS_ID;
     }
 
     @Override
@@ -268,6 +277,14 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
                 }
             }
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void destroyNode() {
+        registryRecord.release();
     }
 
     /**
@@ -774,8 +791,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
         return md.stateDefinition().stateKey();
     }
 
-    // FUTURE USE: the following code will become relevant with
-    // https://github.com/hashgraph/hedera-services/issues/11773
     @NonNull
     @Override
     public SwirldState getSwirldState() {
@@ -788,8 +803,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public PlatformState getPlatformState() {
-        throw new UnsupportedOperationException(
-                "To be implemented with https://github.com/hashgraph/hedera-services/issues/11773");
+        return getChild(PLATFORM_STATE_INDEX);
     }
 
     /**
@@ -797,8 +811,10 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      */
     @Override
     public void setPlatformState(@NonNull final PlatformState platformState) {
-        throw new UnsupportedOperationException(
-                "To be implemented with https://github.com/hashgraph/hedera-services/issues/11773");
+        if (getNumberOfChildren() != 0) {
+            throw new IllegalStateException("The PlatformState has to be set as the first child");
+        }
+        setChild(PLATFORM_STATE_INDEX, platformState);
     }
 
     /**
@@ -807,6 +823,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        return com.swirlds.platform.state.State.createInfoString(hashDepth, getPlatformState(), getHash(), this);
+        return createInfoString(hashDepth, getPlatformState(), getHash(), this);
     }
 }
