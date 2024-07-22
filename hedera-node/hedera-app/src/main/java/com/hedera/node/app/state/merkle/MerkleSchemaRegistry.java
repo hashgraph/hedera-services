@@ -37,7 +37,9 @@ import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.merkledb.MerkleDbDataSourceBuilder;
 import com.swirlds.merkledb.MerkleDbTableConfig;
 import com.swirlds.metrics.api.Metrics;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskKeySerializer;
@@ -75,9 +77,9 @@ import org.apache.logging.log4j.Logger;
  * then registers each and every {@link Schema} that it has. Each {@link Schema} is associated with
  * a {@link SemanticVersion}.
  *
- * <p>The Hedera application then calls {@code com.hedera.node.app.Hedera#onMigrate(MerkleHederaState, HederaSoftwareVersion, InitTrigger, Metrics)} on each {@link MerkleSchemaRegistry} instance, supplying it the
+ * <p>The Hedera application then calls {@code com.hedera.node.app.Hedera#onMigrate(MerkleStateRoot, HederaSoftwareVersion, InitTrigger, Metrics)} on each {@link MerkleSchemaRegistry} instance, supplying it the
  * application version number and the newly created (or deserialized) but not yet hashed copy of the {@link
- * MerkleHederaState}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
+ * MerkleStateRoot}. The registry determines which {@link Schema}s to apply, possibly taking multiple migration steps,
  * to transition the merkle tree from its current version to the final version.
  */
 public class MerkleSchemaRegistry implements SchemaRegistry {
@@ -176,7 +178,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
      * @param networkInfo The network information to use at the time of migration
      * @param sharedValues A map of shared values for cross-service migration patterns
      * @throws IllegalArgumentException if the {@code currentVersion} is not at least the
-     * {@code previousVersion} or if the {@code hederaState} is not an instance of {@link MerkleHederaState}
+     * {@code previousVersion} or if the {@code hederaState} is not an instance of {@link MerkleStateRoot}
      */
     // too many parameters, commented out code
     @SuppressWarnings({"java:S107", "java:S125"})
@@ -198,8 +200,8 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         if (isSoOrdered(currentVersion, previousVersion)) {
             throw new IllegalArgumentException("The currentVersion must be at least the previousVersion");
         }
-        if (!(hederaState instanceof MerkleHederaState state)) {
-            throw new IllegalArgumentException("The state must be an instance of MerkleHederaState");
+        if (!(hederaState instanceof MerkleStateRoot state)) {
+            throw new IllegalArgumentException("The state must be an instance of MerkleStateRoot");
         }
         if (schemas.isEmpty()) {
             logger.info("Service {} does not use state", serviceName);
@@ -250,7 +252,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 schema.restart(migrationContext);
             }
             // Now commit all the service-specific changes made during this service's update or migration
-            if (writableStates instanceof MerkleHederaState.MerkleWritableStates mws) {
+            if (writableStates instanceof MerkleStateRoot.MerkleWritableStates mws) {
                 mws.commit();
             }
             // And finally we can remove any states we need to remove
@@ -262,7 +264,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final Schema schema,
             @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
-            @NonNull final MerkleHederaState hederaState) {
+            @NonNull final MerkleStateRoot hederaState) {
         // Create the new states (based on the schema) which, thanks to the above, does not
         // expand the set of states that the migration code will see
         schema.statesToCreate(configuration).stream()

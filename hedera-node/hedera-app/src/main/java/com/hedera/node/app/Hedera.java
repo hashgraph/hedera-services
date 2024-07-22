@@ -59,7 +59,6 @@ import com.hedera.node.app.service.util.impl.UtilServiceImpl;
 import com.hedera.node.app.services.ServiceMigrator;
 import com.hedera.node.app.services.ServicesRegistry;
 import com.hedera.node.app.state.HederaLifecyclesImpl;
-import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.statedumpers.DumpCheckpoint;
 import com.hedera.node.app.statedumpers.MerkleStateChild;
@@ -86,6 +85,7 @@ import com.swirlds.platform.listeners.PlatformStatusChangeListener;
 import com.swirlds.platform.listeners.ReconnectCompleteListener;
 import com.swirlds.platform.listeners.StateWriteToDiskCompleteListener;
 import com.swirlds.platform.state.MerkleRoot;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.InitTrigger;
@@ -227,7 +227,7 @@ public final class Hedera implements SwirldMain {
      * with the given {@link ConstructableRegistry}.
      *
      * <p>This registration is a critical side effect that must happen called before any Platform initialization
-     * steps that try to create or deserialize a {@link MerkleHederaState}.
+     * steps that try to create or deserialize a {@link MerkleStateRoot}.
      *
      * @param constructableRegistry the registry to register {@link RuntimeConstructable} factories with
      * @param registryFactory the factory to use for creating the services registry
@@ -279,12 +279,12 @@ public final class Hedera implements SwirldMain {
                         new AddressBookServiceImpl())
                 .forEach(servicesRegistry::register);
         try {
-            // And the factory for the MerkleHederaState class id must be our constructor
+            // And the factory for the MerkleStateRoot class id must be our constructor
             // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
             constructableRegistry.registerConstructable(new ClassConstructorPair(
-                    MerkleHederaState.class, () -> new MerkleHederaState(new HederaLifecyclesImpl(this))));
+                    MerkleStateRoot.class, () -> new MerkleStateRoot(new HederaLifecyclesImpl(this))));
         } catch (final ConstructableRegistryException e) {
-            logger.error("Failed to register MerkleHederaState factory with ConstructableRegistry", e);
+            logger.error("Failed to register MerkleStateRoot factory with ConstructableRegistry", e);
             throw new IllegalStateException(e);
         }
     }
@@ -322,10 +322,10 @@ public final class Hedera implements SwirldMain {
     @NonNull
     public MerkleRoot newMerkleStateRoot() {
         final State state = new State();
-        state.setSwirldState(new MerkleHederaState(new HederaLifecyclesImpl(this)));
+        state.setSwirldState(new MerkleStateRoot(new HederaLifecyclesImpl(this)));
         return state;
         // FUTURE WORK: https://github.com/hashgraph/hedera-services/issues/11773
-        // return new MerkleHederaState(new HederaLifecyclesImpl(this));
+        // return new MerkleStateRoot(new HederaLifecyclesImpl(this));
     }
 
     /*==================================================================================================================
@@ -455,7 +455,7 @@ public final class Hedera implements SwirldMain {
      * {@inheritDoc}
      *
      * <p>Called <b>AFTER</b> init and migrate have been called on the state (either the new state created from
-     * {@link #newMerkleStateRoot()} or an instance of {@link MerkleHederaState} created by the platform and
+     * {@link #newMerkleStateRoot()} or an instance of {@link MerkleStateRoot} created by the platform and
      * loaded from the saved state).
      *
      * <p>(FUTURE) Consider moving this initialization into {@link #onStateInitialized(HederaState, Platform, PlatformState, InitTrigger, SoftwareVersion)}
@@ -556,8 +556,8 @@ public final class Hedera implements SwirldMain {
         if (daggerApp != null) {
             logger.debug("Shutting down the state");
             final var state = daggerApp.workingStateAccessor().getHederaState();
-            if (state instanceof MerkleHederaState mhs) {
-                mhs.close();
+            if (state instanceof MerkleStateRoot msr) {
+                msr.close();
             }
 
             logger.debug("Shutting down the block manager");
@@ -592,7 +592,7 @@ public final class Hedera implements SwirldMain {
         daggerApp.preHandleWorkflow().preHandle(readableStoreFactory, creator.accountId(), transactions.stream());
     }
 
-    public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
+    public void onNewRecoveredState(@NonNull final MerkleStateRoot recoveredState) {
         try {
             if (shouldDump(daggerApp.initTrigger(), MOD_POST_EVENT_STREAM_REPLAY)) {
                 dumpModChildrenFrom(recoveredState, MOD_POST_EVENT_STREAM_REPLAY, MerkleStateChild.childrenToDump());
@@ -675,7 +675,7 @@ public final class Hedera implements SwirldMain {
         if (trigger != GENESIS) {
             requireNonNull(deserializedVersion, "Deserialized version cannot be null for trigger " + trigger);
         }
-        // Until all service schemas are migrated, MerkleHederaState will not be able to implement
+        // Until all service schemas are migrated, MerkleStateRoot will not be able to implement
         // the States API, even if it already has all its children in the Merkle tree, as it will lack
         // state definitions for those children. (And note services may even require migrations for
         // those children to be usable with the current version of the software.)

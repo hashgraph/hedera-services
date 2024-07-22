@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle;
+package com.swirlds.platform.state;
 
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.node.app.Hedera;
-import com.hedera.node.app.spi.state.CommittableWritableStates;
-import com.hedera.node.app.spi.state.EmptyReadableStates;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
@@ -30,9 +27,6 @@ import com.swirlds.common.merkle.impl.PartialNaryMerkleInternal;
 import com.swirlds.common.utility.Labeled;
 import com.swirlds.merkle.map.MerkleMap;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.state.MerkleRoot;
-import com.swirlds.platform.state.PlatformState;
-import com.swirlds.platform.state.State;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -43,6 +37,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
 import com.swirlds.state.merkle.disk.OnDiskWritableKVState;
@@ -54,6 +49,8 @@ import com.swirlds.state.merkle.queue.WritableQueueStateImpl;
 import com.swirlds.state.merkle.singleton.ReadableSingletonStateImpl;
 import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.merkle.singleton.WritableSingletonStateImpl;
+import com.swirlds.state.spi.CommittableWritableStates;
+import com.swirlds.state.spi.EmptyReadableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.ReadableSingletonState;
@@ -84,7 +81,7 @@ import org.apache.logging.log4j.Logger;
  * SwirldState}. The Hedera application, after startup, only needs the ability to get {@link
  * ReadableStates} and {@link WritableStates} from this object.
  *
- * <p>Among {@link MerkleHederaState}'s child nodes are the various {@link
+ * <p>Among {@link MerkleStateRoot}'s child nodes are the various {@link
  * com.swirlds.merkle.map.MerkleMap}'s and {@link com.swirlds.virtualmap.VirtualMap}'s that make up
  * the service's states. Each such child node has a label specified that is computed from the
  * metadata for that state. Since both service names and state keys are restricted to characters
@@ -96,9 +93,9 @@ import org.apache.logging.log4j.Logger;
  * each child must be part of the state proof. It would be better to have a binary tree. We should
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
-public class MerkleHederaState extends PartialNaryMerkleInternal
+public class MerkleStateRoot extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState, HederaState, MerkleRoot {
-    private static final Logger logger = LogManager.getLogger(MerkleHederaState.class);
+    private static final Logger logger = LogManager.getLogger(MerkleStateRoot.class);
 
     /**
      * Used when asked for a service's readable states that we don't have
@@ -110,8 +107,8 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * This class ID is returned IF the default constructor was used. This is a nasty workaround for
      * {@link ConstructableRegistry}. The registry does classpath scanning, and finds this class. It then invokes
      * the default constructor and then asks for the class ID, and then throws away the object. It sticks this
-     * mapping of class ID to class name into a map. Later (in {@link Hedera}) we define an actual mapping for the
-     * {@link ConstructableRegistry} that maps {@link #CLASS_ID} to {@link MerkleHederaState} using a lambda that will
+     * mapping of class ID to class name into a map. Later we define an actual mapping for the
+     * {@link ConstructableRegistry} that maps {@link #CLASS_ID} to {@link MerkleStateRoot} using a lambda that will
      * create the instancing using the non-default constructor. But the {@link ConstructableRegistry} doesn't
      * actually register the second mapping! So we will trick it. We will return this bogus class ID if the default
      * constructor is used, or {@link #CLASS_ID} otherwise.
@@ -164,7 +161,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      *
      * @param lifecycles The lifecycle callbacks. Cannot be null.
      */
-    public MerkleHederaState(@NonNull final HederaLifecycles lifecycles) {
+    public MerkleStateRoot(@NonNull final HederaLifecycles lifecycles) {
         this.lifecycles = requireNonNull(lifecycles);
         this.classId = CLASS_ID;
     }
@@ -178,7 +175,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * @deprecated This constructor is only for use by the ConstructableRegistry.
      */
     @Deprecated(forRemoval = true)
-    public MerkleHederaState() {
+    public MerkleStateRoot() {
         // ConstructableRegistry requires a "working" no-arg constructor
         this.lifecycles = null;
         this.classId = DO_NOT_USE_IN_REAL_LIFE_CLASS_ID;
@@ -229,7 +226,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      *
      * @param from The other state to fast-copy from. Cannot be null.
      */
-    private MerkleHederaState(@NonNull final MerkleHederaState from) {
+    private MerkleStateRoot(@NonNull final MerkleStateRoot from) {
         // Copy the Merkle route from the source instance
         super(from);
 
@@ -268,7 +265,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * to get shutdown in an orderly way.
      */
     public void close() {
-        logger.info("Closing MerkleHederaState");
+        logger.info("Closing MerkleStateRoot");
         for (final var svc : services.values()) {
             for (final var md : svc.values()) {
                 final var index = findNodeIndex(md.serviceName(), extractStateKey(md));
@@ -316,11 +313,11 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      */
     @NonNull
     @Override
-    public MerkleHederaState copy() {
+    public MerkleStateRoot copy() {
         throwIfImmutable();
         throwIfDestroyed();
         setImmutable(true);
-        return new MerkleHederaState(this);
+        return new MerkleStateRoot(this);
     }
 
     /**
@@ -345,7 +342,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      */
     @Override
     public MerkleNode migrate(final int ignored) {
-        // Always return this node, we never want to replace MerkleHederaState node in the tree
+        // Always return this node, we never want to replace MerkleStateRoot node in the tree
         return this;
     }
 
@@ -359,7 +356,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * @throws IllegalArgumentException if the node is neither a merkle map nor virtual map, or if
      * it doesn't have a label, or if the label isn't right.
      */
-    <K, V> void putServiceStateIfAbsent(
+    public <K, V> void putServiceStateIfAbsent(
             @NonNull final StateMetadata<K, V> md, @NonNull final Supplier<MerkleNode> nodeSupplier) {
 
         // Validate the inputs
@@ -415,7 +412,7 @@ public class MerkleHederaState extends PartialNaryMerkleInternal
      * @param serviceName The service name. Cannot be null.
      * @param stateKey The state key
      */
-    void removeServiceState(@NonNull final String serviceName, @NonNull final String stateKey) {
+    public void removeServiceState(@NonNull final String serviceName, @NonNull final String stateKey) {
         throwIfImmutable();
         requireNonNull(serviceName);
         requireNonNull(stateKey);

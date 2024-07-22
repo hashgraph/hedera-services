@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle;
+package com.swirlds.platform.state;
 
 import com.swirlds.common.context.PlatformContext;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
@@ -79,12 +78,12 @@ public interface HederaLifecycles {
      * @param context the current platform context
      */
     void onUpdateWeight(
-            @NonNull MerkleHederaState state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context);
+            @NonNull MerkleStateRoot state, @NonNull AddressBook configAddressBook, @NonNull PlatformContext context);
 
     /**
      * Called when event stream recovery finishes.
      *
      * @param recoveredState the recovered state after reapplying all events
      */
-    void onNewRecoveredState(@NonNull MerkleHederaState recoveredState);
+    void onNewRecoveredState(@NonNull MerkleStateRoot recoveredState);
 }

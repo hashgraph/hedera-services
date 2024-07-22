@@ -23,11 +23,11 @@ import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.state.merkle.HederaLifecycles;
-import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.common.threading.manager.AdHocThreadManager;
+import com.swirlds.platform.state.HederaLifecycles;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
@@ -113,21 +113,21 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
 
     @Override
     public void onUpdateWeight(
-            @NonNull final MerkleHederaState state,
+            @NonNull final MerkleStateRoot stateRoot,
             @NonNull final AddressBook configAddressBook,
             @NonNull final PlatformContext context) {
         // Get all nodeIds added in the config.txt
         final var nodeIdsLeftToUpdate = configAddressBook.getNodeIdSet();
-        final var stakingInfoIndex = state.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY);
+        final var stakingInfoIndex = stateRoot.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY);
         if (stakingInfoIndex == -1) {
             logger.warn("Staking info not found in state, skipping weight update");
             return;
         }
         @SuppressWarnings("unchecked")
-        final var stakingInfoVMap =
-                (VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>) state.getChild(stakingInfoIndex);
+        final var stakingInfoVMap = (VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>>)
+                stateRoot.getChild(stakingInfoIndex);
         // Since it is much easier to modify the in-state staking info after schemas
-        // are registered with MerkleHederaState, we do that work later in the token
+        // are registered with MerkleStateRoot, we do that work later in the token
         // service schema's restart() hook. Here we only update the address book weights
         // based on the staking info in the state.
         weightUpdateVisitor.accept(stakingInfoVMap, (node, info) -> {
@@ -149,7 +149,7 @@ public class HederaLifecyclesImpl implements HederaLifecycles {
     }
 
     @Override
-    public void onNewRecoveredState(@NonNull final MerkleHederaState recoveredState) {
-        hedera.onNewRecoveredState(recoveredState);
+    public void onNewRecoveredState(@NonNull final MerkleStateRoot recoveredStateRoot) {
+        hedera.onNewRecoveredState(recoveredStateRoot);
     }
 }

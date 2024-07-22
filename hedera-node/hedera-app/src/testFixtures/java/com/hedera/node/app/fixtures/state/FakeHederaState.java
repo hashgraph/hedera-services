@@ -19,9 +19,9 @@ package com.hedera.node.app.fixtures.state;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.spi.state.EmptyReadableStates;
-import com.hedera.node.app.spi.state.EmptyWritableStates;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.spi.EmptyReadableStates;
+import com.swirlds.state.spi.EmptyWritableStates;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;

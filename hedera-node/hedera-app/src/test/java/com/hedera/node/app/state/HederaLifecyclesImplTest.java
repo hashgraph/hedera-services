@@ -31,15 +31,15 @@ import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.Hedera;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.hedera.node.app.state.merkle.MerkleHederaState;
-import com.hedera.node.app.state.merkle.MerkleTestBase;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.state.test.fixtures.MapReadableKVState;
@@ -75,7 +75,7 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
     private PlatformContext platformContext;
 
     @Mock
-    private MerkleHederaState merkleHederaState;
+    private MerkleStateRoot merkleStateRoot;
 
     @Mock
     private PlatformState platformState;
@@ -110,23 +110,23 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void delegatesOnPreHandle() {
-        subject.onPreHandle(event, merkleHederaState);
+        subject.onPreHandle(event, merkleStateRoot);
 
-        verify(hedera).onPreHandle(event, merkleHederaState);
+        verify(hedera).onPreHandle(event, merkleStateRoot);
     }
 
     @Test
     void delegatesOnHandleConsensusRound() {
-        subject.onHandleConsensusRound(round, platformState, merkleHederaState);
+        subject.onHandleConsensusRound(round, platformState, merkleStateRoot);
 
-        verify(hedera).onHandleConsensusRound(round, platformState, merkleHederaState);
+        verify(hedera).onHandleConsensusRound(round, platformState, merkleStateRoot);
     }
 
     @Test
     void delegatesOnStateInitialized() {
-        subject.onStateInitialized(merkleHederaState, platform, platformState, InitTrigger.GENESIS, null);
+        subject.onStateInitialized(merkleStateRoot, platform, platformState, InitTrigger.GENESIS, null);
 
-        verify(hedera).onStateInitialized(merkleHederaState, platform, platformState, InitTrigger.GENESIS, null);
+        verify(hedera).onStateInitialized(merkleStateRoot, platform, platformState, InitTrigger.GENESIS, null);
     }
 
     @Test
@@ -140,7 +140,7 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
         assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
         assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
 
-        subject.onUpdateWeight(merkleHederaState, pretendAddressBook, platform.getContext());
+        subject.onUpdateWeight(merkleStateRoot, pretendAddressBook, platform.getContext());
 
         // if staking info map has node with 0 weight and a new node is added,
         // both gets weight of 0
@@ -154,7 +154,7 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
         final var node1 = new NodeId(1);
         given(platform.getSelfId()).willReturn(node0);
         final var pretendAddressBook = createPretendBookFrom(platform, true);
-        given(merkleHederaState.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
+        given(merkleStateRoot.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
                 .willReturn(PRETEND_STAKING_INFO_CHILD_INDEX);
         doAnswer(invocationOnMock -> {
                     final BiConsumer<EntityNumber, StakingNodeInfo> visitor = invocationOnMock.getArgument(1);
@@ -170,7 +170,7 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
                 .when(weightUpdateVisitor)
                 .accept(any(), any());
 
-        subject.onUpdateWeight(merkleHederaState, pretendAddressBook, platform.getContext());
+        subject.onUpdateWeight(merkleStateRoot, pretendAddressBook, platform.getContext());
 
         // if staking info map has node with 0 weight and a new node is added,
         // new nodes gets weight of 0
@@ -186,7 +186,7 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
         given(platform.getSelfId()).willReturn(node0);
 
         final var pretendAddressBook = createPretendBookFrom(platform, true);
-        given(merkleHederaState.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
+        given(merkleStateRoot.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
                 .willReturn(PRETEND_STAKING_INFO_CHILD_INDEX);
         doAnswer(invocationOnMock -> {
                     final BiConsumer<EntityNumber, StakingNodeInfo> visitor = invocationOnMock.getArgument(1);
@@ -220,7 +220,7 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
         assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
         assertThrows(NoSuchElementException.class, () -> pretendAddressBook.getAddress(node2));
 
-        assertDoesNotThrow(() -> subject.onUpdateWeight(merkleHederaState, pretendAddressBook, platform.getContext()));
+        assertDoesNotThrow(() -> subject.onUpdateWeight(merkleStateRoot, pretendAddressBook, platform.getContext()));
 
         // if staking info map has node with 0 weight and a new node is added,
         // new nodes gets weight of 0
@@ -236,7 +236,7 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
         given(platform.getSelfId()).willReturn(node0);
 
         final var pretendAddressBook = createPretendBookFrom(platform, true);
-        given(merkleHederaState.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
+        given(merkleStateRoot.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
                 .willReturn(PRETEND_STAKING_INFO_CHILD_INDEX);
         doAnswer(invocationOnMock -> {
                     final BiConsumer<EntityNumber, StakingNodeInfo> visitor = invocationOnMock.getArgument(1);
@@ -262,7 +262,7 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
         assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
         assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
 
-        subject.onUpdateWeight(merkleHederaState, pretendAddressBook, platform.getContext());
+        subject.onUpdateWeight(merkleStateRoot, pretendAddressBook, platform.getContext());
 
         // if staking info map has node with 250L weight and a new node is added,
         // both gets weight of 250L
@@ -272,7 +272,7 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
 
     @Test
     void marksNonExistingNodesToDeletedInStateAndAddsNewNodesToState() {
-        given(merkleHederaState.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
+        given(merkleStateRoot.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY))
                 .willReturn(PRETEND_STAKING_INFO_CHILD_INDEX);
         doAnswer(invocationOnMock -> {
                     final BiConsumer<EntityNumber, StakingNodeInfo> visitor = invocationOnMock.getArgument(1);
@@ -306,7 +306,7 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
         assertEquals(10L, pretendAddressBook.getAddress(node0).getWeight());
         assertEquals(10L, pretendAddressBook.getAddress(node1).getWeight());
 
-        subject.onUpdateWeight(merkleHederaState, pretendAddressBook, platformContext);
+        subject.onUpdateWeight(merkleStateRoot, pretendAddressBook, platformContext);
 
         // node 0 is added so the weight of new node is 0
         // node 1 weight will be updated

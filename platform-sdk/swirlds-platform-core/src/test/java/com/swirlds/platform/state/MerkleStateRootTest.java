@@ -14,25 +14,26 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.state.merkle;
+package com.swirlds.platform.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.node.app.spi.fixtures.state.TestSchema;
 import com.swirlds.base.state.MutabilityException;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.InitTrigger;
 import com.swirlds.platform.system.Platform;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
+import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
+import com.swirlds.platform.test.fixtures.state.TestSchema;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableQueueState;
@@ -59,9 +60,9 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MerkleHederaStateTest extends MerkleTestBase {
+class MerkleStateRootTest extends MerkleTestBase {
     /** The merkle tree we will test with */
-    private MerkleHederaState hederaMerkle;
+    private MerkleStateRoot hederaMerkle;
 
     private final AtomicBoolean onPreHandleCalled = new AtomicBoolean(false);
     private final AtomicBoolean onHandleCalled = new AtomicBoolean(false);
@@ -74,7 +75,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         }
 
         @Override
-        public void onNewRecoveredState(@NonNull MerkleHederaState recoveredState) {
+        public void onNewRecoveredState(@NonNull MerkleStateRoot recoveredState) {
             // No-op
         }
 
@@ -94,7 +95,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
 
         @Override
         public void onUpdateWeight(
-                @NonNull MerkleHederaState state,
+                @NonNull MerkleStateRoot state,
                 @NonNull AddressBook configAddressBook,
                 @NonNull PlatformContext context) {
             onUpdateWeightCalled.set(true);
@@ -108,7 +109,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
     @BeforeEach
     void setUp() {
         setupFruitMerkleMap();
-        hederaMerkle = new MerkleHederaState(lifecycles);
+        hederaMerkle = new MerkleStateRoot(lifecycles);
     }
 
     /** Looks for a merkle node with the given label */
@@ -211,7 +212,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         }
 
         @Test
-        @DisplayName("Adding a service to a MerkleHederaState that has other node types on it")
+        @DisplayName("Adding a service to a MerkleStateRoot that has other node types on it")
         void addingServiceWhenNonServiceNodeChildrenExist() {
             hederaMerkle.setChild(0, Mockito.mock(MerkleNode.class));
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
@@ -732,7 +733,7 @@ class MerkleHederaStateTest extends MerkleTestBase {
         void handleConsensusRoundCallback() {
             final var round = Mockito.mock(Round.class);
             final var platformState = Mockito.mock(PlatformState.class);
-            final var state = new MerkleHederaState(lifecycles);
+            final var state = new MerkleStateRoot(lifecycles);
 
             state.handleConsensusRound(round, platformState);
             assertThat(onHandleCalled).isTrue();
