@@ -50,20 +50,40 @@ We will apply the `TokenFeeScheduleUpdate` throttle mechanism.
 
 #### Positive Tests
 
-- Verify that the `tokenFeeScheduleUpdate` function updates `FixedHbarFee` for a given token.
-- Verify that the `tokenFeeScheduleUpdate` function updates `FixedHTSFee` for a given token.
-- Verify that the `tokenFeeScheduleUpdate` function updates `FractionalFee` for a given token.
-- Verify that the `tokenFeeScheduleUpdate` function updates `RoyaltyFee` for a given nft.
+- Verify that the `updateFungibleTokenCustomFees` function updates `FixedHbarFee` for a given token.
+- Verify that the `updateFungibleTokenCustomFees` function updates multiple `FixedHbarFees` for a given token.
+- Verify that the `updateFungibleTokenCustomFees` function updates `FixedHTSFee` for a given token.
+- Verify that the `updateFungibleTokenCustomFees` function updates multiple `FixedHTSFees` for a given token.
+- Verify that the `updateFungibleTokenCustomFees` function updates `FixedHTSFee` with the same token as denominator.
+- Verify that the `updateFungibleTokenCustomFees` function updates `FractionalFee` for a given token.
+- Verify that the `updateFungibleTokenCustomFees` function updates `FractionalFee` for a given token with `min` and `max` amounts.
+- Verify that the `updateFungibleTokenCustomFees` function updates multiple `FractionalFees` for a given token.
+- Verify that the `updateFungibleTokenCustomFees` function updates both `FixedHbarFees` and `FractionalFees` for a given token.
+- Verify that the `updateNonFungibleTokenCustomFees` function updates `RoyaltyFee` for a given nft.
+- Verify that the `updateNonFungibleTokenCustomFees` function updates multiple `RoyaltyFees` for a given nft.
+- Verify that the `updateNonFungibleTokenCustomFees` function updates `FixedHBARFee` for a given nft.
+- Verify that the `updateNonFungibleTokenCustomFees` function updates `FixedHTSFee` for a given nft.
+- Verify that the `updateNonFungibleTokenCustomFees` function updates `FixedHTSFee` with the same token as denominator.
+- Verify that the `updateNonFungibleTokenCustomFees` function updates both `RoyaltyFee` `FixedHTSFee` for a given nft.
+- Verify that the `updateNonFungibleTokenCustomFees` function updates `RoyaltyFee` with `HBAR` fallback for a given nft.
+- Verify that the `updateNonFungibleTokenCustomFees` function updates `RoyaltyFee` with `HTS` token fallback for a given nft.
 
 #### Negative Tests
 
-- Verify that the `tokenFeeScheduleUpdate` function with empty `Fee Schedule` fails with `CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES` when the given token has no set fees.
-- Verify that the `tokenFeeScheduleUpdate` function fails with `TOKEN_HAS_NO_FEE_SCHEDULE_KEY` when the `feeSchedule` key is not provided.
+- Verify that the `updateFungibleTokenCustomFees` function with empty `Fee Schedule` fails with `CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES` when the given token has no set fees.
+- Verify that the `updateNonFungibleTokenCustomFees` function with empty `Fee Schedule` fails with `CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES` when the given token has no set fees.
+- Verify that the `updateFungibleTokenCustomFees` function fails with `TOKEN_HAS_NO_FEE_SCHEDULE_KEY` when the `feeSchedule` key is not provided.
+- Verify that the `updateNonFungibleTokenCustomFees` function fails with `TOKEN_HAS_NO_FEE_SCHEDULE_KEY` when the `feeSchedule` key is not provided.
 - Verify that the `tokenFeeScheduleUpdate` function fails with `CUSTOM_FEE_MUST_BE_POSITIVE` when the provided `feeSchedule` is with negative values.
-- Verify that the `tokenFeeScheduleUpdate` function fails with `FRACTION_DIVIDES_BY_ZERO` when the provided `FractionalFee` denominator is zero.
-- Verify that the `tokenFeeScheduleUpdate` function fails with `CUSTOM_FEES_LIST_TOO_LONG` when the provided `feeSchedule` exceeds 10 custom fees.
-- Verify that the `tokenFeeScheduleUpdate` function fails with `INVALID_CUSTOM_FEE_COLLECTOR` when the provided `feeSchedule` has invalid fee collector account.
-- Verify that the `tokenFeeScheduleUpdate` function fails with `INVALID_TOKEN_ID_IN_CUSTOM_FEES` when the provided `feeSchedule` has invalid fee token.
-- Verify that the `tokenFeeScheduleUpdate` function fails with `TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR` when the provided `feeSchedule` has fee token not associated to the fee collector.
-- Verify that the `tokenFeeScheduleUpdate` function fails with `CUSTOM_FEE_NOT_FULLY_SPECIFIED` when the provided `feeSchedule` is incomplete.
+- Verify that the `updateFungibleTokenCustomFees` function fails with `FRACTION_DIVIDES_BY_ZERO` when the provided `FractionalFee` denominator is zero.
+- Verify that the `updateFungibleTokenCustomFees` function fails with `CUSTOM_FEES_LIST_TOO_LONG` when the provided `feeSchedule` exceeds 10 custom fees.
+- Verify that the `updateNonFungibleTokenCustomFees` function fails with `CUSTOM_FEES_LIST_TOO_LONG` when the provided `feeSchedule` exceeds 10 custom fees.
+- Verify that the `updateFungibleTokenCustomFees` function fails with `INVALID_CUSTOM_FEE_COLLECTOR` when the provided `feeSchedule` has invalid fee collector account.
+- Verify that the `updateNonFungibleTokenCustomFees` function fails with `INVALID_CUSTOM_FEE_COLLECTOR` when the provided `feeSchedule` has invalid fee collector account.
+- Verify that the `updateFungibleTokenCustomFees` function fails with `INVALID_TOKEN_ID_IN_CUSTOM_FEES` when the provided `feeSchedule` has invalid fee token.
+- Verify that the `updateNonFungibleTokenCustomFees` function fails with `INVALID_TOKEN_ID_IN_CUSTOM_FEES` when the provided `feeSchedule` has invalid fee token.
+- Verify that the `updateFungibleTokenCustomFees` function fails with `TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR` when the provided `feeSchedule` has fee token not associated to the fee collector.
+- Verify that the `updateNonFungibleTokenCustomFees` function fails with `TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR` when the provided `feeSchedule` has fee token not associated to the fee collector.
+- Verify that the `updateFungibleTokenCustomFees` function fails with `CUSTOM_FEE_NOT_FULLY_SPECIFIED` when the provided `feeSchedule` is incomplete.
+- Verify that the `updateNonFungibleTokenCustomFees` function fails with `CUSTOM_FEE_NOT_FULLY_SPECIFIED` when the provided `feeSchedule` is incomplete.
 
