@@ -29,6 +29,7 @@ testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.mockito")
     requires("org.mockito.junit.jupiter")
+    requires("org.assertj.core")
 }
 
 tasks.shadowJar {
