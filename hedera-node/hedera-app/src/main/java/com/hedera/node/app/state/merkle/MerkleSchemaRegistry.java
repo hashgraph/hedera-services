@@ -264,7 +264,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             @NonNull final Schema schema,
             @NonNull final Configuration configuration,
             @NonNull final Metrics metrics,
-            @NonNull final MerkleStateRoot hederaState) {
+            @NonNull final MerkleStateRoot stateRoot) {
         // Create the new states (based on the schema) which, thanks to the above, does not
         // expand the set of states that the migration code will see
         schema.statesToCreate(configuration).stream()
@@ -274,7 +274,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                     logger.info("  Ensuring {} has state {}", serviceName, stateKey);
                     final var md = new StateMetadata<>(serviceName, schema, def);
                     if (def.singleton()) {
-                        hederaState.putServiceStateIfAbsent(
+                        stateRoot.putServiceStateIfAbsent(
                                 md,
                                 () -> new SingletonNode<>(
                                         md.serviceName(),
@@ -283,7 +283,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.stateDefinition().valueCodec(),
                                         null));
                     } else if (def.queue()) {
-                        hederaState.putServiceStateIfAbsent(
+                        stateRoot.putServiceStateIfAbsent(
                                 md,
                                 () -> new QueueNode<>(
                                         md.serviceName(),
@@ -292,13 +292,13 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                                         md.singletonClassId(),
                                         md.stateDefinition().valueCodec()));
                     } else if (!def.onDisk()) {
-                        hederaState.putServiceStateIfAbsent(md, () -> {
+                        stateRoot.putServiceStateIfAbsent(md, () -> {
                             final var map = new MerkleMap<>();
                             map.setLabel(StateUtils.computeLabel(serviceName, stateKey));
                             return map;
                         });
                     } else {
-                        hederaState.putServiceStateIfAbsent(md, () -> {
+                        stateRoot.putServiceStateIfAbsent(md, () -> {
                             // MAX_IN_MEMORY_HASHES (ramToDiskThreshold) = 8388608
                             // PREFER_DISK_BASED_INDICES = false
                             final var tableConfig = new MerkleDbTableConfig<>(
@@ -327,7 +327,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         // Create the "before" and "after" writable states (we won't commit anything
         // from these states until we have completed migration for this schema)
         final var statesToRemove = schema.statesToRemove();
-        final var writableStates = hederaState.getWritableStates(serviceName);
+        final var writableStates = stateRoot.getWritableStates(serviceName);
         final var remainingStates = new HashSet<>(writableStates.stateKeys());
         remainingStates.removeAll(statesToRemove);
         final var newStates = new FilteredWritableStates(writableStates, remainingStates);

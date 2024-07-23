@@ -36,7 +36,7 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 public interface MerkleStateLifecycles {
     /**
      * Called when an event is added to the hashgraph used to compute consensus ordering
-     * for this Hedera node.
+     * for this node.
      *
      * @param event the event that was added
      * @param state the latest immutable state at the time of the event
@@ -45,7 +45,7 @@ public interface MerkleStateLifecycles {
 
     /**
      * Called when a round of events have reached consensus, and are ready to be handled
-     * by the Hedera network.
+     * by the network.
      *
      * @param round the round that has just reached consensus
      * @param platformState the working state of the platform
@@ -54,13 +54,13 @@ public interface MerkleStateLifecycles {
     void onHandleConsensusRound(@NonNull Round round, @NonNull PlatformState platformState, @NonNull MerkleState state);
 
     /**
-     * Called when the platform is initializing the Hedera network state.
+     * Called when the platform is initializing the network state.
      *
      * @param state the working state of the network to be initialized
      * @param platform the platform used by this node
      * @param platformState the working state of the platform
      * @param trigger the reason for the initialization
-     * @param previousVersion if non-null, the Hedera network version that was previously in use
+     * @param previousVersion if non-null, the network version that was previously in use
      */
     void onStateInitialized(
             @NonNull MerkleState state,
@@ -70,7 +70,7 @@ public interface MerkleStateLifecycles {
             @Nullable SoftwareVersion previousVersion);
 
     /**
-     * Called when the platform needs to update the weights in the Hedera network
+     * Called when the platform needs to update the weights in the network
      * address book
      *
      * @param state the working state of the network

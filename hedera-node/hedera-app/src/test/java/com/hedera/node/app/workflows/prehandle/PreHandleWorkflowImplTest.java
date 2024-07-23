@@ -126,8 +126,8 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
 
     @BeforeEach
     void setUp() {
-        final var fakeHederaState = new FakeMerkleState();
-        fakeHederaState.addService(
+        final var fakeMerkleState = new FakeMerkleState();
+        fakeMerkleState.addService(
                 TokenService.NAME,
                 Map.of(
                         "ACCOUNTS",
@@ -142,7 +142,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
                                 STAKING_REWARD_ACCOUNT.accountID(), STAKING_REWARD_ACCOUNT.account()),
                         "ALIASES",
                         Collections.emptyMap()));
-        storeFactory = new ReadableStoreFactory(fakeHederaState);
+        storeFactory = new ReadableStoreFactory(fakeMerkleState);
 
         final var config = new VersionedConfigImpl(HederaTestConfigBuilder.createConfig(), DEFAULT_CONFIG_VERSION);
         when(configProvider.getConfiguration()).thenReturn(config);

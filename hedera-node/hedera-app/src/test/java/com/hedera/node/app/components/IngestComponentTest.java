@@ -103,7 +103,7 @@ class IngestComponentTest {
 
         final var state = new FakeMerkleState();
         state.addService(RecordCacheService.NAME, Map.of("TransactionRecordQueue", new ArrayDeque<String>()));
-        app.workingStateAccessor().setHederaState(state);
+        app.workingStateAccessor().setMerkleState(state);
     }
 
     @Test

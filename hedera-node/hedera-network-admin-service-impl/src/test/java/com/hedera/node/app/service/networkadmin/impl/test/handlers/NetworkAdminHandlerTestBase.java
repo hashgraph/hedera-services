@@ -218,7 +218,7 @@ public class NetworkAdminHandlerTestBase {
         final var svc = new RecordCacheService();
         svc.registerSchemas(registry);
         registry.migrate(svc.getServiceName(), state, networkInfo);
-        lenient().when(wsa.getHederaState()).thenReturn(state);
+        lenient().when(wsa.getMerkleState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
         lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(123456789999L);

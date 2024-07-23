@@ -40,7 +40,7 @@ public class WorkingStateAccessor {
      * @return the working {@link MerkleState}.
      */
     @Nullable
-    public MerkleState getHederaState() {
+    public MerkleState getMerkleState() {
         return merkleState;
     }
 
@@ -48,7 +48,7 @@ public class WorkingStateAccessor {
      * Sets the working {@link MerkleState}.
      * @param merkleState the working {@link MerkleState}.
      */
-    public void setHederaState(MerkleState merkleState) {
+    public void setMerkleState(MerkleState merkleState) {
         requireNonNull(merkleState);
         this.merkleState = merkleState;
     }

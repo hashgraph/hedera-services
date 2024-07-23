@@ -53,7 +53,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * A stack of savepoints scoped to a dispatch. Each savepoint captures the state of the {@link HederaState} at the time
+ * A stack of savepoints scoped to a dispatch. Each savepoint captures the state of the {@link MerkleState} at the time
  * the savepoint was created and all the changes made to the state from the time savepoint was created, along with all
  * the stream builders created in the savepoint.
  */
@@ -140,7 +140,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, MerkleS
 
     @Override
     public void createSavepoint() {
-        stack.push(new FollowingSavepoint(new WrappedHederaState(peek().state()), peek()));
+        stack.push(new FollowingSavepoint(new WrappedMerkleState(peek().state()), peek()));
     }
 
     @Override
@@ -420,9 +420,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, MerkleS
 
     private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {
         if (root instanceof SavepointStackImpl parent) {
-            stack.push(new FirstChildSavepoint(new WrappedHederaState(root), parent.peek(), category));
+            stack.push(new FirstChildSavepoint(new WrappedMerkleState(root), parent.peek(), category));
         } else {
-            stack.push(new FirstRootSavepoint(new WrappedHederaState(root), requireNonNull(builderSink)));
+            stack.push(new FirstRootSavepoint(new WrappedMerkleState(root), requireNonNull(builderSink)));
         }
     }
 }
