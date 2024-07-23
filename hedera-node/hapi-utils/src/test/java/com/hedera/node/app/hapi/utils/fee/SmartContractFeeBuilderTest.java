@@ -55,6 +55,8 @@ class SmartContractFeeBuilderTest {
 
     @Test
     void assertMethodsDoNotThrowExceptionsWithPlainBodies() {
+        // Validate that methods called with plain bodies don't throw unexpected exceptions.
+        // This also ensures reliability of the calculateFees() implementations
         final var txnBody = TransactionBody.newBuilder().build();
         assertDoesNotThrow(() -> smartContractFeeBuilder.getContractDeleteTxFeeMatrices(txnBody, signValueObj));
         assertDoesNotThrow(() -> smartContractFeeBuilder.getEthereumTransactionFeeMatrices(txnBody, signValueObj));
