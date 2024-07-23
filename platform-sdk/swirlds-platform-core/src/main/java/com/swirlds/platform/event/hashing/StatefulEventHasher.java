@@ -28,7 +28,7 @@ import java.io.IOException;
 /**
  * An implementation of {@link EventHasher} that is stateful and thus not safe to use by multiple threads concurrently.
  */
-public class StatefulEventHasher implements EventHasher {
+public class StatefulEventHasher implements EventHasher, UnsignedEventHasher {
     private final HashingOutputStream hashingOutputStream = new HashingOutputStream(DigestType.SHA_384.buildDigest());
     private final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(hashingOutputStream);
 
@@ -54,14 +54,12 @@ public class StatefulEventHasher implements EventHasher {
      * Hashes the given {@link UnsignedEvent} and sets the hash on the event.
      *
      * @param event the event to hash
-     * @return the hashed event
      */
-    @NonNull
-    public UnsignedEvent hashEvent(@NonNull final UnsignedEvent event) {
+    @Override
+    public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
         try {
             event.serializeLegacyHashBytes(outputStream);
             event.setHash(new Hash(hashingOutputStream.getDigest(), DigestType.SHA_384));
-            return event;
         } catch (final IOException e) {
             throw new RuntimeException("An exception occurred while trying to hash an event!", e);
         }

@@ -448,6 +448,7 @@ public class UnsignedEvent extends AbstractHashable {
      * @return the maximum generation of the other parents
      * @deprecated this method should be replaced since there can be multiple other parents.
      */
+    @Deprecated
     public long getOtherParentGen() {
         if (otherParents == null || otherParents.isEmpty()) {
             return EventConstants.GENERATION_UNDEFINED;
@@ -478,9 +479,9 @@ public class UnsignedEvent extends AbstractHashable {
      * Get the hash of the other parent with the maximum generation.
      *
      * @return the hash of the other parent with the maximum generation
-     * @deprecated
      */
     @Nullable
+    @Deprecated
     public Hash getOtherParentHash() {
         if (otherParents == null || otherParents.isEmpty()) {
             return null;

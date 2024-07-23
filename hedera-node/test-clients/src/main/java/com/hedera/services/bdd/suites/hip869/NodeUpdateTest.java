@@ -29,6 +29,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeUpdate;
 import static com.hedera.services.bdd.spec.utilops.EmbeddedVerbs.viewNode;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.suites.HapiSuite.DEFAULT_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.NONSENSE_KEY;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HBAR;
@@ -157,20 +158,22 @@ public class NodeUpdateTest {
 
     @EmbeddedHapiTest(NEEDS_STATE_ACCESS)
     final Stream<DynamicTest> updateMultipleFieldsWork() {
+        final var updateOp = nodeUpdate("testNode")
+                .adminKey("adminKey2")
+                .signedBy(DEFAULT_PAYER, "adminKey", "adminKey2")
+                .description("updated description")
+                .gossipEndpoint(List.of(
+                        asServiceEndpoint("127.0.0.1:60"),
+                        asServiceEndpoint("127.0.0.2:60"),
+                        asServiceEndpoint("127.0.0.3:60")))
+                .serviceEndpoint(List.of(asServiceEndpoint("127.0.1.1:60"), asServiceEndpoint("127.0.1.2:60")))
+                .gossipCaCertificate("caCert")
+                .grpcCertificateHash("grpcCert");
         return hapiTest(
                 newKeyNamed("adminKey"),
                 newKeyNamed("adminKey2"),
                 nodeCreate("testNode").description("description to be changed").adminKey("adminKey"),
-                nodeUpdate("testNode")
-                        .adminKey("adminKey")
-                        .description("updated description")
-                        .gossipEndpoint(List.of(
-                                asServiceEndpoint("127.0.0.1:60"),
-                                asServiceEndpoint("127.0.0.2:60"),
-                                asServiceEndpoint("127.0.0.3:60")))
-                        .serviceEndpoint(List.of(asServiceEndpoint("127.0.1.1:60"), asServiceEndpoint("127.0.1.2:60")))
-                        .gossipCaCertificate("caCert")
-                        .grpcCertificateHash("grpcCert"),
+                updateOp,
                 viewNode("testNode", node -> {
                     assertEquals("updated description", node.description(), "Node description should be updated");
                     assertIterableEquals(
@@ -192,6 +195,7 @@ public class NodeUpdateTest {
                             Bytes.wrap("grpcCert"),
                             node.grpcCertificateHash(),
                             "Node grpcCertificateHash should be updated");
+                    assertEquals(toPbj(updateOp.getAdminKey()), node.adminKey(), "Node adminKey should be updated");
                 }));
     }
 
