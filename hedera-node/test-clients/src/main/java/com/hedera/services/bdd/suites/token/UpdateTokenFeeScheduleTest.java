@@ -16,18 +16,29 @@
 
 package com.hedera.services.bdd.suites.token;
 
+import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
 import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.FEE_SCHEDULE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
+import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHbarFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fixedHtsFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fractionalFeeInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInHbarsInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithFallbackInTokenInSchedule;
 import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.royaltyFeeWithoutFallbackInSchedule;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEES_LIST_TOO_LONG;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CUSTOM_FEE_MUST_BE_POSITIVE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FRACTION_DIVIDES_BY_ZERO;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CUSTOM_FEE_COLLECTOR;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID_IN_CUSTOM_FEES;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FEE_SCHEDULE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
@@ -41,6 +52,7 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
+import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
@@ -278,5 +290,168 @@ public class UpdateTokenFeeScheduleTest {
                         .hasCustom(royaltyFeeWithFallbackInHbarsInSchedule(1L, 10L, 1L, feeCollector.name()))
                         .hasCustom(royaltyFeeWithFallbackInTokenInSchedule(
                                 1L, 10L, 1L, feeToken.name(), feeCollector.name()))));
+    }
+
+    @Order(15)
+    @HapiTest
+    @DisplayName("fungible token custom fees reset")
+    public Stream<DynamicTest> resetFungibleTokenCustomFees() {
+        return hapiTest(
+                updateTokenFeeSchedules.call("resetFungibleTokenFees", fungibleToken),
+                fungibleToken.getInfo().andAssert(HapiGetTokenInfo::hasEmptyCustom)
+                /*,
+                updateTokenFeeSchedules
+                        .call("resetFungibleTokenFees", fungibleToken)
+                        .andAssert(
+                                result -> result.hasKnownStatus(ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES))*/ );
+    }
+
+    @Order(16)
+    @HapiTest
+    @DisplayName("nft token custom fees reset")
+    public Stream<DynamicTest> resetNonFungibleTokenCustomFees() {
+        return hapiTest(
+                updateTokenFeeSchedules.call("resetNonFungibleTokenFees", nonFungibleToken),
+                nonFungibleToken.getInfo().andAssert(HapiGetTokenInfo::hasEmptyCustom)
+                /*,
+                updateTokenFeeSchedules
+                        .call("resetNonFungibleTokenFees", nonFungibleToken)
+                        .andAssert(
+                                result -> result.hasKnownStatus(ResponseCodeEnum.CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES))*/ );
+    }
+
+    @Order(17)
+    @HapiTest
+    @DisplayName("update tokens without fee schedule key")
+    public Stream<DynamicTest> updateTokensWithoutFeeScheduleKeyShouldFail(
+            @FungibleToken(
+                            name = "noFeeKeyFungibleToken",
+                            keys = {ADMIN_KEY})
+                    final SpecFungibleToken noFeeKeyFungibleToken,
+            @NonFungibleToken(
+                            name = "noFeeKeyNonFungibleToken",
+                            keys = {ADMIN_KEY, SUPPLY_KEY})
+                    final SpecNonFungibleToken noFeeKeyNonFungibleToken) {
+        return hapiTest(
+                updateTokenFeeSchedules
+                        .call("updateFungibleFixedTokenFee", noFeeKeyFungibleToken, 1L, feeCollector)
+                        .andAssert(
+                                txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, TOKEN_HAS_NO_FEE_SCHEDULE_KEY)),
+                updateTokenFeeSchedules
+                        .call("updateNonFungibleRoyaltyFee", noFeeKeyNonFungibleToken, 1L, 10L, feeCollector)
+                        .andAssert(
+                                txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, TOKEN_HAS_NO_FEE_SCHEDULE_KEY)));
+    }
+
+    @Order(18)
+    @HapiTest
+    @DisplayName("update tokens with negative values")
+    public Stream<DynamicTest> updateTokensWithNegativeValues() {
+        return hapiTest(
+                updateTokenFeeSchedules
+                        .call("updateFungibleFixedHbarFee", fungibleToken, -1L, feeCollector)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEE_MUST_BE_POSITIVE)),
+                updateTokenFeeSchedules
+                        .call("updateNonFungibleFixedHbarFee", nonFungibleToken, -1L, feeCollector)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEE_MUST_BE_POSITIVE)),
+                updateTokenFeeSchedules
+                        .call("updateFungibleFixedHtsFee", fungibleToken, feeToken, -1L, feeCollector)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEE_MUST_BE_POSITIVE)),
+                updateTokenFeeSchedules
+                        .call("updateNonFungibleFixedHtsFee", nonFungibleToken, feeToken, -1L, feeCollector)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEE_MUST_BE_POSITIVE)),
+                //                updateTokenFeeSchedules.call("updateNonFungibleRoyaltyFee", nonFungibleToken, -1L,
+                // -10L, feeCollector)
+                //                        .andAssert(txn -> txn.hasKnownStatuses(CUSTOM_FEE_MUST_BE_POSITIVE)),
+                updateTokenFeeSchedules
+                        .call("updateFungibleFractionalFee", fungibleToken, 1L, -10L, false, feeCollector)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEE_MUST_BE_POSITIVE)));
+    }
+
+    @Order(19)
+    @HapiTest
+    @DisplayName("update token fractional fee with zero fraction")
+    public Stream<DynamicTest> updateFractionalFeeWithZeroFraction() {
+        return hapiTest(updateTokenFeeSchedules
+                .call("updateFungibleFractionalFee", feeToken, 1L, 0L, false, feeCollector)
+                .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, FRACTION_DIVIDES_BY_ZERO)));
+    }
+
+    @Order(20)
+    @HapiTest
+    @DisplayName("update token fees with more than max allowed fees")
+    public Stream<DynamicTest> updateTokenFeesAboveMaxAllowed() {
+        return hapiTest(
+                overriding("tokens.maxCustomFeesAllowed", "10"),
+                updateTokenFeeSchedules
+                        .call("updateFungibleFixedHbarFees", fungibleToken, 11, 10L, feeCollector)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEES_LIST_TOO_LONG)),
+                updateTokenFeeSchedules
+                        .call("updateFungibleFractionalFees", feeToken, 11, 1L, 10L, false, feeCollector)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEES_LIST_TOO_LONG)),
+                updateTokenFeeSchedules
+                        .call("updateNonFungibleRoyaltyFees", nonFungibleToken, 11, 1L, 10L, feeCollector)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, CUSTOM_FEES_LIST_TOO_LONG)));
+    }
+
+    @Order(21)
+    @HapiTest
+    @DisplayName("update token fees with invalid fee collector")
+    public Stream<DynamicTest> updateFeesWithInvalidFeeCollector() {
+        final var invalidFeeCollector = asHeadlongAddress(asEvmAddress(0L));
+        return hapiTest(
+                updateTokenFeeSchedules
+                        .call("updateFungibleFixedHbarFee", fungibleToken, 10L, invalidFeeCollector)
+                        .andAssert(txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_CUSTOM_FEE_COLLECTOR)),
+                updateTokenFeeSchedules
+                        .call("updateNonFungibleRoyaltyFee", nonFungibleToken, 1L, 10L, invalidFeeCollector)
+                        .andAssert(
+                                txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_CUSTOM_FEE_COLLECTOR)));
+    }
+
+    @Order(22)
+    @HapiTest
+    @DisplayName("update token fees with invalid token denominator")
+    public Stream<DynamicTest> updateFeesWithInvalidToken() {
+        final var invalidTokenAddress = asHeadlongAddress(asEvmAddress(1912312313L));
+        return hapiTest(
+                updateTokenFeeSchedules
+                        .call("updateFungibleFixedHtsFee", fungibleToken, invalidTokenAddress, 10L, feeCollector)
+                        .andAssert(
+                                txn -> txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_TOKEN_ID_IN_CUSTOM_FEES)),
+                updateTokenFeeSchedules
+                        .call(
+                                "updateNonFungibleRoyaltyFeeHtsFallback",
+                                nonFungibleToken,
+                                invalidTokenAddress,
+                                1L,
+                                10L,
+                                10L,
+                                feeCollector)
+                        .andAssert(txn ->
+                                txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, INVALID_TOKEN_ID_IN_CUSTOM_FEES)));
+    }
+
+    @Order(23)
+    @HapiTest
+    @DisplayName("update token fees with collector not associated with token")
+    public Stream<DynamicTest> updateFeesWithCollectorNotAssociatedToToken(
+            @Account(name = "collector", balance = ONE_HUNDRED_HBARS) final SpecAccount collector) {
+        return hapiTest(
+                updateTokenFeeSchedules
+                        .call("updateFungibleFixedHtsFee", fungibleToken, feeToken, 10L, collector)
+                        .andAssert(txn ->
+                                txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR)),
+                updateTokenFeeSchedules
+                        .call(
+                                "updateNonFungibleRoyaltyFeeHtsFallback",
+                                nonFungibleToken,
+                                feeToken,
+                                1L,
+                                10L,
+                                10L,
+                                collector)
+                        .andAssert(txn ->
+                                txn.hasKnownStatuses(CONTRACT_REVERT_EXECUTED, TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR)));
     }
 }

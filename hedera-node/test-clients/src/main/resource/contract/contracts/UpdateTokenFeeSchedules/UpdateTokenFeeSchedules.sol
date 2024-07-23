@@ -61,7 +61,7 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         }
     }
 
-      function updateFungibleFixedHtsFee(address tokenAddress, address feeToken, int64 amount, address collector) external {
+    function updateFungibleFixedHtsFee(address tokenAddress, address feeToken, int64 amount, address collector) external {
 
         IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](1);
         IHederaTokenService.FixedFee memory fixedHtsFee = createFixedTokenFee(amount, feeToken, collector);
@@ -74,7 +74,7 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         }
     }
 
-      function updateNonFungibleFixedHtsFee(address tokenAddress, address feeToken, int64 amount, address collector) external {
+    function updateNonFungibleFixedHtsFee(address tokenAddress, address feeToken, int64 amount, address collector) external {
 
         IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](1);
         IHederaTokenService.FixedFee memory fixedHtsFee = createFixedTokenFee(amount, feeToken, collector);
@@ -114,7 +114,7 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         }
     }
 
-     function updateNonFungibleFixedTokenFee(address tokenAddress, int64 amount, address collector) external {
+    function updateNonFungibleFixedTokenFee(address tokenAddress, int64 amount, address collector) external {
 
         IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](1);
         IHederaTokenService.FixedFee memory fixedHtsFee = createFixedFeeForCurrentToken(amount, collector);
@@ -127,7 +127,7 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         }
     }
 
-     function updateFungibleFractionalFee(address tokenAddress, int64 numerator, int64 denominator, bool netOfTransfers, address collector) external {
+    function updateFungibleFractionalFee(address tokenAddress, int64 numerator, int64 denominator, bool netOfTransfers, address collector) external {
 
         IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](0);
         IHederaTokenService.FractionalFee[] memory fractionalFees = new IHederaTokenService.FractionalFee[](1);
@@ -153,7 +153,7 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         }
     }
 
-      function updateFungibleFractionalFeeMinAndMax(address tokenAddress, int64 numerator, int64 denominator, int64 minimumAmount, int64 maximumAmount, bool netOfTransfers, address collector) external {
+    function updateFungibleFractionalFeeMinAndMax(address tokenAddress, int64 numerator, int64 denominator, int64 minimumAmount, int64 maximumAmount, bool netOfTransfers, address collector) external {
 
         IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](0);
         IHederaTokenService.FractionalFee[] memory fractionalFees = new IHederaTokenService.FractionalFee[](1);
@@ -167,7 +167,7 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         }
     }
 
-     function updateNonFungibleRoyaltyFee(address tokenAddress, int64 numerator, int64 denominator, address collector) external {
+    function updateNonFungibleRoyaltyFee(address tokenAddress, int64 numerator, int64 denominator, address collector) external {
 
         IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](0);
 
@@ -195,7 +195,7 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         }
     }
 
-      function updateNonFungibleRoyaltyFeeHbarFallback(address tokenAddress, int64 numerator, int64 denominator, int64 amount, address collector) external {
+    function updateNonFungibleRoyaltyFeeHbarFallback(address tokenAddress, int64 numerator, int64 denominator, int64 amount, address collector) external {
 
         IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](0);
 
@@ -210,7 +210,7 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         }
     }
 
-       function updateNonFungibleRoyaltyFeeHtsFallback(address tokenAddress, address feeToken, int64 numerator, int64 denominator, int64 amount, address collector) external {
+    function updateNonFungibleRoyaltyFeeHtsFallback(address tokenAddress, address feeToken, int64 numerator, int64 denominator, int64 amount, address collector) external {
 
         IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](0);
 
@@ -218,6 +218,27 @@ contract UpdateTokenFeeSchedules is HederaTokenService, FeeHelper {
         IHederaTokenService.RoyaltyFee memory royaltyFee = createRoyaltyFeeWithTokenDenominatedFallbackFee(numerator, denominator, amount, feeToken, collector);
         royaltyFees[0] = royaltyFee;
 
+        int responseCode = updateNonFungibleTokenCustomFees(tokenAddress, fixedFees, royaltyFees);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of custom fee failed!");
+        }
+    }
+
+    function resetFungibleTokenFees(address tokenAddress) external {
+        IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](0);
+        IHederaTokenService.FractionalFee[] memory fractionalFees = new IHederaTokenService.FractionalFee[](0);
+        int responseCode = updateFungibleTokenCustomFees(tokenAddress, fixedFees, fractionalFees);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ("Update of custom fee failed!");
+        }
+    }
+
+
+    function resetNonFungibleTokenFees(address tokenAddress) external {
+        IHederaTokenService.FixedFee[] memory fixedFees = new IHederaTokenService.FixedFee[](0);
+        IHederaTokenService.RoyaltyFee[] memory royaltyFees = new IHederaTokenService.RoyaltyFee[](0);
         int responseCode = updateNonFungibleTokenCustomFees(tokenAddress, fixedFees, royaltyFees);
 
         if (responseCode != HederaResponseCodes.SUCCESS) {
