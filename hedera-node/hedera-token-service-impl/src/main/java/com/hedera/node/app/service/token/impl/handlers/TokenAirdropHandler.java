@@ -192,7 +192,8 @@ public class TokenAirdropHandler implements TransactionHandler {
                             .build();
                     final AccountPendingAirdrop newAccountPendingAirdrop = getNewAccountPendingAirdropAndUpdateStores(
                             senderAccount, pendingId, pendingValue, accountStore, pendingStore);
-                    final var record = createPendingAirdropRecord(pendingId, newAccountPendingAirdrop.pendingAirdropValue());
+                    final var record =
+                            createPendingAirdropRecord(pendingId, newAccountPendingAirdrop.pendingAirdropValue());
                     pendingStore.put(pendingId, newAccountPendingAirdrop);
                     recordBuilder.addPendingAirdrop(record);
                 });
@@ -227,7 +228,8 @@ public class TokenAirdropHandler implements TransactionHandler {
 
                 // 2. create, validate and save NFT pending airdrops in to state
                 nftLists.pendingNftList().forEach(item -> {
-                    final var optionalAccountId = nftLists.pendingNftList().stream().findFirst();
+                    final var optionalAccountId =
+                            nftLists.pendingNftList().stream().findFirst();
                     final var senderId = optionalAccountId.orElseThrow().senderAccountIDOrThrow();
                     final var senderAccount = accountStore.get(senderId);
                     validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
@@ -260,7 +262,8 @@ public class TokenAirdropHandler implements TransactionHandler {
                     // check for existence
                     validateTrue(!pendingStore.exists(pendingId), PENDING_NFT_AIRDROP_ALREADY_EXISTS);
                     pendingStore.put(pendingId, newAccountPendingAirdrop);
-                    final var record = createPendingAirdropRecord(pendingId, newAccountPendingAirdrop.pendingAirdropValue());
+                    final var record =
+                            createPendingAirdropRecord(pendingId, newAccountPendingAirdrop.pendingAirdropValue());
                     recordBuilder.addPendingAirdrop(record);
                 });
 
