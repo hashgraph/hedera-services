@@ -124,8 +124,12 @@ contract NumericContract {
 
     function tokenURI(address token, uint256 _tokenId) public view {
         (bool success, bytes memory result) = token.staticcall(abi.encodeWithSignature("tokenURI(uint256)", _tokenId));
+        string memory resultString = abi.decode(result, (string));
+        string memory expectedBad = "ERC721Metadata: URI query for nonexistent token";
 
-        if (success == false) {
+        // tokenURI has different behaviour from the original ERC721 standard as it should revert when providing invalid
+        // serialNumber, but instead it returns success with result describing the issue, that is why we compare the result.
+        if (keccak256(bytes(resultString)) == keccak256(bytes(expectedBad))) {
             revert();
         }
     }
