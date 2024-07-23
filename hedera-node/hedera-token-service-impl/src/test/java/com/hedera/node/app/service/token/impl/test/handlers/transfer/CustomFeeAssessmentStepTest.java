@@ -22,7 +22,7 @@ import static com.hedera.node.app.service.token.impl.handlers.BaseCryptoHandler.
 import static com.hedera.node.app.service.token.impl.test.handlers.transfer.AccountAmountUtils.aaWith;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -50,7 +50,7 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.ReplaceAliasesWi
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactory;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +68,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
     public void setUp() {
         super.setUp();
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
+                        any(), eq(SingleTransactionStreamBuilder.class), eq(null), any()))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);
@@ -392,7 +392,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
                                 .build())
                 .build();
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
+                        any(), eq(SingleTransactionStreamBuilder.class), eq(null), any()))
                 .will((invocation) -> {
                     final var relation = new TokenRelation(fungibleTokenId, ownerId, 1, false, true, true, null, null);
                     final var relation1 =

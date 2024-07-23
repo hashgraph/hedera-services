@@ -49,7 +49,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.service.token.impl.handlers.BaseTokenHandler;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.node.config.data.EntitiesConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -228,7 +228,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                 .build();
         // We don't need to verify signatures for this internal dispatch. So we specify the keyVerifier to null
         final var streamBuilder = context.dispatchRemovablePrecedingTransaction(
-                syntheticAssociation, SingleTransactionRecordBuilder.class, null, context.payer());
+                syntheticAssociation, SingleTransactionStreamBuilder.class, null, context.payer());
         validateTrue(streamBuilder.status() == SUCCESS, streamBuilder.status());
         // increment the usedAutoAssociations count
         final var accountModified = requireNonNull(accountStore.getAliasedAccountById(accountId))

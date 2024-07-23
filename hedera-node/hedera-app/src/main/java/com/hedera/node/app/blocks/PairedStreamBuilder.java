@@ -25,7 +25,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,12 +34,12 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A {@link SingleTransactionRecordBuilder} that forwards all received calls to an {@link IoBlockItemsBuilder} and a
+ * A {@link SingleTransactionStreamBuilder} that forwards all received calls to an {@link IoBlockItemsBuilder} and a
  * {@link SingleTransactionRecordBuilderImpl}.
  *
  * TODO - implement this class
  */
-public class PairedStreamBuilder implements SingleTransactionRecordBuilder {
+public class PairedStreamBuilder implements SingleTransactionStreamBuilder {
     private final IoBlockItemsBuilder ioBlockItemsBuilder;
     private final SingleTransactionRecordBuilderImpl recordBuilder;
 
@@ -52,7 +52,7 @@ public class PairedStreamBuilder implements SingleTransactionRecordBuilder {
     }
 
     @Override
-    public SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction) {
+    public SingleTransactionStreamBuilder transaction(@NonNull Transaction transaction) {
         return null;
     }
 
@@ -99,7 +99,7 @@ public class PairedStreamBuilder implements SingleTransactionRecordBuilder {
     }
 
     @Override
-    public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
+    public SingleTransactionStreamBuilder status(@NonNull ResponseCodeEnum status) {
         return null;
     }
 
@@ -117,17 +117,17 @@ public class PairedStreamBuilder implements SingleTransactionRecordBuilder {
     public void nullOutSideEffectFields() {}
 
     @Override
-    public SingleTransactionRecordBuilder syncBodyIdFromRecordId() {
+    public SingleTransactionStreamBuilder syncBodyIdFromRecordId() {
         return null;
     }
 
     @Override
-    public SingleTransactionRecordBuilder memo(@NonNull String memo) {
+    public SingleTransactionStreamBuilder memo(@NonNull String memo) {
         return null;
     }
 
     @Override
-    public SingleTransactionRecordBuilder consensusTimestamp(@NonNull Instant now) {
+    public SingleTransactionStreamBuilder consensusTimestamp(@NonNull Instant now) {
         return null;
     }
 
@@ -137,22 +137,22 @@ public class PairedStreamBuilder implements SingleTransactionRecordBuilder {
     }
 
     @Override
-    public SingleTransactionRecordBuilder transactionID(@NonNull TransactionID transactionID) {
+    public SingleTransactionStreamBuilder transactionID(@NonNull TransactionID transactionID) {
         return null;
     }
 
     @Override
-    public SingleTransactionRecordBuilder parentConsensus(@NonNull Instant parentConsensus) {
+    public SingleTransactionStreamBuilder parentConsensus(@NonNull Instant parentConsensus) {
         return null;
     }
 
     @Override
-    public SingleTransactionRecordBuilder transactionBytes(@NonNull Bytes transactionBytes) {
+    public SingleTransactionStreamBuilder transactionBytes(@NonNull Bytes transactionBytes) {
         return null;
     }
 
     @Override
-    public SingleTransactionRecordBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
+    public SingleTransactionStreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
         return null;
     }
 }

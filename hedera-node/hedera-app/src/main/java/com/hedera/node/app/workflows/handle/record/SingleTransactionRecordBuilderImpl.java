@@ -76,7 +76,7 @@ import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.SingleTransactionRecord.TransactionOutputs;
 import com.hedera.pbj.runtime.OneOf;
@@ -112,7 +112,7 @@ import java.util.Set;
  */
 @SuppressWarnings({"unused", "UnusedReturnValue"})
 public class SingleTransactionRecordBuilderImpl
-        implements SingleTransactionRecordBuilder,
+        implements SingleTransactionStreamBuilder,
                 ConsensusCreateTopicRecordBuilder,
                 ConsensusSubmitMessageRecordBuilder,
                 CreateFileRecordBuilder,
@@ -393,7 +393,7 @@ public class SingleTransactionRecordBuilderImpl
         final var newTransactionID = transactionID;
         final var body =
                 inProgressBody().copyBuilder().transactionID(newTransactionID).build();
-        this.transaction = SingleTransactionRecordBuilder.transactionWith(body);
+        this.transaction = SingleTransactionStreamBuilder.transactionWith(body);
         this.transactionBytes = transaction.signedTransactionBytes();
         return this;
     }

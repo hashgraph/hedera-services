@@ -58,7 +58,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -170,7 +170,7 @@ public class ChildDispatchFactory {
         final var childTxnInfo = getTxnInfoFrom(txBody);
         final var childStack = SavepointStackImpl.newChildStack(stack, reversingBehavior, category, customizer);
         final var streamBuilder =
-                initializedForChild(childStack.getBaseBuilder(SingleTransactionRecordBuilder.class), childTxnInfo);
+                initializedForChild(childStack.getBaseBuilder(SingleTransactionStreamBuilder.class), childTxnInfo);
         return newChildDispatch(
                 streamBuilder,
                 childTxnInfo,
@@ -199,7 +199,7 @@ public class ChildDispatchFactory {
 
     private RecordDispatch newChildDispatch(
             // @ChildDispatchScope
-            @NonNull final SingleTransactionRecordBuilder builder,
+            @NonNull final SingleTransactionStreamBuilder builder,
             @NonNull final TransactionInfo txnInfo,
             @NonNull final AccountID payerId,
             @NonNull final HandleContext.TransactionCategory category,
@@ -473,8 +473,8 @@ public class ChildDispatchFactory {
      * @param builder the stream item builder
      * @param txnInfo the transaction info
      */
-    private SingleTransactionRecordBuilder initializedForChild(
-            @NonNull final SingleTransactionRecordBuilder builder, @NonNull final TransactionInfo txnInfo) {
+    private SingleTransactionStreamBuilder initializedForChild(
+            @NonNull final SingleTransactionStreamBuilder builder, @NonNull final TransactionInfo txnInfo) {
         builder.transaction(txnInfo.transaction())
                 .transactionBytes(txnInfo.signedBytes())
                 .memo(txnInfo.txBody().memo());

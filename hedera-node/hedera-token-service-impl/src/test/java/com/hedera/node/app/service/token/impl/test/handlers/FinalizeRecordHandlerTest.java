@@ -58,7 +58,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactor
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -135,8 +135,8 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
-        given(context.userTransactionRecordBuilder(SingleTransactionRecordBuilder.class))
-                .willReturn(mock(SingleTransactionRecordBuilder.class));
+        given(context.userTransactionRecordBuilder(SingleTransactionStreamBuilder.class))
+                .willReturn(mock(SingleTransactionStreamBuilder.class));
 
         assertThatThrownBy(() -> subject.finalizeStakingRecord(
                         context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap()))
@@ -160,8 +160,8 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
-        given(context.userTransactionRecordBuilder(SingleTransactionRecordBuilder.class))
-                .willReturn(mock(SingleTransactionRecordBuilder.class));
+        given(context.userTransactionRecordBuilder(SingleTransactionStreamBuilder.class))
+                .willReturn(mock(SingleTransactionStreamBuilder.class));
 
         assertThatThrownBy(() -> subject.finalizeStakingRecord(
                         context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap()))

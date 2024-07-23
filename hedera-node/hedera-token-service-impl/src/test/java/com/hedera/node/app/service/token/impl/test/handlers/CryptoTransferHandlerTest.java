@@ -32,7 +32,7 @@ import static com.hedera.node.app.service.token.impl.test.handlers.transfer.Acco
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -75,7 +75,7 @@ import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.WarmupContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.handle.DispatchHandleContext;
 import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
@@ -520,7 +520,7 @@ class CryptoTransferHandlerTest extends CryptoTransferHandlerTestBase {
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
+                        any(), eq(SingleTransactionStreamBuilder.class), eq(null), any()))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, tokenReceiverId, 1, false, true, true, null, null);

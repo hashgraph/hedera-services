@@ -22,8 +22,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder.ReversingBehavior.REMOVABLE;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder.ReversingBehavior.REVERSIBLE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -31,7 +31,7 @@ import com.hedera.node.app.blocks.IoBlockItemsBuilder;
 import com.hedera.node.app.blocks.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
@@ -112,8 +112,8 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
     }
 
     @Override
-    public SingleTransactionRecordBuilder createBuilder(
-            @NonNull final SingleTransactionRecordBuilder.ReversingBehavior reversingBehavior,
+    public SingleTransactionStreamBuilder createBuilder(
+            @NonNull final SingleTransactionStreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
             @NonNull final ExternalizedRecordCustomizer customizer,
             final boolean isBaseBuilder) {
@@ -141,7 +141,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
      */
     abstract void commitBuilders();
 
-    private void rollback(@NonNull final List<SingleTransactionRecordBuilder> builders) {
+    private void rollback(@NonNull final List<SingleTransactionStreamBuilder> builders) {
         var iterator = builders.listIterator();
         while (iterator.hasNext()) {
             final var builder = iterator.next();

@@ -17,7 +17,7 @@
 package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.AccountID;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -25,7 +25,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CryptoCreate}
  * transaction.
  */
-public interface CryptoCreateRecordBuilder extends SingleTransactionRecordBuilder {
+public interface CryptoCreateRecordBuilder extends SingleTransactionStreamBuilder {
     /**
      * Tracks creation of a new account by number. Even if someday we support creating multiple
      * accounts within a smart contract call, we will still only need to track one created account

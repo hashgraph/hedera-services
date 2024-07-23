@@ -21,29 +21,100 @@ import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.TokenAssociation;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.TokenType;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.contract.ContractFunctionResult;
+import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionReceipt;
+import com.hedera.hapi.node.transaction.TransactionRecord;
+import com.hedera.hapi.streams.ContractActions;
+import com.hedera.hapi.streams.ContractBytecode;
+import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.time.Instant;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
- * An implementation of {@link SingleTransactionRecordBuilder} that produces block items for a single user or
+ * An implementation of {@link SingleTransactionStreamBuilder} that produces block items for a single user or
  * synthetic transaction; that is, the "input" block item with a {@link Transaction} and "output" block items
  * with a {@link TransactionResult} and, optionally, {@link TransactionOutput}.
  *
  */
-public class IoBlockItemsBuilder implements SingleTransactionRecordBuilder {
+public class IoBlockItemsBuilder implements SingleTransactionStreamBuilder {
+    // base transaction data
+    private Transaction transaction;
+    private Bytes transactionBytes = Bytes.EMPTY;
+    // fields needed for TransactionRecord
+    // Mutable because the provisional consensus timestamp assigned on dispatch could
+    // change when removable records appear "between" this record and the parent record
+    private Instant consensusNow;
+    private Instant parentConsensus;
+    private TransactionID transactionID;
+    private List<TokenTransferList> tokenTransferLists = new LinkedList<>();
+    private List<AssessedCustomFee> assessedCustomFees = new LinkedList<>();
+    private List<TokenAssociation> automaticTokenAssociations = new LinkedList<>();
+
+    private List<AccountAmount> paidStakingRewards = new LinkedList<>();
+    private final TransactionRecord.Builder transactionRecordBuilder = TransactionRecord.newBuilder();
+    private TransferList transferList = TransferList.DEFAULT;
+
+    // fields needed for TransactionReceipt
+    private ResponseCodeEnum status = ResponseCodeEnum.OK;
+    private ExchangeRateSet exchangeRate = ExchangeRateSet.DEFAULT;
+    private List<Long> serialNumbers = new LinkedList<>();
+    private long newTotalSupply = 0L;
+    private final TransactionReceipt.Builder transactionReceiptBuilder = TransactionReceipt.newBuilder();
+    // Sidecar data, booleans are the migration flag
+    private List<AbstractMap.SimpleEntry<ContractStateChanges, Boolean>> contractStateChanges = new LinkedList<>();
+    private List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions = new LinkedList<>();
+    private List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes = new LinkedList<>();
+
+    // Fields that are not in TransactionRecord, but are needed for computing staking rewards
+    // These are not persisted to the record file
+    private final Map<AccountID, AccountID> deletedAccountBeneficiaries = new HashMap<>();
+
+    // A set of ids that should be explicitly considered as in a "reward situation",
+    // despite the canonical definition of a reward situation; needed for mono-service
+    // fidelity only
+    @Nullable
+    private Set<AccountID> explicitRewardReceiverIds;
+
+    // While the fee is sent to the underlying builder all the time, it is also cached here because, as of today,
+    // there is no way to get the transaction fee from the PBJ object.
+    private long transactionFee;
+    private ContractFunctionResult contractFunctionResult;
+
+    // Used for some child records builders.
     private final ReversingBehavior reversingBehavior;
-    private final ExternalizedRecordCustomizer customizer;
+
+    // Category of the record
     private final HandleContext.TransactionCategory category;
+
+    // Used to customize the externalized form of a dispatched child transaction, right before
+    // its record stream item is built; lets the contract service externalize certain dispatched
+    // CryptoCreate transactions as ContractCreate synthetic transactions
+    private final ExternalizedRecordCustomizer customizer;
+
+    private TokenID tokenID;
+    private TokenType tokenType;
 
     public IoBlockItemsBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
@@ -63,13 +134,13 @@ public class IoBlockItemsBuilder implements SingleTransactionRecordBuilder {
     }
 
     @Override
-    public SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction) {
+    public SingleTransactionStreamBuilder transaction(@NonNull Transaction transaction) {
         return null;
     }
 
     @Override
     public Transaction transaction() {
-        return null;
+        return transaction;
     }
 
     @Override
@@ -110,7 +181,7 @@ public class IoBlockItemsBuilder implements SingleTransactionRecordBuilder {
     }
 
     @Override
-    public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
+    public SingleTransactionStreamBuilder status(@NonNull ResponseCodeEnum status) {
         return null;
     }
 
@@ -128,17 +199,17 @@ public class IoBlockItemsBuilder implements SingleTransactionRecordBuilder {
     public void nullOutSideEffectFields() {}
 
     @Override
-    public SingleTransactionRecordBuilder syncBodyIdFromRecordId() {
+    public SingleTransactionStreamBuilder syncBodyIdFromRecordId() {
         return null;
     }
 
     @Override
-    public SingleTransactionRecordBuilder memo(@NonNull String memo) {
+    public SingleTransactionStreamBuilder memo(@NonNull String memo) {
         return null;
     }
 
     @Override
-    public SingleTransactionRecordBuilder consensusTimestamp(@NonNull Instant now) {
+    public SingleTransactionStreamBuilder consensusTimestamp(@NonNull Instant now) {
         return null;
     }
 
@@ -148,22 +219,22 @@ public class IoBlockItemsBuilder implements SingleTransactionRecordBuilder {
     }
 
     @Override
-    public SingleTransactionRecordBuilder transactionID(@NonNull TransactionID transactionID) {
+    public SingleTransactionStreamBuilder transactionID(@NonNull TransactionID transactionID) {
         return null;
     }
 
     @Override
-    public SingleTransactionRecordBuilder parentConsensus(@NonNull Instant parentConsensus) {
+    public SingleTransactionStreamBuilder parentConsensus(@NonNull Instant parentConsensus) {
         return null;
     }
 
     @Override
-    public SingleTransactionRecordBuilder transactionBytes(@NonNull Bytes transactionBytes) {
+    public SingleTransactionStreamBuilder transactionBytes(@NonNull Bytes transactionBytes) {
         return null;
     }
 
     @Override
-    public SingleTransactionRecordBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
+    public SingleTransactionStreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
         return null;
     }
 }

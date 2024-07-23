@@ -29,7 +29,7 @@ import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategor
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -95,7 +95,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
@@ -572,20 +572,20 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         @Test
         void testDispatchWithInvalidArguments() {
             assertThatThrownBy(() -> subject.dispatchPrecedingTransaction(
-                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT))
+                            null, SingleTransactionStreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() ->
                             subject.dispatchPrecedingTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchChildTransaction(
-                            null, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
+                            null, SingleTransactionStreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() ->
                             subject.dispatchChildTransaction(txBody, null, VERIFIER_CALLBACK, AccountID.DEFAULT, CHILD))
                     .isInstanceOf(NullPointerException.class);
             assertThatThrownBy(() -> subject.dispatchRemovableChildTransaction(
                             null,
-                            SingleTransactionRecordBuilder.class,
+                            SingleTransactionStreamBuilder.class,
                             VERIFIER_CALLBACK,
                             AccountID.DEFAULT,
                             NOOP_RECORD_CUSTOMIZER))
@@ -598,12 +598,12 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         private static Stream<Arguments> createContextDispatchers() {
             return Stream.of(
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchPrecedingTransaction(
-                            txBody, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, ALICE.accountID())),
+                            txBody, SingleTransactionStreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID())),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchChildTransaction(
-                            txBody, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), CHILD)),
+                            txBody, SingleTransactionStreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), CHILD)),
                     Arguments.of((Consumer<HandleContext>) context -> context.dispatchRemovableChildTransaction(
                             txBody,
-                            SingleTransactionRecordBuilder.class,
+                            SingleTransactionStreamBuilder.class,
                             VERIFIER_CALLBACK,
                             ALICE.accountID(),
                             (ignore) -> Transaction.DEFAULT)));
@@ -633,7 +633,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
             assertThatNoException()
                     .isThrownBy(() -> context.dispatchPrecedingTransaction(
-                            txBody, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT));
+                            txBody, SingleTransactionStreamBuilder.class, VERIFIER_CALLBACK, AccountID.DEFAULT));
             verify(dispatcher, never()).dispatchHandle(any());
             verify(stack).commitFullStack();
         }
@@ -646,10 +646,10 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
 
             assertThatNoException()
                     .isThrownBy(() -> context.dispatchPrecedingTransaction(
-                            txBody, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, ALICE.accountID()));
+                            txBody, SingleTransactionStreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID()));
             assertThatNoException()
                     .isThrownBy((() -> context.dispatchPrecedingTransaction(
-                            txBody, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, ALICE.accountID())));
+                            txBody, SingleTransactionStreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID())));
             verify(dispatchProcessor, times(2)).processDispatch(any());
         }
 
@@ -660,7 +660,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
             context.dispatchPrecedingTransaction(
-                    txBody, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, ALICE.accountID());
+                    txBody, SingleTransactionStreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID());
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack).commitFullStack();
@@ -673,7 +673,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             Mockito.lenient().when(verifier.verificationFor((Key) any())).thenReturn(verification);
 
             context.dispatchRemovablePrecedingTransaction(
-                    txBody, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, ALICE.accountID());
+                    txBody, SingleTransactionStreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID());
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();
@@ -698,7 +698,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
             assertThat(context.dispatchPaidRewards()).isSameAs(Collections.emptyMap());
 
             context.dispatchChildTransaction(
-                    txBody, SingleTransactionRecordBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), SCHEDULED);
+                    txBody, SingleTransactionStreamBuilder.class, VERIFIER_CALLBACK, ALICE.accountID(), SCHEDULED);
 
             verify(dispatchProcessor).processDispatch(childDispatch);
             verify(stack, never()).commitFullStack();

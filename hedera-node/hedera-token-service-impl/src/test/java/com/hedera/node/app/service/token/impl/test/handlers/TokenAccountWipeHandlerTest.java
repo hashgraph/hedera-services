@@ -77,7 +77,7 @@ import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
@@ -140,22 +140,22 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             }
 
             @Override
-            public SingleTransactionRecordBuilder memo(@NonNull String memo) {
+            public SingleTransactionStreamBuilder memo(@NonNull String memo) {
                 return this;
             }
 
             @Override
-            public SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction) {
+            public SingleTransactionStreamBuilder transaction(@NonNull Transaction transaction) {
                 return this;
             }
 
             @Override
-            public SingleTransactionRecordBuilder transactionBytes(@NonNull Bytes transactionBytes) {
+            public SingleTransactionStreamBuilder transactionBytes(@NonNull Bytes transactionBytes) {
                 return this;
             }
 
             @Override
-            public SingleTransactionRecordBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
+            public SingleTransactionStreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
                 return this;
             }
 
@@ -176,7 +176,7 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             }
 
             @Override
-            public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
+            public SingleTransactionStreamBuilder status(@NonNull ResponseCodeEnum status) {
                 return this;
             }
 
@@ -194,12 +194,12 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             public void nullOutSideEffectFields() {}
 
             @Override
-            public SingleTransactionRecordBuilder syncBodyIdFromRecordId() {
+            public SingleTransactionStreamBuilder syncBodyIdFromRecordId() {
                 return null;
             }
 
             @Override
-            public SingleTransactionRecordBuilder consensusTimestamp(@NotNull final Instant now) {
+            public SingleTransactionStreamBuilder consensusTimestamp(@NotNull final Instant now) {
                 return null;
             }
 
@@ -209,12 +209,12 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
             }
 
             @Override
-            public SingleTransactionRecordBuilder transactionID(@NotNull final TransactionID transactionID) {
+            public SingleTransactionStreamBuilder transactionID(@NotNull final TransactionID transactionID) {
                 return null;
             }
 
             @Override
-            public SingleTransactionRecordBuilder parentConsensus(@NotNull final Instant parentConsensus) {
+            public SingleTransactionStreamBuilder parentConsensus(@NotNull final Instant parentConsensus) {
                 return null;
             }
 

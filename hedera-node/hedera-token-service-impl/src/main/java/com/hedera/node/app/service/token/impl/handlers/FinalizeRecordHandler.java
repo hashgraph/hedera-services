@@ -41,7 +41,7 @@ import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -130,7 +130,7 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
         } catch (HandleException e) {
             if (e.getStatus() == FAIL_INVALID) {
                 logHbarFinalizationFailInvalid(
-                        context.userTransactionRecordBuilder(SingleTransactionRecordBuilder.class),
+                        context.userTransactionRecordBuilder(SingleTransactionStreamBuilder.class),
                         writableAccountStore);
             }
             throw e;
@@ -170,7 +170,7 @@ public class FinalizeRecordHandler extends RecordFinalizerBase {
     // invoke logger parameters conditionally
     @SuppressWarnings("java:S2629")
     private void logHbarFinalizationFailInvalid(
-            @NonNull final SingleTransactionRecordBuilder recordBuilder,
+            @NonNull final SingleTransactionStreamBuilder recordBuilder,
             @NonNull final WritableAccountStore accountStore) {
         logger.error(
                 """

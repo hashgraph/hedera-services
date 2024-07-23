@@ -18,8 +18,8 @@ package com.hedera.node.app.workflows.handle.stack;
 
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder.ReversingBehavior;
 import com.swirlds.state.HederaState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -64,7 +64,7 @@ public interface Savepoint extends BuilderSink {
      * @param isBaseBuilder     whether the builder is the base builder for a stack
      * @return the new builder
      */
-    SingleTransactionRecordBuilder createBuilder(
+    SingleTransactionStreamBuilder createBuilder(
             @NonNull ReversingBehavior reversingBehavior,
             @NonNull HandleContext.TransactionCategory txnCategory,
             @NonNull ExternalizedRecordCustomizer customizer,

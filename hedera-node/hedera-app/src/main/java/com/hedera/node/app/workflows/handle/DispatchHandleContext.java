@@ -59,7 +59,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -374,7 +374,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
-                SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE,
+                SingleTransactionStreamBuilder.ReversingBehavior.IRREVERSIBLE,
                 true);
     }
 
@@ -392,7 +392,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayer,
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
-                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
+                SingleTransactionStreamBuilder.ReversingBehavior.REMOVABLE,
                 false);
     }
 
@@ -416,7 +416,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 childCategory,
-                SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE,
+                SingleTransactionStreamBuilder.ReversingBehavior.REVERSIBLE,
                 false);
     }
 
@@ -440,7 +440,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 customizer,
                 TransactionCategory.CHILD,
-                SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE,
+                SingleTransactionStreamBuilder.ReversingBehavior.REMOVABLE,
                 false);
     }
 
