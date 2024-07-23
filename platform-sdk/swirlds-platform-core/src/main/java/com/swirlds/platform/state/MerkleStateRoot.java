@@ -19,7 +19,7 @@ package com.swirlds.platform.state;
 import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static java.util.Objects.requireNonNull;
 
-import com.swirlds.common.constructable.ConstructableRegistry;
+import com.swirlds.common.constructable.ConstructableIgnored;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.merkle.MerkleInternal;
 import com.swirlds.common.merkle.MerkleNode;
@@ -93,6 +93,7 @@ import org.apache.logging.log4j.Logger;
  * each child must be part of the state proof. It would be better to have a binary tree. We should
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
+@ConstructableIgnored
 public class MerkleStateRoot extends PartialNaryMerkleInternal
         implements MerkleInternal, SwirldState, MerkleState, MerkleRoot {
     private static final Logger logger = LogManager.getLogger(MerkleStateRoot.class);
@@ -101,19 +102,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      * Used when asked for a service's readable states that we don't have
      */
     private static final ReadableStates EMPTY_READABLE_STATES = new EmptyReadableStates();
-
-    // For serialization
-    /**
-     * This class ID is returned IF the default constructor was used. This is a nasty workaround for
-     * {@link ConstructableRegistry}. The registry does classpath scanning, and finds this class. It then invokes
-     * the default constructor and then asks for the class ID, and then throws away the object. It sticks this
-     * mapping of class ID to class name into a map. Later we define an actual mapping for the
-     * {@link ConstructableRegistry} that maps {@link #CLASS_ID} to {@link MerkleStateRoot} using a lambda that will
-     * create the instancing using the non-default constructor. But the {@link ConstructableRegistry} doesn't
-     * actually register the second mapping! So we will trick it. We will return this bogus class ID if the default
-     * constructor is used, or {@link #CLASS_ID} otherwise.
-     */
-    private static final long DO_NOT_USE_IN_REAL_LIFE_CLASS_ID = 0x0000deadbeef0000L;
 
     //    private static final long CLASS_ID = 0x2de3ead3caf06392L;
     // Uncomment the following class ID to run a mono -> modular state migration
@@ -178,7 +166,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     public MerkleStateRoot() {
         // ConstructableRegistry requires a "working" no-arg constructor
         this.lifecycles = null;
-        this.classId = DO_NOT_USE_IN_REAL_LIFE_CLASS_ID;
     }
 
     /**
