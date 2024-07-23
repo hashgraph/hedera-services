@@ -19,6 +19,7 @@ package com.hedera.node.app.service.token.impl;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.service.token.ReadableAccountStore;
+import com.hedera.node.app.service.token.ReadableAirdropStore;
 import com.hedera.node.app.service.token.ReadableNetworkStakingRewardsStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableStakingInfoStore;
@@ -62,6 +63,7 @@ public class TokenServiceImpl implements TokenService {
     public Set<ReadableStoreDefinition<?>> readableStoreDefinitions() {
         return Set.of(
                 new ReadableStoreDefinition<>(ReadableAccountStore.class, ReadableAccountStoreImpl::new),
+                new ReadableStoreDefinition<>(ReadableAirdropStore.class, ReadableAirdropStoreImpl::new),
                 new ReadableStoreDefinition<>(ReadableNftStore.class, ReadableNftStoreImpl::new),
                 new ReadableStoreDefinition<>(ReadableStakingInfoStore.class, ReadableStakingInfoStoreImpl::new),
                 new ReadableStoreDefinition<>(ReadableTokenStore.class, ReadableTokenStoreImpl::new),
@@ -74,6 +76,7 @@ public class TokenServiceImpl implements TokenService {
     public Set<WritableStoreDefinition<?>> writableStoreDefinitions() {
         return Set.of(
                 new WritableStoreDefinition<>(WritableAccountStore.class, WritableAccountStore::new),
+                new WritableStoreDefinition<>(WritableAirdropStore.class, WritableAirdropStore::new),
                 new WritableStoreDefinition<>(WritableNftStore.class, WritableNftStore::new),
                 new WritableStoreDefinition<>(
                         WritableStakingInfoStore.class,
