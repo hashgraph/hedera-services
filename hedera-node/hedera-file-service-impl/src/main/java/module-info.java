@@ -12,6 +12,7 @@ module com.hedera.node.app.service.file.impl {
     requires transitive dagger;
     requires transitive static java.compiler; // javax.annotation.processing.Generated
     requires transitive javax.inject;
+    requires com.hedera.node.app.service.addressbook.impl;
     requires com.swirlds.common;
     requires com.fasterxml.jackson.databind;
     requires com.google.protobuf;

@@ -33,7 +33,6 @@ import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.base.NodeAddress;
 import com.hedera.hapi.node.base.NodeAddressBook;
 import com.hedera.hapi.node.base.SemanticVersion;
-import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.ServicesConfigurationList;
 import com.hedera.hapi.node.base.Setting;
 import com.hedera.hapi.node.base.SubType;
@@ -49,6 +48,7 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.spi.workflows.SystemContext;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BootstrapConfig;
@@ -57,16 +57,22 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.PublicKey;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -172,23 +178,6 @@ public class V0490FileSchema extends Schema {
                         .build(),
                 addressBookFileNum);
 
-        // Create the node details for file 102,  their fields are different from 101, addressBook
-        final var nodeDetail = new ArrayList<NodeAddress>();
-        for (final var nodeInfo : networkInfo.addressBook()) {
-            nodeDetail.add(NodeAddress.newBuilder()
-                    .stake(nodeInfo.stake())
-                    .nodeAccountId(nodeInfo.accountId())
-                    .nodeId(nodeInfo.nodeId())
-                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
-                    // we really don't have grpc proxy name and port for now.Temporary values are set.
-                    // After Dynamic Address Book Phase 2 release, we will have the correct values. Then update here.
-                    .serviceEndpoint(ServiceEndpoint.newBuilder()
-                            .ipAddressV4(Bytes.wrap("1.0.0.0"))
-                            .port(1)
-                            .build())
-                    .build());
-        }
-
         final var nodeInfoFileNum = filesConfig.nodeDetails();
         systemContext.dispatchCreation(
                 TransactionBody.newBuilder()
@@ -212,10 +201,7 @@ public class V0490FileSchema extends Schema {
                             // we really don't have grpc proxy name and port for now. Temporary values are set.
                             // After Dynamic Address Book Phase 2 release, we will have the correct values.Then update
                             // here.
-                            ServiceEndpoint.newBuilder()
-                                    .ipAddressV4(Bytes.wrap("1.0.0.0"))
-                                    .port(1)
-                                    .build())
+                            V053AddressBookSchema.endpointFor("1.0.0.0", 1))
                     .build());
         }
         return NodeAddressBook.PROTOBUF.toBytes(
@@ -232,10 +218,7 @@ public class V0490FileSchema extends Schema {
                     .rsaPubKey(nodeInfo.hexEncodedPublicKey())
                     // we really don't have grpc proxy name and port for now.Temporary values are set.
                     // After Dynamic Address Book Phase 2 release, we will have the correct values. Then update here.
-                    .serviceEndpoint(ServiceEndpoint.newBuilder()
-                            .ipAddressV4(Bytes.wrap("1.0.0.0"))
-                            .port(1)
-                            .build())
+                    .serviceEndpoint(V053AddressBookSchema.endpointFor("1.0.0.0", 1))
                     .build());
         }
         return NodeAddressBook.PROTOBUF.toBytes(
@@ -273,15 +256,23 @@ public class V0490FileSchema extends Schema {
                 .mapToLong(EntityNumber::number)
                 .mapToObj(nodeStore::get)
                 .filter(node -> node != null && !node.deleted())
-                .forEach(node -> nodeDetails.add(NodeAddress.newBuilder()
-                        .nodeId(node.nodeId())
-                        .nodeAccountId(node.accountId())
-                        .nodeCertHash(node.grpcCertificateHash())
-                        .description(node.description())
-                        .stake(node.weight())
-                        //                    .rsaPubKey(nodeInfo.hexEncodedPublicKey())
-                        .serviceEndpoint(node.serviceEndpoint())
-                        .build()));
+                .forEach(node -> {
+                    try {
+                        nodeDetails.add(NodeAddress.newBuilder()
+                                .nodeId(node.nodeId())
+                                .nodeAccountId(node.accountId())
+                                .nodeCertHash(node.grpcCertificateHash())
+                                .description(node.description())
+                                .stake(node.weight())
+                                .rsaPubKey(CommonUtils.hex(getPublicKeyFromCertBytes(
+                                                node.grpcCertificateHash().toByteArray())
+                                        .getEncoded()))
+                                .serviceEndpoint(node.serviceEndpoint())
+                                .build());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
         return NodeAddressBook.PROTOBUF.toBytes(
                 NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
     }
@@ -655,5 +646,17 @@ public class V0490FileSchema extends Schema {
                                 .getConfigData(EntitiesConfig.class)
                                 .maxLifetime())
                 .build();
+    }
+
+    private PublicKey getPublicKeyFromCertBytes(@NonNull final byte[] certBytes) throws IOException {
+        PublicKey ret = null;
+        try {
+            X509Certificate certificate = (X509Certificate)
+                    CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(certBytes));
+            ret = certificate.getPublicKey();
+        } catch (final CertificateException e) {
+            throw new IOException("Not able to create x509 certificate", e);
+        }
+        return ret;
     }
 }
