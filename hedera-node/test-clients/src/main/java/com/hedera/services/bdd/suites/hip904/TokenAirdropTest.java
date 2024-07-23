@@ -660,7 +660,7 @@ public class TokenAirdropTest {
                     .then(
                             tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                                     .payingWith(OWNER),
-                            cryptoDelete(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
+                            cryptoDelete(OWNER)
                                     .hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
         }
 
@@ -674,7 +674,7 @@ public class TokenAirdropTest {
                             tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 3L)
                                             .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                                     .payingWith(OWNER),
-                            cryptoDelete(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
+                            cryptoDelete(OWNER)
                                     .hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
         }
     }
