@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.spi;
 
+import com.swirlds.platform.state.merkle.disk.blockstream.StateChangesObserverSingleton;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -51,8 +52,11 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
             final var value = entry.getValue();
             if (value == null) {
                 removeFromDataSource(key);
+                // Q? Should we notify the observer for removing data from KV store
             } else {
                 putIntoDataSource(key, value);
+                // Notify the observer about the state change
+                StateChangesObserverSingleton.getInstanceOrThrow().mapUpdateChange(getStateKey(), key, value);
             }
         }
         reset();

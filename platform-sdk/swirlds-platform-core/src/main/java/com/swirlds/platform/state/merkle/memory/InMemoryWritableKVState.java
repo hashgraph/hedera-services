@@ -25,7 +25,6 @@ import static com.swirlds.platform.state.merkle.logging.StateLogger.logMapRemove
 
 import com.hedera.pbj.runtime.Codec;
 import com.swirlds.merkle.map.MerkleMap;
-import com.swirlds.platform.state.merkle.disk.blockstream.StateChangesObserverSingleton;
 import com.swirlds.platform.state.spi.WritableKVStateBase;
 import com.swirlds.state.spi.WritableKVState;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -110,11 +109,8 @@ public final class InMemoryWritableKVState<K, V> extends WritableKVStateBase<K, 
         } else {
             merkle.put(k, new InMemoryValue<>(inMemoryValueClassId, keyCodec, valueCodec, k, value));
         }
-        final var label = getStateKey();
         // Log to transaction state log, what was put
-        logMapPut(label, key, value);
-        // Notify the observer.
-        StateChangesObserverSingleton.getInstanceOrThrow().mapUpdateChange(label, key, value);
+        logMapPut(getStateKey(), key, value);
     }
 
     @Override

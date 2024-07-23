@@ -18,6 +18,7 @@ package com.swirlds.platform.state.spi;
 
 import static java.util.Objects.requireNonNull;
 
+import com.swirlds.platform.state.merkle.disk.blockstream.StateChangesObserverSingleton;
 import com.swirlds.state.spi.WritableQueueState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -74,10 +75,13 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     public final void commit() {
         for (int i = 0; i < readElements.size(); i++) {
             removeFromDataSource();
+            StateChangesObserverSingleton.getInstanceOrThrow().queuePopChange(getStateKey());
         }
 
         for (final var addedElement : addedElements) {
             addToDataSource(addedElement);
+            // Notify the observer about the state change
+            StateChangesObserverSingleton.getInstanceOrThrow().queuePushChange(getStateKey(), addedElement);
         }
 
         reset();

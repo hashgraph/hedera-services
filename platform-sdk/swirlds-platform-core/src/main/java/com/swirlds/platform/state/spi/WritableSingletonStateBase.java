@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.state.spi;
 
+import com.swirlds.platform.state.merkle.disk.blockstream.StateChangesObserverSingleton;
 import com.swirlds.state.spi.WritableSingletonState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
@@ -79,6 +80,8 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
     public void commit() {
         if (modified) {
             backingStoreMutator.accept(value);
+            // Notify the observer about the state change
+            StateChangesObserverSingleton.getInstanceOrThrow().singletonUpdateChange(getStateKey(), value);
         }
         reset();
     }
