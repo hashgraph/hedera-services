@@ -624,7 +624,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     public TokenAirdropRecordBuilder pendingAirdrops(@NonNull List<PendingAirdropRecord> pendingAirdropRecords) {
-        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
+        requireNonNull(pendingAirdropRecords, "pendingAirdropRecords must not be null");
         this.pendingAirdropRecords = pendingAirdropRecords;
         return this;
     }
@@ -637,7 +637,7 @@ public class SingleTransactionRecordBuilderImpl
      */
     @Override
     public TokenAirdropRecordBuilder addPendingAirdrop(@NonNull PendingAirdropRecord pendingAirdropRecord) {
-        requireNonNull(tokenTransferLists, "tokenTransferLists must not be null");
+        requireNonNull(pendingAirdropRecords, "pendingAirdropRecords must not be null");
         this.pendingAirdropRecords.add(pendingAirdropRecord);
         return this;
     }
