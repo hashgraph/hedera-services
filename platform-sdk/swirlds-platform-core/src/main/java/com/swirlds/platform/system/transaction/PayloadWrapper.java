@@ -17,9 +17,9 @@
 package com.swirlds.platform.system.transaction;
 
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
-import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
+import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -69,25 +69,17 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
 
     @Override
     public int getSize() {
-        if (PayloadOneOfType.STATE_SIGNATURE_PAYLOAD.equals(payload.kind())) {
-            final StateSignaturePayload stateSignaturePayload = payload.as();
-            return Long.BYTES // round
-                    + Integer.BYTES // signature array length
-                    + (int) stateSignaturePayload.signature().length()
-                    + Integer.BYTES // hash array length
-                    + (int) stateSignaturePayload.hash().length()
-                    + Integer.BYTES; // epochHash, always null, which is SerializableStreamConstants.NULL_VERSION
-        } else {
-            final Bytes bytes = payload.as();
-            return Integer.BYTES // add the the size of array length field
-                    + (int) bytes.length(); // add the size of the array
+        if (!isSystem()) {
+            return (int) ((Bytes) payload.as()).length();
         }
+        return PayloadUtils.getLegacyPayloadSize(payload);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
+    @SuppressWarnings("unchecked")
     public <T> @Nullable T getMetadata() {
         return (T) metadata;
     }
