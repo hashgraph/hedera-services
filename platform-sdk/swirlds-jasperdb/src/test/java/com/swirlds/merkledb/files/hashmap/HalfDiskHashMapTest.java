@@ -26,7 +26,7 @@ import com.swirlds.merkledb.files.DataFileCompactor;
 import com.swirlds.merkledb.files.FilesTestType;
 import com.swirlds.merkledb.serialize.KeySerializer;
 import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Random;
@@ -47,12 +47,12 @@ class HalfDiskHashMapTest {
 
     // =================================================================================================================
     // Helper Methods
-    private HalfDiskHashMap<VirtualLongKey> createNewTempMap(FilesTestType testType, int count) throws IOException {
+    private HalfDiskHashMap<VirtualKey> createNewTempMap(FilesTestType testType, int count) throws IOException {
         // create map
-        HalfDiskHashMap<VirtualLongKey> map = new HalfDiskHashMap<>(
+        HalfDiskHashMap<VirtualKey> map = new HalfDiskHashMap<>(
                 dbConfig,
                 count,
-                (KeySerializer<VirtualLongKey>) testType.keySerializer,
+                (KeySerializer<VirtualKey>) testType.keySerializer,
                 tempDirPath.resolve(testType.name()),
                 "HalfDiskHashMapTest",
                 null,
@@ -62,7 +62,7 @@ class HalfDiskHashMapTest {
     }
 
     private static void createSomeData(
-            FilesTestType testType, HalfDiskHashMap<VirtualLongKey> map, int start, int count, long dataMultiplier)
+            FilesTestType testType, HalfDiskHashMap<VirtualKey> map, int start, int count, long dataMultiplier)
             throws IOException {
         map.startWriting();
         for (int i = start; i < (start + count); i++) {
@@ -75,7 +75,7 @@ class HalfDiskHashMapTest {
     }
 
     private static void checkData(
-            FilesTestType testType, HalfDiskHashMap<VirtualLongKey> map, int start, int count, long dataMultiplier)
+            FilesTestType testType, HalfDiskHashMap<VirtualKey> map, int start, int count, long dataMultiplier)
             throws IOException {
         long START = System.currentTimeMillis();
         for (int i = start; i < (start + count); i++) {
@@ -98,7 +98,7 @@ class HalfDiskHashMapTest {
         final Path tempSnapshotDir = tempDirPath.resolve("DataFileTestSnapshot_" + testType.name());
         final int count = 10_000;
         // create map
-        final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, count);
+        final HalfDiskHashMap<VirtualKey> map = createNewTempMap(testType, count);
         // create some data
         createSomeData(testType, map, 1, count, 1);
         // sequentially check data
@@ -113,10 +113,10 @@ class HalfDiskHashMapTest {
         // create snapshot
         map.snapshot(tempSnapshotDir);
         // open snapshot and check data
-        HalfDiskHashMap<VirtualLongKey> mapFromSnapshot = new HalfDiskHashMap<>(
+        HalfDiskHashMap<VirtualKey> mapFromSnapshot = new HalfDiskHashMap<>(
                 ConfigurationHolder.getConfigData(MerkleDbConfig.class),
                 count,
-                (KeySerializer<VirtualLongKey>) testType.keySerializer,
+                (KeySerializer<VirtualKey>) testType.keySerializer,
                 tempSnapshotDir,
                 "HalfDiskHashMapTest",
                 null,
@@ -146,7 +146,7 @@ class HalfDiskHashMapTest {
     @EnumSource(FilesTestType.class)
     void multipleWriteBatchesAndMerge(FilesTestType testType) throws Exception {
         // create map
-        final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 10_000);
+        final HalfDiskHashMap<VirtualKey> map = createNewTempMap(testType, 10_000);
         final DataFileCompactor dataFileCompactor = new DataFileCompactor(
                 dbConfig,
                 "HalfDiskHashMapTest",
@@ -175,7 +175,7 @@ class HalfDiskHashMapTest {
     @EnumSource(FilesTestType.class)
     void updateData(FilesTestType testType) throws Exception {
         // create map
-        final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 1000);
+        final HalfDiskHashMap<VirtualKey> map = createNewTempMap(testType, 1000);
         // create some data
         createSomeData(testType, map, 0, 1000, 1);
         checkData(testType, map, 0, 1000, 1);
@@ -189,7 +189,7 @@ class HalfDiskHashMapTest {
     @Test
     void testOverwritesWithCollision() throws IOException {
         final FilesTestType testType = FilesTestType.fixed;
-        try (final HalfDiskHashMap<VirtualLongKey> map = createNewTempMap(testType, 1000)) {
+        try (final HalfDiskHashMap<VirtualKey> map = createNewTempMap(testType, 1000)) {
             map.startWriting();
             for (int i = 100; i < 300; i++) {
                 map.put(new CollidableFixedLongKey(i), i);

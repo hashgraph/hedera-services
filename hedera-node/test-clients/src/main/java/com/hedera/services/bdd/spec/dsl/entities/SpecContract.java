@@ -130,7 +130,7 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
      * Returns an operation to associate the contract with the given tokens. Will ultimately fail if the contract
      * does not have an admin key.
      *
-     * @param tokens the tokens to associate
+     * @param token the tokens to associate
      * @return the operation
      */
     public TransferTokenOperation transferToken(

@@ -16,17 +16,21 @@
 
 package com.hedera.node.app.service.addressbook.impl.schemas;
 
-import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.config.data.AccountsConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.state.spi.MigrationContext;
+import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.WritableKVState;
@@ -49,6 +53,7 @@ public class V053AddressBookSchema extends Schema {
     private static final long MAX_NODES = 100L;
     private static final SemanticVersion VERSION =
             SemanticVersion.newBuilder().major(0).minor(53).patch(0).build();
+    public static final String ACCOUNTS_KEY = "ACCOUNTS";
 
     public V053AddressBookSchema() {
         super(VERSION);
@@ -65,13 +70,30 @@ public class V053AddressBookSchema extends Schema {
         requireNonNull(ctx);
         final WritableKVState<EntityNumber, Node> writableNodes =
                 ctx.newStates().get(NODES_KEY);
+        ReadableKVState<AccountID, Account> readableAccounts = null;
+        try {
+            readableAccounts = ctx.newStates().get(ACCOUNTS_KEY);
+        } catch (IllegalArgumentException e) {
+            log.info("AccountStore is not found, can be ignored.");
+        }
         final var networkInfo = ctx.networkInfo();
         final var addressBook = networkInfo.addressBook();
         final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
-        final var adminKey =
-                Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
+        final var accountConfig = ctx.configuration().getConfigData(AccountsConfig.class);
+        var adminKey = Key.DEFAULT;
+        if (readableAccounts != null) {
+            final var adminAccount = readableAccounts.get(AccountID.newBuilder()
+                    .accountNum(accountConfig.addressBookAdmin())
+                    .build());
+            if (adminAccount != null) {
+                adminKey = adminAccount.keyOrElse(Key.DEFAULT);
+            }
+        }
         log.info("Started migrating nodes from address book");
 
+        Key finalAdminKey = adminKey == null || adminKey.equals(Key.DEFAULT)
+                ? Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build()
+                : adminKey;
         addressBook.forEach(nodeInfo -> {
             final var node = Node.newBuilder()
                     .nodeId(nodeInfo.nodeId())
@@ -82,7 +104,7 @@ public class V053AddressBookSchema extends Schema {
                             endpointFor(nodeInfo.externalHostName(), nodeInfo.externalPort())))
                     .gossipCaCertificate(nodeInfo.sigCertBytes())
                     .weight(nodeInfo.stake())
-                    .adminKey(adminKey)
+                    .adminKey(finalAdminKey)
                     .build();
             writableNodes.put(
                     EntityNumber.newBuilder().number(nodeInfo.nodeId()).build(), node);
