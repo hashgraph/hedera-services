@@ -72,4 +72,13 @@ public interface ReconnectMapStats {
      * @param cleanDataNum the number of data payloads transferred unnecessarily because they were clean
      */
     default void incrementLeafData(int dataNum, int cleanDataNum) {}
+
+    /**
+     * Formats a string with all the accumulated stats and any other useful information
+     * maintained by the implementation of this interface, such as the map name and similar.
+     * @return a string with the stats, useful for e.g. logging
+     */
+    default String format() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
 }

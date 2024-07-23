@@ -116,9 +116,9 @@ public class MerkleDbStatisticsUpdater {
      * @return leaf keys store file size, Mb
      */
     private int updateLeafKeysStoreFileStats(final MerkleDbDataSource<?, ?> dataSource) {
-        if (dataSource.getObjectKeyToPath() != null) {
+        if (dataSource.getKeyToPath() != null) {
             final LongSummaryStatistics leafKeyFileSizeStats =
-                    dataSource.getObjectKeyToPath().getFilesSizeStatistics();
+                    dataSource.getKeyToPath().getFilesSizeStatistics();
             statistics.setLeafKeysStoreFileCount((int) leafKeyFileSizeStats.getCount());
             final int fileSizeInMb = (int) (leafKeyFileSizeStats.getSum() * BYTES_TO_MEBIBYTES);
             statistics.setLeafKeysStoreFileSizeMb(fileSizeInMb);
@@ -140,11 +140,10 @@ public class MerkleDbStatisticsUpdater {
     void updateOffHeapStats(final MerkleDbDataSource<?, ?> dataSource) {
         int totalOffHeapMemoryConsumption = updateOffHeapStat(
                         dataSource.getPathToDiskLocationInternalNodes(), statistics::setOffHeapHashesIndexMb)
-                + updateOffHeapStat(dataSource.getPathToDiskLocationLeafNodes(), statistics::setOffHeapLeavesIndexMb)
-                + updateOffHeapStat(dataSource.getLongKeyToPath(), statistics::setOffHeapLongKeysIndexMb);
-        if (dataSource.getObjectKeyToPath() != null) {
+                + updateOffHeapStat(dataSource.getPathToDiskLocationLeafNodes(), statistics::setOffHeapLeavesIndexMb);
+        if (dataSource.getKeyToPath() != null) {
             totalOffHeapMemoryConsumption += updateOffHeapStat(
-                    (OffHeapUser) dataSource.getObjectKeyToPath(), statistics::setOffHeapObjectKeyBucketsIndexMb);
+                    (OffHeapUser) dataSource.getKeyToPath(), statistics::setOffHeapObjectKeyBucketsIndexMb);
         }
         if (dataSource.getHashStoreRam() != null) {
             totalOffHeapMemoryConsumption +=

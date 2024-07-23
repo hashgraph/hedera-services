@@ -52,14 +52,18 @@ Labels are used by monitoring systems like Grafana to create more dynamic dashbo
 In addition to having a unique name, a metric can also have labels. Labels allow for differentiation within a metric.
 For example, a metric measuring incoming connections can distinguish between GET and POST requests using labels.
 
-Consider the following example metrics:
+Consider the following example with the metric `api_http_requests_total`, which counts the total number of HTTP requests a server receives. 
 
-- Metric 1: api_http_requests_total{method="GET"}
-- Metric 2: api_http_requests_total{method="POST"}
+To distinguish between different types of requests, such as GET and POST requests, one could define two different metrics and aggregate them at query time. Alternatively, one could define possible labels for a single metric when creating it and assign specific values to these labels based on the nature of the HTTP request at measurement time. 
 
-When creating a metric, the label keys must be specified upfront, while the label values are assigned when setting a value for the metric.
+Then, using the Prometheus query language:
+* Sum up the values of all metrics with that name (as always):
+`sum(api_http_requests_total) ` 
 
-If you later want to know the combined measurement of all metrics with the name `api_http_requests_total` you can use the prometheus query language to sum up the values of all metrics with that name.
+* Or,  get the sums of the values measured with the corresponding label information.
+`sum(api_http_requests_total{method="GET"})`
+`sum(api_http_requests_total{method="POST"})`
+
 See https://prometheus.io/docs/prometheus/latest/querying/basics/#time-series-selectors for more information.
 
 In prometheus a concrete metric is defined like this (see https://prometheus.io/docs/concepts/data_model/#notation):
@@ -84,7 +88,7 @@ A label is a key-value pair that can be defined as a `record`:
 record Label(@NonNull String key, @NonNull String value) {}
 ``` 
 
-The `Metric` interface will be extended by several methpds that allow to define label values to a metric:
+The `Metric` interface will be extended by several methods that allow to define label values to a metric:
 
 ```java
 interface Metric {
@@ -305,7 +309,7 @@ myDoubleGauge:,myDoubleGauge,
 ```
 
 The first section of the list is metadata that defines the file name (that includes the `nodeId`) and a list of all metric names.
-The metric category is ignored here. As you can see the 2 gauges with same name but different category are ends in 2 times the same line.
+The metric category is ignored here. As you can see, the two gauges with the same name but different categories are printed twice in the same line.
 This proposal would not change that behavior.
 
 The second section of the list defines the metrics and their values. This part will be changed to include the labels.

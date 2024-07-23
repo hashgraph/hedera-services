@@ -120,6 +120,7 @@ public class ContractUpdateHandler implements TransactionHandler {
     private boolean isAdminSigRequired(final ContractUpdateTransactionBody op) {
         return !op.hasExpirationTime()
                 || hasCryptoAdminKey(op)
+                || op.hasMaxAutomaticTokenAssociations()
                 || op.hasProxyAccountID()
                 || op.hasAutoRenewPeriod()
                 || op.hasFileID()
