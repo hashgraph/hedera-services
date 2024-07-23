@@ -120,7 +120,7 @@ include(":swirlds-cli", "platform-sdk/swirlds-cli")
 
 include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
 
-include(":hedera-nativesupport", "platform-sdk/hedera-nativesupport")
+include(":hedera-common-nativesupport", "platform-sdk/hedera-common-nativesupport")
 
 include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
 
