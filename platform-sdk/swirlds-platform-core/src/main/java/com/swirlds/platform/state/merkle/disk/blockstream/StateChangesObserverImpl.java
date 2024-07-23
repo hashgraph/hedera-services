@@ -192,8 +192,6 @@ public class StateChangesObserverImpl implements StateChangesObserver {
             case TokenID tokenID -> b.key(new MapChangeKey.Builder().tokenIdKey(tokenID));
             case TopicID topicID -> b.key(new MapChangeKey.Builder().topicIdKey(topicID));
             case Bytes bytes -> b.key(new MapChangeKey.Builder().protoBytesKey(bytes));
-            case String s -> b.key(new MapChangeKey.Builder().protoStringKey(s)); // used in tests
-            case Long l -> b.key(new MapChangeKey.Builder().protoLongKey(l)); // used in tests
             default -> throw new IllegalArgumentException(
                     "Unknown key type " + key.getClass().getName());
         }
@@ -214,7 +212,6 @@ public class StateChangesObserverImpl implements StateChangesObserver {
             case Token token -> b.value(new MapChangeValue.Builder().tokenValue(token));
             case TokenRelation tokenRelation -> b.value(new MapChangeValue.Builder().tokenRelationValue(tokenRelation));
             case Topic topic -> b.value(new MapChangeValue.Builder().topicValue(topic));
-            case String s -> b.value(new MapChangeValue.Builder().protoStringValue(s)); // used in tests
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());
         }
@@ -240,7 +237,6 @@ public class StateChangesObserverImpl implements StateChangesObserver {
             case Bytes protoBytesElement -> b.protoBytesElement(protoBytesElement);
             case TransactionRecordEntry transactionRecordEntryElement -> b.transactionRecordEntryElement(
                     transactionRecordEntryElement);
-            case String s -> b.protoStringElement(s); // used in tests
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());
         }
@@ -284,7 +280,6 @@ public class StateChangesObserverImpl implements StateChangesObserver {
             case Timestamp timestamp -> b.timestampValue(timestamp);
             case ThrottleUsageSnapshots throttleUsageSnapshots -> b.throttleUsageSnapshotsValue(throttleUsageSnapshots);
             case CongestionLevelStarts congestionLevelStarts -> b.congestionLevelStartsValue(congestionLevelStarts);
-            case String s -> b.stringValue(s); // used in tests
             default -> throw new IllegalArgumentException(
                     "Unknown value type " + value.getClass().getName());
         }
