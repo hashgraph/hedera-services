@@ -34,6 +34,7 @@ import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
+import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,6 +68,7 @@ class CryptoTransferHandlerTestBase extends StepsBase {
 
     protected CryptoTransferHandler subject;
     protected TokenAirdropHandler tokenAirdropHandler;
+    protected TokenAirdropValidator tokenAirdropValidator;
     protected CryptoTransferValidator validator;
     protected CryptoTransferExecutor executor;
 
@@ -75,8 +77,9 @@ class CryptoTransferHandlerTestBase extends StepsBase {
         super.setUp();
         executor = new CryptoTransferExecutor();
         validator = new CryptoTransferValidator();
+        tokenAirdropValidator = new TokenAirdropValidator();
         subject = new CryptoTransferHandler(validator, executor);
-        tokenAirdropHandler = new TokenAirdropHandler(validator, executor);
+        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, executor);
     }
 
     protected TransactionBody newCryptoTransfer(final AccountAmount... acctAmounts) {

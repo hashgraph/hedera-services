@@ -59,7 +59,7 @@ public class TransferContextImpl implements TransferContext {
     private final TokensConfig tokensConfig;
     private final List<TokenAssociation> automaticAssociations = new ArrayList<>();
     private final List<AssessedCustomFee> assessedCustomFees = new ArrayList<>();
-    private final CryptoTransferTransactionBody body;
+    private CryptoTransferTransactionBody syntheticBody = null;
     private final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments;
 
     /**
@@ -79,7 +79,6 @@ public class TransferContextImpl implements TransferContext {
     public TransferContextImpl(
             final HandleContext context, final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
         this.context = context;
-        this.body = context.body().cryptoTransferOrThrow();
         this.accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         this.autoAccountCreator = new AutoAccountCreator(context);
         this.autoCreationConfig = context.configuration().getConfigData(AutoCreationConfig.class);
@@ -103,7 +102,7 @@ public class TransferContextImpl implements TransferContext {
             final CryptoTransferTransactionBody syntheticBody,
             final boolean enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments) {
         this.context = context;
-        this.body = syntheticBody;
+        this.syntheticBody = syntheticBody;
         this.accountStore = context.storeFactory().writableStore(WritableAccountStore.class);
         this.autoAccountCreator = new AutoAccountCreator(context);
         this.autoCreationConfig = context.configuration().getConfigData(AutoCreationConfig.class);
@@ -201,6 +200,8 @@ public class TransferContextImpl implements TransferContext {
     @Override
     public void validateHbarAllowances() {
         final var topLevelPayer = context.payer();
+        // use the synthetic body if we have one
+        var body = syntheticBody != null ? syntheticBody : context.body().cryptoTransferOrThrow();
         for (final var aa : body.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
             if (aa.isApproval() && aa.amount() < 0L) {
                 maybeValidateHbarAllowance(
