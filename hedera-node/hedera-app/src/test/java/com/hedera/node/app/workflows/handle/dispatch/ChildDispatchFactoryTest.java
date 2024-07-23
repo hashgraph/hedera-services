@@ -17,8 +17,8 @@
 package com.hedera.node.app.workflows.handle.dispatch;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.CONTRACT_CALL;
-import static com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactoryTest.asTxn;
-import static com.hedera.node.app.workflows.handle.dispatch.ChildRecordBuilderFactoryTest.consensusTime;
+import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.asTxn;
+import static com.hedera.node.app.workflows.handle.steps.HollowAccountCompletionsTest.consensusTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,13 +53,13 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.WrappedMerkleState;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.DispatchProcessor;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -68,6 +68,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
+import java.time.Instant;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,9 +103,6 @@ class ChildDispatchFactoryTest {
 
     @Mock(strictness = LENIENT)
     private Predicate<Key> verifierCallback;
-
-    @Mock(strictness = LENIENT)
-    private RecordListBuilder recordListBuilder;
 
     @Mock(strictness = LENIENT)
     private ReadableStoreFactory readableStoreFactory;
@@ -170,19 +168,16 @@ class ChildDispatchFactoryTest {
     private static final TransactionBody txBody = asTxn(transferBody, payerId, consensusTime);
     private final Configuration configuration = HederaTestConfigBuilder.createConfig();
 
-    private final ChildRecordBuilderFactory childRecordBuilderFactory = new ChildRecordBuilderFactory();
-
     private final Predicate<Key> callback = key -> true;
     private final HandleContext.TransactionCategory category = HandleContext.TransactionCategory.CHILD;
     private final ExternalizedRecordCustomizer customizer = recordBuilder -> recordBuilder;
     private final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior =
-            SingleTransactionRecordBuilderImpl.ReversingBehavior.REMOVABLE;
+            SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
 
     @BeforeEach
     public void setUp() {
         subject = new ChildDispatchFactory(
                 dispatcher,
-                childRecordBuilderFactory,
                 authorizer,
                 networkInfo,
                 feeManager,
@@ -257,14 +252,14 @@ class ChildDispatchFactoryTest {
                         HandleContext.TransactionCategory.SCHEDULED,
                         customizer,
                         reversingBehavior,
-                        recordListBuilder,
                         configuration,
                         savepointStack,
                         readableStoreFactory,
                         creatorInfo,
                         platformState,
                         CONTRACT_CALL,
-                        throttleAdviser));
+                        throttleAdviser,
+                        Instant.ofEpochSecond(12345L)));
         assertTrue(exception.getCause() instanceof UnknownHederaFunctionality);
         assertEquals("Unknown Hedera Functionality", exception.getMessage());
     }
@@ -276,8 +271,6 @@ class ChildDispatchFactoryTest {
         given(readableStoreFactory.getStore(ReadableAccountStore.class)).willReturn(accountStore);
         given(accountStore.getAccountById(payerId))
                 .willReturn(Account.newBuilder().key(Key.DEFAULT).build());
-        given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
         given(parentDispatch.stack()).willReturn(savepointStack);
-        given(savepointStack.peek()).willReturn(new WrappedMerkleState(savepointStack));
     }
 }

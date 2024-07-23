@@ -44,7 +44,6 @@ import com.hedera.node.app.service.contract.impl.utils.SystemContractUtils;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.ExchangeRateInfo;
 import com.hedera.node.app.spi.key.KeyVerifier;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.signatures.SignatureVerification;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import java.util.function.Predicate;
@@ -81,7 +80,7 @@ class HandleSystemContractOperationsTest {
     private KeyVerifier keyVerifier;
 
     @Mock
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack savepointStack;
 
     private HandleSystemContractOperations subject;
 
@@ -131,8 +130,8 @@ class HandleSystemContractOperationsTest {
                 AccountID.newBuilder().build());
 
         // given
-        given(context.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.addChildRecordBuilder(ContractCallRecordBuilder.class))
+        given(context.savepointStack()).willReturn(savepointStack);
+        given(savepointStack.addChildRecordBuilder(ContractCallRecordBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
@@ -163,8 +162,8 @@ class HandleSystemContractOperationsTest {
                 AccountID.newBuilder().build());
 
         // given
-        given(context.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.addChildRecordBuilder(ContractCallRecordBuilder.class))
+        given(context.savepointStack()).willReturn(savepointStack);
+        given(savepointStack.addChildRecordBuilder(ContractCallRecordBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.transaction(transaction)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.SUCCESS)).willReturn(recordBuilder);
@@ -187,8 +186,8 @@ class HandleSystemContractOperationsTest {
                 AccountID.newBuilder().build());
 
         // given
-        given(context.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.addChildRecordBuilder(ContractCallRecordBuilder.class))
+        given(context.savepointStack()).willReturn(savepointStack);
+        given(savepointStack.addChildRecordBuilder(ContractCallRecordBuilder.class))
                 .willReturn(recordBuilder);
         given(recordBuilder.transaction(Transaction.DEFAULT)).willReturn(recordBuilder);
         given(recordBuilder.status(ResponseCodeEnum.FAIL_INVALID)).willReturn(recordBuilder);

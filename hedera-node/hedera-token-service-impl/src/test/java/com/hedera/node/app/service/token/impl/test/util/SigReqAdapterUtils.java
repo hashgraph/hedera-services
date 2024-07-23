@@ -531,6 +531,7 @@ public class SigReqAdapterUtils {
                 fungibleTokenAllowances,
                 2,
                 false,
+                null,
                 null);
     }
 }

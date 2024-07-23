@@ -18,6 +18,9 @@ package com.hedera.node.app.workflows.handle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.BUSY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.FAIL_INVALID;
+import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartEvent;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartRound;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logStartUserTransaction;
@@ -31,7 +34,6 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.Transaction;
-import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
 import com.hedera.node.app.records.BlockRecordManager;
@@ -41,6 +43,7 @@ import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.store.ReadableStoreFactory;
@@ -53,7 +56,6 @@ import com.hedera.node.app.workflows.handle.cache.CacheWarmer;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
 import com.hedera.node.app.workflows.handle.record.GenesisSetup;
-import com.hedera.node.app.workflows.handle.record.RecordListBuilder;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.steps.HollowAccountCompletions;
 import com.hedera.node.app.workflows.handle.steps.NodeStakeUpdates;
@@ -72,6 +74,7 @@ import com.swirlds.state.spi.info.NetworkInfo;
 import com.swirlds.state.spi.info.NodeInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -225,6 +228,7 @@ public class HandleWorkflow {
      * Handles a platform transaction. This method is responsible for creating a {@link UserTxn} and
      * executing the workflow for the transaction. This produces a stream of records that are then passed to the
      * {@link BlockRecordManager} to be externalized.
+     *
      * @param state the writable {@link MerkleState} that this transaction will work on
      * @param platformState the {@link PlatformState} that this transaction will work on
      * @param event the {@link ConsensusEvent} that this transaction belongs to
@@ -239,11 +243,13 @@ public class HandleWorkflow {
             @NonNull final ConsensusTransaction txn) {
         final var handleStart = System.nanoTime();
 
-        final var consensusNow = txn.getConsensusTimestamp().minusNanos(1000 - 3L);
+        // Always use platform-assigned time for user transaction, c.f. https://hips.hedera.com/hip/hip-993
+        final var consensusNow = txn.getConsensusTimestamp();
         final var userTxn = newUserTxn(state, platformState, event, creator, txn, consensusNow);
+
         blockRecordManager.startUserTransaction(consensusNow, state, platformState);
-        final var recordStream = execute(userTxn);
-        blockRecordManager.endUserTransaction(recordStream, state);
+        final var streamItems = execute(userTxn);
+        blockRecordManager.endUserTransaction(streamItems, state);
 
         handleWorkflowMetrics.updateTransactionDuration(
                 userTxn.functionality(), (int) (System.nanoTime() - handleStart));
@@ -254,6 +260,7 @@ public class HandleWorkflow {
      * successfully, we only add the missing keys. If it did not run or an error occurred, we run it again.
      * If there is a due diligence error, this method will return a CryptoTransfer to charge the node along with
      * its verification data.
+     *
      * @param creator the node that created the transaction
      * @param platformTxn the transaction to be verified
      * @param storeFactory the store factory
@@ -306,7 +313,9 @@ public class HandleWorkflow {
     private Stream<SingleTransactionRecord> execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
-                skip(userTxn);
+                initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo()).status(BUSY);
+                // Flushes the BUSY builder to the stream, no other side effects
+                userTxn.stack().commitFullStack();
             } else {
                 if (userTxn.isGenesisTxn()) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
@@ -324,10 +333,12 @@ public class HandleWorkflow {
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
             }
-            return finalRecordStream(userTxn);
+            final var streamItems = userTxn.stack().buildStreamItems(userTxn.consensusNow());
+            recordCache.add(userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), streamItems);
+            return streamItems.stream();
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
-            return failInvalidRecordStream(userTxn);
+            return failInvalidStreamItems(userTxn);
         }
     }
 
@@ -337,31 +348,18 @@ public class HandleWorkflow {
      *
      * @return the failure record
      */
-    private Stream<SingleTransactionRecord> failInvalidRecordStream(@NonNull final UserTxn userTxn) {
-        final var failInvalidRecordListBuilder = new RecordListBuilder(userTxn.consensusNow());
-        final var recordBuilder = failInvalidRecordListBuilder.userTransactionRecordBuilder();
-        initializeUserRecord(recordBuilder, userTxn.txnInfo());
-        recordBuilder.status(FAIL_INVALID);
+    private Stream<SingleTransactionRecord> failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
-        return recordStream(userTxn, failInvalidRecordListBuilder);
-    }
-
-    /**
-     * Has the side effect of adding a {@link ResponseCodeEnum#BUSY} record to
-     * the transaction's record stream, but skips any other execution.
-     *
-     * @param userTxn the user transaction to skip
-     */
-    private void skip(@NonNull final UserTxn userTxn) {
-        final TransactionInfo txnInfo = userTxn.txnInfo();
-        userTxn.recordListBuilder()
-                .userTransactionRecordBuilder()
-                .transaction(txnInfo.transaction())
-                .transactionBytes(txnInfo.signedBytes())
-                .transactionID(txnInfo.txBody().transactionIDOrElse(TransactionID.DEFAULT))
-                .exchangeRate(exchangeRateManager.exchangeRates())
-                .memo(txnInfo.txBody().memo())
-                .status(BUSY);
+        final var failInvalidBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+        initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
+                .status(FAIL_INVALID)
+                .consensusTimestamp(userTxn.consensusNow());
+        final var failInvalidRecord = failInvalidBuilder.build();
+        recordCache.add(
+                userTxn.creatorInfo().nodeId(),
+                requireNonNull(userTxn.txnInfo().payerID()),
+                List.of(failInvalidRecord));
+        return Stream.of(failInvalidRecord);
     }
 
     /**
@@ -386,40 +384,14 @@ public class HandleWorkflow {
     }
 
     /**
-     * Returns a stream of records for the given user transaction with
-     * its in-scope records.
-     *
-     * @param userTxn the user transaction
-     * @return the stream of records
-     */
-    private Stream<SingleTransactionRecord> finalRecordStream(@NonNull final UserTxn userTxn) {
-        return recordStream(userTxn, userTxn.recordListBuilder());
-    }
-
-    /**
-     * Builds and caches the result of the user transaction with
-     * the explicitly provided records.
-     *
-     * @param userTxn the user transaction
-     * @param recordListBuilder the explicit records
-     * @return the stream of records
-     */
-    private Stream<SingleTransactionRecord> recordStream(
-            @NonNull final UserTxn userTxn, @NonNull final RecordListBuilder recordListBuilder) {
-        final var result = recordListBuilder.build();
-        recordCache.add(
-                userTxn.creatorInfo().nodeId(), requireNonNull(userTxn.txnInfo().payerID()), result.records());
-        return result.records().stream();
-    }
-
-    /**
      * Returns the user dispatch for the given user transaction.
      *
      * @param userTxn the user transaction
      * @return the user dispatch
      */
     private Dispatch dispatchFor(@NonNull final UserTxn userTxn) {
-        return userTxn.dispatch(
+        final var baseBuilder = initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo());
+        return userTxn.newDispatch(
                 authorizer,
                 networkInfo,
                 feeManager,
@@ -431,31 +403,21 @@ public class HandleWorkflow {
                 exchangeRateManager,
                 childDispatchFactory,
                 dispatcher,
-                initializeUserRecord(userTxn),
-                networkUtilizationManager);
+                networkUtilizationManager,
+                baseBuilder);
     }
 
     /**
-     * Initializes the user record with the transaction information. The record builder
-     * list is initialized with the transaction, transaction bytes, transaction ID,
+     * Initializes the base builder of the given user transaction initialized with its transaction
+     * information. The record builder is initialized with the transaction, transaction bytes, transaction ID,
      * exchange rate, and memo.
      *
-     * @param userTxn the user transaction whose record should be initialized
+     * @param builder the base builder
+     * @param txnInfo the transaction information
+     * @return the initialized base builder
      */
-    private SingleTransactionRecordBuilderImpl initializeUserRecord(@NonNull final UserTxn userTxn) {
-        return initializeUserRecord(userTxn.recordListBuilder().userTransactionRecordBuilder(), userTxn.txnInfo());
-    }
-
-    /**
-     * Initializes the user record with the transaction information. The record builder
-     * list is initialized with the transaction, transaction bytes, transaction ID,
-     * exchange rate, and memo.
-     *
-     * @param recordBuilder the record builder
-     * @param txnInfo the transaction info
-     */
-    private SingleTransactionRecordBuilderImpl initializeUserRecord(
-            @NonNull final SingleTransactionRecordBuilderImpl recordBuilder, @NonNull final TransactionInfo txnInfo) {
+    private SingleTransactionRecordBuilder initializeBuilderInfo(
+            @NonNull final SingleTransactionRecordBuilder builder, @NonNull final TransactionInfo txnInfo) {
         final var transaction = txnInfo.transaction();
         // If the transaction uses the legacy body bytes field instead of explicitly
         // setting its signed bytes, the record will have the hash of its bytes as
@@ -466,8 +428,7 @@ public class HandleWorkflow {
         } else {
             transactionBytes = Transaction.PROTOBUF.toBytes(transaction);
         }
-        return recordBuilder
-                .transaction(txnInfo.transaction())
+        return builder.transaction(txnInfo.transaction())
                 .transactionBytes(transactionBytes)
                 .transactionID(txnInfo.txBody().transactionIDOrThrow())
                 .exchangeRate(exchangeRateManager.exchangeRates())
@@ -519,7 +480,6 @@ public class HandleWorkflow {
     }
 
     /**
-     *
      * Constructs a new {@link UserTxn} with the scope defined by the
      * current state, platform context, creator, and consensus time.
      *

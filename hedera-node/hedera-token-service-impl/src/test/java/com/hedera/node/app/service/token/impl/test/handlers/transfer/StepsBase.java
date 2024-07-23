@@ -48,7 +48,6 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHand
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.fees.Fees;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
@@ -77,7 +76,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected HandleContext handleContext;
 
     @Mock(strictness = Mock.Strictness.LENIENT)
-    protected RecordBuilders recordBuilders;
+    protected HandleContext.SavepointStack stack;
 
     @Mock
     protected ExpiryValidator expiryValidator;
@@ -100,7 +99,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
     protected void baseInternalSetUp(final boolean prepopulateReceiverIds) {
         super.handlerTestBaseInternalSetUp(prepopulateReceiverIds);
         refreshWritableStores();
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(handleContext.savepointStack()).willReturn(stack);
     }
 
     protected final AccountID unknownAliasedId =
@@ -217,7 +216,7 @@ public class StepsBase extends CryptoTokenHandlerTestBase {
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
-        given(recordBuilders.getOrCreate(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
-        given(recordBuilders.getOrCreate(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
+        given(stack.getBaseBuilder(CryptoCreateRecordBuilder.class)).willReturn(cryptoCreateRecordBuilder);
+        given(stack.getBaseBuilder(CryptoTransferRecordBuilder.class)).willReturn(xferRecordBuilder);
     }
 }

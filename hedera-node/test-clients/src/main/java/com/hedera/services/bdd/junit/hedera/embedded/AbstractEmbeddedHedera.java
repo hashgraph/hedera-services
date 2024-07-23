@@ -19,7 +19,6 @@ package com.hedera.services.bdd.junit.hedera.embedded;
 import static com.hedera.hapi.util.HapiUtils.parseAccount;
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.services.bdd.junit.hedera.ExternalPath.ADDRESS_BOOK;
-import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
 import static com.swirlds.platform.system.InitTrigger.GENESIS;
 import static com.swirlds.platform.system.status.PlatformStatus.ACTIVE;
 import static com.swirlds.platform.system.status.PlatformStatus.FREEZE_COMPLETE;
@@ -45,6 +44,7 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionResponse;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.listeners.PlatformStatusChangeNotification;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.address.Address;
@@ -235,7 +235,7 @@ public abstract class AbstractEmbeddedHedera implements EmbeddedHedera {
 
     private static AddressBook loadAddressBook(@NonNull final Path path) {
         requireNonNull(path);
-        final var configFile = loadConfigFile(path.toAbsolutePath());
+        final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
         final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
                 .withSize(1)
                 .withRealKeysEnabled(true)
