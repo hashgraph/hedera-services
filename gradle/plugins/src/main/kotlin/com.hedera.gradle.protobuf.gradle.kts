@@ -57,6 +57,14 @@ sourceSets.all {
     }
 }
 
+tasks.javadoc {
+    options {
+        this as StandardJavadocDocletOptions
+        // There are violations in the generated protobuf code
+        addStringOption("Xdoclint:-reference,-html", "-quiet")
+    }
+}
+
 // Give JUnit more ram and make it execute tests in parallel
 tasks.test {
     // We are running a lot of tests 10s of thousands, so they need to run in parallel. Make each
