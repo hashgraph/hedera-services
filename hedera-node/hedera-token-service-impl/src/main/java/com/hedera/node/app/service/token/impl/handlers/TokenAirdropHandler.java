@@ -42,6 +42,7 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
+import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.SubType;
@@ -156,28 +157,10 @@ public class TokenAirdropHandler implements TransactionHandler {
                 final var senderId = senderOptionalAmount.orElseThrow().accountIDOrThrow();
                 final var senderAccount = accountStore.getForModify(senderId);
                 validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
-                final var senderAccountAmount = senderOptionalAmount.get();
-                final var tokenRel = tokenRelStore.get(senderId, tokenId);
 
                 // 1. Validate allowances and token associations
-                validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-                if (senderAccountAmount.isApproval()) {
-                    final var topLevelPayer = context.payer();
-                    final var tokenAllowances = senderAccount.tokenAllowances();
-                    var haveExistingAllowance = false;
-                    for (final var allowance : tokenAllowances) {
-                        if (topLevelPayer.equals(allowance.spenderId()) && tokenId.equals(allowance.tokenId())) {
-                            haveExistingAllowance = true;
-                            final var newAllowanceAmount = allowance.amount()
-                                    + senderOptionalAmount.get().amount();
-                            validateTrue(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
-                            break;
-                        }
-                    }
-                    validateTrue(haveExistingAllowance, SPENDER_DOES_NOT_HAVE_ALLOWANCE);
-                } else {
-                    validateTrue(tokenRel.balance() >= Math.abs(senderAccountAmount.amount()), INVALID_ACCOUNT_AMOUNTS);
-                }
+                validateFungibleTransfers(
+                        context.payer(), senderAccount, tokenId, senderOptionalAmount.get(), tokenRelStore);
 
                 // 2. separate transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
@@ -222,39 +205,25 @@ public class TokenAirdropHandler implements TransactionHandler {
             // process non-fungible tokens transfers if any
             if (!xfers.nftTransfers().isEmpty()) {
                 validateTrue(tokenHasNoCustomFeesPaidByReceiver(tokenId, tokenStore), INVALID_TRANSACTION);
-                // 1. separate NFT transfers in to two lists
+                // 1. validate NFT transfers
+                final var nftTransfer = xfers.nftTransfers().stream().findFirst();
+                final var senderId = nftTransfer.orElseThrow().senderAccountIDOrThrow();
+                final var senderAccount = accountStore.get(senderId);
+                validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
+                validateNftTransfers(
+                        context.payer(),
+                        senderAccount,
+                        tokenId,
+                        xfers.nftTransfers(),
+                        tokenRelStore,
+                        tokenStore,
+                        nftStore);
+                // 2. separate NFT transfers in to two lists
                 // - one list for executing the transfer and one list for adding to pending state
                 final var nftLists = separateNftTransfers(context, tokenId, xfers.nftTransfers());
 
-                // 2. create, validate and save NFT pending airdrops in to state
+                // 3. create and save NFT pending airdrops in to state
                 nftLists.pendingNftList().forEach(item -> {
-                    final var optionalAccountId =
-                            nftLists.pendingNftList().stream().findFirst();
-                    final var senderId = optionalAccountId.orElseThrow().senderAccountIDOrThrow();
-                    final var senderAccount = accountStore.get(senderId);
-                    validateTrue(senderAccount != null, INVALID_ACCOUNT_ID);
-                    final var tokenRel = tokenRelStore.get(senderAccount.accountIdOrThrow(), tokenId);
-                    validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
-                    final var token = tokenStore.get(tokenId);
-                    validateTrue(token != null, INVALID_TOKEN_ID);
-                    // If isApproval flag is set then the spender account must have paid for the transaction.
-                    // The transfer list specifies the owner who granted allowance as sender
-                    // check if the allowances from the sender account has the payer account as spender
-                    final var nft = nftStore.get(tokenId, item.serialNumber());
-                    validateTrue(nft != null, INVALID_NFT_ID);
-                    if (item.isApproval()) {
-                        validateSpenderHasAllowance(senderAccount, context.payer(), tokenId, nft);
-                    }
-                    // owner of nft should match the sender in transfer list
-                    if (nft.hasOwnerId()) {
-                        validateTrue(nft.ownerId() != null, INVALID_NFT_ID);
-                        validateTrue(nft.ownerId().equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-                    } else {
-                        final var treasuryId = token.treasuryAccountId();
-                        validateTrue(treasuryId != null, INVALID_ACCOUNT_ID);
-                        validateTrue(treasuryId.equals(senderId), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
-                    }
-
                     final var pendingId = createNftPendingAirdropId(
                             tokenId, item.serialNumber(), item.senderAccountID(), item.receiverAccountID());
                     AccountPendingAirdrop newAccountPendingAirdrop = getNewAccountPendingAirdropAndUpdateStores(
@@ -283,6 +252,65 @@ public class TokenAirdropHandler implements TransactionHandler {
         // transfer tokens, that are not in pending state, if any...
         if (!tokenTransferList.isEmpty()) {
             executeCryptoTransfer(context, tokenTransferList, recordBuilder);
+        }
+    }
+
+    private void validateNftTransfers(
+            AccountID payer,
+            Account senderAccount,
+            TokenID tokenId,
+            List<NftTransfer> nftTransfers,
+            ReadableTokenRelationStore tokenRelStore,
+            ReadableTokenStore tokenStore,
+            ReadableNftStore nftStore) {
+        final var tokenRel = tokenRelStore.get(senderAccount.accountIdOrThrow(), tokenId);
+        validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        final var token = tokenStore.get(tokenId);
+        validateTrue(token != null, INVALID_TOKEN_ID);
+
+        for (NftTransfer nftTransfer : nftTransfers) {
+            // If isApproval flag is set then the spender account must have paid for the transaction.
+            // The transfer list specifies the owner who granted allowance as sender
+            // check if the allowances from the sender account has the payer account as spender
+            final var nft = nftStore.get(tokenId, nftTransfer.serialNumber());
+            validateTrue(nft != null, INVALID_NFT_ID);
+            if (nftTransfer.isApproval()) {
+                validateSpenderHasAllowance(senderAccount, payer, tokenId, nft);
+            }
+            // owner of nft should match the sender in transfer list
+            if (nft.hasOwnerId()) {
+                validateTrue(nft.ownerId() != null, INVALID_NFT_ID);
+                validateTrue(nft.ownerId().equals(senderAccount.accountId()), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+            } else {
+                final var treasuryId = token.treasuryAccountId();
+                validateTrue(treasuryId != null, INVALID_ACCOUNT_ID);
+                validateTrue(treasuryId.equals(senderAccount.accountId()), SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
+            }
+        }
+    }
+
+    private static void validateFungibleTransfers(
+            final AccountID payer,
+            final Account senderAccount,
+            final TokenID tokenId,
+            final AccountAmount senderAmount,
+            final ReadableTokenRelationStore tokenRelStore) {
+        final var tokenRel = tokenRelStore.get(senderAccount.accountIdOrThrow(), tokenId);
+        validateTrue(tokenRel != null, TOKEN_NOT_ASSOCIATED_TO_ACCOUNT);
+        if (senderAmount.isApproval()) {
+            final var tokenAllowances = senderAccount.tokenAllowances();
+            var haveExistingAllowance = false;
+            for (final var allowance : tokenAllowances) {
+                if (payer.equals(allowance.spenderId()) && tokenId.equals(allowance.tokenId())) {
+                    haveExistingAllowance = true;
+                    final var newAllowanceAmount = allowance.amount() + senderAmount.amount();
+                    validateTrue(newAllowanceAmount >= 0, AMOUNT_EXCEEDS_ALLOWANCE);
+                    break;
+                }
+            }
+            validateTrue(haveExistingAllowance, SPENDER_DOES_NOT_HAVE_ALLOWANCE);
+        } else {
+            validateTrue(tokenRel.balance() >= Math.abs(senderAmount.amount()), INVALID_ACCOUNT_AMOUNTS);
         }
     }
 
