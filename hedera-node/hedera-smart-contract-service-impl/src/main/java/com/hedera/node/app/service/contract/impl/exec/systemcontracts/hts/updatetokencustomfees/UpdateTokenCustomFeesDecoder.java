@@ -74,9 +74,9 @@ public class UpdateTokenCustomFeesDecoder {
     // Royalty Fee tuple indexes
     private static final int ROYALTY_FEE_NUMERATOR = 0;
     private static final int ROYALTY_FEE_DENOMINATOR = 1;
-    private static final int ROYALTY_FEE_AMOUNT = 2;
-    private static final int ROYALTY_FEE_TOKEN_ID = 3;
-    private static final int ROYALTY_FEE_USE_HBARS_FOR_PAYMENT = 4;
+    private static final int ROYALTY_FALLBACK_FEE_AMOUNT = 2;
+    private static final int ROYALTY_FALLBACK_FEE_TOKEN_ID = 3;
+    private static final int ROYALTY_FALLBACK_FEE_USE_HBARS_FOR_PAYMENT = 4;
     private static final int ROYALTY_FEE_FEE_COLLECTOR = 5;
 
     @Inject
@@ -180,22 +180,27 @@ public class UpdateTokenCustomFeesDecoder {
         final boolean useCurrentToken = fee.get(FIXED_FEE_USE_CURRENT_TOKEN_FOR_PAYMENT);
         return useCurrentToken
                 ? tokenId
-                : getIfPresent(fee.get(FIXED_FEE_TOKEN_ID), fee.get(FIXED_FEE_USE_HBARS_FOR_PAYMENT));
+                : getDenominationTokenIdOrNull(fee.get(FIXED_FEE_TOKEN_ID), fee.get(FIXED_FEE_USE_HBARS_FOR_PAYMENT));
     }
 
-    private @Nullable TokenID getIfPresent(@NonNull final Address address, final boolean useHbarsForPayment) {
+    // In the solidity structure for FixedFees we have the property `bool useHbarsForPayment` that is not present
+    // in the protobuf version where we set the denominating token to null if the fee is in hbars and/or we provide zero
+    // address.
+    private @Nullable TokenID getDenominationTokenIdOrNull(
+            @NonNull final Address address, final boolean useHbarsForPayment) {
         final var tokenId = ConversionUtils.asTokenId(address);
         return useHbarsForPayment || tokenId.equals(TokenID.DEFAULT) ? null : tokenId;
     }
 
     private @Nullable FixedFee getFallbackFee(@NonNull Tuple fee) {
-        final Address tokenAddress = fee.get(ROYALTY_FEE_TOKEN_ID);
-        final long amount = fee.get(ROYALTY_FEE_AMOUNT);
+        final Address tokenAddress = fee.get(ROYALTY_FALLBACK_FEE_TOKEN_ID);
+        final long amount = fee.get(ROYALTY_FALLBACK_FEE_AMOUNT);
         return ConversionUtils.asTokenId(tokenAddress).equals(TokenID.DEFAULT) && amount == 0
                 ? null
                 : FixedFee.newBuilder()
                         .amount(amount)
-                        .denominatingTokenId(getIfPresent(tokenAddress, fee.get(ROYALTY_FEE_USE_HBARS_FOR_PAYMENT)))
+                        .denominatingTokenId(getDenominationTokenIdOrNull(
+                                tokenAddress, fee.get(ROYALTY_FALLBACK_FEE_USE_HBARS_FOR_PAYMENT)))
                         .build();
     }
 }

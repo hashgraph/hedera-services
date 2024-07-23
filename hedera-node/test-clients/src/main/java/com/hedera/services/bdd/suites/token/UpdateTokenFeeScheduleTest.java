@@ -252,7 +252,7 @@ public class UpdateTokenFeeScheduleTest {
 
     @Order(13)
     @HapiTest
-    @DisplayName("fungible token fees")
+    @DisplayName("fungible token multiple fees")
     public Stream<DynamicTest> updateFungibleTokenFees() {
         return hapiTest(
                 updateTokenFeeSchedules.call(
@@ -267,7 +267,7 @@ public class UpdateTokenFeeScheduleTest {
 
     @Order(14)
     @HapiTest
-    @DisplayName("non fungible token fees")
+    @DisplayName("non fungible token multiple fees")
     public Stream<DynamicTest> updateNonFungibleTokenFees() {
         return hapiTest(
                 updateTokenFeeSchedules.call(
