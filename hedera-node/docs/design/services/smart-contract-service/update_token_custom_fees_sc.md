@@ -36,8 +36,8 @@ New system contract functions must be added to the `IHederaTokenService` interfa
 
 ### Smart Contract Service Module
 
-- UpdateTokenCustomFeesTranslator
-- UpdateTokenCustomFeesDecoder
+- UpdateTokenCustomFeesTranslator - This class will be responsible for handling the `updateFungibleTokenCustomFees` and `updateNonFungibleTokenCustomFees` selectors and dispatching them to the corresponding HAPI calls.
+- UpdateTokenCustomFeesDecoder - This class provides methods  and constants for decoding the given `HtsCallAttempt` into a `TransactionBody` for `TokenFeeScheduleUpdate` call.
 
 ## Security Implications
 
@@ -74,7 +74,8 @@ We will apply the `TokenFeeScheduleUpdate` throttle mechanism.
 - Verify that the `updateNonFungibleTokenCustomFees` function with empty `Fee Schedule` fails with `CUSTOM_SCHEDULE_ALREADY_HAS_NO_FEES` when the given token has no set fees.
 - Verify that the `updateFungibleTokenCustomFees` function fails with `TOKEN_HAS_NO_FEE_SCHEDULE_KEY` when the `feeSchedule` key is not provided.
 - Verify that the `updateNonFungibleTokenCustomFees` function fails with `TOKEN_HAS_NO_FEE_SCHEDULE_KEY` when the `feeSchedule` key is not provided.
-- Verify that the `tokenFeeScheduleUpdate` function fails with `CUSTOM_FEE_MUST_BE_POSITIVE` when the provided `feeSchedule` is with negative values.
+- Verify that the `updateFungibleTokenCustomFees` function fails with `CUSTOM_FEE_MUST_BE_POSITIVE` when the provided `feeSchedule` is with negative values.
+- Verify that the `updateNonFungibleTokenCustomFees` function fails with `CUSTOM_FEE_MUST_BE_POSITIVE` when the provided `feeSchedule` is with negative values.
 - Verify that the `updateFungibleTokenCustomFees` function fails with `FRACTION_DIVIDES_BY_ZERO` when the provided `FractionalFee` denominator is zero.
 - Verify that the `updateFungibleTokenCustomFees` function fails with `CUSTOM_FEES_LIST_TOO_LONG` when the provided `feeSchedule` exceeds 10 custom fees.
 - Verify that the `updateNonFungibleTokenCustomFees` function fails with `CUSTOM_FEES_LIST_TOO_LONG` when the provided `feeSchedule` exceeds 10 custom fees.
@@ -84,6 +85,4 @@ We will apply the `TokenFeeScheduleUpdate` throttle mechanism.
 - Verify that the `updateNonFungibleTokenCustomFees` function fails with `INVALID_TOKEN_ID_IN_CUSTOM_FEES` when the provided `feeSchedule` has invalid fee token.
 - Verify that the `updateFungibleTokenCustomFees` function fails with `TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR` when the provided `feeSchedule` has fee token not associated to the fee collector.
 - Verify that the `updateNonFungibleTokenCustomFees` function fails with `TOKEN_NOT_ASSOCIATED_TO_FEE_COLLECTOR` when the provided `feeSchedule` has fee token not associated to the fee collector.
-- Verify that the `updateFungibleTokenCustomFees` function fails with `CUSTOM_FEE_NOT_FULLY_SPECIFIED` when the provided `feeSchedule` is incomplete.
-- Verify that the `updateNonFungibleTokenCustomFees` function fails with `CUSTOM_FEE_NOT_FULLY_SPECIFIED` when the provided `feeSchedule` is incomplete.
 
