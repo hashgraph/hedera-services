@@ -201,7 +201,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             throw new IllegalArgumentException("The currentVersion must be at least the previousVersion");
         }
         if (!(hederaState instanceof MerkleStateRoot state)) {
-            throw new IllegalArgumentException("The state must be an instance of MerkleStateRoot");
+            throw new IllegalArgumentException("The state must be an instance of " + MerkleStateRoot.class.getName());
         }
         if (schemas.isEmpty()) {
             logger.info("Service {} does not use state", serviceName);
