@@ -648,16 +648,35 @@ public class TokenAirdropTest {
         }
     }
 
-    @HapiTest
-    @DisplayName("delete account with relation to pending airdrop")
-    final Stream<DynamicTest> canNotDeleteAccountRelatedToAirdrop() {
-        return defaultHapiSpec("should fail - ACCOUNT_HAS_PENDING_AIRDROPS")
-                .given()
-                .when()
-                .then(
-                        tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
-                                .payingWith(OWNER),
-                        cryptoDelete(RECEIVER_WITH_0_AUTO_ASSOCIATIONS).hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
+    @Nested
+    @DisplayName("delete account with relation ")
+    class DeleteAccount {
+        @HapiTest
+        @DisplayName("to fungible token pending airdrop")
+        final Stream<DynamicTest> canNotDeleteAccountRelatedToAirdrop() {
+            return defaultHapiSpec("should fail - ACCOUNT_HAS_PENDING_AIRDROPS")
+                    .given()
+                    .when()
+                    .then(
+                            tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                    .payingWith(OWNER),
+                            cryptoDelete(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
+                                    .hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
+        }
+
+        @HapiTest
+        @DisplayName("to non-fungible token pending airdrop")
+        final Stream<DynamicTest> canNotDeleteAccountRelatedToNFTAirdrop() {
+            return defaultHapiSpec("should fail - ACCOUNT_HAS_PENDING_AIRDROPS")
+                    .given()
+                    .when()
+                    .then(
+                            tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 3L)
+                                            .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
+                                    .payingWith(OWNER),
+                            cryptoDelete(RECEIVER_WITH_0_AUTO_ASSOCIATIONS)
+                                    .hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
+        }
     }
 
     private TokenMovement defaultMovementOfToken(String token) {
