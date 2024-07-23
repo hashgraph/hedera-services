@@ -124,7 +124,7 @@ public class StateDumper {
             @NonNull final DumpCheckpoint checkpoint,
             @NonNull final Set<MerkleStateChild> childrenToDump) {
         if (!(hederaState instanceof MerkleStateRoot state)) {
-            throw new IllegalArgumentException("Expected a MerkleStateRoot");
+            throw new IllegalArgumentException("Expected a " + MerkleStateRoot.class.getSimpleName());
         }
         final SingletonNode<BlockInfo> blockInfoNode =
                 requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, BLOCK_INFO_STATE_KEY)));
