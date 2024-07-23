@@ -824,17 +824,19 @@ public class SingleTransactionRecordBuilderImpl
         return exchangeRate;
     }
 
-    /**
-     * Sets the receipt exchange rate.
-     *
-     * @param exchangeRate the {@link ExchangeRateSet} for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @NonNull
     @Override
     public SingleTransactionRecordBuilderImpl exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
         requireNonNull(exchangeRate, "exchangeRate must not be null");
         this.exchangeRate = exchangeRate;
+        return this;
+    }
+
+    @NonNull
+    @Override
+    public SingleTransactionStreamBuilder congestionMultiplier(long congestionMultiplier) {
+        // No-op
         return this;
     }
 
@@ -1033,20 +1035,6 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
-     * Sets the contractActions which are part of sidecar records.
-     *
-     * @param contractActions the contractActions
-     * @return the builder
-     */
-    @NonNull
-    public SingleTransactionRecordBuilderImpl contractActions(
-            @NonNull final List<AbstractMap.SimpleEntry<ContractActions, Boolean>> contractActions) {
-        requireNonNull(contractActions, "contractActions must not be null");
-        this.contractActions = contractActions;
-        return this;
-    }
-
-    /**
      * Adds contractActions to sidecar records.
      *
      * @param contractActions the contractActions to add
@@ -1062,26 +1050,13 @@ public class SingleTransactionRecordBuilderImpl
     }
 
     /**
-     * Sets the contractBytecodes which are part of sidecar records.
-     *
-     * @param contractBytecodes the contractBytecodes
-     * @return the builder
-     */
-    @NonNull
-    public SingleTransactionRecordBuilderImpl contractBytecodes(
-            @NonNull final List<AbstractMap.SimpleEntry<ContractBytecode, Boolean>> contractBytecodes) {
-        requireNonNull(contractBytecodes, "contractBytecodes must not be null");
-        this.contractBytecodes = contractBytecodes;
-        return this;
-    }
-
-    /**
      * Adds contractBytecodes to sidecar records.
      *
      * @param contractBytecode the contractBytecode to add
      * @param isMigration flag indicating whether sidecar is from migration
      * @return the builder
      */
+    @Override
     @NonNull
     public SingleTransactionRecordBuilderImpl addContractBytecode(
             @NonNull final ContractBytecode contractBytecode, final boolean isMigration) {
@@ -1100,7 +1075,6 @@ public class SingleTransactionRecordBuilderImpl
      * @param beneficiaryForDeletedAccount the beneficiary account ID
      */
     @Override
-    @NonNull
     public void addBeneficiaryForDeletedAccount(
             @NonNull final AccountID deletedAccountID, @NonNull final AccountID beneficiaryForDeletedAccount) {
         requireNonNull(deletedAccountID, "deletedAccountID must not be null");
@@ -1158,16 +1132,13 @@ public class SingleTransactionRecordBuilderImpl
         }
     }
 
-    public EthereumTransactionRecordBuilder feeChargedToPayer(@NonNull long amount) {
-        transactionRecordBuilder.transactionFee(transactionFee + amount);
-        return this;
-    }
-
     /**
      * Returns the staking rewards paid in this transaction.
      *
      * @return the staking rewards paid in this transaction
      */
+    @Override
+    @NonNull
     public List<AccountAmount> getPaidStakingRewards() {
         return paidStakingRewards;
     }
@@ -1177,6 +1148,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the {@link TransactionRecord.Builder} of the record
      */
     @Override
+    @NonNull
     public TransactionCategory category() {
         return category;
     }

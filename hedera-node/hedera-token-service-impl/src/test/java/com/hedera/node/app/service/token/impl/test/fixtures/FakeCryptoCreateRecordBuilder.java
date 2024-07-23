@@ -160,6 +160,11 @@ public class FakeCryptoCreateRecordBuilder {
                 return this;
             }
 
+            @Override
+            public SingleTransactionStreamBuilder congestionMultiplier(final long congestionMultiplier) {
+                return this;
+            }
+
             @NonNull
             @Override
             public CryptoCreateRecordBuilder transactionFee(@NonNull final long transactionFee) {

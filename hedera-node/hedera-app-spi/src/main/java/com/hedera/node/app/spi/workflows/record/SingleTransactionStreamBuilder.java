@@ -178,6 +178,13 @@ public interface SingleTransactionStreamBuilder {
     SingleTransactionStreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate);
 
     /**
+     * Sets the congestion multiplier used for charging the fees for this transaction. This is set if non-zero.
+     * @param congestionMultiplier the congestion multiplier
+     * @return this builder
+     */
+    SingleTransactionStreamBuilder congestionMultiplier(long congestionMultiplier);
+
+    /**
      * Convenience method to package as {@link TransactionBody} as a {@link Transaction} .
      *
      * @param body the transaction body

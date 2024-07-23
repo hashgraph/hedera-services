@@ -68,7 +68,4 @@ public interface EthereumTransactionRecordBuilder extends ContractOperationRecor
      */
     @NonNull
     EthereumTransactionRecordBuilder ethereumHash(@NonNull Bytes ethereumHash);
-
-    @NonNull
-    EthereumTransactionRecordBuilder feeChargedToPayer(@NonNull long amount);
 }

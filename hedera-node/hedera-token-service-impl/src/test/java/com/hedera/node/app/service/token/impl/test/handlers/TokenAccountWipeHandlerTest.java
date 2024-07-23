@@ -159,6 +159,11 @@ class TokenAccountWipeHandlerTest extends ParityTestBase {
                 return this;
             }
 
+            @Override
+            public SingleTransactionStreamBuilder congestionMultiplier(final long congestionMultiplier) {
+                return this;
+            }
+
             @NonNull
             @Override
             public TransactionBody transactionBody() {

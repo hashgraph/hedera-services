@@ -152,9 +152,7 @@ public class SingleTransactionRecordBuilderTest {
                 .scheduleID(scheduleID)
                 .scheduledTransactionID(scheduledTransactionID)
                 .serialNumbers(serialNumbers)
-                .contractStateChanges(List.of(new AbstractMap.SimpleEntry<>(contractStateChanges, false)))
-                .contractActions(List.of(new AbstractMap.SimpleEntry<>(contractActions, false)))
-                .contractBytecodes(List.of(new AbstractMap.SimpleEntry<>(contractBytecode, false)));
+                .contractStateChanges(List.of(new AbstractMap.SimpleEntry<>(contractStateChanges, false)));
 
         if (entropyOneOfType == TransactionRecord.EntropyOneOfType.PRNG_BYTES) {
             singleTransactionRecordBuilder.entropyBytes(prngBytes);

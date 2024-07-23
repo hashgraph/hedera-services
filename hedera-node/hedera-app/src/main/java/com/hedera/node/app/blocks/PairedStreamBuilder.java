@@ -155,4 +155,9 @@ public class PairedStreamBuilder implements SingleTransactionStreamBuilder {
     public SingleTransactionStreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
         return null;
     }
+
+    @Override
+    public SingleTransactionStreamBuilder congestionMultiplier(final long congestionMultiplier) {
+        return null;
+    }
 }

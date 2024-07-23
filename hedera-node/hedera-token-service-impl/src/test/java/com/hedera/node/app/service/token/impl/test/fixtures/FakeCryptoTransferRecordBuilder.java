@@ -106,6 +106,11 @@ public class FakeCryptoTransferRecordBuilder {
             }
 
             @Override
+            public SingleTransactionStreamBuilder congestionMultiplier(final long congestionMultiplier) {
+                return this;
+            }
+
+            @Override
             public long transactionFee() {
                 return 0;
             }

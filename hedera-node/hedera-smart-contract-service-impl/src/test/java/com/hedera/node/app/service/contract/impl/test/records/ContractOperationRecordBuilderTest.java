@@ -92,6 +92,11 @@ class ContractOperationRecordBuilderTest {
             }
 
             @Override
+            public SingleTransactionStreamBuilder congestionMultiplier(final long congestionMultiplier) {
+                return this;
+            }
+
+            @Override
             public void trackExplicitRewardSituation(@NonNull AccountID accountId) {}
 
             @Override
