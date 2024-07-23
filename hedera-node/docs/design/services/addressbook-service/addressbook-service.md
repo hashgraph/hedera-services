@@ -1,9 +1,9 @@
 # Addressbook Service
 
 The Address Book Service is responsible for configuring the list of nodes on the network.
-Nodes can be added, updated or removed via the Address Book Service and changes take effect once the
-network is restarted. This allows the Hedera council to add and remove nodes, and node operators to configure nodes
-on the network.
+Nodes can be added, updated or removed via the Address Book Service and changes take effect once a freeze upgrade 
+transaction is sent and the network is restarted. This allows the Hedera council to add and remove nodes, and node operators 
+to update nodes on the network.
 
 ### Table of Contents
 - [Addressbook Service](#Addressbook-Service)
@@ -21,20 +21,20 @@ on the network.
 The Addressbook Service is a service (```AddressBookService extends RpcService```) that provides a decentralized and secure
 way to update the node addressbook to configure nodes on the Hedera network. It allows the Hedera council to add and
 remove nodes, and node operators to configure nodes on the network. Changes are saved to state. When the network receives
-a freeze transactions, changes are persisted to disk in a file `config.txt`. 
-Changes take effect once the network is restarted.
+a freeze transactions, new files `config.txt` and `s-public-alias.pem` are created on each node of the network to
+reflect the changes. Changes take effect once the network is restarted.
 
 ## Architecture Overview
 
-The Addressbook Service is designed to handle transactions and queries related to the dynamic addressbook that specifies
-nodes on the Hedera network. It provides a set of operations that allow users to add, delete and update node information, 
-including consensus staking. The main components of the Addressbook Service are:
+The Addressbook Service is designed to handle transactions related to the dynamic addressbook that specifies
+nodes on the Hedera network. It provides a set of operations that allow users to add, delete and update node 
+information. The main components of the Addressbook Service are:
 
-1. `Protobuf Definitions`: These are used to define the structure of our transactions and queries. They ensure that 
+1. `Protobuf Definitions`: These are used to define the structure of transactions. They ensure that 
 the data sent between the client and the server is structured and typed.
 
-2. `Handlers`: These are responsible for executing the transactions and queries. Each type of transaction or query 
-has its own handler. Handlers interact with the Network and Freeze Services to perform the required operations.
+2. `Handlers`: These are responsible for executing the transactions. Each type of transaction has its own handler. 
+Handlers interact with the Addressbook Service to perform the required operations.
 
 3. `Addressbook Service`: These are interfaces that define methods for interacting with the dynamic addressbook. 
 They provide the functionality for the various operations that can be performed.
