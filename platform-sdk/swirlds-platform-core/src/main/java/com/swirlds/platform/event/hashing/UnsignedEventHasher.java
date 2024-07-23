@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,20 @@
  * limitations under the License.
  */
 
-plugins {
-    id("java-library")
-    id("com.hedera.gradle.java")
-}
+package com.swirlds.platform.event.hashing;
 
-group = "com.hedera.storage"
+import com.swirlds.platform.system.events.UnsignedEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
+/**
+ * Hashes unsigned events.
+ */
+public interface UnsignedEventHasher {
+
+    /**
+     * Hashes the event and builds the event descriptor.
+     *
+     * @param event the event to hash
+     */
+    void hashUnsignedEvent(@NonNull final UnsignedEvent event);
+}

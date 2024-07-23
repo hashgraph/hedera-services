@@ -29,9 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
-/**
- * {@inheritDoc}
- */
 public class AsyncNotificationEngine extends AbstractNotificationEngine {
 
     /**

@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec;
 
-import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.ACCOUNTS_KEY;
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.extensions.NetworkTargetingExtension.REPEATABLE_KEY_GENERATOR;

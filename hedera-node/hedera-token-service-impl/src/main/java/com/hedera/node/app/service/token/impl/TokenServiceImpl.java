@@ -30,6 +30,7 @@ import com.hedera.node.app.service.token.impl.api.TokenServiceApiProvider;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema;
 import com.hedera.node.app.service.token.impl.schemas.V0500TokenSchema;
+import com.hedera.node.app.service.token.impl.schemas.V0530TokenSchema;
 import com.hedera.node.app.spi.api.ServiceApiDefinition;
 import com.hedera.node.app.spi.store.ReadableStoreDefinition;
 import com.hedera.node.app.spi.store.WritableStoreDefinition;
@@ -89,5 +90,6 @@ public class TokenServiceImpl implements TokenService {
         requireNonNull(registry);
         registry.register(new V0490TokenSchema(new SyntheticAccountCreator()));
         registry.register(new V0500TokenSchema());
+        registry.register(new V0530TokenSchema());
     }
 }

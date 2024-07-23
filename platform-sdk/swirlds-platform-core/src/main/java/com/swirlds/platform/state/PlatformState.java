@@ -223,8 +223,16 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     private void skipUptimeData(final @NonNull SerializableDataInputStream in) throws IOException {
+        // uptime data version
+        in.readInt();
         int numOfEntries = in.readInt();
         for (int i = 0; i < numOfEntries; i++) {
+            // key version
+            in.readInt();
+            // nodeId
+            in.readLong();
+            // value version
+            in.readInt();
             // lastEventRound
             in.readLong();
             // lastEventTime

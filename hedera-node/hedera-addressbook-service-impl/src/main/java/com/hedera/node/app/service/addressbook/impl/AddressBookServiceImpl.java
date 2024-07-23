@@ -30,7 +30,6 @@ import java.util.Set;
  * Standard implementation of the {@link AddressBookService} {@link RpcService}.
  */
 public final class AddressBookServiceImpl implements AddressBookService {
-    public static final String NODES_KEY = "NODES";
 
     @Override
     public void registerSchemas(@NonNull SchemaRegistry registry) {
