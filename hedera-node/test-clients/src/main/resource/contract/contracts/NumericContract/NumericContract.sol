@@ -4,6 +4,9 @@ pragma experimental ABIEncoderV2;
 
 contract NumericContract {
 
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*               Non-static Simple HTS functions              */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
     function approveRedirect(address token, address account, uint256 amount) public {
         (bool success, bytes memory result) = address(token).call(abi.encodeWithSignature("approve(address,uint256)", account, amount));
 
@@ -78,6 +81,57 @@ contract NumericContract {
 
     function wipeNFT(address token, address account, int64[] memory serialNumbers) public {
         (bool success, bytes memory result) = address(0x167).call(abi.encodeWithSignature("wipeTokenAccountNFT(address,address,int64[])", token, account, serialNumbers));
+
+        if (success == false) {
+            revert();
+        }
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                    Static HTS functions                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+    function getTokenKey(address token, uint keyType) public view {
+        (bool success, bytes memory result) = address(0x167).staticcall(abi.encodeWithSignature("getTokenKey(address,uint)", token, keyType));
+
+        if (success == false) {
+            revert();
+        }
+    }
+
+    function getNonFungibleTokenInfo(address token, int64 serialNumber) public view {
+        (bool success, bytes memory result) = address(0x167).staticcall(abi.encodeWithSignature("getNonFungibleTokenInfo(address,int64)", token, serialNumber));
+
+        if (success == false) {
+            revert();
+        }
+    }
+
+    function getApproved(address token, uint256 serialNumber) public view {
+        (bool success, bytes memory result) = address(0x167).staticcall(abi.encodeWithSignature("getApproved(address,uint256)", token, serialNumber));
+
+        if (success == false) {
+            revert();
+        }
+    }
+
+    function getApprovedERC(address token, uint256 serialNumber) public view {
+        (bool success, bytes memory result) = token.staticcall(abi.encodeWithSignature("getApproved(uint256)", serialNumber));
+
+        if (success == false) {
+            revert();
+        }
+    }
+
+    function tokenURI(address token, uint256 _tokenId) public view {
+        (bool success, bytes memory result) = token.staticcall(abi.encodeWithSignature("tokenURI(uint256)", _tokenId));
+
+        if (success == false) {
+            revert();
+        }
+    }
+
+    function ownerOf(address token, uint256 _tokenId) public view {
+        (bool success, bytes memory result) = token.staticcall(abi.encodeWithSignature("ownerOf(uint256)", _tokenId));
 
         if (success == false) {
             revert();

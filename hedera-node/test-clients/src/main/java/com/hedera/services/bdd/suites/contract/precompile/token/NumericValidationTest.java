@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -246,6 +247,82 @@ public class NumericValidationTest {
                     .call("wipeNFT", nft, numericContract, new long[] {-1L})
                     .gas(1_000_000L)
                     .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
+        }
+    }
+
+    @Nested
+    @DisplayName("calls fail to static functions with invalid amounts")
+    class StaticFunctionsTests {
+
+        @HapiTest
+        @DisplayName("when using tokenURI")
+        // tokenURI has different behaviour from the original ERC721 standard as it should revert when providing invalid
+        // serialNumber
+        public Stream<DynamicTest> successTokenURI() {
+            return hapiTest(numericContract
+                    .call("tokenURI", nft, BigInteger.ZERO)
+                    .gas(1_000_000L)
+                    .andAssert(txn -> txn.hasKnownStatus(SUCCESS)));
+        }
+
+        @HapiTest
+        @DisplayName("when using getTokenKey for NFT")
+        public Stream<DynamicTest> failToGetTokenKeyNFT() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("getTokenKey", nft, testCase.amount)
+                            .gas(1_000_000L)
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
+        }
+
+        @HapiTest
+        @DisplayName("when using getTokenKey for Fungible Token")
+        public Stream<DynamicTest> failToGetTokenKeyFT() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("getTokenKey", fungibleToken, testCase.amount)
+                            .gas(1_000_000L)
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
+        }
+
+        @HapiTest
+        @DisplayName("when using getNonFungibleTokenInfo")
+        public Stream<DynamicTest> failToGetNonFungibleTokenInfo() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("getNonFungibleTokenInfo", nft, -1L)
+                            .gas(1_000_000L)
+                            .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
+        }
+
+        @HapiTest
+        @DisplayName("when using getApproved")
+        public Stream<DynamicTest> failToGetApproved() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("getApproved", nft, testCase.amount)
+                            .gas(1_000_000L)
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
+        }
+
+        @HapiTest
+        @DisplayName("when using getApprovedERC")
+        public Stream<DynamicTest> failToGetApprovedERC() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("getApprovedERC", nft, testCase.amount)
+                            .gas(1_000_000L)
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
+        }
+
+        @HapiTest
+        @DisplayName("when using ownerOf")
+        public Stream<DynamicTest> failToOwnerOf() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("ownerOf", nft, testCase.amount)
+                            .gas(1_000_000L)
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
         }
     }
 }
