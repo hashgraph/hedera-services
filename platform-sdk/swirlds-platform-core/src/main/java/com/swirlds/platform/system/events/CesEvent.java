@@ -39,8 +39,8 @@ import java.util.Iterator;
 import java.util.Objects;
 
 /**
- * An event that may or may not have reached consensus. If it has reached consensus, provides detailed consensus
- * information.
+ * A wrapper around a {@link PlatformEvent} that holds additional information required by the
+ * {@link com.swirlds.platform.event.stream.ConsensusEventStream}.
  */
 public class CesEvent extends AbstractSerializableHashable
         implements RunningHashable, StreamAligned, Timestamped, ConsensusEvent {
@@ -143,6 +143,7 @@ public class CesEvent extends AbstractSerializableHashable
     }
 
     @Override
+    @NonNull
     public Iterator<ConsensusTransaction> consensusTransactionIterator() {
         return platformEvent.consensusTransactionIterator();
     }
