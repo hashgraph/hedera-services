@@ -21,7 +21,29 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * The {@code LibraryLoader} interface provides methods for loading native libraries based on the operating system
+ * and architecture. It defines default extensions for binary libraries and provides mechanisms to create instances
+ * of library loaders suited for the current system configuration or specific combinations of architecture and OS.
+ * Usage of this interface allows dynamic loading of native libraries bundled within the JAR files, facilitating
+ * platform-specific library management.
+ * Example usage:
+ * <pre>
+ * {@code
+ * LibraryLoader loader = LibraryLoader.create(MyClass.class);
+ * loader.install("myLibrary");
+ * }
+ * </pre>
+ * In case the system does not match the requested combination of architecture and OS, a no-op implementation
+ * is returned.
+ * <pre>
+ * {@code
+ * LibraryLoader loader = LibraryLoader.create(MyClass.class, Architecture.AMD64, OperatingSystem.LINUX);
+ * loader.install("myLibrary"); //This will produce a no-op in other combination of system different to:Architecture.AMD64, OperatingSystem.LINUX
+ * }
+ * </pre>
  *
+ * @see Architecture
+ * @see OperatingSystem
  */
 public interface LibraryLoader {
 
@@ -74,7 +96,9 @@ public interface LibraryLoader {
      * Returns an instance of a LibraryLoader for the requested combination of Architecture and OS.
      * If the system does not match the requested combination a no-op version of the libraryLoader is returned.
      * @param caller caller class located in the same jar that the library wanted to be loaded
-     * @return an instance of {@link LibraryLoader}
+     * @param architecture requested architecture
+     * @param operatingSystem requested os
+     * @return an instance of {@link LibraryLoader} that can perform the installation or a NO-OP
      */
     @NonNull
     static LibraryLoader create(
