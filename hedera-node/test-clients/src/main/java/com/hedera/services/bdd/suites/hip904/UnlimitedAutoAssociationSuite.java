@@ -70,7 +70,8 @@ import org.junit.jupiter.api.Tag;
 @HapiTestLifecycle
 @DisplayName("UnlimitedAutoAssociationSuite")
 @Tag(TOKEN)
-class UnlimitedAutoAssociationSuite {
+public class UnlimitedAutoAssociationSuite {
+    public static final int UNLIMITED_AUTO_ASSOCIATION_SLOTS = -1;
     private static final double expectedCreateHollowAccountFee = 0.0472956012;
     private static final double transferFee = 0.00189;
     private static final double expectedFeeForOneAssociation = 0.05;

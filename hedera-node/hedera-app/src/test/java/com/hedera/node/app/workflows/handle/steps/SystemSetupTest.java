@@ -90,7 +90,7 @@ class SystemSetupTest {
     void setup() {
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
         given(context.consensusTime()).willReturn(CONSENSUS_NOW);
-        given(context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class))
+        given(context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class))
                 .willReturn(genesisAccountRecordBuilder);
         given(context.readableStore(ReadableBlockRecordStore.class)).willReturn(blockStore);
 

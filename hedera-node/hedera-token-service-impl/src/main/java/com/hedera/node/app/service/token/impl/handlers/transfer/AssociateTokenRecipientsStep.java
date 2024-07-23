@@ -23,6 +23,7 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep.validateSpenderHasAllowance;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
@@ -226,8 +227,9 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
                         .build())
                 .build();
         // We don't need to verify signatures for this internal dispatch. So we specify the keyVerifier to null
-        context.dispatchRemovablePrecedingTransaction(
+        final var streamBuilder = context.dispatchRemovablePrecedingTransaction(
                 syntheticAssociation, SingleTransactionRecordBuilder.class, null, context.payer());
+        validateTrue(streamBuilder.status() == SUCCESS, streamBuilder.status());
         // increment the usedAutoAssociations count
         final var accountModified = requireNonNull(accountStore.getAliasedAccountById(accountId))
                 .copyBuilder()
