@@ -6,8 +6,11 @@ These responses are found in the transaction receipt. This document's goal is to
 ## Propagated EVM Transaction Response Codes
 These response codes can appear for `ContractCall`, `ContractCreate`, and `EthereumTransaction`.
 It is possible for `ContractCreate` and `ContractCall` to create child transactions, and if one of them fails with a special revert or halt reason, the status is propagated to the top-level status of the transaction.
-`ContractCall` creates child transactions by executing logic that results in another call to a function/contract.
-`ContractCreate` creates child transactions by having logic containing calls in the constructor.
+- `ContractCall` creates child transactions by executing logic that results in another call to a function/contract.
+- `ContractCreate` creates child transactions by having logic containing calls in the constructor.
+- `EthereumTransaction` allows for wrapped ContractCall and ContractCreate transactions, which can also create child transactions in the same manner as described above.
+
+Note: The description for the statuses is copied from [protobuf repo](https://github.com/hashgraph/hedera-protobufs/blob/main/services/response_code.proto)
 
 - **CONTRACT_REVERT_EXECUTED**
   - The default error for contract execution being reverted. This also happens when the REVERT opcode is executed in the contract.
@@ -84,6 +87,12 @@ These responses do include ContractCreate via EthereumTransaction.
 - **INVALID_MAX_AUTO_ASSOCIATIONS**
   - The maximum automatic associations value is not valid. The most common cause for this error is a value less than `-1`.
 
+- **REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT**
+  - Cannot set the number of automatic associations for an account more than the maximum allowed token associations tokens.maxPerAccount. If you would like to exceed that, you should set maxAutoAssociations to -1.
+
+- **PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED** 
+  - Proxy account ID field is deprecated.
+
 - **INVALID_AUTORENEW_ACCOUNT**
   - The `autoRenewAccount` specified is not a valid, active account.
 
@@ -114,7 +123,8 @@ These are additional response codes that can appear specifically for `EthereumTr
 - **WRONG_CHAIN_ID**
   - `EthereumTransaction` was signed against a chain ID that this network does not support.
 
+- **NEGATIVE_ALLOWANCE_AMOUNT**
+  - The maxGasAllowance field is set to less than 0. This represents the maximum amount of tinybars, that the payer of the transaction is willing to pay to complete the transaction.
+
 - **INVALID_ETHEREUM_TRANSACTION**
   - The Ethereum transaction either failed parsing or failed signature validation, or some other `EthereumTransaction` error not covered by another response code.
-
-Note: The description for the statuses is copied from [protobuf repo](https://github.com/hashgraph/hedera-protobufs/blob/main/services/response_code.proto)
