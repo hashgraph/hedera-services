@@ -17,9 +17,18 @@
 package com.hedera.node.app.blocks;
 
 import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
+import com.hedera.node.app.blocks.impl.ConcurrentBlockItemWriter;
 import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
+import com.hedera.node.app.blocks.impl.GrpcBlockItemWriter;
+import com.hedera.node.config.ConfigProvider;
+import com.hedera.node.config.data.BlockStreamConfig;
+import com.swirlds.state.spi.info.SelfNodeInfo;
 import dagger.Binds;
 import dagger.Module;
+import dagger.Provides;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.nio.file.FileSystem;
+import java.util.concurrent.ExecutorService;
 import javax.inject.Singleton;
 
 @Module
@@ -28,7 +37,21 @@ public interface BlockStreamModule {
     @Singleton
     BlockStreamManager bindBlockStreamManager(BlockStreamManagerImpl blockStreamManager);
 
-    @Binds
+    @Provides
     @Singleton
-    BlockItemWriter bindBlockItemWriter(FileBlockItemWriter fileBlockItemWriter);
+    static BlockItemWriter bindBlockItemWriter(
+            @NonNull final ConfigProvider configProvider,
+            @NonNull final SelfNodeInfo selfNodeInfo,
+            @NonNull final FileSystem fileSystem,
+            @NonNull final ExecutorService executorService) {
+        final var config = configProvider.getConfiguration();
+        final var blockStreamConfig = config.getConfigData(BlockStreamConfig.class);
+        return switch (blockStreamConfig.writerMode()) {
+            case FILE -> new ConcurrentBlockItemWriter(executorService, new FileBlockItemWriter(configProvider, selfNodeInfo, fileSystem));
+            case GRPC -> new GrpcBlockItemWriter();
+            default -> throw new IllegalArgumentException(
+                    "Unknown BlockStreamWriterMode: " + blockStreamConfig.writerMode());
+        };
+    }
+    ;
 }
