@@ -84,7 +84,6 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
         this.consensusTimestamp = consensusTimestamp;
     }
 
-
     /**
      * Returns the payload as a PBJ record
      *

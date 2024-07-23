@@ -94,10 +94,7 @@ public class RandomEventUtils {
 
         final List<OneOf<PayloadOneOfType>> convertedTransactions = new ArrayList<>();
         if (transactions != null) {
-            Stream.of(transactions)
-                    .map(PayloadWrapper::getPayload)
-                    .map(one -> new OneOf<>(PayloadOneOfType.APPLICATION_PAYLOAD, one.as()))
-                    .forEach(convertedTransactions::add);
+            Stream.of(transactions).map(PayloadWrapper::getPayload).forEach(convertedTransactions::add);
         }
         final UnsignedEvent unsignedEvent = new UnsignedEvent(
                 new BasicSoftwareVersion(1),

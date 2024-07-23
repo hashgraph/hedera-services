@@ -31,6 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.pbj.runtime.OneOf;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.base.test.fixtures.time.FakeTime;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
@@ -214,7 +215,7 @@ class PcesWriterTests {
                 final byte[] bytes = new byte[transactionSize];
                 random.nextBytes(bytes);
 
-                transactions[index] = new PayloadWrapper(new OneOf<>(APPLICATION_PAYLOAD, bytes));
+                transactions[index] = new PayloadWrapper(new OneOf<>(APPLICATION_PAYLOAD, Bytes.wrap(bytes)));
             }
             return transactions;
         };
