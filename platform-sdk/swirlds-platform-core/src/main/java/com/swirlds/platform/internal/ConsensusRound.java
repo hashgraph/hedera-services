@@ -241,9 +241,6 @@ public class ConsensusRound implements Round {
         return reachedConsTimestamp;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public boolean isPcesRound() {
         return pcesRound;
     }

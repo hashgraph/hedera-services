@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.service.addressbook.impl;
+package com.swirlds.platform.event.hashing;
 
-import com.hedera.node.app.service.addressbook.AddressBookService;
-import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
-import com.hedera.node.app.spi.RpcService;
-import com.swirlds.state.spi.SchemaRegistry;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * Standard implementation of the {@link AddressBookService} {@link RpcService}.
+ * Hashes unsigned events.
  */
-public final class AddressBookServiceImpl implements AddressBookService {
+public interface UnsignedEventHasher {
 
-    @Override
-    public void registerSchemas(@NonNull SchemaRegistry registry) {
-        registry.register(new V053AddressBookSchema());
-    }
+    /**
+     * Hashes the event and builds the event descriptor.
+     *
+     * @param event the event to hash
+     */
+    void hashUnsignedEvent(@NonNull final UnsignedEvent event);
 }

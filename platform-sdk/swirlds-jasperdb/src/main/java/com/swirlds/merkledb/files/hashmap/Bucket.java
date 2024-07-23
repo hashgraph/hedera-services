@@ -46,7 +46,7 @@ import org.apache.logging.log4j.Logger;
  *
  * <p>Protobuf schema:
  *
- * <p><pre>
+ * <pre>
  * message Bucket {
  *
  *     // Bucket index

@@ -203,12 +203,12 @@ public class SyncPermitProvider {
                 if (usedPermits == 0) {
                     return;
                 }
-                try {
-                    MILLISECONDS.sleep(10);
-                } catch (final InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException("interrupted while waiting for all permits to be released", e);
-                }
+            }
+            try {
+                MILLISECONDS.sleep(10);
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("interrupted while waiting for all permits to be released", e);
             }
         }
     }
