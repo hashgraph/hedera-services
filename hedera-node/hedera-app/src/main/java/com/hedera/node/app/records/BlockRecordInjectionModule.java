@@ -79,7 +79,7 @@ public abstract class BlockRecordInjectionModule {
             @NonNull final BlockRecordStreamProducer streamFileProducer) {
         final var merkleState = state.getMerkleState();
         if (merkleState == null) {
-            throw new IllegalStateException("Hedera state is null");
+            throw new IllegalStateException("Merkle state is null");
         }
         return new BlockRecordManagerImpl(configProvider, merkleState, streamFileProducer);
     }
