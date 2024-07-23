@@ -35,19 +35,13 @@ import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.c
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateFungibleTransfers;
 import static com.hedera.node.app.service.token.impl.util.AirdropHandlerHelper.separateNftTransfers;
 import static com.hedera.node.app.service.token.impl.util.CryptoTransferHelper.createAccountAmount;
-import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkPayer;
-import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkReceiver;
-import static com.hedera.node.app.service.token.impl.util.CryptoTransferValidationHelper.checkSender;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
-import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
-import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
-import com.hedera.hapi.node.base.NftTransfer;
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.SubType;
@@ -62,7 +56,6 @@ import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.token.TokenAirdropTransactionBody;
 import com.hedera.hapi.node.token.TokenAssociateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableNftStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -115,18 +108,11 @@ public class TokenAirdropHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-
         final var op = context.body().tokenAirdropOrThrow();
-        final var accountStore = context.createStore(ReadableAccountStore.class);
-        final var tokenStore = context.createStore(ReadableTokenStore.class);
-
-        for (final var transfers : op.tokenTransfers()) {
-            final var tokenID = transfers.tokenOrThrow();
-            final var tokenMeta = tokenStore.getTokenMeta(tokenID);
-            validateTruePreCheck(tokenMeta != null, INVALID_TOKEN_ID);
-            checkFungibleTokenTransfers(tokenID, transfers.transfers(), context, accountStore);
-            checkNftTransfers(tokenID, transfers.nftTransfers(), context, tokenMeta, accountStore);
-        }
+        var convertedOp = CryptoTransferTransactionBody.newBuilder()
+                .tokenTransfers(op.tokenTransfers())
+                .build();
+        executor.preHandle(context, convertedOp);
     }
 
     @Override
@@ -443,93 +429,6 @@ public class TokenAirdropHandler implements TransactionHandler {
             serviceFee += fee.serviceFee();
         }
         return new Fees(nodeFee, networkFee, serviceFee);
-    }
-
-    /**
-     * As part of pre-handle, token transfers in the transfer list are plausible.
-     *
-     * @param tokenID      The ID of the token we are transferring
-     * @param transfers    The transfers to check
-     * @param ctx          The context we gather signing keys into
-     * @param accountStore The account store to use to look up accounts
-     * @throws PreCheckException If the transaction is invalid
-     */
-    private void checkFungibleTokenTransfers(
-            @NonNull final TokenID tokenID,
-            @NonNull final List<AccountAmount> transfers,
-            @NonNull final PreHandleContext ctx,
-            @NonNull final ReadableAccountStore accountStore)
-            throws PreCheckException {
-        //        final var tokenStore = ctx.createStore(ReadableTokenStore.class);
-        //        // Fail if we have custom fees attached to the token
-        //        // We're going to iterate over all the transfers in the transfer list. Each transfer is known as an
-        //        // "account amount". Each of these represents the transfer of fungible token INTO a single account or
-        // OUT of a
-        //        // single account.
-        //        for (final var accountAmount : transfers) {
-        //            // Given an accountId, we need to look up the associated account.
-        //            final var accountId = validateAccountID(accountAmount.accountIDOrElse(AccountID.DEFAULT), null);
-        //            final var account = accountStore.getAliasedAccountById(accountId);
-        //            final var isCredit = accountAmount.amount() > 0;
-        //            final var isDebit = accountAmount.amount() < 0;
-        //            if (account != null) {
-        //                if (isStakingAccount(ctx.configuration(), account.accountId())) {
-        //                    throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
-        //                }
-        //
-        //                if (isDebit) {
-        //                    if (accountAmount.isApproval()) {
-        //
-        //                    } else {
-        //                        // If the account is a hollow account, then we require a signature for it.
-        //                        // It is possible that the hollow account has signed this transaction, in which case
-        //                        // we need to finalize the hollow account by setting its key.
-        //                        if (isHollow(account)) {
-        //                            ctx.requireSignatureForHollowAccount(account);
-        //                        } else {
-        //                            ctx.requireKeyOrThrow(account.key(), INVALID_ACCOUNT_ID);
-        //                        }
-        //                    }
-        //                } else if (isCredit && account.receiverSigRequired()) {
-        //                    ctx.requireKeyOrThrow(account.key(), INVALID_TRANSFER_ACCOUNT_ID);
-        //                }
-        //            } else if (isDebit) {
-        //                // All debited accounts must be valid
-        //                throw new PreCheckException(INVALID_ACCOUNT_ID);
-        //            }
-        //        }
-    }
-
-    /**
-     * As part of pre-handle, nft transfers in the transfer list are plausible.
-     *
-     * @param tokenID          The ID of the token we are transferring
-     * @param nftTransfersList The nft transfers to check
-     * @param context          The context we gather signing keys into
-     * @param accountStore     The account store to use to look up accounts
-     * @throws PreCheckException If the transaction is invalid
-     */
-    private void checkNftTransfers(
-            final TokenID tokenID,
-            final List<NftTransfer> nftTransfersList,
-            final PreHandleContext context,
-            final ReadableTokenStore.TokenMetadata tokenMeta,
-            final ReadableAccountStore accountStore)
-            throws PreCheckException {
-
-        final var tokenStore = context.createStore(ReadableTokenStore.class);
-
-        for (final var nftTransfer : nftTransfersList) {
-            // Validate accounts
-            final var senderId = nftTransfer.senderAccountIDOrElse(AccountID.DEFAULT);
-            validateAccountID(senderId, null);
-            checkSender(senderId, nftTransfer, context, accountStore);
-            checkPayer(senderId, context);
-
-            final var receiverId = nftTransfer.receiverAccountIDOrElse(AccountID.DEFAULT);
-            validateAccountID(receiverId, null);
-            checkReceiver(receiverId, senderId, nftTransfer, context, tokenMeta, null, accountStore);
-        }
     }
 
     private void validateSpenderHasAllowance(
