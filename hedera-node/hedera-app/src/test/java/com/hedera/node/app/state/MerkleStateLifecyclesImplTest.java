@@ -56,7 +56,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HederaLifecyclesImplTest extends MerkleTestBase {
+class MerkleStateLifecyclesImplTest extends MerkleTestBase {
     private static final int PRETEND_STAKING_INFO_CHILD_INDEX = 7;
 
     @Mock
@@ -101,11 +101,11 @@ class HederaLifecyclesImplTest extends MerkleTestBase {
                     BiConsumer<EntityNumber, StakingNodeInfo>>
             weightUpdateVisitor;
 
-    private HederaLifecyclesImpl subject;
+    private MerkleStateLifecyclesImpl subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HederaLifecyclesImpl(hedera, weightUpdateVisitor);
+        subject = new MerkleStateLifecyclesImpl(hedera, weightUpdateVisitor);
     }
 
     @Test

@@ -96,7 +96,7 @@ import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.HederaRecordCache;
-import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.state.WrappedMerkleState;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -113,7 +113,7 @@ import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import com.swirlds.state.spi.info.NetworkInfo;
@@ -233,7 +233,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
     private RecordListBuilder recordListBuilder;
 
     @Mock(strictness = LENIENT)
-    private HederaState baseState;
+    private MerkleState baseState;
 
     @Mock
     private WritableStates writableStates;
@@ -547,7 +547,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
                 G_KEY, GRAPE);
 
         @Mock(strictness = LENIENT)
-        private HederaState baseState;
+        private MerkleState baseState;
 
         @Mock(strictness = LENIENT, answer = Answers.RETURNS_SELF)
         private SingleTransactionRecordBuilderImpl childRecordBuilder;
@@ -655,7 +655,7 @@ public class DispatchHandleContextTest extends StateTestBase implements Scenario
         @Test
         void testDispatchPrecedingWithChangedDataDoesntFail() {
             final var context = createContext(txBody, HandleContext.TransactionCategory.USER);
-            when(stack.peek()).thenReturn(new WrappedHederaState(baseState));
+            when(stack.peek()).thenReturn(new WrappedMerkleState(baseState));
             when(stack.peek().getWritableStates(FOOD_SERVICE)).thenReturn(writableStates);
             final Map<String, String> newData = new HashMap<>(BASE_DATA);
             newData.put(B_KEY, BLUEBERRY);

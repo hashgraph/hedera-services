@@ -53,7 +53,7 @@ import com.hedera.node.app.spi.signatures.VerificationAssistant;
 import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.state.WrappedMerkleState;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.throttle.NetworkUtilizationManager;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
@@ -278,6 +278,6 @@ class ChildDispatchFactoryTest {
                 .willReturn(Account.newBuilder().key(Key.DEFAULT).build());
         given(parentDispatch.recordListBuilder()).willReturn(recordListBuilder);
         given(parentDispatch.stack()).willReturn(savepointStack);
-        given(savepointStack.peek()).willReturn(new WrappedHederaState(savepointStack));
+        given(savepointStack.peek()).willReturn(new WrappedMerkleState(savepointStack));
     }
 }

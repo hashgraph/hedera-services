@@ -23,7 +23,7 @@ import static org.mockito.Mock.Strictness.LENIENT;
 import static org.mockito.Mockito.when;
 
 import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
 import com.swirlds.state.test.fixtures.StateTestBase;
@@ -55,7 +55,7 @@ class SavepointStackImplTest extends StateTestBase {
             G_KEY, GRAPE);
 
     @Mock(strictness = LENIENT)
-    private HederaState baseState;
+    private MerkleState baseState;
 
     @BeforeEach
     void setup() {

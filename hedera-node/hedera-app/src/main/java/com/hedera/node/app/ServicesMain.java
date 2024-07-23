@@ -208,8 +208,8 @@ public class ServicesMain implements SwirldMain {
         //       ConstructableRegistry as the factory for the Services Merkle tree class id.
         //
         // Now, note that hedera::newState returns MerkleStateRoot instances that delegate
-        // their lifecycle methods to an injected instance of HederaLifecycles---and
-        // hedera::newState injects an instance of HederaLifecyclesImpl which primarily
+        // their lifecycle methods to an injected instance of MerkleStateLifecycles---and
+        // hedera::newState injects an instance of MerkleStateLifecyclesImpl which primarily
         // delegates these calls back to the Hedera instance itself.
         //
         // Thus, the Hedera instance centralizes nearly all the setup and runtime logic for the

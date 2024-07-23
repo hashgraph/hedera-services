@@ -29,7 +29,7 @@ import com.hedera.node.app.service.util.impl.handlers.UtilHandlers;
 import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.app.workflows.dispatcher.TransactionHandlers;
 import com.swirlds.common.utility.AutoCloseableWrapper;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import dagger.Module;
 import dagger.Provides;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -57,7 +57,7 @@ public interface HandleWorkflowModule {
     Runnable NO_OP = () -> {};
 
     @Provides
-    static Supplier<AutoCloseableWrapper<HederaState>> provideStateSupplier(
+    static Supplier<AutoCloseableWrapper<MerkleState>> provideStateSupplier(
             @NonNull final WorkingStateAccessor workingStateAccessor) {
         return () -> new AutoCloseableWrapper<>(workingStateAccessor.getHederaState(), NO_OP);
     }

@@ -32,7 +32,7 @@ import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.spi.ReadableKVState;
@@ -68,9 +68,9 @@ class MerkleStateRootTest extends MerkleTestBase {
     private final AtomicBoolean onHandleCalled = new AtomicBoolean(false);
     private final AtomicBoolean onUpdateWeightCalled = new AtomicBoolean(false);
 
-    private final HederaLifecycles lifecycles = new HederaLifecycles() {
+    private final MerkleStateLifecycles lifecycles = new MerkleStateLifecycles() {
         @Override
-        public void onPreHandle(@NonNull Event event, @NonNull HederaState state) {
+        public void onPreHandle(@NonNull Event event, @NonNull MerkleState state) {
             onPreHandleCalled.set(true);
         }
 
@@ -81,13 +81,13 @@ class MerkleStateRootTest extends MerkleTestBase {
 
         @Override
         public void onHandleConsensusRound(
-                @NonNull Round round, @NonNull PlatformState platformState, @NonNull HederaState state) {
+                @NonNull Round round, @NonNull PlatformState platformState, @NonNull MerkleState state) {
             onHandleCalled.set(true);
         }
 
         @Override
         public void onStateInitialized(
-                @NonNull HederaState state,
+                @NonNull MerkleState state,
                 @NonNull Platform platform,
                 @NonNull PlatformState platformState,
                 @NonNull InitTrigger trigger,
@@ -398,7 +398,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Reading an unknown state on ReadableStates should throw IAE")
         void unknownState() {
-            // Given a HederaState with the fruit and animal and country states
+            // Given a MerkleState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(animalMetadata, () -> animalMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
@@ -414,7 +414,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Read a virtual map")
         void readVirtualMap() {
-            // Given a HederaState with the fruit virtual map
+            // Given a MerkleState with the fruit virtual map
             setupFruitVirtualMap();
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitVirtualMap);
 
@@ -428,7 +428,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Try to read a state that is MISSING from the merkle tree")
         void readMissingState() {
-            // Given a HederaState with the fruit merkle map, which somehow has
+            // Given a MerkleState with the fruit merkle map, which somehow has
             // lost the merkle node (this should NEVER HAPPEN in real life!)
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             hederaMerkle.setChild(0, null);
@@ -443,7 +443,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Contains is true for all states in stateKeys and false for unknown ones")
         void contains() {
-            // Given a HederaState with the fruit and animal and country and steam states
+            // Given a MerkleState with the fruit and animal and country and steam states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(animalMetadata, () -> animalMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
@@ -466,7 +466,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Getting the same readable state twice returns the same instance")
         void getReturnsSameInstanceIfCalledTwice() {
-            // Given a HederaState with the fruit and the ReadableStates for it
+            // Given a MerkleState with the fruit and the ReadableStates for it
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             final var states = hederaMerkle.getReadableStates(FIRST_SERVICE);
 
@@ -481,7 +481,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Getting ReadableStates on a known service returns an object with all the state")
         void knownServiceNameUsingReadableStates() {
-            // Given a HederaState with the fruit and animal and country states
+            // Given a MerkleState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(animalMetadata, () -> animalMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
@@ -596,7 +596,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Reading an unknown state on WritableState should throw IAE")
         void unknownState() {
-            // Given a HederaState with the fruit and animal and country states
+            // Given a MerkleState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(animalMetadata, () -> animalMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
@@ -612,7 +612,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Try to read a state that is MISSING from the merkle tree")
         void readMissingState() {
-            // Given a HederaState with the fruit virtual map, which somehow has
+            // Given a MerkleState with the fruit virtual map, which somehow has
             // lost the merkle node (this should NEVER HAPPEN in real life!)
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             hederaMerkle.setChild(0, null);
@@ -627,7 +627,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Read a virtual map")
         void readVirtualMap() {
-            // Given a HederaState with the fruit virtual map
+            // Given a MerkleState with the fruit virtual map
             setupFruitVirtualMap();
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitVirtualMap);
 
@@ -641,7 +641,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Contains is true for all states in stateKeys and false for unknown ones")
         void contains() {
-            // Given a HederaState with the fruit and animal and country states
+            // Given a MerkleState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(animalMetadata, () -> animalMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);
@@ -664,7 +664,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Getting the same writable state twice returns the same instance")
         void getReturnsSameInstanceIfCalledTwice() {
-            // Given a HederaState with the fruit and the WritableStates for it
+            // Given a MerkleState with the fruit and the WritableStates for it
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             final var states = hederaMerkle.getWritableStates(FIRST_SERVICE);
 
@@ -679,7 +679,7 @@ class MerkleStateRootTest extends MerkleTestBase {
         @Test
         @DisplayName("Getting WritableStates on a known service returns an object with all the state")
         void knownServiceNameUsingWritableStates() {
-            // Given a HederaState with the fruit and animal and country states
+            // Given a MerkleState with the fruit and animal and country states
             hederaMerkle.putServiceStateIfAbsent(fruitMetadata, () -> fruitMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(animalMetadata, () -> animalMerkleMap);
             hederaMerkle.putServiceStateIfAbsent(countryMetadata, () -> countrySingleton);

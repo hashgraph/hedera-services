@@ -30,7 +30,7 @@ import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.WritableStoreFactory;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.Set;
@@ -39,7 +39,7 @@ import javax.inject.Inject;
 
 public class TokenContextImpl implements TokenContext, FinalizeContext {
     private final Configuration configuration;
-    private final HederaState state;
+    private final MerkleState state;
     private final ReadableStoreFactory readableStoreFactory;
     private final WritableStoreFactory writableStoreFactory;
     private final RecordListBuilder recordListBuilder;
@@ -48,7 +48,7 @@ public class TokenContextImpl implements TokenContext, FinalizeContext {
     @Inject
     public TokenContextImpl(
             @NonNull final Configuration configuration,
-            @NonNull final HederaState state,
+            @NonNull final MerkleState state,
             @NonNull final StoreMetricsService storeMetricsService,
             @NonNull final SavepointStackImpl stack,
             @NonNull final RecordListBuilder recordListBuilder,

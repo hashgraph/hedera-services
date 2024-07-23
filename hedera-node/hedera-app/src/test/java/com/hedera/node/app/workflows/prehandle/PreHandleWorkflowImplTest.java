@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeMerkleState;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.signature.AppKeyVerifier;
@@ -126,7 +126,7 @@ final class PreHandleWorkflowImplTest extends AppTestBase implements Scenarios {
 
     @BeforeEach
     void setUp() {
-        final var fakeHederaState = new FakeHederaState();
+        final var fakeHederaState = new FakeMerkleState();
         fakeHederaState.addService(
                 TokenService.NAME,
                 Map.of(

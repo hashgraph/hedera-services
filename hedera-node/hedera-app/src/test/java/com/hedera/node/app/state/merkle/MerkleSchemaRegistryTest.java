@@ -30,7 +30,7 @@ import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.merkledb.MerkleDb;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.state.HederaLifecycles;
+import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
@@ -63,7 +63,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MerkleSchemaRegistryTest extends MerkleTestBase {
     @Mock
-    private HederaLifecycles lifecycles;
+    private MerkleStateLifecycles lifecycles;
 
     private MerkleSchemaRegistry schemaRegistry;
     private Configuration config;

@@ -31,7 +31,7 @@ import com.hedera.node.config.VersionedConfigImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.state.HederaLifecycles;
+import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.state.spi.MigrationContext;
@@ -63,7 +63,7 @@ class DependencyMigrationTest extends MerkleTestBase {
             SemanticVersion.newBuilder().major(0).minor(49).patch(0).build();
 
     @Mock
-    private HederaLifecycles lifecycles;
+    private MerkleStateLifecycles lifecycles;
 
     @Mock
     private NetworkInfo networkInfo;

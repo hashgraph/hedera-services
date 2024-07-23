@@ -49,7 +49,7 @@ import com.hedera.node.app.records.schemas.V0490BlockRecordSchema;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.spi.ReadableSingletonStateBase;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
@@ -437,8 +437,8 @@ final class BlockRecordManagerTest extends AppTestBase {
         Assertions.assertThat(result).isEqualTo(fromTimestamp(EPOCH));
     }
 
-    private static HederaState simpleBlockInfoState(final BlockInfo blockInfo) {
-        return new HederaState() {
+    private static MerkleState simpleBlockInfoState(final BlockInfo blockInfo) {
+        return new MerkleState() {
             @NonNull
             @Override
             public ReadableStates getReadableStates(@NonNull final String serviceName) {

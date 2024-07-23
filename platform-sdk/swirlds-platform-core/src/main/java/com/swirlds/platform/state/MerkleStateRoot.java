@@ -36,7 +36,7 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
@@ -76,7 +76,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * An implementation of {@link SwirldState} and {@link HederaState}. The Hashgraph Platform
+ * An implementation of {@link SwirldState} and {@link MerkleState}. The Hashgraph Platform
  * communicates with the application through {@link SwirldMain} and {@link
  * SwirldState}. The Hedera application, after startup, only needs the ability to get {@link
  * ReadableStates} and {@link WritableStates} from this object.
@@ -94,7 +94,7 @@ import org.apache.logging.log4j.Logger;
  * consider nesting service nodes in a MerkleMap, or some other such approach to get a binary tree.
  */
 public class MerkleStateRoot extends PartialNaryMerkleInternal
-        implements MerkleInternal, SwirldState, HederaState, MerkleRoot {
+        implements MerkleInternal, SwirldState, MerkleState, MerkleRoot {
     private static final Logger logger = LogManager.getLogger(MerkleStateRoot.class);
 
     /**
@@ -132,7 +132,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     /**
      * The callbacks for Hedera lifecycle events.
      */
-    private final HederaLifecycles lifecycles;
+    private final MerkleStateLifecycles lifecycles;
 
     public Map<String, Map<String, StateMetadata<?, ?>>> getServices() {
         return services;
@@ -161,7 +161,7 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
      *
      * @param lifecycles The lifecycle callbacks. Cannot be null.
      */
-    public MerkleStateRoot(@NonNull final HederaLifecycles lifecycles) {
+    public MerkleStateRoot(@NonNull final MerkleStateLifecycles lifecycles) {
         this.lifecycles = requireNonNull(lifecycles);
         this.classId = CLASS_ID;
     }

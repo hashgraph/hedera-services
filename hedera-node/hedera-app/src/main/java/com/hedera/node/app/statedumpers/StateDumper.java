@@ -85,7 +85,7 @@ import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
 import com.swirlds.platform.state.MerkleStateRoot;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;
@@ -120,10 +120,10 @@ public class StateDumper {
     private static final String SEMANTIC_CONGESTION = "congestion.txt";
 
     public static void dumpModChildrenFrom(
-            @NonNull final HederaState hederaState,
+            @NonNull final MerkleState merkleState,
             @NonNull final DumpCheckpoint checkpoint,
             @NonNull final Set<MerkleStateChild> childrenToDump) {
-        if (!(hederaState instanceof MerkleStateRoot state)) {
+        if (!(merkleState instanceof MerkleStateRoot state)) {
             throw new IllegalArgumentException("Expected a " + MerkleStateRoot.class.getSimpleName());
         }
         final SingletonNode<BlockInfo> blockInfoNode =

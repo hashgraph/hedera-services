@@ -353,7 +353,7 @@ public class RecordCacheImpl implements HederaRecordCache {
     private WritableStates getWritableState() {
         final var hederaState = workingStateAccessor.getHederaState();
         if (hederaState == null) {
-            throw new RuntimeException("HederaState is null. This can only happen very early during bootstrapping");
+            throw new RuntimeException("MerkleState is null. This can only happen very early during bootstrapping");
         }
         return hederaState.getWritableStates(NAME);
     }

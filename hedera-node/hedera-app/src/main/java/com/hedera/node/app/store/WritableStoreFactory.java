@@ -43,7 +43,7 @@ import com.hedera.node.app.service.token.impl.WritableTokenRelationStore;
 import com.hedera.node.app.service.token.impl.WritableTokenStore;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Collections;
@@ -51,7 +51,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Factory for all writable stores. It creates new writable stores based on the {@link HederaState}.
+ * Factory for all writable stores. It creates new writable stores based on the {@link MerkleState}.
  *
  * <p>The initial implementation creates all known stores hard-coded. In a future version, this will be replaced by a
  * dynamic approach.
@@ -113,7 +113,7 @@ public class WritableStoreFactory {
     /**
      * Constructor of {@code WritableStoreFactory}
      *
-     * @param state the {@link HederaState} to use
+     * @param state the {@link MerkleState} to use
      * @param serviceName the name of the service to create stores for
      * @param configuration the configuration to use for the created stores
      * @param storeMetricsService Service that provides utilization metrics.
@@ -121,7 +121,7 @@ public class WritableStoreFactory {
      * @throws IllegalArgumentException if the service name is unknown
      */
     public WritableStoreFactory(
-            @NonNull final HederaState state,
+            @NonNull final MerkleState state,
             @NonNull final String serviceName,
             @NonNull final Configuration configuration,
             @NonNull final StoreMetricsService storeMetricsService) {

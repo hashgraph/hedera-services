@@ -38,7 +38,7 @@ import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.fixtures.AppTestBase;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeMerkleState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.spi.records.RecordCache;
 import com.hedera.node.app.state.DeduplicationCache;
@@ -101,7 +101,7 @@ final class RecordCacheImplTest extends AppTestBase {
             @Mock final NetworkInfo networkInfo) {
         dedupeCache = new DeduplicationCacheImpl(props, instantSource);
         final var registry = new FakeSchemaRegistry();
-        final var state = new FakeHederaState();
+        final var state = new FakeMerkleState();
         final var svc = new RecordCacheService();
         svc.registerSchemas(registry);
         registry.migrate(svc.getServiceName(), state, networkInfo);

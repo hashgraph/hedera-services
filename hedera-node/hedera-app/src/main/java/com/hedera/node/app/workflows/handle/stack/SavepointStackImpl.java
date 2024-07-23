@@ -20,8 +20,8 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.node.app.spi.workflows.HandleContext.SavepointStack;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
-import com.hedera.node.app.state.WrappedHederaState;
-import com.swirlds.state.HederaState;
+import com.hedera.node.app.state.WrappedMerkleState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -34,10 +34,10 @@ import javax.inject.Inject;
 /**
  * The default implementation of {@link SavepointStack}.
  */
-public class SavepointStackImpl implements SavepointStack, HederaState {
+public class SavepointStackImpl implements SavepointStack, MerkleState {
 
-    private final HederaState root;
-    private final Deque<WrappedHederaState> stack = new ArrayDeque<>();
+    private final MerkleState root;
+    private final Deque<WrappedMerkleState> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
 
     /**
@@ -47,13 +47,13 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * @throws NullPointerException if {@code root} is {@code null}
      */
     @Inject
-    public SavepointStackImpl(@NonNull final HederaState root) {
+    public SavepointStackImpl(@NonNull final MerkleState root) {
         this.root = requireNonNull(root, "root must not be null");
         setupSavepoint(root);
     }
 
-    private void setupSavepoint(@NonNull final HederaState state) {
-        final var newState = new WrappedHederaState(state);
+    private void setupSavepoint(@NonNull final MerkleState state) {
+        final var newState = new WrappedMerkleState(state);
         stack.push(newState);
     }
 
@@ -102,13 +102,13 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
     }
 
     /**
-     * Returns the current {@link HederaState} without removing it from the stack.
+     * Returns the current {@link MerkleState} without removing it from the stack.
      *
-     * @return the current {@link HederaState}
+     * @return the current {@link MerkleState}
      * @throws IllegalStateException if the stack has been committed already
      */
     @NonNull
-    public WrappedHederaState peek() {
+    public WrappedMerkleState peek() {
         if (stack.isEmpty()) {
             throw new IllegalStateException("The stack has already been committed");
         }
@@ -133,7 +133,7 @@ public class SavepointStackImpl implements SavepointStack, HederaState {
      * for the same service name. This means that any modifications to the {@link WritableStates} will be reflected
      * in the {@link ReadableStates} instances returned from this method.
      * <p>
-     * Unlike other {@link HederaState} implementations, the returned {@link ReadableStates} of this implementation
+     * Unlike other {@link MerkleState} implementations, the returned {@link ReadableStates} of this implementation
      * must only be used in the handle workflow.
      */
     @Override

@@ -23,17 +23,17 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
- * Implements the major lifecycle events for Hedera Services.
+ * Implements the major lifecycle events for the Merkle state.
  *
  * <p>Currently these are implied by the {@link com.swirlds.platform.system.SwirldState}
  * interface; but in the future will be callbacks registered with a platform builder.
  */
-public interface HederaLifecycles {
+public interface MerkleStateLifecycles {
     /**
      * Called when an event is added to the hashgraph used to compute consensus ordering
      * for this Hedera node.
@@ -41,7 +41,7 @@ public interface HederaLifecycles {
      * @param event the event that was added
      * @param state the latest immutable state at the time of the event
      */
-    void onPreHandle(@NonNull Event event, @NonNull HederaState state);
+    void onPreHandle(@NonNull Event event, @NonNull MerkleState state);
 
     /**
      * Called when a round of events have reached consensus, and are ready to be handled
@@ -51,7 +51,7 @@ public interface HederaLifecycles {
      * @param platformState the working state of the platform
      * @param state the working state of the network
      */
-    void onHandleConsensusRound(@NonNull Round round, @NonNull PlatformState platformState, @NonNull HederaState state);
+    void onHandleConsensusRound(@NonNull Round round, @NonNull PlatformState platformState, @NonNull MerkleState state);
 
     /**
      * Called when the platform is initializing the Hedera network state.
@@ -63,7 +63,7 @@ public interface HederaLifecycles {
      * @param previousVersion if non-null, the Hedera network version that was previously in use
      */
     void onStateInitialized(
-            @NonNull HederaState state,
+            @NonNull MerkleState state,
             @NonNull Platform platform,
             @NonNull PlatformState platformState,
             @NonNull InitTrigger trigger,

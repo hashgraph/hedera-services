@@ -30,7 +30,7 @@ import com.swirlds.config.api.Configuration;
 import com.swirlds.config.extensions.sources.SimpleConfigSource;
 import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.platform.state.HederaLifecycles;
+import com.swirlds.platform.state.MerkleStateLifecycles;
 import com.swirlds.platform.state.MerkleStateRoot;
 import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
 import com.swirlds.platform.test.fixtures.state.TestSchema;
@@ -72,7 +72,7 @@ class SerializationTest extends MerkleTestBase {
     private NetworkInfo networkInfo;
 
     @Mock
-    private HederaLifecycles lifecycles;
+    private MerkleStateLifecycles lifecycles;
 
     @BeforeEach
     void setUp() throws IOException {

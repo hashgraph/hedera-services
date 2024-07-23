@@ -69,7 +69,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
     @SuppressWarnings("rawtypes")
     public void migrate(
             @NonNull final String serviceName,
-            @NonNull final FakeHederaState state,
+            @NonNull final FakeMerkleState state,
             @NonNull final NetworkInfo networkInfo) {
         migrate(
                 serviceName,
@@ -83,7 +83,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
 
     public void migrate(
             @NonNull final String serviceName,
-            @NonNull final FakeHederaState state,
+            @NonNull final FakeMerkleState state,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Configuration config,
@@ -145,7 +145,7 @@ public class FakeSchemaRegistry implements SchemaRegistry {
             @NonNull final String serviceName,
             @NonNull final Schema schema,
             @NonNull final Configuration configuration,
-            @NonNull final FakeHederaState state) {
+            @NonNull final FakeMerkleState state) {
         final Map<String, Object> stateDataSources = new HashMap<>();
         schema.statesToCreate(configuration).forEach(def -> {
             final var stateKey = def.stateKey();
