@@ -47,6 +47,29 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
      * {@inheritDoc}
      */
     @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PayloadWrapper that = (PayloadWrapper) o;
+        return Objects.equals(getPayload(), that.getPayload());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(getPayload());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public @Nullable Instant getConsensusTimestamp() {
         return consensusTimestamp;
     }
@@ -61,12 +84,21 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
         this.consensusTimestamp = consensusTimestamp;
     }
 
+
+    /**
+     * Returns the payload as a PBJ record
+     *
+     * @return the payload
+     */
     @NonNull
     @Override
     public OneOf<PayloadOneOfType> getPayload() {
         return payload;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int getSize() {
         if (!isSystem()) {
