@@ -20,3 +20,6 @@ and unzip the `jdk.../include/` dir into `$DOWNLOAD_DIR`
 `brew install mingw-w64`
 2. Execute
 `x86_64-w64-mingw32-g++ -I"$$DOWNLOAD_DIR/include/" -I"$DOWNLOAD_DIR/include/win32/" -shared -o greeter.dll cppGreeter.cpp`
+
+To compile natively on Linux:
+`g++ -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -o greeter.so -shared cppGreeter.cpp -static-libgcc -static-libstdc++`
