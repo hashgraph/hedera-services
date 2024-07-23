@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,86 +17,75 @@
 package com.hedera.nativesupport;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * Utility class that helps to extract a library contained in the JAR file into a temporary directory.
+ *
  */
-public final class LibraryLoader {
+public interface LibraryLoader {
 
     /**
-     * The root resources folder where the software is located.
+     * A No-op Library Loader to return in case the expected {@link Architecture} or {@link OperatingSystem} doesn't match
      */
-    private static final String SOFTWARE_FOLDER_NAME = "software";
+    LibraryLoader NO_OP_LOADER = (libraryName, libExtensions) -> {
+        Objects.requireNonNull(libraryName, "libraryName must not be null");
+        Objects.requireNonNull(libExtensions, "libExtensions must not be null");
+    };
 
     /**
-     * The path delimiter used in the JAR file.
+     * Default extensions for binary libraries per OS
      */
-    private static final String RESOURCE_PATH_DELIMITER = File.separator;
-
-    /**
-     * The {@link ResourceLoader} used to load the Helm executable.
-     */
-    private static final ResourceLoader RESOURCE_LOADER = new ResourceLoader(LibraryLoader.class);
-
-    private static final Map<OperatingSystem, String> DEFAULT_LIB_EXTENSIONS =
+    Map<OperatingSystem, String> DEFAULT_LIB_EXTENSIONS =
             Map.of(OperatingSystem.WINDOWS, "dll", OperatingSystem.LINUX, "so", OperatingSystem.DARWIN, "dylib");
 
     /**
-     * Private constructor to prevent instantiation of this utility class.
-     */
-    private LibraryLoader() {
-        // Empty private constructor to prevent instantiation of this utility class.
-    }
-
-    /**
-     * Unpacks a library in the JAR file into a temporary directory.
+     * installs a library assuming the default lib extensions
      *
      * @param libraryName the library to load.
-     * @return the path to the library to load.
      * @implNote This method expects the executable to be present at the following location in the JAR file:
      * {@code /software/<os>/<arch>/libraryName}.
      */
-    public static Path install(@NonNull final String libraryName) {
-        return install(libraryName, DEFAULT_LIB_EXTENSIONS);
+    default void install(@NonNull String libraryName) {
+        install(libraryName, DEFAULT_LIB_EXTENSIONS);
     }
 
     /**
-     * Unpacks a library in the JAR file into a temporary directory.
+     * installs a library
      *
      * @param libraryName the library to load.
      * @param libExtensions defaults extensions for each os to use to load the library
-     * @return the path to the library to load.
      * @implNote This method expects the executable to be present at the following location in the JAR file:
      * {@code /software/<os>/<arch>/libraryName}.
      */
-    public static Path install(
-            @NonNull final String libraryName, @NonNull final Map<OperatingSystem, String> libExtensions) {
-        Objects.requireNonNull(libraryName, "libraryName must not be null");
-        Objects.requireNonNull(libExtensions, "libExtensions must not be null");
-        try {
-            final OperatingSystem os = OperatingSystem.current();
-            final Architecture arch = Architecture.current();
+    void install(@NonNull String libraryName, @NonNull Map<OperatingSystem, String> libExtensions);
 
-            String libExtension = libExtensions.get(os);
-            if (!libExtensions.isEmpty()) {
-                libExtension = "." + libExtension;
-            }
-            return RESOURCE_LOADER.load(SOFTWARE_FOLDER_NAME
-                    + RESOURCE_PATH_DELIMITER
-                    + os.name().toLowerCase(Locale.US)
-                    + RESOURCE_PATH_DELIMITER
-                    + arch.name().toLowerCase(Locale.US)
-                    + RESOURCE_PATH_DELIMITER
-                    + libraryName
-                    + libExtension);
-        } catch (IOException | SecurityException | IllegalStateException e) {
-            throw new IllegalStateException("Could not install requested library " + libraryName, e);
-        }
+    /**
+     * Returns an instance of a LibraryLoader for the current combination of Architecture and OS
+     * @param caller caller class located in the same jar that the library wanted to be loaded
+     * @return an instance of {@link LibraryLoader}
+     */
+    @NonNull
+    static LibraryLoader create(@NonNull final Class<?> caller) {
+        return new LibraryLoaderImpl(new ResourceLoader(Objects.requireNonNull(caller, "caller must not be null")));
+    }
+
+    /**
+     * Returns an instance of a LibraryLoader for the requested combination of Architecture and OS.
+     * If the system does not match the requested combination a no-op version of the libraryLoader is returned.
+     * @param caller caller class located in the same jar that the library wanted to be loaded
+     * @return an instance of {@link LibraryLoader}
+     */
+    @NonNull
+    static LibraryLoader create(
+            @NonNull final Class<?> caller,
+            @NonNull final Architecture architecture,
+            @NonNull final OperatingSystem operatingSystem) {
+        if (Architecture.current() != Objects.requireNonNull(architecture, "architecture must not be null")
+                || OperatingSystem.current()
+                        != Objects.requireNonNull(operatingSystem, "operatingSystem must not be null")) {
+            return NO_OP_LOADER;
+        } else
+            return new LibraryLoaderImpl(new ResourceLoader(Objects.requireNonNull(caller, "caller must not be null")));
     }
 }

@@ -1,4 +1,4 @@
-Go to the dir containing the java file Greeter.java and execute 
+Go to the dir containing the java file Greeter.java and execute
 
 `javac -h . Greeter.java`
 It will generate a `.h` file. Move it to `src/main/cpp` and set the current directory there.
