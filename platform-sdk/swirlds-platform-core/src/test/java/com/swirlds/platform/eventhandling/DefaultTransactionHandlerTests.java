@@ -78,8 +78,7 @@ class DefaultTransactionHandlerTests {
         final ArrayList<CesEvent> streamedEvents = new ArrayList<>();
         for (final Iterator<EventImpl> iterator = events.iterator(); iterator.hasNext(); ) {
             final EventImpl event = iterator.next();
-            final CesEvent cesEvent =
-                    new CesEvent(event.getBaseEvent(), roundNumber, !iterator.hasNext());
+            final CesEvent cesEvent = new CesEvent(event.getBaseEvent(), roundNumber, !iterator.hasNext());
             streamedEvents.add(cesEvent);
             cesEvent.getRunningHash().setHash(mock(Hash.class));
         }

@@ -71,8 +71,7 @@ class EventStreamMultiFileIteratorTest {
         StaticSoftwareVersion.reset();
     }
 
-    public static void assertEventsAreEqual(
-            final CesEvent expected, final CesEvent actual) {
+    public static void assertEventsAreEqual(final CesEvent expected, final CesEvent actual) {
         assertEquals(expected.getPlatformEvent(), actual.getPlatformEvent());
         assertEquals(
                 expected.getPlatformEvent().getConsensusData(),
@@ -88,13 +87,11 @@ class EventStreamMultiFileIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<CesEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
-        try (final IOIterator<CesEvent> iterator =
-                new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
+        try (final IOIterator<CesEvent> iterator = new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
 
             final List<CesEvent> deserializedEvents = new ArrayList<>();
             iterator.forEachRemaining(deserializedEvents::add);
@@ -123,8 +120,7 @@ class EventStreamMultiFileIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<CesEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         // Figure out which event is the first one we expect to see
         final int readStartingAtRound = 10;
@@ -193,8 +189,7 @@ class EventStreamMultiFileIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<CesEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -202,8 +197,7 @@ class EventStreamMultiFileIteratorTest {
         Files.delete(fileToDelete);
 
         boolean readFailed = false;
-        try (final IOIterator<CesEvent> iterator =
-                new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
+        try (final IOIterator<CesEvent> iterator = new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
 
             final List<CesEvent> deserializedEvents = new ArrayList<>();
             iterator.forEachRemaining(deserializedEvents::add);
@@ -234,16 +228,14 @@ class EventStreamMultiFileIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<CesEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
         final Path lastFile = getLastEventStreamFile(directory);
         truncateFile(lastFile, false);
 
-        try (final IOIterator<CesEvent> iterator =
-                new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
+        try (final IOIterator<CesEvent> iterator = new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
 
             final List<CesEvent> deserializedEvents = new ArrayList<>();
 
@@ -283,8 +275,7 @@ class EventStreamMultiFileIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<CesEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -292,8 +283,7 @@ class EventStreamMultiFileIteratorTest {
         truncateFile(fileToTruncate, false);
 
         boolean readFailed = false;
-        try (final IOIterator<CesEvent> iterator =
-                new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
+        try (final IOIterator<CesEvent> iterator = new EventStreamMultiFileIterator(directory, UNBOUNDED)) {
 
             final List<CesEvent> deserializedEvents = new ArrayList<>();
             iterator.forEachRemaining(deserializedEvents::add);
@@ -383,8 +373,7 @@ class EventStreamMultiFileIteratorTest {
             startingIndex++;
         }
 
-        try (final IOIterator<CesEvent> iterator =
-                new EventStreamMultiFileIterator(directory, lowerBound)) {
+        try (final IOIterator<CesEvent> iterator = new EventStreamMultiFileIterator(directory, lowerBound)) {
 
             final List<CesEvent> deserializedEvents = new ArrayList<>();
 

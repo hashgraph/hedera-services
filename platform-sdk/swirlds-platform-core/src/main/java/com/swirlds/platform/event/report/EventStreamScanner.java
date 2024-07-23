@@ -140,8 +140,7 @@ public class EventStreamScanner {
     /**
      * Write information to the console that let's a human know of the progress of the scan.
      */
-    private void writeConsoleSummary(
-            final CesEvent firstEvent, final CesEvent mostRecentEvent) {
+    private void writeConsoleSummary(final CesEvent firstEvent, final CesEvent mostRecentEvent) {
 
         if (enableProgressReport && eventCount % PROGRESS_INTERVAL == 0) {
             // This is intended to be used in a terminal with a human in the loop, intentionally not logged.

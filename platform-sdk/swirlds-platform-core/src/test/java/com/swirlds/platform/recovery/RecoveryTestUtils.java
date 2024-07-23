@@ -150,10 +150,7 @@ public final class RecoveryTestUtils {
      * @param events         a list of events to be written
      */
     public static void writeRandomEventStream(
-            final Random random,
-            final Path destination,
-            final int secondsPerFile,
-            final List<CesEvent> events)
+            final Random random, final Path destination, final int secondsPerFile, final List<CesEvent> events)
             throws IOException {
 
         final Configuration configuration = new TestConfigBuilder()

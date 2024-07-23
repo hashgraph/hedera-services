@@ -62,8 +62,7 @@ class EventStreamSingleFileIteratorTest {
         StaticSoftwareVersion.reset();
     }
 
-    public static void assertEventsAreEqual(
-            final CesEvent expected, final CesEvent actual) {
+    public static void assertEventsAreEqual(final CesEvent expected, final CesEvent actual) {
         assertEquals(expected, actual);
     }
 

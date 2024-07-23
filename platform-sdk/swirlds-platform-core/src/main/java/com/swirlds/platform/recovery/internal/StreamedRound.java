@@ -19,8 +19,8 @@ package com.swirlds.platform.recovery.internal;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.CesEvent;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.util.iterator.TypedIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -39,14 +39,10 @@ public class StreamedRound implements Round {
     private final AddressBook consensusRoster;
 
     public StreamedRound(
-            @NonNull final AddressBook consensusRoster,
-            @NonNull final List<CesEvent> events,
-            final long roundNumber) {
+            @NonNull final AddressBook consensusRoster, @NonNull final List<CesEvent> events, final long roundNumber) {
         this.events = events;
         this.roundNumber = roundNumber;
-        events.stream()
-                .map(CesEvent::getPlatformEvent)
-                .forEach(PlatformEvent::setConsensusTimestampsOnPayloads);
+        events.stream().map(CesEvent::getPlatformEvent).forEach(PlatformEvent::setConsensusTimestampsOnPayloads);
         consensusTimestamp = events.get(events.size() - 1).getPlatformEvent().getConsensusTimestamp();
         this.consensusRoster = Objects.requireNonNull(consensusRoster);
     }

@@ -63,8 +63,8 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.StaticSoftwareVersion;
 import com.swirlds.platform.system.SwirldMain;
 import com.swirlds.platform.system.SwirldState;
-import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.events.CesEvent;
+import com.swirlds.platform.system.events.ConsensusEvent;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateNotification;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -356,8 +356,7 @@ public final class EventRecoveryWorkflow {
 
         platform.close();
 
-        return new RecoveredState(
-                signedState, ((CesEvent) Objects.requireNonNull(lastEvent)).getPlatformEvent());
+        return new RecoveredState(signedState, ((CesEvent) Objects.requireNonNull(lastEvent)).getPlatformEvent());
     }
 
     /**
@@ -429,8 +428,7 @@ public final class EventRecoveryWorkflow {
      * @return the running event hash at the end of the current round
      */
     static Hash getHashEventsCons(final Hash previousRunningHash, final StreamedRound round) {
-        final RunningHashCalculatorForStream<CesEvent> hashCalculator =
-                new RunningHashCalculatorForStream<>();
+        final RunningHashCalculatorForStream<CesEvent> hashCalculator = new RunningHashCalculatorForStream<>();
         hashCalculator.setRunningHash(previousRunningHash);
 
         for (final ConsensusEvent event : round) {

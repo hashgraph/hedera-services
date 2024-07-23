@@ -78,8 +78,7 @@ class EventStreamPathIteratorTest {
         final int secondsPerFile = 2;
         final int expectedFileCount = durationInSeconds / secondsPerFile;
 
-        final List<CesEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 

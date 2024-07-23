@@ -68,8 +68,7 @@ class EventStreamRoundIteratorTest {
         StaticSoftwareVersion.reset();
     }
 
-    public static void assertEventsAreEqual(
-            final CesEvent expected, final CesEvent actual) {
+    public static void assertEventsAreEqual(final CesEvent expected, final CesEvent actual) {
         assertEquals(expected, actual);
     }
 
@@ -84,8 +83,7 @@ class EventStreamRoundIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<CesEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -130,8 +128,7 @@ class EventStreamRoundIteratorTest {
         final int secondsPerFile = 2;
         final long firstRoundToRead = 10;
 
-        final List<CesEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         final List<CesEvent> eventsToBeReturned = new ArrayList<>();
         events.forEach(event -> {
@@ -183,8 +180,7 @@ class EventStreamRoundIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<CesEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -245,8 +241,7 @@ class EventStreamRoundIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<CesEvent> events =
-                generateRandomEvents(random, 100L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 100L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -269,8 +264,7 @@ class EventStreamRoundIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<CesEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
@@ -329,8 +323,7 @@ class EventStreamRoundIteratorTest {
         final int durationInSeconds = 100;
         final int secondsPerFile = 2;
 
-        final List<CesEvent> events =
-                generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
+        final List<CesEvent> events = generateRandomEvents(random, 1L, Duration.ofSeconds(durationInSeconds), 1, 20);
 
         writeRandomEventStream(random, directory, secondsPerFile, events);
 
