@@ -194,16 +194,6 @@ interface Metrics {
     * Removes all metrics with the given category and name. Labels will be ignored.
     */
     void remove(@NonNull String category, @NonNull String name);
-    
-    /**
-    * Removes all metrics that have the same category and name as the given metric. Labels will be ignored.
-    */ 
-    void remove(@NonNull Metric metric);
-    
-    /**
-    * Removes all metrics that have the same category and name as the given metric configs. Labels will be ignored.
-    */ 
-    void remove(final @NonNull MetricConfig<?, ?> config);
 }
 ```
 
