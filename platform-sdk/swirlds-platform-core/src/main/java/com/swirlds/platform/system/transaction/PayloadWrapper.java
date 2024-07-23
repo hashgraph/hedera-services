@@ -18,7 +18,6 @@ package com.swirlds.platform.system.transaction;
 
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
-import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.util.PayloadUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -39,6 +38,13 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
     /** The protobuf data stored */
     private final OneOf<PayloadOneOfType> payload;
 
+    /**
+     * Constructs a new payload wrapper
+     *
+     * @param payload the hapi payload
+     *
+     * @throws NullPointerException if payload is null
+     */
     public PayloadWrapper(@NonNull final OneOf<PayloadOneOfType> payload) {
         this.payload = Objects.requireNonNull(payload, "payload should not be null");
     }
@@ -96,13 +102,12 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
     }
 
     /**
-     * {@inheritDoc}
+     * Get the serialized size of the transaction. This method returns the same value as `getSerializedLength()`
+     *
+     * @return the size of the transaction in the unit of byte
      */
     @Override
     public int getSize() {
-        if (!isSystem()) {
-            return (int) ((Bytes) payload.as()).length();
-        }
         return PayloadUtils.getLegacyPayloadSize(payload);
     }
 
