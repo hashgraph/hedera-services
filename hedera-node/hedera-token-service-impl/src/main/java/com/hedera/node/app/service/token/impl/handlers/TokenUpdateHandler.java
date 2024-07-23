@@ -550,7 +550,7 @@ public class TokenUpdateHandler extends BaseTokenHandler implements TransactionH
      * @param keysRequired keys required
      * @return threshold key with threshold 1
      */
-    private Key oneOf(@NonNull final Key... keysRequired) {
+    public static Key oneOf(@NonNull final Key... keysRequired) {
         return Key.newBuilder()
                 .thresholdKey(ThresholdKey.newBuilder()
                         .keys(new KeyList(Arrays.asList(keysRequired)))
