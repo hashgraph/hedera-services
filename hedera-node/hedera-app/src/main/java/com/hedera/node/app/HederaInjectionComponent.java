@@ -19,6 +19,7 @@ package com.hedera.node.app;
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.node.app.annotations.MaxSignedTxnSize;
 import com.hedera.node.app.authorization.AuthorizerInjectionModule;
+import com.hedera.node.app.blocks.BlockStreamModule;
 import com.hedera.node.app.components.IngestInjectionComponent;
 import com.hedera.node.app.components.QueryInjectionComponent;
 import com.hedera.node.app.config.ConfigProviderImpl;
@@ -79,6 +80,7 @@ import javax.inject.Singleton;
             AuthorizerInjectionModule.class,
             InfoInjectionModule.class,
             BlockRecordInjectionModule.class,
+            BlockStreamModule.class,
             PlatformModule.class,
             ThrottleServiceModule.class
         })

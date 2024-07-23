@@ -16,25 +16,19 @@
 
 package com.hedera.node.app.blocks;
 
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
+import com.hedera.node.app.blocks.impl.BlockStreamManagerImpl;
+import com.hedera.node.app.blocks.impl.FileBlockItemWriter;
+import dagger.Binds;
+import dagger.Module;
+import javax.inject.Singleton;
 
-/**
- * Writes serialized block items to files, one per block number.
- */
-public class FileBlockItemWriter implements BlockItemWriter {
-    @Inject
-    public FileBlockItemWriter() {
-        // Dagger2
-    }
+@Module
+public interface BlockStreamModule {
+    @Binds
+    @Singleton
+    BlockStreamManager bindBlockStreamManager(BlockStreamManagerImpl blockStreamManager);
 
-    @Override
-    public void startBlock(long blockNumber) {}
-
-    @Override
-    public void writeItem(@NonNull Bytes serializedItem) {}
-
-    @Override
-    public void closeStream() {}
+    @Binds
+    @Singleton
+    BlockItemWriter bindBlockItemWriter(FileBlockItemWriter fileBlockItemWriter);
 }

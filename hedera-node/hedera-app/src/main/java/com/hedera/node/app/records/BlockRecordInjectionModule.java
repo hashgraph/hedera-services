@@ -16,10 +16,6 @@
 
 package com.hedera.node.app.records;
 
-import com.hedera.node.app.blocks.BlockItemWriter;
-import com.hedera.node.app.blocks.BlockStreamManager;
-import com.hedera.node.app.blocks.BlockStreamManagerImpl;
-import com.hedera.node.app.blocks.FileBlockItemWriter;
 import com.hedera.node.app.records.impl.BlockRecordManagerImpl;
 import com.hedera.node.app.records.impl.BlockRecordStreamProducer;
 import com.hedera.node.app.records.impl.producers.BlockRecordFormat;
@@ -87,14 +83,6 @@ public abstract class BlockRecordInjectionModule {
         }
         return new BlockRecordManagerImpl(configProvider, hederaState, streamFileProducer);
     }
-
-    @Binds
-    @Singleton
-    abstract BlockStreamManager bindBlockStreamManager(BlockStreamManagerImpl blockStreamManager);
-
-    @Binds
-    @Singleton
-    abstract BlockItemWriter bindBlockItemWriter(FileBlockItemWriter fileBlockItemWriter);
 
     @Provides
     @Singleton

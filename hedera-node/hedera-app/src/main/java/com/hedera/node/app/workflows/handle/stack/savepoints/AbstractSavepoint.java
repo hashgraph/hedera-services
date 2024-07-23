@@ -27,8 +27,8 @@ import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBu
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
-import com.hedera.node.app.blocks.IoBlockItemsBuilder;
-import com.hedera.node.app.blocks.PairedStreamBuilder;
+import com.hedera.node.app.blocks.impl.IoBlockItemsBuilder;
+import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
