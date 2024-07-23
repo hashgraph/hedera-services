@@ -52,14 +52,18 @@ Labels are used by monitoring systems like Grafana to create more dynamic dashbo
 In addition to having a unique name, a metric can also have labels. Labels allow for differentiation within a metric.
 For example, a metric measuring incoming connections can distinguish between GET and POST requests using labels.
 
-Consider the following example metrics:
+Consider the following example with the metric `api_http_requests_total`, which counts the total number of HTTP requests a server receives. 
 
-- Metric 1: api_http_requests_total{method="GET"}
-- Metric 2: api_http_requests_total{method="POST"}
+To distinguish between different types of requests, such as GET and POST requests, one could define two different metrics and aggregate them at query time. Alternatively, one could define possible labels for a single metric when creating it and assign specific values to these labels based on the nature of the HTTP request at measurement time. 
 
-When creating a metric, the label keys must be specified upfront, while the label values are assigned when setting a value for the metric.
+Then, using the Prometheus query language:
+* Sum up the values of all metrics with that name (as always):
+`sum(api_http_requests_total) ` 
 
-If you later want to know the combined measurement of all metrics with the name `api_http_requests_total` you can use the prometheus query language to sum up the values of all metrics with that name.
+* Or,  get the sums of the values measured with the corresponding label information.
+`sum(api_http_requests_total{method="GET"})`
+`sum(api_http_requests_total{method="POST"})`
+
 See https://prometheus.io/docs/prometheus/latest/querying/basics/#time-series-selectors for more information.
 
 In prometheus a concrete metric is defined like this (see https://prometheus.io/docs/concepts/data_model/#notation):
