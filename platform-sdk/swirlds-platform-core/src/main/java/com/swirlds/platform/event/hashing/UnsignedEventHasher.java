@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.gradle.services")
-    id("com.hedera.gradle.services-publish")
-}
+package com.swirlds.platform.event.hashing;
 
-description = "Hedera AddressBook Service API"
+import com.swirlds.platform.system.events.UnsignedEvent;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
-testModuleInfo {
-    requires("org.assertj.core")
-    requires("org.junit.jupiter.api")
+/**
+ * Hashes unsigned events.
+ */
+public interface UnsignedEventHasher {
+
+    /**
+     * Hashes the event and builds the event descriptor.
+     *
+     * @param event the event to hash
+     */
+    void hashUnsignedEvent(@NonNull final UnsignedEvent event);
 }
