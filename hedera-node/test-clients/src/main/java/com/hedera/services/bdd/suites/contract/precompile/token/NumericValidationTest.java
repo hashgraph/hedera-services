@@ -22,7 +22,6 @@ import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.ADMIN_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.PAUSE_KEY;
 import static com.hedera.services.bdd.spec.dsl.entities.SpecTokenKey.SUPPLY_KEY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.hedera.services.bdd.junit.HapiTest;
@@ -256,13 +255,12 @@ public class NumericValidationTest {
 
         @HapiTest
         @DisplayName("when using tokenURI")
-        // tokenURI has different behaviour from the original ERC721 standard as it should revert when providing invalid
-        // serialNumber
-        public Stream<DynamicTest> successTokenURI() {
-            return hapiTest(numericContract
-                    .call("tokenURI", nft, BigInteger.ZERO)
-                    .gas(1_000_000L)
-                    .andAssert(txn -> txn.hasKnownStatus(SUCCESS)));
+        public Stream<DynamicTest> failTokenURI() {
+            return zeroNegativeAndGreaterThanLong.stream()
+                    .flatMap(testCase -> hapiTest(numericContract
+                            .call("tokenURI", nft, testCase.amount)
+                            .gas(1_000_000L)
+                            .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
         }
 
         @HapiTest
