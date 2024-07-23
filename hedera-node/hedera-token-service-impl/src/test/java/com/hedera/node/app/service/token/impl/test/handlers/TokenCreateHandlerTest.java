@@ -75,7 +75,6 @@ import com.hedera.node.app.service.token.impl.validators.TokenAttributesValidato
 import com.hedera.node.app.service.token.impl.validators.TokenCreateValidator;
 import com.hedera.node.app.service.token.records.TokenCreateRecordBuilder;
 import com.hedera.node.app.spi.ids.EntityNumGenerator;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryMeta;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -106,7 +105,7 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     private EntityNumGenerator entityNumGenerator;
 
     @Mock(strictness = LENIENT)
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
     private TokenCreateRecordBuilder recordBuilder;
     private TokenCreateHandler subject;
@@ -123,15 +122,13 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
 
     private static final TokenID newTokenId =
             TokenID.newBuilder().tokenNum(3000L).build();
-    private static final Timestamp expiry =
-            Timestamp.newBuilder().seconds(1234600L).build();
     private final AccountID autoRenewAccountId = ownerId;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
         refreshWritableStores();
-        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusInstant);
+        recordBuilder = new SingleTransactionRecordBuilderImpl();
         tokenFieldsValidator = new TokenAttributesValidator();
         customFeesValidator = new CustomFeesValidator();
         tokenCreateValidator = new TokenCreateValidator(tokenFieldsValidator);
@@ -1050,8 +1047,8 @@ class TokenCreateHandlerTest extends CryptoTokenHandlerTestBase {
     private void setUpTxnContext() {
         txn = new TokenCreateBuilder().build();
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(recordBuilder);
         given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         given(configProvider.getConfiguration()).willReturn(versionedConfig);
         given(handleContext.configuration()).willReturn(configuration);
