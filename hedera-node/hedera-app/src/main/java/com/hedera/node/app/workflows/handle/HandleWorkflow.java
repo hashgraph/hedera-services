@@ -33,9 +33,13 @@ import static com.swirlds.platform.system.InitTrigger.EVENT_STREAM_RECOVERY;
 import static com.swirlds.state.spi.HapiUtils.SEMANTIC_VERSION_COMPARATOR;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.EventMetadata;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.platform.event.EventCore;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
@@ -192,7 +196,23 @@ public class HandleWorkflow {
             blockStreamManager.startRound(round, state);
         }
         for (final var event : round) {
-            // TODO - stream input event metadata if mode != RECORDS
+            // Stream input event metadata (STREAM mode only)
+            if (STREAM_MODE != RECORDS) {
+                final var startEvent = BlockItem.newBuilder()
+                        .startEvent(EventMetadata.newBuilder()
+                                .eventCore(EventCore.newBuilder()
+                                        .creatorNodeId(event.getCreatorId().id())
+                                        // ??? how to get??
+                                        .birthRound(-1)
+                                        .timeCreated(Timestamp.newBuilder()
+                                                .seconds(event.getTimeCreated().getEpochSecond())
+                                                .nanos(event.getTimeCreated().getNano()))
+                                        // ???: how to get??
+                                        .parents(List.of())
+                                        .version(event.getSoftwareVersion())));
+                blockStreamManager.writeItem(startEvent.build());
+            }
+
             final var creator = networkInfo.nodeInfo(event.getCreatorId().id());
             if (creator == null) {
                 if (!isSoOrdered(event.getSoftwareVersion(), version)) {
@@ -272,6 +292,11 @@ public class HandleWorkflow {
 
         if (STREAM_MODE != BLOCKS) {
             blockRecordManager.startUserTransaction(consensusNow, state, platformState);
+        } else {
+            final var txnInfo = userTxn.txnInfo();
+            final var txnItem =
+                    BlockItem.newBuilder().transaction(txnInfo.transaction()).build();
+            blockStreamManager.writeItem(txnItem);
         }
         final var outputItems = execute(userTxn);
         // TODO: need to switch with config and send block items to block stream manager

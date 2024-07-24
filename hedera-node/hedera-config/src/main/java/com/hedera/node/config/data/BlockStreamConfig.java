@@ -17,6 +17,7 @@
 package com.hedera.node.config.data;
 
 import com.hedera.node.config.NetworkProperty;
+import com.hedera.node.config.NodeProperty;
 import com.hedera.node.config.types.StreamMode;
 import com.swirlds.config.api.ConfigData;
 import com.swirlds.config.api.ConfigProperty;
@@ -24,4 +25,6 @@ import com.swirlds.config.api.ConfigProperty;
 @ConfigData("blockStream")
 public record BlockStreamConfig(
         // Default value of RECORDS disables the block stream; setting BLOCKS or BOTH enables it
-        @ConfigProperty(defaultValue = "RECORDS") @NetworkProperty StreamMode streamMode) {}
+        @ConfigProperty(defaultValue = "RECORDS") @NetworkProperty StreamMode streamMode,
+        // The number of pending `BlockItem`s to write at a time to the block stream
+        @ConfigProperty(defaultValue = "10") @NodeProperty int pendingChunkSize) {}
