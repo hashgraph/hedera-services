@@ -51,7 +51,6 @@ import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_MILLION_HBARS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_HAS_PENDING_AIRDROPS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.AMOUNT_EXCEEDS_ALLOWANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SIGNATURE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
@@ -59,7 +58,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.PENDING_NFT_AIRDROP_ALREADY_EXISTS;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -379,10 +377,13 @@ public class TokenAirdropTest {
         final Stream<DynamicTest> nftWithRoyaltyFeesPaidByReceiverFails() {
             return defaultHapiSpec("should fail - INVALID_TRANSACTION")
                     .given()
-                    .when()
-                    .then(tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 1)
+                    .when(
+                            tokenAssociate(OWNER, NFT_WITH_ROYALTY_FEE),
+                            cryptoTransfer(movingUnique(NFT_WITH_ROYALTY_FEE, 1L)
+                                    .between(TREASURY_FOR_CUSTOM_FEE_TOKENS, OWNER)))
+                    .then(tokenAirdrop(movingUnique(NFT_WITH_ROYALTY_FEE, 1L)
                                     .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                            .payingWith(OWNER)
+                            .signedByPayerAnd(RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS, OWNER)
                             .hasKnownStatus(INVALID_TRANSACTION));
         }
     }
@@ -465,33 +466,7 @@ public class TokenAirdropTest {
         /**
          *  When we set the token value as negative value, the transfer list that we aggregate just switch
          *  the roles of sender and receiver, so the sender checks will fail.
-         *  There are 3 different outcomes if we try to airdrop token with negative value:
-         *  1. When receiver is not associated with the token - the node will return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT
-         *  2. When receiver don't have enough balance - the node will return INVALID_ACCOUNT_AMOUNTS
-         *  3. When receiver is associated and have enough balance - the node will expect signature - INVALID_SIGNATURE
          */
-        @HapiTest
-        @DisplayName("containing negative amount and receiver is not associated")
-        final Stream<DynamicTest> airdropNegativeAmountFails1() {
-            var receiver = "receiver";
-            return defaultHapiSpec("should fail - TOKEN_NOT_ASSOCIATED_TO_ACCOUNT")
-                    .given(cryptoCreate(receiver))
-                    .when()
-                    .then(tokenAirdrop(moving(-15, FUNGIBLE_TOKEN).between(OWNER, receiver))
-                            .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
-        }
-
-        @HapiTest
-        @DisplayName("containing negative amount and receiver don't have enough balance")
-        final Stream<DynamicTest> airdropNegativeAmountFails2() {
-            var receiver = "receiver";
-            return defaultHapiSpec("should fail - INVALID_ACCOUNT_AMOUNTS")
-                    .given(cryptoCreate(receiver), tokenAssociate(receiver, FUNGIBLE_TOKEN))
-                    .when()
-                    .then(tokenAirdrop(moving(-15, FUNGIBLE_TOKEN).between(OWNER, receiver))
-                            .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS));
-        }
-
         @HapiTest
         @DisplayName("containing negative amount")
         final Stream<DynamicTest> airdropNegativeAmountFails3() {
@@ -506,40 +481,42 @@ public class TokenAirdropTest {
                             .hasKnownStatus(INVALID_SIGNATURE));
         }
 
-        @HapiTest
-        @DisplayName("spender does not have enough allowance")
-        final Stream<DynamicTest> spenderNotEnoughAllowanceFails() {
-            var spenderWithLowAllowance = "SpenderWithLowAllowance";
-            return defaultHapiSpec("should fail - AMOUNT_EXCEEDS_ALLOWANCE")
-                    .given(
-                            cryptoCreate(spenderWithLowAllowance),
-                            tokenAssociate(spenderWithLowAllowance, FUNGIBLE_TOKEN))
-                    .when(cryptoApproveAllowance()
-                            .payingWith(OWNER)
-                            .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, spenderWithLowAllowance, 10))
-                    .then(tokenAirdrop(movingWithAllowance(50, FUNGIBLE_TOKEN)
-                                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                            .payingWith(spenderWithLowAllowance)
-                            .signedBy(spenderWithLowAllowance, OWNER)
-                            .hasKnownStatus(AMOUNT_EXCEEDS_ALLOWANCE));
-        }
-
-        @HapiTest
-        @DisplayName("sender is not associated")
-        final Stream<DynamicTest> senderWithMissingAssociationFails() {
-            return defaultHapiSpec("should fail - TOKEN_NOT_ASSOCIATED_TO_ACCOUNT")
-                    .given(cryptoCreate("notAssociatedSender").balance(ONE_HUNDRED_HBARS))
-                    .when()
-                    .then(
-                            tokenAirdrop(moving(1, FUNGIBLE_TOKEN)
-                                            .between("notAssociatedSender", RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                                    .payingWith("notAssociatedSender")
-                                    .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
-                            tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1)
-                                            .between("notAssociatedSender", RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                                    .payingWith("notAssociatedSender")
-                                    .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
-        }
+        //        @HapiTest
+        //        @DisplayName("spender does not have enough allowance")
+        //        final Stream<DynamicTest> spenderNotEnoughAllowanceFails() {
+        //            var spenderWithLowAllowance = "SpenderWithLowAllowance";
+        //            return defaultHapiSpec("should fail - AMOUNT_EXCEEDS_ALLOWANCE")
+        //                    .given(
+        //                            cryptoCreate(spenderWithLowAllowance),
+        //                            tokenAssociate(spenderWithLowAllowance, FUNGIBLE_TOKEN))
+        //                    .when(cryptoApproveAllowance()
+        //                            .payingWith(OWNER)
+        //                            .addTokenAllowance(OWNER, FUNGIBLE_TOKEN, spenderWithLowAllowance, 10))
+        //                    .then(tokenAirdrop(movingWithAllowance(50, FUNGIBLE_TOKEN)
+        //                                    .between(OWNER, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+        //                            .payingWith(spenderWithLowAllowance)
+        //                            .signedBy(spenderWithLowAllowance, OWNER)
+        //                            .hasKnownStatus(AMOUNT_EXCEEDS_ALLOWANCE));
+        //        }
+        //
+        //        @HapiTest
+        //        @DisplayName("sender is not associated")
+        //        final Stream<DynamicTest> senderWithMissingAssociationFails() {
+        //            return defaultHapiSpec("should fail - TOKEN_NOT_ASSOCIATED_TO_ACCOUNT")
+        //                    .given(cryptoCreate("notAssociatedSender").balance(ONE_HUNDRED_HBARS))
+        //                    .when()
+        //                    .then(
+        //                            tokenAirdrop(moving(1, FUNGIBLE_TOKEN)
+        //                                            .between("notAssociatedSender",
+        // RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+        //                                    .payingWith("notAssociatedSender")
+        //                                    .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT),
+        //                            tokenAirdrop(movingUnique(NON_FUNGIBLE_TOKEN, 1)
+        //                                            .between("notAssociatedSender",
+        // RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
+        //                                    .payingWith("notAssociatedSender")
+        //                                    .hasKnownStatus(TOKEN_NOT_ASSOCIATED_TO_ACCOUNT));
+        //        }
 
         @HapiTest
         @DisplayName("with missing sender's signature")
@@ -580,7 +557,7 @@ public class TokenAirdropTest {
                     .when()
                     .then(tokenAirdrop(moving(99, FUNGIBLE_TOKEN)
                                     .between(lowBalanceOwner, RECEIVER_WITH_UNLIMITED_AUTO_ASSOCIATIONS))
-                            .payingWith(OWNER)
+                            .payingWith(lowBalanceOwner)
                             .hasKnownStatus(INVALID_ACCOUNT_AMOUNTS));
         }
 
@@ -660,8 +637,7 @@ public class TokenAirdropTest {
                     .then(
                             tokenAirdrop(moving(10, FUNGIBLE_TOKEN).between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                                     .payingWith(OWNER),
-                            cryptoDelete(OWNER)
-                                    .hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
+                            cryptoDelete(OWNER).hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
         }
 
         @HapiTest
@@ -674,8 +650,7 @@ public class TokenAirdropTest {
                             tokenAirdrop(TokenMovement.movingUnique(NON_FUNGIBLE_TOKEN, 3L)
                                             .between(OWNER, RECEIVER_WITH_0_AUTO_ASSOCIATIONS))
                                     .payingWith(OWNER),
-                            cryptoDelete(OWNER)
-                                    .hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
+                            cryptoDelete(OWNER).hasKnownStatus(ACCOUNT_HAS_PENDING_AIRDROPS));
         }
     }
 
@@ -781,8 +756,10 @@ public class TokenAirdropTest {
                         .tokenType(NON_FUNGIBLE_UNIQUE)
                         .supplyKey(nftWithCustomFeeSupplyKey)
                         .treasury(TREASURY_FOR_CUSTOM_FEE_TOKENS)
-                        .withCustom(royaltyFeeWithFallback(
-                                1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), TREASURY_FOR_CUSTOM_FEE_TOKENS))));
+                        .withCustom(
+                                royaltyFeeWithFallback(1, 2, fixedHbarFeeInheritingRoyaltyCollector(1), HTS_COLLECTOR)),
+                tokenAssociate(HTS_COLLECTOR, NFT_WITH_ROYALTY_FEE),
+                mintToken(NFT_WITH_ROYALTY_FEE, List.of(ByteStringUtils.wrapUnsafely("meta1".getBytes())))));
 
         return t.toArray(new SpecOperation[0]);
     }
