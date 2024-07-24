@@ -133,7 +133,7 @@ public class TokenAirdropHandler implements TransactionHandler {
         final var nftStore = context.storeFactory().readableStore(ReadableNftStore.class);
         final var tokenStore = context.storeFactory().readableStore(ReadableTokenStore.class);
         final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
-        var recordBuilder = context.recordBuilders().getOrCreate(TokenAirdropRecordBuilder.class);
+        var recordBuilder = context.savepointStack().getBaseBuilder(TokenAirdropRecordBuilder.class);
         List<TokenTransferList> tokenTransferList = new ArrayList<>();
 
         // charge custom fees in advance
