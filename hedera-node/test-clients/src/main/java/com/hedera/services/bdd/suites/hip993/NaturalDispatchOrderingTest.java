@@ -178,7 +178,7 @@ public class NaturalDispatchOrderingTest {
                 nonFungibleToken.treasury().authorizeContract(transferContract),
                 transferContract
                         .call("transferNFTCall", nonFungibleToken, nonFungibleToken.treasury(), beneficiary, 1L)
-                        .andAssert(txn -> txn.via("fullSuccess")),
+                        .andAssert(txn -> txn.gas(2_000_000).via("fullSuccess")),
                 withOpContext((spec, opLog) -> {
                     final var calldata = transferFunction.encodeCallWithArgs(
                             nonFungibleToken.addressOn(spec.targetNetworkOrThrow()),
