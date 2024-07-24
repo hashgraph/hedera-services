@@ -65,7 +65,6 @@ public interface ContractCreateRecordBuilder extends SingleTransactionRecordBuil
     @NonNull
     ContractCreateRecordBuilder contractCreateResult(@Nullable ContractFunctionResult result);
 
-    // TODO check if we need transaction or we can change SingleTransactionRecord constructor
     @NonNull
     ContractCreateRecordBuilder transaction(@NonNull Transaction transaction);
 }

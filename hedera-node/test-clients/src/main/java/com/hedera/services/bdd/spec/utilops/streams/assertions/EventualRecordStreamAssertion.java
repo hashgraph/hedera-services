@@ -127,6 +127,11 @@ public class EventualRecordStreamAssertion extends EventualAssertion {
                     }
                 }
             }
+
+            @Override
+            public String name() {
+                return assertion.toString();
+            }
         });
         return false;
     }

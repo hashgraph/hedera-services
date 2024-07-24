@@ -94,6 +94,7 @@ public abstract class AbstractSpecOperation implements SpecOperation {
     }
 
     private void addRequisites(@NonNull final List<SpecEntity> allRequirements, @NonNull final SpecEntity entity) {
+        requireNonNull(entity);
         entity.prerequisiteEntities().forEach(prerequisite -> addRequisites(allRequirements, prerequisite));
         allRequirements.add(entity);
     }
