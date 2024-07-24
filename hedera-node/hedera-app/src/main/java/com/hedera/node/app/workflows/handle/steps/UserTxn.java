@@ -206,6 +206,11 @@ public record UserTxn(
         final var fees = dispatcher.dispatchComputeFees(dispatchHandleContext);
         final var feeAccumulator = new FeeAccumulator(
                 serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) baseBuilder);
+        final var congestionMultiplier = feeManager.congestionMultiplierFor(
+                txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
+        if (congestionMultiplier > 1) {
+            baseBuilder.congestionMultiplier(congestionMultiplier);
+        }
         return new RecordDispatch(
                 baseBuilder,
                 config,

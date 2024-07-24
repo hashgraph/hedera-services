@@ -259,6 +259,11 @@ public class ChildDispatchFactory {
                 dispatchProcessor,
                 throttleAdviser);
         final var childFees = computeChildFees(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
+        final var congestionMultiplier = feeManager.congestionMultiplierFor(
+                txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
+        if (congestionMultiplier > 1) {
+            builder.congestionMultiplier(congestionMultiplier);
+        }
         final var childFeeAccumulator = new FeeAccumulator(
                 serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder);
         final var childTokenContext =

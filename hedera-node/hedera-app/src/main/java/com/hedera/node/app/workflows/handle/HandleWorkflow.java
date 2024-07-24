@@ -363,9 +363,6 @@ public class HandleWorkflow {
                 }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
                 dispatchProcessor.processDispatch(dispatch);
-                // TODO : confirm this is correct
-                dispatch.recordBuilder()
-                        .congestionMultiplier(congestionMultipliers.utilizationScaledCurrentMultiplier());
                 updateWorkflowMetrics(userTxn);
             }
             final var streamItems = userTxn.stack().buildStreamItems(userTxn.consensusNow());
