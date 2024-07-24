@@ -2,9 +2,14 @@ open module com.swirlds.platform.core.test.fixtures {
     requires transitive com.hedera.node.hapi;
     requires transitive com.swirlds.common.test.fixtures;
     requires transitive com.swirlds.common;
+    requires transitive com.swirlds.merkle;
     requires transitive com.swirlds.platform.core;
+    requires transitive com.swirlds.state.api.test.fixtures;
+    requires transitive com.swirlds.state.api;
+    requires transitive com.swirlds.virtualmap;
     requires transitive com.hedera.pbj.runtime;
     requires com.swirlds.logging;
+    requires com.swirlds.merkledb;
     requires org.apache.logging.log4j;
     requires org.junit.jupiter.api;
     requires org.mockito;

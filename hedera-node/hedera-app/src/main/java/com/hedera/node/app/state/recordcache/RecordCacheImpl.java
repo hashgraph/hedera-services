@@ -29,7 +29,6 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.state.recordcache.TransactionRecordEntry;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.validation.TruePredicate;
 import com.hedera.node.app.state.DeduplicationCache;
 import com.hedera.node.app.state.HederaRecordCache;
@@ -38,6 +37,7 @@ import com.hedera.node.app.state.WorkingStateAccessor;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.data.LedgerConfig;
+import com.swirlds.state.spi.CommittableWritableStates;
 import com.swirlds.state.spi.ReadableQueueState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableStates;
@@ -351,16 +351,16 @@ public class RecordCacheImpl implements HederaRecordCache {
 
     /** Utility method that get the writable queue from the working state */
     private WritableStates getWritableState() {
-        final var hederaState = workingStateAccessor.getHederaState();
-        if (hederaState == null) {
-            throw new RuntimeException("HederaState is null. This can only happen very early during bootstrapping");
+        final var merkleState = workingStateAccessor.getMerkleState();
+        if (merkleState == null) {
+            throw new RuntimeException("MerkleState is null. This can only happen very early during bootstrapping");
         }
-        return hederaState.getWritableStates(NAME);
+        return merkleState.getWritableStates(NAME);
     }
 
     /** Utility method that get the readable queue from the working state */
     private ReadableQueueState<TransactionRecordEntry> getReadableQueue() {
-        final var states = requireNonNull(workingStateAccessor.getHederaState()).getReadableStates(NAME);
+        final var states = requireNonNull(workingStateAccessor.getMerkleState()).getReadableStates(NAME);
         return states.getQueue(TXN_RECORD_QUEUE);
     }
 }

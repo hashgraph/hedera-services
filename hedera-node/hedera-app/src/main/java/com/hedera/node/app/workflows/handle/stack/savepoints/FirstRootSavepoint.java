@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.stack.savepoints;
 
-import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.state.WrappedMerkleState;
 import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -28,7 +28,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * parent sink although the capacity is limited in both directions.
  */
 public class FirstRootSavepoint extends AbstractSavepoint {
-    public FirstRootSavepoint(@NonNull WrappedHederaState state, BuilderSink parentSink) {
+    public FirstRootSavepoint(@NonNull WrappedMerkleState state, BuilderSink parentSink) {
         super(state, parentSink, parentSink.precedingCapacity(), parentSink.followingCapacity());
     }
 

@@ -74,7 +74,7 @@ import com.hedera.node.config.data.SchedulingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigInteger;
@@ -154,7 +154,7 @@ public class ThrottleAccumulator {
      * @return whether the transaction should be throttled
      */
     public boolean shouldThrottle(
-            @NonNull final TransactionInfo txnInfo, @NonNull final Instant now, @NonNull final HederaState state) {
+            @NonNull final TransactionInfo txnInfo, @NonNull final Instant now, @NonNull final MerkleState state) {
         resetLastAllowedUse();
         lastTxnWasGasThrottled = false;
         if (shouldThrottleTxn(false, txnInfo, now, state)) {
@@ -337,7 +337,7 @@ public class ThrottleAccumulator {
             final boolean isScheduled,
             @NonNull final TransactionInfo txnInfo,
             @NonNull final Instant now,
-            @NonNull final HederaState state) {
+            @NonNull final MerkleState state) {
         final var function = txnInfo.functionality();
         final var configuration = configProvider.getConfiguration();
 
@@ -402,7 +402,7 @@ public class ThrottleAccumulator {
             final ThrottleReqsManager manager,
             final TransactionInfo txnInfo,
             final Instant now,
-            final HederaState state) {
+            final MerkleState state) {
         final var txnBody = txnInfo.txBody();
         final var scheduleCreate = txnBody.scheduleCreateOrThrow();
         final var scheduled = scheduleCreate.scheduledTransactionBodyOrThrow();
@@ -477,7 +477,7 @@ public class ThrottleAccumulator {
     }
 
     private boolean shouldThrottleScheduleSign(
-            ThrottleReqsManager manager, TransactionInfo txnInfo, Instant now, HederaState state) {
+            ThrottleReqsManager manager, TransactionInfo txnInfo, Instant now, MerkleState state) {
         final var txnBody = txnInfo.txBody();
         if (!manager.allReqsMetAt(now)) {
             return true;

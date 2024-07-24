@@ -47,7 +47,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.TokenMintTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeMerkleState;
 import com.hedera.node.app.service.consensus.ConsensusService;
 import com.hedera.node.app.service.consensus.impl.ConsensusServiceImpl;
 import com.hedera.node.app.service.contract.ContractService;
@@ -119,7 +119,7 @@ class UtilizationScaledThrottleMultiplierTest {
     @Mock
     private TransactionInfo txnInfo;
 
-    private FakeHederaState state;
+    private FakeMerkleState state;
 
     @BeforeEach
     void setUp() {
@@ -137,7 +137,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(CRYPTO_CREATE);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeMerkleState()
                 .addService(
                         TokenService.NAME,
                         Map.of(
@@ -182,7 +182,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(CONTRACT_CREATE);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeMerkleState()
                 .addService(
                         ContractService.NAME,
                         Map.of(
@@ -210,7 +210,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(FILE_CREATE);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeMerkleState()
                 .addService(
                         FileService.NAME,
                         Map.of(
@@ -244,7 +244,7 @@ class UtilizationScaledThrottleMultiplierTest {
                 TOKEN_MINT);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeMerkleState()
                 .addService(
                         TokenService.NAME,
                         Map.of(
@@ -282,7 +282,7 @@ class UtilizationScaledThrottleMultiplierTest {
                 TOKEN_MINT);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        var storeFactory = new ReadableStoreFactory(new FakeHederaState());
+        var storeFactory = new ReadableStoreFactory(new FakeMerkleState());
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(tokenMintTxnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER, multiplier);
@@ -299,7 +299,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(TOKEN_CREATE);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeMerkleState()
                 .addService(
                         TokenService.NAME,
                         Map.of(
@@ -325,7 +325,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(TOKEN_ASSOCIATE_TO_ACCOUNT);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeMerkleState()
                 .addService(
                         TokenService.NAME,
                         Map.of(
@@ -357,7 +357,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(CONSENSUS_CREATE_TOPIC);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        state = new FakeHederaState()
+        state = new FakeMerkleState()
                 .addService(
                         ConsensusService.NAME,
                         Map.of(
@@ -379,7 +379,7 @@ class UtilizationScaledThrottleMultiplierTest {
         when(txnInfo.functionality()).thenReturn(CRYPTO_TRANSFER);
         when(delegate.currentMultiplier()).thenReturn(SOME_MULTIPLIER);
 
-        var storeFactory = new ReadableStoreFactory(new FakeHederaState());
+        var storeFactory = new ReadableStoreFactory(new FakeMerkleState());
         long multiplier = utilizationScaledThrottleMultiplier.currentMultiplier(txnInfo, storeFactory);
 
         assertEquals(SOME_MULTIPLIER, multiplier);
