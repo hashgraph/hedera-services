@@ -26,9 +26,7 @@ tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.add("-Xlint:-exports,-overloads,-lossy-conversions")
 }
 
-mainModuleInfo {
-    annotationProcessor("com.swirlds.config.processor")
-}
+mainModuleInfo { annotationProcessor("com.swirlds.config.processor") }
 
 testModuleInfo {
     requires("com.swirlds.base.test.fixtures")
