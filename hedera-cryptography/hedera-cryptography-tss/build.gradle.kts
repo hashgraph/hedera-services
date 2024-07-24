@@ -18,7 +18,9 @@ plugins {
     id("com.hedera.gradle.platform")
     id("com.hedera.gradle.platform-publish")
 }
+
 group = "com.hedera.cryptography"
+
 testModuleInfo {
     requires("org.junit.jupiter.api")
     requires("org.mockito")
