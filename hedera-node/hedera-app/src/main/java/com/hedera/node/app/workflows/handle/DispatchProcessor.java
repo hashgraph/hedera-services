@@ -117,7 +117,11 @@ public class DispatchProcessor {
         }
         dispatchUsageManager.trackUsage(dispatch, workDone);
         recordFinalizer.finalizeRecord(dispatch);
-        dispatch.stack().commitFullStack();
+        if (dispatch.txnCategory() == USER) {
+            dispatch.stack().commitTransaction(dispatch.recordBuilder());
+        } else {
+            dispatch.stack().commitFullStack();
+        }
     }
 
     /**

@@ -51,6 +51,14 @@ public class PairedStreamBuilder implements SingleTransactionRecordBuilder {
         ioBlockItemsBuilder = new IoBlockItemsBuilder(reversingBehavior, customizer, category);
     }
 
+    public IoBlockItemsBuilder ioBlockItemsBuilder() {
+        return ioBlockItemsBuilder;
+    }
+
+    public SingleTransactionRecordBuilderImpl recordBuilder() {
+        return recordBuilder;
+    }
+
     @Override
     public SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction) {
         return null;

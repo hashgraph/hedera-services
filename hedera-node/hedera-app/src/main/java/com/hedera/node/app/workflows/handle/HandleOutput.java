@@ -20,23 +20,33 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.node.app.state.SingleTransactionRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
- * A temporary wrapper class as we transition from the V6 record stream to the block stream; includes at least one of,
+ * A temporary wrapper class as we transition from the V6 record stream to the block stream;
+ * includes at least one of,
  * <ol>
  *     <li>The V6 record stream items,</li>
  *     <li>The block stream output items</li>
  * </ol>
- * @param outputBlockItems maybe the block stream output items
+ * @param blockItems maybe the block stream output items
  * @param recordStreamItems maybe the V6 record stream items
  */
-public record OutputItemStream(
-        @Nullable List<BlockItem> outputBlockItems, @Nullable List<SingleTransactionRecord> recordStreamItems) {
-    public OutputItemStream {
-        if (outputBlockItems == null) {
+public record HandleOutput(
+        @Nullable List<BlockItem> blockItems, @Nullable List<SingleTransactionRecord> recordStreamItems) {
+    public HandleOutput {
+        if (blockItems == null) {
             requireNonNull(recordStreamItems);
         }
+    }
+
+    public @NonNull List<SingleTransactionRecord> recordsOrThrow() {
+        return requireNonNull(recordStreamItems);
+    }
+
+    public @NonNull List<BlockItem> blocksItemsOrThrow() {
+        return requireNonNull(blockItems);
     }
 }

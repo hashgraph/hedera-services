@@ -273,10 +273,12 @@ public class HandleWorkflow {
         if (STREAM_MODE != BLOCKS) {
             blockRecordManager.startUserTransaction(consensusNow, state, platformState);
         }
-        final var outputItems = execute(userTxn);
-        // TODO: need to switch with config and send block items to block stream manager
+        final var handleOutput = execute(userTxn);
         if (STREAM_MODE != BLOCKS) {
-            blockRecordManager.endUserTransaction(outputItems.recordStreamItems().stream(), state);
+            blockRecordManager.endUserTransaction(handleOutput.recordsOrThrow().stream(), state);
+        }
+        if (STREAM_MODE != RECORDS) {
+            handleOutput.blocksItemsOrThrow().forEach(blockStreamManager::writeItem);
         }
 
         handleWorkflowMetrics.updateTransactionDuration(
@@ -338,19 +340,21 @@ public class HandleWorkflow {
      *
      * @return the stream of records
      */
-    private OutputItemStream execute(@NonNull final UserTxn userTxn) {
+    private HandleOutput execute(@NonNull final UserTxn userTxn) {
         try {
             if (isOlderSoftwareEvent(userTxn)) {
                 initializeBuilderInfo(userTxn.baseBuilder(), userTxn.txnInfo()).status(BUSY);
                 // Flushes the BUSY builder to the stream, no other side effects
-                userTxn.stack().commitFullStack();
+                userTxn.stack().commitTransaction(userTxn.baseBuilder());
             } else {
                 if (userTxn.isGenesisTxn()) {
                     // (FUTURE) Once all genesis setup is done via dispatch, remove this method
                     genesisSetup.externalizeInitSideEffects(userTxn.tokenContextImpl());
                 }
                 updateNodeStakes(userTxn);
-                blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+                if (HandleWorkflow.STREAM_MODE != BLOCKS) {
+                    blockRecordManager.advanceConsensusClock(userTxn.consensusNow(), userTxn.state());
+                }
                 expireSchedules(userTxn);
                 logPreDispatch(userTxn);
                 final var dispatch = dispatchFor(userTxn);
@@ -361,10 +365,10 @@ public class HandleWorkflow {
                 dispatchProcessor.processDispatch(dispatch);
                 updateWorkflowMetrics(userTxn);
             }
-            final var streamItems = userTxn.stack().buildStreamItems(userTxn.consensusNow());
+            final var handleOutput = userTxn.stack().buildHandleOutput(userTxn.consensusNow());
             recordCache.add(
-                    userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), streamItems.recordStreamItems());
-            return streamItems;
+                    userTxn.creatorInfo().nodeId(), userTxn.txnInfo().payerID(), handleOutput.recordStreamItems());
+            return handleOutput;
         } catch (final Exception e) {
             logger.error("{} - exception thrown while handling user transaction", ALERT_MESSAGE, e);
             // TODO - build and stream any committed builders and state changes from the stack, with a
@@ -379,7 +383,7 @@ public class HandleWorkflow {
      *
      * @return the failure record
      */
-    private OutputItemStream failInvalidStreamItems(@NonNull final UserTxn userTxn) {
+    private HandleOutput failInvalidStreamItems(@NonNull final UserTxn userTxn) {
         userTxn.stack().rollbackFullStack();
         final var failInvalidBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
         initializeBuilderInfo(failInvalidBuilder, userTxn.txnInfo())
@@ -391,7 +395,7 @@ public class HandleWorkflow {
                 requireNonNull(userTxn.txnInfo().payerID()),
                 List.of(failInvalidRecord));
         // TODO: Add block items
-        return new OutputItemStream(List.of(), List.of(failInvalidRecord));
+        return new HandleOutput(List.of(), List.of(failInvalidRecord));
     }
 
     /**
@@ -507,7 +511,7 @@ public class HandleWorkflow {
                             userTxn.stack(), ScheduleService.NAME, userTxn.config(), storeMetricsService)
                     .getStore(WritableScheduleStore.class);
             scheduleStore.purgeExpiredSchedulesBetween(firstSecondToExpire, lastSecondToExpire);
-            userTxn.stack().commitFullStack();
+            userTxn.stack().commitPreTxnSystemChanges();
         }
     }
 

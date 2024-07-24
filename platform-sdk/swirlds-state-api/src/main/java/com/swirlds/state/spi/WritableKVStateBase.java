@@ -16,6 +16,34 @@
 
 package com.swirlds.state.spi;
 
+import com.hedera.hapi.block.stream.output.MapChangeKey;
+import com.hedera.hapi.block.stream.output.MapChangeValue;
+import com.hedera.hapi.block.stream.output.MapDeleteChange;
+import com.hedera.hapi.block.stream.output.MapUpdateChange;
+import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.node.base.AccountID;
+import com.hedera.hapi.node.base.ContractID;
+import com.hedera.hapi.node.base.FileID;
+import com.hedera.hapi.node.base.NftID;
+import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.TokenID;
+import com.hedera.hapi.node.base.TopicID;
+import com.hedera.hapi.node.state.common.EntityIDPair;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.consensus.Topic;
+import com.hedera.hapi.node.state.contract.Bytecode;
+import com.hedera.hapi.node.state.contract.SlotKey;
+import com.hedera.hapi.node.state.contract.SlotValue;
+import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoLong;
+import com.hedera.hapi.node.state.primitives.ProtoString;
+import com.hedera.hapi.node.state.schedule.Schedule;
+import com.hedera.hapi.node.state.schedule.ScheduleList;
+import com.hedera.hapi.node.state.token.Account;
+import com.hedera.hapi.node.state.token.Nft;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.hedera.hapi.node.state.token.Token;
+import com.hedera.hapi.node.state.token.TokenRelation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
@@ -27,7 +55,9 @@ import java.util.*;
  * @param <V> The value type
  */
 public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V> implements WritableKVState<K, V> {
-    /** A map of all modified values buffered in this mutable state */
+    /**
+     * A map of all modified values buffered in this mutable state
+     */
     private final Map<K, V> modifications = new LinkedHashMap<>();
 
     /**
@@ -37,6 +67,110 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      */
     protected WritableKVStateBase(@NonNull final String stateKey) {
         super(stateKey);
+    }
+
+    /**
+     * A temporary method used for the block stream MVP to accumulate state changes.
+     * @return the list of pending state changes
+     */
+    public List<StateChange> pendingStateChanges() {
+        final List<StateChange> changes = new ArrayList<>();
+        for (final var entry : modifications.entrySet()) {
+            final var key = entry.getKey();
+            final var value = entry.getValue();
+            if (value == null) {
+                changes.add(StateChange.newBuilder()
+                        .stateName(getStateKey())
+                        .mapDelete(MapDeleteChange.newBuilder().key(keyFor(key)).build())
+                        .build());
+            } else {
+                changes.add(StateChange.newBuilder()
+                        .stateName(getStateKey())
+                        .mapUpdate(MapUpdateChange.newBuilder()
+                                .key(keyFor(key))
+                                .value(valueFor(value))
+                                .build())
+                        .build());
+            }
+        }
+        return changes;
+    }
+
+    private MapChangeKey keyFor(final K key) {
+        return switch (key) {
+            case AccountID accountID -> MapChangeKey.newBuilder()
+                    .accountIdKey(accountID)
+                    .build();
+            case EntityIDPair entityIDPair -> MapChangeKey.newBuilder()
+                    .entityIdPairKey(entityIDPair)
+                    .build();
+            case EntityNumber entityNumber -> MapChangeKey.newBuilder()
+                    .entityNumberKey(entityNumber)
+                    .build();
+            case FileID fileID -> MapChangeKey.newBuilder().fileIdKey(fileID).build();
+            case NftID nftID -> MapChangeKey.newBuilder().nftIdKey(nftID).build();
+            case ProtoLong protoLong -> MapChangeKey.newBuilder()
+                    .protoLongKey(protoLong.value())
+                    .build();
+            case ProtoString protoString -> MapChangeKey.newBuilder()
+                    .protoStringKey(protoString.value())
+                    .build();
+            case ScheduleID scheduleID -> MapChangeKey.newBuilder()
+                    .scheduleIdKey(scheduleID)
+                    .build();
+            case SlotKey slotKey -> MapChangeKey.newBuilder()
+                    .slotKeyKey(slotKey)
+                    .build();
+            case TokenID tokenID -> MapChangeKey.newBuilder()
+                    .tokenIdKey(tokenID)
+                    .build();
+            case TopicID topicID -> MapChangeKey.newBuilder()
+                    .topicIdKey(topicID)
+                    .build();
+            case ContractID contractID -> MapChangeKey.newBuilder()
+                    .contractIdKey(contractID)
+                    .build();
+            default -> throw new IllegalStateException(
+                    "Unrecognized key type " + key.getClass().getSimpleName());
+        };
+    }
+
+    private MapChangeValue valueFor(final V value) {
+        return switch (value) {
+            case Account account -> MapChangeValue.newBuilder()
+                    .accountValue(account)
+                    .build();
+            case AccountID accountID -> MapChangeValue.newBuilder()
+                    .accountIdValue(accountID)
+                    .build();
+            case Bytecode bytecode -> MapChangeValue.newBuilder()
+                    .bytecodeValue(bytecode)
+                    .build();
+            case File file -> MapChangeValue.newBuilder().fileValue(file).build();
+            case Nft nft -> MapChangeValue.newBuilder().nftValue(nft).build();
+            case ProtoString protoString -> MapChangeValue.newBuilder()
+                    .protoStringValue(protoString.value())
+                    .build();
+            case Schedule schedule -> MapChangeValue.newBuilder()
+                    .scheduleValue(schedule)
+                    .build();
+            case ScheduleList scheduleList -> MapChangeValue.newBuilder()
+                    .scheduleListValue(scheduleList)
+                    .build();
+            case SlotValue slotValue -> MapChangeValue.newBuilder()
+                    .slotValueValue(slotValue)
+                    .build();
+            case StakingNodeInfo stakingNodeInfo -> MapChangeValue.newBuilder()
+                    .stakingNodeInfoValue(stakingNodeInfo)
+                    .build();
+            case Token token -> MapChangeValue.newBuilder().tokenValue(token).build();
+            case TokenRelation tokenRelation -> MapChangeValue.newBuilder()
+                    .tokenRelationValue(tokenRelation)
+                    .build();
+            case Topic topic -> MapChangeValue.newBuilder().topicValue(topic).build();
+            default -> throw new IllegalStateException(
+                    "Unexpected value: " + value.getClass().getSimpleName());
+        };
     }
 
     /**
@@ -69,7 +203,9 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         modifications.clear();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Nullable
     public final V get(@NonNull K key) {
@@ -82,14 +218,18 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Nullable
     @Override
     public V getOriginalValue(@NonNull K key) {
         return super.get(key);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Nullable
     public final V getForModify(@NonNull final K key) {
@@ -114,7 +254,9 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         return val;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public final void put(@NonNull final K key, @NonNull final V value) {
         Objects.requireNonNull(key);
@@ -122,7 +264,9 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         modifications.put(key, value);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public final void remove(@NonNull final K key) {
         Objects.requireNonNull(key);
@@ -163,7 +307,9 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         return new KVStateKeyIterator<>(backendItr, removedKeys, maybeAddedKeys);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     @NonNull
     @Override
     public final Set<K> modifiedKeys() {
@@ -182,6 +328,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      * <li>if the key is not in backing store and is being tried to be removed in modifications,
      * then it is not counted as the key does not exist in state.</li>
      * </ol>
+     *
      * @return The size of the state.
      */
     public long size() {
@@ -228,6 +375,7 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
 
     /**
      * Returns the size of the underlying data source. This can be a merkle map or a virtual map.
+     *
      * @return size of the underlying data source.
      */
     protected abstract long sizeOfDataSource();

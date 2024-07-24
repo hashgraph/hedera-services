@@ -127,6 +127,9 @@ public class GenesisSetup {
                             entityNum,
                             recordBuilder.status());
                 }
+                // Before committing, reset the next entity number to be the first user entity
+                controlledNum.put(new EntityNumber(firstUserNum - 1));
+                dispatch.stack().commitTransaction(recordBuilder);
             }
 
             @NonNull
@@ -148,12 +151,6 @@ public class GenesisSetup {
             }
         };
         fileService.createSystemEntities(genesisContext);
-        // Before returning, reset the next entity number to be the first user entity
-        final var controlledNum = dispatch.stack()
-                .getWritableStates(EntityIdService.NAME)
-                .<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY);
-        controlledNum.put(new EntityNumber(firstUserNum - 1));
-        dispatch.stack().commitFullStack();
     }
 
     /**
