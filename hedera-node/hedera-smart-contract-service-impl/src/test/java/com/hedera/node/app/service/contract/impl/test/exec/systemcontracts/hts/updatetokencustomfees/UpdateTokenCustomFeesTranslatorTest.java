@@ -22,6 +22,7 @@ import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_H
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.OWNER_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.SENDER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -35,6 +36,8 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees.UpdateTokenCustomFeesDecoder;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.updatetokencustomfees.UpdateTokenCustomFeesTranslator;
 import com.hedera.node.app.service.contract.impl.test.exec.systemcontracts.common.CallTestBase;
+import com.hedera.node.config.data.ContractsConfig;
+import com.swirlds.config.api.Configuration;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +57,12 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
     @Mock
     private VerificationStrategy verificationStrategy;
 
+    @Mock
+    Configuration configuration;
+
+    @Mock
+    private ContractsConfig contractsConfig;
+
     private final UpdateTokenCustomFeesDecoder decoder = new UpdateTokenCustomFeesDecoder();
 
     private UpdateTokenCustomFeesTranslator subject;
@@ -66,6 +75,7 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
     @Test
     void matchesUpdateFungibleTokenCustomFees() {
         // given:
+        setConfiguration(true);
         given(attempt.selector())
                 .willReturn(UpdateTokenCustomFeesTranslator.UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector());
         // expect:
@@ -73,8 +83,17 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
     }
 
     @Test
+    void matchesFailsIfFeatureFlagDisabled() {
+        // given:
+        setConfiguration(false);
+        // expect:
+        assertFalse(subject.matches(attempt));
+    }
+
+    @Test
     void matchesUpdateNonFungibleTokenCustomFees() {
         // given:
+        setConfiguration(true);
         given(attempt.selector())
                 .willReturn(UpdateTokenCustomFeesTranslator.UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector());
         // expect:
@@ -140,5 +159,11 @@ class UpdateTokenCustomFeesTranslatorTest extends CallTestBase {
 
         final var call = subject.callFrom(attempt);
         assertThat(call).isInstanceOf(DispatchForResponseCodeHtsCall.class);
+    }
+
+    private void setConfiguration(final boolean enabled) {
+        given(attempt.configuration()).willReturn(configuration);
+        given(configuration.getConfigData(ContractsConfig.class)).willReturn(contractsConfig);
+        given(contractsConfig.systemContractUpdateCustomFeesEnabled()).willReturn(enabled);
     }
 }

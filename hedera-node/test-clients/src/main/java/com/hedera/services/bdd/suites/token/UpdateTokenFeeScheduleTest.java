@@ -87,7 +87,7 @@ public class UpdateTokenFeeScheduleTest {
             keys = {ADMIN_KEY, FEE_SCHEDULE_KEY, SUPPLY_KEY})
     static SpecNonFungibleToken nonFungibleToken;
 
-    @Account(name = "feeCollector", balance = ONE_HUNDRED_HBARS)
+    @Account(name = "feeCollector", tinybarBalance = ONE_HUNDRED_HBARS)
     static SpecAccount feeCollector;
 
     @BeforeAll
@@ -436,7 +436,7 @@ public class UpdateTokenFeeScheduleTest {
     @HapiTest
     @DisplayName("update token fees with collector not associated with token")
     public Stream<DynamicTest> updateFeesWithCollectorNotAssociatedToToken(
-            @Account(name = "collector", balance = ONE_HUNDRED_HBARS) final SpecAccount collector) {
+            @Account(name = "collector", tinybarBalance = ONE_HUNDRED_HBARS) final SpecAccount collector) {
         return hapiTest(
                 updateTokenFeeSchedules
                         .call("updateFungibleFixedHtsFee", fungibleToken, feeToken, 10L, collector)
