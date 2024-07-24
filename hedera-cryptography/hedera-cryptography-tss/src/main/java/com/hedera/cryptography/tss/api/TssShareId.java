@@ -14,28 +14,24 @@
  * limitations under the License.
  */
 
-package com.hedera.cryptography.tss;
+package com.hedera.cryptography.tss.api;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.cryptography.signaturescheme.api.PairingPublicKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
- * A record that contains a share ID, and the corresponding public key.
+ * The ID of a TSS share.
  *
- * @param shareId the share ID
- * @param publicKey the public key
+ * @param idElement the field element that represents the share ID
  */
-public record TssPublicShare(@NonNull TssShareId shareId, @NonNull PairingPublicKey publicKey) {
+public record TssShareId(@NonNull Integer /*This will be a FieldElement from Pairings-Api*/ idElement) {
     /**
-     * Constructor
+     * Constructor.
      *
-     * @param shareId the share ID
-     * @param publicKey the public key
+     * @param idElement the field element that represents the share ID
      */
-    public TssPublicShare {
-        requireNonNull(shareId, "shareId must not be null");
-        requireNonNull(shareId, "publicKey must not be null");
+    public TssShareId {
+        requireNonNull(idElement, "idElement must not be null");
     }
 }

@@ -25,7 +25,13 @@ import com.hedera.cryptography.signaturescheme.api.PairingPrivateKey;
 import com.hedera.cryptography.signaturescheme.api.PairingPublicKey;
 import com.hedera.cryptography.signaturescheme.api.PairingSignature;
 import com.hedera.cryptography.signaturescheme.api.SignatureSchema;
-import com.hedera.cryptography.tss.impl.TssServiceImpl;
+import com.hedera.cryptography.tss.api.TssMessage;
+import com.hedera.cryptography.tss.api.TssParticipantDirectory;
+import com.hedera.cryptography.tss.api.TssPrivateShare;
+import com.hedera.cryptography.tss.api.TssPublicShare;
+import com.hedera.cryptography.tss.api.TssService;
+import com.hedera.cryptography.tss.api.TssShareId;
+import com.hedera.cryptography.tss.api.TssShareSignature;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,7 +66,7 @@ class TssTest {
                 .withThreshold(2)
                 .build(SIGNATURE_SCHEMA);
 
-        final TssServiceImpl tssService = new TssServiceImpl(SIGNATURE_SCHEMA, new Random());
+        final TssService tssService = TssService.create(SIGNATURE_SCHEMA, new Random());
 
         // this message will contain a random share split in 3 parts
         final TssMessage p0Message = tssService.generateTssMessage(p0sDirectory);
@@ -129,7 +135,7 @@ class TssTest {
                 .withThreshold(2)
                 .build(SIGNATURE_SCHEMA);
 
-        final TssServiceImpl tssService = new TssServiceImpl(SIGNATURE_SCHEMA, new Random());
+        final TssService tssService = TssService.create(SIGNATURE_SCHEMA, new Random());
         final List<TssPublicShare> publicShares =
                 List.of(mock(TssPublicShare.class), mock(TssPublicShare.class), mock(TssPublicShare.class));
         final PairingPublicKey ledgerID = tssService.aggregatePublicShares(publicShares);
@@ -185,7 +191,7 @@ class TssTest {
                 .withThreshold(2)
                 .build(SIGNATURE_SCHEMA);
 
-        final TssServiceImpl tssService = new TssServiceImpl(SIGNATURE_SCHEMA, new Random());
+        final TssService tssService = TssService.create(SIGNATURE_SCHEMA, new Random());
         final List<TssPublicShare> publicShares =
                 List.of(mock(TssPublicShare.class), mock(TssPublicShare.class), mock(TssPublicShare.class));
         final PairingPublicKey ledgerID = tssService.aggregatePublicShares(publicShares);

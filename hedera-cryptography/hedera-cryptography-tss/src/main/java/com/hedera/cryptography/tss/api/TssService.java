@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.cryptography.tss;
+package com.hedera.cryptography.tss.api;
 
 import com.hedera.cryptography.signaturescheme.api.PairingPrivateKey;
 import com.hedera.cryptography.signaturescheme.api.PairingPublicKey;
 import com.hedera.cryptography.signaturescheme.api.PairingSignature;
 import com.hedera.cryptography.signaturescheme.api.SignatureSchema;
+import com.hedera.cryptography.tss.impl.TssServiceImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
+import java.util.Random;
 
 /**
  * A Threshold Signature Scheme Service.
@@ -152,4 +154,14 @@ public interface TssService {
      */
     @NonNull
     PairingSignature aggregateSignatures(@NonNull List<TssShareSignature> partialSignatures);
+
+    /**
+     * Builder method that creates a default instance for this service
+     * @param signatureSchema predefined Curve and Group selections to use.
+     * @param random a source of randomness {@link java.util.Random}
+     * @return the default TssService instance
+     */
+    static TssService create(@NonNull final SignatureSchema signatureSchema, @NonNull final Random random) {
+        return new TssServiceImpl(signatureSchema, random);
+    }
 }

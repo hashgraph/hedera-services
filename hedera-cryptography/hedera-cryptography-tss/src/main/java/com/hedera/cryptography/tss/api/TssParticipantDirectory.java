@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.cryptography.tss;
+package com.hedera.cryptography.tss.api;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;

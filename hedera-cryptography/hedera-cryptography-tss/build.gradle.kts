@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.hedera.gradle.platform")
-    id("com.hedera.gradle.platform-publish")
-}
+plugins { id("com.hedera.gradle.platform") }
 
 group = "com.hedera.cryptography"
 
