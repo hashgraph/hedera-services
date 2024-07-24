@@ -393,8 +393,20 @@ class NodeCreateHandlerTest extends AddressBookTestBase {
     void failsWhenEndpointHaveInvalidIp2() {
         txn = new NodeCreateBuilder()
                 .withAccountId(accountId)
+                .withGossipEndpoint(List.of(endpoint1, endpoint9))
+                .build();
+        setupHandle();
+
+        final var msg = assertThrows(HandleException.class, () -> subject.handle(handleContext));
+        assertEquals(ResponseCodeEnum.INVALID_IPV4_ADDRESS, msg.getStatus());
+    }
+
+    @Test
+    void failsWhenEndpointHaveInvalidIp3() {
+        txn = new NodeCreateBuilder()
+                .withAccountId(accountId)
                 .withGossipEndpoint(List.of(endpoint1, endpoint2))
-                .withServiceEndpoint(List.of(endpoint9))
+                .withServiceEndpoint(List.of(endpoint10))
                 .build();
         setupHandle();
 
