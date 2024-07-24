@@ -967,7 +967,7 @@ public class NonceSuite {
                 .then(
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .has(accountWith().nonce(1L)),
-                        getTxnRecord(TX).hasChildRecordCount(0));
+                        getTxnRecord(TX).hasNonStakingChildRecordCount(0));
     }
 
     // depends on https://github.com/hashgraph/hedera-services/pull/11359

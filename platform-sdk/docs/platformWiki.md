@@ -16,8 +16,8 @@ This code is maintained by the "Platform Base" team.
 - [Configuration](./base/configuration/configuration.md)
 - [Context](./base/context/context.md)
 - [Metrics](./base/metrics/metrics.md)
-    - Prometheus
-    - [Busy time metrics](base/metrics/metric-types/busy-time-metric.md)
+  - Prometheus
+  - [Busy time metrics](base/metrics/metric-types/busy-time-metric.md)
 - Logging
 - Thread Management
 - [Test Support](./base/test-support/test-support.md)
@@ -32,30 +32,30 @@ This code is maintained by the "Platform Hashgraph" team.
 - [Platform Status](./core/platform-status.md)
 - [Threads](./core/core-platform-threads.drawio.svg)
 - Components
-    - [Framework](components/componentFramework.md)
-    - [Networking](core/network/network.md)
-    - [Gossip](./core/gossip/gossip.md)
-        - [Sync gossip algorithm](core/gossip/syncing/sync-protocol.md)
-        - [Out of order gossip algorithm](core/gossip/OOG/OOG-protocol.md)
-    - Hashgraph
-    - State management
-        - [Rules for using SignedState objects](./core/signed-state-use.md)
-        - State snapshots
-        - Hashing
-        - State Signing
-        - ISS Detection
-    - Reconnect
-    - Transaction Handling
-    - BLS
-    - Application Communication
+  - [Framework](components/componentFramework.md)
+  - [Networking](core/network/network.md)
+  - [Gossip](./core/gossip/gossip.md)
+    - [Sync gossip algorithm](core/gossip/syncing/sync-protocol.md)
+    - [Out of order gossip algorithm](core/gossip/OOG/OOG-protocol.md)
+  - Hashgraph
+  - State management
+    - [Rules for using SignedState objects](./core/signed-state-use.md)
+    - State snapshots
+    - Hashing
+    - State Signing
+    - ISS Detection
+  - Reconnect
+  - Transaction Handling
+  - BLS
+  - Application Communication
 - Event Flow
-    - Event Intake
-    - [Pre-consensus event stream](core/preconsensusEventStream.svg)
-    - Post-consensus event stream
-    - Threading Diagram
+  - Event Intake
+  - [Pre-consensus event stream](core/preconsensusEventStream.svg)
+  - Post-consensus event stream
+  - Threading Diagram
 - [Freeze](core/freeze/freeze.md)
 - WIP
-    - [Address book management](core/address-book-management.md)
+  - [Address book management](core/address-book-management.md)
 - [External docs](https://drive.google.com/drive/folders/161GObnZVBWXKy4MHulBZKFcBDsNTU5FB?usp=drive_link)
 
 ## Data
@@ -63,23 +63,27 @@ This code is maintained by the "Platform Hashgraph" team.
 This code is maintained by the "Platform Data" team.
 
 - Merkle APIs
-    - Fast Copies
-    - Mutability
-    - Reference Counting
-    - Hashing
-    - Serialization
+  - Fast Copies
+  - Mutability
+  - Reference Counting
+  - Hashing
+  - Serialization
 - Data Structures
-    - VirtualMap
-        - MerkleDB
-    - MerkleMap
-    - FCHashMap
-    - FCQueue
+  - VirtualMap
+    - MerkleDB
+  - MerkleMap
+  - FCHashMap
+  - FCQueue
 - Reconnect
 
 ## Process
 
 ### Testing
+
 ### Pull Requests
+
 ### Documentation
+
 #### Markdown Wiki
+
 #### Mindmap
