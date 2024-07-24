@@ -16,19 +16,17 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
-import static com.hedera.hapi.node.base.ResponseCodeEnum.ACCOUNT_IS_IMMUTABLE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.EMPTY_PENDING_AIRDROP_ID_LIST;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_PENDING_AIRDROP_ID_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PENDING_AIRDROP_ID_REPEATED;
-import static com.hedera.node.app.spi.key.KeyUtils.isValid;
-import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
+import static com.hedera.node.app.spi.validation.Validations.validateAccountID;
 import static com.hedera.node.app.spi.workflows.HandleException.validateTrue;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateFalsePreCheck;
 import static com.hedera.node.app.spi.workflows.PreCheckException.validateTruePreCheck;
@@ -167,11 +165,7 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
         }
 
         // delete the account airdrops from the linked list
-        final var payerAccount = getIfUsable(
-            payer,
-            accountStore,
-            context.expiryValidator(),
-            INVALID_ACCOUNT_ID);
+        final var payerAccount = getIfUsable(payer, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
         validateTrue(payerAccount.hasHeadPendingAirdropId(), INVALID_TRANSACTION_BODY);
 
         for (var pendingAirdropsToCancel : pendingAirdropIds) {
@@ -180,8 +174,10 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
 
             // Update the account to point to the new head if the current one is being cancelled
             if (pendingAirdropsToCancel.equals(payerAccount.headPendingAirdropId())) {
-                final var updatedPayer = payerAccount.copyBuilder()
-                    .headPendingAirdropId(accountAirdropToCancel.nextAirdrop()).build();
+                final var updatedPayer = payerAccount
+                        .copyBuilder()
+                        .headPendingAirdropId(accountAirdropToCancel.nextAirdrop())
+                        .build();
                 accountStore.put(updatedPayer);
             }
 
@@ -190,13 +186,19 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
             if (prevAirdropId != null) {
                 final var prevAccountAirdrop = airdropStore.getForModify(prevAirdropId);
                 validateTrue(prevAccountAirdrop != null, INVALID_TRANSACTION_BODY);
-                final var prevAirdropToUpdate = prevAccountAirdrop.copyBuilder().nextAirdrop(nextAirdropId).build();
+                final var prevAirdropToUpdate = prevAccountAirdrop
+                        .copyBuilder()
+                        .nextAirdrop(nextAirdropId)
+                        .build();
                 airdropStore.patch(prevAirdropId, prevAirdropToUpdate);
             }
             if (nextAirdropId != null) {
                 final var nextAccountAirdrop = airdropStore.getForModify(nextAirdropId);
                 validateTrue(nextAccountAirdrop != null, INVALID_TRANSACTION_BODY);
-                final var nextAirdropToUpdate = nextAccountAirdrop.copyBuilder().previousAirdrop(prevAirdropId).build();
+                final var nextAirdropToUpdate = nextAccountAirdrop
+                        .copyBuilder()
+                        .previousAirdrop(prevAirdropId)
+                        .build();
                 airdropStore.patch(nextAirdropId, nextAirdropToUpdate);
             }
         }
