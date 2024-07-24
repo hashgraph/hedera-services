@@ -98,9 +98,6 @@ public class TokenCancelAirdropHandler extends BaseTokenHandler implements Trans
 
         // If the sender account is immutable, then we throw an exception.
         final var key = senderAccount.key();
-        if (key == null || !isValid(key)) {
-            throw new PreCheckException(ACCOUNT_IS_IMMUTABLE);
-        }
         context.requireKey(key);
     }
 
