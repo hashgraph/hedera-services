@@ -34,7 +34,8 @@ import java.util.List;
 /**
  * A wrapper class for {@link EventDescriptor} that includes the hash of the event descriptor.
  */
-public record EventDescriptorWrapper(@NonNull EventDescriptor eventDescriptor, @NonNull Hash hash, @NonNull NodeId creator) {
+public record EventDescriptorWrapper(
+        @NonNull EventDescriptor eventDescriptor, @NonNull Hash hash, @NonNull NodeId creator) {
     public static final long CLASS_ID = 0x825e17f25c6e2566L;
 
     private static final class ClassVersion {
@@ -53,9 +54,11 @@ public record EventDescriptorWrapper(@NonNull EventDescriptor eventDescriptor, @
         public static final int BIRTH_ROUND = 3;
     }
 
-
     public EventDescriptorWrapper(@NonNull EventDescriptor eventDescriptor) {
-        this(eventDescriptor, new Hash(eventDescriptor.hash().toByteArray()), new NodeId(eventDescriptor.creatorNodeId()));
+        this(
+                eventDescriptor,
+                new Hash(eventDescriptor.hash().toByteArray()),
+                new NodeId(eventDescriptor.creatorNodeId()));
     }
 
     /**
@@ -83,7 +86,10 @@ public record EventDescriptorWrapper(@NonNull EventDescriptor eventDescriptor, @
         out.writeLong(eventDescriptor.birthRound());
     }
 
-    public static void serializeList(@Nullable final List<EventDescriptorWrapper> descriptorWrapperList, @NonNull final SerializableDataOutputStream out) throws IOException {
+    public static void serializeList(
+            @Nullable final List<EventDescriptorWrapper> descriptorWrapperList,
+            @NonNull final SerializableDataOutputStream out)
+            throws IOException {
         if (descriptorWrapperList == null) {
             out.writeInt(NULL_LIST_ARRAY_LENGTH);
             return;
@@ -114,7 +120,8 @@ public record EventDescriptorWrapper(@NonNull EventDescriptor eventDescriptor, @
     }
 
     @NonNull
-    private static EventDescriptorWrapper deserializeOne(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
+    private static EventDescriptorWrapper deserializeOne(
+            @NonNull final SerializableDataInputStream in, final int version) throws IOException {
         final Hash hash = in.readSerializable(false, Hash::new);
         if (hash == null) {
             throw new IOException("hash cannot be null");
@@ -136,7 +143,8 @@ public record EventDescriptorWrapper(@NonNull EventDescriptor eventDescriptor, @
     }
 
     @Nullable
-    public static List<EventDescriptorWrapper> deserializeList(@NonNull final SerializableDataInputStream in) throws IOException {
+    public static List<EventDescriptorWrapper> deserializeList(@NonNull final SerializableDataInputStream in)
+            throws IOException {
         final int length = in.readInt();
         if (length == NULL_LIST_ARRAY_LENGTH) {
             return null;
@@ -165,5 +173,4 @@ public record EventDescriptorWrapper(@NonNull EventDescriptor eventDescriptor, @
         }
         return list;
     }
-
 }

@@ -80,11 +80,18 @@ public class RandomEventUtils {
 
         final EventDescriptorWrapper selfDescriptor = (selfParent == null || selfParent.getBaseHash() == null)
                 ? null
-                : new EventDescriptorWrapper(new EventDescriptor(selfParent.getBaseHash().getBytes(), selfParent.getCreatorId().id(), selfParent.getBirthRound(), selfParent.getGeneration()));
+                : new EventDescriptorWrapper(new EventDescriptor(
+                        selfParent.getBaseHash().getBytes(),
+                        selfParent.getCreatorId().id(),
+                        selfParent.getBirthRound(),
+                        selfParent.getGeneration()));
         final EventDescriptorWrapper otherDescriptor = (otherParent == null || otherParent.getBaseHash() == null)
                 ? null
-                : new EventDescriptorWrapper(new EventDescriptor(otherParent.getBaseHash().getBytes(), otherParent.getCreatorId().id(), otherParent.getBirthRound(), otherParent.getGeneration()));
-
+                : new EventDescriptorWrapper(new EventDescriptor(
+                        otherParent.getBaseHash().getBytes(),
+                        otherParent.getCreatorId().id(),
+                        otherParent.getBirthRound(),
+                        otherParent.getGeneration()));
 
         final List<OneOf<PayloadOneOfType>> convertedTransactions = new ArrayList<>();
         if (transactions != null) {

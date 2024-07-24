@@ -500,7 +500,8 @@ public class TestingEventBuilder {
         final long generation = generationOverride == null ? parent.getGeneration() : generationOverride;
         final long birthRound = birthRoundOverride == null ? parent.getBirthRound() : birthRoundOverride;
 
-        return new EventDescriptorWrapper(new EventDescriptor(parent.getHash().getBytes(), parent.getCreatorId().id(), generation, birthRound));
+        return new EventDescriptorWrapper(new EventDescriptor(
+                parent.getHash().getBytes(), parent.getCreatorId().id(), generation, birthRound));
     }
 
     /**
