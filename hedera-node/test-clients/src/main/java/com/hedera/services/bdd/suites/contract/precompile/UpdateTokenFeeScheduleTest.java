@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.services.bdd.suites.token;
+package com.hedera.services.bdd.suites.contract.precompile;
 
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.asEvmAddress;
 import static com.hedera.services.bdd.junit.TestTags.SMART_CONTRACT;
@@ -53,6 +53,7 @@ import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
 import com.hedera.services.bdd.spec.queries.token.HapiGetTokenInfo;
+import com.hedera.services.bdd.suites.utils.contracts.precompile.TokenKeyType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
@@ -93,9 +94,13 @@ public class UpdateTokenFeeScheduleTest {
     @BeforeAll
     static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
         testLifecycle.doAdhoc(
-                feeToken.authorizeContracts(updateTokenFeeSchedules),
-                fungibleToken.authorizeContracts(updateTokenFeeSchedules),
-                nonFungibleToken.authorizeContracts(updateTokenFeeSchedules),
+                feeToken.authorizeContracts(updateTokenFeeSchedules).alsoAuthorizing(TokenKeyType.FEE_SCHEDULE_KEY),
+                fungibleToken
+                        .authorizeContracts(updateTokenFeeSchedules)
+                        .alsoAuthorizing(TokenKeyType.FEE_SCHEDULE_KEY),
+                nonFungibleToken
+                        .authorizeContracts(updateTokenFeeSchedules)
+                        .alsoAuthorizing(TokenKeyType.FEE_SCHEDULE_KEY),
                 feeCollector.associateTokens(feeToken, fungibleToken));
     }
 
