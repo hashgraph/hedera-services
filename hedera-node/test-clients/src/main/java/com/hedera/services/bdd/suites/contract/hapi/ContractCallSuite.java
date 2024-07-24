@@ -2490,7 +2490,7 @@ public class ContractCallSuite {
                                 CONTRACT_REVERT_EXECUTED,
                                 recordWith()
                                         .status(INSUFFICIENT_GAS)
-                                        .consensusTimeImpliedByNonce(parentConsTime.get(), 1))));
+                                        .consensusTimeImpliedByOffset(parentConsTime.get(), 1))));
     }
 
     @HapiTest

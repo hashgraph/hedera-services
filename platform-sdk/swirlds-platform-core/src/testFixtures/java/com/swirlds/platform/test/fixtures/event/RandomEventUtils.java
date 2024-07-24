@@ -108,7 +108,7 @@ public class RandomEventUtils {
         if (fakeHash) {
             unsignedEvent.setHash(RandomUtils.randomHash(random));
         } else {
-            new StatefulEventHasher().hashEvent(unsignedEvent);
+            new StatefulEventHasher().hashUnsignedEvent(unsignedEvent);
         }
         return unsignedEvent;
     }

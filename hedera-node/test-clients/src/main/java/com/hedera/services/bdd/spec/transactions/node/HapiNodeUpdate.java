@@ -218,4 +218,8 @@ public class HapiNodeUpdate extends HapiTxnOp<HapiNodeUpdate> {
         newDescription.ifPresent(d -> helper.add("description", d));
         return helper;
     }
+
+    public Key getAdminKey() {
+        return newAdminKey.orElse(null);
+    }
 }

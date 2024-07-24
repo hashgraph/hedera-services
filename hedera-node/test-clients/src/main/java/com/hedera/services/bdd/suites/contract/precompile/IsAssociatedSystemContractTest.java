@@ -71,7 +71,7 @@ public class IsAssociatedSystemContractTest {
     @Contract(contract = "HRCContract", creationGas = 4_000_000L)
     static SpecContract senderContract;
 
-    @Account(name = "senderAccount", balance = ONE_HUNDRED_HBARS)
+    @Account(name = "senderAccount", tinybarBalance = ONE_HUNDRED_HBARS)
     static SpecAccount senderAccount;
 
     @Order(0)

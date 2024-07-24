@@ -43,7 +43,6 @@ import com.hedera.node.app.service.contract.impl.handlers.ContractDeleteHandler;
 import com.hedera.node.app.service.contract.impl.records.ContractDeleteRecordBuilder;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -75,7 +74,7 @@ class ContractDeleteHandlerTest {
     private ContractDeleteRecordBuilder recordBuilder;
 
     @Mock
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
     private final ContractDeleteHandler subject = new ContractDeleteHandler();
 
@@ -206,8 +205,8 @@ class ContractDeleteHandlerTest {
         given(context.body()).willReturn(txn);
         given(context.storeFactory()).willReturn(storeFactory);
         given(storeFactory.serviceApi(TokenServiceApi.class)).willReturn(tokenServiceApi);
-        given(context.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(ContractDeleteRecordBuilder.class)).willReturn(recordBuilder);
+        given(context.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(ContractDeleteRecordBuilder.class)).willReturn(recordBuilder);
     }
 
     private static final Account TBD_CONTRACT = Account.newBuilder()

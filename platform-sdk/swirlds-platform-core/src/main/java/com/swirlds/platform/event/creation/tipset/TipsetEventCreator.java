@@ -34,7 +34,9 @@ import com.swirlds.platform.event.EventUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.creation.EventCreationConfig;
 import com.swirlds.platform.event.creation.EventCreator;
+import com.swirlds.platform.event.hashing.PbjHasher;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
+import com.swirlds.platform.event.hashing.UnsignedEventHasher;
 import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
@@ -119,7 +121,7 @@ public class TipsetEventCreator implements EventCreator {
     /**
      * Event hasher for unsigned events.
      */
-    private final StatefulEventHasher statefulEventHasher = new StatefulEventHasher();
+    private final UnsignedEventHasher eventHasher;
 
     /**
      * Create a new tipset event creator.
@@ -169,6 +171,12 @@ public class TipsetEventCreator implements EventCreator {
         noParentFoundLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
 
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
+        this.eventHasher = platformContext
+                        .getConfiguration()
+                        .getConfigData(EventConfig.class)
+                        .migrateEventHashing()
+                ? new PbjHasher()
+                : new StatefulEventHasher();
     }
 
     /**
@@ -441,7 +449,7 @@ public class TipsetEventCreator implements EventCreator {
                         : ConsensusConstants.ROUND_FIRST,
                 timeCreated,
                 transactionSupplier.getTransactions());
-        statefulEventHasher.hashEvent(event);
+        eventHasher.hashUnsignedEvent(event);
 
         return event;
     }
