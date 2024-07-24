@@ -67,6 +67,7 @@ import com.swirlds.platform.event.validation.EventSignatureValidator;
 import com.swirlds.platform.event.validation.InternalEventValidator;
 import com.swirlds.platform.eventhandling.DefaultTransactionHandler;
 import com.swirlds.platform.eventhandling.DefaultTransactionPrehandler;
+import com.swirlds.platform.eventhandling.EventConfig;
 import com.swirlds.platform.eventhandling.TransactionHandler;
 import com.swirlds.platform.eventhandling.TransactionPrehandler;
 import com.swirlds.platform.gossip.SyncGossip;
@@ -257,7 +258,12 @@ public class PlatformComponentBuilder {
     @NonNull
     public EventHasher buildEventHasher() {
         if (eventHasher == null) {
-            eventHasher = new DefaultEventHasher();
+            eventHasher = new DefaultEventHasher(
+                    blocks.appVersion().getPbjSemanticVersion(),
+                    blocks.platformContext()
+                            .getConfiguration()
+                            .getConfigData(EventConfig.class)
+                            .migrateEventHashing());
         }
         return eventHasher;
     }
@@ -359,7 +365,7 @@ public class PlatformComponentBuilder {
             eventSignatureValidator = new DefaultEventSignatureValidator(
                     blocks.platformContext(),
                     CryptoStatic::verifySignature,
-                    blocks.appVersion(),
+                    blocks.appVersion().getPbjSemanticVersion(),
                     blocks.initialState().get().getState().getPlatformState().getPreviousAddressBook(),
                     blocks.initialAddressBook(),
                     blocks.intakeEventCounter());
@@ -860,7 +866,7 @@ public class PlatformComponentBuilder {
             issDetector = new DefaultIssDetector(
                     blocks.platformContext(),
                     blocks.initialState().get().getState().getPlatformState().getAddressBook(),
-                    blocks.appVersion(),
+                    blocks.appVersion().getPbjSemanticVersion(),
                     ignorePreconsensusSignatures,
                     roundToIgnore);
         }

@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.state;
 
+import static com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType.STATE_SIGNATURE_PAYLOAD;
 import static com.swirlds.common.test.fixtures.RandomUtils.randomHash;
 import static com.swirlds.common.utility.Threshold.MAJORITY;
 import static com.swirlds.common.utility.Threshold.SUPER_MAJORITY;
@@ -28,7 +29,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
+import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.common.context.PlatformContext;
 import com.swirlds.common.crypto.Hash;
@@ -44,13 +47,10 @@ import com.swirlds.platform.state.iss.IssDetector;
 import com.swirlds.platform.state.iss.internal.HashValidityStatus;
 import com.swirlds.platform.state.signed.ReservedSignedState;
 import com.swirlds.platform.state.signed.SignedState;
-import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.address.Address;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.state.notifications.IssNotification;
 import com.swirlds.platform.system.state.notifications.IssNotification.IssType;
-import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.StateSignatureTransaction;
 import com.swirlds.platform.test.PlatformTest;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
@@ -84,17 +84,16 @@ class IssDetectorTests extends PlatformTest {
 
         return hashGenerationData.nodeList().stream()
                 .map(nodeHashInfo -> {
-                    final StateSignatureTransaction signatureTransaction =
-                            new StateSignatureTransaction(StateSignaturePayload.newBuilder()
-                                    .round(roundNumber)
-                                    .signature(Bytes.EMPTY)
-                                    .hash(nodeHashInfo.nodeStateHash().getBytes())
-                                    .build());
+                    final StateSignaturePayload signatureTransaction = StateSignaturePayload.newBuilder()
+                            .round(roundNumber)
+                            .signature(Bytes.EMPTY)
+                            .hash(nodeHashInfo.nodeStateHash().getBytes())
+                            .build();
 
                     final TestingEventBuilder event = new TestingEventBuilder(random)
                             .setCreatorId(nodeHashInfo.nodeId())
-                            .setTransactions(new ConsensusTransactionImpl[] {signatureTransaction})
-                            .setSoftwareVersion(new BasicSoftwareVersion(1));
+                            .setTransactions(List.of(new OneOf<>(STATE_SIGNATURE_PAYLOAD, signatureTransaction)))
+                            .setSoftwareVersion(SemanticVersion.DEFAULT);
 
                     return EventImplTestUtils.createEventImpl(event, null, null);
                 })
@@ -160,7 +159,9 @@ class IssDetectorTests extends PlatformTest {
     private static ConsensusRound createRoundWithSignatureEvents(
             final long roundNumber, @NonNull final List<EventImpl> eventsToInclude) {
         final ConsensusRound consensusRound = mock(ConsensusRound.class);
-        when(consensusRound.getConsensusEvents()).thenReturn(eventsToInclude);
+        when(consensusRound.getConsensusEvents())
+                .thenReturn(
+                        eventsToInclude.stream().map(EventImpl::getBaseEvent).toList());
         when(consensusRound.getRoundNum()).thenReturn(roundNumber);
 
         return consensusRound;
@@ -179,7 +180,7 @@ class IssDetectorTests extends PlatformTest {
         final PlatformContext platformContext = createDefaultPlatformContext();
 
         final IssDetector issDetector = new DefaultIssDetector(
-                platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
+                platformContext, addressBook, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         // signature events are generated for each round when that round is handled, and then are included randomly
@@ -299,7 +300,7 @@ class IssDetectorTests extends PlatformTest {
         }
 
         final IssDetector issDetector = new DefaultIssDetector(
-                platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
+                platformContext, addressBook, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -385,7 +386,7 @@ class IssDetectorTests extends PlatformTest {
         final NodeId selfId = addressBook.getNodeId(0);
 
         final IssDetector issDetector = new DefaultIssDetector(
-                platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
+                platformContext, addressBook, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -507,7 +508,7 @@ class IssDetectorTests extends PlatformTest {
         final NodeId selfId = addressBook.getNodeId(0);
 
         final IssDetector issDetector = new DefaultIssDetector(
-                platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
+                platformContext, addressBook, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -592,7 +593,7 @@ class IssDetectorTests extends PlatformTest {
         final NodeId selfId = addressBook.getNodeId(0);
 
         final IssDetector issDetector = new DefaultIssDetector(
-                platformContext, addressBook, new BasicSoftwareVersion(1), false, DO_NOT_IGNORE_ROUNDS);
+                platformContext, addressBook, SemanticVersion.DEFAULT, false, DO_NOT_IGNORE_ROUNDS);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;
@@ -669,7 +670,7 @@ class IssDetectorTests extends PlatformTest {
                 .roundsNonAncient();
 
         final IssDetector issDetector =
-                new DefaultIssDetector(platformContext, addressBook, new BasicSoftwareVersion(1), false, 1);
+                new DefaultIssDetector(platformContext, addressBook, SemanticVersion.DEFAULT, false, 1);
         final IssDetectorTestHelper issDetectorTestHelper = new IssDetectorTestHelper(issDetector);
 
         long currentRound = 0;

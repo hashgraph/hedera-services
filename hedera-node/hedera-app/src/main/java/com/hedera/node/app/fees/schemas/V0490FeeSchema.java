@@ -20,22 +20,15 @@ import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.base.TimestampSeconds;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
-import com.hedera.node.app.service.mono.state.submerkle.ExchangeRates;
 import com.hedera.node.config.data.BootstrapConfig;
-import com.swirlds.platform.state.spi.WritableSingletonStateBase;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class V0490FeeSchema extends Schema {
     public static final String MIDNIGHT_RATES_STATE_KEY = "MIDNIGHT_RATES";
-    private static final Logger log = LogManager.getLogger(V0490FeeSchema.class);
-
-    private static ExchangeRates fs;
 
     /**
      * The version of the schema.
@@ -56,9 +49,9 @@ public class V0490FeeSchema extends Schema {
     @Override
     public void migrate(@NonNull final MigrationContext ctx) {
         final var isGenesis = ctx.previousVersion() == null;
-        final var midnightRatesState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);
         if (isGenesis) {
             // Set the initial exchange rates (from the bootstrap config) as the midnight rates
+            final var midnightRatesState = ctx.newStates().getSingleton(MIDNIGHT_RATES_STATE_KEY);
             final var bootstrapConfig = ctx.configuration().getConfigData(BootstrapConfig.class);
             final var exchangeRateSet = ExchangeRateSet.newBuilder()
                     .currentRate(ExchangeRate.newBuilder()
@@ -75,35 +68,5 @@ public class V0490FeeSchema extends Schema {
 
             midnightRatesState.put(exchangeRateSet);
         }
-
-        if (fs != null) {
-            log.info("BBM: migrating fee service");
-
-            var toState = ctx.newStates().getSingleton(V0490FeeSchema.MIDNIGHT_RATES_STATE_KEY);
-            final var toRates = ExchangeRateSet.newBuilder()
-                    .currentRate(ExchangeRate.newBuilder()
-                            .centEquiv(fs.getCurrCentEquiv())
-                            .hbarEquiv(fs.getCurrHbarEquiv())
-                            .expirationTime(TimestampSeconds.newBuilder().seconds(fs.getCurrExpiry()))
-                            .build())
-                    .nextRate(ExchangeRate.newBuilder()
-                            .centEquiv(fs.getNextCentEquiv())
-                            .hbarEquiv(fs.getNextHbarEquiv())
-                            .expirationTime(TimestampSeconds.newBuilder().seconds(fs.getNextExpiry()))
-                            .build())
-                    .build();
-            toState.put(toRates);
-
-            if (toState.isModified()) ((WritableSingletonStateBase) toState).commit();
-
-            log.info("BBM: finished migrating fee service");
-        } else {
-            log.warn("BBM: no fee 'from' state found");
-        }
-        fs = null;
-    }
-
-    public static void setFs(ExchangeRates fs) {
-        V0490FeeSchema.fs = fs;
     }
 }

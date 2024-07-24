@@ -16,17 +16,17 @@
 
 package com.hedera.services.bdd.spec.dsl.utils;
 
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
+
 import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.KeyList;
 import com.hedera.hapi.node.state.token.Account;
-import com.hedera.node.app.service.mono.pbj.PbjConverter;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.spec.HapiSpec;
 import com.hedera.services.bdd.spec.dsl.EvmAddressableEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import com.hedera.services.bdd.spec.dsl.SpecEntityRegistrar;
-import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ public class DslUtils {
     public static final Key PBJ_IMMUTABILITY_SENTINEL_KEY =
             Key.newBuilder().keyList(KeyList.DEFAULT).build();
     public static final com.hederahashgraph.api.proto.java.Key PROTO_IMMUTABILITY_SENTINEL_KEY =
-            PbjConverter.fromPbj(PBJ_IMMUTABILITY_SENTINEL_KEY);
+            fromPbj(PBJ_IMMUTABILITY_SENTINEL_KEY);
 
     /**
      * Substitutes spec entities with their EVM applicable types in the given arguments, as follows:
@@ -89,7 +89,7 @@ public class DslUtils {
      * @return a list of all required entities
      */
     public static List<SpecEntity> allRequiredCallEntities(
-            @NonNull final SpecContract target, @NonNull final Object[] parameters) {
+            @NonNull final SpecEntity target, @NonNull final Object[] parameters) {
         List<SpecEntity> requiredEntities = new ArrayList<>();
         requiredEntities.add(target);
         for (final var parameter : parameters) {

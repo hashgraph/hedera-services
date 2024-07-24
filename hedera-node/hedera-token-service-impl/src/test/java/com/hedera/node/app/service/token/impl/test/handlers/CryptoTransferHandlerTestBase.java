@@ -31,10 +31,15 @@ import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.CryptoTransferHandler;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class CryptoTransferHandlerTestBase extends StepsBase {
     protected static final AccountID ACCOUNT_3333 = asAccount(3333);
     protected static final AccountID ACCOUNT_4444 = asAccount(4444);
@@ -61,6 +66,9 @@ class CryptoTransferHandlerTestBase extends StepsBase {
 
     protected CryptoTransferHandler subject;
     protected CryptoTransferValidator validator;
+
+    @Mock
+    protected HandleContext.SavepointStack stack;
 
     @BeforeEach
     public void setUp() {

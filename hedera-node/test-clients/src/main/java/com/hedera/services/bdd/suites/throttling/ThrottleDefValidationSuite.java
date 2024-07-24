@@ -21,7 +21,6 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
-import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.EXCHANGE_RATE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.FEE_SCHEDULE_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -35,8 +34,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS_BUT_MI
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.THROTTLE_GROUP_HAS_ZERO_OPS_PER_SEC;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -45,9 +42,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 @TestMethodOrder(OrderAnnotation.class)
 public class ThrottleDefValidationSuite {
-    private static final String DEFAULT_CONGESTION_MULTIPLIERS =
-            HapiSpecSetup.getDefaultNodeProps().get("fees.percentCongestionMultipliers");
-
     @HapiTest
     final Stream<DynamicTest> updateWithMissingTokenMintFails() {
         var missingMintThrottles = protoDefsFromResource("testSystemFiles/throttles-sans-mint.json");
@@ -69,14 +63,9 @@ public class ThrottleDefValidationSuite {
         return defaultHapiSpec("EnsureDefaultsRestored")
                 .given()
                 .when()
-                .then(
-                        fileUpdate(THROTTLE_DEFS)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .contents(defaultThrottles.toByteArray()),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(EXCHANGE_RATE_CONTROL)
-                                .overridingProps(
-                                        Map.of("fees.percentCongestionMultipliers", DEFAULT_CONGESTION_MULTIPLIERS)));
+                .then(fileUpdate(THROTTLE_DEFS)
+                        .payingWith(EXCHANGE_RATE_CONTROL)
+                        .contents(defaultThrottles.toByteArray()));
     }
 
     @HapiTest

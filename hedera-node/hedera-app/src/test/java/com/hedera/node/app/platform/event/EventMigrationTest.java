@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.platform.event;
 
-import com.hedera.node.app.service.mono.context.properties.SerializableSemVers;
+import com.hederahashgraph.api.proto.java.SemanticVersion;
 import com.swirlds.common.constructable.ConstructableRegistry;
 import com.swirlds.common.constructable.ConstructableRegistryException;
 import com.swirlds.common.crypto.Hash;
@@ -40,7 +40,12 @@ public class EventMigrationTest {
     @BeforeAll
     public static void setUp() throws ConstructableRegistryException {
         ConstructableRegistry.getInstance().registerConstructables("");
-        StaticSoftwareVersion.setSoftwareVersion(Set.of(SerializableSemVers.CLASS_ID));
+        SemanticVersion semanticVersion = SemanticVersion.newBuilder()
+                .setMajor(0)
+                .setMinor(46)
+                .setPatch(3)
+                .build();
+        StaticSoftwareVersion.setSoftwareVersion(new SerializableSemVers(semanticVersion, semanticVersion));
     }
 
     /**
@@ -52,8 +57,7 @@ public class EventMigrationTest {
      * The file being read is from mainnet written by the SDK 0.46.3.
      * <p>
      * Even though this could be considered a platform test, it needs to be in the services module because the event
-     * contains a {@link com.hedera.node.app.service.mono.context.properties.SerializableSemVers} which is a services
-     * class
+     * contains a {@link SerializableSemVers} which is a services class
      */
     @Test
     public void migration() throws URISyntaxException, IOException {

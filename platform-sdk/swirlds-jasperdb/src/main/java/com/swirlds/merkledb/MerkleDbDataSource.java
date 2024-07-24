@@ -50,14 +50,13 @@ import com.swirlds.merkledb.files.VirtualHashRecordSerializer;
 import com.swirlds.merkledb.files.VirtualLeafRecordSerializer;
 import com.swirlds.merkledb.files.hashmap.Bucket;
 import com.swirlds.merkledb.files.hashmap.HalfDiskHashMap;
-import com.swirlds.merkledb.serialize.KeyIndexType;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
@@ -65,6 +64,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -108,9 +108,6 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     /** data item serializer for hashStoreDisk store */
     private final VirtualHashRecordSerializer virtualHashRecordSerializer = new VirtualHashRecordSerializer();
 
-    /** We have an optimized mode when the keys can be represented by a single long */
-    private final boolean isLongKeyMode;
-
     /**
      * In memory off-heap store for path to disk location, this is used for internal hashes store.
      */
@@ -135,17 +132,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     /** True when hashesRamToDiskThreshold is less than Long.MAX_VALUE */
     private final boolean hasDiskStoreForHashes;
 
-    /**
-     * In memory off-heap store for key to path map, this is used when isLongKeyMode=true and keys
-     * are longs
-     */
-    private final LongList longKeyToPath;
-
-    /**
-     * Mixed disk and off-heap memory store for key to path map, this is used if
-     * isLongKeyMode=false, and we have complex keys.
-     */
-    private final HalfDiskHashMap<K> objectKeyToPath;
+    /** Mixed disk and off-heap memory store for key to path map */
+    private final HalfDiskHashMap<K> keyToPath;
 
     /** Mixed disk and off-heap memory store for path to leaf key and value */
     private final MemoryIndexDiskKeyValueStore<VirtualLeafRecord<K, V>> pathToKeyValue;
@@ -325,71 +313,51 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             hashStoreDiskFileCompactor = null;
         }
 
-        final DataFileCompactor<Bucket<K>> objectKeyToPathFileCompactor;
+        final DataFileCompactor<Bucket<K>> keyToPathFileCompactor;
         // key to path store
-        if (tableConfig.getKeySerializer().getIndexType() == KeyIndexType.SEQUENTIAL_INCREMENTING_LONGS) {
-            isLongKeyMode = true;
-            objectKeyToPath = null;
-            objectKeyToPathFileCompactor = null;
-            if (Files.exists(dbPaths.longKeyToPathFile)) {
-                longKeyToPath = new LongListOffHeap(dbPaths.longKeyToPathFile);
-            } else {
-                longKeyToPath = new LongListOffHeap();
-            }
-        } else {
-            isLongKeyMode = false;
-            longKeyToPath = null;
-            String storeName = tableName + "_objectkeytopath";
-            objectKeyToPath = new HalfDiskHashMap<>(
-                    database.getConfig(),
-                    tableConfig.getMaxNumberOfKeys(),
-                    tableConfig.getKeySerializer(),
-                    dbPaths.objectKeyToPathDirectory,
-                    storeName,
-                    tableName + ":objectKeyToPath",
-                    tableConfig.isPreferDiskBasedIndices());
-            objectKeyToPathFileCompactor = new DataFileCompactor<>(
-                    database.getConfig(),
-                    storeName,
-                    objectKeyToPath.getFileCollection(),
-                    objectKeyToPath.getBucketIndexToBucketLocation(),
-                    statisticsUpdater::setLeafKeysStoreCompactionTimeMs,
-                    statisticsUpdater::setLeafKeysStoreCompactionSavedSpaceMb,
-                    statisticsUpdater::setLeafKeysStoreFileSizeByLevelMb,
-                    updateTotalStatsFunction);
-            objectKeyToPath.printStats();
-        }
+        String keyToPathStoreName = tableName + "_objectkeytopath";
+        keyToPath = new HalfDiskHashMap<>(
+                database.getConfig(),
+                tableConfig.getMaxNumberOfKeys(),
+                tableConfig.getKeySerializer(),
+                dbPaths.keyToPathDirectory,
+                keyToPathStoreName,
+                tableName + ":objectKeyToPath",
+                tableConfig.isPreferDiskBasedIndices());
+        keyToPathFileCompactor = new DataFileCompactor<>(
+                database.getConfig(),
+                keyToPathStoreName,
+                keyToPath.getFileCollection(),
+                keyToPath.getBucketIndexToBucketLocation(),
+                statisticsUpdater::setLeafKeysStoreCompactionTimeMs,
+                statisticsUpdater::setLeafKeysStoreCompactionSavedSpaceMb,
+                statisticsUpdater::setLeafKeysStoreFileSizeByLevelMb,
+                updateTotalStatsFunction);
+        keyToPath.printStats();
+
         final LoadedDataCallback<VirtualLeafRecord<K, V>> leafRecordLoadedCallback;
-        final boolean needRestoreLongKeyToPath = (longKeyToPath != null) && (longKeyToPath.size() == 0);
         final boolean needRestorePathToDiskLocationLeafNodes = pathToDiskLocationLeafNodes.size() == 0;
-        if (needRestoreLongKeyToPath || needRestorePathToDiskLocationLeafNodes) {
+        if (needRestorePathToDiskLocationLeafNodes) {
             leafRecordLoadedCallback = (dataLocation, leafRecord) -> {
                 final long path = leafRecord.getPath();
-                if (needRestoreLongKeyToPath) {
-                    // This is a "long" key mode, so keys are known to implement VirtualLongKey
-                    final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
-                    longKeyToPath.put(key, path);
-                }
-                if (needRestorePathToDiskLocationLeafNodes) {
-                    pathToDiskLocationLeafNodes.put(path, dataLocation);
-                }
+                pathToDiskLocationLeafNodes.put(path, dataLocation);
             };
         } else {
             leafRecordLoadedCallback = null;
         }
         // Create path to key/value store, this will create new or load if files exist
-        final String storeName = tableName + "_pathtohashkeyvalue";
+        final String pathToKeyValueStoreName = tableName + "_pathtohashkeyvalue";
         pathToKeyValue = new MemoryIndexDiskKeyValueStore<>(
                 database.getConfig(),
                 dbPaths.pathToKeyValueDirectory,
-                storeName,
+                pathToKeyValueStoreName,
                 tableName + ":pathToHashKeyValue",
                 leafRecordSerializer,
                 leafRecordLoadedCallback,
                 pathToDiskLocationLeafNodes);
         final DataFileCompactor<VirtualLeafRecord<K, V>> pathToKeyValueFileCompactor = new DataFileCompactor<>(
                 database.getConfig(),
-                storeName,
+                pathToKeyValueStoreName,
                 pathToKeyValue.getFileCollection(),
                 pathToDiskLocationLeafNodes,
                 statisticsUpdater::setLeavesStoreCompactionTimeMs,
@@ -413,7 +381,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                 tableConfig.getHashesRamToDiskThreshold());
 
         compactionCoordinator = new MerkleDbCompactionCoordinator(
-                tableName, objectKeyToPathFileCompactor, hashStoreDiskFileCompactor, pathToKeyValueFileCompactor);
+                tableName, keyToPathFileCompactor, hashStoreDiskFileCompactor, pathToKeyValueFileCompactor);
 
         if (compactionEnabled) {
             enableBackgroundCompaction();
@@ -494,9 +462,9 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     public void saveRecords(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualHashRecord> hashRecordsToUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-            final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+            @NonNull final Stream<VirtualHashRecord> hashRecordsToUpdate,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
             final boolean isReconnectContext)
             throws IOException {
         try {
@@ -582,9 +550,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             // Cache miss
             cached = null;
             statisticsUpdater.countLeafKeyReads();
-            path = isLongKeyMode
-                    ? longKeyToPath.get(((VirtualLongKey) key).getKeyAsLong(), INVALID_PATH)
-                    : objectKeyToPath.get(key, INVALID_PATH);
+            path = keyToPath.get(key, INVALID_PATH);
         }
 
         // If the key didn't map to anything, we just return null
@@ -661,9 +627,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         }
 
         statisticsUpdater.countLeafKeyReads();
-        final long path = isLongKeyMode
-                ? longKeyToPath.get(((VirtualLongKey) key).getKeyAsLong(), INVALID_PATH)
-                : objectKeyToPath.get(key, INVALID_PATH);
+        final long path = keyToPath.get(key, INVALID_PATH);
 
         if (leafRecordCache != null) {
             // Path may be INVALID_PATH here. Still needs to be cached (negative result)
@@ -758,12 +722,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     }
                     pathToDiskLocationInternalNodes.close();
                     pathToDiskLocationLeafNodes.close();
-                    if (longKeyToPath != null) {
-                        longKeyToPath.close();
-                    }
-                    if (objectKeyToPath != null) {
-                        objectKeyToPath.close();
-                    }
+                    keyToPath.close();
                     pathToKeyValue.close();
                 } catch (final Exception e) {
                     logger.warn(EXCEPTION.getMarker(), "Exception while closing Data Source [{}]", tableName);
@@ -813,7 +772,7 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
             final MerkleDbPaths snapshotDbPaths = new MerkleDbPaths(snapshotDirectory);
             // main snapshotting process in multiple-threads
             try {
-                final CountDownLatch countDownLatch = new CountDownLatch(8);
+                final CountDownLatch countDownLatch = new CountDownLatch(7);
                 // write all data stores
                 runWithSnapshotExecutor(true, countDownLatch, "pathToDiskLocationInternalNodes", () -> {
                     pathToDiskLocationInternalNodes.writeToFile(snapshotDbPaths.pathToDiskLocationInternalNodesFile);
@@ -831,12 +790,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
                     hashStoreDisk.snapshot(snapshotDbPaths.hashStoreDiskDirectory);
                     return true;
                 });
-                runWithSnapshotExecutor(longKeyToPath != null, countDownLatch, "longKeyToPath", () -> {
-                    longKeyToPath.writeToFile(snapshotDbPaths.longKeyToPathFile);
-                    return true;
-                });
-                runWithSnapshotExecutor(objectKeyToPath != null, countDownLatch, "objectKeyToPath", () -> {
-                    objectKeyToPath.snapshot(snapshotDbPaths.objectKeyToPathDirectory);
+                runWithSnapshotExecutor(keyToPath != null, countDownLatch, "keyToPath", () -> {
+                    keyToPath.snapshot(snapshotDbPaths.keyToPathDirectory);
                     return true;
                 });
                 runWithSnapshotExecutor(true, countDownLatch, "pathToKeyValue", () -> {
@@ -887,15 +842,13 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         return new ToStringBuilder(this)
                 .append("maxNumberOfKeys", tableConfig.getMaxNumberOfKeys())
                 .append("preferDiskBasedIndexes", tableConfig.isPreferDiskBasedIndices())
-                .append("isLongKeyMode", isLongKeyMode)
                 .append("pathToDiskLocationInternalNodes.size", pathToDiskLocationInternalNodes.size())
                 .append("pathToDiskLocationLeafNodes.size", pathToDiskLocationLeafNodes.size())
                 .append("hashesRamToDiskThreshold", tableConfig.getHashesRamToDiskThreshold())
                 .append("hashStoreRam.size", hashStoreRam == null ? null : hashStoreRam.size())
                 .append("hashStoreDisk", hashStoreDisk)
                 .append("hasDiskStoreForHashes", hasDiskStoreForHashes)
-                .append("longKeyToPath.size", longKeyToPath == null ? null : longKeyToPath.size())
-                .append("objectKeyToPath", objectKeyToPath)
+                .append("keyToPath", keyToPath)
                 .append("pathToKeyValue", pathToKeyValue)
                 .append("snapshotInProgress", snapshotInProgress.get())
                 .toString();
@@ -1124,31 +1077,31 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
     private void writeLeavesToPathToKeyValue(
             final long firstLeafPath,
             final long lastLeafPath,
-            final Stream<VirtualLeafRecord<K, V>> dirtyLeaves,
-            final Stream<VirtualLeafRecord<K, V>> deletedLeaves,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> dirtyLeaves,
+            @NonNull final Stream<VirtualLeafRecord<K, V>> deletedLeaves,
             boolean isReconnect)
             throws IOException {
-        if ((dirtyLeaves == null) || (firstLeafPath <= 0)) {
-            // nothing to do
+        // If both streams are empty, no new data files should be created. One simple way to
+        // check emptiness is to use iterators. The streams aren't processed in parallel anyway
+        final Iterator<VirtualLeafRecord<K, V>> dirtyIterator = dirtyLeaves
+                .sorted(Comparator.comparingLong(VirtualLeafRecord::getPath))
+                .iterator();
+        final Iterator<VirtualLeafRecord<K, V>> deletedIterator = deletedLeaves.iterator();
+
+        if (!dirtyIterator.hasNext() && !deletedIterator.hasNext()) {
+            // Nothing to do
             return;
         }
 
-        // start writing
         pathToKeyValue.startWriting(firstLeafPath, lastLeafPath);
-        if (!isLongKeyMode) {
-            objectKeyToPath.startWriting();
-        }
+        keyToPath.startWriting();
 
         // Iterate over leaf records
-        dirtyLeaves.sorted(Comparator.comparingLong(VirtualLeafRecord::getPath)).forEachOrdered(leafRecord -> {
+        while (dirtyIterator.hasNext()) {
+            final VirtualLeafRecord<K, V> leafRecord = dirtyIterator.next();
             final long path = leafRecord.getPath();
             // Update key to path index
-            if (isLongKeyMode) {
-                final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
-                longKeyToPath.put(key, path);
-            } else {
-                objectKeyToPath.put(leafRecord.getKey(), path);
-            }
+            keyToPath.put(leafRecord.getKey(), path);
             statisticsUpdater.countFlushLeafKeysWritten();
 
             // Update path to K/V store
@@ -1162,29 +1115,21 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
             // cache the record
             invalidateReadCache(leafRecord.getKey());
-        });
+        }
 
         // Iterate over leaf records to delete
-        deletedLeaves.forEach(leafRecord -> {
+        while (deletedIterator.hasNext()) {
+            final VirtualLeafRecord<K, V> leafRecord = deletedIterator.next();
             final long path = leafRecord.getPath();
             // Update key to path index. In some cases (e.g. during reconnect), some leaves in the
             // deletedLeaves stream have been moved to different paths in the tree. This is good
             // indication that these leaves should not be deleted. This is why putIfEqual() and
             // deleteIfEqual() are used below rather than unconditional put() and delete() as for
             // dirtyLeaves stream above
-            if (isLongKeyMode) {
-                final long key = ((VirtualLongKey) leafRecord.getKey()).getKeyAsLong();
-                if (isReconnect) {
-                    longKeyToPath.putIfEqual(key, path, INVALID_PATH);
-                } else {
-                    longKeyToPath.put(key, INVALID_PATH);
-                }
+            if (isReconnect) {
+                keyToPath.deleteIfEqual(leafRecord.getKey(), path);
             } else {
-                if (isReconnect) {
-                    objectKeyToPath.deleteIfEqual(leafRecord.getKey(), path);
-                } else {
-                    objectKeyToPath.delete(leafRecord.getKey());
-                }
+                keyToPath.delete(leafRecord.getKey());
             }
             statisticsUpdater.countFlushLeavesDeleted();
 
@@ -1196,17 +1141,15 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
 
             // delete the record from the cache
             invalidateReadCache(leafRecord.getKey());
-        });
+        }
 
         // end writing
         final DataFileReader<VirtualLeafRecord<K, V>> pathToKeyValueReader = pathToKeyValue.endWriting();
         statisticsUpdater.setFlushLeavesStoreFileSize(pathToKeyValueReader);
         compactionCoordinator.compactPathToKeyValueAsync();
-        if (!isLongKeyMode) {
-            final DataFileReader<Bucket<K>> objectKeyToPathReader = objectKeyToPath.endWriting();
-            statisticsUpdater.setFlushLeafKeysStoreFileSize(objectKeyToPathReader);
-            compactionCoordinator.compactDiskStoreForObjectKeyToPathAsync();
-        }
+        final DataFileReader<Bucket<K>> keyToPathReader = keyToPath.endWriting();
+        statisticsUpdater.setFlushLeafKeysStoreFileSize(keyToPathReader);
+        compactionCoordinator.compactDiskStoreForKeyToPathAsync();
     }
 
     /**
@@ -1237,8 +1180,8 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         return hashStoreDisk;
     }
 
-    FileStatisticAware getObjectKeyToPath() {
-        return objectKeyToPath;
+    FileStatisticAware getKeyToPath() {
+        return keyToPath;
     }
 
     FileStatisticAware getPathToKeyValue() {
@@ -1253,25 +1196,12 @@ public final class MerkleDbDataSource<K extends VirtualKey, V extends VirtualVal
         return hashStoreRam;
     }
 
-    LongList getLongKeyToPath() {
-        return longKeyToPath;
-    }
-
     LongList getPathToDiskLocationInternalNodes() {
         return pathToDiskLocationInternalNodes;
     }
 
     LongList getPathToDiskLocationLeafNodes() {
         return pathToDiskLocationLeafNodes;
-    }
-
-    /**
-     * Used for tests.
-     *
-     * @return true if we are in "long key" mode.
-     */
-    boolean isLongKeyMode() {
-        return isLongKeyMode;
     }
 
     /**

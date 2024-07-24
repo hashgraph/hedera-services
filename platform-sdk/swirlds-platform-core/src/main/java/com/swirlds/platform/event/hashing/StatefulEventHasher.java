@@ -21,16 +21,23 @@ import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.crypto.HashingOutputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.platform.event.PlatformEvent;
+import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 /**
  * An implementation of {@link EventHasher} that is stateful and thus not safe to use by multiple threads concurrently.
  */
-public class StatefulEventHasher implements EventHasher {
+public class StatefulEventHasher implements EventHasher, UnsignedEventHasher {
     private final HashingOutputStream hashingOutputStream = new HashingOutputStream(DigestType.SHA_384.buildDigest());
     private final SerializableDataOutputStream outputStream = new SerializableDataOutputStream(hashingOutputStream);
 
+    /**
+     * Hashes the given {@link PlatformEvent} and sets the hash on the event.
+     *
+     * @param event the event to hash
+     * @return the hashed event
+     */
     @NonNull
     @Override
     public PlatformEvent hashEvent(@NonNull final PlatformEvent event) {
@@ -38,6 +45,21 @@ public class StatefulEventHasher implements EventHasher {
             event.serializeLegacyHashBytes(outputStream);
             event.setHash(new Hash(hashingOutputStream.getDigest(), DigestType.SHA_384));
             return event;
+        } catch (final IOException e) {
+            throw new RuntimeException("An exception occurred while trying to hash an event!", e);
+        }
+    }
+
+    /**
+     * Hashes the given {@link UnsignedEvent} and sets the hash on the event.
+     *
+     * @param event the event to hash
+     */
+    @Override
+    public void hashUnsignedEvent(@NonNull final UnsignedEvent event) {
+        try {
+            event.serializeLegacyHashBytes(outputStream);
+            event.setHash(new Hash(hashingOutputStream.getDigest(), DigestType.SHA_384));
         } catch (final IOException e) {
             throw new RuntimeException("An exception occurred while trying to hash an event!", e);
         }

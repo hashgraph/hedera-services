@@ -17,16 +17,20 @@
 package com.hedera.services.bdd.junit.hedera.embedded;
 
 import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.CLASSIC_HAPI_TEST_NETWORK_SIZE;
+import static com.hedera.services.bdd.junit.SharedNetworkLauncherSessionListener.repeatableModeRequested;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.classicMetadataFor;
 import static com.hedera.services.bdd.junit.hedera.utils.AddressBookUtils.configTxtForLocal;
-import static com.hedera.services.bdd.suites.TargetNetworkType.EMBEDDED_NETWORK;
+import static com.hedera.services.bdd.spec.TargetNetworkType.EMBEDDED_NETWORK;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.hapi.node.state.blockrecords.RunningHashes;
 import com.hedera.services.bdd.junit.hedera.AbstractNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.SystemFunctionalityTarget;
-import com.hedera.services.bdd.suites.TargetNetworkType;
+import com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils;
+import com.hedera.services.bdd.spec.HapiPropertySource;
+import com.hedera.services.bdd.spec.TargetNetworkType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
@@ -38,11 +42,15 @@ import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.IntStream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class EmbeddedNetwork extends AbstractNetwork {
-    private static final String WORKING_DIR_SCOPE = "embedded";
+    private static final Logger log = LogManager.getLogger(EmbeddedNetwork.class);
+
+    private static final String DEFAULT_WORKING_DIR = "embedded";
     private static final String EMBEDDED_HOST = "127.0.0.1";
-    private static final String EMBEDDED_NETWORK_NAME = WORKING_DIR_SCOPE.toUpperCase();
+    private static final String DEFAULT_NAME = DEFAULT_WORKING_DIR.toUpperCase();
 
     private final String configTxt;
     private final EmbeddedNode embeddedNode;
@@ -51,19 +59,16 @@ public class EmbeddedNetwork extends AbstractNetwork {
     private EmbeddedHedera embeddedHedera;
 
     /**
-     * Creates an embedded "network" of with the given size.
+     * Creates an embedded "network" with default name and scope to be shared by many tests.
      *
      * @return the embedded network
      */
-    public static synchronized HederaNetwork newEmbeddedNetwork() {
-        return new EmbeddedNetwork();
+    public static HederaNetwork newSharedNetwork() {
+        return new EmbeddedNetwork(DEFAULT_NAME, DEFAULT_WORKING_DIR);
     }
 
-    public EmbeddedNetwork() {
-        super(
-                EMBEDDED_NETWORK_NAME,
-                List.of(new EmbeddedNode(
-                        classicMetadataFor(0, EMBEDDED_NETWORK_NAME, EMBEDDED_HOST, WORKING_DIR_SCOPE, 0, 0, 0, 0))));
+    public EmbeddedNetwork(@NonNull final String name, @NonNull final String workingDir) {
+        super(name, List.of(new EmbeddedNode(classicMetadataFor(0, name, EMBEDDED_HOST, workingDir, 0, 0, 0, 0))));
         this.embeddedNode = (EmbeddedNode) nodes().getFirst();
         // Even though we are only embedding node0, we generate an address book
         // for a "classic" HapiTest network with 4 nodes so that tests can still
@@ -72,8 +77,8 @@ public class EmbeddedNetwork extends AbstractNetwork {
         this.configTxt = configTxtForLocal(
                 name(),
                 IntStream.range(0, CLASSIC_HAPI_TEST_NETWORK_SIZE)
-                        .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(classicMetadataFor(
-                                nodeId, EMBEDDED_NETWORK_NAME, EMBEDDED_HOST, WORKING_DIR_SCOPE, 0, 0, 0, 0)))
+                        .<HederaNode>mapToObj(nodeId -> new EmbeddedNode(
+                                classicMetadataFor(nodeId, name, EMBEDDED_HOST, workingDir, 0, 0, 0, 0)))
                         .toList(),
                 0,
                 0);
@@ -85,7 +90,9 @@ public class EmbeddedNetwork extends AbstractNetwork {
         embeddedNode.initWorkingDir(configTxt);
         embeddedNode.start();
         // Start the embedded Hedera "network"
-        embeddedHedera = new EmbeddedHedera(embeddedNode);
+        embeddedHedera = repeatableModeRequested()
+                ? new RepeatableEmbeddedHedera(embeddedNode)
+                : new ConcurrentEmbeddedHedera(embeddedNode);
         embeddedHedera.start();
     }
 
@@ -93,6 +100,18 @@ public class EmbeddedNetwork extends AbstractNetwork {
     public void terminate() {
         if (embeddedHedera != null) {
             embeddedHedera.stop();
+            if (repeatableModeRequested()) {
+                final var runningHashes = embeddedHedera
+                        .state()
+                        .getReadableStates("BlockRecordService")
+                        .<RunningHashes>getSingleton("RUNNING_HASHES")
+                        .get();
+                if (runningHashes != null) {
+                    log.info(
+                            "Final record running hash - {}",
+                            runningHashes.runningHash().toHex());
+                }
+            }
         }
     }
 
@@ -126,8 +145,12 @@ public class EmbeddedNetwork extends AbstractNetwork {
         return EMBEDDED_NETWORK;
     }
 
-    @Nullable
-    public EmbeddedHedera embeddedHedera() {
-        return embeddedHedera;
+    public @NonNull EmbeddedHedera embeddedHederaOrThrow() {
+        return requireNonNull(embeddedHedera);
+    }
+
+    @Override
+    protected HapiPropertySource networkOverrides() {
+        return WorkingDirUtils.hapiTestStartupProperties();
     }
 }

@@ -24,5 +24,18 @@
         ],
         "stateMutability": "nonpayable",
         "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "isAssociated",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "associated",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
     }
 ]

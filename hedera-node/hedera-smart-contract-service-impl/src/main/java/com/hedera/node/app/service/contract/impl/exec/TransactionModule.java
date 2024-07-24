@@ -118,14 +118,14 @@ public interface TransactionModule {
     @TopLevelResourcePrices
     static FunctionalityResourcePrices provideTopLevelResourcePrices(
             @NonNull final HederaFunctionality functionality, @NonNull final HandleContext context) {
-        return context.resourcePricesFor(functionality, SubType.DEFAULT);
+        return context.resourcePriceCalculator().resourcePricesFor(functionality, SubType.DEFAULT);
     }
 
     @Provides
     @TransactionScope
     @ChildTransactionResourcePrices
     static FunctionalityResourcePrices provideChildTransactionResourcePrices(@NonNull final HandleContext context) {
-        return context.resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT);
+        return context.resourcePriceCalculator().resourcePricesFor(HederaFunctionality.CONTRACT_CALL, SubType.DEFAULT);
     }
 
     @Provides
@@ -192,7 +192,7 @@ public interface TransactionModule {
                 hederaEvmBlocks,
                 tinybarValues,
                 systemContractGasCalculator,
-                context.recordBuilder(ContractOperationRecordBuilder.class),
+                context.savepointStack().getBaseBuilder(ContractOperationRecordBuilder.class),
                 pendingCreationMetadataRef);
     }
 

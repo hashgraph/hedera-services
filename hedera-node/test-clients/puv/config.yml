@@ -1,5 +1,0 @@
-networks:
-  localhost:
-    startupNodeAccount: 3
-    nodes:
-      - { account: 3, ipv4Addr: 127.0.0.1 }

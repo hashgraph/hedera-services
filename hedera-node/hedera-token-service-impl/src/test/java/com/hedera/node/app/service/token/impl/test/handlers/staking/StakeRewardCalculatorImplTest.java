@@ -31,6 +31,7 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakePeriodManager;
 import com.hedera.node.app.service.token.impl.handlers.staking.StakeRewardCalculatorImpl;
 import java.time.Instant;
+import java.time.InstantSource;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +64,8 @@ class StakeRewardCalculatorImplTest {
 
     @Mock(strictness = Mock.Strictness.LENIENT)
     private Account account;
+
+    private final InstantSource instantSource = InstantSource.system();
 
     private List<Long> rewardHistory;
 

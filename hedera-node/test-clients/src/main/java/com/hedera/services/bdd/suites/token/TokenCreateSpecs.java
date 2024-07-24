@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.OP_BODY;
 import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.SIGNED_TRANSACTION;
 import static com.hedera.services.bdd.spec.HapiSpecOperation.UnknownFieldLocation.TRANSACTION;
@@ -50,10 +51,11 @@ import static com.hedera.services.bdd.spec.transactions.token.CustomFeeTests.fra
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingHbar;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfig;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.recordSystemProperty;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sendModified;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withOpContext;
@@ -101,6 +103,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_SYMBOL_T
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSACTION_HAS_UNKNOWN_FIELDS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TRANSFERS_NOT_ZERO_SUM_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
+import static java.lang.Integer.parseInt;
 
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpecSetup;
@@ -110,10 +113,8 @@ import com.hederahashgraph.api.proto.java.TokenKycStatus;
 import com.hederahashgraph.api.proto.java.TokenPauseStatus;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
-import java.time.Instant;
 import java.util.List;
 import java.util.OptionalLong;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -146,9 +147,6 @@ public class TokenCreateSpecs {
     private static final String B_TOKEN = "TokenB";
     private static final String FIRST_USER = "Client1";
     private static final String SENTINEL_VALUE = "0.0.0";
-
-    private static final long defaultMaxLifetime =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
     @HapiTest
     final Stream<DynamicTest> getInfoIdVariantsTreatedAsExpected() {
@@ -321,15 +319,14 @@ public class TokenCreateSpecs {
 
     @HapiTest
     final Stream<DynamicTest> cannotCreateWithExcessiveLifetime() {
-        final var smallBuffer = 12_345L;
-        final var okExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() - smallBuffer;
-        final var excessiveExpiry = defaultMaxLifetime + Instant.now().getEpochSecond() + smallBuffer;
-        return defaultHapiSpec("CannotCreateWithExcessiveLifetime", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given()
-                .when()
-                .then(
-                        tokenCreate("neverToBe").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
-                        tokenCreate("neverToBe").expiry(okExpiry));
+        return hapiTest(doSeveralWithStartupConfigNow("entities.maxLifetime", (value, now) -> {
+            final var defaultMaxLifetime = Long.parseLong(value);
+            final var okExpiry = defaultMaxLifetime + now.getEpochSecond() - 12345L;
+            final var excessiveExpiry = defaultMaxLifetime + now.getEpochSecond() + 12345L;
+            return specOps(
+                    tokenCreate("neverToBe").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
+                    tokenCreate("neverToBe").expiry(okExpiry));
+        }));
     }
 
     @HapiTest
@@ -1003,42 +1000,38 @@ public class TokenCreateSpecs {
 
     @HapiTest
     final Stream<DynamicTest> creationValidatesName() {
-        AtomicInteger maxUtf8Bytes = new AtomicInteger();
-
-        return defaultHapiSpec("CreationValidatesName", NONDETERMINISTIC_TRANSACTION_FEES)
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        recordSystemProperty("tokens.maxTokenNameUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set))
-                .when()
-                .then(
-                        tokenCreate(PRIMARY).name("").logged().hasPrecheck(MISSING_TOKEN_NAME),
-                        tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        sourcing(() -> tokenCreate("tooLong")
-                                .name(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
-                                .hasPrecheck(TOKEN_NAME_TOO_LONG)),
-                        sourcing(() -> tokenCreate("tooLongAgain")
-                                .name(nCurrencySymbols(maxUtf8Bytes.get() / 3 + 1))
-                                .hasPrecheck(TOKEN_NAME_TOO_LONG)));
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate(PRIMARY).name("").logged().hasPrecheck(MISSING_TOKEN_NAME),
+                tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                doSeveralWithStartupConfig("tokens.maxTokenNameUtf8Bytes", value -> {
+                    final var maxLen = parseInt(value);
+                    return specOps(
+                            tokenCreate("tooLong")
+                                    .name(TxnUtils.nAscii(maxLen + 1))
+                                    .hasPrecheck(TOKEN_NAME_TOO_LONG),
+                            tokenCreate("tooLongAgain")
+                                    .name(nCurrencySymbols(maxLen / 3 + 1))
+                                    .hasPrecheck(TOKEN_NAME_TOO_LONG));
+                }));
     }
 
     @HapiTest
     final Stream<DynamicTest> creationValidatesSymbol() {
-        AtomicInteger maxUtf8Bytes = new AtomicInteger();
-
-        return defaultHapiSpec("CreationValidatesSymbol")
-                .given(
-                        cryptoCreate(TOKEN_TREASURY).balance(0L),
-                        recordSystemProperty("tokens.maxSymbolUtf8Bytes", Integer::parseInt, maxUtf8Bytes::set))
-                .when()
-                .then(
-                        tokenCreate("missingSymbol").symbol("").hasPrecheck(MISSING_TOKEN_SYMBOL),
-                        tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
-                        sourcing(() -> tokenCreate("tooLong")
-                                .symbol(TxnUtils.nAscii(maxUtf8Bytes.get() + 1))
-                                .hasPrecheck(TOKEN_SYMBOL_TOO_LONG)),
-                        sourcing(() -> tokenCreate("tooLongAgain")
-                                .symbol(nCurrencySymbols(maxUtf8Bytes.get() / 3 + 1))
-                                .hasPrecheck(TOKEN_SYMBOL_TOO_LONG)));
+        return hapiTest(
+                cryptoCreate(TOKEN_TREASURY).balance(0L),
+                tokenCreate("missingSymbol").symbol("").hasPrecheck(MISSING_TOKEN_SYMBOL),
+                tokenCreate(PRIMARY).name("T\u0000ken").logged().hasPrecheck(INVALID_ZERO_BYTE_IN_STRING),
+                doSeveralWithStartupConfig("tokens.maxSymbolUtf8Bytes", value -> {
+                    final var maxLen = parseInt(value);
+                    return specOps(
+                            tokenCreate("tooLong")
+                                    .symbol(TxnUtils.nAscii(maxLen + 1))
+                                    .hasPrecheck(TOKEN_SYMBOL_TOO_LONG),
+                            tokenCreate("tooLongAgain")
+                                    .symbol(nCurrencySymbols(maxLen / 3 + 1))
+                                    .hasPrecheck(TOKEN_SYMBOL_TOO_LONG));
+                }));
     }
 
     private String nCurrencySymbols(int n) {
@@ -1121,6 +1114,7 @@ public class TokenCreateSpecs {
                         .initialSupply(initialSupply))
                 .then(getAccountBalance(TOKEN_TREASURY).hasTinyBars(1L).hasTokenBalance(token, initialSupply));
     }
+
     // FULLY_NONDETERMINISTIC because in mono-service zero amount token transfers will create a tokenTransferLists
     // with a just tokenNum, in mono-service the tokenTransferLists will be empty
     @HapiTest

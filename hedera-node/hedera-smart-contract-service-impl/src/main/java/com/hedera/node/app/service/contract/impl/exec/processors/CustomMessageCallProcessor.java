@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.exec.processors;
 import static com.hedera.hapi.streams.ContractActionType.PRECOMPILE;
 import static com.hedera.hapi.streams.ContractActionType.SYSTEM;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INSUFFICIENT_CHILD_RECORDS;
-import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_FEE_SUBMITTED;
+import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.exec.failure.CustomExceptionalHaltReason.INVALID_SIGNATURE;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.acquiredSenderAuthorizationViaDelegateCall;
 import static com.hedera.node.app.service.contract.impl.exec.utils.FrameUtils.alreadyHalted;
@@ -265,7 +265,7 @@ public class CustomMessageCallProcessor extends MessageCallProcessor {
     private void doHaltIfInvalidSystemCall(
             @NonNull final MessageFrame frame, @NonNull final OperationTracer operationTracer) {
         if (transfersValue(frame)) {
-            doHalt(frame, INVALID_FEE_SUBMITTED, operationTracer);
+            doHalt(frame, INVALID_CONTRACT_ID, operationTracer);
         }
     }
 

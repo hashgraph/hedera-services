@@ -61,8 +61,8 @@ class EnsureAliasesStepTest extends StepsBase {
 
     private void ensureAliasesInternalSetup(final boolean prepopulateReceiverIds) {
         super.baseInternalSetUp(prepopulateReceiverIds);
-        givenTxn();
         givenStoresAndConfig(handleContext);
+        givenTxn();
         ensureAliasesStep = new EnsureAliasesStep(body);
         transferContext = new TransferContextImpl(handleContext);
     }
@@ -86,7 +86,7 @@ class EnsureAliasesStepTest extends StepsBase {
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThat(writableAccountStore.sizeOfAliasesState()).isEqualTo(2);
         assertThat(writableAccountStore.modifiedAccountsInState()).isEmpty();
@@ -165,7 +165,7 @@ class EnsureAliasesStepTest extends StepsBase {
                     writableAliases.put(evmAddressAlias3, asAccount(hbarReceiver + 2));
                     return cryptoCreateRecordBuilder.accountID(asAccount(hbarReceiver + 2));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         ensureAliasesStep = new EnsureAliasesStep(body);
 
@@ -255,7 +255,7 @@ class EnsureAliasesStepTest extends StepsBase {
                     writableAliases.put(edKeyAlias, asAccount(tokenReceiver));
                     return cryptoCreateRecordBuilder.accountID(asAccount(tokenReceiver));
                 });
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
 
         assertThatThrownBy(() -> ensureAliasesStep.doIn(transferContext))
                 .isInstanceOf(HandleException.class)
@@ -351,7 +351,7 @@ class EnsureAliasesStepTest extends StepsBase {
                 .alias(edKeyAlias.value())
                 .build());
 
-        given(handleContext.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
+        given(storeFactory.writableStore(WritableAccountStore.class)).willReturn(writableAccountStore);
         transferContext = new TransferContextImpl(handleContext);
     }
 

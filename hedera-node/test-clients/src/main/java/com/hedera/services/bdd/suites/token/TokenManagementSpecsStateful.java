@@ -18,6 +18,7 @@ package com.hedera.services.bdd.suites.token;
 
 import static com.hedera.services.bdd.junit.TestTags.TOKEN;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTokenInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
@@ -26,6 +27,8 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenFreeze;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenUnfreeze;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.restoreDefault;
 import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
 import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
@@ -39,7 +42,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import java.util.List;
 import java.util.Map;
@@ -49,9 +52,6 @@ import org.junit.jupiter.api.Tag;
 
 @Tag(TOKEN)
 public class TokenManagementSpecsStateful {
-    private static final String TOKENS_NFTS_MAX_ALLOWED_MINTS = "tokens.nfts.maxAllowedMints";
-    private static final String defaultMaxNftMints =
-            HapiSpecSetup.getDefaultNodeProps().get(TOKENS_NFTS_MAX_ALLOWED_MINTS);
     private static final String FUNGIBLE_TOKEN = "fungibleToken";
 
     @HapiTest
@@ -94,26 +94,20 @@ public class TokenManagementSpecsStateful {
                         .logged());
     }
 
-    @HapiTest
+    @LeakyHapiTest(overrides = {"tokens.nfts.maxAllowedMints"})
     final Stream<DynamicTest> nftMintingCapIsEnforced() {
-        return defaultHapiSpec("NftMintingCapIsEnforced")
-                .given(
-                        newKeyNamed("supplyKey"),
-                        tokenCreate(FUNGIBLE_TOKEN)
-                                .initialSupply(0)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .supplyType(TokenSupplyType.INFINITE)
-                                .supplyKey("supplyKey"),
-                        mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Why not?"))))
-                .when(fileUpdate(APP_PROPERTIES)
-                        .payingWith(ADDRESS_BOOK_CONTROL)
-                        .overridingProps(Map.of(TOKENS_NFTS_MAX_ALLOWED_MINTS, "" + 1)))
-                .then(
-                        mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Again, why not?")))
-                                .hasKnownStatus(MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED),
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of(TOKENS_NFTS_MAX_ALLOWED_MINTS, "" + defaultMaxNftMints)),
-                        mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Again, why not?"))));
+        return hapiTest(
+                newKeyNamed("supplyKey"),
+                tokenCreate(FUNGIBLE_TOKEN)
+                        .initialSupply(0)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .supplyType(TokenSupplyType.INFINITE)
+                        .supplyKey("supplyKey"),
+                mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Why not?"))),
+                overriding("tokens.nfts.maxAllowedMints", "1"),
+                mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Again, why not?")))
+                        .hasKnownStatus(MAX_NFTS_IN_PRICE_REGIME_HAVE_BEEN_MINTED),
+                restoreDefault("tokens.nfts.maxAllowedMints"),
+                mintToken(FUNGIBLE_TOKEN, List.of(ByteString.copyFromUtf8("Again, why not?"))));
     }
 }

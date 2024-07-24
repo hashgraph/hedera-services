@@ -34,22 +34,6 @@ mainModuleInfo {
     runtimeOnly("org.junit.platform.launcher")
 }
 
-itestModuleInfo {
-    requires("com.hedera.node.test.clients")
-    requires("org.apache.commons.lang3")
-    requires("org.junit.jupiter.api")
-    requires("org.testcontainers")
-    requires("org.testcontainers.junit.jupiter")
-    requires("org.apache.commons.lang3")
-}
-
-eetModuleInfo {
-    requires("com.hedera.node.test.clients")
-    requires("org.junit.jupiter.api")
-    requires("org.testcontainers")
-    requires("org.testcontainers.junit.jupiter")
-}
-
 sourceSets {
     // Needed because "resource" directory is misnamed. See
     // https://github.com/hashgraph/hedera-services/issues/3361
@@ -67,21 +51,29 @@ tasks.register<JavaExec>("runTestClient") {
     mainClass = providers.gradleProperty("testClient")
 }
 
-val ciCheckTagExpressions =
+val prCheckTags =
     mapOf(
         "hapiTestCrypto" to "CRYPTO",
         "hapiTestToken" to "TOKEN",
-        "hapiTestRestart" to "RESTART",
+        "hapiTestRestart" to "RESTART|UPGRADE",
         "hapiTestSmartContract" to "SMART_CONTRACT",
         "hapiTestNDReconnect" to "ND_RECONNECT",
         "hapiTestTimeConsuming" to "LONG_RUNNING",
         "hapiTestMisc" to
-            "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT|EMBEDDED)"
+            "!(CRYPTO|TOKEN|SMART_CONTRACT|LONG_RUNNING|RESTART|ND_RECONNECT|EMBEDDED|UPGRADE)"
+    )
+val prCheckStartPorts =
+    mapOf(
+        "hapiTestCrypto" to "26000",
+        "hapiTestToken" to "27000",
+        "hapiTestRestart" to "28000",
+        "hapiTestSmartContract" to "29000",
+        "hapiTestNDReconnect" to "30000",
+        "hapiTestTimeConsuming" to "31000",
+        "hapiTestMisc" to "32000"
     )
 
-tasks {
-    ciCheckTagExpressions.forEach { (taskName, _) -> register(taskName) { dependsOn("test") } }
-}
+tasks { prCheckTags.forEach { (taskName, _) -> register(taskName) { dependsOn("test") } } }
 
 tasks.test {
     testClassesDirs = sourceSets.main.get().output.classesDirs
@@ -90,16 +82,26 @@ tasks.test {
     val ciTagExpression =
         gradle.startParameter.taskNames
             .stream()
-            .map { ciCheckTagExpressions[it] ?: "" }
+            .map { prCheckTags[it] ?: "" }
             .filter { it.isNotBlank() }
             .toList()
             .joinToString("|")
     useJUnitPlatform {
         includeTags(
-            if (ciTagExpression.isBlank()) "none()|!(EMBEDDED)"
-            else "${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION"
+            if (ciTagExpression.isBlank()) "none()|!(EMBEDDED|REPEATABLE)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED|REPEATABLE)"
         )
     }
+
+    // Choose a different initial port for each test task if running as PR check
+    val initialPort =
+        gradle.startParameter.taskNames
+            .stream()
+            .map { prCheckStartPorts[it] ?: "" }
+            .filter { it.isNotBlank() }
+            .findFirst()
+            .orElse("")
+    systemProperty("hapi.spec.initial.port", initialPort)
 
     // Default quiet mode is "false" unless we are running in CI or set it explicitly to "true"
     systemProperty(
@@ -129,15 +131,34 @@ tasks.test {
     modularity.inferModulePath.set(false)
 }
 
-// Runs a test against an embedded network; when we have deterministic clients
-// we will add a testDeterministicEmbedded for completely reproducible streams
+val prEmbeddedCheckTags =
+    mapOf(
+        "hapiEmbeddedMisc" to "EMBEDDED",
+    )
+
+tasks {
+    prEmbeddedCheckTags.forEach { (taskName, _) ->
+        register(taskName) { dependsOn("testEmbedded") }
+    }
+}
+
+// Runs tests against an embedded network that supports concurrent tests
 tasks.register<Test>("testEmbedded") {
     testClassesDirs = sourceSets.main.get().output.classesDirs
     classpath = sourceSets.main.get().runtimeClasspath
 
+    val ciTagExpression =
+        gradle.startParameter.taskNames
+            .stream()
+            .map { prEmbeddedCheckTags[it] ?: "" }
+            .filter { it.isNotBlank() }
+            .toList()
+            .joinToString("|")
     useJUnitPlatform {
-        // Exclude tests that start and stop nodes, or explicitly preclude embedded mode
-        excludeTags("RESTART|ND_RECONNECT|IF_NOT_EMBEDDED")
+        includeTags(
+            if (ciTagExpression.isBlank()) "none()|!(RESTART|ND_RECONNECT|UPGRADE|NOT_EMBEDDED)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)"
+        )
     }
 
     systemProperty("junit.jupiter.execution.parallel.enabled", true)
@@ -154,6 +175,37 @@ tasks.register<Test>("testEmbedded") {
     )
     // Tell our launcher to target an embedded network
     systemProperty("hapi.spec.embedded.mode", true)
+    // Configure log4j2.xml for the embedded node
+    systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
+
+    // Limit heap and number of processors
+    maxHeapSize = "8g"
+    jvmArgs("-XX:ActiveProcessorCount=6")
+
+    // Do not yet run things on the '--module-path'
+    modularity.inferModulePath.set(false)
+}
+
+// Runs tests against an embedded network that achieves repeatable results by running tests in a
+// single thread
+tasks.register<Test>("testRepeatable") {
+    testClassesDirs = sourceSets.main.get().output.classesDirs
+    classpath = sourceSets.main.get().runtimeClasspath
+
+    useJUnitPlatform {
+        // Exclude tests that start and stop nodes, or explicitly preclude embedded or repeatable
+        // mode
+        excludeTags("RESTART|ND_RECONNECT|UPGRADE|NOT_REPEATABLE")
+    }
+
+    // Disable all parallelism
+    systemProperty("junit.jupiter.execution.parallel.enabled", false)
+    systemProperty(
+        "junit.jupiter.testclass.order.default",
+        "org.junit.jupiter.api.ClassOrderer\$OrderAnnotation"
+    )
+    // Tell our launcher to target a repeatable embedded network
+    systemProperty("hapi.spec.repeatable.mode", true)
     // Configure log4j2.xml for the embedded node
     systemProperty("log4j.configurationFile", "embedded-node0-log4j2.xml")
 
@@ -260,11 +312,6 @@ val cleanYahCli =
         group = "copy"
         delete(File(project.file("yahcli"), "yahcli.jar"))
     }
-
-tasks.assemble {
-    dependsOn(tasks.shadowJar)
-    dependsOn(copyYahCli)
-}
 
 tasks.clean {
     dependsOn(cleanYahCli)

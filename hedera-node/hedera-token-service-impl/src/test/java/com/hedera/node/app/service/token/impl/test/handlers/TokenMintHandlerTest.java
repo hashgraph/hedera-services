@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -45,6 +46,7 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.CryptoTokenHand
 import com.hedera.node.app.service.token.impl.validators.TokenSupplyChangeOpsValidator;
 import com.hedera.node.app.service.token.records.TokenMintRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
+import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -65,7 +67,6 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
     private final Bytes metadata1 = Bytes.wrap("memo".getBytes());
     private final Bytes metadata2 = Bytes.wrap("memo2".getBytes());
-    private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
     private SingleTransactionRecordBuilderImpl recordBuilder;
     private TokenMintHandler subject;
 
@@ -75,7 +76,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
         subject = new TokenMintHandler(new TokenSupplyChangeOpsValidator());
-        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
+        recordBuilder = new SingleTransactionRecordBuilderImpl();
     }
 
     @Test
@@ -257,9 +258,12 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         final var txnBody = givenMintTxn(nonFungibleTokenId, metadata, null);
 
         final var feeCalculator = mock(FeeCalculator.class);
+        final var feeCalculatorFactory = mock(FeeCalculatorFactory.class);
         final var feeContext = mock(FeeContext.class);
         given(feeContext.body()).willReturn(txnBody);
-        given(feeContext.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)).willReturn(feeCalculator);
+        given(feeContext.feeCalculatorFactory()).willReturn(feeCalculatorFactory);
+        given(feeCalculatorFactory.feeCalculator(SubType.TOKEN_NON_FUNGIBLE_UNIQUE))
+                .willReturn(feeCalculator);
         final var numSigs = 5;
         given(feeContext.numTxnSignatures()).willReturn(numSigs);
 
@@ -291,7 +295,10 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
-        given(handleContext.recordBuilder(TokenMintRecordBuilder.class)).willReturn(recordBuilder);
+
+        final var stack = mock(HandleContext.SavepointStack.class);
+        given(handleContext.savepointStack()).willReturn(stack);
+        lenient().when(stack.getBaseBuilder(TokenMintRecordBuilder.class)).thenReturn(recordBuilder);
 
         return txnBody;
     }

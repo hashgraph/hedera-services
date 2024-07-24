@@ -80,19 +80,17 @@ import com.hedera.node.app.service.contract.ContractService;
 import com.hedera.node.app.service.contract.impl.schemas.V0490ContractSchema;
 import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
-import com.hedera.node.app.service.mono.statedumpers.DumpCheckpoint;
-import com.hedera.node.app.service.mono.statedumpers.MerkleStateChild;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.TokenService;
 import com.hedera.node.app.state.merkle.MerkleHederaState;
 import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
-import com.swirlds.platform.state.merkle.disk.OnDiskKey;
-import com.swirlds.platform.state.merkle.disk.OnDiskValue;
-import com.swirlds.platform.state.merkle.queue.QueueNode;
-import com.swirlds.platform.state.merkle.singleton.SingletonNode;
 import com.swirlds.state.HederaState;
+import com.swirlds.state.merkle.disk.OnDiskKey;
+import com.swirlds.state.merkle.disk.OnDiskValue;
+import com.swirlds.state.merkle.queue.QueueNode;
+import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -194,8 +192,7 @@ public class StateDumper {
                     Paths.get(dumpLoc, SEMANTIC_SCHEDULED_TRANSACTIONS),
                     scheduledTransactionsByKey,
                     scheduledTransactionsByEquality,
-                    scheduledTransactionsByExpiry,
-                    checkpoint);
+                    scheduledTransactionsByExpiry);
         }
 
         if (childrenToDump.contains(MerkleStateChild.TOKENS)) {
@@ -222,19 +219,19 @@ public class StateDumper {
         if (childrenToDump.contains(MerkleStateChild.STAKING_INFOS)) {
             final VirtualMap<OnDiskKey<EntityNumber>, OnDiskValue<StakingNodeInfo>> stakingInfoMap =
                     requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, STAKING_INFO_KEY)));
-            dumpModStakingInfo(Paths.get(dumpLoc, SEMANTIC_STAKING_INFO), stakingInfoMap, checkpoint);
+            dumpModStakingInfo(Paths.get(dumpLoc, SEMANTIC_STAKING_INFO), stakingInfoMap);
         }
 
         if (childrenToDump.contains(MerkleStateChild.STAKING_NETWORK_METADATA)) {
             final SingletonNode<NetworkStakingRewards> stakingRewards =
                     requireNonNull(state.getChild(state.findNodeIndex(TokenService.NAME, STAKING_NETWORK_REWARDS_KEY)));
-            dumpModStakingRewards(Paths.get(dumpLoc, SEMANTIC_STAKING_REWARDS), stakingRewards.getValue(), checkpoint);
+            dumpModStakingRewards(Paths.get(dumpLoc, SEMANTIC_STAKING_REWARDS), stakingRewards.getValue());
         }
 
         if (childrenToDump.contains(MerkleStateChild.TRANSACTION_RECORD_QUEUE)) {
             final QueueNode<TransactionRecordEntry> queue =
                     requireNonNull(state.getChild(state.findNodeIndex(RecordCacheService.NAME, TXN_RECORD_QUEUE)));
-            dumpModTxnRecordQueue(Paths.get(dumpLoc, SEMANTIC_TXN_RECORD_QUEUE), queue, checkpoint);
+            dumpModTxnRecordQueue(Paths.get(dumpLoc, SEMANTIC_TXN_RECORD_QUEUE), queue);
         }
 
         if (childrenToDump.contains(MerkleStateChild.THROTTLE_METADATA)) {
@@ -247,8 +244,7 @@ public class StateDumper {
             dumpModCongestion(
                     Paths.get(dumpLoc, SEMANTIC_CONGESTION),
                     congestionLevelStartsSingletonNode.getValue(),
-                    throttleUsageSnapshotsSingletonNode.getValue(),
-                    checkpoint);
+                    throttleUsageSnapshotsSingletonNode.getValue());
         }
     }
 

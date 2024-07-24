@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiSpecOperation;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.transactions.token.TokenMovement;
 import java.util.List;
 import java.util.function.IntFunction;
@@ -64,7 +65,7 @@ public class NftTransferSuite {
                 .noLogging();
     }
 
-    private static HapiSpecOperation createAccounts(String prefix, int numAccounts) {
+    private static SpecOperation createAccounts(String prefix, int numAccounts) {
         // Create user accounts to partake in crypto transfers
         return parFor(
                 0, numAccounts, id -> cryptoCreate(prefix + id).noLogging().balance(ONE_HUNDRED_HBARS));
@@ -99,7 +100,7 @@ public class NftTransferSuite {
                 newKeyNamed(KEY), cryptoCreate(FEE_COLLECTOR).noLogging().balance(0L));
     }
 
-    private static HapiSpecOperation associateAccountsWithTokenTypes() {
+    private static SpecOperation associateAccountsWithTokenTypes() {
         String[] tokenNames = IntStream.range(0, NftTransferSuite.NUM_TOKEN_TYPES)
                 .mapToObj(NftTransferSuite::tokenTypeName)
                 .toArray(String[]::new);
@@ -123,15 +124,15 @@ public class NftTransferSuite {
         return IntStream.range(from, to).mapToObj(functionToRun).toList();
     }
 
-    private static HapiSpecOperation parFor(int from, int to, IntFunction<HapiSpecOperation> functionToRun) {
-        return inParallel(IntStream.range(from, to).mapToObj(functionToRun).toArray(HapiSpecOperation[]::new));
+    private static SpecOperation parFor(int from, int to, IntFunction<HapiSpecOperation> functionToRun) {
+        return inParallel(IntStream.range(from, to).mapToObj(functionToRun).toArray(SpecOperation[]::new));
     }
 
     private static HapiSpecOperation seqFor(int from, int to, IntFunction<HapiSpecOperation> functionToRun) {
         return blockingOrder(IntStream.range(from, to).mapToObj(functionToRun).toArray(HapiSpecOperation[]::new));
     }
 
-    private static HapiSpecOperation transferInitial() {
+    private static SpecOperation transferInitial() {
         return inParallel(IntStream.range(0, NUM_ACCOUNTS)
                 .mapToObj(accountId -> opsFor(0, NftTransferSuite.NUM_TOKEN_TYPES, tokenId -> cryptoTransfer(
                                 TokenMovement.movingUnique(tokenTypeName(tokenId), accountId + 1)
@@ -139,7 +140,7 @@ public class NftTransferSuite {
                         .payingWith(GENESIS)
                         .noLogging()))
                 .flatMap(List::stream)
-                .toArray(HapiSpecOperation[]::new));
+                .toArray(SpecOperation[]::new));
     }
 
     private static HapiSpecOperation transferRound(int roundNum) {

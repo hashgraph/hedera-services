@@ -17,7 +17,6 @@
 package com.hedera.node.app.state;
 
 import com.hedera.hapi.node.base.TransactionID;
-import com.hedera.node.app.service.mono.context.properties.GlobalDynamicProperties;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -31,10 +30,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 public interface DeduplicationCache {
     /**
      * Add a TransactionID to the cache. If the {@link TransactionID#transactionValidStart()} is older than
-     * {@link GlobalDynamicProperties#maxTxnDuration()} from now, then the transaction will not be added. Otherwise,
-     * it is added to the cache. If the transaction is in the future, it will be added to the cache. It is the
-     * responsibility of the {@link com.hedera.node.app.workflows.TransactionChecker} to ensure that the transaction
-     * is not submitted to the platform until it is valid.
+     * {@code maxTxnDuration} from now, then the transaction will not be added. Otherwise, it is added to the
+     * cache. If the transaction is in the future, it will be added to the cache. It is the responsibility of
+     * the {@link com.hedera.node.app.workflows.TransactionChecker} to ensure that the transaction is not
+     * submitted to the platform until it is valid.
      *
      * @param transactionID The transaction ID to add to the cache.
      */

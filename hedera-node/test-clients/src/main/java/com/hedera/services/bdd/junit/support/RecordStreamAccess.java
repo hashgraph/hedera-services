@@ -32,6 +32,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,7 +53,7 @@ import org.apache.logging.log4j.Logger;
 public enum RecordStreamAccess {
     RECORD_STREAM_ACCESS;
 
-    private static final Logger LOGGER = LogManager.getLogger(RecordStreamAccess.class);
+    private static final Logger log = LogManager.getLogger(RecordStreamAccess.class);
 
     private static final int MONITOR_INTERVAL_MS = 250;
 
@@ -89,7 +90,7 @@ public enum RecordStreamAccess {
                     unsubscribe.run();
                     stopMonitorIfNoSubscribers();
                 } catch (final Exception e) {
-                    LOGGER.error("Failed to unregister listener for " + path, e);
+                    log.error("Failed to unregister listener for " + path, e);
                 }
             };
         } catch (final Exception e) {
@@ -108,8 +109,7 @@ public enum RecordStreamAccess {
         if (numSubscribers == 0) {
             try {
                 if (!validatingListeners.isEmpty()) {
-                    LOGGER.info(
-                            "Stopping record stream access monitor (locations were {})", validatingListeners.keySet());
+                    log.info("Stopping record stream access monitor (locations were {})", validatingListeners.keySet());
                     validatingListeners.clear();
                 }
                 // Remove all observers and stop the monitor
@@ -131,13 +131,12 @@ public enum RecordStreamAccess {
      */
     public synchronized BroadcastingRecordStreamListener getValidatingListener(final String loc) throws Exception {
         if (!validatingListeners.containsKey(loc)) {
-            // In most cases should let us run HapiSpec#main() from both the root and test-clients/
-            // directories
             var fAtLoc = relocatedIfNotPresentWithCurrentPathPrefix(new File(loc), "..", TEST_CLIENTS_PREFIX);
             if (!fAtLoc.exists()) {
-                throw new IllegalArgumentException("No such record stream file location: " + fAtLoc.getAbsolutePath());
+                Files.createDirectories(fAtLoc.toPath());
             }
             validatingListeners.put(loc, newValidatingListener(fAtLoc.getAbsolutePath()));
+            log.info("Started record stream listener for {}", loc);
         }
         return validatingListeners.get(loc);
     }

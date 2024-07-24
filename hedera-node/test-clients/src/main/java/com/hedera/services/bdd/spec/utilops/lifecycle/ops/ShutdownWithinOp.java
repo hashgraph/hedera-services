@@ -42,8 +42,6 @@ public class ShutdownWithinOp extends AbstractLifecycleOp {
 
     @Override
     protected void run(@NonNull final HederaNode node) {
-        log.info("Asking node '{}' to stop", node.getName());
-        node.stop();
         log.info("Waiting for '{}' to stop", node.getName());
         node.stopFuture().orTimeout(timeout.toMillis(), MILLISECONDS).join();
         log.info("Stopped node '{}'", node.getName());

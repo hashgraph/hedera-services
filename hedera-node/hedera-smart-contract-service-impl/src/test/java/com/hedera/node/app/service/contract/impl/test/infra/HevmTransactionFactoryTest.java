@@ -34,20 +34,18 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_STAKING_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.MEMO_TOO_LONG;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SERIALIZATION_FAILED;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.WRONG_CHAIN_ID;
 import static com.hedera.node.app.hapi.utils.ethereum.EthTxData.WEIBARS_IN_A_TINYBAR;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AN_ED25519_KEY;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_CONTRACTS_CONFIG;
-import static com.hedera.node.app.service.contract.impl.test.TestHelpers.AUTO_ASSOCIATING_LEDGER_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.A_DELETED_CONTRACT;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALLED_CONTRACT_ID;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CALL_DATA;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.CONSTRUCTOR_PARAMS;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_CONTRACTS_CONFIG;
+import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_ENTITIES_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_HEDERA_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_LEDGER_CONFIG;
 import static com.hedera.node.app.service.contract.impl.test.TestHelpers.DEFAULT_STAKING_CONFIG;
@@ -162,6 +160,7 @@ class HevmTransactionFactoryTest {
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
+                DEFAULT_ENTITIES_CONFIG,
                 null,
                 accountStore,
                 expiryValidator,
@@ -319,18 +318,11 @@ class HevmTransactionFactoryTest {
     }
 
     @Test
-    void fromHapiCreationDoesNotPermitUnsupportedAutoAssociations() {
-        assertCreateFailsWith(NOT_SUPPORTED, b -> b.gas(DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
-                .maxAutomaticTokenAssociations(1)
-                .autoRenewPeriod(SOME_DURATION));
-    }
-
-    @Test
     void fromHapiCreationDoesNotPermitExcessAutoAssociations() {
         givenInsteadAutoAssociatingSubject();
         assertCreateFailsWith(REQUESTED_NUM_AUTOMATIC_ASSOCIATIONS_EXCEEDS_ASSOCIATION_LIMIT, b -> b.gas(
                         DEFAULT_CONTRACTS_CONFIG.maxGasPerSec())
-                .maxAutomaticTokenAssociations(AUTO_ASSOCIATING_LEDGER_CONFIG.maxAutoAssociations() + 1)
+                .maxAutomaticTokenAssociations(DEFAULT_LEDGER_CONFIG.maxAutoAssociations() + 1)
                 .autoRenewPeriod(SOME_DURATION));
     }
 
@@ -715,12 +707,13 @@ class HevmTransactionFactoryTest {
     private void givenInsteadAutoAssociatingSubject() {
         subject = new HevmTransactionFactory(
                 networkInfo,
-                AUTO_ASSOCIATING_LEDGER_CONFIG,
+                DEFAULT_LEDGER_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
                 featureFlags,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
-                AUTO_ASSOCIATING_CONTRACTS_CONFIG,
+                DEFAULT_CONTRACTS_CONFIG,
+                DEFAULT_ENTITIES_CONFIG,
                 null,
                 accountStore,
                 expiryValidator,
@@ -734,12 +727,13 @@ class HevmTransactionFactoryTest {
     private void givenInsteadFailedHydrationSubject() {
         subject = new HevmTransactionFactory(
                 networkInfo,
-                AUTO_ASSOCIATING_LEDGER_CONFIG,
+                DEFAULT_LEDGER_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
                 featureFlags,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
-                AUTO_ASSOCIATING_CONTRACTS_CONFIG,
+                DEFAULT_CONTRACTS_CONFIG,
+                DEFAULT_ENTITIES_CONFIG,
                 HydratedEthTxData.failureFrom(CONTRACT_FILE_EMPTY),
                 accountStore,
                 expiryValidator,
@@ -753,12 +747,13 @@ class HevmTransactionFactoryTest {
     private void givenInsteadHydratedEthTxWithWrongChainId(@NonNull final EthTxData ethTxData) {
         subject = new HevmTransactionFactory(
                 networkInfo,
-                AUTO_ASSOCIATING_LEDGER_CONFIG,
+                DEFAULT_LEDGER_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
                 featureFlags,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEFAULT_CONTRACTS_CONFIG,
+                DEFAULT_ENTITIES_CONFIG,
                 HydratedEthTxData.successFrom(ethTxData),
                 accountStore,
                 expiryValidator,
@@ -772,12 +767,13 @@ class HevmTransactionFactoryTest {
     private void givenInsteadHydratedEthTxWithRightChainId(@NonNull final EthTxData ethTxData) {
         subject = new HevmTransactionFactory(
                 networkInfo,
-                AUTO_ASSOCIATING_LEDGER_CONFIG,
+                DEFAULT_LEDGER_CONFIG,
                 DEFAULT_HEDERA_CONFIG,
                 featureFlags,
                 gasCalculator,
                 DEFAULT_STAKING_CONFIG,
                 DEV_CHAIN_ID_CONTRACTS_CONFIG,
+                DEFAULT_ENTITIES_CONFIG,
                 HydratedEthTxData.successFrom(ethTxData),
                 accountStore,
                 expiryValidator,

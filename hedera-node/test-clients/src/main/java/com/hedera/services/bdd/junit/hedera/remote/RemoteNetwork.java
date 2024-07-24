@@ -17,7 +17,7 @@
 package com.hedera.services.bdd.junit.hedera.remote;
 
 import static com.hedera.services.bdd.junit.hedera.NodeMetadata.UNKNOWN_PORT;
-import static com.hedera.services.bdd.suites.TargetNetworkType.REMOTE_NETWORK;
+import static com.hedera.services.bdd.spec.TargetNetworkType.REMOTE_NETWORK;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -25,9 +25,9 @@ import com.hedera.services.bdd.junit.hedera.AbstractGrpcNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNetwork;
 import com.hedera.services.bdd.junit.hedera.HederaNode;
 import com.hedera.services.bdd.junit.hedera.NodeMetadata;
+import com.hedera.services.bdd.spec.TargetNetworkType;
 import com.hedera.services.bdd.spec.infrastructure.HapiClients;
 import com.hedera.services.bdd.spec.props.NodeConnectInfo;
-import com.hedera.services.bdd.suites.TargetNetworkType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Duration;
 import java.util.List;

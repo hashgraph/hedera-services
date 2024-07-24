@@ -18,7 +18,7 @@ package com.hedera.services.bdd.suites.crypto;
 
 import static com.hedera.services.bdd.junit.TestTags.CRYPTO;
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
-import static com.hedera.services.bdd.spec.HapiSpec.propertyPreservingHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.assertions.AccountInfoAsserts.accountWith;
 import static com.hedera.services.bdd.spec.keys.KeyShape.SIMPLE;
 import static com.hedera.services.bdd.spec.keys.KeyShape.listOf;
@@ -26,7 +26,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getAccountInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
-import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.grantTokenKyc;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.mintToken;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenAssociate;
@@ -34,8 +33,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.tokenCreate;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.moving;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.movingUnique;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
-import static com.hedera.services.bdd.suites.HapiSuite.ADDRESS_BOOK_CONTROL;
-import static com.hedera.services.bdd.suites.HapiSuite.APP_PROPERTIES;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.overriding;
 import static com.hedera.services.bdd.suites.HapiSuite.CIVILIAN_PAYER;
 import static com.hedera.services.bdd.suites.HapiSuite.GENESIS;
 import static com.hedera.services.bdd.suites.HapiSuite.ONE_HUNDRED_HBARS;
@@ -50,11 +48,11 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
+import com.hedera.services.bdd.junit.LeakyHapiTest;
 import com.hedera.services.bdd.spec.keys.KeyShape;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,9 +64,8 @@ public class CryptoGetInfoRegression {
     static final Logger log = LogManager.getLogger(CryptoGetInfoRegression.class);
 
     /** For Demo purpose : The limit on each account info and account balance queries is set to 5 */
-    @HapiTest
+    @LeakyHapiTest(overrides = {"tokens.maxRelsPerInfoQuery"})
     final Stream<DynamicTest> fetchesOnlyALimitedTokenAssociations() {
-        final int infoLimit = 3;
         final var account = "test";
         final var aKey = "tokenKey";
         final var token1 = "token1";
@@ -79,103 +76,93 @@ public class CryptoGetInfoRegression {
         final var token6 = "token6";
         final var token7 = "token7";
         final var token8 = "token8";
-        return propertyPreservingHapiSpec("FetchesOnlyALimitedTokenAssociations")
-                .preserving("tokens.maxRelsPerInfoQuery")
-                .given(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("tokens.maxRelsPerInfoQuery", "" + 1)),
-                        newKeyNamed(aKey),
-                        cryptoCreate(account).balance(ONE_HUNDRED_HBARS),
-                        cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
-                        tokenCreate(token1)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(500)
-                                .kycKey(aKey)
-                                .initialSupply(100),
-                        tokenCreate(token2)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(500)
-                                .kycKey(aKey)
-                                .initialSupply(100),
-                        tokenCreate(token3)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(500)
-                                .kycKey(aKey)
-                                .initialSupply(100),
-                        tokenCreate(token4)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(500)
-                                .kycKey(aKey)
-                                .initialSupply(100),
-                        tokenCreate(token5)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(500)
-                                .kycKey(aKey)
-                                .initialSupply(100),
-                        tokenCreate(token6)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(TokenType.FUNGIBLE_COMMON)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(500)
-                                .kycKey(aKey)
-                                .initialSupply(100),
-                        tokenCreate(token7)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(10L)
-                                .initialSupply(0L)
-                                .kycKey(aKey)
-                                .supplyKey(aKey),
-                        tokenCreate(token8)
-                                .supplyType(TokenSupplyType.FINITE)
-                                .tokenType(NON_FUNGIBLE_UNIQUE)
-                                .treasury(TOKEN_TREASURY)
-                                .maxSupply(10L)
-                                .initialSupply(0L)
-                                .kycKey(aKey)
-                                .supplyKey(aKey),
-                        mintToken(token7, List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
-                        mintToken(token8, List.of(ByteString.copyFromUtf8("a"))))
-                .when(
-                        tokenAssociate(account, token1, token2, token3, token4, token5, token6, token7, token8),
-                        grantTokenKyc(token1, account),
-                        grantTokenKyc(token2, account),
-                        grantTokenKyc(token3, account),
-                        grantTokenKyc(token4, account),
-                        grantTokenKyc(token5, account),
-                        grantTokenKyc(token6, account),
-                        grantTokenKyc(token7, account),
-                        grantTokenKyc(token8, account),
-                        cryptoTransfer(
-                                moving(10L, token1).between(TOKEN_TREASURY, account),
-                                moving(20L, token2).between(TOKEN_TREASURY, account),
-                                moving(30L, token3).between(TOKEN_TREASURY, account)),
-                        cryptoTransfer(
-                                moving(40L, token4).between(TOKEN_TREASURY, account),
-                                moving(50L, token5).between(TOKEN_TREASURY, account),
-                                moving(60L, token6).between(TOKEN_TREASURY, account)),
-                        cryptoTransfer(
-                                movingUnique(token7, 1, 2).between(TOKEN_TREASURY, account),
-                                movingUnique(token8, 1).between(TOKEN_TREASURY, account)))
-                .then(
-                        fileUpdate(APP_PROPERTIES)
-                                .payingWith(ADDRESS_BOOK_CONTROL)
-                                .overridingProps(Map.of("tokens.maxRelsPerInfoQuery", "" + infoLimit)),
-                        getAccountInfo(account)
-                                .hasTokenRelationShipCount(infoLimit)
-                                .logged());
+        return hapiTest(
+                overriding("tokens.maxRelsPerInfoQuery", "" + 1),
+                newKeyNamed(aKey),
+                cryptoCreate(account).balance(ONE_HUNDRED_HBARS),
+                cryptoCreate(TOKEN_TREASURY).balance(ONE_HUNDRED_HBARS),
+                tokenCreate(token1)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(500)
+                        .kycKey(aKey)
+                        .initialSupply(100),
+                tokenCreate(token2)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(500)
+                        .kycKey(aKey)
+                        .initialSupply(100),
+                tokenCreate(token3)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(500)
+                        .kycKey(aKey)
+                        .initialSupply(100),
+                tokenCreate(token4)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(500)
+                        .kycKey(aKey)
+                        .initialSupply(100),
+                tokenCreate(token5)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(500)
+                        .kycKey(aKey)
+                        .initialSupply(100),
+                tokenCreate(token6)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(TokenType.FUNGIBLE_COMMON)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(500)
+                        .kycKey(aKey)
+                        .initialSupply(100),
+                tokenCreate(token7)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(10L)
+                        .initialSupply(0L)
+                        .kycKey(aKey)
+                        .supplyKey(aKey),
+                tokenCreate(token8)
+                        .supplyType(TokenSupplyType.FINITE)
+                        .tokenType(NON_FUNGIBLE_UNIQUE)
+                        .treasury(TOKEN_TREASURY)
+                        .maxSupply(10L)
+                        .initialSupply(0L)
+                        .kycKey(aKey)
+                        .supplyKey(aKey),
+                mintToken(token7, List.of(ByteString.copyFromUtf8("a"), ByteString.copyFromUtf8("b"))),
+                mintToken(token8, List.of(ByteString.copyFromUtf8("a"))),
+                tokenAssociate(account, token1, token2, token3, token4, token5, token6, token7, token8),
+                grantTokenKyc(token1, account),
+                grantTokenKyc(token2, account),
+                grantTokenKyc(token3, account),
+                grantTokenKyc(token4, account),
+                grantTokenKyc(token5, account),
+                grantTokenKyc(token6, account),
+                grantTokenKyc(token7, account),
+                grantTokenKyc(token8, account),
+                cryptoTransfer(
+                        moving(10L, token1).between(TOKEN_TREASURY, account),
+                        moving(20L, token2).between(TOKEN_TREASURY, account),
+                        moving(30L, token3).between(TOKEN_TREASURY, account)),
+                cryptoTransfer(
+                        moving(40L, token4).between(TOKEN_TREASURY, account),
+                        moving(50L, token5).between(TOKEN_TREASURY, account),
+                        moving(60L, token6).between(TOKEN_TREASURY, account)),
+                cryptoTransfer(
+                        movingUnique(token7, 1, 2).between(TOKEN_TREASURY, account),
+                        movingUnique(token8, 1).between(TOKEN_TREASURY, account)),
+                overriding("tokens.maxRelsPerInfoQuery", "3"),
+                getAccountInfo(account).hasTokenRelationShipCount(3));
     }
 
     @HapiTest

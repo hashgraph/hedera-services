@@ -27,6 +27,7 @@ import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.merkle.MerkleNode;
 import com.swirlds.common.merkle.synchronization.LearningSynchronizer;
 import com.swirlds.common.merkle.synchronization.config.ReconnectConfig;
+import com.swirlds.common.merkle.synchronization.stats.ReconnectMapStats;
 import com.swirlds.common.merkle.synchronization.streams.AsyncOutputStream;
 import com.swirlds.common.merkle.synchronization.task.ExpectedLesson;
 import com.swirlds.common.merkle.synchronization.task.ReconnectNodeCount;
@@ -40,6 +41,7 @@ import com.swirlds.virtualmap.internal.Path;
 import com.swirlds.virtualmap.internal.RecordAccessor;
 import com.swirlds.virtualmap.internal.VirtualStateAccessor;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Queue;
@@ -96,6 +98,8 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      */
     private final NodeTraversalOrder traversalOrder;
 
+    private final ReconnectMapStats mapStats;
+
     /**
      * Indicates if no responses from the teacher have been received yet. The very first response
      * must be for path 0 (root virtual node)
@@ -122,6 +126,8 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
      * 		A {@link VirtualStateAccessor} for accessing state (first and last paths) from the
      * 		modified <strong>reconnect</strong> tree. We only use first and last leaf path from this state.
      * 		Cannot be null.
+     * @param mapStats
+     *      A ReconnectMapStats object to collect reconnect metrics
      */
     public LearnerPullVirtualTreeView(
             final ReconnectConfig reconnectConfig,
@@ -130,12 +136,14 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             final VirtualStateAccessor originalState,
             final VirtualStateAccessor reconnectState,
             final ReconnectNodeRemover<K, V> nodeRemover,
-            final NodeTraversalOrder traversalOrder) {
+            final NodeTraversalOrder traversalOrder,
+            @NonNull final ReconnectMapStats mapStats) {
         super(root, originalState, reconnectState);
         this.reconnectConfig = reconnectConfig;
         this.originalRecords = Objects.requireNonNull(originalRecords);
         this.nodeRemover = nodeRemover;
         this.traversalOrder = traversalOrder;
+        this.mapStats = mapStats;
     }
 
     @Override
@@ -173,7 +181,12 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         learnerSendTask.exec();
     }
 
-    private boolean isLeaf(long path) {
+    /**
+     * Determines if a given path refers to a leaf of the tree.
+     * @param path a path
+     * @return true if leaf, false if internal
+     */
+    public boolean isLeaf(long path) {
         assert path <= reconnectState.getLastLeafPath();
         return path >= reconnectState.getFirstLeafPath();
     }
@@ -213,6 +226,7 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
         assert !firstNodeResponse : "Root node must be the first node received from the teacher";
         final boolean isLeaf = isLeaf(path);
         traversalOrder.nodeReceived(path, isClean);
+
         if (isLeaf) {
             if (firstLeaf) {
                 root.prepareForFirstLeaf();
@@ -220,11 +234,21 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
             }
             if (!isClean) {
                 final VirtualLeafRecord<K, V> leaf = in.readSerializable(false, VirtualLeafRecord::new);
+                mapStats.incrementLeafData(1, 0);
                 assert path == leaf.getPath();
                 nodeRemover.newLeafNode(path, leaf.getKey());
                 root.handleReconnectLeaf(leaf); // may block if hashing is slower than ingest
             }
         }
+    }
+
+    /**
+     * Returns the ReconnectMapStats object.
+     * @return the ReconnectMapStats object.
+     */
+    @NonNull
+    public ReconnectMapStats getMapStats() {
+        return mapStats;
     }
 
     /**
@@ -354,5 +378,17 @@ public final class LearnerPullVirtualTreeView<K extends VirtualKey, V extends Vi
     @Override
     public Long convertMerkleRootToViewType(final MerkleNode node) {
         throw new UnsupportedOperationException("Nested virtual maps not supported");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void recordHashStats(
+            @NonNull final ReconnectMapStats mapStats,
+            @NonNull final Long parent,
+            final int childIndex,
+            final boolean nodeAlreadyPresent) {
+        throw new UnsupportedOperationException("The Reconnect Pull Model records the hash stats elsewhere");
     }
 }

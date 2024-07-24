@@ -74,7 +74,6 @@ module com.swirlds.platform.core {
             com.swirlds.platform.test,
             com.hedera.node.test.clients,
             com.swirlds.platform.core.test.fixtures,
-            com.hedera.node.app.service.mono.test.fixtures,
             com.hedera.node.app.test.fixtures;
     exports com.swirlds.platform.event.linking to
             com.swirlds.common,
@@ -85,8 +84,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.state.iss to
             com.swirlds.platform.test;
     exports com.swirlds.platform.state.iss.internal to
-            com.swirlds.platform.test;
-    exports com.swirlds.platform.reconnect.emergency to
             com.swirlds.platform.test;
     exports com.swirlds.platform.recovery.internal to
             com.swirlds.platform.test;
@@ -119,13 +116,6 @@ module com.swirlds.platform.core {
     exports com.swirlds.platform.wiring.components;
     exports com.swirlds.platform.event.hashing;
     exports com.swirlds.platform.event.orphan;
-    exports com.swirlds.platform.state.merkle;
-    exports com.swirlds.platform.state.merkle.logging;
-    exports com.swirlds.platform.state.merkle.disk;
-    exports com.swirlds.platform.state.merkle.singleton;
-    exports com.swirlds.platform.state.merkle.memory;
-    exports com.swirlds.platform.state.merkle.queue;
-    exports com.swirlds.platform.state.spi;
     exports com.swirlds.platform.publisher;
     exports com.swirlds.platform.components.consensus;
     exports com.swirlds.platform.pool;
@@ -136,12 +126,7 @@ module com.swirlds.platform.core {
     requires transitive com.swirlds.cli;
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
-    requires transitive com.swirlds.fcqueue;
-    requires transitive com.swirlds.merkle;
-    requires transitive com.swirlds.merkledb;
     requires transitive com.swirlds.metrics.api;
-    requires transitive com.swirlds.state.api;
-    requires transitive com.swirlds.virtualmap;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
     requires transitive com.hedera.pbj.runtime;
@@ -149,6 +134,9 @@ module com.swirlds.platform.core {
     requires transitive org.apache.logging.log4j;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
+    requires com.swirlds.merkledb;
+    requires com.swirlds.state.api;
+    requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;
     requires java.desktop;

@@ -18,7 +18,7 @@ package com.hedera.services.bdd.spec.transactions.schedule;
 
 import static com.hedera.services.bdd.spec.HapiPropertySource.asScheduleString;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTxnRecord;
-import static com.hedera.services.bdd.spec.transactions.TxnFactory.bannerWith;
+import static com.hedera.services.bdd.spec.transactions.TxnUtils.bannerWith;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ScheduleCreate;
@@ -57,9 +57,6 @@ import org.apache.logging.log4j.Logger;
 
 public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiScheduleCreate<T>> {
     private static final Logger log = LogManager.getLogger(HapiScheduleCreate.class);
-
-    private static final int defaultScheduleTxnExpiry =
-            HapiSpecSetup.getDefaultNodeProps().getInteger("ledger.schedule.txExpiryTimeSecs");
 
     private boolean advertiseCreation = false;
     private boolean recordScheduledTxn = false;
@@ -242,8 +239,10 @@ public class HapiScheduleCreate<T extends HapiTxnOp<T>> extends HapiTxnOp<HapiSc
 
     @Override
     protected long feeFor(HapiSpec spec, Transaction txn, int numPayerKeys) throws Throwable {
+        final var defaultExpiry =
+                spec.targetNetworkOrThrow().startupProperties().getInteger("ledger.schedule.txExpiryTimeSecs");
         FeeCalculator.ActivityMetrics metricsCalc =
-                (_txn, svo) -> scheduleOpsUsage.scheduleCreateUsage(_txn, suFrom(svo), defaultScheduleTxnExpiry);
+                (_txn, svo) -> scheduleOpsUsage.scheduleCreateUsage(_txn, suFrom(svo), defaultExpiry);
 
         return spec.fees().forActivityBasedOp(HederaFunctionality.ScheduleCreate, metricsCalc, txn, numPayerKeys);
     }

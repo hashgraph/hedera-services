@@ -106,6 +106,9 @@ class EthereumTransactionHandlerTest {
     private ContractCreateRecordBuilder createRecordBuilder;
 
     @Mock
+    private HandleContext.SavepointStack stack;
+
+    @Mock
     private RootProxyWorldUpdater baseProxyWorldUpdater;
 
     @Mock
@@ -176,9 +179,9 @@ class EthereumTransactionHandlerTest {
         given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITH_TO_ADDRESS));
         setUpTransactionProcessing();
-        given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
-                .willReturn(recordBuilder);
-        given(handleContext.recordBuilder(ContractCallRecordBuilder.class)).willReturn(callRecordBuilder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(EthereumTransactionRecordBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(ContractCallRecordBuilder.class)).willReturn(callRecordBuilder);
         givenSenderAccount();
         final var expectedResult =
                 SUCCESS_RESULT_WITH_SIGNER_NONCE.asProtoResultOf(ETH_DATA_WITH_TO_ADDRESS, baseProxyWorldUpdater);
@@ -203,9 +206,9 @@ class EthereumTransactionHandlerTest {
         given(factory.create(handleContext, ETHEREUM_TRANSACTION)).willReturn(component);
         given(component.hydratedEthTxData()).willReturn(HydratedEthTxData.successFrom(ETH_DATA_WITHOUT_TO_ADDRESS));
         setUpTransactionProcessing();
-        given(handleContext.recordBuilder(EthereumTransactionRecordBuilder.class))
-                .willReturn(recordBuilder);
-        given(handleContext.recordBuilder(ContractCreateRecordBuilder.class)).willReturn(createRecordBuilder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(EthereumTransactionRecordBuilder.class)).willReturn(recordBuilder);
+        given(stack.getBaseBuilder(ContractCreateRecordBuilder.class)).willReturn(createRecordBuilder);
         given(baseProxyWorldUpdater.getCreatedContractIds()).willReturn(List.of(CALLED_CONTRACT_ID));
         final var expectedResult =
                 SUCCESS_RESULT_WITH_SIGNER_NONCE.asProtoResultOf(ETH_DATA_WITHOUT_TO_ADDRESS, baseProxyWorldUpdater);

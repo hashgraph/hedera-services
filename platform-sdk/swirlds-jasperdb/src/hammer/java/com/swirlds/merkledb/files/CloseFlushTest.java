@@ -25,7 +25,6 @@ import com.swirlds.merkledb.test.fixtures.ExampleLongKeyFixedSize;
 import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.metrics.api.Metrics;
 import com.swirlds.virtualmap.VirtualKey;
-import com.swirlds.virtualmap.VirtualLongKey;
 import com.swirlds.virtualmap.VirtualMap;
 import com.swirlds.virtualmap.VirtualValue;
 import com.swirlds.virtualmap.datasource.VirtualDataSource;
@@ -33,6 +32,7 @@ import com.swirlds.virtualmap.datasource.VirtualDataSourceBuilder;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import com.swirlds.virtualmap.datasource.VirtualLeafRecord;
 import com.swirlds.virtualmap.internal.merkle.VirtualRootNode;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Random;
@@ -79,19 +79,19 @@ public class CloseFlushTest {
         final AtomicReference<Exception> exception = new AtomicReference<>();
         for (int j = 0; j < 100; j++) {
             final Path storeDir = tmpFileDir.resolve("closeFlushTest-" + j);
-            final VirtualDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource =
+            final VirtualDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource =
                     TestType.fixed_fixed.dataType().createDataSource(storeDir, "closeFlushTest", count, 0, false, true);
             // Create a custom data source builder, which creates a custom data source to capture
             // all exceptions happened in saveRecords()
-            final VirtualDataSourceBuilder<VirtualLongKey, ExampleByteArrayVirtualValue> builder =
+            final VirtualDataSourceBuilder<VirtualKey, ExampleByteArrayVirtualValue> builder =
                     new CustomDataSourceBuilder<>(dataSource, exception);
-            VirtualMap<VirtualLongKey, ExampleByteArrayVirtualValue> map = new VirtualMap<>("closeFlushTest", builder);
+            VirtualMap<VirtualKey, ExampleByteArrayVirtualValue> map = new VirtualMap<>("closeFlushTest", builder);
             for (int i = 0; i < count; i++) {
                 final ExampleLongKeyFixedSize key = new ExampleLongKeyFixedSize(i);
                 final ExampleFixedSizeVirtualValue value = new ExampleFixedSizeVirtualValue(i);
                 map.put(key, value);
             }
-            VirtualMap<VirtualLongKey, ExampleByteArrayVirtualValue> copy;
+            VirtualMap<VirtualKey, ExampleByteArrayVirtualValue> copy;
             final CountDownLatch shutdownLatch = new CountDownLatch(1);
             for (int i = 0; i < 100; i++) {
                 copy = map.copy();
@@ -99,9 +99,9 @@ public class CloseFlushTest {
                 map = copy;
             }
             copy = map.copy();
-            final VirtualRootNode<VirtualLongKey, ExampleByteArrayVirtualValue> root = map.getRight();
+            final VirtualRootNode<VirtualKey, ExampleByteArrayVirtualValue> root = map.getRight();
             root.enableFlush();
-            final VirtualMap<VirtualLongKey, ExampleByteArrayVirtualValue> lastMap = map;
+            final VirtualMap<VirtualKey, ExampleByteArrayVirtualValue> lastMap = map;
             final Future<?> job = exec.submit(() -> {
                 try {
                     Thread.sleep(new Random().nextInt(500));
@@ -154,9 +154,9 @@ public class CloseFlushTest {
                 public void saveRecords(
                         final long firstLeafPath,
                         final long lastLeafPath,
-                        final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
-                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
-                        final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
+                        @NonNull final Stream<VirtualHashRecord> pathHashRecordsToUpdate,
+                        @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToAddOrUpdate,
+                        @NonNull final Stream<VirtualLeafRecord<K, V>> leafRecordsToDelete,
                         final boolean isReconnectContext) {
                     try {
                         delegate.saveRecords(

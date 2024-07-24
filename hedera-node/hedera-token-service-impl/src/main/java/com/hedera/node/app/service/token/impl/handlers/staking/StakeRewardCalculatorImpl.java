@@ -36,6 +36,7 @@ import org.apache.logging.log4j.Logger;
 @Singleton
 public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
     private static final Logger logger = LogManager.getLogger(StakeRewardCalculatorImpl.class);
+
     private final StakePeriodManager stakePeriodManager;
 
     /**
@@ -64,7 +65,6 @@ public class StakeRewardCalculatorImpl implements StakeRewardCalculator {
         final var nodeId = account.stakedNodeIdOrThrow();
         final var stakingInfo = stakingInfoStore.getOriginalValue(nodeId);
         if (stakingInfo != null && stakingInfo.deleted()) {
-            logger.info("Node {} is deleted. Paying zero rewards", nodeId);
             return 0;
         }
         final var rewardOffered = computeRewardFromDetails(

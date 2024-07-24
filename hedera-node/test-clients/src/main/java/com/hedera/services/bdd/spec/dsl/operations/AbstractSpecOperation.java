@@ -18,8 +18,8 @@ package com.hedera.services.bdd.spec.dsl.operations;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.services.bdd.SpecOperation;
 import com.hedera.services.bdd.spec.HapiSpec;
+import com.hedera.services.bdd.spec.SpecOperation;
 import com.hedera.services.bdd.spec.dsl.SpecEntity;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
@@ -94,6 +94,7 @@ public abstract class AbstractSpecOperation implements SpecOperation {
     }
 
     private void addRequisites(@NonNull final List<SpecEntity> allRequirements, @NonNull final SpecEntity entity) {
+        requireNonNull(entity);
         entity.prerequisiteEntities().forEach(prerequisite -> addRequisites(allRequirements, prerequisite));
         allRequirements.add(entity);
     }

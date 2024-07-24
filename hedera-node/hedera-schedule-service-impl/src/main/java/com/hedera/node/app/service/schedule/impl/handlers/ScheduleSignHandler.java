@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.service.schedule.impl.handlers;
 
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.AccountID;
@@ -30,8 +30,9 @@ import com.hedera.hapi.node.scheduled.ScheduleSignTransactionBody;
 import com.hedera.hapi.node.state.schedule.Schedule;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.hapi.fees.usage.SigUsage;
 import com.hedera.node.app.hapi.fees.usage.schedule.ScheduleOpsUsage;
-import com.hedera.node.app.service.mono.fees.calculation.schedule.txns.ScheduleSignResourceUsage;
+import com.hedera.node.app.hapi.utils.fee.SigValueObj;
 import com.hedera.node.app.service.schedule.ReadableScheduleStore;
 import com.hedera.node.app.service.schedule.ScheduleRecordBuilder;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
@@ -45,6 +46,7 @@ import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionHandler;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.SchedulingConfig;
+import com.hederahashgraph.api.proto.java.FeeData;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.time.Instant;
@@ -59,6 +61,7 @@ import javax.inject.Singleton;
 @Singleton
 @SuppressWarnings("OverlyCoupledClass")
 public class ScheduleSignHandler extends AbstractScheduleHandler implements TransactionHandler {
+    private final ScheduleOpsUsage scheduleOpsUsage = new ScheduleOpsUsage();
 
     @Inject
     public ScheduleSignHandler() {
@@ -127,7 +130,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
     public void handle(@NonNull final HandleContext context) throws HandleException {
         Objects.requireNonNull(context, NULL_CONTEXT_MESSAGE);
         final Instant currentConsensusTime = context.consensusNow();
-        final WritableScheduleStore scheduleStore = context.writableStore(WritableScheduleStore.class);
+        final WritableScheduleStore scheduleStore = context.storeFactory().writableStore(WritableScheduleStore.class);
         final SchedulingConfig schedulingConfig = context.configuration().getConfigData(SchedulingConfig.class);
         final boolean isLongTermEnabled = schedulingConfig.longTermEnabled();
         final TransactionBody currentTransaction = context.body();
@@ -159,7 +162,7 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                             scheduleStore.put(HandlerUtility.replaceSignatories(scheduleToSign, updatedSignatories));
                         }
                         final ScheduleRecordBuilder scheduleRecords =
-                                context.recordBuilder(ScheduleRecordBuilder.class);
+                                context.savepointStack().getBaseBuilder(ScheduleRecordBuilder.class);
                         scheduleRecords.scheduledTransactionID(
                                 HandlerUtility.transactionIdForScheduled(scheduleToSign));
                         // Based on fuzzy-record matching this field may not be set in mono-service records
@@ -207,9 +210,10 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
         final var scheduleStore = feeContext.readableStore(ReadableScheduleStore.class);
         final var schedule = scheduleStore.get(op.scheduleSignOrThrow().scheduleIDOrThrow());
 
-        return feeContext.feeCalculator(SubType.DEFAULT).legacyCalculate(sigValueObj -> new ScheduleSignResourceUsage(
-                        new ScheduleOpsUsage(), null)
-                .usageGiven(
+        return feeContext
+                .feeCalculatorFactory()
+                .feeCalculator(SubType.DEFAULT)
+                .legacyCalculate(sigValueObj -> usageGiven(
                         fromPbj(op),
                         sigValueObj,
                         schedule,
@@ -217,5 +221,21 @@ public class ScheduleSignHandler extends AbstractScheduleHandler implements Tran
                                 .configuration()
                                 .getConfigData(LedgerConfig.class)
                                 .scheduleTxExpiryTimeSecs()));
+    }
+
+    private FeeData usageGiven(
+            final com.hederahashgraph.api.proto.java.TransactionBody txn,
+            final SigValueObj svo,
+            final Schedule schedule,
+            final long scheduledTxExpiryTimeSecs) {
+        final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
+
+        if (schedule != null) {
+            return scheduleOpsUsage.scheduleSignUsage(txn, sigUsage, schedule.calculatedExpirationSecond());
+        } else {
+            final long latestExpiry =
+                    txn.getTransactionID().getTransactionValidStart().getSeconds() + scheduledTxExpiryTimeSecs;
+            return scheduleOpsUsage.scheduleSignUsage(txn, sigUsage, latestExpiry);
+        }
     }
 }

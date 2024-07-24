@@ -2,10 +2,10 @@ import com.hedera.node.app.config.ServicesConfigExtension;
 import com.swirlds.config.api.ConfigurationExtension;
 
 module com.hedera.node.app {
+    requires transitive com.hedera.node.app.service.addressbook.impl;
     requires transitive com.hedera.node.app.service.consensus.impl;
     requires transitive com.hedera.node.app.service.contract.impl;
     requires transitive com.hedera.node.app.service.file.impl;
-    requires transitive com.hedera.node.app.service.mono;
     requires transitive com.hedera.node.app.service.network.admin.impl;
     requires transitive com.hedera.node.app.service.schedule.impl;
     requires transitive com.hedera.node.app.service.schedule;
@@ -22,10 +22,11 @@ module com.hedera.node.app {
     requires transitive com.swirlds.state.api;
     requires transitive com.hedera.pbj.runtime;
     requires transitive dagger;
-    requires transitive grpc.stub;
+    requires transitive io.grpc.stub;
     requires transitive javax.inject;
     requires com.hedera.node.app.hapi.fees;
     requires com.hedera.node.app.hapi.utils;
+    requires com.hedera.node.app.service.addressbook;
     requires com.hedera.node.app.service.consensus;
     requires com.hedera.node.app.service.contract;
     requires com.hedera.node.app.service.file;
@@ -33,7 +34,6 @@ module com.hedera.node.app {
     requires com.hedera.node.app.service.util;
     requires com.swirlds.base;
     requires com.swirlds.config.extensions;
-    requires com.swirlds.fcqueue;
     requires com.swirlds.logging;
     requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
@@ -41,7 +41,7 @@ module com.hedera.node.app {
     requires com.google.common;
     requires com.google.protobuf;
     requires com.hedera.evm;
-    requires grpc.netty;
+    requires io.grpc.netty;
     requires io.grpc;
     requires io.netty.handler;
     requires io.netty.transport.classes.epoll;
@@ -50,7 +50,8 @@ module com.hedera.node.app {
     requires org.apache.logging.log4j;
     requires static com.github.spotbugs.annotations;
     requires static com.google.auto.service;
-    requires static java.compiler; // javax.annotation.processing.Generated
+    requires static java.compiler;
+    // javax.annotation.processing.Generated
 
     exports com.hedera.node.app to
             com.hedera.node.test.clients;
@@ -76,8 +77,6 @@ module com.hedera.node.app {
     exports com.hedera.node.app.workflows.handle to
             com.hedera.node.app.test.fixtures,
             com.hedera.node.test.clients;
-    exports com.hedera.node.app.workflows.handle.record to
-            com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.version to
             com.hedera.node.app.test.fixtures,
             com.swirlds.platform,
@@ -86,22 +85,19 @@ module com.hedera.node.app {
     exports com.hedera.node.app.state.listeners to
             com.hedera.node.app.test.fixtures;
     exports com.hedera.node.app.services;
-    exports com.hedera.node.app.workflows.handle.flow to
+    exports com.hedera.node.app.store;
+    exports com.hedera.node.app.workflows.handle.steps to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
+    exports com.hedera.node.app.workflows.handle.record to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
+    exports com.hedera.node.app.workflows.handle.throttle to
             com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch.child.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch.user.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.dispatch.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.txn.logic to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.txn to
-            com.hedera.node.app.test.fixtures;
-    exports com.hedera.node.app.workflows.handle.flow.txn.modules to
-            com.hedera.node.app.test.fixtures;
+    exports com.hedera.node.app.workflows.handle.dispatch;
+    exports com.hedera.node.app.workflows.handle.cache to
+            com.hedera.node.app.test.fixtures,
+            com.hedera.node.test.clients;
 
     provides ConfigurationExtension with
             ServicesConfigExtension;

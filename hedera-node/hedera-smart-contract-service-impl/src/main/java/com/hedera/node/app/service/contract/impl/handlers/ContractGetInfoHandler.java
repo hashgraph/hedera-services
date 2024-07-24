@@ -19,7 +19,7 @@ package com.hedera.node.app.service.contract.impl.handlers;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.OK;
 import static com.hedera.hapi.node.base.ResponseType.ANSWER_ONLY;
-import static com.hedera.node.app.service.mono.pbj.PbjConverter.fromPbj;
+import static com.hedera.node.app.hapi.utils.CommonPbjConverters.fromPbj;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.hexedEvmAddressOf;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.summarizeStakingInfo;
 import static com.hedera.node.app.service.token.api.AccountSummariesApi.tokenRelationshipsOf;
@@ -53,6 +53,7 @@ import com.hedera.node.config.data.StakingConfig;
 import com.hedera.node.config.data.TokensConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.InstantSource;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
@@ -63,9 +64,11 @@ import javax.inject.Singleton;
 public class ContractGetInfoHandler extends PaidQueryHandler {
     private static final long BYTES_PER_EVM_KEY_VALUE_PAIR = 64;
 
+    private final InstantSource instantSource;
+
     @Inject
-    public ContractGetInfoHandler() {
-        // Dagger2
+    public ContractGetInfoHandler(@NonNull final InstantSource instantSource) {
+        this.instantSource = requireNonNull(instantSource);
     }
 
     @Override
@@ -140,7 +143,8 @@ public class ContractGetInfoHandler extends PaidQueryHandler {
                 stakingConfig.periodMins(),
                 stakingRewardsStore.isStakingRewardsActivated(),
                 contract,
-                stakingInfoStore);
+                stakingInfoStore,
+                instantSource.instant());
         final var maxReturnedRels = tokensConfig.maxRelsPerInfoQuery();
         final var builder = ContractInfo.newBuilder()
                 .ledgerId(ledgerConfig.id())
