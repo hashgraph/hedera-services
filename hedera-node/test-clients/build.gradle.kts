@@ -88,8 +88,8 @@ tasks.test {
             .joinToString("|")
     useJUnitPlatform {
         includeTags(
-            if (ciTagExpression.isBlank()) "none()|!(EMBEDDED)"
-            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED)"
+            if (ciTagExpression.isBlank()) "none()|!(EMBEDDED|REPEATABLE)"
+            else "(${ciTagExpression}|STREAM_VALIDATION|LOG_VALIDATION)&!(EMBEDDED|REPEATABLE)"
         )
     }
 
@@ -195,7 +195,7 @@ tasks.register<Test>("testRepeatable") {
     useJUnitPlatform {
         // Exclude tests that start and stop nodes, or explicitly preclude embedded or repeatable
         // mode
-        excludeTags("RESTART|ND_RECONNECT|UPGRADE|NOT_EMBEDDED|NOT_REPEATABLE")
+        excludeTags("RESTART|ND_RECONNECT|UPGRADE|NOT_REPEATABLE")
     }
 
     // Disable all parallelism

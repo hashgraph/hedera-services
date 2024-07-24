@@ -418,7 +418,6 @@ public class ContractMintHTSSuite {
                                     childRecordsCheck(
                                             nestedTransferTxn,
                                             SUCCESS,
-                                            recordWith().status(SUCCESS),
                                             recordWith()
                                                     .status(SUCCESS)
                                                     .contractCallResult(resultWith()
@@ -441,6 +440,7 @@ public class ContractMintHTSSuite {
                                                                     .withAmount(0L)
                                                                     .withMetadata(List.of("Test metadata" + " 1"))
                                                                     .build())),
+                                            recordWith().status(SUCCESS),
                                             recordWith()
                                                     .status(SUCCESS)
                                                     .contractCallResult(resultWith()
