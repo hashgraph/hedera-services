@@ -26,6 +26,7 @@ import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -107,8 +108,8 @@ public interface SingleTransactionStreamBuilder {
     SingleTransactionStreamBuilder status(@NonNull ResponseCodeEnum status);
 
     /**
-     * The transaction category of the transaction that created this record
-     * @return the transaction category
+     * Returns the {@link TransactionRecord.Builder} of the record. It can be PRECEDING, CHILD, USER or SCHEDULED.
+     * @return the {@link TransactionRecord.Builder} of the record
      */
     HandleContext.TransactionCategory category();
 

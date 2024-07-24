@@ -39,6 +39,7 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
+import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
@@ -119,6 +120,7 @@ public class HandleWorkflow {
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final PreHandleWorkflow preHandleWorkflow;
+    private final CongestionMultipliers congestionMultipliers;
 
     @Inject
     public HandleWorkflow(
@@ -144,7 +146,8 @@ public class HandleWorkflow {
             @NonNull final GenesisSetup genesisSetup,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final PreHandleWorkflow preHandleWorkflow) {
+            @NonNull final PreHandleWorkflow preHandleWorkflow,
+            @NonNull final CongestionMultipliers congestionMultipliers) {
         this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.authorizer = requireNonNull(authorizer);
@@ -173,6 +176,7 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
+        this.congestionMultipliers = congestionMultipliers;
     }
 
     /**
@@ -359,6 +363,9 @@ public class HandleWorkflow {
                 }
                 hollowAccountCompletions.completeHollowAccounts(userTxn, dispatch);
                 dispatchProcessor.processDispatch(dispatch);
+                // TODO : confirm this is correct
+                dispatch.recordBuilder()
+                        .congestionMultiplier(congestionMultipliers.utilizationScaledCurrentMultiplier());
                 updateWorkflowMetrics(userTxn);
             }
             final var streamItems = userTxn.stack().buildStreamItems(userTxn.consensusNow());

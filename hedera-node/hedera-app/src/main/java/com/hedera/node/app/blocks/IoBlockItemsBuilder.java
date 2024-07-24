@@ -55,7 +55,6 @@ import com.hedera.hapi.node.transaction.AssessedCustomFee;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.SignedTransaction;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.hapi.node.transaction.TransactionRecord;
 import com.hedera.hapi.streams.ContractActions;
 import com.hedera.hapi.streams.ContractBytecode;
 import com.hedera.hapi.streams.ContractStateChanges;
@@ -293,6 +292,7 @@ public class IoBlockItemsBuilder
         return transactionSidecarRecords;
     }
 
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public ReversingBehavior reversingBehavior() {
@@ -301,6 +301,7 @@ public class IoBlockItemsBuilder
 
     // ------------------------------------------------------------------------------------------------------------------------
     // base transaction data
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder parentConsensus(@NonNull final Instant parentConsensus) {
@@ -311,7 +312,7 @@ public class IoBlockItemsBuilder
                 .build());
         return this;
     }
-
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder consensusTimestamp(@NonNull final Instant now) {
@@ -323,12 +324,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the transaction.
-     *
-     * @param transaction the transaction
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder transaction(@NonNull final Transaction transaction) {
@@ -336,12 +332,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the transaction bytes that will be used to compute the transaction hash.
-     *
-     * @param transactionBytes the transaction bytes
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder transactionBytes(@NonNull final Bytes transactionBytes) {
@@ -349,23 +340,14 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Gets the {@link TransactionID} that is currently set.
-     *
-     * @return the {@link TransactionID}
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public TransactionID transactionID() {
         return transactionID;
     }
 
-    /**
-     * Sets the transaction ID.
-     *
-     * @param transactionID the transaction ID
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder transactionID(@NonNull final TransactionID transactionID) {
@@ -373,11 +355,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * When we update nonce on the record, we need to update the body as well with the same transactionID.
-     *
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @NonNull
     @Override
     public IoBlockItemsBuilder syncBodyIdFromRecordId() {
@@ -389,12 +367,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the memo.
-     *
-     * @param memo the memo
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder memo(@NonNull final String memo) {
@@ -405,28 +378,20 @@ public class IoBlockItemsBuilder
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionRecord
 
-    /**
-     * Gets the transaction object.
-     *
-     * @return the transaction object
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public Transaction transaction() {
         return transaction;
     }
 
+    /**{@inheritDoc}*/
     @Override
     public long transactionFee() {
         return transactionFee;
     }
 
-    /**
-     * Sets the consensus transaction fee.
-     *
-     * @param transactionFee the transaction fee
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @NonNull
     @Override
     public IoBlockItemsBuilder transactionFee(final long transactionFee) {
@@ -448,12 +413,7 @@ public class IoBlockItemsBuilder
         return explicitRewardReceiverIds != null ? explicitRewardReceiverIds : emptySet();
     }
 
-    /**
-     * Sets the body to contractCall result.
-     *
-     * @param contractCallResult the contractCall result
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder contractCallResult(@Nullable final ContractFunctionResult contractCallResult) {
@@ -464,12 +424,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the body to contractCreateResult result.
-     *
-     * @param contractCreateResult the contractCreate result
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder contractCreateResult(@Nullable ContractFunctionResult contractCreateResult) {
@@ -480,23 +435,14 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Gets the transferList.
-     *
-     * @return transferList
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public TransferList transferList() {
         return transferList;
     }
 
-    /**
-     * Sets the transferList.
-     *
-     * @param transferList the transferList
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder transferList(@Nullable final TransferList transferList) {
@@ -505,12 +451,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the tokenTransferLists.
-     *
-     * @param tokenTransferLists the tokenTransferLists
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder tokenTransferLists(@NonNull final List<TokenTransferList> tokenTransferLists) {
@@ -520,11 +461,13 @@ public class IoBlockItemsBuilder
         return this;
     }
 
+    /**{@inheritDoc}*/
     @Override
     public List<TokenTransferList> tokenTransferLists() {
         return tokenTransferLists;
     }
 
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder tokenType(final @NonNull TokenType tokenType) {
@@ -532,12 +475,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the scheduleRef.
-     *
-     * @param scheduleRef the scheduleRef
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder scheduleRef(@NonNull final ScheduleID scheduleRef) {
@@ -546,12 +484,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the assessedCustomFees.
-     *
-     * @param assessedCustomFees the assessedCustomFees
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder assessedCustomFees(@NonNull final List<AssessedCustomFee> assessedCustomFees) {
@@ -563,12 +496,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Adds an automaticTokenAssociation.
-     *
-     * @param automaticTokenAssociation the automaticTokenAssociation
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @NonNull
     public IoBlockItemsBuilder addAutomaticTokenAssociation(@NonNull final TokenAssociation automaticTokenAssociation) {
         requireNonNull(automaticTokenAssociation, "automaticTokenAssociation must not be null");
@@ -576,12 +504,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the ethereum hash.
-     *
-     * @param ethereumHash the ethereum hash
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder ethereumHash(@NonNull final Bytes ethereumHash) {
@@ -592,12 +515,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the paidStakingRewards.
-     *
-     * @param paidStakingRewards the paidStakingRewards
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder paidStakingRewards(@NonNull final List<AccountAmount> paidStakingRewards) {
@@ -608,12 +526,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the entropy to a given number.
-     *
-     * @param num number to use for entropy
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder entropyNumber(final int num) {
@@ -622,12 +535,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the entropy to given bytes.
-     *
-     * @param prngBytes bytes to use for entropy
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder entropyBytes(@NonNull final Bytes prngBytes) {
@@ -637,12 +545,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the EVM address.
-     *
-     * @param evmAddress the EVM address
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder evmAddress(@NonNull final Bytes evmAddress) {
@@ -659,12 +562,7 @@ public class IoBlockItemsBuilder
     // ------------------------------------------------------------------------------------------------------------------------
     // fields needed for TransactionReceipt
 
-    /**
-     * Sets the receipt status.
-     *
-     * @param status the receipt status
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder status(@NonNull final ResponseCodeEnum status) {
@@ -673,38 +571,26 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Gets the receipt status.
-     *
-     * @return the receipt status
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public ResponseCodeEnum status() {
         return status;
     }
 
-    /**
-     * Returns if the builder has a ContractFunctionResult set.
-     *
-     * @return the receipt status
-     */
+    /**{@inheritDoc}*/
     @Override
     public boolean hasContractResult() {
         return this.contractFunctionResult != null;
     }
 
+    /**{@inheritDoc}*/
     @Override
     public long getGasUsedForContractTxn() {
         return this.contractFunctionResult.gasUsed();
     }
 
-    /**
-     * Sets the receipt accountID.
-     *
-     * @param accountID the {@link AccountID} for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder accountID(@NonNull final AccountID accountID) {
@@ -712,12 +598,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the receipt fileID.
-     *
-     * @param fileID the {@link FileID} for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder fileID(@NonNull final FileID fileID) {
@@ -725,13 +606,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the receipt contractID; if the contractID is null, this is a no-op. (We allow a null id here
-     * for convenience when chaining builder calls.)
-     *
-     * @param contractID the {@link ContractID} for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder contractID(@Nullable final ContractID contractID) {
@@ -739,12 +614,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the receipt exchange rate.
-     *
-     * @param exchangeRate the {@link ExchangeRateSet} for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @NonNull
     @Override
     public IoBlockItemsBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
@@ -754,21 +624,17 @@ public class IoBlockItemsBuilder
         return this;
     }
 
+    /**{@inheritDoc}*/
     @NonNull
     @Override
-    public SingleTransactionStreamBuilder congestionMultiplier(long congestionMultiplier) {
+    public IoBlockItemsBuilder congestionMultiplier(long congestionMultiplier) {
         if (congestionMultiplier != 0) {
             transactionResultBuilder.congestionPricingMultiplier(congestionMultiplier);
         }
         return this;
     }
 
-    /**
-     * Sets the receipt topicID.
-     *
-     * @param topicID the {@link TopicID} for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder topicID(@NonNull final TopicID topicID) {
@@ -776,12 +642,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the receipt topicSequenceNumber.
-     *
-     * @param topicSequenceNumber the topicSequenceNumber for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder topicSequenceNumber(final long topicSequenceNumber) {
@@ -789,12 +650,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the receipt topicRunningHash.
-     *
-     * @param topicRunningHash the topicRunningHash for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder topicRunningHash(@NonNull final Bytes topicRunningHash) {
@@ -802,28 +658,18 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the receipt topicRunningHashVersion.
-     *
-     * @param topicRunningHashVersion the topicRunningHashVersion for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder topicRunningHashVersion(final long topicRunningHashVersion) {
-        // TOD: Need to confirm what the value should be
+        // TOD0: Need to confirm what the value should be
         transactionOutputBuilder.submitMessage(SubmitMessageOutput.newBuilder()
                 .topicRunningHashVersion(RunningHashVersion.WITH_FULL_MESSAGE)
                 .build());
         return this;
     }
 
-    /**
-     * Sets the receipt tokenID.
-     *
-     * @param tokenID the {@link TokenID} for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder tokenID(@NonNull final TokenID tokenID) {
@@ -832,17 +678,13 @@ public class IoBlockItemsBuilder
         return this;
     }
 
+    /**{@inheritDoc}*/
     @Override
     public TokenID tokenID() {
         return tokenID;
     }
 
-    /**
-     * Sets the receipt nodeID.
-     *
-     * @param nodeId the nodeId for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder nodeID(long nodeId) {
@@ -850,29 +692,20 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the receipt newTotalSupply.
-     *
-     * @param newTotalSupply the newTotalSupply for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @NonNull
     public IoBlockItemsBuilder newTotalSupply(final long newTotalSupply) {
         this.newTotalSupply = newTotalSupply;
         return this;
     }
 
+    /**{@inheritDoc}*/
     @Override
     public long getNewTotalSupply() {
         return newTotalSupply;
     }
 
-    /**
-     * Sets the receipt scheduleID.
-     *
-     * @param scheduleID the {@link ScheduleID} for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder scheduleID(@NonNull final ScheduleID scheduleID) {
@@ -880,12 +713,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the transaction ID of the scheduled child transaction that was executed
-     *
-     * @param scheduledTransactionID the {@link TransactionID} of the scheduled transaction for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder scheduledTransactionID(@NonNull final TransactionID scheduledTransactionID) {
@@ -893,12 +721,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Sets the receipt serialNumbers.
-     *
-     * @param serialNumbers the serialNumbers for the receipt
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder serialNumbers(@NonNull final List<Long> serialNumbers) {
@@ -907,6 +730,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public List<Long> serialNumbers() {
@@ -915,13 +739,7 @@ public class IoBlockItemsBuilder
 
     // ------------------------------------------------------------------------------------------------------------------------
     // Sidecar data, booleans are the migration flag
-    /**
-     * Adds contractStateChanges to sidecar records.
-     *
-     * @param contractStateChanges the contractStateChanges to add
-     * @param isMigration flag indicating whether sidecar is from migration
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder addContractStateChanges(
@@ -931,13 +749,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Adds contractActions to sidecar records.
-     *
-     * @param contractActions the contractActions to add
-     * @param isMigration flag indicating whether sidecar is from migration
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder addContractActions(
@@ -947,13 +759,7 @@ public class IoBlockItemsBuilder
         return this;
     }
 
-    /**
-     * Adds contractBytecodes to sidecar records.
-     *
-     * @param contractBytecode the contractBytecode to add
-     * @param isMigration flag indicating whether sidecar is from migration
-     * @return the builder
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public IoBlockItemsBuilder addContractBytecode(
@@ -965,13 +771,7 @@ public class IoBlockItemsBuilder
 
     // ------------- Information needed by token service for redirecting staking rewards to appropriate accounts
 
-    /**
-     * Adds a beneficiary for a deleted account into the map. This is needed while computing staking rewards.
-     * If the deleted account receives staking reward, it is transferred to the beneficiary.
-     *
-     * @param deletedAccountID the deleted account ID
-     * @param beneficiaryForDeletedAccount the beneficiary account ID
-     */
+    /**{@inheritDoc}*/
     @Override
     public void addBeneficiaryForDeletedAccount(
             @NonNull final AccountID deletedAccountID, @NonNull final AccountID beneficiaryForDeletedAccount) {
@@ -980,49 +780,33 @@ public class IoBlockItemsBuilder
         deletedAccountBeneficiaries.put(deletedAccountID, beneficiaryForDeletedAccount);
     }
 
-    /**
-     * Gets number of deleted accounts in this transaction.
-     *
-     * @return number of deleted accounts in this transaction
-     */
+    /**{@inheritDoc}*/
     @Override
     public int getNumberOfDeletedAccounts() {
         return deletedAccountBeneficiaries.size();
     }
 
-    /**
-     * Gets the beneficiary account ID for deleted account ID.
-     *
-     * @return the beneficiary account ID of deleted account ID
-     */
+    /**{@inheritDoc}*/
     @Override
     @Nullable
     public AccountID getDeletedAccountBeneficiaryFor(@NonNull final AccountID deletedAccountID) {
         return deletedAccountBeneficiaries.get(deletedAccountID);
     }
 
-    /**
-     * Returns the in-progress {@link ContractFunctionResult}.
-     *
-     * @return the in-progress {@link ContractFunctionResult}
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public ContractFunctionResult contractFunctionResult() {
         return contractFunctionResult;
     }
-
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public TransactionBody transactionBody() {
         return inProgressBody();
     }
 
-    /**
-     * Returns the in-progress {@link TransactionBody}.
-     *
-     * @return the in-progress {@link TransactionBody}
-     */
+    /**{@inheritDoc}*/
     private TransactionBody inProgressBody() {
         try {
             final var signedTransaction = SignedTransaction.PROTOBUF.parseStrict(
@@ -1033,27 +817,21 @@ public class IoBlockItemsBuilder
         }
     }
 
-    /**
-     * Returns the staking rewards paid in this transaction.
-     *
-     * @return the staking rewards paid in this transaction
-     */
+    /**{@inheritDoc}*/
     @NonNull
     @Override
     public List<AccountAmount> getPaidStakingRewards() {
         return paidStakingRewards;
     }
 
-    /**
-     * Returns the {@link TransactionRecord.Builder} of the record. It can be PRECEDING, CHILD, USER or SCHEDULED.
-     * @return the {@link TransactionRecord.Builder} of the record
-     */
+    /**{@inheritDoc}*/
     @Override
     @NonNull
     public HandleContext.TransactionCategory category() {
         return category;
     }
 
+    /**{@inheritDoc}*/
     @Override
     public void nullOutSideEffectFields() {
         serialNumbers.clear();

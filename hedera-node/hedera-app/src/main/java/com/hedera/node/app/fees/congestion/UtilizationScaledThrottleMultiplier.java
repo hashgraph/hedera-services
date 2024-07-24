@@ -232,4 +232,8 @@ public class UtilizationScaledThrottleMultiplier {
     public Instant[] congestionLevelStarts() {
         return delegate.congestionLevelStarts();
     }
+
+    public long currentMultiplier() {
+        return delegate.currentMultiplier();
+    }
 }
