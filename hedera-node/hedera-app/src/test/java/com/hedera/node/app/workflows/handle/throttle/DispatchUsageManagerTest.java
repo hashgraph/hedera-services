@@ -53,7 +53,7 @@ import com.hedera.node.app.throttle.ThrottleServiceManager;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import com.hedera.node.app.workflows.handle.metric.HandleWorkflowMetrics;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -132,7 +132,7 @@ class DispatchUsageManagerTest {
     private ReadableAccountStore readableAccountStore;
 
     @Mock
-    private SingleTransactionRecordBuilderImpl recordBuilder;
+    private RecordBuilderImpl recordBuilder;
 
     @Mock
     private HandleWorkflowMetrics handleWorkflowMetrics;

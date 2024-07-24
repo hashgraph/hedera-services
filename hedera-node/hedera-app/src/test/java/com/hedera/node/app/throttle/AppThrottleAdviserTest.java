@@ -28,7 +28,7 @@ import com.hedera.hapi.node.contract.ContractCallTransactionBody;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.workflows.TransactionInfo;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.time.Instant;
@@ -67,10 +67,10 @@ class AppThrottleAdviserTest {
     private SavepointStackImpl stack;
 
     @Mock
-    private SingleTransactionRecordBuilderImpl oneChildBuilder;
+    private RecordBuilderImpl oneChildBuilder;
 
     @Mock
-    private SingleTransactionRecordBuilderImpl twoChildBuilder;
+    private RecordBuilderImpl twoChildBuilder;
 
     private static final Instant CONSENSUS_NOW = Instant.parse("2007-12-03T10:15:30.00Z");
 

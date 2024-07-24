@@ -36,7 +36,7 @@ import com.hedera.node.app.spi.throttle.ThrottleAdviser;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -509,7 +509,7 @@ public interface HandleContext {
          * @throws IllegalArgumentException if the record builder type is unknown to the app
          */
         @NonNull
-        <T extends SingleTransactionRecordBuilder> T getBaseBuilder(@NonNull Class<T> recordBuilderClass);
+        <T extends StreamBuilder> T getBaseBuilder(@NonNull Class<T> recordBuilderClass);
 
         /**
          * Adds a child record builder to the list of record builders. If the current {@link HandleContext} (or any parent

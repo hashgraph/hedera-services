@@ -53,7 +53,7 @@ import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.handle.Dispatch;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleResult;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
@@ -88,7 +88,7 @@ public class HollowAccountCompletionsTest {
     private PreHandleResult preHandleResult;
 
     @Mock(strictness = LENIENT)
-    private SingleTransactionRecordBuilderImpl recordBuilder;
+    private RecordBuilderImpl recordBuilder;
 
     @Mock
     private EthereumTransactionHandler ethereumTransactionHandler;

@@ -25,7 +25,7 @@ import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.CryptoCreateRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
@@ -74,12 +74,12 @@ public class FakeCryptoCreateRecordBuilder {
             }
 
             @Override
-            public SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction) {
+            public StreamBuilder transaction(@NonNull Transaction transaction) {
                 return this;
             }
 
             @Override
-            public SingleTransactionRecordBuilder transactionBytes(@NonNull Bytes transactionBytes) {
+            public StreamBuilder transactionBytes(@NonNull Bytes transactionBytes) {
                 return this;
             }
 
@@ -107,7 +107,7 @@ public class FakeCryptoCreateRecordBuilder {
             }
 
             @Override
-            public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
+            public StreamBuilder status(@NonNull ResponseCodeEnum status) {
                 return this;
             }
 
@@ -125,12 +125,12 @@ public class FakeCryptoCreateRecordBuilder {
             public void nullOutSideEffectFields() {}
 
             @Override
-            public SingleTransactionRecordBuilder syncBodyIdFromRecordId() {
+            public StreamBuilder syncBodyIdFromRecordId() {
                 return null;
             }
 
             @Override
-            public SingleTransactionRecordBuilder consensusTimestamp(@NotNull final Instant now) {
+            public StreamBuilder consensusTimestamp(@NotNull final Instant now) {
                 return null;
             }
 
@@ -140,12 +140,12 @@ public class FakeCryptoCreateRecordBuilder {
             }
 
             @Override
-            public SingleTransactionRecordBuilder transactionID(@NotNull final TransactionID transactionID) {
+            public StreamBuilder transactionID(@NotNull final TransactionID transactionID) {
                 return null;
             }
 
             @Override
-            public SingleTransactionRecordBuilder parentConsensus(@NotNull final Instant parentConsensus) {
+            public StreamBuilder parentConsensus(@NotNull final Instant parentConsensus) {
                 return null;
             }
 
@@ -157,6 +157,11 @@ public class FakeCryptoCreateRecordBuilder {
 
             @Override
             public CryptoCreateRecordBuilder exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
+                return this;
+            }
+
+            @Override
+            public StreamBuilder congestionMultiplier(final long congestionMultiplier) {
                 return this;
             }
 

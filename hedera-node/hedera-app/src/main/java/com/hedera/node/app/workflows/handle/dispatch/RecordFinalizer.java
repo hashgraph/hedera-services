@@ -25,7 +25,7 @@ import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.Dispatch;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -46,7 +46,8 @@ public class RecordFinalizer {
 
     /**
      * Creates a record finalizer with the given dependencies.
-     * @param recordFinalizer the parent record finalizer
+     *
+     * @param recordFinalizer       the parent record finalizer
      */
     @Inject
     public RecordFinalizer(final FinalizeRecordHandler recordFinalizer) {
@@ -98,7 +99,7 @@ public class RecordFinalizer {
     public Set<AccountID> extraRewardReceivers(
             @Nullable final TransactionBody body,
             @NonNull final HederaFunctionality function,
-            @NonNull final SingleTransactionRecordBuilder recordBuilder) {
+            @NonNull final StreamBuilder recordBuilder) {
         if (body == null || recordBuilder.status() != SUCCESS) {
             return emptySet();
         }

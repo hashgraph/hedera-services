@@ -58,8 +58,8 @@ import com.hedera.node.app.service.token.impl.test.handlers.util.TestStoreFactor
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleException;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import java.util.Collections;
@@ -135,8 +135,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
-        given(context.userTransactionRecordBuilder(SingleTransactionRecordBuilder.class))
-                .willReturn(mock(SingleTransactionRecordBuilder.class));
+        given(context.userTransactionRecordBuilder(StreamBuilder.class)).willReturn(mock(StreamBuilder.class));
 
         assertThatThrownBy(() -> subject.finalizeStakingRecord(
                         context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap()))
@@ -160,8 +159,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
                 .build());
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
-        given(context.userTransactionRecordBuilder(SingleTransactionRecordBuilder.class))
-                .willReturn(mock(SingleTransactionRecordBuilder.class));
+        given(context.userTransactionRecordBuilder(StreamBuilder.class)).willReturn(mock(StreamBuilder.class));
 
         assertThatThrownBy(() -> subject.finalizeStakingRecord(
                         context, HederaFunctionality.CRYPTO_DELETE, Collections.emptySet(), emptyMap()))
@@ -253,7 +251,7 @@ class FinalizeRecordHandlerTest extends CryptoTokenHandlerTestBase {
         context = mockContext();
         given(context.configuration()).willReturn(configuration);
 
-        final var childRecord = mock(SingleTransactionRecordBuilderImpl.class);
+        final var childRecord = mock(RecordBuilderImpl.class);
         // child record has  1212 (-) -> 3434(+) transfer
         given(childRecord.transferList())
                 .willReturn(TransferList.newBuilder()

@@ -20,14 +20,14 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransferList;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code RecordBuilder} that collects and builds the information required to create a synthetic
  * account record, specifically for a system account created during node genesis (startup)
  */
-public interface GenesisAccountRecordBuilder extends SingleTransactionRecordBuilder {
+public interface GenesisAccountRecordBuilder extends StreamBuilder {
 
     /**
      * Tracks the created account ID for the system account

@@ -39,7 +39,7 @@ import static com.hedera.node.app.service.token.impl.test.keys.KeysAndIds.TOKEN_
 import static com.hedera.node.app.spi.fixtures.workflows.ExceptionConditions.responseCode;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
@@ -75,7 +75,7 @@ import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.test.fixtures.MapWritableKVState;
@@ -388,7 +388,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            final var recordBuilder = new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
             given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
@@ -428,7 +428,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                     .build());
             final var txn = newBurnTxn(TOKEN_123, 8);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            final var recordBuilder = new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
             given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
@@ -709,7 +709,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            final var recordBuilder = new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
             given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
@@ -772,7 +772,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            final var recordBuilder = new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
             given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 
@@ -836,7 +836,7 @@ class TokenBurnHandlerTest extends ParityTestBase {
                             .build());
             final var txn = newBurnTxn(TOKEN_123, 0, 1L, 2L, 3L, 1L, 2L, 3L, 3L, 1L, 1L, 2L);
             final var context = mockContext(txn);
-            final var recordBuilder = new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
+            final var recordBuilder = new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
             given(context.savepointStack().getBaseBuilder(TokenBurnRecordBuilder.class))
                     .willReturn(recordBuilder);
 

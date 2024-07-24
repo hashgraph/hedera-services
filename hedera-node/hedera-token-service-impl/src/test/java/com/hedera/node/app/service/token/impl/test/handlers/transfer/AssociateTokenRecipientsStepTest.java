@@ -18,7 +18,7 @@ package com.hedera.node.app.service.token.impl.test.handlers.transfer;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -40,8 +40,8 @@ import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRe
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -131,8 +131,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(ResponseCodeEnum.OK);
         given(handleContext.savepointStack()).willReturn(stack);
-        given(handleContext.dispatchRemovablePrecedingTransaction(
-                        any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
+        given(handleContext.dispatchRemovablePrecedingTransaction(any(), eq(StreamBuilder.class), eq(null), any()))
                 .will((invocation) -> {
                     final var relation =
                             new TokenRelation(fungibleTokenId, spenderId, 1, false, true, true, null, null);
@@ -140,7 +139,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, spenderId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER)
+                    return new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER)
                             .status(ResponseCodeEnum.SUCCESS);
                 });
     }

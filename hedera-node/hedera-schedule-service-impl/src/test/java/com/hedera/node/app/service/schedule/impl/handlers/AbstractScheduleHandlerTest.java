@@ -35,7 +35,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.PreHandleContext;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.node.app.workflows.prehandle.PreHandleContextImpl;
 import java.security.InvalidKeyException;
 import java.time.Instant;
@@ -207,7 +207,7 @@ class AbstractScheduleHandlerTest extends ScheduleHandlerTestBase {
     @SuppressWarnings("unchecked")
     @Test
     void verifyTryExecute() {
-        final var mockRecordBuilder = Mockito.mock(SingleTransactionRecordBuilderImpl.class);
+        final var mockRecordBuilder = Mockito.mock(RecordBuilderImpl.class);
         BDDMockito.given(mockContext.dispatchChildTransaction(
                         any(TransactionBody.class),
                         any(),

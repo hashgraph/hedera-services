@@ -20,7 +20,7 @@ import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.faile
 import static com.hedera.node.app.signature.impl.SignatureVerificationImpl.passedVerification;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,7 +51,7 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import java.security.InvalidKeyException;
 import java.time.Instant;
@@ -186,12 +186,12 @@ class ScheduleHandlerTestBase extends ScheduleTestBase {
                         any(Predicate.class),
                         any(AccountID.class),
                         any(TransactionCategory.class)))
-                .willReturn(new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER));
+                .willReturn(new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER));
 
         final var mockStack = mock(HandleContext.SavepointStack.class);
         given(mockContext.savepointStack()).willReturn(mockStack);
         given(mockStack.getBaseBuilder(ScheduleRecordBuilder.class))
-                .willReturn(new SingleTransactionRecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER));
+                .willReturn(new RecordBuilderImpl(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER));
     }
 
     private static TransactionKeys createChildKeys(
