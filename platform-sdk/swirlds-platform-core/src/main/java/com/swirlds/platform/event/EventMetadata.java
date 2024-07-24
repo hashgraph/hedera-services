@@ -52,8 +52,6 @@ public class EventMetadata implements Clearable {
      * calculation, this field may or may not store the final consensus time.
      */
     private Instant preliminaryConsensusTimestamp;
-    /** the local time (not consensus time) at which the event reached consensus */
-    private Instant reachedConsTimestamp;
     /** lastSee[m] is the last ancestor created by m (memoizes function from Swirlds-TR-2020-01) */
     private EventImpl[] lastSee;
     /**
@@ -223,21 +221,6 @@ public class EventMetadata implements Clearable {
      */
     public void setPreliminaryConsensusTimestamp(@Nullable final Instant preliminaryConsensusTimestamp) {
         this.preliminaryConsensusTimestamp = preliminaryConsensusTimestamp;
-    }
-
-    /**
-     * @return the local time (not consensus time) at which the event reached consensus
-     */
-    public @Nullable Instant getReachedConsTimestamp() {
-        return reachedConsTimestamp;
-    }
-
-    /**
-     * @param reachedConsTimestamp the local time (not consensus time) at which the event reached
-     *     consensus
-     */
-    public void setReachedConsTimestamp(@NonNull final Instant reachedConsTimestamp) {
-        this.reachedConsTimestamp = reachedConsTimestamp;
     }
 
     /**

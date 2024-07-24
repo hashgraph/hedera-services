@@ -16,53 +16,28 @@
 
 package com.swirlds.platform.internal;
 
-import com.hedera.hapi.node.base.SemanticVersion;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.event.EventMetadata;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.events.ConsensusData;
-import com.swirlds.platform.system.events.ConsensusEvent;
-import com.swirlds.platform.system.transaction.ConsensusTransaction;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
-import com.swirlds.platform.system.transaction.Transaction;
-import com.swirlds.platform.util.iterator.SkippingIterator;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.Objects;
-import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * An internal platform event. It holds all the event data relevant to the platform. It implements the Event interface
  * which is a public-facing form of an event.
  */
-public class EventImpl extends EventMetadata implements Comparable<EventImpl>, ConsensusEvent {
-
+public class EventImpl extends EventMetadata implements Comparable<EventImpl> {
     /** The base event information, including some gossip specific information */
-    private PlatformEvent baseEvent;
+    private final PlatformEvent baseEvent;
     /** Consensus data calculated for an event */
-    private ConsensusData consensusData;
-
-    /**
-     * An unmodifiable ordered set of system transaction indices in the array of all transactions, from lowest to
-     * highest.
-     */
-    private Set<Integer> systemTransactionIndices;
-
-    /** The number of application transactions in this round */
-    private int numAppTransactions = 0;
-
-    public EventImpl() {}
+    private final ConsensusData consensusData;
 
     public EventImpl(final PlatformEvent platformEvent, final EventImpl selfParent, final EventImpl otherParent) {
         this(platformEvent, new ConsensusData(), selfParent, otherParent);
-    }
-
-    public EventImpl(@NonNull final PlatformEvent platformEvent) {
-        this(platformEvent, new ConsensusData(), null, null);
     }
 
     private EventImpl(
@@ -77,8 +52,6 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
 
         this.baseEvent = baseEvent;
         this.consensusData = consensusData;
-
-        findSystemTransactions();
     }
 
     /**
@@ -119,58 +92,6 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
         return Long.compare(getGeneration(), other.getGeneration());
     }
 
-    /**
-     * Iterates through all the transactions and stores the indices of the system transactions.
-     */
-    private void findSystemTransactions() {
-        final ConsensusTransactionImpl[] transactions = getTransactions();
-        if (transactions == null || transactions.length == 0) {
-            systemTransactionIndices = Collections.emptySet();
-            return;
-        }
-
-        final Set<Integer> indices = new TreeSet<>();
-        for (int i = 0; i < transactions.length; i++) {
-            if (transactions[i].isSystem()) {
-                indices.add(i);
-            } else {
-                numAppTransactions++;
-            }
-        }
-        this.systemTransactionIndices = Collections.unmodifiableSet(indices);
-    }
-
-    /**
-     * Returns the number of application transactions in this event
-     *
-     * @return the number of application transactions
-     */
-    public int getNumAppTransactions() {
-        return numAppTransactions;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Iterator<Transaction> transactionIterator() {
-        if (getTransactions() == null) {
-            return Collections.emptyIterator();
-        }
-        return new SkippingIterator<>(getTransactions(), systemTransactionIndices);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Iterator<ConsensusTransaction> consensusTransactionIterator() {
-        if (getTransactions() == null) {
-            return Collections.emptyIterator();
-        }
-        return new SkippingIterator<>(getTransactions(), systemTransactionIndices);
-    }
-
     //////////////////////////////////////////
     // Getters for the objects contained
     //////////////////////////////////////////
@@ -200,14 +121,6 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
         return !baseEvent.getOtherParents().isEmpty();
     }
 
-    //////////////////////////////////////////
-    // Convenience methods for nested objects
-    //////////////////////////////////////////
-
-    //////////////////////////////////////////
-    // Unsigned Event
-    //////////////////////////////////////////
-
     public Instant getTimeCreated() {
         return baseEvent.getTimeCreated();
     }
@@ -234,10 +147,6 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
     public void setRoundReceived(final long roundReceived) {
         consensusData.setRoundReceived(roundReceived);
     }
-
-    //////////////////////////////////////////
-    //	Event interface methods
-    //////////////////////////////////////////
 
     /**
      * Get the consensus timestamp of this event
@@ -267,18 +176,8 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
     }
 
     /**
-     * {@inheritDoc}
+     * Same as {@link PlatformEvent#getCreatorId()}
      */
-    @Override
-    @NonNull
-    public SemanticVersion getSoftwareVersion() {
-        return baseEvent.getSoftwareVersion();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     @NonNull
     public NodeId getCreatorId() {
         return baseEvent.getCreatorId();
@@ -294,9 +193,8 @@ public class EventImpl extends EventMetadata implements Comparable<EventImpl>, C
     }
 
     /**
-     * {@inheritDoc}
+     * Same as {@link PlatformEvent#getConsensusOrder()}
      */
-    @Override
     public long getConsensusOrder() {
         return baseEvent.getConsensusOrder();
     }

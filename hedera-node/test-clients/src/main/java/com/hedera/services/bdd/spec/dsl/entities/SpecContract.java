@@ -42,6 +42,7 @@ import com.hedera.services.bdd.spec.dsl.operations.queries.StaticCallContractOpe
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.CallContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DissociateTokensOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.TransferTokenOperation;
 import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.contract.HapiContractCreate;
 import com.hedera.services.bdd.spec.utilops.grouping.InBlockingOrder;
@@ -123,6 +124,20 @@ public class SpecContract extends AbstractSpecEntity<SpecOperation, Account>
     public DissociateTokensOperation dissociateTokens(@NonNull final SpecToken... tokens) {
         requireNonNull(tokens);
         return new DissociateTokensOperation(this, List.of(tokens));
+    }
+
+    /**
+     * Returns an operation to associate the contract with the given tokens. Will ultimately fail if the contract
+     * does not have an admin key.
+     *
+     * @param token the tokens to associate
+     * @return the operation
+     */
+    public TransferTokenOperation transferToken(
+            @NonNull final SpecToken token, final long amount, @NonNull final SpecAccount sender) {
+        requireNonNull(token);
+        requireNonNull(sender);
+        return new TransferTokenOperation(amount, token, sender, this);
     }
 
     /**

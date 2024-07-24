@@ -34,7 +34,7 @@ import com.swirlds.merkledb.test.fixtures.ExampleByteArrayVirtualValue;
 import com.swirlds.merkledb.test.fixtures.TestType;
 import com.swirlds.metrics.api.Metric;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualKey;
 import com.swirlds.virtualmap.datasource.VirtualHashRecord;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -55,7 +55,7 @@ class MerkleDbDataSourceMetricsTest {
     private static final int COUNT = 1_048_576;
     private static final int HASHES_RAM_THRESHOLD = COUNT / 2;
     private static Path testDirectory;
-    private MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> dataSource;
+    private MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> dataSource;
     private Metrics metrics;
 
     @BeforeAll
@@ -140,9 +140,7 @@ class MerkleDbDataSourceMetricsTest {
 
         // only one 8 MB memory is reserved despite the fact that leaves reside in [COUNT, COUNT * 2] interval
         assertMetricValue("ds_offheap_leavesIndexMb_" + TABLE_NAME, 8);
-        assertMetricValue("ds_offheap_longKeysIndexMb_" + TABLE_NAME, 8);
-        // no leaf keys store in long keys mode
-        assertMetricValue("ds_offheap_objectKeyBucketsIndexMb_" + TABLE_NAME, 0);
+        assertMetricValue("ds_offheap_objectKeyBucketsIndexMb_" + TABLE_NAME, 8);
         assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 16);
         assertNoMemoryForInternalList();
 
@@ -156,8 +154,8 @@ class MerkleDbDataSourceMetricsTest {
 
         // reserved additional memory chunk for a value that didn't fit into the previous chunk
         assertMetricValue("ds_offheap_leavesIndexMb_" + TABLE_NAME, 16);
-        assertMetricValue("ds_offheap_longKeysIndexMb_" + TABLE_NAME, 16);
-        assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 32);
+        assertMetricValue("ds_offheap_objectKeyBucketsIndexMb_" + TABLE_NAME, 8);
+        assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 24);
         assertNoMemoryForInternalList();
 
         dataSource.saveRecords(
@@ -172,9 +170,8 @@ class MerkleDbDataSourceMetricsTest {
         // shrink the list by one chunk
         assertMetricValue("ds_offheap_leavesIndexMb_" + TABLE_NAME, 8);
 
-        // longKeyToPath list doesn't shrink
-        assertMetricValue("ds_offheap_longKeysIndexMb_" + TABLE_NAME, 16);
-        assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 24);
+        assertMetricValue("ds_offheap_objectKeyBucketsIndexMb_" + TABLE_NAME, 8);
+        assertMetricValue("ds_offheap_dataSourceMb_" + TABLE_NAME, 16);
         assertNoMemoryForInternalList();
     }
 
@@ -199,7 +196,6 @@ class MerkleDbDataSourceMetricsTest {
 
     private void assertNoMemoryForLeafAndKeyToPathLists() {
         assertMetricValue("ds_offheap_leavesIndexMb_" + TABLE_NAME, 0);
-        assertMetricValue("ds_offheap_longKeysIndexMb_" + TABLE_NAME, 0);
         assertMetricValue("ds_offheap_objectKeyBucketsIndexMb_" + TABLE_NAME, 0);
     }
 
@@ -210,7 +206,7 @@ class MerkleDbDataSourceMetricsTest {
                 Integer.valueOf(metric.get(Metric.ValueType.VALUE).toString()));
     }
 
-    public static MerkleDbDataSource<VirtualLongKey, ExampleByteArrayVirtualValue> createDataSource(
+    public static MerkleDbDataSource<VirtualKey, ExampleByteArrayVirtualValue> createDataSource(
             final Path testDirectory,
             final String name,
             final TestType testType,

@@ -49,7 +49,6 @@ import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.FeeCalculatorFactory;
 import com.hedera.node.app.spi.fees.FeeContext;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
@@ -68,7 +67,6 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
 
     private final Bytes metadata1 = Bytes.wrap("memo".getBytes());
     private final Bytes metadata2 = Bytes.wrap("memo2".getBytes());
-    private final Instant consensusNow = Instant.ofEpochSecond(1_234_567L);
     private SingleTransactionRecordBuilderImpl recordBuilder;
     private TokenMintHandler subject;
 
@@ -78,7 +76,7 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         refreshWritableStores();
         givenStoresAndConfig(handleContext);
         subject = new TokenMintHandler(new TokenSupplyChangeOpsValidator());
-        recordBuilder = new SingleTransactionRecordBuilderImpl(consensusNow);
+        recordBuilder = new SingleTransactionRecordBuilderImpl();
     }
 
     @Test
@@ -298,9 +296,9 @@ class TokenMintHandlerTest extends CryptoTokenHandlerTestBase {
         given(handleContext.body()).willReturn(txnBody);
         given(handleContext.consensusNow()).willReturn(Instant.ofEpochSecond(1_234_567L));
 
-        final var recordBuilders = mock(RecordBuilders.class);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        lenient().when(recordBuilders.getOrCreate(TokenMintRecordBuilder.class)).thenReturn(recordBuilder);
+        final var stack = mock(HandleContext.SavepointStack.class);
+        given(handleContext.savepointStack()).willReturn(stack);
+        lenient().when(stack.getBaseBuilder(TokenMintRecordBuilder.class)).thenReturn(recordBuilder);
 
         return txnBody;
     }

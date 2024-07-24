@@ -60,7 +60,6 @@ import com.hedera.node.app.service.contract.impl.records.ContractUpdateRecordBui
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fixtures.workflows.FakePreHandleContext;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.validation.AttributeValidator;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
@@ -123,7 +122,7 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
     private ContractUpdateRecordBuilder recordBuilder;
 
     @Mock
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
     private ContractUpdateHandler subject;
 
@@ -467,8 +466,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(configuration.getConfigData(StakingConfig.class)).thenReturn(stakingConfig);
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
-        when(context.recordBuilders()).thenReturn(recordBuilders);
-        when(recordBuilders.getOrCreate(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
+        when(context.savepointStack()).thenReturn(stack);
+        when(stack.getBaseBuilder(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
 
         subject.handle(context);
 
@@ -680,8 +679,8 @@ class ContractUpdateHandlerTest extends ContractHandlerTestBase {
         when(configuration.getConfigData(StakingConfig.class)).thenReturn(stakingConfig);
         when(stakingConfig.isEnabled()).thenReturn(true);
         when(contract.copyBuilder()).thenReturn(mock(Builder.class));
-        when(context.recordBuilders()).thenReturn(recordBuilders);
-        when(recordBuilders.getOrCreate(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
+        when(context.savepointStack()).thenReturn(stack);
+        when(stack.getBaseBuilder(ContractUpdateRecordBuilder.class)).thenReturn(recordBuilder);
 
         subject.handle(context);
 

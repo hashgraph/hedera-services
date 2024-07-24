@@ -163,11 +163,10 @@ public class SyncGossip implements ConnectionTracker, Gossip {
      * @param intakeQueueSizeSupplier       a supplier for the size of the event intake queue
      * @param swirldStateManager            manages the mutable state
      * @param latestCompleteState           holds the latest signed state that has enough signatures to be verifiable
-     * @param statusActionSubmitter         submits status actions
+     * @param statusActionSubmitter         for submitting updates to the platform status manager
      * @param loadReconnectState            a method that should be called when a state from reconnect is obtained
      * @param clearAllPipelinesForReconnect this method should be called to clear all pipelines prior to a reconnect
      * @param intakeEventCounter            keeps track of the number of events in the intake pipeline from each peer
-     * @param statusActionSubmitter         for submitting updates to the platform status manager
      */
     public SyncGossip(
             @NonNull final PlatformContext platformContext,
@@ -388,7 +387,8 @@ public class SyncGossip implements ConnectionTracker, Gossip {
                             new NegotiationProtocols(List.of(
                                     heartbeatProtocolFactory.build(otherId),
                                     reconnectProtocolFactory.build(otherId),
-                                    syncProtocolFactory.build(otherId)))))
+                                    syncProtocolFactory.build(otherId))),
+                            platformContext.getTime()))
                     .build());
         }
     }
