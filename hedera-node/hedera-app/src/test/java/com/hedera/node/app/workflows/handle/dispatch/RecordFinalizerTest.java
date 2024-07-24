@@ -42,7 +42,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
 import com.hedera.node.app.service.token.records.FinalizeContext;
 import com.hedera.node.app.spi.workflows.HandleContext;
@@ -66,9 +65,6 @@ public class RecordFinalizerTest {
 
     @Mock
     private FinalizeRecordHandler finalizeRecordHandler;
-
-    @Mock
-    CongestionMultipliers congestionMultipliers;
 
     @Mock
     private Dispatch dispatch;
@@ -108,7 +104,7 @@ public class RecordFinalizerTest {
 
     @BeforeEach
     void setUp() {
-        subject = new RecordFinalizer(finalizeRecordHandler, congestionMultipliers);
+        subject = new RecordFinalizer(finalizeRecordHandler);
 
         lenient().when(dispatch.txnInfo()).thenReturn(TXN_INFO);
         lenient().when(dispatch.recordBuilder()).thenReturn(recordBuilder);

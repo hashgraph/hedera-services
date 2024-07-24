@@ -24,7 +24,6 @@ import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.service.token.impl.handlers.FinalizeRecordHandler;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.workflows.handle.Dispatch;
@@ -44,19 +43,15 @@ import javax.inject.Singleton;
 @Singleton
 public class RecordFinalizer {
     private final FinalizeRecordHandler recordFinalizer;
-    private final CongestionMultipliers congestionMultipliers;
 
     /**
      * Creates a record finalizer with the given dependencies.
      *
      * @param recordFinalizer       the parent record finalizer
-     * @param congestionMultipliers
      */
     @Inject
-    public RecordFinalizer(
-            final FinalizeRecordHandler recordFinalizer, final CongestionMultipliers congestionMultipliers) {
+    public RecordFinalizer(final FinalizeRecordHandler recordFinalizer) {
         this.recordFinalizer = recordFinalizer;
-        this.congestionMultipliers = congestionMultipliers;
     }
 
     /**

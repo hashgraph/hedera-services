@@ -124,8 +124,4 @@ public class CongestionMultipliers {
         gasThrottleMultiplier.resetExpectations();
         utilizationScaledThrottleMultiplier.resetExpectations();
     }
-
-    public long utilizationScaledCurrentMultiplier() {
-        return utilizationScaledThrottleMultiplier.currentMultiplier();
-    }
 }

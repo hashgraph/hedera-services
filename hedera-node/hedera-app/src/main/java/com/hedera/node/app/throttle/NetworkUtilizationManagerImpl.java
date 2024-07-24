@@ -113,8 +113,4 @@ public class NetworkUtilizationManagerImpl implements NetworkUtilizationManager 
     public void resetUsageThrottlesTo(@NonNull final List<ThrottleUsageSnapshot> snapshots) {
         backendThrottle.resetUsageThrottlesTo(snapshots);
     }
-
-    public CongestionMultipliers getCongestionMultipliers() {
-        return congestionMultipliers;
-    }
 }

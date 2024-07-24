@@ -39,7 +39,6 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.fees.ExchangeRateManager;
 import com.hedera.node.app.fees.FeeManager;
-import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.records.BlockRecordManager;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.schedule.WritableScheduleStore;
@@ -120,7 +119,6 @@ public class HandleWorkflow {
     private final HederaRecordCache recordCache;
     private final ExchangeRateManager exchangeRateManager;
     private final PreHandleWorkflow preHandleWorkflow;
-    private final CongestionMultipliers congestionMultipliers;
 
     @Inject
     public HandleWorkflow(
@@ -146,8 +144,7 @@ public class HandleWorkflow {
             @NonNull final GenesisSetup genesisSetup,
             @NonNull final HederaRecordCache recordCache,
             @NonNull final ExchangeRateManager exchangeRateManager,
-            @NonNull final PreHandleWorkflow preHandleWorkflow,
-            @NonNull final CongestionMultipliers congestionMultipliers) {
+            @NonNull final PreHandleWorkflow preHandleWorkflow) {
         this.networkInfo = requireNonNull(networkInfo);
         this.nodeStakeUpdates = requireNonNull(nodeStakeUpdates);
         this.authorizer = requireNonNull(authorizer);
@@ -176,7 +173,6 @@ public class HandleWorkflow {
                 .getConfiguration()
                 .getConfigData(BlockStreamConfig.class)
                 .streamMode();
-        this.congestionMultipliers = congestionMultipliers;
     }
 
     /**

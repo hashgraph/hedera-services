@@ -223,19 +223,19 @@ public class IoBlockItemsBuilder
                 BlockItem.newBuilder().transaction(transaction()).build();
         blockItems.add(transactionBlockItem);
 
-        if (!transactionOutputBuilder.equals(TransactionOutput.newBuilder())) {
-            final var outputBlockItem = getTransactionOutputBlockItem();
-            blockItems.add(outputBlockItem);
+        final var resultBlockItem = getTransactionResultBlockItem();
+        blockItems.add(resultBlockItem);
+
+        final var output = getTransactionOutputBuilder().build();
+        if (output.transaction().kind() != TransactionOutput.TransactionOneOfType.UNSET) {
+            blockItems.add(BlockItem.newBuilder().transactionOutput(output).build());
         }
-        if (!transactionResultBuilder.equals(TransactionResult.newBuilder())) {
-            final var resultBlockItem = getTransactionResultBlockItem();
-            blockItems.add(resultBlockItem);
-        }
+
         if (!stateChanges.isEmpty()) {
             final var stateChangesBlockItem = BlockItem.newBuilder()
                     .stateChanges(StateChanges.newBuilder()
                             .cause(STATE_CHANGE_CAUSE_TRANSACTION)
-                            .consensusTimestamp(Timestamp.DEFAULT)
+                            .consensusTimestamp(asTimestamp(consensusNow))
                             .stateChanges(stateChanges)
                             .build())
                     .build();
@@ -256,7 +256,7 @@ public class IoBlockItemsBuilder
     }
 
     @NonNull
-    private BlockItem getTransactionOutputBlockItem() {
+    private TransactionOutput.Builder getTransactionOutputBuilder() {
         var function = HederaFunctionality.NONE;
         try {
             function = functionOf(transactionBody());
@@ -291,10 +291,7 @@ public class IoBlockItemsBuilder
                     .scheduledTransactionId(scheduledTransactionID)
                     .build());
         }
-        final var transactionOutputBlockItem = BlockItem.newBuilder()
-                .transactionOutput(transactionOutputBuilder.build())
-                .build();
-        return transactionOutputBlockItem;
+        return transactionOutputBuilder;
     }
 
     private List<TransactionSidecarRecord> getSideCars() {
@@ -693,9 +690,8 @@ public class IoBlockItemsBuilder
     @NonNull
     public IoBlockItemsBuilder topicRunningHashVersion(final long topicRunningHashVersion) {
         // TOD0: Need to confirm what the value should be
-        transactionOutputBuilder.submitMessage(SubmitMessageOutput.newBuilder()
-                .topicRunningHashVersion(RunningHashVersion.WITH_FULL_MESSAGE)
-                .build());
+        transactionOutputBuilder.submitMessage(
+                new SubmitMessageOutput(RunningHashVersion.WITH_MESSAGE_DIGEST_AND_PAYER));
         return this;
     }
 
