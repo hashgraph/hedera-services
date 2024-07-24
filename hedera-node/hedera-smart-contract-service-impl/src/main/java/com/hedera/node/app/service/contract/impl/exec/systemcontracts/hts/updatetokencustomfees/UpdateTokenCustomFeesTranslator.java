@@ -30,7 +30,6 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.Dispat
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCallAttempt;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator;
-import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
@@ -43,7 +42,7 @@ public class UpdateTokenCustomFeesTranslator extends AbstractCallTranslator<HtsC
     public static final Function UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION =
             new Function(UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_STRING, ReturnTypes.INT);
 
-    private UpdateTokenCustomFeesDecoder decoder;
+    private final UpdateTokenCustomFeesDecoder decoder;
 
     @Inject
     public UpdateTokenCustomFeesTranslator(UpdateTokenCustomFeesDecoder decoder) {
@@ -61,7 +60,6 @@ public class UpdateTokenCustomFeesTranslator extends AbstractCallTranslator<HtsC
     public static long gasRequirement(
             @NonNull final TransactionBody body,
             @NonNull final SystemContractGasCalculator systemContractGasCalculator,
-            @NonNull final HederaWorldUpdater.Enhancement enhancement,
             @NonNull final AccountID payerId) {
         return systemContractGasCalculator.gasRequirement(body, DispatchType.UPDATE_TOKEN_CUSTOM_FEES, payerId);
     }
