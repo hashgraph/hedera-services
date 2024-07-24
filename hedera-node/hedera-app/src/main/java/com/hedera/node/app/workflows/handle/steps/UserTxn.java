@@ -36,7 +36,7 @@ import com.hedera.node.app.signature.DefaultKeyVerifier;
 import com.hedera.node.app.spi.authorization.Authorizer;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
 import com.hedera.node.app.spi.records.RecordCache;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.store.ServiceApiFactory;
 import com.hedera.node.app.store.StoreFactoryImpl;
@@ -163,7 +163,7 @@ public record UserTxn(
             @NonNull final TransactionDispatcher dispatcher,
             @NonNull final NetworkUtilizationManager networkUtilizationManager,
             // @UserTxnScope
-            @NonNull final SingleTransactionStreamBuilder baseBuilder) {
+            @NonNull final StreamBuilder baseBuilder) {
         final var keyVerifier = new DefaultKeyVerifier(
                 txnInfo.signatureMap().sigPair().size(),
                 config.getConfigData(HederaConfig.class),
@@ -236,7 +236,7 @@ public record UserTxn(
      * Returns the base stream builder for this user transaction.
      * @return the base stream builder
      */
-    public SingleTransactionStreamBuilder baseBuilder() {
-        return stack.getBaseBuilder(SingleTransactionStreamBuilder.class);
+    public StreamBuilder baseBuilder() {
+        return stack.getBaseBuilder(StreamBuilder.class);
     }
 }

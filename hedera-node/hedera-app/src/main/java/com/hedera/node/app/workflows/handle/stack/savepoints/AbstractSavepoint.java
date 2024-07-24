@@ -22,8 +22,8 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.REVERTED_SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder.ReversingBehavior.REMOVABLE;
-import static com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REMOVABLE;
+import static com.hedera.node.app.spi.workflows.record.StreamBuilder.ReversingBehavior.REVERSIBLE;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -31,10 +31,10 @@ import com.hedera.node.app.blocks.impl.IoBlockItemsBuilder;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.state.WrappedHederaState;
 import com.hedera.node.app.workflows.handle.HandleWorkflow;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.BuilderSink;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import com.swirlds.state.HederaState;
@@ -112,8 +112,8 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
     }
 
     @Override
-    public SingleTransactionStreamBuilder createBuilder(
-            @NonNull final SingleTransactionStreamBuilder.ReversingBehavior reversingBehavior,
+    public StreamBuilder createBuilder(
+            @NonNull final StreamBuilder.ReversingBehavior reversingBehavior,
             @NonNull final HandleContext.TransactionCategory txnCategory,
             @NonNull final ExternalizedRecordCustomizer customizer,
             final boolean isBaseBuilder) {
@@ -123,7 +123,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
         // TODO - enable this switch when IoBlockItemsBuilder and PairedStreamBuilder are implemented
         final var builder =
                 switch (HandleWorkflow.STREAM_MODE) {
-                    case RECORDS -> new SingleTransactionRecordBuilderImpl(reversingBehavior, customizer, txnCategory);
+                    case RECORDS -> new RecordBuilderImpl(reversingBehavior, customizer, txnCategory);
                     case BLOCKS -> new IoBlockItemsBuilder(reversingBehavior, customizer, txnCategory);
                     case BOTH -> new PairedStreamBuilder(reversingBehavior, customizer, txnCategory);
                 };
@@ -142,7 +142,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
      */
     abstract void commitBuilders();
 
-    private void rollback(@NonNull final List<SingleTransactionStreamBuilder> builders) {
+    private void rollback(@NonNull final List<StreamBuilder> builders) {
         var iterator = builders.listIterator();
         while (iterator.hasNext()) {
             final var builder = iterator.next();

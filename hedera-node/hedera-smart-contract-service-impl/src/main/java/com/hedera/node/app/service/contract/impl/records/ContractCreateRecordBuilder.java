@@ -21,14 +21,14 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * Exposes the record customizations needed for a HAPI contract create transaction.
  */
-public interface ContractCreateRecordBuilder extends SingleTransactionStreamBuilder, ContractOperationRecordBuilder {
+public interface ContractCreateRecordBuilder extends StreamBuilder, ContractOperationRecordBuilder {
 
     /**
      * Tracks the final status of a top-level contract creation.

@@ -36,7 +36,7 @@ import com.hedera.hapi.streams.ContractStateChanges;
 import com.hedera.node.app.service.contract.impl.exec.CallOutcome;
 import com.hedera.node.app.service.contract.impl.records.ContractOperationRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -52,7 +52,7 @@ class ContractOperationRecordBuilderTest {
     void withGasFeeWorksAsExpected() {
         final var subject = new ContractOperationRecordBuilder() {
             @Override
-            public SingleTransactionStreamBuilder transaction(@NonNull Transaction transaction) {
+            public StreamBuilder transaction(@NonNull Transaction transaction) {
                 return this;
             }
 
@@ -77,22 +77,22 @@ class ContractOperationRecordBuilderTest {
             }
 
             @Override
-            public SingleTransactionStreamBuilder memo(@NonNull String memo) {
+            public StreamBuilder memo(@NonNull String memo) {
                 return this;
             }
 
             @Override
-            public SingleTransactionStreamBuilder transactionBytes(@NonNull Bytes transactionBytes) {
+            public StreamBuilder transactionBytes(@NonNull Bytes transactionBytes) {
                 return this;
             }
 
             @Override
-            public SingleTransactionStreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
+            public StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
                 return this;
             }
 
             @Override
-            public SingleTransactionStreamBuilder congestionMultiplier(final long congestionMultiplier) {
+            public StreamBuilder congestionMultiplier(final long congestionMultiplier) {
                 return this;
             }
 
@@ -172,7 +172,7 @@ class ContractOperationRecordBuilderTest {
             }
 
             @Override
-            public SingleTransactionStreamBuilder status(@NonNull ResponseCodeEnum status) {
+            public StreamBuilder status(@NonNull ResponseCodeEnum status) {
                 return this;
             }
 
@@ -190,12 +190,12 @@ class ContractOperationRecordBuilderTest {
             public void nullOutSideEffectFields() {}
 
             @Override
-            public SingleTransactionStreamBuilder syncBodyIdFromRecordId() {
+            public StreamBuilder syncBodyIdFromRecordId() {
                 return null;
             }
 
             @Override
-            public SingleTransactionStreamBuilder consensusTimestamp(@NotNull final Instant now) {
+            public StreamBuilder consensusTimestamp(@NotNull final Instant now) {
                 return null;
             }
 
@@ -205,12 +205,12 @@ class ContractOperationRecordBuilderTest {
             }
 
             @Override
-            public SingleTransactionStreamBuilder transactionID(@NotNull final TransactionID transactionID) {
+            public StreamBuilder transactionID(@NotNull final TransactionID transactionID) {
                 return null;
             }
 
             @Override
-            public SingleTransactionStreamBuilder parentConsensus(@NotNull final Instant parentConsensus) {
+            public StreamBuilder parentConsensus(@NotNull final Instant parentConsensus) {
                 return null;
             }
         };

@@ -89,7 +89,7 @@ import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.pbj.runtime.OneOf;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -110,7 +110,7 @@ import java.util.Set;
  * with a {@link TransactionResult} and, optionally, {@link TransactionOutput}.
  */
 public class IoBlockItemsBuilder
-        implements SingleTransactionStreamBuilder,
+        implements StreamBuilder,
                 ConsensusCreateTopicRecordBuilder,
                 ConsensusSubmitMessageRecordBuilder,
                 CreateFileRecordBuilder,
@@ -207,7 +207,7 @@ public class IoBlockItemsBuilder
     }
 
     @Override
-    public SingleTransactionStreamBuilder stateChanges(@NonNull List<StateChange> stateChanges) {
+    public StreamBuilder stateChanges(@NonNull List<StateChange> stateChanges) {
         this.stateChanges.addAll(stateChanges);
         return this;
     }
@@ -392,7 +392,7 @@ public class IoBlockItemsBuilder
         final var newTransactionID = transactionID;
         final var body =
                 inProgressBody().copyBuilder().transactionID(newTransactionID).build();
-        this.transaction = SingleTransactionStreamBuilder.transactionWith(body);
+        this.transaction = StreamBuilder.transactionWith(body);
         this.transactionBytes = transaction.signedTransactionBytes();
         return this;
     }

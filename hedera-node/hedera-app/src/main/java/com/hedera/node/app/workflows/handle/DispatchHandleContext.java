@@ -59,12 +59,12 @@ import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.PreCheckException;
 import com.hedera.node.app.spi.workflows.TransactionKeys;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import com.hedera.node.app.store.StoreFactoryImpl;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.node.app.workflows.dispatcher.TransactionDispatcher;
 import com.hedera.node.app.workflows.handle.dispatch.ChildDispatchFactory;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.SavepointStackImpl;
 import com.hedera.node.app.workflows.handle.validation.AttributeValidatorImpl;
 import com.hedera.node.app.workflows.handle.validation.ExpiryValidatorImpl;
@@ -374,7 +374,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
-                SingleTransactionStreamBuilder.ReversingBehavior.IRREVERSIBLE,
+                StreamBuilder.ReversingBehavior.IRREVERSIBLE,
                 true);
     }
 
@@ -392,7 +392,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayer,
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 TransactionCategory.PRECEDING,
-                SingleTransactionStreamBuilder.ReversingBehavior.REMOVABLE,
+                StreamBuilder.ReversingBehavior.REMOVABLE,
                 false);
     }
 
@@ -416,7 +416,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER,
                 childCategory,
-                SingleTransactionStreamBuilder.ReversingBehavior.REVERSIBLE,
+                StreamBuilder.ReversingBehavior.REVERSIBLE,
                 false);
     }
 
@@ -440,7 +440,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
                 childSyntheticPayerId,
                 customizer,
                 TransactionCategory.CHILD,
-                SingleTransactionStreamBuilder.ReversingBehavior.REMOVABLE,
+                StreamBuilder.ReversingBehavior.REMOVABLE,
                 false);
     }
 
@@ -469,7 +469,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final AccountID syntheticPayer,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final TransactionCategory category,
-            @NonNull final SingleTransactionRecordBuilderImpl.ReversingBehavior reversingBehavior,
+            @NonNull final RecordBuilderImpl.ReversingBehavior reversingBehavior,
             final boolean commitStack) {
         final var childDispatch = childDispatchFactory.createChildDispatch(
                 childTxBody,

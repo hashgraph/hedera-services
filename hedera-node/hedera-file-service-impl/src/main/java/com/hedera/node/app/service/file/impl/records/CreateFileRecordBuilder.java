@@ -17,13 +17,13 @@
 package com.hedera.node.app.service.file.impl.records;
 
 import com.hedera.hapi.node.base.FileID;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code RecordBuilder} specialization for tracking the side effects of a {@code CreateFile} transaction.
  */
-public interface CreateFileRecordBuilder extends SingleTransactionStreamBuilder {
+public interface CreateFileRecordBuilder extends StreamBuilder {
 
     /**
      * Tracks creation of a new file by {@link FileID}

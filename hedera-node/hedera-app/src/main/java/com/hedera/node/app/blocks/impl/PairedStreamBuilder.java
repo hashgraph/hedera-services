@@ -66,8 +66,8 @@ import com.hedera.node.app.service.token.records.TokenUpdateRecordBuilder;
 import com.hedera.node.app.service.util.impl.records.PrngRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
-import com.hedera.node.app.spi.workflows.record.SingleTransactionStreamBuilder;
-import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
+import com.hedera.node.app.spi.workflows.record.StreamBuilder;
+import com.hedera.node.app.workflows.handle.record.RecordBuilderImpl;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -76,12 +76,12 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A temporary implementation of {@link SingleTransactionStreamBuilder} that forwards all mutating calls to an
- * {@link IoBlockItemsBuilder} and a {@link SingleTransactionRecordBuilderImpl}.
+ * A temporary implementation of {@link StreamBuilder} that forwards all mutating calls to an
+ * {@link IoBlockItemsBuilder} and a {@link RecordBuilderImpl}.
  * <p>
  */
 public class PairedStreamBuilder
-        implements SingleTransactionStreamBuilder,
+        implements StreamBuilder,
                 ConsensusCreateTopicRecordBuilder,
                 ConsensusSubmitMessageRecordBuilder,
                 CreateFileRecordBuilder,
@@ -108,18 +108,18 @@ public class PairedStreamBuilder
                 CryptoUpdateRecordBuilder,
                 NodeCreateRecordBuilder {
     private final IoBlockItemsBuilder ioBlockItemsBuilder;
-    private final SingleTransactionRecordBuilderImpl recordBuilder;
+    private final RecordBuilderImpl recordBuilder;
 
     public PairedStreamBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final HandleContext.TransactionCategory category) {
-        recordBuilder = new SingleTransactionRecordBuilderImpl(reversingBehavior, customizer, category);
+        recordBuilder = new RecordBuilderImpl(reversingBehavior, customizer, category);
         ioBlockItemsBuilder = new IoBlockItemsBuilder(reversingBehavior, customizer, category);
     }
 
     @Override
-    public SingleTransactionStreamBuilder stateChanges(@NonNull List<StateChange> stateChanges) {
+    public StreamBuilder stateChanges(@NonNull List<StateChange> stateChanges) {
         ioBlockItemsBuilder.stateChanges(stateChanges);
         return this;
     }
@@ -128,7 +128,7 @@ public class PairedStreamBuilder
         return ioBlockItemsBuilder;
     }
 
-    public SingleTransactionRecordBuilderImpl recordBuilder() {
+    public RecordBuilderImpl recordBuilder() {
         return recordBuilder;
     }
 
@@ -198,14 +198,14 @@ public class PairedStreamBuilder
     }
 
     @Override
-    public SingleTransactionStreamBuilder syncBodyIdFromRecordId() {
+    public StreamBuilder syncBodyIdFromRecordId() {
         recordBuilder.syncBodyIdFromRecordId();
         ioBlockItemsBuilder.syncBodyIdFromRecordId();
         return this;
     }
 
     @Override
-    public SingleTransactionStreamBuilder consensusTimestamp(@NonNull final Instant now) {
+    public StreamBuilder consensusTimestamp(@NonNull final Instant now) {
         recordBuilder.consensusTimestamp(now);
         ioBlockItemsBuilder.consensusTimestamp(now);
         return this;
@@ -217,35 +217,35 @@ public class PairedStreamBuilder
     }
 
     @Override
-    public SingleTransactionStreamBuilder transactionID(@NonNull final TransactionID transactionID) {
+    public StreamBuilder transactionID(@NonNull final TransactionID transactionID) {
         recordBuilder.transactionID(transactionID);
         ioBlockItemsBuilder.transactionID(transactionID);
         return this;
     }
 
     @Override
-    public SingleTransactionStreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
+    public StreamBuilder parentConsensus(@NonNull final Instant parentConsensus) {
         recordBuilder.parentConsensus(parentConsensus);
         ioBlockItemsBuilder.parentConsensus(parentConsensus);
         return this;
     }
 
     @Override
-    public SingleTransactionStreamBuilder transactionBytes(@NonNull final Bytes transactionBytes) {
+    public StreamBuilder transactionBytes(@NonNull final Bytes transactionBytes) {
         recordBuilder.transactionBytes(transactionBytes);
         ioBlockItemsBuilder.transactionBytes(transactionBytes);
         return this;
     }
 
     @Override
-    public SingleTransactionStreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
+    public StreamBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate) {
         recordBuilder.exchangeRate(exchangeRate);
         ioBlockItemsBuilder.exchangeRate(exchangeRate);
         return this;
     }
 
     @Override
-    public SingleTransactionStreamBuilder congestionMultiplier(final long congestionMultiplier) {
+    public StreamBuilder congestionMultiplier(final long congestionMultiplier) {
         return null;
     }
 
