@@ -505,7 +505,7 @@ public class TokenHandlers {
     public TokenRejectHandler tokenRejectHandler() {
         return tokenRejectHandler;
     }
-    
+
     /**
      * Gets the tokenClaimAirdropHandler.
      * @return the tokenClaimAirdropHandler
