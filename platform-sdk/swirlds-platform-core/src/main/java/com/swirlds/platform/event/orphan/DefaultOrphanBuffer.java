@@ -51,7 +51,8 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
     /**
      * Avoid the creation of lambdas for Map.computeIfAbsent() by reusing this lambda.
      */
-    private static final Function<EventDescriptorWrapper, List<OrphanedEvent>> EMPTY_LIST = ignored -> new ArrayList<>();
+    private static final Function<EventDescriptorWrapper, List<OrphanedEvent>> EMPTY_LIST =
+            ignored -> new ArrayList<>();
 
     /**
      * The current event window.
@@ -105,11 +106,15 @@ public class DefaultOrphanBuffer implements OrphanBuffer {
                 .getAncientMode();
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
-            eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
+            missingParentMap = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
+            eventsWithParents = new StandardSequenceSet<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
         } else {
-            missingParentMap = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
-            eventsWithParents = new StandardSequenceSet<>(0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
+            missingParentMap = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
+            eventsWithParents = new StandardSequenceSet<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
         }
     }
 

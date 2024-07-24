@@ -112,9 +112,11 @@ public class StandardEventDeduplicator implements EventDeduplicator {
                 .getAncientMode();
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            observedEvents = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
+            observedEvents = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
         } else {
-            observedEvents = new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
+            observedEvents = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
         }
     }
 

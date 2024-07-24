@@ -70,8 +70,8 @@ public class SimpleLinker {
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
             throw new UnsupportedOperationException("not yet supported");
         } else {
-            this.parentDescriptorMap =
-                    new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
+            this.parentDescriptorMap = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().generation());
         }
     }
 
@@ -109,11 +109,13 @@ public class SimpleLinker {
             return null;
         }
 
-        if (candidateParent.getGeneration() != parentDescriptor.eventDescriptor().generation()) {
+        if (candidateParent.getGeneration()
+                != parentDescriptor.eventDescriptor().generation()) {
             return null;
         }
 
-        if (candidateParent.getBirthRound() != parentDescriptor.eventDescriptor().birthRound()) {
+        if (candidateParent.getBirthRound()
+                != parentDescriptor.eventDescriptor().birthRound()) {
             return null;
         }
 

@@ -72,7 +72,8 @@ class TipsetWeightCalculatorTests {
      */
     private EventDescriptorWrapper newEventDescriptor(
             @NonNull final Hash hash, @NonNull final NodeId creator, final long generation) {
-        return new EventDescriptorWrapper(new EventDescriptor(hash.getBytes(), creator.id(), generation, EventConstants.BIRTH_ROUND_UNDEFINED));
+        return new EventDescriptorWrapper(
+                new EventDescriptor(hash.getBytes(), creator.id(), generation, EventConstants.BIRTH_ROUND_UNDEFINED));
     }
 
     @Test

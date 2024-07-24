@@ -112,11 +112,11 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
                 .getAncientMode();
         this.eventWindow = EventWindow.getGenesisEventWindow(ancientMode);
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            this.parentDescriptorMap =
-                    new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
+            this.parentDescriptorMap = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
         } else {
-            this.parentDescriptorMap =
-                    new StandardSequenceMap<>(0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
+            this.parentDescriptorMap = new StandardSequenceMap<>(
+                    0, INITIAL_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
         }
     }
 
@@ -308,12 +308,14 @@ abstract class AbstractInOrderLinker implements InOrderLinker {
             return null;
         }
 
-        if (candidateParent.getGeneration() != parentDescriptor.eventDescriptor().generation()) {
+        if (candidateParent.getGeneration()
+                != parentDescriptor.eventDescriptor().generation()) {
             parentHasIncorrectGeneration(child, parentDescriptor, candidateParent);
             return null;
         }
 
-        if (candidateParent.getBirthRound() != parentDescriptor.eventDescriptor().generation()) {
+        if (candidateParent.getBirthRound()
+                != parentDescriptor.eventDescriptor().generation()) {
             parentHasIncorrectBirthRound(child, parentDescriptor, candidateParent);
             return null;
         }

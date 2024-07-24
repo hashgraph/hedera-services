@@ -52,7 +52,9 @@ class ChildlessEventTrackerTests {
 
         for (final EventDescriptorWrapper event : events) {
             final EventDescriptorWrapper existingEvent = uniqueEvents.get(event.creator());
-            if (existingEvent == null || existingEvent.eventDescriptor().generation() < event.eventDescriptor().generation()) {
+            if (existingEvent == null
+                    || existingEvent.eventDescriptor().generation()
+                            < event.eventDescriptor().generation()) {
                 uniqueEvents.put(event.creator(), event);
             }
         }
@@ -84,7 +86,8 @@ class ChildlessEventTrackerTests {
         final List<EventDescriptorWrapper> batch2 = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             final NodeId nonExistentParentId = new NodeId(i + 100);
-            final EventDescriptorWrapper nonExistentParent = newEventDescriptor(randomHash(random), nonExistentParentId, 0);
+            final EventDescriptorWrapper nonExistentParent =
+                    newEventDescriptor(randomHash(random), nonExistentParentId, 0);
             final int oddParentId = (i * 2 + 1) % 10;
             final EventDescriptorWrapper oddParent = batch1.get(oddParentId);
 

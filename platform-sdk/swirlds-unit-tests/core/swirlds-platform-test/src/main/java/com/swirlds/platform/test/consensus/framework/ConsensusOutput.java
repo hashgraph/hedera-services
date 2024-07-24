@@ -60,7 +60,8 @@ public class ConsensusOutput implements Clearable {
 
         // FUTURE WORK: birth round compatibility
         nonAncientEvents = new StandardSequenceSet<>(0, 1024, true, PlatformEvent::getGeneration);
-        nonAncientConsensusEvents = new StandardSequenceSet<>(0, 1024, true, ed -> ed.eventDescriptor().generation());
+        nonAncientConsensusEvents = new StandardSequenceSet<>(
+                0, 1024, true, ed -> ed.eventDescriptor().generation());
     }
 
     public void eventAdded(@NonNull final PlatformEvent event) {

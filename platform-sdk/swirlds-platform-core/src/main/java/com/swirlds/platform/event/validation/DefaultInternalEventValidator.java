@@ -263,7 +263,8 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
 
         long maxParentGeneration = EventConstants.GENERATION_UNDEFINED;
         for (final EventDescriptorWrapper parent : event.getAllParents()) {
-            maxParentGeneration = Math.max(maxParentGeneration, parent.eventDescriptor().generation());
+            maxParentGeneration =
+                    Math.max(maxParentGeneration, parent.eventDescriptor().generation());
         }
 
         if (eventGeneration != maxParentGeneration + 1) {
@@ -295,7 +296,8 @@ public class DefaultInternalEventValidator implements InternalEventValidator {
 
         long maxParentBirthRound = ROUND_NEGATIVE_INFINITY;
         for (final EventDescriptorWrapper parent : event.getAllParents()) {
-            maxParentBirthRound = Math.max(maxParentBirthRound, parent.eventDescriptor().birthRound());
+            maxParentBirthRound =
+                    Math.max(maxParentBirthRound, parent.eventDescriptor().birthRound());
         }
 
         if (eventBirthRound < maxParentBirthRound) {

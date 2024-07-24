@@ -46,12 +46,15 @@ public class ChildlessEventTracker {
      * @param eventDescriptorWrapper the event to add
      * @param parents         the parents of the event being added
      */
-    public void addEvent(@NonNull final EventDescriptorWrapper eventDescriptorWrapper, @NonNull final List<EventDescriptorWrapper> parents) {
+    public void addEvent(
+            @NonNull final EventDescriptorWrapper eventDescriptorWrapper,
+            @NonNull final List<EventDescriptorWrapper> parents) {
         Objects.requireNonNull(eventDescriptorWrapper);
 
         final EventDescriptorWrapper existingEvent = eventsByCreator.get(eventDescriptorWrapper.creator());
         if (existingEvent != null) {
-            if (existingEvent.eventDescriptor().generation() >= eventDescriptorWrapper.eventDescriptor().generation()) {
+            if (existingEvent.eventDescriptor().generation()
+                    >= eventDescriptorWrapper.eventDescriptor().generation()) {
                 // Only add a new event if it has the highest generation of all events observed so far.
                 return;
             } else {

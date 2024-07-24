@@ -80,9 +80,11 @@ public class TipsetTracker {
         this.latestGenerations = new Tipset(addressBook);
 
         if (ancientMode == AncientMode.BIRTH_ROUND_THRESHOLD) {
-            tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, ed -> ed.eventDescriptor().birthRound());
+            tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, ed -> ed.eventDescriptor()
+                    .birthRound());
         } else {
-            tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, ed -> ed.eventDescriptor().generation());
+            tipsets = new StandardSequenceMap<>(0, INITIAL_TIPSET_MAP_CAPACITY, true, ed -> ed.eventDescriptor()
+                    .generation());
         }
 
         ancientEventLogger = new RateLimitedLogger(logger, time, Duration.ofMinutes(1));
@@ -120,7 +122,8 @@ public class TipsetTracker {
      */
     @NonNull
     public Tipset addEvent(
-            @NonNull final EventDescriptorWrapper eventDescriptorWrapper, @NonNull final List<EventDescriptorWrapper> parents) {
+            @NonNull final EventDescriptorWrapper eventDescriptorWrapper,
+            @NonNull final List<EventDescriptorWrapper> parents) {
 
         if (eventWindow.isAncient(eventDescriptorWrapper)) {
             // Note: although we don't immediately return from this method, the tipsets.put()
@@ -144,14 +147,21 @@ public class TipsetTracker {
 
         final Tipset eventTipset;
         if (parentTipsets.isEmpty()) {
-            eventTipset =
-                    new Tipset(addressBook).advance(eventDescriptorWrapper.creator(), eventDescriptorWrapper.eventDescriptor().generation());
+            eventTipset = new Tipset(addressBook)
+                    .advance(
+                            eventDescriptorWrapper.creator(),
+                            eventDescriptorWrapper.eventDescriptor().generation());
         } else {
-            eventTipset = merge(parentTipsets).advance(eventDescriptorWrapper.creator(), eventDescriptorWrapper.eventDescriptor().generation());
+            eventTipset = merge(parentTipsets)
+                    .advance(
+                            eventDescriptorWrapper.creator(),
+                            eventDescriptorWrapper.eventDescriptor().generation());
         }
 
         tipsets.put(eventDescriptorWrapper, eventTipset);
-        latestGenerations = latestGenerations.advance(eventDescriptorWrapper.creator(), eventDescriptorWrapper.eventDescriptor().generation());
+        latestGenerations = latestGenerations.advance(
+                eventDescriptorWrapper.creator(),
+                eventDescriptorWrapper.eventDescriptor().generation());
 
         return eventTipset;
     }

@@ -215,7 +215,8 @@ public class TipsetWeightCalculator {
      * @param parents the proposed parents of an event
      * @return the advancement weight we would get by creating an event with the given parents
      */
-    public TipsetAdvancementWeight getTheoreticalAdvancementWeight(@NonNull final List<EventDescriptorWrapper> parents) {
+    public TipsetAdvancementWeight getTheoreticalAdvancementWeight(
+            @NonNull final List<EventDescriptorWrapper> parents) {
         if (parents.isEmpty()) {
             return ZERO_ADVANCEMENT_WEIGHT;
         }

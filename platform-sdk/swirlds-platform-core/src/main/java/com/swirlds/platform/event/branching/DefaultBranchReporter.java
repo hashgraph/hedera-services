@@ -125,7 +125,8 @@ public class DefaultBranchReporter implements BranchReporter {
         final NodeId creator = event.getCreatorId();
         nodeLoggers.get(creator).error(EXCEPTION.getMarker(), "Node {} is branching", creator);
 
-        final EventDescriptorWrapper previousBranchingEvent = mostRecentBranchingEvents.put(creator, event.getDescriptor());
+        final EventDescriptorWrapper previousBranchingEvent =
+                mostRecentBranchingEvents.put(creator, event.getDescriptor());
 
         if (previousBranchingEvent == null) {
             // This node is now branching but wasn't previously.
