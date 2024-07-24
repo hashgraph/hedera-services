@@ -2,13 +2,6 @@
 
 ---
 
-TDOD: Add Ledger ID to the vote transaction.
-TODO: Create re-generation of the ledger ID in the same network, queue of ledger ids by round with optional signature.
-TODO: Create a way to export and import network settings.
-TODO: Auto generate the `tssEncryptionKey`
-
-TODO: Vote vector is on sequence order not share index order.
-
 ## Summary
 
 This proposal is for the integration of a threshold signature scheme into the consensus nodes to create a
@@ -166,11 +159,8 @@ The TSS-Ledger-ID proposal modifies the address book and roster lifecycle presen
    `active roster` and remain the candidate roster. The platform will continue to attempt to key the candidate
    roster after software upgrade.
 4. The app must detect whether or not the `candidate roster` became the `active roster`.
-    * If the `candidate roster` becomes the `active roster`, the app rotates the CAB to the AAB.
-    * If the `candidate roster` does not become the `active roster`, the CAB remains the CAB and the old AAB remains
-      the AAB after the software upgrade.
 
-![TSS FAB, CAB, AAB Lifecycle](./TSS-FAB-CAB-AAB-Lifecycle.drawio.svg)
+![TSS Roster Lifecycle](./TSS-Roster-Lifecycle.drawio.svg)
 
 #### TSS Algorithm
 
@@ -411,8 +401,6 @@ The following are new system transactions needed to key rosters and generate led
 1. `TssMessageTransaction` - Used to send a TssMessage to the network for a candidate roster.
 2. `TssVoteTransaction` - Used to vote on the validity of TssMessages for a candidate roster.
 
-TODO: Determine if these signatures should be from the RSA key or the TSS Key
-
 ##### TssMessage System Transaction
 
 ```protobuf
@@ -450,8 +438,8 @@ message TssMessageTransaction {
 
   /**
    * The signature is produced by the node signing the tuple (source_roster_hash, target_roster_hash, share_index, 
-   * tss_message) using its private gossip signing key.  The signature is verified by other nodes using the public 
-   * signing key of the node sending this transaction. 
+   * tss_message) using its private `tssEncryptionKey`.  The signature is verified by other nodes using the public 
+   * key of the `tssEncryptionKey` of the node sending this transaction. 
    */
   bytes signature = 6;
 }
@@ -480,28 +468,33 @@ message TssVoteTransaction {
    */
   bytes target_roster_hash = 3;
 
-  /*
+  /**
    * The ledger id that was computed from the TssMessages for the target roster. 
    */
   bytes ledger_id = 4;
 
+  /** 
+   * The signature produced by the node using its RSA signing key to sign the ledger_id.  This signature is used to 
+   * establish a chain of trust in the ledger id.
+   */
+  bytes node_signature = 5;
+
   /**
-   * The tss_vote is a bit vector where the index position of each bit corresponds to a share index and tss message.  
-   * The least significant bit of byte[0] corresponds to share index 0 and the most significant bit of byte[0] 
-   * corresponds  to share index 7.  The least significant bit of byte[1] corresponds to share index 8 and the most 
-   * significant bit of byte[1] corresponds to share index 15, and so on.  If a bit is set to 1, then the TssMessage 
-   * for the corresponding share index was received as one of the first Threshold number of valid TssMessages in 
-   * consensus order.  If a bit is set to 0, then the TssMessage for the corresponding Share index was either 
-   * invalid, was not one of the first Threshold number of valid TssMessages in consensus order, or was not received 
-   * at all by the time the vote was cast. If there is no corresponding share index for a bit, then the bit is set 
-   * to 0. If the sum of bits is greater than the threshold in the source roster, then the vote is a yes vote.  
+   * The tss_vote is a bit vector where the index position of each bit corresponds to the sequence number of a 
+   * `TssMessageTransaction`. The least significant bit of byte[0] corresponds to sequence number 0 and the most 
+   * significant bit of byte[0] corresponds to sequence number 7.  The least significant bit of byte[1] corresponds to 
+   * sequence number 8 and the most significant bit of byte[1] corresponds to the sequence number 15, and so on.   
+   * If a bit is set to 1, then the TssMessage for the corresponding TssMessageTransaction sequence number was 
+   * received as one of the first Threshold number of valid TssMessages in consensus order.  If a bit is set to 0, 
+   * then the TssMessage was invalid or there was no TssMessageTransaction with a sequence number corresponding to 
+   * the bit index.  
    */
   bytes tss_vote = 5;
 
   /**
-   * The signature is produced by the node signing the tuple (source_roster_hash, target_roster_hash, 
-   * ledger_id, tss_vote) using its private gossip signing key.  The signature is verified by other nodes using the 
-   * public signing key of the node sending this transaction.
+   * The signature is produced by the node signing the tuple (source_roster_hash, target_roster_hash, ledger_id, 
+   * node_signature, tss_vote) using its private `tssEncryptionKey`.  The signature is verified by other nodes using 
+   * the public key of the `tssEncryptionKey` of the node sending this transaction.
    */
   bytes signature = 6;
 }
@@ -534,14 +527,20 @@ message LedgerId {
   bytes ledger_id = 1;
 
   /**
-   * The signature of the previous ledger private key on the new ledger id.  May be null. 
-   */
-  bytes signature = 2;
-
-  /**
    * The round number when the new ledger id becomes active.  Must not be null. 
    */
-  uint64 round = 3;
+  uint64 round = 2;
+
+  /**
+   * The signature of the previous ledger private key on the new ledger id.  May be null. 
+   */
+  bytes ledger_signature = 3;
+
+  /**
+   * A map from node ids to the node signatures on the ledger id.  The node signatures are produced by signing the 
+   * ledger id with the node's RSA private key.
+   */
+  map<uint64, bytes> node_signatures = 4;
 }
 ```
 
@@ -655,8 +654,6 @@ This release contains all the state data structures needed to store the public `
 code needed to support storing and retrieving the private `tssEncryptionKey` on disk and managing the `tssEncryptionKey`
 life cycle, including key rotation.
 
-TODO:  Does the below survive after the chatter meeting with Leemon?
-
 The release supporting the addition of the `tssEncryptionKey` to the roster also provides modified HAPI
 transactions for updating the address book with a node's `tssEncryptionKey`. Until the next software upgrade, only
 the candidate roster will have the `tssEncryptionKey` possibly set in roster entries.
@@ -678,8 +675,6 @@ This release must be at least 1 release after the `tssEncryptionKey` release.
 
 The following startup sequence occurs: (This sequence should work for this release and all subsequent releases
 unless the startup sequence is modified by subsequent releases.)
-
-TODO: does the platform need to read the tssEncryptionKey from disk and not involve the app?
 
 1. The app reads the state and cryptography from disk (including support for reading the private `tssEncryptionKey`)
 2. The app hands the state and private keys to the platform.
@@ -730,6 +725,7 @@ Responsibilities:
 1. At node startup
     - read all rosters, `TssMessageTransactions`, and `TssVoteTransactions` from the state.
     - If a candidate roster exists and has sufficient votes to be adopted, rotate the rosters.
+        - If the Ledger ID in the votes is new, add a new ledger id entry into the history in the state.
     - send the active roster to the `TssMessageCreator` and `TssMessageValidator`.
     - If it exists, send the candidate roster to the `TssMessageCreator` and `TssMessageValidator`.
     - send all `TssMessageTransactions` to the `TssMessageValidator`.
@@ -746,9 +742,11 @@ Responsibilities:
         - don’t insert multiple messages for the same share index
     - if successfully inserted into the `TssMessageMap`, send the `TssMessageTransaction` to the `TssMessageValidator`.
 3. Handle `TssVoteTransaction` system transactions
-    - Verify the signature on the `TssVoteTransaction` is valid.
+    - If a threshold number of votes (totaling at least 1/3 of weight), all with the same vote byte array, have
+      already been received for the candidate roster, discard the `TssVoteTransaction`.
+    - Otherwise, Verify the signature on the `TssVoteTransaction` is valid.
     - insert into the `TssVoteMap` if it is legal to do so.
-        - don’t insert multiple votes from the same node.
+        - don’t insert multiple votes from the same node, discard it if it is redundant.
     - Send the `TssVoteTransaction` to the TSS Message Validator.
 4. At end of round handling
     - Detect if there is a new candidate roster set in the state.
@@ -817,7 +815,8 @@ Internal Elements:
 3. Map<RosterHash, Roster> rosters
 4. Map<RosterHash, List<TssMessageTransaction>> tssMessages
 5. Map<RosterHash, List<TssVoteTransaction>> tssVotes
-6. voting closed flag
+6. Set<RosterHash> votingClosed
+7. private RSA signing key (constructor argument)
 
 Inputs:
 
@@ -839,7 +838,7 @@ Input Invariants
 2. If the new active roster == the candidate roster
     1. clear the candidate roster hash
     2. clear the map data for the previous active roster.
-    3. set the voting closed flag to false.
+    3. remove the previous active roster hash from the voting closed set.
 3. If a previous active roster existed and the candidate roster is different from the new active roster, log an error.
 4. Set the new active roster.
 
@@ -850,29 +849,29 @@ Input Invariants
 3. Set the internal candidate roster.
 4. If a previous candidate roster existed
     1. clear the associated `TssMessageTransaction` and `TssVoteTransaction` data.
-    2. set the voting closed flag to false.
+    2. remove the previous candidate roster hash from the voting closed set.
 
 `On TssMessageTransaction`:
 
 1. If the voting is closed, do nothing.
 2. If a `TssVoteTransaction` exists for this node, do nothing.
 3. If a TSS Message already exists for the share index and target roster, do nothing.
-4. `ValidateTssMessage` and if valid, add it to the list of TssMessageTransactions for the target roster.
-5. If there are (source/active roster) threshold number of valid TssMessageTransactions for the target roster, send
-   the valid TssMessageTransactions to the TSS Key Manager.
+4. Validate the TssMessage and if valid, add it to the list of TssMessageTransactions for the target roster.
+5. Update the sequence number bit in the vote vector with the results of validation for the TssMessageTransaction.
+6. If there are (active roster) threshold number of valid TssMessageTransactions for the target roster, send
+   the valid TssMessageTransactions transcript to the TSS Key Manager
 
 `On TssVoteTransaction`:
 
 1. If voting is closed or the vote is a duplicate of an existing vote, do nothing.
 2. Add the vote to the total and check if the threshold is met.
-3. If the threshold is met, send the voting closed notification to the TSS Message Creator.
-4. Send the List of TssMessageTransactions indicated in a yes vote to the TSS Key Manager.
+3. If the threshold is met, add the roster hash to the voting closed set.
 
 `On PublicSharesAndLedgerId`:
 
 1. If the public shares and ledger id are for the candidate roster,
-    1. set the voting closed flag to true.
-    2.
+    1. Sign the ledger ID with the node's private signing key.
+    2. send a `TssVoteTransaction` with the ledger id and the vote vector.
 
 ##### Validate TSS Message List
 
