@@ -224,7 +224,6 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                     runningHashManager.nextResult(serializedItem);
                 }
                 writer.writeItem(serializedItem);
-                log.info("Wrote item of kind {} to block {}", kind, blockNumber);
             }
             return null;
         });
@@ -279,7 +278,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             nMinus3HashFuture = completedFuture(n < 4 ? null : hashes.toByteArray(0, HASH_SIZE));
             nMinus2HashFuture = completedFuture(n < 3 ? null : hashes.toByteArray((n - 3) * HASH_SIZE, HASH_SIZE));
             nMinus1HashFuture = completedFuture(n < 2 ? null : hashes.toByteArray((n - 2) * HASH_SIZE, HASH_SIZE));
-            hashFuture = completedFuture(n < 1 ? null : hashes.toByteArray((n - 1) * HASH_SIZE, HASH_SIZE));
+            hashFuture =
+                    completedFuture(n < 1 ? new byte[HASH_SIZE] : hashes.toByteArray((n - 1) * HASH_SIZE, HASH_SIZE));
         }
 
         /**
