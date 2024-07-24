@@ -51,7 +51,7 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     }
 
     @Override
-    public void startBlock(long blockNumber) {
+    public void openBlock(long blockNumber) {
         if (state != GrpcBlockItemWriter.State.UNINITIALIZED)
             throw new IllegalStateException("Cannot initialize a GrpcBlockItemWriter twice");
 
@@ -109,7 +109,7 @@ public class GrpcBlockItemWriter implements BlockItemWriter {
     }
 
     @Override
-    public void closeStream() {
+    public void closeBlock() {
         requestObserver.onCompleted();
         this.state = GrpcBlockItemWriter.State.CLOSED;
     }

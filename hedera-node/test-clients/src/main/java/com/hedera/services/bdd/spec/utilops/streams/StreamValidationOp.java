@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.spec.utilops.streams;
 
-import static com.hedera.services.bdd.junit.hedera.ExternalPath.STREAMS_DIR;
+import static com.hedera.services.bdd.junit.hedera.ExternalPath.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.support.RecordStreamAccess.RECORD_STREAM_ACCESS;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoTransfer;
 import static com.hedera.services.bdd.spec.utilops.CustomSpecAssert.allRunFor;
@@ -92,7 +92,7 @@ public class StreamValidationOp extends UtilOp {
     private static Optional<RecordStreamAccess.Data> readMaybeStreamDataFor(@NonNull final HapiSpec spec) {
         RecordStreamAccess.Data data = null;
         final var streamLocs = spec.getNetworkNodes().stream()
-                .map(node -> node.getExternalPath(STREAMS_DIR))
+                .map(node -> node.getExternalPath(RECORD_STREAMS_DIR))
                 .map(Path::toAbsolutePath)
                 .map(Object::toString)
                 .toList();

@@ -37,6 +37,7 @@ import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.blocks.BlockStreamService;
 import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.node.app.records.impl.BlockRecordInfoUtils;
+import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.node.config.data.BlockRecordStreamConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -55,9 +56,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 @Singleton
 public class BlockStreamManagerImpl implements BlockStreamManager {
+    private static final Logger log = LogManager.getLogger(BlockStreamManagerImpl.class);
+
     private static final int CHUNK_SIZE = 8;
     private static final CompletableFuture<Bytes> MOCK_STATE_ROOT_HASH_FUTURE =
             completedFuture(Bytes.wrap(new byte[48]));
@@ -107,6 +112,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void startRound(@NonNull final Round round, @NonNull final HederaState state) {
+        pendingItems = new ArrayList<>();
         blockTimestamp = round.getConsensusTimestamp();
         var blockStreamInfo = state.getReadableStates(BlockStreamService.NAME)
                 .<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY)
@@ -128,6 +134,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                         .softwareVersion(nodeVersion)
                         .hapiProtoVersion(hapiVersion))
                 .build());
+        writer.openBlock(blockNumber);
     }
 
     @Override
@@ -143,14 +150,16 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         final var blockHash = Bytes.wrap(combine(
                 combine(previousBlockHash.toByteArray(), inputRootHash.toByteArray()),
                 combine(outputRootHash.toByteArray(), stateRootHash.toByteArray())));
-        final var blockStreamInfoState =
-                state.getWritableStates(BlockStreamService.NAME).<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
+        final var writableState = state.getWritableStates(BlockStreamService.NAME);
+        final var blockStreamInfoState = writableState.<BlockStreamInfo>getSingleton(BLOCK_STREAM_INFO_KEY);
         blockStreamInfoState.put(new BlockStreamInfo(
                 blockNumber,
                 blockHash,
                 blockTimestamp(),
                 runningHashManager.latestHashes(),
                 blockHashManager.hashesAfterLatest(blockHash)));
+        ((CommittableWritableStates) writableState).commit();
+        writer.closeBlock();
     }
 
     @Override
@@ -163,7 +172,7 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
 
     @Override
     public void closeStream() {
-        writer.closeStream();
+        writer.closeBlock();
     }
 
     @Override
@@ -191,8 +200,8 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
         final var scheduledWork = pendingItems;
         final var pendingSerialization = CompletableFuture.supplyAsync(
                 () -> {
-                    final List<Bytes> serializedItems = new ArrayList<>(pendingItems.size());
-                    for (final var item : pendingItems) {
+                    final List<Bytes> serializedItems = new ArrayList<>(scheduledWork.size());
+                    for (final var item : scheduledWork) {
                         serializedItems.add(BlockItem.PROTOBUF.toBytes(item));
                     }
                     return serializedItems;
@@ -205,17 +214,17 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
                 final var kind = item.items().kind();
                 switch (kind) {
                     case START_EVENT, TRANSACTION, SYSTEM_TRANSACTION -> inputTreeHasher.addLeaf(serializedItem);
-                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> {
-                        outputTreeHasher.addLeaf(serializedItem);
-                        if (kind == BlockItem.ItemsOneOfType.TRANSACTION_RESULT) {
-                            runningHashManager.nextResult(serializedItems.get(i));
-                        }
-                    }
+                    case TRANSACTION_RESULT, TRANSACTION_OUTPUT, STATE_CHANGES -> outputTreeHasher.addLeaf(
+                            serializedItem);
                     default -> {
-                        // No-op
+                        // Other items are not part of the input/output trees
                     }
                 }
+                if (kind == BlockItem.ItemsOneOfType.TRANSACTION_RESULT) {
+                    runningHashManager.nextResult(serializedItem);
+                }
                 writer.writeItem(serializedItem);
+                log.info("Wrote item of kind {} to block {}", kind, blockNumber);
             }
             return null;
         });
@@ -268,9 +277,9 @@ public class BlockStreamManagerImpl implements BlockStreamManager {
             final var hashes = blockStreamInfo == null ? Bytes.EMPTY : blockStreamInfo.trailingBlockHashes();
             final var n = (int) (hashes.length() / HASH_SIZE);
             nMinus3HashFuture = completedFuture(n < 4 ? null : hashes.toByteArray(0, HASH_SIZE));
-            nMinus2HashFuture = completedFuture(n < 3 ? null : hashes.toByteArray(HASH_SIZE, HASH_SIZE));
-            nMinus1HashFuture = completedFuture(n < 2 ? null : hashes.toByteArray(2 * HASH_SIZE, HASH_SIZE));
-            hashFuture = completedFuture(n < 1 ? null : hashes.toByteArray(3 * HASH_SIZE, HASH_SIZE));
+            nMinus2HashFuture = completedFuture(n < 3 ? null : hashes.toByteArray((n - 3) * HASH_SIZE, HASH_SIZE));
+            nMinus1HashFuture = completedFuture(n < 2 ? null : hashes.toByteArray((n - 2) * HASH_SIZE, HASH_SIZE));
+            hashFuture = completedFuture(n < 1 ? null : hashes.toByteArray((n - 1) * HASH_SIZE, HASH_SIZE));
         }
 
         /**

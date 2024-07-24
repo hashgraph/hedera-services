@@ -120,6 +120,7 @@ public abstract class AbstractSavepoint extends BuilderSinkImpl implements Savep
         requireNonNull(reversingBehavior);
         requireNonNull(txnCategory);
         requireNonNull(customizer);
+        // TODO - enable this switch when IoBlockItemsBuilder and PairedStreamBuilder are implemented
         final var builder =
                 switch (HandleWorkflow.STREAM_MODE) {
                     case RECORDS -> new SingleTransactionRecordBuilderImpl(reversingBehavior, customizer, txnCategory);

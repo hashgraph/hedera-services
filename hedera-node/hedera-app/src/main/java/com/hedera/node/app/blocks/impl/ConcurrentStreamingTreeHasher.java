@@ -93,7 +93,8 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         if (!pendingLeaves.isEmpty()) {
             schedulePendingWork();
         }
-        maxDepth = Integer.numberOfTrailingZeros(containingPowerOfTwo(numLeaves));
+        final var numPerfectLeaves = containingPowerOfTwo(numLeaves);
+        maxDepth = numPerfectLeaves == 0 ? 0 : Integer.numberOfTrailingZeros(numPerfectLeaves);
         return hashed.thenCompose((ignore) -> combiner.finalCombination());
     }
 

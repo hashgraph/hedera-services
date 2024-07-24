@@ -16,12 +16,17 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_TRANSACTION;
+
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
@@ -32,6 +37,7 @@ import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -40,12 +46,13 @@ import java.util.Set;
  * An implementation of {@link SingleTransactionRecordBuilder} that produces block items for a single user or
  * synthetic transaction; that is, the "input" block item with a {@link Transaction} and "output" block items
  * with a {@link TransactionResult} and, optionally, {@link TransactionOutput}.
- *
  */
 public class IoBlockItemsBuilder implements SingleTransactionRecordBuilder {
     private final ReversingBehavior reversingBehavior;
     private final ExternalizedRecordCustomizer customizer;
     private final HandleContext.TransactionCategory category;
+
+    private List<StateChange> stateChanges = new ArrayList<>();
 
     public IoBlockItemsBuilder(
             @NonNull final ReversingBehavior reversingBehavior,
@@ -56,13 +63,28 @@ public class IoBlockItemsBuilder implements SingleTransactionRecordBuilder {
         this.category = category;
     }
 
+    @Override
+    public SingleTransactionRecordBuilder stateChanges(@NonNull List<StateChange> stateChanges) {
+        this.stateChanges.addAll(stateChanges);
+        return this;
+    }
+
     /**
      * Builds the block items for the transaction.
+     *
      * @return the block items
      */
     public List<BlockItem> build() {
         // TODO - for every transaction type, produce the appropriate block items
-        return Collections.emptyList();
+        return stateChanges.isEmpty()
+                ? Collections.emptyList()
+                : List.of(BlockItem.newBuilder()
+                        .stateChanges(StateChanges.newBuilder()
+                                .cause(STATE_CHANGE_CAUSE_TRANSACTION)
+                                .consensusTimestamp(Timestamp.DEFAULT)
+                                .stateChanges(stateChanges)
+                                .build())
+                        .build());
     }
 
     @Override

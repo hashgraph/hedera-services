@@ -68,7 +68,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
 
     /**
      * The block number for the file we are writing. Each file corresponds to one, and only one, block. Once it is
-     * set in {@link #startBlock}, it is never changed.
+     * set in {@link #openBlock}, it is never changed.
      */
     private long blockNumber;
 
@@ -109,9 +109,8 @@ public class FileBlockItemWriter implements BlockItemWriter {
     }
 
     @Override
-    public void startBlock(long blockNumber) {
-        if (state != State.UNINITIALIZED)
-            throw new IllegalStateException("Cannot initialize a FileBlockItemWriter twice");
+    public void openBlock(long blockNumber) {
+        if (state == State.OPEN) throw new IllegalStateException("Cannot initialize a FileBlockItemWriter twice");
 
         if (blockNumber < 0) throw new IllegalArgumentException("Block number must be non-negative");
 
@@ -119,6 +118,10 @@ public class FileBlockItemWriter implements BlockItemWriter {
 
         // Create the chain of streams.
         this.blockFilePath = getBlockFilePath(blockNumber);
+        logger.info(
+                "Writing block {} to {}",
+                blockNumber,
+                blockFilePath.toAbsolutePath().toString());
 
         OutputStream out = null;
         try {
@@ -166,7 +169,7 @@ public class FileBlockItemWriter implements BlockItemWriter {
     }
 
     @Override
-    public void closeStream() {
+    public void closeBlock() {
         if (state.ordinal() < State.OPEN.ordinal()) {
             throw new IllegalStateException("Cannot close a FileBlockItemWriter that is not open");
         } else if (state.ordinal() == State.CLOSED.ordinal()) {

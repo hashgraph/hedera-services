@@ -64,8 +64,8 @@ public class ConcurrentBlockItemWriter implements BlockItemWriter {
     }
 
     @Override
-    public void startBlock(long blockNumber) {
-        appendSerialAsyncTask(() -> writer.startBlock(blockNumber));
+    public void openBlock(long blockNumber) {
+        appendSerialAsyncTask(() -> writer.openBlock(blockNumber));
     }
 
     @Override
@@ -74,8 +74,8 @@ public class ConcurrentBlockItemWriter implements BlockItemWriter {
     }
 
     @Override
-    public void closeStream() {
-        appendSerialAsyncTask(writer::closeStream);
+    public void closeBlock() {
+        appendSerialAsyncTask(writer::closeBlock);
     }
 
     private synchronized void appendSerialAsyncTask(@NonNull final Runnable task) {

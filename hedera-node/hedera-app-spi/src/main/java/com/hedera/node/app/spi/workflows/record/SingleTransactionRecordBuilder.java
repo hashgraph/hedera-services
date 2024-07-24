@@ -40,19 +40,19 @@ import java.util.Set;
  */
 public interface SingleTransactionRecordBuilder {
     /**
-     * Sets the transaction for this stream item builder.
-     * @param transaction the transaction
-     * @return this builder
-     */
-    SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction);
-
-    /**
      * Adds state changes to this stream builder.
      * @return this builder
      */
     default SingleTransactionRecordBuilder stateChanges(@NonNull List<StateChange> stateChanges) {
         return this;
     }
+
+    /**
+     * Sets the transaction for this stream item builder.
+     * @param transaction the transaction
+     * @return this builder
+     */
+    SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction);
 
     /**
      * Returns the transaction for this stream item builder.

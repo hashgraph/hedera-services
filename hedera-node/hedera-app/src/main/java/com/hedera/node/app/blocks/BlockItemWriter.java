@@ -23,9 +23,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * Writes serialized block items to a destination stream.
  */
 public interface BlockItemWriter {
-    void startBlock(long blockNumber);
+    void openBlock(long blockNumber);
 
     void writeItem(@NonNull Bytes serializedItem);
 
-    void closeStream();
+    void closeBlock();
 }

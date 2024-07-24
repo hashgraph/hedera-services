@@ -60,9 +60,12 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A stack of savepoints scoped to a dispatch. Each savepoint captures the state of the {@link HederaState} at the time
@@ -70,6 +73,8 @@ import java.util.function.Consumer;
  * the stream builders created in the savepoint.
  */
 public class SavepointStackImpl implements HandleContext.SavepointStack, HederaState {
+    private static final Logger log = LogManager.getLogger(SavepointStackImpl.class);
+
     private final HederaState root;
     private final Deque<Savepoint> stack = new ArrayDeque<>();
     private final Map<String, WritableStatesStack> writableStatesMap = new HashMap<>();
@@ -85,11 +90,11 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
      * Any system state changes made <b>before</b> all transaction-caused changes in
      * the {@link com.hedera.node.app.workflows.handle.HandleWorkflow}.
      */
-    private List<StateChange> preTxnSystemChanges = new ArrayList<>();
+    private final List<StateChange> preTxnSystemChanges = new ArrayList<>();
     /**
      * Any system state changes made <b>after</b> all transaction-caused changes.
      */
-    private List<StateChange> postTxnSystemChanges = new ArrayList<>();
+    private final List<StateChange> postTxnSystemChanges = new ArrayList<>();
 
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
@@ -244,6 +249,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
             // The root stack must capture its state changes before committing the first savepoint
             if (isRoot && HandleWorkflow.STREAM_MODE != RECORDS && stack.size() == 1) {
                 final var stateChanges = ((WrappedHederaState) stack.peek().state()).pendingStateChanges();
+                log.info("Capturing {} state changes {}", cause, stateChanges);
                 switch (cause) {
                     case STATE_CHANGE_CAUSE_SYSTEM -> {
                         requireNonNull(changeOrder, "System cause given without order");
@@ -475,7 +481,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
         if (HandleWorkflow.STREAM_MODE == RECORDS) {
             blockItems = null;
         } else {
-            blockItems = new ArrayList<>();
+            blockItems = new LinkedList<>();
         }
         final List<SingleTransactionRecord> records = new ArrayList<>();
         final var builders = requireNonNull(builderSink).allBuilders();
@@ -520,7 +526,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
         if (HandleWorkflow.STREAM_MODE != RECORDS && !preTxnSystemChanges.isEmpty()) {
             final var preTxnConsensusNow = consensusTime.minusNanos(indexOfUserRecord + 1);
             requireNonNull(blockItems)
-                    .add(BlockItem.newBuilder()
+                    .addFirst(BlockItem.newBuilder()
                             .stateChanges(StateChanges.newBuilder()
                                     .cause(STATE_CHANGE_CAUSE_SYSTEM)
                                     .consensusTimestamp(new Timestamp(
