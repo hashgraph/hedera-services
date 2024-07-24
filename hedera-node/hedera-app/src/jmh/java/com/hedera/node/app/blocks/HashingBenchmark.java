@@ -28,6 +28,7 @@ import com.hedera.hapi.block.stream.output.StateChangesCause;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.blocks.impl.ConcurrentStreamingTreeHasher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;

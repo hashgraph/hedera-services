@@ -16,7 +16,8 @@
 
 package com.hedera.services.bdd.junit.hedera;
 
-import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.STREAMS_DIR;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.BLOCK_STREAMS_DIR;
+import static com.hedera.services.bdd.junit.hedera.subprocess.ProcessUtils.RECORD_STREAMS_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.APPLICATION_PROPERTIES;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_DIR;
 import static com.hedera.services.bdd.junit.hedera.utils.WorkingDirUtils.CONFIG_TXT;
@@ -84,10 +85,14 @@ public abstract class AbstractNode implements HederaNode {
                     .resolve(CONFIG_DIR)
                     .resolve(APPLICATION_PROPERTIES);
             case LOG4J2_XML -> workingDir.resolve(LOG4J2_XML);
-            case STREAMS_DIR -> workingDir
+            case RECORD_STREAMS_DIR -> workingDir
                     .resolve(DATA_DIR)
-                    .resolve(STREAMS_DIR)
+                    .resolve(RECORD_STREAMS_DIR)
                     .resolve("record0.0." + getAccountId().accountNumOrThrow());
+            case BLOCK_STREAMS_DIR -> workingDir
+                    .resolve(DATA_DIR)
+                    .resolve(BLOCK_STREAMS_DIR)
+                    .resolve("block-0.0." + getAccountId().accountNumOrThrow());
             case UPGRADE_ARTIFACTS_DIR -> workingDir
                     .resolve(DATA_DIR)
                     .resolve(UPGRADE_DIR)

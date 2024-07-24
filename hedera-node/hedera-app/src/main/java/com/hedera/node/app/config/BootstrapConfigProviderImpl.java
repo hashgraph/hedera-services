@@ -22,6 +22,7 @@ import com.hedera.node.config.VersionedConfiguration;
 import com.hedera.node.config.converter.BytesConverter;
 import com.hedera.node.config.converter.LongPairConverter;
 import com.hedera.node.config.converter.SemanticVersionConverter;
+import com.hedera.node.config.data.BlockStreamConfig;
 import com.hedera.node.config.data.BootstrapConfig;
 import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
@@ -57,6 +58,7 @@ public class BootstrapConfigProviderImpl extends ConfigProviderBase {
                 .withSource(SystemEnvironmentConfigSource.getInstance())
                 .withSource(SystemPropertiesConfigSource.getInstance())
                 .withSource(new PropertyConfigSource(SEMANTIC_VERSION_PROPERTIES_DEFAULT_PATH, 500))
+                .withConfigDataType(BlockStreamConfig.class)
                 .withConfigDataType(BootstrapConfig.class)
                 .withConfigDataType(HederaConfig.class)
                 .withConfigDataType(FilesConfig.class)

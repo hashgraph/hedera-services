@@ -41,6 +41,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
@@ -259,13 +260,13 @@ public class ChildDispatchFactory {
                 dispatchProcessor,
                 throttleAdviser);
         final var childFees = computeChildFees(dispatchHandleContext, category, dispatcher, topLevelFunction, txnInfo);
+        final var childFeeAccumulator =
+                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeRecordBuilder) builder);
         final var congestionMultiplier = feeManager.congestionMultiplierFor(
                 txnInfo.txBody(), txnInfo.functionality(), storeFactory.asReadOnly());
         if (congestionMultiplier > 1) {
             builder.congestionMultiplier(congestionMultiplier);
         }
-        final var childFeeAccumulator = new FeeAccumulator(
-                serviceApiFactory.getApi(TokenServiceApi.class), (SingleTransactionRecordBuilderImpl) builder);
         final var childTokenContext =
                 new TokenContextImpl(config, storeMetricsService, childStack, blockRecordManager, consensusNow);
         return new RecordDispatch(

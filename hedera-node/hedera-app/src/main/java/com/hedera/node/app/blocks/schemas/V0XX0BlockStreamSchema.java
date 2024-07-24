@@ -16,6 +16,14 @@
 
 package com.hedera.node.app.blocks.schemas;
 
+import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.blockstream.BlockStreamInfo;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.state.spi.Schema;
+import com.swirlds.state.spi.StateDefinition;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.Set;
+
 /**
  * Defines the schema for two forms of state,
  * <ol>
@@ -43,4 +51,18 @@ package com.hedera.node.app.blocks.schemas;
  *     <li>The <b>trailing 256 block hashes</b>, used to implement the EVM {@code BLOCKHASH} opcode.</li>
  * </ol>
  */
-public class V0XX0BlockStreamSchema {}
+public class V0XX0BlockStreamSchema extends Schema {
+    public static final String BLOCK_STREAM_INFO_KEY = "BLOCK_STREAM_INFO";
+
+    private static final SemanticVersion VERSION =
+            SemanticVersion.newBuilder().major(0).minor(53).patch(0).build();
+
+    public V0XX0BlockStreamSchema() {
+        super(VERSION);
+    }
+
+    @Override
+    public @NonNull Set<StateDefinition> statesToCreate(@NonNull final Configuration config) {
+        return Set.of(StateDefinition.singleton(BLOCK_STREAM_INFO_KEY, BlockStreamInfo.PROTOBUF));
+    }
+}

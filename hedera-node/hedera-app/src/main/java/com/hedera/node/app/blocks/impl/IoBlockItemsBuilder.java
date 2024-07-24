@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks;
+package com.hedera.node.app.blocks.impl;
 
+import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_TRANSACTION;
 import static com.hedera.hapi.util.HapiUtils.asTimestamp;
 import static com.hedera.hapi.util.HapiUtils.functionOf;
 import static java.util.Collections.emptyList;
@@ -30,6 +31,8 @@ import com.hedera.hapi.block.stream.output.CryptoTransferOutput;
 import com.hedera.hapi.block.stream.output.EthereumOutput;
 import com.hedera.hapi.block.stream.output.RunningHashVersion;
 import com.hedera.hapi.block.stream.output.SignScheduleOutput;
+import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.block.stream.output.StateChanges;
 import com.hedera.hapi.block.stream.output.SubmitMessageOutput;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
@@ -105,7 +108,6 @@ import java.util.Set;
  * An implementation of {@link IoBlockItemsBuilder} that produces block items for a single user or
  * synthetic transaction; that is, the "input" block item with a {@link Transaction} and "output" block items
  * with a {@link TransactionResult} and, optionally, {@link TransactionOutput}.
- *
  */
 public class IoBlockItemsBuilder
         implements SingleTransactionStreamBuilder,
@@ -183,6 +185,8 @@ public class IoBlockItemsBuilder
     // Category of the record
     private final HandleContext.TransactionCategory category;
 
+    private List<StateChange> stateChanges = new ArrayList<>();
+
     // Used to customize the externalized form of a dispatched child transaction, right before
     // its record stream item is built; lets the contract service externalize certain dispatched
     // CryptoCreate transactions as ContractCreate synthetic transactions
@@ -202,16 +206,42 @@ public class IoBlockItemsBuilder
         this.category = category;
     }
 
+    @Override
+    public SingleTransactionStreamBuilder stateChanges(@NonNull List<StateChange> stateChanges) {
+        this.stateChanges.addAll(stateChanges);
+        return this;
+    }
+
     /**
      * Builds the list of block items.
      * @return the list of block items
      */
     public List<BlockItem> build() {
+        final var blockItems = new ArrayList<BlockItem>();
+
         final var transactionBlockItem =
                 BlockItem.newBuilder().transaction(transaction()).build();
-        final var outputBlockItem = getTransactionOutputBlockItem();
-        final var resultBlockItem = getTransactionResultBlockItem();
-        return List.of(transactionBlockItem, resultBlockItem, outputBlockItem);
+        blockItems.add(transactionBlockItem);
+
+        if (!transactionOutputBuilder.equals(TransactionOutput.newBuilder())) {
+            final var outputBlockItem = getTransactionOutputBlockItem();
+            blockItems.add(outputBlockItem);
+        }
+        if (!transactionResultBuilder.equals(TransactionResult.newBuilder())) {
+            final var resultBlockItem = getTransactionResultBlockItem();
+            blockItems.add(resultBlockItem);
+        }
+        if (!stateChanges.isEmpty()) {
+            final var stateChangesBlockItem = BlockItem.newBuilder()
+                    .stateChanges(StateChanges.newBuilder()
+                            .cause(STATE_CHANGE_CAUSE_TRANSACTION)
+                            .consensusTimestamp(Timestamp.DEFAULT)
+                            .stateChanges(stateChanges)
+                            .build())
+                    .build();
+            blockItems.add(stateChangesBlockItem);
+        }
+        return blockItems;
     }
 
     @NonNull

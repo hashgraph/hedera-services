@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks;
+package com.hedera.node.app.blocks.impl;
 
 import static com.hedera.node.app.hapi.utils.CommonUtils.noThrowSha384HashOf;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.blocks.StreamingTreeHasher;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -94,7 +93,8 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         if (!pendingLeaves.isEmpty()) {
             schedulePendingWork();
         }
-        maxDepth = Integer.numberOfTrailingZeros(containingPowerOfTwo(numLeaves));
+        final var numPerfectLeaves = containingPowerOfTwo(numLeaves);
+        maxDepth = numPerfectLeaves == 0 ? 0 : Integer.numberOfTrailingZeros(numPerfectLeaves);
         return hashed.thenCompose((ignore) -> combiner.finalCombination());
     }
 
@@ -124,7 +124,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
         static {
             EMPTY_HASHES[0] = noThrowSha384HashOf(new byte[0]);
             for (int i = 1; i < MAX_DEPTH; i++) {
-                EMPTY_HASHES[i] = combine(EMPTY_HASHES[i - 1], EMPTY_HASHES[i - 1]);
+                EMPTY_HASHES[i] = HashUtils.combine(EMPTY_HASHES[i - 1], EMPTY_HASHES[i - 1]);
             }
         }
 
@@ -171,7 +171,7 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
                         for (int i = 0, m = scheduledWork.size(); i < m; i += 2) {
                             final var left = scheduledWork.get(i);
                             final var right = i + 1 < m ? scheduledWork.get(i + 1) : EMPTY_HASHES[depth];
-                            result.add(combine(left, right));
+                            result.add(HashUtils.combine(left, right));
                         }
                         return result;
                     },
@@ -181,17 +181,6 @@ public class ConcurrentStreamingTreeHasher implements StreamingTreeHasher {
                 return null;
             });
             pendingHashes = new ArrayList<>();
-        }
-
-        private static byte[] combine(final byte[] leftHash, final byte[] rightHash) {
-            try {
-                final var digest = MessageDigest.getInstance("SHA-384");
-                digest.update(leftHash);
-                digest.update(rightHash);
-                return digest.digest();
-            } catch (final NoSuchAlgorithmException fatal) {
-                throw new IllegalStateException(fatal);
-            }
         }
     }
 

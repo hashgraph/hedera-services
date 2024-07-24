@@ -428,7 +428,7 @@ message MapChangeKey {
         /**
          * A change to a virtual map keyed by File identifier.
          */
-        proto.FileID filed_id_key = 4;
+        proto.FileID file_id_key = 4;
 
         /**
          * A change to a virtual map keyed by NFT identifier.
@@ -469,6 +469,11 @@ message MapChangeKey {
          * A change to a virtual map keyed by a Topic identifier.
          */
         proto.TopicID topic_id_key = 12;
+
+        /**
+         * A change to a virtual map keyed by contract id identifier.
+         */
+        proto.ContractID contract_id_key = 13;
     }
 }
 

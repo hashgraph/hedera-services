@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.ByteString;
+import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.*;
@@ -153,5 +154,31 @@ class OrderedComparisonTest {
                 assertEquals(expected, actual);
             }
         });
+    }
+
+    @Test
+    void hmmGasPrice() throws IOException {
+        final var loc = "/Users/michaeltinker/Forensics/mainnet-telemetry/tNode0";
+        final var entries = parseV6RecordStreamEntriesIn(loc);
+        final var histograms = statusHistograms(entries);
+        System.out.println(histograms);
+        for (final var entry : entries) {
+            if (entry.function() == HederaFunctionality.EthereumTransaction) {
+                final var txnId = entry.txnId();
+                if (txnId.getTransactionValidStart().getSeconds() == 1720118311L) {
+                    System.out.println(entry.submittedTransaction());
+                    final var signedTxn = SignedTransaction.parseFrom(
+                            entry.submittedTransaction().getSignedTransactionBytes());
+                    System.out.println(signedTxn);
+                    System.out.println(entry.body() + "\n ➡️ \n" + entry.transactionRecord());
+                    final var ethTxData = EthTxData.populateEthTxData(entry.body()
+                            .getEthereumTransaction()
+                            .getEthereumData()
+                            .toByteArray());
+                    System.out.println("====");
+                    System.out.println(ethTxData);
+                }
+            }
+        }
     }
 }

@@ -14,27 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.node.app.blocks;
-
-import com.hedera.pbj.runtime.io.buffer.Bytes;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
+package com.hedera.node.config.types;
 
 /**
- * Writes serialized block items to files, one per block number.
+ *
  */
-public class FileBlockItemWriter implements BlockItemWriter {
-    @Inject
-    public FileBlockItemWriter() {
-        // Dagger2
-    }
-
-    @Override
-    public void startBlock(long blockNumber) {}
-
-    @Override
-    public void writeItem(@NonNull Bytes serializedItem) {}
-
-    @Override
-    public void closeStream() {}
+public enum BlockStreamWriterMode {
+    GRPC,
+    FILE
 }

@@ -16,14 +16,24 @@
 
 package com.hedera.node.app.blocks;
 
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
+import com.hedera.node.app.blocks.schemas.V0XX0BlockStreamSchema;
+import com.hedera.node.config.data.BlockStreamConfig;
+import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.SchemaRegistry;
 import com.swirlds.state.spi.Service;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 public class BlockStreamService implements Service {
     public static final String NAME = "BlockStreamService";
+
+    private final boolean enabled;
+
+    public BlockStreamService(final Configuration config) {
+        this.enabled = config.getConfigData(BlockStreamConfig.class).streamMode() != RECORDS;
+    }
 
     @NonNull
     @Override
@@ -34,5 +44,8 @@ public class BlockStreamService implements Service {
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
         requireNonNull(registry);
+        if (enabled) {
+            registry.register(new V0XX0BlockStreamSchema());
+        }
     }
 }

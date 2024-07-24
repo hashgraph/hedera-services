@@ -46,6 +46,7 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.node.state.blockrecords;
     exports com.hedera.hapi.node.state.blockrecords.codec;
     exports com.hedera.hapi.node.state.blockrecords.schema;
+    exports com.hedera.hapi.node.state.blockstream;
     exports com.hedera.hapi.node.state.schedule;
     exports com.hedera.hapi.node.state.primitives;
     exports com.hedera.hapi.node.state.throttles;
@@ -58,6 +59,9 @@ module com.hedera.node.hapi {
     exports com.hedera.hapi.block.stream;
     exports com.hedera.hapi.block.stream.input;
     exports com.hedera.hapi.block.stream.output;
+    exports com.hedera.hapi.block.stream.schema;
+    exports com.hedera.hapi.block.protoc;
+    exports com.hedera.hapi.block.stream.protoc;
 
     requires transitive com.google.common;
     requires transitive com.google.protobuf;
