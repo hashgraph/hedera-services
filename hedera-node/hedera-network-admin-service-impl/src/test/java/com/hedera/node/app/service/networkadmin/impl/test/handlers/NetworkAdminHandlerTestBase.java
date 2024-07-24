@@ -41,8 +41,8 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.fixtures.state.FakeMerkleState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
+import com.hedera.node.app.fixtures.state.FakeState;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
 import com.hedera.node.app.service.token.ReadableTokenStore;
@@ -213,7 +213,7 @@ public class NetworkAdminHandlerTestBase {
     }
 
     protected void refreshRecordCache() {
-        final var state = new FakeMerkleState();
+        final var state = new FakeState();
         final var registry = new FakeSchemaRegistry();
         final var svc = new RecordCacheService();
         svc.registerSchemas(registry);

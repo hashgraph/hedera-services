@@ -23,7 +23,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 
@@ -41,7 +41,7 @@ public interface MerkleStateLifecycles {
      * @param event the event that was added
      * @param state the latest immutable state at the time of the event
      */
-    void onPreHandle(@NonNull Event event, @NonNull MerkleState state);
+    void onPreHandle(@NonNull Event event, @NonNull State state);
 
     /**
      * Called when a round of events have reached consensus, and are ready to be handled
@@ -51,7 +51,7 @@ public interface MerkleStateLifecycles {
      * @param platformState the working state of the platform
      * @param state the working state of the network
      */
-    void onHandleConsensusRound(@NonNull Round round, @NonNull PlatformState platformState, @NonNull MerkleState state);
+    void onHandleConsensusRound(@NonNull Round round, @NonNull PlatformState platformState, @NonNull State state);
 
     /**
      * Called when the platform is initializing the network state.
@@ -63,7 +63,7 @@ public interface MerkleStateLifecycles {
      * @param previousVersion if non-null, the network version that was previously in use
      */
     void onStateInitialized(
-            @NonNull MerkleState state,
+            @NonNull State state,
             @NonNull Platform platform,
             @NonNull PlatformState platformState,
             @NonNull InitTrigger trigger,

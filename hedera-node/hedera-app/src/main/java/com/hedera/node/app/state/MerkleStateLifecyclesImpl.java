@@ -35,7 +35,7 @@ import com.swirlds.platform.system.Round;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import com.swirlds.state.merkle.disk.OnDiskKey;
 import com.swirlds.state.merkle.disk.OnDiskValue;
 import com.swirlds.virtualmap.VirtualMap;
@@ -91,19 +91,19 @@ public class MerkleStateLifecyclesImpl implements MerkleStateLifecycles {
     }
 
     @Override
-    public void onPreHandle(@NonNull final Event event, @NonNull final MerkleState state) {
+    public void onPreHandle(@NonNull final Event event, @NonNull final State state) {
         hedera.onPreHandle(event, state);
     }
 
     @Override
     public void onHandleConsensusRound(
-            @NonNull final Round round, @NonNull final PlatformState platformState, @NonNull final MerkleState state) {
+            @NonNull final Round round, @NonNull final PlatformState platformState, @NonNull final State state) {
         hedera.onHandleConsensusRound(round, platformState, state);
     }
 
     @Override
     public void onStateInitialized(
-            @NonNull final MerkleState state,
+            @NonNull final State state,
             @NonNull final Platform platform,
             @NonNull final PlatformState platformState,
             @NonNull final InitTrigger trigger,

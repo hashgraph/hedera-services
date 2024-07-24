@@ -36,7 +36,7 @@ import com.swirlds.platform.system.SwirldState;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.system.events.Event;
 import com.swirlds.platform.system.state.notifications.NewRecoveredStateListener;
-import com.swirlds.state.MerkleState;
+import com.swirlds.state.State;
 import com.swirlds.state.merkle.StateMetadata;
 import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.merkle.disk.OnDiskReadableKVState;
@@ -76,7 +76,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * An implementation of {@link SwirldState} and {@link MerkleState}. The Hashgraph Platform
+ * An implementation of {@link SwirldState} and {@link com.swirlds.state.State}. The Hashgraph Platform
  * communicates with the application through {@link SwirldMain} and {@link
  * SwirldState}. The Hedera application, after startup, only needs the ability to get {@link
  * ReadableStates} and {@link WritableStates} from this object.
@@ -95,7 +95,7 @@ import org.apache.logging.log4j.Logger;
  */
 @ConstructableIgnored
 public class MerkleStateRoot extends PartialNaryMerkleInternal
-        implements MerkleInternal, SwirldState, MerkleState, MerkleRoot {
+        implements MerkleInternal, SwirldState, State, MerkleRoot {
     private static final Logger logger = LogManager.getLogger(MerkleStateRoot.class);
 
     /**
@@ -807,6 +807,6 @@ public class MerkleStateRoot extends PartialNaryMerkleInternal
     @NonNull
     @Override
     public String getInfoString(final int hashDepth) {
-        return State.createInfoString(hashDepth, getPlatformState(), getHash(), this);
+        return com.swirlds.platform.state.State.createInfoString(hashDepth, getPlatformState(), getHash(), this);
     }
 }
