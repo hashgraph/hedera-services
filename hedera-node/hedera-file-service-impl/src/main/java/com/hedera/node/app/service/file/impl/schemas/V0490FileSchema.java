@@ -231,7 +231,6 @@ public class V0490FileSchema extends Schema {
         final var filesConfig = systemContext.configuration().getConfigData(FilesConfig.class);
         final var bootstrapConfig = systemContext.configuration().getConfigData(BootstrapConfig.class);
 
-        // Create the master key that will own both of these special files
         final var masterKey = KeyList.newBuilder()
                 .keys(Key.newBuilder()
                         .ed25519(bootstrapConfig.genesisPublicKey())
@@ -270,6 +269,9 @@ public class V0490FileSchema extends Schema {
                                 .serviceEndpoint(node.serviceEndpoint())
                                 .build());
                     } catch (IOException e) {
+                        logger.warn(
+                                "Unexpected IOException while creating NodeDetail List : {}",
+                                node.grpcCertificateHash().toByteArray());
                         throw new RuntimeException(e);
                     }
                 });
@@ -442,8 +444,6 @@ public class V0490FileSchema extends Schema {
         final var config = systemContext.configuration();
         final var bootstrapConfig = config.getConfigData(BootstrapConfig.class);
         // The overrides file is initially empty
-        final var servicesConfigList =
-                ServicesConfigurationList.newBuilder().nameValue(List.of()).build();
         final var masterKey =
                 Key.newBuilder().ed25519(bootstrapConfig.genesisPublicKey()).build();
         systemContext.dispatchCreation(
