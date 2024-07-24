@@ -21,6 +21,7 @@ import static com.swirlds.logging.legacy.LogMarker.SOCKET_EXCEPTIONS;
 
 import com.swirlds.common.crypto.config.CryptoConfig;
 import com.swirlds.common.platform.NodeId;
+import com.swirlds.common.utility.throttle.RateLimiter;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.platform.Utilities;
 import com.swirlds.platform.crypto.KeysAndCerts;
@@ -70,10 +71,12 @@ public final class NetworkUtils {
      *
      * @param e          the exception that was thrown
      * @param connection the connection used when the exception was thrown
+     * @param socketExceptionRateLimiter a rate limiter for reporting full stack traces for socket exceptions
      * @throws InterruptedException if the provided exception is an {@link InterruptedException}, it will be rethrown
      *                              once the connection is closed
      */
-    public static void handleNetworkException(final Exception e, final Connection connection)
+    public static void handleNetworkException(
+            final Exception e, final Connection connection, final RateLimiter socketExceptionRateLimiter)
             throws InterruptedException {
         final String description;
         // always disconnect when an exception gets thrown
@@ -90,8 +93,12 @@ public final class NetworkUtils {
         // we use a different marker depending on what the root cause is
         final Marker marker = NetworkUtils.determineExceptionMarker(e);
         if (SOCKET_EXCEPTIONS.getMarker().equals(marker)) {
-            final String formattedException = NetworkUtils.formatException(e);
-            logger.warn(marker, "Connection broken: {} {}", description, formattedException);
+            if (socketExceptionRateLimiter.requestAndTrigger()) {
+                logger.warn(marker, "Connection broken: {}", description, e);
+            } else {
+                final String formattedException = NetworkUtils.formatException(e);
+                logger.warn(marker, "Connection broken: {} {}", description, formattedException);
+            }
         } else {
             logger.error(EXCEPTION.getMarker(), "Connection broken: {}", description, e);
         }

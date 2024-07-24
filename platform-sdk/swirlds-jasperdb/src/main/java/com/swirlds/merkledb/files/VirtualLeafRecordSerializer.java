@@ -39,7 +39,7 @@ import java.util.Objects;
  *
  * <p>Protobuf schema:
  *
- * <p><pre>
+ * <pre>
  * message LeafRecord {
  *
  *     // Virtual node path

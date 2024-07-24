@@ -877,7 +877,8 @@ public class HapiSpecRegistry {
         if (txn.hasGrpcCertificateHash()) {
             builder.setGrpcCertificateHash(txn.getGossipCaCertificate().toByteString());
         }
-        //     TODO   builder.setGossipEndpoint()
+        builder.addAllGossipEndpoint(txn.getGossipEndpointList());
+        builder.addAllServiceEndpoint(txn.getServiceEndpointList());
         put(name, builder.build());
     }
 }

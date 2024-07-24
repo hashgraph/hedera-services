@@ -23,7 +23,6 @@ import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.spi.fees.Fees;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import javax.inject.Inject;
 
 /**
  * Accumulates fees for a given transaction. They can either be charged to a payer account, ore refunded to a receiver
@@ -39,7 +38,6 @@ public class FeeAccumulator {
      * @param tokenApi the {@link TokenServiceApi} to use to charge and refund fees.
      * @param recordBuilder the {@link FeeRecordBuilder} to record any changes
      */
-    @Inject
     public FeeAccumulator(@NonNull final TokenServiceApi tokenApi, @NonNull final FeeRecordBuilder recordBuilder) {
         this.tokenApi = requireNonNull(tokenApi);
         this.recordBuilder = requireNonNull(recordBuilder);

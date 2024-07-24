@@ -55,7 +55,6 @@ import com.hedera.node.app.service.token.records.TokenBaseRecordBuilder;
 import com.hedera.node.app.spi.fees.FeeCalculator;
 import com.hedera.node.app.spi.fees.Fees;
 import com.hedera.node.app.spi.metrics.StoreMetricsService;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.store.StoreFactory;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.HandleException;
@@ -101,7 +100,7 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
     private TransactionDispatcher transactionDispatcher;
 
     @Mock(strictness = LENIENT)
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
     @BeforeEach
     void setup() {
@@ -118,8 +117,8 @@ class TokenFeeScheduleUpdateHandlerTest extends CryptoTokenHandlerTestBase {
         given(storeFactory.readableStore(ReadableAccountStore.class)).willReturn(readableAccountStore);
         given(storeFactory.readableStore(ReadableTokenRelationStore.class)).willReturn(readableTokenRelStore);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
-        given(context.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(recordBuilder);
+        given(context.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(recordBuilder);
     }
 
     @Test

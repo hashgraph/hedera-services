@@ -38,7 +38,6 @@ import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.node.app.service.contract.impl.exec.scope.HandleHederaOperations;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
 import com.hedera.node.app.spi.workflows.ResourceExhaustedException;
-import com.hedera.node.app.spi.workflows.record.RecordListCheckPoint;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.ArrayList;
@@ -79,11 +78,6 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
      */
     @Nullable
     private final WorldUpdater parent;
-
-    /**
-     * The current checkpoint of the child records for this ProxyWorldUpdater.
-     */
-    private final RecordListCheckPoint recordListCheckPoint;
 
     /**
      * The {@link EvmFrameState} managing this {@code ProxyWorldUpdater}'s state.
@@ -129,11 +123,6 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         this.enhancement = requireNonNull(enhancement);
         this.evmFrameStateFactory = requireNonNull(evmFrameStateFactory);
         this.evmFrameState = evmFrameStateFactory.get();
-        // Everytime we create a new child updater, we need to create a new record list checkpoint containing the
-        // last preceding record and the first following record, so that we can revert the child records from the
-        // checkpoint
-        // when revert() operation is called.
-        this.recordListCheckPoint = enhancement.operations().createRecordListCheckPoint();
     }
 
     /**
@@ -391,7 +380,6 @@ public class ProxyWorldUpdater implements HederaWorldUpdater {
         // EvmFrameState is just a convenience wrapper around the scope to let us use Besu types, and
         // ultimately the HederaOperations is the one tracking and managing all changes
         enhancement.operations().revert();
-        enhancement.operations().revertRecordsFrom(recordListCheckPoint);
         // Because of the revert-then-commit pattern that Besu uses for force deletions in
         // AbstractMessageProcessor#clearAccumulatedStateBesidesGasAndOutput(), we have
         // to take special measures here to avoid popping the savepoint stack twice for

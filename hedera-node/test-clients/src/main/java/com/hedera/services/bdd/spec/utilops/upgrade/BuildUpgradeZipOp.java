@@ -45,9 +45,9 @@ import java.util.zip.ZipOutputStream;
  *     <li><b>(Optional)</b> A <i>settings.txt</i> at the given path.</li>
  *     <li><b>(Optional)</b> A <i>config.txt</i> obtained by removing a requested
  *     node from the target network's current <i>config.txt</i>. If this is specified,
- *     the target network must be a {@link SubProcessNetwork}</li>, since this is
+ *     the target network must be a {@link SubProcessNetwork}, since this is
  *     the only case in which the test can meaningfully inspect and change the
- *     address book.
+ *     address book.</li>
  * </ol>
  */
 public class BuildUpgradeZipOp extends UtilOp {

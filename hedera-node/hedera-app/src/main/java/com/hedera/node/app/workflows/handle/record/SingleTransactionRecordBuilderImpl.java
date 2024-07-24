@@ -16,12 +16,15 @@
 
 package com.hedera.node.app.workflows.handle.record;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.IDENTICAL_SCHEDULE_ALREADY_CREATED;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
-import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_EXTERNALIZED_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer.NOOP_RECORD_CUSTOMIZER;
+import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
 import static com.hedera.node.app.state.logging.TransactionStateLogger.logEndTransactionRecord;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ContractID;
@@ -204,63 +207,20 @@ public class SingleTransactionRecordBuilderImpl
     private TokenType tokenType;
 
     /**
-     * Possible behavior of a {@link SingleTransactionRecord} when a parent transaction fails,
-     * and it is asked to be reverted
-     */
-    public enum ReversingBehavior {
-        /**
-         * Changes are not committed. The record is kept in the record stream,
-         * but the status is set to {@link ResponseCodeEnum#REVERTED_SUCCESS}
-         */
-        REVERSIBLE,
-
-        /**
-         * Changes are not committed and the record is removed from the record stream.
-         */
-        REMOVABLE,
-
-        /**
-         * Changes are committed independent of the user and parent transactions.
-         */
-        IRREVERSIBLE
-    }
-
-    /**
      * Creates new transaction record builder where reversion will leave its record in the stream
      * with either a failure status or {@link ResponseCodeEnum#REVERTED_SUCCESS}.
      *
-     * @param consensusNow the consensus timestamp for the transaction
      */
-    public SingleTransactionRecordBuilderImpl(@NonNull final Instant consensusNow) {
-        this(consensusNow, ReversingBehavior.REVERSIBLE, USER);
+    @VisibleForTesting
+    public SingleTransactionRecordBuilderImpl() {
+        this(REVERSIBLE, NOOP_RECORD_CUSTOMIZER, USER);
     }
 
-    /**
-     * Creates new transaction record builder.
-     *
-     * @param consensusNow the consensus timestamp for the transaction
-     * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
-     */
     public SingleTransactionRecordBuilderImpl(
-            @NonNull final Instant consensusNow,
-            final ReversingBehavior reversingBehavior,
-            final TransactionCategory category) {
-        this(consensusNow, reversingBehavior, NOOP_EXTERNALIZED_RECORD_CUSTOMIZER, category);
-    }
-
-    /**
-     * Creates new transaction record builder with both explicit reversing behavior and
-     * transaction construction finishing.
-     *
-     * @param consensusNow the consensus timestamp for the transaction
-     * @param reversingBehavior the reversing behavior (see {@link RecordListBuilder}
-     */
-    public SingleTransactionRecordBuilderImpl(
-            @NonNull final Instant consensusNow,
             @NonNull final ReversingBehavior reversingBehavior,
             @NonNull final ExternalizedRecordCustomizer customizer,
             @NonNull final TransactionCategory category) {
-        this.consensusNow = requireNonNull(consensusNow, "consensusNow must not be null");
+        this.consensusNow = Instant.EPOCH;
         this.reversingBehavior = requireNonNull(reversingBehavior, "reversingBehavior must not be null");
         this.customizer = requireNonNull(customizer, "customizer must not be null");
         this.category = requireNonNull(category, "category must not be null");
@@ -272,7 +232,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the transaction record
      */
     public SingleTransactionRecord build() {
-        if (customizer != NOOP_EXTERNALIZED_RECORD_CUSTOMIZER) {
+        if (customizer != NOOP_RECORD_CUSTOMIZER) {
             transaction = customizer.apply(transaction);
             transactionBytes = transaction.signedTransactionBytes();
         }
@@ -344,6 +304,7 @@ public class SingleTransactionRecordBuilderImpl
                 transaction, transactionRecord, transactionSidecarRecords, new TransactionOutputs(tokenType));
     }
 
+    @Override
     public void nullOutSideEffectFields() {
         serialNumbers.clear();
         tokenTransferLists.clear();
@@ -354,25 +315,29 @@ public class SingleTransactionRecordBuilderImpl
         assessedCustomFees.clear();
 
         newTotalSupply = 0L;
+        transactionFee = 0L;
         contractFunctionResult = null;
 
         transactionReceiptBuilder.accountID((AccountID) null);
         transactionReceiptBuilder.contractID((ContractID) null);
         transactionReceiptBuilder.fileID((FileID) null);
         transactionReceiptBuilder.tokenID((TokenID) null);
-        transactionReceiptBuilder.scheduleID((ScheduleID) null);
-        transactionReceiptBuilder.scheduledTransactionID((TransactionID) null);
+        if (status != IDENTICAL_SCHEDULE_ALREADY_CREATED) {
+            transactionReceiptBuilder.scheduleID((ScheduleID) null);
+            transactionReceiptBuilder.scheduledTransactionID((TransactionID) null);
+        }
+        // Note that internal contract creations are removed instead of reversed
+        transactionRecordBuilder.scheduleRef((ScheduleID) null);
         transactionReceiptBuilder.topicRunningHash(Bytes.EMPTY);
         transactionReceiptBuilder.newTotalSupply(0L);
         transactionReceiptBuilder.topicRunningHashVersion(0L);
         transactionReceiptBuilder.topicSequenceNumber(0L);
-        // Note that internal contract creations are removed instead of reversed
-        transactionRecordBuilder.scheduleRef((ScheduleID) null);
         transactionRecordBuilder.alias(Bytes.EMPTY);
         transactionRecordBuilder.ethereumHash(Bytes.EMPTY);
         transactionRecordBuilder.evmAddress(Bytes.EMPTY);
     }
 
+    @Override
     public ReversingBehavior reversingBehavior() {
         return reversingBehavior;
     }
@@ -385,6 +350,7 @@ public class SingleTransactionRecordBuilderImpl
         return this;
     }
 
+    @Override
     public SingleTransactionRecordBuilderImpl consensusTimestamp(@NonNull final Instant now) {
         this.consensusNow = requireNonNull(now, "consensus time must not be null");
         return this;
@@ -442,6 +408,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
+    @Override
     public SingleTransactionRecordBuilderImpl syncBodyIdFromRecordId() {
         final var newTransactionID = transactionID;
         final var body =
@@ -475,16 +442,6 @@ public class SingleTransactionRecordBuilderImpl
     @NonNull
     public Transaction transaction() {
         return transaction;
-    }
-
-    /**
-     * Gets the consensus instant.
-     *
-     * @return the consensus instant
-     */
-    @NonNull
-    public Instant consensusNow() {
-        return consensusNow;
     }
 
     /**
@@ -920,6 +877,7 @@ public class SingleTransactionRecordBuilderImpl
      * @return the builder
      */
     @NonNull
+    @Override
     public SingleTransactionRecordBuilderImpl exchangeRate(@NonNull final ExchangeRateSet exchangeRate) {
         requireNonNull(exchangeRate, "exchangeRate must not be null");
         this.exchangeRate = exchangeRate;

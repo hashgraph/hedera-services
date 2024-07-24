@@ -18,6 +18,7 @@ package com.hedera.node.app.service.schedule;
 
 import com.hedera.hapi.node.base.ScheduleID;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
@@ -29,7 +30,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * to which an instance of the implementation will be provided may be substantially any non-query
  * transaction other than a ScheduleCreate, ScheduleSign, or ScheduleDelete.
  */
-public interface ScheduleRecordBuilder {
+public interface ScheduleRecordBuilder extends SingleTransactionRecordBuilder {
     /**
      * Schedule ref schedule record builder.
      *
