@@ -30,7 +30,7 @@ public final class FileServiceImpl implements FileService {
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
     public static final String DEFAULT_MEMO = "";
 
-    private final V0490FileSchema genesisSchema = new V0490FileSchema();
+    private final V0490FileSchema fileSchema = new V0490FileSchema();
 
     /**
      * Constructs a {@link FileServiceImpl}.
@@ -45,7 +45,7 @@ public final class FileServiceImpl implements FileService {
      */
     @Override
     public void registerSchemas(@NonNull final SchemaRegistry registry) {
-        registry.register(genesisSchema);
+        registry.register(fileSchema);
     }
 
     /**
@@ -54,13 +54,13 @@ public final class FileServiceImpl implements FileService {
      * @param context the genesis context
      */
     public void createSystemEntities(@NonNull final SystemContext context) {
-        genesisSchema.createGenesisAddressBookAndNodeDetails(context);
-        genesisSchema.createGenesisExchangeRate(context);
-        genesisSchema.createGenesisFeeSchedule(context);
-        genesisSchema.createGenesisNetworkProperties(context);
-        genesisSchema.createGenesisHapiPermissions(context);
-        genesisSchema.createGenesisThrottleDefinitions(context);
-        genesisSchema.createGenesisSoftwareUpdateFiles(context);
+        fileSchema.createGenesisAddressBookAndNodeDetails(context);
+        fileSchema.createGenesisExchangeRate(context);
+        fileSchema.createGenesisFeeSchedule(context);
+        fileSchema.createGenesisNetworkProperties(context);
+        fileSchema.createGenesisHapiPermissions(context);
+        fileSchema.createGenesisThrottleDefinitions(context);
+        fileSchema.createGenesisSoftwareUpdateFiles(context);
     }
 
     /**
@@ -68,8 +68,8 @@ public final class FileServiceImpl implements FileService {
      *
      * @return the genesis file schema
      */
-    public V0490FileSchema genesisSchema() {
-        return genesisSchema;
+    public V0490FileSchema fileSchema() {
+        return fileSchema;
     }
 
     /**
@@ -80,6 +80,6 @@ public final class FileServiceImpl implements FileService {
      */
     public void updateNodeDetailsAfterFreeze(
             @NonNull final SystemContext context, @NonNull final ReadableNodeStore nodeStore) {
-        genesisSchema.updateNodeDetailsAfterFreeze(context, nodeStore);
+        fileSchema.updateNodeDetailsAfterFreeze(context, nodeStore);
     }
 }

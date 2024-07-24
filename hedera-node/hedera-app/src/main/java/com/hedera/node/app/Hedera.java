@@ -694,7 +694,7 @@ public final class Hedera implements SwirldMain {
             daggerApp.throttleServiceManager().init(state, throttleDefinitionsFrom(state));
         } else {
             // Otherwise initialize facilities from the pending genesis file contents
-            final var schema = fileServiceImpl.genesisSchema();
+            final var schema = fileServiceImpl.fileSchema();
             daggerApp.exchangeRateManager().init(state, schema.genesisExchangeRates(bootstrapConfig));
             daggerApp.feeManager().update(schema.genesisFeeSchedules(bootstrapConfig));
             daggerApp.throttleServiceManager().init(state, schema.genesisThrottleDefinitions(bootstrapConfig));

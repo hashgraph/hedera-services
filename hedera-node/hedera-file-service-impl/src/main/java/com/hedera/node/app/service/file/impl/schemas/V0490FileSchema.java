@@ -64,6 +64,7 @@ import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
@@ -263,9 +264,8 @@ public class V0490FileSchema extends Schema {
                                 .nodeCertHash(node.grpcCertificateHash())
                                 .description(node.description())
                                 .stake(node.weight())
-                                .rsaPubKey(CommonUtils.hex(getPublicKeyFromCertBytes(
-                                                node.grpcCertificateHash().toByteArray())
-                                        .getEncoded()))
+                                .rsaPubKey(getRsaPubKey(getPublicKeyFromCertBytes(
+                                        node.grpcCertificateHash().toByteArray())))
                                 .serviceEndpoint(node.serviceEndpoint())
                                 .build());
                     } catch (IOException e) {
@@ -650,13 +650,23 @@ public class V0490FileSchema extends Schema {
 
     private PublicKey getPublicKeyFromCertBytes(@NonNull final byte[] certBytes) throws IOException {
         PublicKey ret = null;
-        try {
-            X509Certificate certificate = (X509Certificate)
-                    CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(certBytes));
-            ret = certificate.getPublicKey();
-        } catch (final CertificateException e) {
-            throw new IOException("Not able to create x509 certificate", e);
+        if (certBytes.length != 0) {
+            try {
+                X509Certificate certificate = (X509Certificate) CertificateFactory.getInstance("X.509")
+                        .generateCertificate(new ByteArrayInputStream(certBytes));
+                ret = certificate.getPublicKey();
+            } catch (final CertificateException e) {
+                throw new IOException("Not able to create x509 certificate", e);
+            }
         }
         return ret;
+    }
+
+    private String getRsaPubKey(@Nullable final PublicKey publicKey) {
+        if (publicKey == null) {
+            return "null"; // because CommonUtils.hex return "null"
+        } else {
+            return CommonUtils.hex(publicKey.getEncoded());
+        }
     }
 }
