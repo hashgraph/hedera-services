@@ -40,8 +40,10 @@ import com.hedera.node.app.service.token.impl.WritableStakingInfoStore;
 import com.hedera.node.app.service.token.records.NodeStakeUpdateRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
 import com.hedera.node.app.spi.numbers.HederaAccountNumbers;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
@@ -74,6 +76,7 @@ public class EndOfStakingPeriodUpdater {
 
     /**
      * Constructs an {@link EndOfStakingPeriodUpdater} instance.
+     *
      * @param accountNumbers the account numbers
      * @param stakeRewardsHelper the staking rewards helper
      */
@@ -91,7 +94,7 @@ public class EndOfStakingPeriodUpdater {
      *
      * @param context the context of the transaction used to end the staking period
      */
-    public void updateNodes(@NonNull final TokenContext context) {
+    public @Nullable SingleTransactionRecordBuilder updateNodes(@NonNull final TokenContext context) {
         final var consensusTime = context.consensusTime();
         log.info("Updating node stakes for a just-finished period @ {}", consensusTime);
 
@@ -99,7 +102,7 @@ public class EndOfStakingPeriodUpdater {
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
         if (!stakingConfig.isEnabled()) {
             log.info("Staking not enabled, nothing to do");
-            return;
+            return null;
         }
 
         final ReadableAccountStore accountStore = context.readableStore(ReadableAccountStore.class);
@@ -256,8 +259,7 @@ public class EndOfStakingPeriodUpdater {
         // We don't want to fail adding the preceding child record for the node stake update that happens every
         // midnight. So, we add the preceding child record builder as unchecked, that doesn't fail with
         // MAX_CHILD_RECORDS_EXCEEDED
-        final var nodeStakeUpdateBuilder = context.addPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class);
-        nodeStakeUpdateBuilder
+        return context.addPrecedingChildRecordBuilder(NodeStakeUpdateRecordBuilder.class)
                 .transaction(transactionWith(syntheticNodeStakeUpdateTxn.build()))
                 .memo("End of staking period calculation record")
                 .status(SUCCESS);
@@ -347,6 +349,7 @@ public class EndOfStakingPeriodUpdater {
 
     /**
      * Returns the timestamp that is just before midnight of the day of the given consensus time.
+     *
      * @param consensusTime the consensus time
      * @return the timestamp that is just before midnight of the day of the given consensus time
      */

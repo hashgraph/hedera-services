@@ -35,6 +35,7 @@ import com.hedera.hapi.node.state.contract.Bytecode;
 import com.hedera.hapi.node.state.contract.SlotKey;
 import com.hedera.hapi.node.state.contract.SlotValue;
 import com.hedera.hapi.node.state.file.File;
+import com.hedera.hapi.node.state.primitives.ProtoBytes;
 import com.hedera.hapi.node.state.primitives.ProtoLong;
 import com.hedera.hapi.node.state.primitives.ProtoString;
 import com.hedera.hapi.node.state.schedule.Schedule;
@@ -109,6 +110,9 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
                     .build();
             case FileID fileID -> MapChangeKey.newBuilder().fileIdKey(fileID).build();
             case NftID nftID -> MapChangeKey.newBuilder().nftIdKey(nftID).build();
+            case ProtoBytes protoBytes -> MapChangeKey.newBuilder()
+                    .protoBytesKey(protoBytes.value())
+                    .build();
             case ProtoLong protoLong -> MapChangeKey.newBuilder()
                     .protoLongKey(protoLong.value())
                     .build();

@@ -242,7 +242,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
         }
         while (!stack.isEmpty()) {
             // The root stack must capture its state changes before committing the first savepoint
-            if (isRoot && stack.size() == 1) {
+            if (isRoot && HandleWorkflow.STREAM_MODE != RECORDS && stack.size() == 1) {
                 final var stateChanges = ((WrappedHederaState) stack.peek().state()).pendingStateChanges();
                 switch (cause) {
                     case STATE_CHANGE_CAUSE_SYSTEM -> {
