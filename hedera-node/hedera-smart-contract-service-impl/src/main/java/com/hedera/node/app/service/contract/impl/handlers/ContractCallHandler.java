@@ -75,7 +75,7 @@ public class ContractCallHandler implements TransactionHandler {
         // (FUTURE) Remove ExternalizeAbortResult.NO, this is only
         // for mono-service fidelity during differential testing
         outcome.addCallDetailsTo(
-                context.recordBuilders().getOrCreate(ContractCallRecordBuilder.class), ExternalizeAbortResult.NO);
+                context.savepointStack().getBaseBuilder(ContractCallRecordBuilder.class), ExternalizeAbortResult.NO);
 
         throwIfUnsuccessful(outcome.status());
     }

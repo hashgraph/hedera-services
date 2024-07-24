@@ -18,18 +18,12 @@ package com.swirlds.platform.uptime;
 
 import static com.swirlds.logging.legacy.LogMarker.EXCEPTION;
 
-import com.swirlds.common.FastCopyable;
-import com.swirlds.common.io.SelfSerializable;
-import com.swirlds.common.io.streams.SerializableDataInputStream;
-import com.swirlds.common.io.streams.SerializableDataOutputStream;
 import com.swirlds.common.platform.NodeId;
 import com.swirlds.platform.system.events.ConsensusEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
@@ -38,65 +32,27 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Contains the uptime data for the network.
+ * Uptime data about nodes in the address book.
  */
-public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUptimeData {
+public class UptimeData {
 
-    private static final Logger logger = LogManager.getLogger(UptimeDataImpl.class);
+    /**
+     * The round reported if no events have been observed.
+     */
+    public static final long NO_ROUND = -1;
 
-    private static final long CLASS_ID = 0x1f13fa8c89b27a8cL;
-
-    private static final int MAX_NODE_COUNT = 1024;
-
-    private static final class ClassVersion {
-        public static final int ORIGINAL = 1;
-        public static final int SELF_SERIALIZABLE_NODE_ID = 2;
-    }
+    private static final Logger logger = LogManager.getLogger(UptimeData.class);
 
     private final SortedMap<NodeId, NodeUptimeData> data = new TreeMap<>();
 
     /**
-     * Zero arg constructor required by serialization engine.
+     * Get the consensus time when the most recent consensus event from the given node was observed, or null if no
+     * consensus event from the given node has ever been observed.
+     *
+     * @param id the node ID
+     * @return the consensus time when the most recent consensus event from the given node was observed, or null if no
+     * consensus event from the given node has ever been received
      */
-    public UptimeDataImpl() {}
-
-    /**
-     * Copy constructor.
-     */
-    private UptimeDataImpl(@NonNull final UptimeDataImpl other) {
-        for (final Entry<NodeId, NodeUptimeData> entry : other.data.entrySet()) {
-            data.put(entry.getKey(), entry.getValue().copy());
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long getClassId() {
-        return CLASS_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getVersion() {
-        return ClassVersion.SELF_SERIALIZABLE_NODE_ID;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int getMinimumSupportedVersion() {
-        return ClassVersion.ORIGINAL;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     @Nullable
     public Instant getLastEventTime(@NonNull final NodeId id) {
         Objects.requireNonNull(id, "id must not be null");
@@ -108,9 +64,13 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
     }
 
     /**
-     * {@inheritDoc}
+     * Get the round when the most recent consensus event from the given node was observed, or {@link UptimeData#NO_ROUND} if no
+     * consensus event from the given node has ever been observed.
+     *
+     * @param id the node ID
+     * @return the round when the most recent consensus event from the given node was observed, or {@link UptimeData#NO_ROUND} if
+     * no consensus event from the given node has ever been observed
      */
-    @Override
     public long getLastEventRound(@NonNull final NodeId id) {
         Objects.requireNonNull(id, "id must not be null");
         final NodeUptimeData nodeData = data.get(id);
@@ -121,9 +81,12 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
     }
 
     /**
-     * {@inheritDoc}
+     * Get the consensus time when the most recent judge from the given node was observed, or null if no judge from the
+     * given node has ever been observed.
+     *
+     * @param id the node ID
+     * @return the consensus time when the most recent judge from the given node was observed, or null if no judge
      */
-    @Override
     @Nullable
     public Instant getLastJudgeTime(@NonNull final NodeId id) {
         Objects.requireNonNull(id, "id must not be null");
@@ -135,9 +98,13 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
     }
 
     /**
-     * {@inheritDoc}
+     * Get the round when the most recent judge from the given node was observed, or {@link UptimeData#NO_ROUND} if no judge from
+     * the given node has ever been observed.
+     *
+     * @param id the node ID
+     * @return the round when the most recent judge from the given node was observed, or {@link UptimeData#NO_ROUND} if no judge
+     * from the given node has ever been observed
      */
-    @Override
     public long getLastJudgeRound(@NonNull final NodeId id) {
         Objects.requireNonNull(id, "id must not be null");
         final NodeUptimeData nodeData = data.get(id);
@@ -148,18 +115,21 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
     }
 
     /**
-     * {@inheritDoc}
+     * Get the set of node IDs that are currently being tracked.
+     *
+     * @return the set of node IDs that are currently being tracked
      */
     @NonNull
-    @Override
     public Set<NodeId> getTrackedNodes() {
         return new HashSet<>(data.keySet());
     }
 
     /**
-     * {@inheritDoc}
+     * Record data about the most recent event received by a node.
+     *
+     * @param event the event
+     * @param round the round number
      */
-    @Override
     public void recordLastEvent(@NonNull final ConsensusEvent event, final long round) {
         final NodeUptimeData nodeData = data.get(event.getCreatorId());
         if (nodeData == null) {
@@ -172,9 +142,11 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
     }
 
     /**
-     * {@inheritDoc}
+     * Record data about the most recent judge received by a node.
+     *
+     * @param event the judge
+     * @param round the round number
      */
-    @Override
     public void recordLastJudge(@NonNull final ConsensusEvent event, final long round) {
         final NodeUptimeData nodeData = data.get(event.getCreatorId());
         if (nodeData == null) {
@@ -186,61 +158,22 @@ public class UptimeDataImpl implements FastCopyable, SelfSerializable, MutableUp
     }
 
     /**
-     * {@inheritDoc}
+     * Start tracking data for a new node.
+     *
+     * @param node the node ID
      */
-    @Override
     public void addNode(@NonNull final NodeId node) {
         Objects.requireNonNull(node, "node must not be null");
         data.put(node, new NodeUptimeData());
     }
 
-    @Override
+    /**
+     * Stop tracking data for a node.
+     *
+     * @param node the node ID
+     */
     public void removeNode(@NonNull final NodeId node) {
         Objects.requireNonNull(node, "node must not be null");
         data.remove(node);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void serialize(@NonNull final SerializableDataOutputStream out) throws IOException {
-        out.writeInt(data.size());
-        for (final Entry<NodeId, NodeUptimeData> entry : data.entrySet()) {
-            out.writeSerializable(entry.getKey(), false);
-            out.writeSerializable(entry.getValue(), false);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void deserialize(@NonNull final SerializableDataInputStream in, final int version) throws IOException {
-        final int lastConsensusEventTimesSize = in.readInt();
-        if (lastConsensusEventTimesSize > MAX_NODE_COUNT) {
-            // Safety sanity check, don't let an attacker force us to allocate too much memory.
-            throw new IOException("too many nodes");
-        }
-
-        for (int i = 0; i < lastConsensusEventTimesSize; i++) {
-            final NodeId nodeId;
-            if (version < ClassVersion.SELF_SERIALIZABLE_NODE_ID) {
-                nodeId = new NodeId(in.readLong());
-            } else {
-                nodeId = in.readSerializable(false, NodeId::new);
-            }
-            data.put(nodeId, in.readSerializable(false, NodeUptimeData::new));
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @SuppressWarnings("unchecked")
-    @NonNull
-    @Override
-    public UptimeDataImpl copy() {
-        return new UptimeDataImpl(this);
     }
 }

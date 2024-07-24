@@ -22,6 +22,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdForKeyLookU
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.asIdWithAlias;
 import static com.hedera.services.bdd.spec.transactions.TxnUtils.suFrom;
 import static com.hedera.services.bdd.spec.transactions.token.TokenMovement.HBAR_SENTINEL_TOKEN_ID;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
@@ -29,6 +30,7 @@ import static java.util.stream.Collectors.reducing;
 import static java.util.stream.Collectors.summingLong;
 import static java.util.stream.Collectors.toList;
 
+import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UInt32Value;
@@ -276,6 +278,11 @@ public class HapiCryptoTransfer extends HapiTxnOp<HapiCryptoTransfer> {
     public static Function<HapiSpec, TransferList> tinyBarsFromTo(
             final ByteString from, final ByteString to, final long amount) {
         return tinyBarsFromTo(from, to, ignore -> amount);
+    }
+
+    public static Function<HapiSpec, TransferList> tinyBarsFromTo(
+            final String from, final Address to, final long amount) {
+        return tinyBarsFromTo(from, ByteString.copyFrom(unhex(to.toString().substring(2))), ignore -> amount);
     }
 
     public static Function<HapiSpec, TransferList> tinyBarsFromTo(

@@ -16,6 +16,10 @@
 
 package com.swirlds.platform.test.network.communication.multithreaded;
 
+import com.swirlds.common.context.PlatformContext;
+import com.swirlds.common.test.fixtures.platform.TestPlatformContextBuilder;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.config.extensions.test.fixtures.TestConfigBuilder;
 import com.swirlds.platform.network.Connection;
 import com.swirlds.platform.network.ConnectionManager;
 import com.swirlds.platform.network.communication.NegotiationProtocols;
@@ -28,6 +32,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Used to run a negotiator in a separate thread and capture any exceptions it might throw
  */
 class TestNegotiator {
+    private final Configuration configuration = new TestConfigBuilder().getOrCreateConfig();
+    private final PlatformContext platformContext =
+            TestPlatformContextBuilder.create().withConfiguration(configuration).build();
+
     private final TestProtocol protocol;
     private final ProtocolNegotiatorThread negotiator;
     private final Thread thread;
@@ -42,7 +50,8 @@ class TestNegotiator {
                 connectionManager,
                 100,
                 List.of(c -> handshakeRan.incrementAndGet()),
-                new NegotiationProtocols(List.of(protocol)));
+                new NegotiationProtocols(List.of(protocol)),
+                platformContext.getTime());
         thread = new Thread(this::run);
     }
 
