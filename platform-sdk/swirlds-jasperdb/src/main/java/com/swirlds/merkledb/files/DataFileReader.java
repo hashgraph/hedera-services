@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  *
  * <p>Protobuf schema:
  *
- * <p><pre>
+ * <pre>
  * message DataFile {
  *
  *     // File index in its file collection

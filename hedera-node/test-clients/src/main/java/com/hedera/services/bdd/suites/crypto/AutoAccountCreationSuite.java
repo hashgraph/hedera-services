@@ -491,10 +491,7 @@ public class AutoAccountCreationSuite {
                         sourcing(() -> childRecordsCheck(
                                 nftTransfer,
                                 SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .consensusTimeImpliedByNonce(
-                                                parentConsTime.get(), hasNodeStakeUpdate.get() ? -2 : -1),
+                                recordWith().status(SUCCESS).consensusTimeImpliedByOffset(parentConsTime.get(), -2),
                                 recordWith().status(SUCCESS))));
     }
 
@@ -1633,6 +1630,7 @@ public class AutoAccountCreationSuite {
                 .then(getTxnRecord(NFT_XFER)
                         .hasNonStakingChildRecordCount(2)
                         .hasPriority(recordWith().autoAssociationCount(1))
+                        .logged()
                         .hasChildRecords(
                                 recordWith().status(SUCCESS).memo(LAZY_MEMO),
                                 recordWith().status(SUCCESS)));

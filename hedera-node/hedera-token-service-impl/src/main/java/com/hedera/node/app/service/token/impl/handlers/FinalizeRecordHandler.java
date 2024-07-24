@@ -40,12 +40,12 @@ import com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHan
 import com.hedera.node.app.service.token.records.ChildRecordBuilder;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.FinalizeContext;
-import com.hedera.node.app.service.token.records.ParentRecordFinalizer;
 import com.hedera.node.app.spi.workflows.HandleException;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.node.config.data.StakingConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,8 +60,8 @@ import org.apache.logging.log4j.Logger;
  * This class is used to "finalize" hbar and token transfers for the parent transaction record.
  */
 @Singleton
-public class FinalizeParentRecordHandler extends RecordFinalizerBase implements ParentRecordFinalizer {
-    private static final Logger logger = LogManager.getLogger(FinalizeParentRecordHandler.class);
+public class FinalizeRecordHandler extends RecordFinalizerBase {
+    private static final Logger logger = LogManager.getLogger(FinalizeRecordHandler.class);
     public static final long LEDGER_TOTAL_TINY_BAR_FLOAT = 5000000000000000000L;
     private static final List<AccountAmount> GENESIS_TREASURY_CREDIT = List.of(AccountAmount.newBuilder()
             .amount(LEDGER_TOTAL_TINY_BAR_FLOAT)
@@ -71,20 +71,32 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
     private final StakingRewardsHandler stakingRewardsHandler;
 
     /**
-     * Constructs a {@link FinalizeParentRecordHandler} instance.
+     * Constructs a {@link FinalizeRecordHandler} instance.
      * @param stakingRewardsHandler the {@link StakingRewardsHandler} instance
      */
     @Inject
-    public FinalizeParentRecordHandler(@NonNull final StakingRewardsHandler stakingRewardsHandler) {
+    public FinalizeRecordHandler(@NonNull final StakingRewardsHandler stakingRewardsHandler) {
         this.stakingRewardsHandler = stakingRewardsHandler;
     }
 
-    @Override
-    public void finalizeParentRecord(
+    public void finalizeStakingRecord(
             @NonNull final FinalizeContext context,
             @NonNull final HederaFunctionality functionality,
             @NonNull final Set<AccountID> explicitRewardReceivers,
             @NonNull final Map<AccountID, Long> prePaidRewards) {
+        finalizeRecord(context, functionality, explicitRewardReceivers, prePaidRewards);
+    }
+
+    public void finalizeNonStakingRecord(
+            @NonNull final FinalizeContext context, @NonNull final HederaFunctionality functionality) {
+        finalizeRecord(context, functionality, null, null);
+    }
+
+    private void finalizeRecord(
+            @NonNull final FinalizeContext context,
+            @NonNull final HederaFunctionality functionality,
+            @Nullable final Set<AccountID> explicitRewardReceivers,
+            @Nullable final Map<AccountID, Long> prePaidRewards) {
         final var recordBuilder = context.userTransactionRecordBuilder(CryptoTransferRecordBuilder.class);
 
         // This handler won't ask the context for its transaction, but instead will determine the net hbar transfers and
@@ -97,7 +109,7 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
         final var stakingConfig = context.configuration().getConfigData(StakingConfig.class);
         final var writableTokenStore = context.writableStore(WritableTokenStore.class);
 
-        if (stakingConfig.isEnabled()) {
+        if (stakingConfig.isEnabled() && explicitRewardReceivers != null && prePaidRewards != null) {
             // staking rewards are triggered for any balance changes to account's that are staked to
             // a node. They are also triggered if staking related fields are modified
             // Calculate staking rewards and add them also to hbarChanges here, before assessing
@@ -194,11 +206,9 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
             }
             for (final var childChange : childHbarChangesFromRecord) {
                 final var accountId = childChange.accountID();
-                if (hbarChanges.containsKey(accountId)) {
-                    final var newAdjust = hbarChanges.merge(accountId, -childChange.amount(), Long::sum);
-                    if (newAdjust == 0) {
-                        hbarChanges.remove(accountId);
-                    }
+                final var newAdjust = hbarChanges.merge(accountId, -childChange.amount(), Long::sum);
+                if (newAdjust == 0) {
+                    hbarChanges.remove(accountId);
                 }
             }
             for (final var tokenTransfers : childRecord.tokenTransferLists()) {
@@ -209,11 +219,9 @@ public class FinalizeParentRecordHandler extends RecordFinalizerBase implements 
                         final var accountId = unitAdjust.accountIDOrThrow();
                         final var amount = unitAdjust.amount();
                         final var key = new EntityIDPair(accountId, tokenId);
-                        if (fungibleChanges.containsKey(key)) {
-                            final var newAdjust = fungibleChanges.merge(key, -amount, Long::sum);
-                            if (newAdjust == 0) {
-                                fungibleChanges.remove(key);
-                            }
+                        final var newAdjust = fungibleChanges.merge(key, -amount, Long::sum);
+                        if (newAdjust == 0) {
+                            fungibleChanges.remove(key);
                         }
                     }
                 } else {
