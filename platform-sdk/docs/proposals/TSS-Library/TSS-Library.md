@@ -9,6 +9,7 @@ Provide necessary components for signing messages using a TSS scheme.
 | Designers          | Austin, Cody, Edward, Rohit, Maxi, <br/> Platform team | 
 | Functional Impacts | Platform team. Release engineering. DevOps             |
 | Related Proposals  | TSS-Roster, TSS-Ledger-Id                              |
+| Version            | 2                                                      |
 
 
 ## Purpose and Context
@@ -369,12 +370,12 @@ To implement the functionality detailed in the previous section, the following c
 ![img_6.png](img_6.svg)
 1. **hedera-cryptography**: This is a separate repository for hosting cryptography-related libraries.
    It is necessary to facilitate our build process, which includes Rust libraries. It also provides independent release cycles between consensus node code and other library users.
-2. **swirlds-nativesupport**: Gradle module that enables loading into memory compiled native libraries so they can be used with JNI.
-3. **swirlds-crypto-tss**: Gradle module for the TSS Library.
-   This library's only client is the consensus node, so it will be in the hedera-services repository, under the `platform-sdk` folder.
-4. **swirlds-crypto-signatures**: Gradle module for the Bilinear Pairings Signature Library.
-5. **swirlds-crypto-pairings-api**: Gradle module for the Bilinear Pairings API. Minimizes the impact of adding or removing implementations.
-6. **swirlds-crypto-altbn128**: Gradle module that will implement the Bilinear Pairings API using alt-bn128 elliptic curve.
+2. **hedera-common-nativesupport**: Gradle module that enables loading into memory compiled native libraries so they can be used with JNI.
+3. **hedera-cryptography-tss**: Gradle module for the TSS Library.
+   This library's only client is the consensus node, so it will be in the `hedera-services` repository, under a newly created `hedera-cryptography` folder in `hedera-services`.
+4. **hedera-cryptography-signatures**: Gradle module for the Bilinear Pairings Signature Library.
+5. **hedera-cryptography-pairings-api**: Gradle module for the Bilinear Pairings API. Minimizes the impact of adding or removing implementations.
+6. **hedera-cryptography-altbn128**: Gradle module that will implement the Bilinear Pairings API using alt-bn128 elliptic curve.
    That curve has been chosen due to EVM support. The arkworks rust library will provide the underlying cryptography implementation.
    The module will include Java and Rust code that will be compiled for all supported system architectures and distributed in a jar with a predefined structure.
 
@@ -393,12 +394,12 @@ While developing and on a developer’s machine, Rust code will be built for the
 Once the code is merged to develop, the CI/CD pipeline compiles the Rust code into a binary library for each of the multiple supported platforms, packages it into a jar, and publishes it to Maven.
 The dependency from the Maven repo will contain the Java code and the binary library cross-compiled for all supported architectures.
 
-We will provide a library `swirlds-nativesupport` that will help load and use native code through JNI.
+We will provide a library `hedera-common-nativesupport` that will help load and use native code through JNI.
 The low-level details of the build logic for this to work are outside the scope of this proposal.
 A high overview is mentioned for the benefit of readers and will be provided by the DevOps Team alongside the RE Team.
 
 ### Libraries Specifications
-#### Swirlds Crypto Pairings API
+#### Hedera Cryptography Pairings API
 ##### Overview
 This API will expose general arithmetic operations to work with Bilinear Pairings and EC curves that implementations must provide.
 
@@ -490,7 +491,7 @@ static {
 ```
 
 
-#### Swirlds Crypto Pairings Signature Library
+#### Hedera Cryptography Pairings Signatures Library
 ##### Overview
 This module provides cryptography primitives to create EC PublicKeys, EC PrivateKeys, and Signatures.
 
@@ -553,10 +554,10 @@ static{
 ##### Constraints
 This module will not depend on hedera-services artifacts, so it cannot include logging, metrics, configuration, or any other helper module from that repo.
 ##### Dependencies
-swirlds-cryptography-pairings-API and runtime implementation
+hedera-cryptography-pairings-api and runtime implementation
 
 
-#### Swirlds Crypto TSS Library
+#### Hedera Cryptography TSS Library
 ##### Overview
 This library implements the Groth21 TSS-specific primitives.
 
@@ -671,7 +672,7 @@ static {
 }
 ```
 
-#### Swirlds Native Support
+#### Hedera Common Native Support
 ##### Overview
 This library provides classes that assist other modules to load native libraries packaged in dependency jars.
 
@@ -712,14 +713,14 @@ https://github.com/hashgraph/full-stack-testing/blob/c3fd5602525145be132770116f5
 
 
 
-#### Swirlds Crypto Pairings Alt-128 
+#### Hedera Cryptography alt-bn128 
 ##### Overview
 Implementation module of the parings API for alt-bn128 pairings friendly curve.
 The underlying cryptography primitives will be provided by `arkwrorks` accessed through custom Rust code and Java JNI interface.
 
 ###### Code Organization Structure:
 ```
-swirlds-crypto-pairings-altbn128
+hedera-cryptography-altbn128
     ├── main
     │   ├── java
     │   │   └── **
