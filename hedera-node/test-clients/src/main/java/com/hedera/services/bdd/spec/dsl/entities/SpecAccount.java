@@ -21,6 +21,7 @@ import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
 import static com.hedera.node.app.service.contract.impl.utils.ConversionUtils.headlongAddressOf;
 import static com.hedera.services.bdd.spec.dsl.utils.DslUtils.atMostOnce;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
+import static com.hedera.services.bdd.suites.HapiSuite.TINY_PARTS_PER_WHOLE;
 import static java.util.Objects.requireNonNull;
 
 import com.esaulpaugh.headlong.abi.Address;
@@ -37,6 +38,7 @@ import com.hedera.services.bdd.spec.dsl.operations.transactions.AssociateTokensO
 import com.hedera.services.bdd.spec.dsl.operations.transactions.AuthorizeContractOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DeleteAccountOperation;
 import com.hedera.services.bdd.spec.dsl.operations.transactions.DissociateTokensOperation;
+import com.hedera.services.bdd.spec.dsl.operations.transactions.TransferTokensOperation;
 import com.hedera.services.bdd.spec.dsl.utils.KeyMetadata;
 import com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoCreate;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -48,7 +50,11 @@ import java.util.List;
  */
 public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
         implements SpecEntity, EvmAddressableEntity {
+    private static final long UNSPECIFIED_CENT_BALANCE = -1;
+
     private final Account.Builder builder = Account.newBuilder();
+
+    private long centBalance = UNSPECIFIED_CENT_BALANCE;
 
     public SpecAccount(@NonNull final String name) {
         super(name);
@@ -62,6 +68,34 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     public Account.Builder builder() {
         throwIfLocked();
         return builder;
+    }
+
+    /**
+     * Sets the initial balance of the account in USD cents, to be converted to tinybars at the target network's
+     * active exchange rate at the time of creating this account.
+     *
+     * @param centBalance the initial balance in cents
+     * @return {@code this}
+     */
+    public SpecAccount centBalance(final long centBalance) {
+        throwIfLocked();
+        this.centBalance = centBalance;
+        return this;
+    }
+
+    /**
+     * Returns an operation to transfer tokens, transferring its balance to the given beneficiary.
+     *
+     * @param to the beneficiary
+     * @param units the number of units to transfer
+     * @param token the token to transfer
+     * @return the operation
+     */
+    public TransferTokensOperation transferUnitsTo(
+            @NonNull final SpecAccount to, final long units, @NonNull final SpecFungibleToken token) {
+        requireNonNull(token);
+        requireNonNull(to);
+        return new TransferTokensOperation(this, to, token, units);
     }
 
     /**
@@ -171,9 +205,12 @@ public class SpecAccount extends AbstractSpecEntity<HapiCryptoCreate, Account>
     @Override
     protected Creation<HapiCryptoCreate, Account> newCreation(@NonNull final HapiSpec spec) {
         final var model = builder.build();
-        final var op = cryptoCreate(name)
-                .balance(model.tinybarBalance())
-                .maxAutomaticTokenAssociations(model.maxAutoAssociations());
+        final var op = cryptoCreate(name).maxAutomaticTokenAssociations(model.maxAutoAssociations());
+        if (centBalance != UNSPECIFIED_CENT_BALANCE) {
+            op.balance(spec.ratesProvider().toTbWithActiveRates(centBalance * TINY_PARTS_PER_WHOLE));
+        } else {
+            op.balance(model.tinybarBalance());
+        }
         if (model.hasStakedNodeId()) {
             op.stakedNodeId(model.stakedNodeIdOrThrow());
         }

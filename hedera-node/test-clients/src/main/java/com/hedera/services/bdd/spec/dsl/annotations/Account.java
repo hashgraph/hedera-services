@@ -38,11 +38,19 @@ public @interface Account {
     String name() default "";
 
     /**
-     * If set, the initial balance of the account.
+     * If set, the initial balance of the account in tinybars.
      *
-     * @return the initial balance of the account
+     * @return the initial balance of the account in tinybars
      */
-    long balance() default 0;
+    long tinybarBalance() default 0;
+
+    /**
+     * If set, the initial balance of the account in cents (to be converted to tinybars at the spec's
+     * active exchange rate).
+     *
+     * @return the initial balance of the account in cents
+     */
+    long centBalance() default 0;
 
     /**
      * If set, the initial staked node id of the account.
