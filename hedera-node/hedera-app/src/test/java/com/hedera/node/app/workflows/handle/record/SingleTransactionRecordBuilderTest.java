@@ -27,6 +27,7 @@ import com.hedera.hapi.node.base.ContractID;
 import com.hedera.hapi.node.base.FileID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.ScheduleID;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenID;
 import com.hedera.hapi.node.base.TokenTransferList;
@@ -113,9 +114,7 @@ public class SingleTransactionRecordBuilderTest {
         final List<AccountAmount> paidStakingRewards = List.of(accountAmount);
         final List<Long> serialNumbers = List.of(1L, 2L, 3L);
 
-        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
-                new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME);
-        assertEquals(CONSENSUS_TIME, singleTransactionRecordBuilder.consensusNow());
+        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder = new SingleTransactionRecordBuilderImpl();
 
         singleTransactionRecordBuilder
                 .parentConsensus(PARENT_CONSENSUS_TIME)
@@ -185,9 +184,9 @@ public class SingleTransactionRecordBuilderTest {
         }
         assertEquals(
                 transactionHash, singleTransactionRecord.transactionRecord().transactionHash());
+        // Consensus timestamp will be set at end of handle workflow
         assertEquals(
-                HapiUtils.asTimestamp(CONSENSUS_TIME),
-                singleTransactionRecord.transactionRecord().consensusTimestamp());
+                Timestamp.DEFAULT, singleTransactionRecord.transactionRecord().consensusTimestamp());
         assertEquals(transactionID, singleTransactionRecord.transactionRecord().transactionID());
         assertEquals(MEMO, singleTransactionRecord.transactionRecord().memo());
         assertEquals(
@@ -212,19 +211,19 @@ public class SingleTransactionRecordBuilderTest {
 
         assertTransactionReceiptProps(
                 singleTransactionRecord.transactionRecord().receipt(), serialNumbers);
-
+        // Consensus timestamp will be set at end of handle workflow
         final var expectedTransactionSidecarRecords = List.of(
                 new TransactionSidecarRecord(
-                        HapiUtils.asTimestamp(CONSENSUS_TIME),
+                        Timestamp.DEFAULT,
                         false,
                         new OneOf<>(
                                 TransactionSidecarRecord.SidecarRecordsOneOfType.STATE_CHANGES, contractStateChanges)),
                 new TransactionSidecarRecord(
-                        HapiUtils.asTimestamp(CONSENSUS_TIME),
+                        Timestamp.DEFAULT,
                         false,
                         new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.ACTIONS, contractActions)),
                 new TransactionSidecarRecord(
-                        HapiUtils.asTimestamp(CONSENSUS_TIME),
+                        Timestamp.DEFAULT,
                         false,
                         new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, contractBytecode)));
         assertEquals(expectedTransactionSidecarRecords, singleTransactionRecord.transactionSidecarRecords());
@@ -248,21 +247,19 @@ public class SingleTransactionRecordBuilderTest {
 
     @Test
     void testTopLevelRecordBuilder() {
-        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
-                new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME);
+        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder = new SingleTransactionRecordBuilderImpl();
 
         singleTransactionRecordBuilder.transaction(transaction);
 
-        assertEquals(CONSENSUS_TIME, singleTransactionRecordBuilder.consensusNow());
         assertNull(singleTransactionRecordBuilder.parentConsensusTimestamp());
         assertEquals(ResponseCodeEnum.OK, singleTransactionRecordBuilder.status());
 
         SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder.build();
 
         assertEquals(transaction, singleTransactionRecord.transaction());
+        // Consensus timestamp will be set at end of handle workflow
         assertEquals(
-                HapiUtils.asTimestamp(CONSENSUS_TIME),
-                singleTransactionRecord.transactionRecord().consensusTimestamp());
+                Timestamp.DEFAULT, singleTransactionRecord.transactionRecord().consensusTimestamp());
         assertNull(singleTransactionRecord.transactionRecord().parentConsensusTimestamp());
         assertEquals(
                 ResponseCodeEnum.OK,
@@ -271,8 +268,7 @@ public class SingleTransactionRecordBuilderTest {
 
     @Test
     void testBuilderWithAddMethods() {
-        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder =
-                new SingleTransactionRecordBuilderImpl(CONSENSUS_TIME);
+        SingleTransactionRecordBuilderImpl singleTransactionRecordBuilder = new SingleTransactionRecordBuilderImpl();
 
         SingleTransactionRecord singleTransactionRecord = singleTransactionRecordBuilder
                 .transaction(transaction)
@@ -287,9 +283,9 @@ public class SingleTransactionRecordBuilderTest {
                 .build();
 
         assertEquals(transaction, singleTransactionRecord.transaction());
+        // Consensus timestamp will be set at end of handle workflow
         assertEquals(
-                HapiUtils.asTimestamp(CONSENSUS_TIME),
-                singleTransactionRecord.transactionRecord().consensusTimestamp());
+                Timestamp.DEFAULT, singleTransactionRecord.transactionRecord().consensusTimestamp());
         assertNull(singleTransactionRecord.transactionRecord().parentConsensusTimestamp());
         assertEquals(
                 ResponseCodeEnum.OK,
@@ -311,17 +307,19 @@ public class SingleTransactionRecordBuilderTest {
                 singleTransactionRecord.transactionRecord().receipt().serialNumbers());
 
         final var expectedTransactionSidecarRecords = List.of(
+                // Consensus timestamp will be set at end of handle workflow
                 new TransactionSidecarRecord(
-                        HapiUtils.asTimestamp(CONSENSUS_TIME),
+                        Timestamp.DEFAULT,
                         false,
                         new OneOf<>(
                                 TransactionSidecarRecord.SidecarRecordsOneOfType.STATE_CHANGES, contractStateChanges)),
                 new TransactionSidecarRecord(
-                        HapiUtils.asTimestamp(CONSENSUS_TIME),
+                        Timestamp.DEFAULT,
                         false,
                         new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.ACTIONS, contractActions)),
+                // Consensus timestamp will be set at end of handle workflow
                 new TransactionSidecarRecord(
-                        HapiUtils.asTimestamp(CONSENSUS_TIME),
+                        Timestamp.DEFAULT,
                         false,
                         new OneOf<>(TransactionSidecarRecord.SidecarRecordsOneOfType.BYTECODE, contractBytecode)));
         assertEquals(expectedTransactionSidecarRecords, singleTransactionRecord.transactionSidecarRecords());

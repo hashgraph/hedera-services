@@ -49,13 +49,6 @@ public interface KeySerializer<K extends VirtualKey> extends BaseSerializer<K>, 
     long getCurrentDataVersion();
 
     /**
-     * @return The index to use for indexing the keys that this KeySerializer creates
-     */
-    default KeyIndexType getIndexType() {
-        return getSerializedSize() == Long.BYTES ? KeyIndexType.SEQUENTIAL_INCREMENTING_LONGS : KeyIndexType.GENERIC;
-    }
-
-    /**
      * Compare keyToCompare's data to that contained in the given buffer. The data in the buffer
      * is assumed to be starting at the current buffer position and in the format written by this
      * class's serialize() method. The reason for this rather than just deserializing then doing an

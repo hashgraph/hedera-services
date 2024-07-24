@@ -137,7 +137,7 @@ public class DefaultRoundDurabilityBuffer implements RoundDurabilityBuffer {
      * @return the keystone sequence number
      */
     private static long getKeystoneSequence(@NonNull final ConsensusRound consensusRound) {
-        return consensusRound.getKeystoneEvent().getBaseEvent().getStreamSequenceNumber();
+        return consensusRound.getKeystoneEvent().getStreamSequenceNumber();
     }
 
     /**

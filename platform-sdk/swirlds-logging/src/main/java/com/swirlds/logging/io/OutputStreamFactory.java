@@ -17,10 +17,9 @@
 package com.swirlds.logging.io;
 
 import static com.swirlds.logging.api.extensions.handler.LogHandler.PROPERTY_HANDLER;
-import static com.swirlds.logging.utils.ConfigUtils.configValueOrElse;
-import static com.swirlds.logging.utils.ConfigUtils.readDataSizeInBytes;
 
 import com.swirlds.config.api.Configuration;
+import com.swirlds.logging.utils.ConfigUtils;
 import com.swirlds.logging.utils.FileUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.FileOutputStream;
@@ -67,20 +66,20 @@ public class OutputStreamFactory {
 
         final String propertyPrefix = PROPERTY_HANDLER.formatted(handlerName);
 
-        final Path filePath = configValueOrElse(
+        final Path filePath = ConfigUtils.configValueOrElse(
                 configuration, propertyPrefix + FILE_NAME_PROPERTY, Path.class, Path.of(DEFAULT_FILE_NAME));
 
         try {
             FileUtils.checkOrCreateParentDirectory(filePath);
             final boolean append =
-                    configValueOrElse(configuration, propertyPrefix + APPEND_PROPERTY, Boolean.class, true);
-            final Long maxFileSize = readDataSizeInBytes(configuration, propertyPrefix + SIZE_PROPERTY);
+                    ConfigUtils.configValueOrElse(configuration, propertyPrefix + APPEND_PROPERTY, Boolean.class, true);
+            final Long maxFileSize = ConfigUtils.readDataSizeInBytes(configuration, propertyPrefix + SIZE_PROPERTY);
 
             if (maxFileSize == null) {
                 return new FileOutputStream(filePath.toFile(), append);
             }
 
-            final int maxRollingOver = configValueOrElse(
+            final int maxRollingOver = ConfigUtils.configValueOrElse(
                     configuration, propertyPrefix + MAX_ROLLOVER, Integer.class, DEFAULT_MAX_ROLLOVER_FILES);
             return new RolloverFileOutputStream(filePath, maxFileSize, append, maxRollingOver);
         } catch (IOException | IllegalStateException e) {

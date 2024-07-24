@@ -17,8 +17,8 @@
 package com.hedera.services.bdd.spec.utilops.embedded;
 
 import static com.hedera.node.app.hapi.utils.CommonPbjConverters.toPbj;
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.addressbook.AddressBookService.NAME;
-import static com.hedera.node.app.service.addressbook.impl.AddressBookServiceImpl.NODES_KEY;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.state.addressbook.Node;

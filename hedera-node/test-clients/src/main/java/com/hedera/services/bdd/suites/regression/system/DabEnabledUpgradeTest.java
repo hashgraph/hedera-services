@@ -30,7 +30,6 @@ import static com.hedera.services.bdd.spec.queries.QueryVerbs.getVersionInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.nodeDelete;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.ensureStakingActivated;
-import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.sourcing;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateUpgradeAddressBooks;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.waitUntilStartOfNextStakingPeriod;
@@ -91,16 +90,16 @@ import org.junit.jupiter.api.TestMethodOrder;
 @HapiTestLifecycle
 @OrderedInIsolation
 public class DabEnabledUpgradeTest implements LifecycleTest {
-    @Account(balance = ONE_BILLION_HBARS, stakedNodeId = 0)
+    @Account(tinybarBalance = ONE_BILLION_HBARS, stakedNodeId = 0)
     static SpecAccount NODE0_STAKER;
 
-    @Account(balance = ONE_BILLION_HBARS, stakedNodeId = 1)
+    @Account(tinybarBalance = ONE_BILLION_HBARS, stakedNodeId = 1)
     static SpecAccount NODE1_STAKER;
 
-    @Account(balance = ONE_BILLION_HBARS, stakedNodeId = 2)
+    @Account(tinybarBalance = ONE_BILLION_HBARS, stakedNodeId = 2)
     static SpecAccount NODE2_STAKER;
 
-    @Account(balance = ONE_MILLION_HBARS, stakedNodeId = 3)
+    @Account(tinybarBalance = ONE_MILLION_HBARS, stakedNodeId = 3)
     static SpecAccount NODE3_STAKER;
 
     @BeforeAll
@@ -173,13 +172,10 @@ public class DabEnabledUpgradeTest implements LifecycleTest {
 
         @BeforeAll
         static void beforeAll(@NonNull final TestLifecycle testLifecycle) {
-            testLifecycle.doAdhoc(
-                    newKeyNamed("adminKey"),
-                    nodeCreate("node4")
-                            .adminKeyName("adminKey")
-                            .accountId(NEW_ACCOUNT_ID)
-                            .description(CLASSIC_NODE_NAMES[4])
-                            .withAvailableSubProcessPorts());
+            testLifecycle.doAdhoc(nodeCreate("node4")
+                    .accountId(NEW_ACCOUNT_ID)
+                    .description(CLASSIC_NODE_NAMES[4])
+                    .withAvailableSubProcessPorts());
         }
 
         @HapiTest

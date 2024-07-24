@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeMerkleState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.fixtures.state.FakeServicesRegistry;
 import com.hedera.node.app.services.ServiceMigrator;
@@ -29,7 +29,7 @@ import com.hedera.node.app.spi.fixtures.state.MapWritableStates;
 import com.hedera.node.config.data.HederaConfig;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.metrics.api.Metrics;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -44,22 +44,22 @@ public class FakeServiceMigrator implements ServiceMigrator {
 
     @Override
     public void doMigrations(
-            @NonNull final HederaState hederaState,
+            @NonNull final MerkleState merkleState,
             @NonNull final ServicesRegistry servicesRegistry,
             @Nullable final SemanticVersion previousVersion,
             @NonNull final SemanticVersion currentVersion,
             @NonNull final Configuration config,
             @NonNull final NetworkInfo networkInfo,
             @NonNull final Metrics metrics) {
-        requireNonNull(hederaState);
+        requireNonNull(merkleState);
         requireNonNull(servicesRegistry);
         requireNonNull(currentVersion);
         requireNonNull(config);
         requireNonNull(networkInfo);
         requireNonNull(metrics);
 
-        if (!(hederaState instanceof FakeHederaState state)) {
-            throw new IllegalArgumentException("Can only be used with FakeHederaState instances");
+        if (!(merkleState instanceof FakeMerkleState state)) {
+            throw new IllegalArgumentException("Can only be used with FakeMerkleState instances");
         }
         if (!(servicesRegistry instanceof FakeServicesRegistry registry)) {
             throw new IllegalArgumentException("Can only be used with FakeServicesRegistry instances");
