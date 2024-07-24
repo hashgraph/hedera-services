@@ -129,7 +129,7 @@ class MerkleDbCompactionCoordinator {
     /**
      * Compacts the object key to path store asynchronously if it's present.
      */
-    void compactDiskStoreForObjectKeyToPathAsync() {
+    void compactDiskStoreForKeyToPathAsync() {
         if (objectKeyToPathTask == null) {
             return;
         }

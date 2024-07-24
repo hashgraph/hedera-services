@@ -222,7 +222,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // create a new transfer context that is specific only for this transaction
         final var transferContext =
                 new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
-        final var recordBuilder = context.recordBuilders().getOrCreate(CryptoTransferRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoTransferRecordBuilder.class);
 
         executor.executeCryptoTransfer(txn, transferContext, context, validator, recordBuilder);
     }

@@ -17,22 +17,28 @@
 package com.hedera.node.app.service.token.impl.test.fixtures;
 
 import com.hedera.hapi.node.base.AccountAmount;
+import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.TokenAssociation;
 import com.hedera.hapi.node.base.TokenTransferList;
+import com.hedera.hapi.node.base.Transaction;
+import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.contract.ContractFunctionResult;
 import com.hedera.hapi.node.transaction.AssessedCustomFee;
+import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.PendingAirdropRecord;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenAirdropRecordBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.Arrays;
+import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -62,10 +68,6 @@ public class FakeTokenAirdropRecordBuilder {
                 return 0;
             }
 
-            private TransferList transferList;
-            private List<TokenTransferList> tokenTransferLists;
-            private List<AssessedCustomFee> assessedCustomFees;
-
             @Override
             public SingleTransactionRecordBuilder status(@NonNull ResponseCodeEnum status) {
                 return this;
@@ -76,22 +78,93 @@ public class FakeTokenAirdropRecordBuilder {
                 return HandleContext.TransactionCategory.USER;
             }
 
-            private List<AccountAmount> paidStakingRewards;
-            private List<TokenAssociation> automaticTokenAssociations;
-            private ContractFunctionResult contractCallResult;
-            private List<PendingAirdropRecord> pendingAirdropRecords;
+            @Override
+            public ReversingBehavior reversingBehavior() {
+                return null;
+            }
+
+            @Override
+            public void nullOutSideEffectFields() {}
+
+            @Override
+            public SingleTransactionRecordBuilder syncBodyIdFromRecordId() {
+                return null;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder memo(@NotNull String memo) {
+                return null;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder consensusTimestamp(@NotNull Instant now) {
+                return null;
+            }
+
+            @Override
+            public TransactionID transactionID() {
+                return null;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder transactionID(@NotNull TransactionID transactionID) {
+                return null;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder parentConsensus(@NotNull Instant parentConsensus) {
+                return null;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder transactionBytes(@NotNull Bytes transactionBytes) {
+                return null;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder exchangeRate(@NotNull ExchangeRateSet exchangeRate) {
+                return null;
+            }
 
             @Override
             public TokenAirdropRecordBuilder pendingAirdrops(
                     @NotNull List<PendingAirdropRecord> pendingAirdropRecords) {
-                this.pendingAirdropRecords = pendingAirdropRecords;
                 return this;
             }
 
             @Override
             public TokenAirdropRecordBuilder addPendingAirdrop(@NotNull PendingAirdropRecord pendingAirdropRecord) {
-                this.pendingAirdropRecords = List.of(pendingAirdropRecord);
                 return this;
+            }
+
+            @Override
+            public SingleTransactionRecordBuilder transaction(@NotNull Transaction transaction) {
+                return null;
+            }
+
+            @Override
+            public Transaction transaction() {
+                return null;
+            }
+
+            @Override
+            public Set<AccountID> explicitRewardSituationIds() {
+                return Set.of();
+            }
+
+            @Override
+            public List<AccountAmount> getPaidStakingRewards() {
+                return List.of();
+            }
+
+            @Override
+            public boolean hasContractResult() {
+                return false;
+            }
+
+            @Override
+            public long getGasUsedForContractTxn() {
+                return 0;
             }
 
             @NonNull
@@ -103,7 +176,6 @@ public class FakeTokenAirdropRecordBuilder {
             @NonNull
             @Override
             public CryptoTransferRecordBuilder transferList(@NonNull final TransferList hbarTransfers) {
-                this.transferList = hbarTransfers;
                 return this;
             }
 
@@ -111,7 +183,6 @@ public class FakeTokenAirdropRecordBuilder {
             @Override
             public CryptoTransferRecordBuilder tokenTransferLists(
                     @NonNull final List<TokenTransferList> tokenTransferLists) {
-                this.tokenTransferLists = tokenTransferLists;
                 return this;
             }
 
@@ -119,28 +190,24 @@ public class FakeTokenAirdropRecordBuilder {
             @Override
             public CryptoTransferRecordBuilder assessedCustomFees(
                     @NonNull final List<AssessedCustomFee> assessedCustomFees) {
-                this.assessedCustomFees = assessedCustomFees;
                 return this;
             }
 
             @Override
             public CryptoTransferRecordBuilder paidStakingRewards(
                     @NonNull final List<AccountAmount> paidStakingRewards) {
-                this.paidStakingRewards = paidStakingRewards;
                 return this;
             }
 
             @Override
             public CryptoTransferRecordBuilder addAutomaticTokenAssociation(
                     @NonNull final TokenAssociation tokenAssociation) {
-                this.automaticTokenAssociations = Arrays.asList(tokenAssociation);
                 return this;
             }
 
             @NonNull
             @Override
             public CryptoTransferRecordBuilder contractCallResult(@Nullable ContractFunctionResult result) {
-                this.contractCallResult = result;
                 return this;
             }
         };

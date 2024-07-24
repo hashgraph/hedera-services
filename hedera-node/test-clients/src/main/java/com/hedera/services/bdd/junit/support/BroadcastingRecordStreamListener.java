@@ -50,7 +50,11 @@ public class BroadcastingRecordStreamListener extends FileAlterationListenerAdap
      */
     public Runnable subscribe(final StreamDataListener listener) {
         listeners.add(listener);
-        return () -> listeners.remove(listener);
+        log.info("Listener@{} subscribed {}", System.identityHashCode(this), listener.name());
+        return () -> {
+            listeners.remove(listener);
+            log.info("Listener@{} unsubscribed {}", System.identityHashCode(this), listener.name());
+        };
     }
 
     enum FileType {

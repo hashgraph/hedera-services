@@ -318,7 +318,8 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     void handleAirdropMultipleTokensToPendingState() {
         givenStoresAndConfig(handleContext);
         tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, executor);
-        given(recordBuilders.getOrCreate(TokenAirdropRecordBuilder.class)).willReturn(tokenAirdropRecordBuilder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(TokenAirdropRecordBuilder.class)).willReturn(tokenAirdropRecordBuilder);
         var tokenWithNoCustomFees =
                 fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
         var nftWithNoCustomFees = nonFungibleToken
