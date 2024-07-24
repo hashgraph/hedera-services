@@ -113,12 +113,6 @@ public class CryptoTransferValidationHelper {
         }
     }
 
-    public static void checkPayer(AccountID sender, PreHandleContext context) throws PreCheckException {
-        if (context.payer() != sender) {
-            context.requireKeyOrThrow(context.payerKey(), INVALID_ACCOUNT_ID);
-        }
-    }
-
     private static boolean receivesFungibleValue(
             final AccountID target, final CryptoTransferTransactionBody op, final ReadableAccountStore accountStore) {
         for (final var adjust : op.transfersOrElse(TransferList.DEFAULT).accountAmounts()) {
