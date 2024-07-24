@@ -16,6 +16,7 @@
 
 package com.swirlds.platform.test.fixtures.event;
 
+import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.pbj.runtime.OneOf;
 import com.swirlds.common.crypto.SignatureType;
@@ -25,7 +26,7 @@ import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.event.hashing.StatefulEventHasher;
 import com.swirlds.platform.internal.EventImpl;
 import com.swirlds.platform.system.BasicSoftwareVersion;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import com.swirlds.platform.system.transaction.ConsensusTransactionImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -77,20 +78,13 @@ public class RandomEventUtils {
             @Nullable final EventImpl otherParent,
             final boolean fakeHash) {
 
-        final EventDescriptor selfDescriptor = (selfParent == null || selfParent.getBaseHash() == null)
+        final EventDescriptorWrapper selfDescriptor = (selfParent == null || selfParent.getBaseHash() == null)
                 ? null
-                : new EventDescriptor(
-                        selfParent.getBaseHash(),
-                        selfParent.getCreatorId(),
-                        selfParent.getGeneration(),
-                        selfParent.getBaseEvent().getBirthRound());
-        final EventDescriptor otherDescriptor = (otherParent == null || otherParent.getBaseHash() == null)
+                : new EventDescriptorWrapper(new EventDescriptor(selfParent.getBaseHash().getBytes(), selfParent.getCreatorId().id(), selfParent.getBirthRound(), selfParent.getGeneration()));
+        final EventDescriptorWrapper otherDescriptor = (otherParent == null || otherParent.getBaseHash() == null)
                 ? null
-                : new EventDescriptor(
-                        otherParent.getBaseHash(),
-                        otherParent.getCreatorId(),
-                        otherParent.getGeneration(),
-                        otherParent.getBaseEvent().getBirthRound());
+                : new EventDescriptorWrapper(new EventDescriptor(otherParent.getBaseHash().getBytes(), otherParent.getCreatorId().id(), otherParent.getBirthRound(), otherParent.getGeneration()));
+
 
         final List<OneOf<PayloadOneOfType>> convertedTransactions = new ArrayList<>();
         if (transactions != null) {

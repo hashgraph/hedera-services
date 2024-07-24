@@ -22,6 +22,7 @@ import static com.swirlds.platform.system.events.EventConstants.MINIMUM_ROUND_CR
 
 import com.hedera.hapi.node.base.SemanticVersion;
 import com.hedera.hapi.platform.event.EventConsensusData;
+import com.hedera.hapi.platform.event.EventDescriptor;
 import com.hedera.hapi.platform.event.EventPayload.PayloadOneOfType;
 import com.hedera.hapi.platform.event.StateSignaturePayload;
 import com.hedera.hapi.util.HapiUtils;
@@ -33,7 +34,7 @@ import com.swirlds.common.test.fixtures.RandomUtils;
 import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.system.BasicSoftwareVersion;
 import com.swirlds.platform.system.SoftwareVersion;
-import com.swirlds.platform.system.events.EventDescriptor;
+import com.swirlds.platform.system.events.EventDescriptorWrapper;
 import com.swirlds.platform.system.events.UnsignedEvent;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -479,7 +480,7 @@ public class TestingEventBuilder {
      * @return the parent event descriptor
      */
     @Nullable
-    private EventDescriptor createDescriptorFromParent(
+    private EventDescriptorWrapper createDescriptorFromParent(
             @Nullable final PlatformEvent parent,
             @Nullable final Long generationOverride,
             @Nullable final Long birthRoundOverride) {
@@ -499,7 +500,7 @@ public class TestingEventBuilder {
         final long generation = generationOverride == null ? parent.getGeneration() : generationOverride;
         final long birthRound = birthRoundOverride == null ? parent.getBirthRound() : birthRoundOverride;
 
-        return new EventDescriptor(parent.getHash(), parent.getCreatorId(), generation, birthRound);
+        return new EventDescriptorWrapper(new EventDescriptor(parent.getHash().getBytes(), parent.getCreatorId().id(), generation, birthRound));
     }
 
     /**
@@ -520,9 +521,9 @@ public class TestingEventBuilder {
             }
         }
 
-        final EventDescriptor selfParentDescriptor =
+        final EventDescriptorWrapper selfParentDescriptor =
                 createDescriptorFromParent(selfParent, selfParentGenerationOverride, selfParentBirthRoundOverride);
-        final List<EventDescriptor> otherParentDescriptors = Stream.ofNullable(otherParents)
+        final List<EventDescriptorWrapper> otherParentDescriptors = Stream.ofNullable(otherParents)
                 .flatMap(List::stream)
                 .map(parent -> createDescriptorFromParent(
                         parent, otherParentGenerationOverride, otherParentBirthRoundOverride))
