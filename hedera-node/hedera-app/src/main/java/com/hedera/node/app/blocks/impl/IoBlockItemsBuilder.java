@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.blocks.impl;
 
+import com.hedera.hapi.block.stream.BlockItem;
 import com.hedera.hapi.block.stream.output.TransactionOutput;
 import com.hedera.hapi.block.stream.output.TransactionResult;
 import com.hedera.hapi.node.base.AccountAmount;
@@ -25,13 +26,13 @@ import com.hedera.hapi.node.base.Transaction;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.hapi.node.transaction.ExchangeRateSet;
 import com.hedera.hapi.node.transaction.TransactionBody;
-import com.hedera.node.app.blocks.BlockStreamManager;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -56,11 +57,12 @@ public class IoBlockItemsBuilder implements SingleTransactionRecordBuilder {
     }
 
     /**
-     * Streams the block items produced by this builder to the given manager.
-     * @param manager the manager to which the block items are streamed
+     * Builds the block items for the transaction.
+     * @return the block items
      */
-    public void streamTo(@NonNull final BlockStreamManager manager) {
+    public List<BlockItem> build() {
         // TODO - for every transaction type, produce the appropriate block items
+        return Collections.emptyList();
     }
 
     @Override

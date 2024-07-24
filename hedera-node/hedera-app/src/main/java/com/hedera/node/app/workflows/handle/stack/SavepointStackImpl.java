@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.workflows.handle.stack;
 
+import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_SYSTEM;
+import static com.hedera.hapi.block.stream.output.StateChangesCause.STATE_CHANGE_CAUSE_TRANSACTION;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.CHILD;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.PRECEDING;
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.SCHEDULED;
@@ -24,17 +26,25 @@ import static com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomi
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.IRREVERSIBLE;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REMOVABLE;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.ReversingBehavior.REVERSIBLE;
+import static com.hedera.node.config.types.StreamMode.RECORDS;
 import static java.util.Objects.requireNonNull;
 
 import com.hedera.hapi.block.stream.BlockItem;
+import com.hedera.hapi.block.stream.output.StateChange;
+import com.hedera.hapi.block.stream.output.StateChanges;
+import com.hedera.hapi.block.stream.output.StateChangesCause;
+import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
+import com.hedera.node.app.blocks.impl.IoBlockItemsBuilder;
+import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import com.hedera.node.app.state.ReadonlyStatesWrapper;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.hedera.node.app.state.WrappedHederaState;
-import com.hedera.node.app.workflows.handle.OutputItemStream;
+import com.hedera.node.app.workflows.handle.HandleOutput;
+import com.hedera.node.app.workflows.handle.HandleWorkflow;
 import com.hedera.node.app.workflows.handle.record.SingleTransactionRecordBuilderImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.BuilderSinkImpl;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FirstChildSavepoint;
@@ -72,10 +82,14 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
     @Nullable
     private final BuilderSink builderSink;
     /**
-     * If creating blocks, the K/V and queue state changes committed by the most recent call to commitFullStack().
+     * Any system state changes made <b>before</b> all transaction-caused changes in
+     * the {@link com.hedera.node.app.workflows.handle.HandleWorkflow}.
      */
-    @Nullable
-    private List<BlockItem> stateChanges;
+    private List<StateChange> preTxnSystemChanges = new ArrayList<>();
+    /**
+     * Any system state changes made <b>after</b> all transaction-caused changes.
+     */
+    private List<StateChange> postTxnSystemChanges = new ArrayList<>();
 
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
@@ -126,6 +140,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
     /**
      * Constructs a new child {@link SavepointStackImpl} with the given parent stack and the provided
      * characteristics of the dispatch.
+     *
      * @param parent the parent stack
      * @param reversingBehavior the reversing behavior of the dispatch
      * @param category the category of the dispatch
@@ -172,12 +187,78 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
     }
 
     /**
-     * Commits all state changes captured in this stack.
+     * Commits all state changes captured in this stack, without capturing the details
+     * for the block stream.
+     * @throws NullPointerException if called on the root stack
      */
     public void commitFullStack() {
-        // TODO - traverse the queue and K/V WritableStates in the first savepoint WrappedHederaState's
-        // writableStatesMap and create a StateChanges list
+        commitFullStack(null, null, null);
+    }
+
+    private enum SystemStateChangeOrder {
+        PRE_TXNS,
+        POST_TXNS
+    }
+
+    /**
+     * Commits all state changes captured in this stack; and captures the details for
+     * the block stream, correlated to the given builder.
+     * @param builder the builder to correlate the state changes to
+     */
+    public void commitTransaction(@Nullable final SingleTransactionRecordBuilder builder) {
+        commitFullStack(STATE_CHANGE_CAUSE_TRANSACTION, null, builder);
+    }
+
+    /**
+     * Commits all state changes captured in this stack; and captures the details for
+     * the block stream, correlated to state changes preceding the first transaction.
+     */
+    public void commitPreTxnSystemChanges() {
+        commitFullStack(STATE_CHANGE_CAUSE_SYSTEM, SystemStateChangeOrder.PRE_TXNS, null);
+    }
+
+    /**
+     * Commits all state changes captured in this stack; and captures the details for
+     * the block stream, correlated to state changes following the last transaction.
+     */
+    public void commitPostTxnSystemChanges() {
+        commitFullStack(STATE_CHANGE_CAUSE_SYSTEM, SystemStateChangeOrder.POST_TXNS, null);
+    }
+
+    /**
+     * Commits all state changes captured in this stack; if this is the root stack, also
+     * captures those changes as builders with the given cause.
+     */
+    private void commitFullStack(
+            @Nullable final StateChangesCause cause,
+            @Nullable final SystemStateChangeOrder changeOrder,
+            @Nullable final SingleTransactionRecordBuilder causeBuilder) {
+        if (cause != null || causeBuilder != null || changeOrder != null) {
+            requireNonNull(builderSink, "Cause metadata provided to child stack");
+        }
+        final var isRoot = builderSink != null;
+        if (isRoot) {
+            requireNonNull(cause, "Committing root stack must have a cause");
+        }
         while (!stack.isEmpty()) {
+            // The root stack must capture its state changes before committing the first savepoint
+            if (isRoot && stack.size() == 1) {
+                final var stateChanges = ((WrappedHederaState) stack.peek().state()).pendingStateChanges();
+                switch (cause) {
+                    case STATE_CHANGE_CAUSE_SYSTEM -> {
+                        requireNonNull(changeOrder, "System cause given without order");
+                        if (changeOrder == SystemStateChangeOrder.PRE_TXNS) {
+                            preTxnSystemChanges.addAll(stateChanges);
+                        } else {
+                            postTxnSystemChanges.addAll(stateChanges);
+                        }
+                    }
+                    case STATE_CHANGE_CAUSE_TRANSACTION -> {
+                        requireNonNull(causeBuilder, "Transaction cause given without builder");
+                        causeBuilder.stateChanges(stateChanges);
+                    }
+                }
+            }
             stack.pop().commit();
         }
         setupFirstSavepoint(baseBuilder.category());
@@ -265,18 +346,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
     }
 
     /**
-     * May only be called on the root stack to get the entire list of stream builders created in the course
-     * of handling a user transaction.
-     * @return all stream builders created when handling the user transaction
-     * @throws NullPointerException if called on a non-root stack
-     */
-    public List<SingleTransactionRecordBuilder> allStreamBuilders() {
-        return requireNonNull(builderSink).allBuilders();
-    }
-
-    /**
      * May only be called on the root stack to determine if this stack has capacity to create more system records to
      * as preceding dispatches.
+     *
      * @return whether there are more system records to be created
      * @throws NullPointerException if called on a non-root stack
      */
@@ -287,6 +359,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
     /**
      * Whether this stack has accumulated any stream builders other than its base builder; important to know when
      * determining the record finalization work to be done.
+     *
      * @return whether this stack has any stream builders other than the base builder
      */
     public boolean hasNonBaseStreamBuilder() {
@@ -304,6 +377,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
     /**
      * For each stream builder in this stack other than the designated base builder, invokes the given consumer
      * with the builder cast to the given type.
+     *
      * @param builderClass the type to cast the builders to
      * @param consumer the consumer to invoke
      * @param <T> the type to cast the builders to
@@ -321,6 +395,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
 
     /**
      * Returns the {@link HandleContext.TransactionCategory} of the transaction that created this stack.
+     *
      * @return the transaction category
      */
     public HandleContext.TransactionCategory txnCategory() {
@@ -329,6 +404,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
 
     /**
      * Creates a new stream builder for a removable child in the active savepoint.
+     *
      * @return the new stream builder
      */
     public SingleTransactionRecordBuilder createRemovableChildBuilder() {
@@ -337,6 +413,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
 
     /**
      * Creates a new stream builder for a reversible child in the active savepoint.
+     *
      * @return the new stream builder
      */
     public SingleTransactionRecordBuilder createReversibleChildBuilder() {
@@ -345,6 +422,7 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
 
     /**
      * Creates a new stream builder for an irreversible preceding transaction in the active savepoint.
+     *
      * @return the new stream builder
      */
     public SingleTransactionRecordBuilder createIrreversiblePrecedingBuilder() {
@@ -392,9 +470,15 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
      * @param consensusTime consensus time of the transaction
      * @return the stream of records
      */
-    public OutputItemStream buildStreamItems(@NonNull final Instant consensusTime) {
+    public HandleOutput buildHandleOutput(@NonNull final Instant consensusTime) {
+        final List<BlockItem> blockItems;
+        if (HandleWorkflow.STREAM_MODE == RECORDS) {
+            blockItems = null;
+        } else {
+            blockItems = new ArrayList<>();
+        }
         final List<SingleTransactionRecord> records = new ArrayList<>();
-        final var builders = allStreamBuilders();
+        final var builders = requireNonNull(builderSink).allBuilders();
         TransactionID.Builder idBuilder = null;
         int indexOfUserRecord = 0;
         for (int i = 0; i < builders.size(); i++) {
@@ -422,10 +506,29 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
             if (i > indexOfUserRecord && builder.category() != SCHEDULED) {
                 builder.parentConsensus(consensusTime);
             }
-            records.add(((SingleTransactionRecordBuilderImpl) builder).build());
+            switch (HandleWorkflow.STREAM_MODE) {
+                case RECORDS -> records.add(((SingleTransactionRecordBuilderImpl) builder).build());
+                case BLOCKS -> requireNonNull(blockItems).addAll(((IoBlockItemsBuilder) builder).build());
+                case BOTH -> {
+                    final var pairedBuilder = (PairedStreamBuilder) builder;
+                    records.add(pairedBuilder.recordBuilder().build());
+                    requireNonNull(blockItems)
+                            .addAll(pairedBuilder.ioBlockItemsBuilder().build());
+                }
+            }
         }
-        // TODO: Add block items
-        return new OutputItemStream(List.of(), records);
+        if (HandleWorkflow.STREAM_MODE != RECORDS && !preTxnSystemChanges.isEmpty()) {
+            final var preTxnConsensusNow = consensusTime.minusNanos(indexOfUserRecord + 1);
+            requireNonNull(blockItems)
+                    .add(BlockItem.newBuilder()
+                            .stateChanges(StateChanges.newBuilder()
+                                    .cause(STATE_CHANGE_CAUSE_SYSTEM)
+                                    .consensusTimestamp(new Timestamp(
+                                            preTxnConsensusNow.getEpochSecond(), preTxnConsensusNow.getNano()))
+                                    .stateChanges(preTxnSystemChanges))
+                            .build());
+        }
+        return new HandleOutput(blockItems, records);
     }
 
     private void setupFirstSavepoint(@NonNull final HandleContext.TransactionCategory category) {

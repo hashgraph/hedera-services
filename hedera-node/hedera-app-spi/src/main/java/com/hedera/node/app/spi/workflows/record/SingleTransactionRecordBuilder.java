@@ -18,6 +18,7 @@ package com.hedera.node.app.spi.workflows.record;
 
 import static com.hedera.node.app.spi.workflows.HandleContext.TransactionCategory.USER;
 
+import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.hapi.node.base.AccountAmount;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.ResponseCodeEnum;
@@ -44,6 +45,14 @@ public interface SingleTransactionRecordBuilder {
      * @return this builder
      */
     SingleTransactionRecordBuilder transaction(@NonNull Transaction transaction);
+
+    /**
+     * Adds state changes to this stream builder.
+     * @return this builder
+     */
+    default SingleTransactionRecordBuilder stateChanges(@NonNull List<StateChange> stateChanges) {
+        return this;
+    }
 
     /**
      * Returns the transaction for this stream item builder.
