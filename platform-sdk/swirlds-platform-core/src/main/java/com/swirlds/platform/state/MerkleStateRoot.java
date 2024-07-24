@@ -76,7 +76,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * An implementation of {@link SwirldState} and {@link com.swirlds.state.State}. The Hashgraph Platform
+ * An implementation of {@link SwirldState} and {@link State}. The Hashgraph Platform
  * communicates with the application through {@link SwirldMain} and {@link
  * SwirldState}. The Hedera application, after startup, only needs the ability to get {@link
  * ReadableStates} and {@link WritableStates} from this object.
