@@ -19,8 +19,15 @@ package com.hedera.services.bdd.junit.support;
 import com.hedera.services.stream.proto.RecordStreamItem;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
+/**
+ * A listener that receives record stream items and transaction sidecar records.
+ */
 public interface StreamDataListener {
     default void onNewItem(RecordStreamItem item) {}
 
     default void onNewSidecar(TransactionSidecarRecord sidecar) {}
+
+    default String name() {
+        return "AnonymousListener";
+    }
 }

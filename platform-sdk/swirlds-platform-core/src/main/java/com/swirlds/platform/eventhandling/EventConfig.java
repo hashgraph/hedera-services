@@ -34,6 +34,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  *                                          ancient or not. Once this setting has been enabled on a network, it can
  *                                          never be disabled again (migration pathway is one-way).
  * @param useOldStyleIntakeQueue            if true then use an old style queue between gossip and the intake queue
+ * @param migrateEventHashing               if true then use the new event hashing algorithm for new events, events
+ *                                          created by previous software versions will still need to be hashed using the
+ *                                          old algorithm.
  */
 @ConfigData("event")
 public record EventConfig(
@@ -43,7 +46,8 @@ public record EventConfig(
         @ConfigProperty(defaultValue = "/opt/hgcapp/eventsStreams") String eventsLogDir,
         @ConfigProperty(defaultValue = "true") boolean enableEventStreaming,
         @ConfigProperty(defaultValue = "false") boolean useBirthRoundAncientThreshold,
-        @ConfigProperty(defaultValue = "true") boolean useOldStyleIntakeQueue) {
+        @ConfigProperty(defaultValue = "true") boolean useOldStyleIntakeQueue,
+        @ConfigProperty(defaultValue = "false") boolean migrateEventHashing) {
 
     /**
      * @return the {@link AncientMode} based on useBirthRoundAncientThreshold

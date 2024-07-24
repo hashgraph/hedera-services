@@ -18,12 +18,13 @@ package com.hedera.node.app.service.token.records;
 
 import com.hedera.hapi.node.base.ResponseCodeEnum;
 import com.hedera.hapi.node.base.Transaction;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * A {@code RecordBuilder} specialization for tracking {@code NodeStakeUpdate} at midnight UTC every day.
  */
-public interface NodeStakeUpdateRecordBuilder {
+public interface NodeStakeUpdateRecordBuilder extends SingleTransactionRecordBuilder {
     /**
      * Sets the status.
      *

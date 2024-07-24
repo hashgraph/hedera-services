@@ -214,6 +214,7 @@ tasks.withType<Javadoc>().configureEach {
         )
         options.windowTitle = "Hedera Consensus Node"
         options.memberLevel = JavadocMemberLevel.PACKAGE
+        addStringOption("Xdoclint:all,-missing", "-Xwerror")
     }
 }
 
@@ -337,6 +338,7 @@ testlogger {
 tasks.assemble {
     // 'assemble' compiles all sources, including all test sources
     dependsOn(tasks.testClasses)
+    dependsOn(tasks.javadoc)
     dependsOn(tasks.named("hammerClasses"))
     dependsOn(tasks.named("timeConsumingClasses"))
     dependsOn(tasks.named("itestClasses"))
