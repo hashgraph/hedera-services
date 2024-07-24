@@ -31,6 +31,7 @@ import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.HtsCal
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.ReturnTypes;
 import com.hedera.node.app.service.contract.impl.exec.systemcontracts.hts.update.UpdateTranslator;
 import com.hedera.node.app.service.contract.impl.hevm.HederaWorldUpdater;
+import com.hedera.node.config.data.ContractsConfig;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -51,8 +52,10 @@ public class UpdateTokenCustomFeesTranslator extends AbstractCallTranslator<HtsC
 
     @Override
     public boolean matches(@NonNull HtsCallAttempt attempt) {
-        return Arrays.equals(attempt.selector(), UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector())
-                || Arrays.equals(attempt.selector(), UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector());
+        return attempt.configuration().getConfigData(ContractsConfig.class).systemContractUpdateCustomFeesEnabled()
+                && (Arrays.equals(attempt.selector(), UPDATE_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector())
+                        || Arrays.equals(
+                                attempt.selector(), UPDATE_NON_FUNGIBLE_TOKEN_CUSTOM_FEES_FUNCTION.selector()));
     }
 
     public static long gasRequirement(
