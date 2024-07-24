@@ -116,13 +116,16 @@ include(":swirlds-platform-core", "platform-sdk/swirlds-platform-core")
 
 include(":swirlds-state-api", "platform-sdk/swirlds-state-api")
 
-include(":hedera-crypto-tss", "platform-sdk/hedera-crypto-tss")
-
 include(":swirlds-cli", "platform-sdk/swirlds-cli")
 
 include(":swirlds-benchmarks", "platform-sdk/swirlds-benchmarks")
 
 include(":swirlds-platform-test", "platform-sdk/swirlds-unit-tests/core/swirlds-platform-test")
+
+// Platform cryptography projects
+include(":hedera-cryptography", "hedera-cryptography")
+
+include(":hedera-cryptography-tss", "hedera-cryptography/hedera-cryptography-tss")
 
 // Platform demo/test applications
 includeAllProjects("platform-sdk/platform-apps/demos")
