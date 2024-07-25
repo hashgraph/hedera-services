@@ -333,23 +333,38 @@ The current startup procedure will be altered as follows
   AddressBook from `config.txt` will be removed or refactored and moved into the Services codebase.
 
 ### DevOps Workflow changes
-(See Roster Startup Behavior diagram above)
-Current network Transplant procedure is manual.
-DevOps get given a State and `config.txt` file on disk. This is then followed by a software-only upgrade to adopt
-the `config.txt` file using that state. This will change.
 
-The implementation of this proposal changes this DevOps workflow as follows:
+The urrent network Transplant procedure is manual.
+DevOps get given a State and `config.txt` file on disk. This is then followed by a software-only upgrade to adopt
+the `config.txt` file using that state. This will change as follows:
 When adding new nodes to an existing network, DevOps will be given a combination of optional State data and Roster with
-the new node in it. Devops will no longer
-need `config.txt` on new nodes to existing networks.
+the new node in it. Devops will no longer need `config.txt` on new nodes to existing networks.
 One of the State or Roster or both must exist for the network to start.
 
+#### New Transplant Procedure
+
+The app will decide a network transplant sequence based on the following heuristics:
+
+* Network Transplant process == Active Roster AND State provided
+  When both a roster and a state are provided, it signifies a network transplant.
+  The node will discard any existing candidate roster, rotate the active roster to the previous roster,
+  and adopt the provided roster as the new active roster. This way, the provided network state and roster are adopted.
+
+* Genesis Network process == Active Roster, No State provided
+  When a roster is provided, but no pre-existing state exists, it will indicate the creation of a new network.
+  The node will initiate the TSS key generation process (out of scope for this proposal),
+  create a genesis state with the provided roster, and start participating in consensus from round 0.
+* Keep Network Settings (Normal restart) == No Active Roster AND State provided
+  If only a state is provided without a roster, the node will retain its existing network settings, including the active
+  roster.
+  This will be the typical behavior for a node restarting within an established network.
+  ![](Proposed%20Network%20Transplant%20flow.drawio.svg)
 ## Core Behaviors, in summary
 
-- Roster Creation: App will create a Candidate Roster from the Address Book.
+- Roster Creation: Hedera App will create a Candidate Roster from the Address Book.
 - Roster Submission: App will trigger roster submission by setting the `Roster` object in the
   `PlatformState` API.
-- Roster Validation: The submitted roster is validated and hashed, if valid
+- Roster Validation: The submitted roster is validated and hashed, if valid, and the hash is not already in the state.
 - Roster Storage: The Roster is stored in the State as a map of Roster Hash to Roster. A reference to the candidate
   roster's hash is also stored in the
   `RosterState` object.
