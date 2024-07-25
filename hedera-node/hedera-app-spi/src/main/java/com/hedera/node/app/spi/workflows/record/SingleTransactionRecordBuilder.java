@@ -181,6 +181,13 @@ public interface SingleTransactionRecordBuilder {
     SingleTransactionRecordBuilder exchangeRate(@NonNull ExchangeRateSet exchangeRate);
 
     /**
+     * Returns the number of automatic token associations
+     *
+     * @return the number of associations
+     */
+    int getNumAutoAssociations();
+
+    /**
      * Returns true if this builder's transaction originated from inside another handler or workflow; and not
      * a user transaction (or scheduled user transaction).
      * @return true if this transaction is internal

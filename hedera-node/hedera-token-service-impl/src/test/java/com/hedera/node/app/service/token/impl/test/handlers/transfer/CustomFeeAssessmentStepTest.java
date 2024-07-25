@@ -94,7 +94,6 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
 
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
-        given(recordBuilders.getOrCreate(any())).willReturn(builder);
         final var replacedOp = getReplacedOp();
         subject = new CustomFeeAssessmentStep(replacedOp);
     }
@@ -446,8 +445,7 @@ class CustomFeeAssessmentStepTest extends StepsBase {
         givenStoresAndConfig(handleContext);
         givenTxn(body, payerId);
         givenAutoCreationDispatchEffects(payerId);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(builder);
+        given(handleContext.savepointStack()).willReturn(stack);
 
         transferContext = new TransferContextImpl(handleContext);
         ensureAliasesStep = new EnsureAliasesStep(body);

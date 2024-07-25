@@ -31,6 +31,7 @@ import com.hedera.hapi.node.base.TransferList;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
+import com.hedera.node.app.service.token.records.CryptoTransferRecordBuilder;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
@@ -85,8 +86,8 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                 .withValue("entities.unlimitedAutoAssociationsEnabled", false)
                 .getOrCreateConfig();
         given(handleContext.configuration()).willReturn(modifiedConfiguration);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(builder);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(any())).willReturn(builder);
 
         subject.doIn(transferContext);
 
@@ -115,7 +116,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(ResponseCodeEnum.OK);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(handleContext.savepointStack()).willReturn(stack);
     }
 
     private AccountAmount adjustFrom(AccountID account, long amount) {

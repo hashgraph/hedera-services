@@ -91,8 +91,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         final var receiver = asAccount(hbarReceiver);
         given(handleContext.payer()).willReturn(spenderId);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(builder);
+        given(handleContext.savepointStack()).willReturn(stack);
         final var replacedOp = getReplacedOp();
         adjustHbarChangesStep = new AdjustHbarChangesStep(replacedOp, payerId);
 
@@ -119,8 +118,7 @@ class AdjustHbarChangesStepTest extends StepsBase {
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
         given(handleContext.body()).willReturn(txn);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(builder);
+        given(handleContext.savepointStack()).willReturn(stack);
 
         final var receiver = asAccount(hbarReceiver);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);

@@ -103,8 +103,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
         final var receiver = asAccount(tokenReceiver);
         given(handleContext.payer()).willReturn(spenderId);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(OK);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(builder);
+        given(handleContext.savepointStack()).willReturn(stack);
         final var replacedOp = getReplacedOp();
         changeNFTOwnersStep = new NFTOwnersChangeStep(replacedOp.tokenTransfers(), payerId);
         final var nft = writableNftStore.get(nftIdSl1);
@@ -189,8 +188,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
                         .build())
                 .build();
         givenTxn(body, spenderId);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(builder);
+        given(handleContext.savepointStack()).willReturn(stack);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);
@@ -262,8 +260,7 @@ class NFTOwnersChangeStepTest extends StepsBase {
                         .build())
                 .build();
         givenTxn(body, spenderId);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
-        given(recordBuilders.getOrCreate(any())).willReturn(builder);
+        given(handleContext.savepointStack()).willReturn(stack);
         ensureAliasesStep = new EnsureAliasesStep(body);
         replaceAliasesWithIDsInOp = new ReplaceAliasesWithIDsInOp();
         associateTokenRecepientsStep = new AssociateTokenRecipientsStep(body);

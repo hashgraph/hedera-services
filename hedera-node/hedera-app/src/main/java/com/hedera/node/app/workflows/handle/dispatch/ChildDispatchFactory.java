@@ -41,6 +41,7 @@ import com.hedera.node.app.ids.EntityIdService;
 import com.hedera.node.app.ids.EntityNumGeneratorImpl;
 import com.hedera.node.app.ids.WritableEntityIdStore;
 import com.hedera.node.app.records.BlockRecordManager;
+import com.hedera.node.app.service.token.api.FeeRecordBuilder;
 import com.hedera.node.app.service.token.api.TokenServiceApi;
 import com.hedera.node.app.services.ServiceScopeLookup;
 import com.hedera.node.app.signature.AppKeyVerifier;
@@ -234,7 +235,8 @@ public class ChildDispatchFactory {
         final var entityNumGenerator = new EntityNumGeneratorImpl(
                 new WritableStoreFactory(childStack, EntityIdService.NAME, config, storeMetricsService)
                         .getStore(WritableEntityIdStore.class));
-        final var feeAccumulator = new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), recordBuilder);
+        final var feeAccumulator =
+                new FeeAccumulator(serviceApiFactory.getApi(TokenServiceApi.class), (FeeRecordBuilder) builder);
         final var dispatchHandleContext = new DispatchHandleContext(
                 consensusNow,
                 creatorInfo,

@@ -24,7 +24,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_NFT_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
 import static com.hedera.node.app.service.token.impl.handlers.transfer.NFTOwnersChangeStep.validateSpenderHasAllowance;
 import static com.hedera.node.app.service.token.impl.util.TokenHandlerHelper.getIfUsable;
@@ -185,7 +184,7 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             @NonNull final HandleContext context) {
         final var account =
                 getIfUsableForAliasedId(accountId, accountStore, context.expiryValidator(), INVALID_ACCOUNT_ID);
-        final var tokenRel = tokenRelStore.get(accountId, tokenId);
+        final var tokenRel = tokenRelStore.get(account.accountIdOrThrow(), tokenId);
         final var config = context.configuration();
         final var entitiesConfig = config.getConfigData(EntitiesConfig.class);
 
@@ -196,10 +195,10 @@ public class AssociateTokenRecipientsStep extends BaseTokenHandler implements Tr
             validateFalse(token.hasKycKey(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
             validateFalse(token.accountsFrozenByDefault(), ACCOUNT_FROZEN_FOR_TOKEN);
 
-            // We only charge auto-association fees inline if this is a user disaptch; in that case the
-            // contract service will take the auto-association costs from the remaining EVM gas
-            if (context.recordBuilders()
-                    .getOrCreate(SingleTransactionRecordBuilder.class)
+            // We only charge auto-association fees inline if this is a user dispatch; for internal dispatches,
+            // the contract service will take the auto-association costs from the remaining EVM gas
+            if (context.savepointStack()
+                    .getBaseBuilder(SingleTransactionRecordBuilder.class)
                     .isUserDispatch()) {
                 final var unlimitedAssociationsEnabled =
                         config.getConfigData(EntitiesConfig.class).unlimitedAutoAssociationsEnabled();
