@@ -167,7 +167,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                     .commit();
         }
 
-        final var merkleState = app.workingStateAccessor().getMerkleState();
+        final var merkleState = app.workingStateAccessor().getState();
         final var producer = concurrent
                 ? new StreamFileProducerConcurrent(
                         app.networkInfo().selfNodeInfo(),
@@ -178,7 +178,7 @@ final class BlockRecordManagerTest extends AppTestBase {
                         app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getMerkleState(), producer)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             if (!startMode.equals("GENESIS")) {
                 blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             }
@@ -261,12 +261,12 @@ final class BlockRecordManagerTest extends AppTestBase {
                 .commit();
 
         final Random random = new Random(82792874);
-        final var merkleState = app.workingStateAccessor().getMerkleState();
+        final var merkleState = app.workingStateAccessor().getState();
         final var producer = new StreamFileProducerSingleThreaded(
                 app.networkInfo().selfNodeInfo(), blockRecordFormat, blockRecordWriterFactory);
         Bytes finalRunningHash;
         try (final var blockRecordManager = new BlockRecordManagerImpl(
-                app.configProvider(), app.workingStateAccessor().getMerkleState(), producer)) {
+                app.configProvider(), app.workingStateAccessor().getState(), producer)) {
             blockRecordManager.switchBlocksAt(FORCED_BLOCK_SWITCH_TIME);
             // write a blocks & record files
             int transactionCount = 0;

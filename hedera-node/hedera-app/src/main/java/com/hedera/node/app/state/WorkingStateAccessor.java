@@ -40,7 +40,7 @@ public class WorkingStateAccessor {
      * @return the working {@link State}.
      */
     @Nullable
-    public State getMerkleState() {
+    public State getState() {
         return state;
     }
 
@@ -48,7 +48,7 @@ public class WorkingStateAccessor {
      * Sets the working {@link State}.
      * @param state the working {@link State}.
      */
-    public void setMerkleState(State state) {
+    public void setState(State state) {
         requireNonNull(state);
         this.state = state;
     }

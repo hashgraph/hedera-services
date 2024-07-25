@@ -555,7 +555,7 @@ public final class Hedera implements SwirldMain {
 
         if (daggerApp != null) {
             logger.debug("Shutting down the state");
-            final var state = daggerApp.workingStateAccessor().getMerkleState();
+            final var state = daggerApp.workingStateAccessor().getState();
             if (state instanceof MerkleStateRoot msr) {
                 msr.close();
             }
@@ -614,7 +614,7 @@ public final class Hedera implements SwirldMain {
      */
     public void onHandleConsensusRound(
             @NonNull final Round round, @NonNull final PlatformState platformState, @NonNull final State state) {
-        daggerApp.workingStateAccessor().setMerkleState(state);
+        daggerApp.workingStateAccessor().setState(state);
         daggerApp.platformStateAccessor().setPlatformState(platformState);
         daggerApp.handleWorkflow().handleRound(state, platformState, round);
     }
@@ -734,7 +734,7 @@ public final class Hedera implements SwirldMain {
                 .contractServiceImpl(contractServiceImpl)
                 .metrics(metrics)
                 .build();
-        daggerApp.workingStateAccessor().setMerkleState(state);
+        daggerApp.workingStateAccessor().setState(state);
         daggerApp.platformStateAccessor().setPlatformState(platformState);
     }
 

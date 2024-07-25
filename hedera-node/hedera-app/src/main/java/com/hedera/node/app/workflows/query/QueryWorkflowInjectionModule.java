@@ -53,7 +53,7 @@ public interface QueryWorkflowInjectionModule {
     @Singleton
     static Function<ResponseType, AutoCloseableWrapper<State>> provideStateAccess(
             @NonNull final WorkingStateAccessor workingStateAccessor) {
-        return responseType -> new AutoCloseableWrapper<>(workingStateAccessor.getMerkleState(), NO_OP);
+        return responseType -> new AutoCloseableWrapper<>(workingStateAccessor.getState(), NO_OP);
     }
 
     @Provides

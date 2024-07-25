@@ -375,7 +375,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                 svc.registerSchemas(reg);
                 reg.migrate(svc.getServiceName(), initialState, networkInfo);
             });
-            workingStateAccessor.setMerkleState(initialState);
+            workingStateAccessor.setState(initialState);
 
             return new App() {
                 @NonNull
@@ -411,7 +411,7 @@ public class AppTestBase extends TestBase implements TransactionFactory, Scenari
                 @NonNull
                 @Override
                 public StateMutator stateMutator(@NonNull final String serviceName) {
-                    final var fakeMerkleState = requireNonNull(workingStateAccessor.getMerkleState());
+                    final var fakeMerkleState = requireNonNull(workingStateAccessor.getState());
                     final var writableStates = (MapWritableStates) fakeMerkleState.getWritableStates(serviceName);
                     return new StateMutator(writableStates);
                 }

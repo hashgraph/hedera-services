@@ -77,7 +77,7 @@ public abstract class BlockRecordInjectionModule {
             @NonNull final ConfigProvider configProvider,
             @NonNull final WorkingStateAccessor state,
             @NonNull final BlockRecordStreamProducer streamFileProducer) {
-        final var merkleState = state.getMerkleState();
+        final var merkleState = state.getState();
         if (merkleState == null) {
             throw new IllegalStateException("Merkle state is null");
         }

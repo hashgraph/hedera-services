@@ -59,7 +59,7 @@ public interface HandleWorkflowModule {
     @Provides
     static Supplier<AutoCloseableWrapper<State>> provideStateSupplier(
             @NonNull final WorkingStateAccessor workingStateAccessor) {
-        return () -> new AutoCloseableWrapper<>(workingStateAccessor.getMerkleState(), NO_OP);
+        return () -> new AutoCloseableWrapper<>(workingStateAccessor.getState(), NO_OP);
     }
 
     @Provides

@@ -200,7 +200,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
         if (isSoOrdered(currentVersion, previousVersion)) {
             throw new IllegalArgumentException("The currentVersion must be at least the previousVersion");
         }
-        if (!(state instanceof MerkleStateRoot merkleStateRoot)) {
+        if (!(state instanceof MerkleStateRoot stateRoot)) {
             throw new IllegalArgumentException("The state must be an instance of " + MerkleStateRoot.class.getName());
         }
         if (schemas.isEmpty()) {
@@ -227,7 +227,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             // available at this moment in time. This is done to make sure that even after we
             // add new states into the tree, it doesn't increase the number of states that can
             // be seen by the schema migration code
-            final var readableStates = merkleStateRoot.getReadableStates(serviceName);
+            final var readableStates = stateRoot.getReadableStates(serviceName);
             final var previousStates = new FilteredReadableStates(readableStates, readableStates.stateKeys());
             // Similarly, we distinguish between the writable states before and after
             // applying the schema's state definitions. This is done to ensure that we
@@ -237,11 +237,11 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
             final WritableStates writableStates;
             final WritableStates newStates;
             if (applications.contains(STATE_DEFINITIONS)) {
-                final var redefinedWritableStates = applyStateDefinitions(schema, config, metrics, merkleStateRoot);
+                final var redefinedWritableStates = applyStateDefinitions(schema, config, metrics, stateRoot);
                 writableStates = redefinedWritableStates.beforeStates();
                 newStates = redefinedWritableStates.afterStates();
             } else {
-                newStates = writableStates = merkleStateRoot.getWritableStates(serviceName);
+                newStates = writableStates = stateRoot.getWritableStates(serviceName);
             }
             final var migrationContext = new MigrationContextImpl(
                     previousStates, newStates, config, networkInfo, entityIdStore, previousVersion, sharedValues);
@@ -256,7 +256,7 @@ public class MerkleSchemaRegistry implements SchemaRegistry {
                 mws.commit();
             }
             // And finally we can remove any states we need to remove
-            schema.statesToRemove().forEach(stateKey -> merkleStateRoot.removeServiceState(serviceName, stateKey));
+            schema.statesToRemove().forEach(stateKey -> stateRoot.removeServiceState(serviceName, stateKey));
         }
     }
 

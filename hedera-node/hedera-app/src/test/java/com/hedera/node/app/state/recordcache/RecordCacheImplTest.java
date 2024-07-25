@@ -105,7 +105,7 @@ final class RecordCacheImplTest extends AppTestBase {
         final var svc = new RecordCacheService();
         svc.registerSchemas(registry);
         registry.migrate(svc.getServiceName(), state, networkInfo);
-        lenient().when(wsa.getMerkleState()).thenReturn(state);
+        lenient().when(wsa.getState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
         lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(180L);
@@ -191,7 +191,7 @@ final class RecordCacheImplTest extends AppTestBase {
                     // duplicate  user tx
                     new TransactionRecordEntry(3, payer1, transactionRecord(DUPLICATE_TRANSACTION, txId1, 400)));
 
-            final var state = wsa.getMerkleState();
+            final var state = wsa.getState();
             assertThat(state).isNotNull();
             final var services = state.getWritableStates(RecordCacheService.NAME);
             final WritableQueueState<TransactionRecordEntry> queue =
@@ -261,7 +261,7 @@ final class RecordCacheImplTest extends AppTestBase {
                     transactionID().copyBuilder().accountID(oldPayer).build();
             final var oldEntry = new TransactionRecordEntry(0, oldPayer, transactionRecord(SUCCESS, oldTxId, 100));
 
-            final var state = wsa.getMerkleState();
+            final var state = wsa.getState();
             assertThat(state).isNotNull();
             final var services = state.getWritableStates(RecordCacheService.NAME);
             final WritableQueueState<TransactionRecordEntry> queue =
