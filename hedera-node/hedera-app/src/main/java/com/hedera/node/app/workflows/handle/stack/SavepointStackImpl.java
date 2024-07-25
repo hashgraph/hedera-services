@@ -37,6 +37,7 @@ import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.base.TransactionID;
 import com.hedera.node.app.blocks.impl.IoBlockItemsBuilder;
 import com.hedera.node.app.blocks.impl.PairedStreamBuilder;
+import com.hedera.node.app.blocks.impl.StateChangesListenerImpl;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.ExternalizedRecordCustomizer;
 import com.hedera.node.app.spi.workflows.record.StreamBuilder;
@@ -52,6 +53,7 @@ import com.hedera.node.app.workflows.handle.stack.savepoints.FirstRootSavepoint;
 import com.hedera.node.app.workflows.handle.stack.savepoints.FollowingSavepoint;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.StateChangesListener;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -95,6 +97,8 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
      * Any system state changes made <b>after</b> all transaction-caused changes.
      */
     private final List<StateChange> postTxnSystemChanges = new ArrayList<>();
+
+    private StateChangesListener listener = new StateChangesListenerImpl();
 
     /**
      * Constructs the root {@link SavepointStackImpl} for the given state at the start of handling a user transaction.
@@ -248,7 +252,11 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
         while (!stack.isEmpty()) {
             // The root stack must capture its state changes before committing the first savepoint
             if (isRoot && HandleWorkflow.STREAM_MODE != RECORDS && stack.size() == 1) {
-                final var stateChanges = ((WrappedHederaState) stack.peek().state()).pendingStateChanges();
+                ((WrappedHederaState) stack.peek().state()).register(listener);
+
+                stack.pop().commit();
+
+                final var stateChanges = listener.getStateChanges();
                 log.info("Capturing {} state changes {}", cause, stateChanges);
                 switch (cause) {
                     case STATE_CHANGE_CAUSE_SYSTEM -> {
@@ -264,8 +272,9 @@ public class SavepointStackImpl implements HandleContext.SavepointStack, HederaS
                         causeBuilder.stateChanges(stateChanges);
                     }
                 }
+            } else {
+                stack.pop().commit();
             }
-            stack.pop().commit();
         }
         setupFirstSavepoint(baseBuilder.category());
     }

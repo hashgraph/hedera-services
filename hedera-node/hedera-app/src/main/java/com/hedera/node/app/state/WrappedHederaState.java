@@ -18,16 +18,14 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.block.stream.output.StateChange;
 import com.swirlds.state.HederaState;
 import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.spi.StateChangesListener;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A {@link HederaState} that wraps another {@link HederaState} and provides a {@link #commit()} method that
@@ -48,17 +46,11 @@ public class WrappedHederaState implements HederaState {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
     }
 
-    /**
-     * A temporary method used for the block stream MVP to accumulate state changes.
-     * @return the list of pending state changes
-     */
-    public List<StateChange> pendingStateChanges() {
-        final List<StateChange> allChanges = new ArrayList<>();
-        final List<String> serviceNames = new ArrayList<>(writableStatesMap.keySet());
-        serviceNames.sort(Comparator.naturalOrder());
-        serviceNames.forEach(serviceName ->
-                allChanges.addAll(writableStatesMap.get(serviceName).pendingStateChanges()));
-        return allChanges;
+    public void register(@NonNull StateChangesListener listener) {
+        Objects.requireNonNull(listener);
+        for (final var writableStates : writableStatesMap.values()) {
+            writableStates.register(listener);
+        }
     }
 
     /**

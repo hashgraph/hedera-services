@@ -30,6 +30,7 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
     private final Consumer<T> backingStoreMutator;
     private boolean modified;
     private T value;
+    private StateChangesListener stateChangesListener;
 
     /**
      * Creates a new instance.
@@ -70,6 +71,11 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
         return modified;
     }
 
+    public void register(@NonNull StateChangesListener listener) {
+        Objects.requireNonNull(listener);
+        this.stateChangesListener = listener;
+    }
+
     /**
      * Flushes all changes into the underlying data store. This method should <strong>ONLY</strong>
      * be called by the code that created the {@link WritableSingletonStateBase} instance or owns
@@ -78,6 +84,10 @@ public class WritableSingletonStateBase<T> extends ReadableSingletonStateBase<T>
     public void commit() {
         if (modified) {
             backingStoreMutator.accept(value);
+
+            if (stateChangesListener != null) {
+                stateChangesListener.singletonUpdateChange(getStateKey(), value);
+            }
         }
         reset();
     }

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
@@ -50,6 +51,8 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     /** The cached most recent peeked element */
     private E peekedElement = null;
 
+    private StateChangesListener stateChangesListener;
+
     /** Create a new instance */
     protected WritableQueueStateBase(@NonNull final String stateKey) {
         this.stateKey = requireNonNull(stateKey);
@@ -65,6 +68,11 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
         return !readElements.isEmpty() || !addedElements.isEmpty();
     }
 
+    public void register(@NonNull StateChangesListener listener) {
+        Objects.requireNonNull(listener);
+        this.stateChangesListener = listener;
+    }
+
     /**
      * Flushes all changes into the underlying data store. This method should <strong>ONLY</strong>
      * be called by the code that created the {@link WritableKVStateBase} instance or owns it. Don't
@@ -73,10 +81,18 @@ public abstract class WritableQueueStateBase<E> implements WritableQueueState<E>
     public final void commit() {
         for (int i = 0; i < readElements.size(); i++) {
             removeFromDataSource();
+
+            if (stateChangesListener != null) {
+                stateChangesListener.queuePopChange(getStateKey());
+            }
         }
 
         for (final var addedElement : addedElements) {
             addToDataSource(addedElement);
+
+            if (stateChangesListener != null) {
+                stateChangesListener.queuePushChange(getStateKey(), addedElement);
+            }
         }
 
         reset();

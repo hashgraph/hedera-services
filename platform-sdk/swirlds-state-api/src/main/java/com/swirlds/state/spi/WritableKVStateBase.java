@@ -16,35 +16,6 @@
 
 package com.swirlds.state.spi;
 
-import com.hedera.hapi.block.stream.output.MapChangeKey;
-import com.hedera.hapi.block.stream.output.MapChangeValue;
-import com.hedera.hapi.block.stream.output.MapDeleteChange;
-import com.hedera.hapi.block.stream.output.MapUpdateChange;
-import com.hedera.hapi.block.stream.output.StateChange;
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.ContractID;
-import com.hedera.hapi.node.base.FileID;
-import com.hedera.hapi.node.base.NftID;
-import com.hedera.hapi.node.base.ScheduleID;
-import com.hedera.hapi.node.base.TokenID;
-import com.hedera.hapi.node.base.TopicID;
-import com.hedera.hapi.node.state.common.EntityIDPair;
-import com.hedera.hapi.node.state.common.EntityNumber;
-import com.hedera.hapi.node.state.consensus.Topic;
-import com.hedera.hapi.node.state.contract.Bytecode;
-import com.hedera.hapi.node.state.contract.SlotKey;
-import com.hedera.hapi.node.state.contract.SlotValue;
-import com.hedera.hapi.node.state.file.File;
-import com.hedera.hapi.node.state.primitives.ProtoBytes;
-import com.hedera.hapi.node.state.primitives.ProtoLong;
-import com.hedera.hapi.node.state.primitives.ProtoString;
-import com.hedera.hapi.node.state.schedule.Schedule;
-import com.hedera.hapi.node.state.schedule.ScheduleList;
-import com.hedera.hapi.node.state.token.Account;
-import com.hedera.hapi.node.state.token.Nft;
-import com.hedera.hapi.node.state.token.StakingNodeInfo;
-import com.hedera.hapi.node.state.token.Token;
-import com.hedera.hapi.node.state.token.TokenRelation;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.*;
@@ -61,6 +32,8 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
      */
     private final Map<K, V> modifications = new LinkedHashMap<>();
 
+    private StateChangesListener stateChangesListener;
+
     /**
      * Create a new StateBase.
      *
@@ -70,111 +43,9 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
         super(stateKey);
     }
 
-    /**
-     * A temporary method used for the block stream MVP to accumulate state changes.
-     * @return the list of pending state changes
-     */
-    public List<StateChange> pendingStateChanges() {
-        final List<StateChange> changes = new ArrayList<>();
-        for (final var entry : modifications.entrySet()) {
-            final var key = entry.getKey();
-            final var value = entry.getValue();
-            if (value == null) {
-                changes.add(StateChange.newBuilder()
-                        .stateName(getStateKey())
-                        .mapDelete(MapDeleteChange.newBuilder().key(keyFor(key)).build())
-                        .build());
-            } else {
-                changes.add(StateChange.newBuilder()
-                        .stateName(getStateKey())
-                        .mapUpdate(MapUpdateChange.newBuilder()
-                                .key(keyFor(key))
-                                .value(valueFor(value))
-                                .build())
-                        .build());
-            }
-        }
-        return changes;
-    }
-
-    private MapChangeKey keyFor(final K key) {
-        return switch (key) {
-            case AccountID accountID -> MapChangeKey.newBuilder()
-                    .accountIdKey(accountID)
-                    .build();
-            case EntityIDPair entityIDPair -> MapChangeKey.newBuilder()
-                    .entityIdPairKey(entityIDPair)
-                    .build();
-            case EntityNumber entityNumber -> MapChangeKey.newBuilder()
-                    .entityNumberKey(entityNumber)
-                    .build();
-            case FileID fileID -> MapChangeKey.newBuilder().fileIdKey(fileID).build();
-            case NftID nftID -> MapChangeKey.newBuilder().nftIdKey(nftID).build();
-            case ProtoBytes protoBytes -> MapChangeKey.newBuilder()
-                    .protoBytesKey(protoBytes.value())
-                    .build();
-            case ProtoLong protoLong -> MapChangeKey.newBuilder()
-                    .protoLongKey(protoLong.value())
-                    .build();
-            case ProtoString protoString -> MapChangeKey.newBuilder()
-                    .protoStringKey(protoString.value())
-                    .build();
-            case ScheduleID scheduleID -> MapChangeKey.newBuilder()
-                    .scheduleIdKey(scheduleID)
-                    .build();
-            case SlotKey slotKey -> MapChangeKey.newBuilder()
-                    .slotKeyKey(slotKey)
-                    .build();
-            case TokenID tokenID -> MapChangeKey.newBuilder()
-                    .tokenIdKey(tokenID)
-                    .build();
-            case TopicID topicID -> MapChangeKey.newBuilder()
-                    .topicIdKey(topicID)
-                    .build();
-            case ContractID contractID -> MapChangeKey.newBuilder()
-                    .contractIdKey(contractID)
-                    .build();
-            default -> throw new IllegalStateException(
-                    "Unrecognized key type " + key.getClass().getSimpleName());
-        };
-    }
-
-    private MapChangeValue valueFor(final V value) {
-        return switch (value) {
-            case Account account -> MapChangeValue.newBuilder()
-                    .accountValue(account)
-                    .build();
-            case AccountID accountID -> MapChangeValue.newBuilder()
-                    .accountIdValue(accountID)
-                    .build();
-            case Bytecode bytecode -> MapChangeValue.newBuilder()
-                    .bytecodeValue(bytecode)
-                    .build();
-            case File file -> MapChangeValue.newBuilder().fileValue(file).build();
-            case Nft nft -> MapChangeValue.newBuilder().nftValue(nft).build();
-            case ProtoString protoString -> MapChangeValue.newBuilder()
-                    .protoStringValue(protoString.value())
-                    .build();
-            case Schedule schedule -> MapChangeValue.newBuilder()
-                    .scheduleValue(schedule)
-                    .build();
-            case ScheduleList scheduleList -> MapChangeValue.newBuilder()
-                    .scheduleListValue(scheduleList)
-                    .build();
-            case SlotValue slotValue -> MapChangeValue.newBuilder()
-                    .slotValueValue(slotValue)
-                    .build();
-            case StakingNodeInfo stakingNodeInfo -> MapChangeValue.newBuilder()
-                    .stakingNodeInfoValue(stakingNodeInfo)
-                    .build();
-            case Token token -> MapChangeValue.newBuilder().tokenValue(token).build();
-            case TokenRelation tokenRelation -> MapChangeValue.newBuilder()
-                    .tokenRelationValue(tokenRelation)
-                    .build();
-            case Topic topic -> MapChangeValue.newBuilder().topicValue(topic).build();
-            default -> throw new IllegalStateException(
-                    "Unexpected value: " + value.getClass().getSimpleName());
-        };
+    public void register(@NonNull StateChangesListener listener) {
+        Objects.requireNonNull(listener);
+        this.stateChangesListener = listener;
     }
 
     /**
@@ -188,8 +59,16 @@ public abstract class WritableKVStateBase<K, V> extends ReadableKVStateBase<K, V
             final var value = entry.getValue();
             if (value == null) {
                 removeFromDataSource(key);
+
+                if (stateChangesListener != null) {
+                    stateChangesListener.mapDeleteChange(getStateKey(), key);
+                }
             } else {
                 putIntoDataSource(key, value);
+
+                if (stateChangesListener != null) {
+                    stateChangesListener.mapUpdateChange(getStateKey(), key, value);
+                }
             }
         }
         reset();

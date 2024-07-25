@@ -18,21 +18,19 @@ package com.hedera.node.app.state;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.hapi.block.stream.output.StateChange;
 import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.node.app.spi.state.WrappedWritableKVState;
 import com.hedera.node.app.spi.state.WrappedWritableQueueState;
 import com.hedera.node.app.spi.state.WrappedWritableSingletonState;
+import com.swirlds.state.spi.StateChangesListener;
 import com.swirlds.state.spi.WritableKVState;
 import com.swirlds.state.spi.WritableQueueState;
 import com.swirlds.state.spi.WritableSingletonState;
 import com.swirlds.state.spi.WritableStates;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -56,16 +54,17 @@ public class WrappedWritableStates implements WritableStates {
         this.delegate = requireNonNull(delegate, "delegate must not be null");
     }
 
-    /**
-     * A temporary method used for the block stream MVP to accumulate state changes.
-     * @return the list of pending state changes
-     */
-    public List<StateChange> pendingStateChanges() {
-        final List<StateChange> allChanges = new ArrayList<>();
-        final List<WrappedWritableKVState<?, ?>> kvStates = new ArrayList<>(writableKVStateMap.values());
-        kvStates.sort(Comparator.comparing(WrappedWritableKVState::getStateKey));
-        kvStates.forEach(kvState -> allChanges.addAll(kvState.pendingStateChanges()));
-        return allChanges;
+    public void register(@NonNull StateChangesListener listener) {
+        Objects.requireNonNull(listener);
+        for (WrappedWritableKVState<?, ?> kvState : writableKVStateMap.values()) {
+            kvState.register(listener);
+        }
+        for (WrappedWritableQueueState<?> queueState : writableQueueStateMap.values()) {
+            queueState.register(listener);
+        }
+        for (WrappedWritableSingletonState<?> singletonState : writableSingletonStateMap.values()) {
+            singletonState.register(listener);
+        }
     }
 
     @Override
