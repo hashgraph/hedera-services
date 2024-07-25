@@ -159,10 +159,14 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
-      - name: Check Installed Packages (Linux)
+      - name: Check Linux Configuration (Linux)
         if: ${{ runner.os != 'Windows' && runner.os != 'macOS' }}
         run: |
           sudo apt update && sudo apt list --installed
+          env
+          locale -a
+          echo "*******"
+          locale
 
       - name: Setup Python
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
