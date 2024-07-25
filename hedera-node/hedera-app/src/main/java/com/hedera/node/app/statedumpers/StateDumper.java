@@ -82,15 +82,15 @@ import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.service.file.impl.schemas.V0490FileSchema;
 import com.hedera.node.app.service.schedule.ScheduleService;
 import com.hedera.node.app.service.token.TokenService;
-import com.hedera.node.app.state.merkle.MerkleHederaState;
-import com.hedera.node.app.state.merkle.StateMetadata;
 import com.hedera.node.app.state.recordcache.RecordCacheService;
 import com.hedera.node.app.throttle.CongestionThrottleService;
-import com.swirlds.platform.state.merkle.disk.OnDiskKey;
-import com.swirlds.platform.state.merkle.disk.OnDiskValue;
-import com.swirlds.platform.state.merkle.queue.QueueNode;
-import com.swirlds.platform.state.merkle.singleton.SingletonNode;
-import com.swirlds.state.HederaState;
+import com.swirlds.platform.state.MerkleStateRoot;
+import com.swirlds.state.MerkleState;
+import com.swirlds.state.merkle.StateMetadata;
+import com.swirlds.state.merkle.disk.OnDiskKey;
+import com.swirlds.state.merkle.disk.OnDiskValue;
+import com.swirlds.state.merkle.queue.QueueNode;
+import com.swirlds.state.merkle.singleton.SingletonNode;
 import com.swirlds.virtualmap.VirtualMap;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -101,7 +101,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * A utility class for dumping the state of the {@link MerkleHederaState} to a directory.
+ * A utility class for dumping the state of the {@link MerkleStateRoot} to a directory.
  */
 public class StateDumper {
     private static final String SEMANTIC_UNIQUE_TOKENS = "uniqueTokens.txt";
@@ -120,11 +120,11 @@ public class StateDumper {
     private static final String SEMANTIC_CONGESTION = "congestion.txt";
 
     public static void dumpModChildrenFrom(
-            @NonNull final HederaState hederaState,
+            @NonNull final MerkleState merkleState,
             @NonNull final DumpCheckpoint checkpoint,
             @NonNull final Set<MerkleStateChild> childrenToDump) {
-        if (!(hederaState instanceof MerkleHederaState state)) {
-            throw new IllegalArgumentException("Expected a MerkleHederaState");
+        if (!(merkleState instanceof MerkleStateRoot state)) {
+            throw new IllegalArgumentException("Expected a " + MerkleStateRoot.class.getSimpleName());
         }
         final SingletonNode<BlockInfo> blockInfoNode =
                 requireNonNull(state.getChild(state.findNodeIndex(BlockRecordService.NAME, BLOCK_INFO_STATE_KEY)));

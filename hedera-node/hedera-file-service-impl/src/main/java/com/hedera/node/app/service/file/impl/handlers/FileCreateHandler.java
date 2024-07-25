@@ -157,13 +157,12 @@ public class FileCreateHandler implements TransactionHandler {
             fileStore.put(file);
 
             handleContext
-                    .recordBuilders()
-                    .getOrCreate(CreateFileRecordBuilder.class)
+                    .savepointStack()
+                    .getBaseBuilder(CreateFileRecordBuilder.class)
                     .fileID(fileId);
         } catch (final HandleException e) {
             if (e.getStatus() == INVALID_EXPIRATION_TIME) {
-                // Since for some reason CreateTransactionBody does not have an expiration time,
-                // it makes more sense to propagate AUTORENEW_DURATION_NOT_IN_RANGE
+                // (FUTURE) Remove this translation done for mono-service fidelity
                 throw new HandleException(AUTORENEW_DURATION_NOT_IN_RANGE);
             }
             throw e;

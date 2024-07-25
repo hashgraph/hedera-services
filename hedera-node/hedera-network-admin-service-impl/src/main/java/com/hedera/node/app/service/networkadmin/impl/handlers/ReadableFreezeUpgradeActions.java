@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
 import static java.util.concurrent.CompletableFuture.runAsync;
 
+import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
@@ -42,7 +43,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
@@ -196,9 +196,9 @@ public class ReadableFreezeUpgradeActions {
         return StreamSupport.stream(
                         Spliterators.spliterator(nodeStore.keys(), nodeStore.sizeOfState(), DISTINCT), false)
                 .mapToLong(EntityNumber::number)
+                .sorted()
                 .mapToObj(nodeStore::get)
                 .filter(node -> node != null && !node.deleted())
-                .sorted(Comparator.comparing(Node::nodeId))
                 .map(node -> new ActiveNode(node, stakingInfoStore.get(node.nodeId())))
                 .toList();
     }
@@ -212,22 +212,32 @@ public class ReadableFreezeUpgradeActions {
             @Nullable final Timestamp now,
             @Nullable List<ActiveNode> nodes) {
         try {
-            FileUtils.cleanDirectory(artifactsLoc.toFile());
+            final var artifactsDir = artifactsLoc.toFile();
+            if (!FileUtils.isDirectory(artifactsDir)) {
+                FileUtils.forceMkdir(artifactsDir);
+            }
+            FileUtils.cleanDirectory(artifactsDir);
             UnzipUtility.unzip(archiveData.toByteArray(), artifactsLoc);
             log.info("Finished unzipping {} bytes for {} update into {}", size, desc, artifactsLoc);
-            if (desc.equals(PREPARE_UPGRADE_DESC)) {
-                requireNonNull(nodes, "Cannot generate config.txt without a valid list of active nodes");
+            if (nodes != null) {
                 generateConfigPem(artifactsLoc, nodes);
                 log.info("Finished generating config.txt and pem files into {}", artifactsLoc);
             }
             writeSecondMarker(marker, now);
-        } catch (final IOException e) {
+        } catch (final Exception t) {
             // catch and log instead of throwing because upgrade process looks at the presence or absence
             // of marker files to determine whether to proceed with the upgrade
             // if second marker is present, that means the zip file was successfully extracted
-            log.error("Failed to unzip archive for NMT consumption", e);
+            log.error("Failed to unzip archive for NMT consumption", t);
             log.error(MANUAL_REMEDIATION_ALERT);
         }
+    }
+
+    private long getNextNodeID(@NonNull List<ActiveNode> nodes) {
+        requireNonNull(nodes);
+        final long maxNodeId =
+                nodes.stream().mapToLong(a -> a.node.nodeId()).max().orElse(-1L);
+        return maxNodeId + 1;
     }
 
     private void generateConfigPem(@NonNull final Path artifactsLoc, @NonNull final List<ActiveNode> activeNodes) {
@@ -240,28 +250,14 @@ public class ReadableFreezeUpgradeActions {
             return;
         }
 
+        final var nextNodeId = getNextNodeID(activeNodes);
         try (final var fw = new FileWriter(configTxt.toFile());
                 final var bw = new BufferedWriter(fw)) {
             activeNodes.forEach(node -> writeConfigLineAndPem(node, bw, artifactsLoc));
-            writeNextNodeId(activeNodes, bw);
+            bw.write("nextNodeId, " + nextNodeId);
+            bw.flush();
         } catch (final IOException e) {
             log.error("Failed to generate {} with exception : {}", configTxt, e);
-        }
-    }
-
-    private void writeNextNodeId(final List<ActiveNode> activeNodes, final BufferedWriter bw) {
-        requireNonNull(activeNodes);
-        requireNonNull(bw);
-        // find max nodeId of all nodes and write nextNodeId as maxNodeId + 1
-        final var maxNodeId = activeNodes.stream()
-                .map(ActiveNode::node)
-                .map(Node::nodeId)
-                .max(Long::compareTo)
-                .orElseThrow();
-        try {
-            bw.write("nextNodeId, " + (maxNodeId + 1));
-        } catch (IOException e) {
-            log.error("Failed to write nextNodeId {} with exception : {}", maxNodeId, e);
         }
     }
 
@@ -290,17 +286,17 @@ public class ReadableFreezeUpgradeActions {
             line.append("address, ")
                     .append(node.nodeId())
                     .append(", ")
-                    .append(node.nodeId()) // nodeId as nickname
+                    .append(node.nodeId())
                     .append(", ")
                     .append(name)
                     .append(", ")
                     .append(weight)
                     .append(", ")
-                    .append(gossipEndpoints.get(INT).ipAddressV4().asUtf8String())
+                    .append(hostNameFor(gossipEndpoints.get(INT)))
                     .append(", ")
                     .append(gossipEndpoints.get(INT).port())
                     .append(", ")
-                    .append(gossipEndpoints.get(EXT).ipAddressV4().asUtf8String())
+                    .append(hostNameFor(gossipEndpoints.get(EXT)))
                     .append(", ")
                     .append(gossipEndpoints.get(EXT).port())
                     .append(", ")
@@ -320,6 +316,21 @@ public class ReadableFreezeUpgradeActions {
         } else {
             log.error("Node has {} gossip endpoints, expected greater than 1", gossipEndpoints.size());
         }
+    }
+
+    private String hostNameFor(@NonNull final ServiceEndpoint endpoint) {
+        return endpoint.ipAddressV4().length() == 4
+                ? ipV4AddressFromOctets(endpoint.ipAddressV4())
+                : endpoint.domainName();
+    }
+
+    private String ipV4AddressFromOctets(@NonNull final Bytes encoded) {
+        return (encoded.getByte(0) & 0xFF) + "."
+                + (encoded.getByte(1) & 0xFF)
+                + "."
+                + (encoded.getByte(2) & 0xFF)
+                + "."
+                + (encoded.getByte(3) & 0xFF);
     }
 
     private void catchUpOnMissedFreezeScheduling(final PlatformState platformState) {

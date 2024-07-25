@@ -19,6 +19,7 @@ package com.hedera.node.app.workflows.handle.record;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.hapi.util.HapiUtils.ACCOUNT_ID_COMPARATOR;
 import static com.hedera.hapi.util.HapiUtils.FUNDING_ACCOUNT_EXPIRY;
+import static com.hedera.node.app.ids.schemas.V0490EntityIdSchema.ENTITY_ID_STATE_KEY;
 import static com.hedera.node.app.service.token.impl.handlers.staking.StakingRewardsHelper.asAccountAmounts;
 import static com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder.transactionWith;
 import static java.util.Objects.requireNonNull;
@@ -26,14 +27,29 @@ import static java.util.Objects.requireNonNull;
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.Duration;
 import com.hedera.hapi.node.base.TransferList;
+import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.Account;
 import com.hedera.hapi.node.token.CryptoCreateTransactionBody;
 import com.hedera.hapi.node.transaction.TransactionBody;
+import com.hedera.node.app.ids.EntityIdService;
+import com.hedera.node.app.service.file.impl.FileServiceImpl;
 import com.hedera.node.app.service.token.impl.schemas.SyntheticAccountCreator;
 import com.hedera.node.app.service.token.records.GenesisAccountRecordBuilder;
 import com.hedera.node.app.service.token.records.TokenContext;
+import com.hedera.node.app.spi.workflows.GenesisContext;
+import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
+import com.hedera.node.app.workflows.handle.Dispatch;
+import com.hedera.node.config.data.AccountsConfig;
+import com.hedera.node.config.data.HederaConfig;
+import com.swirlds.config.api.Configuration;
+import com.swirlds.platform.state.PlatformState;
+import com.swirlds.platform.system.InitTrigger;
+import com.swirlds.platform.system.Platform;
+import com.swirlds.platform.system.SoftwareVersion;
+import com.swirlds.state.spi.info.NetworkInfo;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.SortedSet;
@@ -61,24 +77,97 @@ public class GenesisSetup {
     private SortedSet<Account> miscAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
     private SortedSet<Account> treasuryClones = new TreeSet<>(ACCOUNT_COMPARATOR);
     private SortedSet<Account> blocklistAccounts = new TreeSet<>(ACCOUNT_COMPARATOR);
+
+    private final FileServiceImpl fileService;
     private final SyntheticAccountCreator syntheticAccountCreator;
 
     /**
      * Constructs a new {@link GenesisSetup}.
      */
     @Inject
-    public GenesisSetup(@NonNull final SyntheticAccountCreator syntheticAccountCreator) {
+    public GenesisSetup(
+            @NonNull final FileServiceImpl fileService,
+            @NonNull final SyntheticAccountCreator syntheticAccountCreator) {
+        this.fileService = requireNonNull(fileService);
         this.syntheticAccountCreator = requireNonNull(syntheticAccountCreator);
     }
 
     /**
-     * Called only once, before handling the first transaction in network history.
+     * Creates the system entities within the given dispatch.
+     *
+     * @param dispatch the genesis dispatch
+     */
+    public void createSystemEntities(@NonNull final Dispatch dispatch) {
+        final var config = dispatch.config();
+        final var hederaConfig = config.getConfigData(HederaConfig.class);
+        final var firstUserNum = config.getConfigData(HederaConfig.class).firstUserEntity();
+        final var systemAdminId = AccountID.newBuilder()
+                .shardNum(hederaConfig.shard())
+                .realmNum(hederaConfig.realm())
+                .accountNum(config.getConfigData(AccountsConfig.class).systemAdmin())
+                .build();
+        final var genesisContext = new GenesisContext() {
+            @Override
+            public void dispatchCreation(@NonNull final TransactionBody txBody, final long entityNum) {
+                requireNonNull(txBody);
+                if (entityNum >= firstUserNum) {
+                    throw new IllegalArgumentException("Cannot create user entity at genesis");
+                }
+                final var controlledNum = dispatch.stack()
+                        .getWritableStates(EntityIdService.NAME)
+                        .<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY);
+                controlledNum.put(new EntityNumber(entityNum - 1));
+                final var recordBuilder = dispatch.handleContext()
+                        .dispatchPrecedingTransaction(
+                                txBody, SingleTransactionRecordBuilder.class, key -> true, systemAdminId);
+                if (recordBuilder.status() != SUCCESS) {
+                    log.error(
+                            "Failed to dispatch genesis transaction {} for entity {} - {}",
+                            txBody,
+                            entityNum,
+                            recordBuilder.status());
+                }
+            }
+
+            @NonNull
+            @Override
+            public Configuration configuration() {
+                return dispatch.config();
+            }
+
+            @NonNull
+            @Override
+            public NetworkInfo networkInfo() {
+                return dispatch.handleContext().networkInfo();
+            }
+
+            @NonNull
+            @Override
+            public Instant now() {
+                return dispatch.consensusNow();
+            }
+        };
+        fileService.createSystemEntities(genesisContext);
+        // Before returning, reset the next entity number to be the first user entity
+        final var controlledNum = dispatch.stack()
+                .getWritableStates(EntityIdService.NAME)
+                .<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY);
+        controlledNum.put(new EntityNumber(firstUserNum - 1));
+        dispatch.stack().commitFullStack();
+    }
+
+    /**
+     * Called only once, before handling the first transaction in network history. Externalizes
+     * side effects of genesis setup done in
+     * {@link com.swirlds.platform.system.SwirldState#init(Platform, PlatformState, InitTrigger, SoftwareVersion)}.
+     * <p>
+     * Should be removed once
      *
      * @throws NullPointerException if called more than once
      */
-    public void setupIn(@NonNull final TokenContext context) {
+    public void externalizeInitSideEffects(@NonNull final TokenContext context) {
         final var firstConsensusTime = context.consensusTime();
-        log.info("Exporting genesis records at {}", firstConsensusTime);
+        log.info("Doing genesis setup at {}", firstConsensusTime);
         // The account creator registers all its synthetics accounts based on the
         // given genesis configuration via callbacks on this object, so following
         // references to our field sets are guaranteed to be non-empty as appropriate
@@ -155,10 +244,9 @@ public class GenesisSetup {
             @Nullable final String recordMemo,
             @Nullable final Long overrideAutoRenewPeriod) {
         for (final Account account : accts) {
-            // we create preceding records on genesis for each system account created.
-            // This is an exception and should not fail with MAX_CHILD_RECORDS_EXCEEDED
-            final var recordBuilder =
-                    context.addUncheckedPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
+            // Since this is only called at genesis, the active savepoint's preceding record capacity will be
+            // Integer.MAX_VALUE and this will never fail with MAX_CHILD_RECORDS_EXCEEDED (c.f., HandleWorkflow)
+            final var recordBuilder = context.addPrecedingChildRecordBuilder(GenesisAccountRecordBuilder.class);
             recordBuilder.accountID(account.accountId());
             if (recordMemo != null) {
                 recordBuilder.memo(recordMemo);

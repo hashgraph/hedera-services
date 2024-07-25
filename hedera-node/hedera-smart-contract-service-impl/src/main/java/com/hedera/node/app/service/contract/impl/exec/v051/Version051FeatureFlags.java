@@ -37,4 +37,10 @@ public class Version051FeatureFlags extends Version050FeatureFlags {
         requireNonNull(config);
         return config.getConfigData(ContractsConfig.class).systemContractAccountServiceEnabled();
     }
+
+    @Override
+    public boolean isAuthorizedRawMethodEnabled(@NonNull Configuration config) {
+        requireNonNull(config);
+        return config.getConfigData(ContractsConfig.class).systemContractAccountServiceIsAuthorizedRawEnabled();
+    }
 }

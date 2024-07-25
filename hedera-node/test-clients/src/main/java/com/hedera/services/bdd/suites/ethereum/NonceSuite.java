@@ -58,7 +58,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_G
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_CONTRACT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_GAS_LIMIT_EXCEEDED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NEGATIVE_ALLOWANCE_AMOUNT;
@@ -68,7 +68,6 @@ import com.hedera.node.app.hapi.utils.ethereum.EthTxData;
 import com.hedera.node.app.hapi.utils.ethereum.EthTxData.EthTransactionType;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.spec.HapiPropertySource;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -591,8 +590,6 @@ public class NonceSuite {
         final String FUNGIBLE_TOKEN = "fungibleToken";
         final AtomicReference<String> treasuryMirrorAddr = new AtomicReference<>();
         final AtomicReference<String> tokenMirrorAddr = new AtomicReference<>();
-        final var illegalNumChildren =
-                HapiSpecSetup.getDefaultNodeProps().getInteger("consensus.handle.maxFollowingRecords") + 1;
         return defaultHapiSpec(
                         "nonceUpdatedAfterEvmReversionDueMaxChildRecordsExceeded",
                         NONDETERMINISTIC_ETHEREUM_DATA,
@@ -619,7 +616,9 @@ public class NonceSuite {
                                         CHECK_BALANCE_REPEATEDLY_FUNCTION,
                                         asHeadlongAddress(tokenMirrorAddr.get()),
                                         asHeadlongAddress(treasuryMirrorAddr.get()),
-                                        BigInteger.valueOf(illegalNumChildren))
+                                        BigInteger.valueOf(spec.startupProperties()
+                                                        .getInteger("consensus.handle.maxFollowingRecords")
+                                                + 1))
                                 .type(EthTransactionType.EIP1559)
                                 .signingWith(SECP_256K1_SOURCE_KEY)
                                 .payingWith(RELAYER)
@@ -963,12 +962,12 @@ public class NonceSuite {
                         .payingWith(RELAYER)
                         .nonce(0)
                         .gasLimit(ENOUGH_GAS_LIMIT)
-                        .hasKnownStatus(INVALID_FEE_SUBMITTED)
+                        .hasKnownStatus(INVALID_CONTRACT_ID)
                         .via(TX))
                 .then(
                         getAliasedAccountInfo(SECP_256K1_SOURCE_KEY)
                                 .has(accountWith().nonce(1L)),
-                        getTxnRecord(TX).hasChildRecordCount(0));
+                        getTxnRecord(TX).hasNonStakingChildRecordCount(0));
     }
 
     // depends on https://github.com/hashgraph/hedera-services/pull/11359

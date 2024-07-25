@@ -51,16 +51,6 @@ public class RemoteNode extends AbstractNode implements HederaNode {
     }
 
     @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Cannot stop remote node");
-    }
-
-    @Override
-    public boolean terminate() {
-        throw new UnsupportedOperationException("Cannot terminate a remote node");
-    }
-
-    @Override
     public CompletableFuture<Void> mfFuture(@NonNull MarkerFile markerFile) {
         throw new UnsupportedOperationException("Cannot check marker files on a remote node");
     }

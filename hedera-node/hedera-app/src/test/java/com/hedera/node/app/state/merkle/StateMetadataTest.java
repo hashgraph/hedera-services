@@ -19,8 +19,10 @@ package com.hedera.node.app.state.merkle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.hedera.node.app.spi.fixtures.state.TestSchema;
-import com.swirlds.platform.state.merkle.StateUtils;
+import com.swirlds.platform.test.fixtures.state.MerkleTestBase;
+import com.swirlds.platform.test.fixtures.state.TestSchema;
+import com.swirlds.state.merkle.StateMetadata;
+import com.swirlds.state.merkle.StateUtils;
 import com.swirlds.state.spi.Schema;
 import com.swirlds.state.spi.StateDefinition;
 import org.junit.jupiter.api.BeforeEach;

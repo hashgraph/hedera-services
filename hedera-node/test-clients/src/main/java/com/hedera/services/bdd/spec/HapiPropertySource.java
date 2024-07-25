@@ -17,12 +17,15 @@
 package com.hedera.services.bdd.spec;
 
 import static com.hedera.services.bdd.spec.transactions.contract.HapiParserUtil.asHeadlongAddress;
+import static com.hedera.services.bdd.suites.utils.sysfiles.BookEntryPojo.asOctets;
 import static java.lang.System.arraycopy;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
+import com.hedera.node.config.converter.LongPairConverter;
+import com.hedera.node.config.types.LongPair;
 import com.hedera.services.bdd.spec.keys.KeyFactory;
 import com.hedera.services.bdd.spec.keys.SigControl;
 import com.hedera.services.bdd.spec.props.JutilPropertySource;
@@ -141,6 +144,15 @@ public interface HapiPropertySource {
         return Long.parseLong(get(property));
     }
 
+    /**
+     * Returns a {@link LongPair} from the given property.
+     * @param property the property to get the value from
+     * @return the {@link LongPair} value
+     */
+    default LongPair getLongPair(@NonNull final String property) {
+        return new LongPairConverter().convert(get(property));
+    }
+
     default HapiSpecSetup.TlsConfig getTlsConfig(String property) {
         return HapiSpecSetup.TlsConfig.valueOf(get(property).toUpperCase());
     }
@@ -186,7 +198,7 @@ public interface HapiPropertySource {
                 .map(s -> (s instanceof HapiPropertySource)
                         ? s
                         : ((s instanceof Map) ? new MapPropertySource((Map) s) : new JutilPropertySource((String) s)))
-                .toArray(n -> new HapiPropertySource[n]);
+                .toArray(HapiPropertySource[]::new);
     }
 
     static TokenID asToken(String v) {
@@ -244,7 +256,7 @@ public interface HapiPropertySource {
     static ServiceEndpoint asServiceEndpoint(String v) {
         String[] parts = v.split(":");
         return ServiceEndpoint.newBuilder()
-                .setIpAddressV4(ByteString.copyFromUtf8(parts[0]))
+                .setIpAddressV4(asOctets(parts[0]))
                 .setPort(Integer.parseInt(parts[1]))
                 .build();
     }

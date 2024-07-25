@@ -35,7 +35,7 @@ import com.hedera.node.config.data.LedgerConfig;
 import com.hedera.pbj.runtime.ParseException;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -81,7 +81,7 @@ public class SystemFileUpdates {
      * @param state the current state (the updated file content needs to be committed to the state)
      * @param txBody the transaction body
      */
-    public ResponseCodeEnum handleTxBody(@NonNull final HederaState state, @NonNull final TransactionBody txBody) {
+    public ResponseCodeEnum handleTxBody(@NonNull final MerkleState state, @NonNull final TransactionBody txBody) {
         requireNonNull(state, "state must not be null");
         requireNonNull(txBody, "txBody must not be null");
 
@@ -131,7 +131,7 @@ public class SystemFileUpdates {
     private void updateConfig(
             @NonNull final Configuration configuration,
             @NonNull final ConfigType configType,
-            @NonNull final HederaState state) {
+            @NonNull final MerkleState state) {
         observePropertiesAndPermissions(state, configuration, (properties, permissions) -> {
             configProvider.update(properties, permissions);
             if (configType == ConfigType.NETWORK_PROPERTIES) {

@@ -27,7 +27,7 @@ import com.hedera.hapi.node.base.*;
 import com.hedera.hapi.node.transaction.ExchangeRate;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeMerkleState;
 import com.hedera.node.app.store.ReadableStoreFactory;
 import com.hedera.node.app.workflows.TransactionInfo;
 import com.hedera.pbj.runtime.OneOf;
@@ -68,14 +68,14 @@ public class FeeCalculatorImplTest {
                 ExchangeRate.DEFAULT,
                 false,
                 congestionMultipliers,
-                new ReadableStoreFactory(new FakeHederaState()));
+                new ReadableStoreFactory(new FakeMerkleState()));
         assertNotNull(calculator);
 
         calculator = new FeeCalculatorImpl(
                 feeData,
                 new ExchangeRate(0, 0, null),
                 congestionMultipliers,
-                new ReadableStoreFactory(new FakeHederaState()),
+                new ReadableStoreFactory(new FakeMerkleState()),
                 HederaFunctionality.CONTRACT_CALL);
         assertNotNull(calculator);
     }
@@ -96,12 +96,12 @@ public class FeeCalculatorImplTest {
                         ExchangeRate.DEFAULT,
                         false,
                         congestionMultipliers,
-                        new ReadableStoreFactory(new FakeHederaState())));
+                        new ReadableStoreFactory(new FakeMerkleState())));
     }
 
     @Test
     void willReturnMultiplier() {
-        var storeFactory = new ReadableStoreFactory(new FakeHederaState());
+        var storeFactory = new ReadableStoreFactory(new FakeMerkleState());
         var calculator = new FeeCalculatorImpl(
                 feeData,
                 new ExchangeRate(0, 0, null),

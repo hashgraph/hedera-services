@@ -19,9 +19,8 @@ package com.swirlds.platform.test.components;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.swirlds.platform.event.PlatformEvent;
 import com.swirlds.platform.internal.ConsensusRound;
-import com.swirlds.platform.internal.EventImpl;
-import com.swirlds.platform.test.fixtures.event.EventImplTestUtils;
 import com.swirlds.platform.test.fixtures.event.TestingEventBuilder;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,10 +43,11 @@ public final class TransactionHandlingTestUtils {
             final Random random, final int eventCount, final int transactionsPerEvent) {
         final ConsensusRound round = mock(ConsensusRound.class);
 
-        final List<EventImpl> events = new ArrayList<>();
+        final List<PlatformEvent> events = new ArrayList<>();
         for (int index = 0; index < eventCount; index++) {
-            events.add(EventImplTestUtils.createEventImpl(
-                    new TestingEventBuilder(random).setSystemTransactionCount(transactionsPerEvent), null, null));
+            events.add(new TestingEventBuilder(random)
+                    .setSystemTransactionCount(transactionsPerEvent)
+                    .build());
         }
 
         when(round.getConsensusEvents()).thenReturn(events);

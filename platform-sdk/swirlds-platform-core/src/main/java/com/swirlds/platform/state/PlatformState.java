@@ -25,7 +25,6 @@ import com.swirlds.platform.consensus.ConsensusSnapshot;
 import com.swirlds.platform.event.AncientMode;
 import com.swirlds.platform.system.SoftwareVersion;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.uptime.UptimeDataImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.IOException;
@@ -59,6 +58,14 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
          * Removed the running event hash algorithm.
          */
         public static final int REMOVED_EVENT_HASH = 4;
+        /**
+         * Removed epoch hash fields.
+         */
+        public static final int REMOVED_EPOCH_HASH = 5;
+        /**
+         * Removed the uptime data.
+         */
+        public static final int REMOVED_UPTIME_DATA = 6;
     }
 
     /**
@@ -96,17 +103,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     private SoftwareVersion creationSoftwareVersion;
 
     /**
-     * The epoch hash of this state. Updated every time emergency recovery is performed.
-     */
-    private Hash epochHash;
-
-    /**
-     * The next epoch hash, used to update the epoch hash at the next round boundary. This field is not part of the hash
-     * and is not serialized.
-     */
-    private Hash nextEpochHash;
-
-    /**
      * The number of non-ancient rounds.
      */
     private int roundsNonAncient;
@@ -125,11 +121,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      * the last time when a freeze was performed
      */
     private Instant lastFrozenTime;
-
-    /**
-     * Data on node uptime.
-     */
-    private UptimeDataImpl uptimeData = new UptimeDataImpl();
 
     /**
      * Null if birth round migration has not yet happened, otherwise the software version that was first used when the
@@ -163,32 +154,13 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         this.legacyRunningEventHash = that.legacyRunningEventHash;
         this.consensusTimestamp = that.consensusTimestamp;
         this.creationSoftwareVersion = that.creationSoftwareVersion;
-        this.epochHash = that.epochHash;
-        this.nextEpochHash = that.nextEpochHash;
         this.roundsNonAncient = that.roundsNonAncient;
         this.snapshot = that.snapshot;
         this.freezeTime = that.freezeTime;
         this.lastFrozenTime = that.lastFrozenTime;
-        this.uptimeData = that.uptimeData.copy();
         this.firstVersionInBirthRoundMode = that.firstVersionInBirthRoundMode;
         this.lastRoundBeforeBirthRoundMode = that.lastRoundBeforeBirthRoundMode;
         this.lowestJudgeGenerationBeforeBirthRoundMode = that.lowestJudgeGenerationBeforeBirthRoundMode;
-    }
-
-    /**
-     * Update the epoch hash if the next epoch hash is non-null and different from the current epoch hash.
-     */
-    public void updateEpochHash() {
-        throwIfImmutable();
-        if (nextEpochHash != null && !nextEpochHash.equals(epochHash)) {
-            // This is the first round after an emergency recovery round
-            // Set the epoch hash to the next value
-            epochHash = nextEpochHash;
-
-            // set this to null so the value is consistent with a
-            // state loaded from disk or received via reconnect
-            nextEpochHash = null;
-        }
     }
 
     /**
@@ -210,12 +182,10 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         out.writeSerializable(legacyRunningEventHash, false);
         out.writeInstant(consensusTimestamp);
         out.writeSerializable(creationSoftwareVersion, true);
-        out.writeSerializable(epochHash, false);
         out.writeInt(roundsNonAncient);
         out.writeSerializable(snapshot, false);
         out.writeInstant(freezeTime);
         out.writeInstant(lastFrozenTime);
-        out.writeSerializable(uptimeData, false);
         out.writeSerializable(firstVersionInBirthRoundMode, true);
         out.writeLong(lastRoundBeforeBirthRoundMode);
         out.writeLong(lowestJudgeGenerationBeforeBirthRoundMode);
@@ -232,12 +202,16 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         legacyRunningEventHash = in.readSerializable(false, Hash::new);
         consensusTimestamp = in.readInstant();
         creationSoftwareVersion = in.readSerializable();
-        epochHash = in.readSerializable(false, Hash::new);
+        if (version < ClassVersion.REMOVED_EPOCH_HASH) {
+            in.readSerializable(false, Hash::new);
+        }
         roundsNonAncient = in.readInt();
         snapshot = in.readSerializable(false, ConsensusSnapshot::new);
         freezeTime = in.readInstant();
         lastFrozenTime = in.readInstant();
-        uptimeData = in.readSerializable(false, UptimeDataImpl::new);
+        if (version < ClassVersion.REMOVED_UPTIME_DATA) {
+            skipUptimeData(in);
+        }
         if (version >= ClassVersion.BIRTH_ROUND_MIGRATION_PATHWAY) {
             firstVersionInBirthRoundMode = in.readSerializable();
             lastRoundBeforeBirthRoundMode = in.readLong();
@@ -248,12 +222,34 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
         }
     }
 
+    private void skipUptimeData(final @NonNull SerializableDataInputStream in) throws IOException {
+        // uptime data version
+        in.readInt();
+        int numOfEntries = in.readInt();
+        for (int i = 0; i < numOfEntries; i++) {
+            // key version
+            in.readInt();
+            // nodeId
+            in.readLong();
+            // value version
+            in.readInt();
+            // lastEventRound
+            in.readLong();
+            // lastEventTime
+            in.readInstant();
+            // lastJudgeRound
+            in.readLong();
+            // lastJudgeTime
+            in.readInstant();
+        }
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public int getVersion() {
-        return ClassVersion.REMOVED_EVENT_HASH;
+        return ClassVersion.REMOVED_UPTIME_DATA;
     }
 
     /**
@@ -404,44 +400,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
     }
 
     /**
-     * Sets the epoch hash of this state.
-     *
-     * @param epochHash the epoch hash of this state
-     */
-    public void setEpochHash(@Nullable final Hash epochHash) {
-        this.epochHash = epochHash;
-    }
-
-    /**
-     * Gets the epoch hash of this state.
-     *
-     * @return the epoch hash of this state
-     */
-    @Nullable
-    public Hash getEpochHash() {
-        return epochHash;
-    }
-
-    /**
-     * Sets the next epoch hash of this state.
-     *
-     * @param nextEpochHash the next epoch hash of this state
-     */
-    public void setNextEpochHash(@Nullable final Hash nextEpochHash) {
-        this.nextEpochHash = nextEpochHash;
-    }
-
-    /**
-     * Gets the next epoch hash of this state.
-     *
-     * @return the next epoch hash of this state
-     */
-    @Nullable
-    public Hash getNextEpochHash() {
-        return nextEpochHash;
-    }
-
-    /**
      * Sets the number of non-ancient rounds.
      *
      * @param roundsNonAncient the number of non-ancient rounds
@@ -512,25 +470,6 @@ public class PlatformState extends PartialMerkleLeaf implements MerkleLeaf {
      */
     public void setLastFrozenTime(@Nullable final Instant lastFrozenTime) {
         this.lastFrozenTime = lastFrozenTime;
-    }
-
-    /**
-     * Gets the uptime data.
-     *
-     * @return the uptime data
-     */
-    @Nullable
-    public UptimeDataImpl getUptimeData() {
-        return uptimeData;
-    }
-
-    /**
-     * Sets the uptime data.
-     *
-     * @param uptimeData the uptime data
-     */
-    public void setUptimeData(@NonNull final UptimeDataImpl uptimeData) {
-        this.uptimeData = Objects.requireNonNull(uptimeData);
     }
 
     /**

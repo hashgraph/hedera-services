@@ -17,12 +17,15 @@
 package com.hedera.services.bdd.suites.consensus;
 
 import static com.hedera.services.bdd.spec.HapiSpec.defaultHapiSpec;
+import static com.hedera.services.bdd.spec.HapiSpec.hapiTest;
 import static com.hedera.services.bdd.spec.queries.QueryVerbs.getTopicInfo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.createTopic;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.cryptoCreate;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.submitMessageTo;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.updateTopic;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doSeveralWithStartupConfigNow;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.newKeyNamed;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.specOps;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.validateChargedUsdWithin;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
@@ -44,7 +47,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.UNAUTHORIZED;
 
 import com.hedera.services.bdd.junit.HapiTest;
-import com.hedera.services.bdd.spec.HapiSpecSetup;
 import com.hedera.services.bdd.spec.transactions.consensus.HapiTopicUpdate;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -55,8 +57,6 @@ import org.junit.jupiter.api.DynamicTest;
 
 public class TopicUpdateSuite {
     private static final long validAutoRenewPeriod = 7_000_000L;
-    private static final long defaultMaxLifetime =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
 
     @HapiTest
     final Stream<DynamicTest> pureCheckFails() {
@@ -196,7 +196,7 @@ public class TopicUpdateSuite {
 
     @HapiTest
     final Stream<DynamicTest> updateMultipleFields() {
-        long expirationTimestamp = Instant.now().getEpochSecond() + 10000000; // more than default.autorenew
+        long expirationTimestamp = Instant.now().getEpochSecond() + 7999990; // more than default.autorenew
         // .secs=7000000
         return defaultHapiSpec("updateMultipleFields")
                 .given(
@@ -246,14 +246,16 @@ public class TopicUpdateSuite {
     /* If admin key is not set, only expiration timestamp updates are allowed */
     @HapiTest
     final Stream<DynamicTest> updateExpiryOnTopicWithNoAdminKey() {
-        long overlyDistantNewExpiry = Instant.now().getEpochSecond() + defaultMaxLifetime + 12_345L;
-        long reasonableNewExpiry = Instant.now().getEpochSecond() + defaultMaxLifetime - 12_345L;
-        return defaultHapiSpec("updateExpiryOnTopicWithNoAdminKey")
-                .given(createTopic("testTopic"))
-                .when(
-                        updateTopic("testTopic").expiry(overlyDistantNewExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
-                        updateTopic("testTopic").expiry(reasonableNewExpiry))
-                .then(getTopicInfo("testTopic").hasExpiry(reasonableNewExpiry));
+        return hapiTest(
+                createTopic("testTopic"), doSeveralWithStartupConfigNow("entities.maxLifetime", (value, now) -> {
+                    final var maxLifetime = Long.parseLong(value);
+                    final var newExpiry = now.getEpochSecond() + maxLifetime - 12_345L;
+                    final var excessiveExpiry = now.getEpochSecond() + maxLifetime + 12_345L;
+                    return specOps(
+                            updateTopic("testTopic").expiry(excessiveExpiry).hasKnownStatus(INVALID_EXPIRATION_TIME),
+                            updateTopic("testTopic").expiry(newExpiry),
+                            getTopicInfo("testTopic").hasExpiry(newExpiry));
+                }));
     }
 
     @HapiTest

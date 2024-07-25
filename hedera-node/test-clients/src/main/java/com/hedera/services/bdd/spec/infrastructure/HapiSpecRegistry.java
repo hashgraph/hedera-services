@@ -43,6 +43,8 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.GetAccountDetailsResponse;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -843,5 +845,40 @@ public class HapiSpecRegistry {
 
     public void saveMetadata(String token, String metadata) {
         put(token + "Metadata", metadata, String.class);
+    }
+
+    public boolean hasNodeMeta(String name) {
+        return hasVia(this::getNodeMeta, name);
+    }
+
+    public NodeCreateTransactionBody getNodeMeta(String name) {
+        return get(name, NodeCreateTransactionBody.class);
+    }
+
+    public void saveNodeMeta(String name, NodeUpdateTransactionBody txn) {
+        NodeCreateTransactionBody.Builder builder;
+        if (hasNodeMeta(name)) {
+            builder = getNodeMeta(name).toBuilder();
+        } else {
+            builder = NodeCreateTransactionBody.newBuilder();
+        }
+        if (txn.hasAdminKey()) {
+            builder.setAdminKey(txn.getAdminKey());
+        }
+        if (txn.hasAccountId()) {
+            builder.setAccountId(txn.getAccountId());
+        }
+        if (txn.hasDescription()) {
+            builder.setDescription(txn.getDescription().getValue());
+        }
+        if (txn.hasGossipCaCertificate()) {
+            builder.setGossipCaCertificate(txn.getGossipCaCertificate().toByteString());
+        }
+        if (txn.hasGrpcCertificateHash()) {
+            builder.setGrpcCertificateHash(txn.getGossipCaCertificate().toByteString());
+        }
+        builder.addAllGossipEndpoint(txn.getGossipEndpointList());
+        builder.addAllServiceEndpoint(txn.getServiceEndpointList());
+        put(name, builder.build());
     }
 }

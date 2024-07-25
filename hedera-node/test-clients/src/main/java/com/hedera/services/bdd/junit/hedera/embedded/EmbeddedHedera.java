@@ -16,7 +16,7 @@
 
 package com.hedera.services.bdd.junit.hedera.embedded;
 
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeMerkleState;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.Response;
@@ -44,7 +44,7 @@ public interface EmbeddedHedera {
      *
      * @return the fake state of the embedded Hedera node
      */
-    FakeHederaState state();
+    FakeMerkleState state();
 
     /**
      * Returns the next in a repeatable sequence of valid start times that the embedded Hedera's
@@ -76,7 +76,20 @@ public interface EmbeddedHedera {
      * @param nodeAccountId the account ID of the node to submit the transaction to
      * @return the response to the transaction
      */
-    TransactionResponse submit(@NonNull Transaction transaction, @NonNull AccountID nodeAccountId);
+    default TransactionResponse submit(@NonNull Transaction transaction, @NonNull AccountID nodeAccountId) {
+        return submit(transaction, nodeAccountId, SyntheticVersion.PRESENT);
+    }
+
+    /**
+     * Submits a transaction to the embedded node.
+     *
+     * @param transaction the transaction to submit
+     * @param nodeAccountId the account ID of the node to submit the transaction to
+     * @param version the synthetic version of the transaction
+     * @return the response to the transaction
+     */
+    TransactionResponse submit(
+            @NonNull Transaction transaction, @NonNull AccountID nodeAccountId, @NonNull SyntheticVersion version);
 
     /**
      * Sends a query to the embedded node.

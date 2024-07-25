@@ -216,7 +216,7 @@ public class HapiGetTxnRecord extends HapiQueryOp<HapiGetTxnRecord> {
 
     public HapiGetTxnRecord exposingCreationsTo(final Consumer<List<String>> creationObserver) {
         this.createdIdsObserver = creationObserver;
-        return this;
+        return andAllChildRecords();
     }
 
     public HapiGetTxnRecord exposingCreationDetailsTo(final Consumer<List<AccountCreationDetails>> observer) {

@@ -35,6 +35,7 @@ import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileDelete;
 import static com.hedera.services.bdd.spec.transactions.TxnVerbs.fileUpdate;
 import static com.hedera.services.bdd.spec.transactions.crypto.HapiCryptoTransfer.tinyBarsFromTo;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.balanceSnapshot;
+import static com.hedera.services.bdd.spec.utilops.UtilVerbs.doWithStartupConfig;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.submitModified;
 import static com.hedera.services.bdd.spec.utilops.UtilVerbs.withTargetLedgerId;
 import static com.hedera.services.bdd.spec.utilops.mod.ModificationUtils.withSuccessivelyVariedBodyIds;
@@ -78,9 +79,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DynamicTest;
 
 public class FileCreateSuite {
-    private static final long defaultMaxLifetime =
-            Long.parseLong(HapiSpecSetup.getDefaultNodeProps().get("entities.maxLifetime"));
-
     @HapiTest
     final Stream<DynamicTest> exchangeRateControlAccountIsntCharged() {
         return defaultHapiSpec("ExchangeRateControlAccountIsntCharged")
@@ -99,9 +97,9 @@ public class FileCreateSuite {
         return defaultHapiSpec("CreateFailsWithExcessiveLifetime")
                 .given()
                 .when()
-                .then(fileCreate("test")
-                        .lifetime(defaultMaxLifetime + 12_345L)
-                        .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE));
+                .then(doWithStartupConfig("entities.maxLifetime", value -> fileCreate("test")
+                        .lifetime(Long.parseLong(value) + 12_345L)
+                        .hasPrecheck(AUTORENEW_DURATION_NOT_IN_RANGE)));
     }
 
     @HapiTest
@@ -228,7 +226,8 @@ public class FileCreateSuite {
 
     /**
      * Fetches the system files from a running network and validates they can be
-     * parsed as the expected protobuf messages. */
+     * parsed as the expected protobuf messages.
+     */
     @HapiTest
     final Stream<DynamicTest> fetchFiles() {
         return customHapiSpec("FetchFiles")

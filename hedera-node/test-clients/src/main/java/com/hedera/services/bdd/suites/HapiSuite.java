@@ -116,10 +116,9 @@ public abstract class HapiSuite {
     public static final long ONE_HUNDRED_HBARS = 100 * ONE_HBAR;
     public static final long THOUSAND_HBAR = 1_000 * ONE_HBAR;
     public static final long ONE_MILLION_HBARS = 1_000_000L * ONE_HBAR;
+    public static final long ONE_BILLION_HBARS = 1_000 * ONE_MILLION_HBARS;
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
 
-    public static final String CHAIN_ID_PROP = "contracts.chainId";
-    public static final String CRYPTO_CREATE_WITH_ALIAS_ENABLED = "cryptoCreateWithAlias.enabled";
     public static final Integer CHAIN_ID = 298;
     public static final String ETH_HASH_KEY = "EthHash";
     public static final String ETH_SENDER_ADDRESS = "EthSenderAddress";
@@ -182,7 +181,7 @@ public abstract class HapiSuite {
     private boolean tearDownClientsAfter = true;
     private List<HapiSpec> finalSpecs = Collections.emptyList();
 
-    private Map<String, Object> overrides = Collections.emptyMap();
+    private Map<String, String> overrides = Collections.emptyMap();
 
     public String name() {
         String simpleName = this.getClass().getSimpleName();
@@ -248,10 +247,6 @@ public abstract class HapiSuite {
             autoSnapshotManagementOn |= spec.setup().autoSnapshotManagement();
             if (!overrides.isEmpty()) {
                 spec.addOverrideProperties(overrides);
-            }
-            if (spec.isOnlySpecToRunInSuite()) {
-                specs = List.of(spec);
-                break;
             }
         }
         if (autoSnapshotManagementOn) {

@@ -18,7 +18,6 @@ package com.hedera.node.app.throttle;
 
 import static com.hedera.hapi.node.base.ResponseCodeEnum.SUCCESS;
 import static com.hedera.node.app.records.BlockRecordService.EPOCH;
-import static com.hedera.node.app.service.file.impl.schemas.V0490FileSchema.BLOBS_KEY;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.CONGESTION_LEVEL_STARTS_STATE_KEY;
 import static com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema.THROTTLE_USAGE_SNAPSHOTS_STATE_KEY;
 import static org.mockito.BDDMockito.given;
@@ -35,16 +34,10 @@ import com.hedera.hapi.node.transaction.ThrottleDefinitions;
 import com.hedera.node.app.fees.congestion.CongestionMultipliers;
 import com.hedera.node.app.hapi.utils.throttles.DeterministicThrottle;
 import com.hedera.node.app.hapi.utils.throttles.GasLimitDeterministicThrottle;
-import com.hedera.node.app.service.file.FileService;
 import com.hedera.node.app.throttle.schemas.V0490CongestionThrottleSchema;
-import com.hedera.node.app.util.FileUtilities;
 import com.hedera.node.config.ConfigProvider;
-import com.hedera.node.config.VersionedConfigImpl;
-import com.hedera.node.config.data.FilesConfig;
-import com.hedera.node.config.testfixtures.HederaTestConfigBuilder;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.config.api.Configuration;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.spi.ReadableKVState;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
@@ -60,7 +53,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ThrottleServiceManagerTest {
-    private static final Configuration DEFAULT_CONFIG = HederaTestConfigBuilder.createConfig();
     private static final Bytes MOCK_ENCODED_THROTTLE_DEFS = Bytes.wrap("NOPE");
     private static final ThrottleDefinitions MOCK_THROTTLE_DEFS = ThrottleDefinitions.DEFAULT;
     private static final ThrottleUsageSnapshots MOCK_THROTTLE_USAGE_SNAPSHOTS = new ThrottleUsageSnapshots(
@@ -101,7 +93,7 @@ class ThrottleServiceManagerTest {
     private ReadableStates throttleReadableStates;
 
     @Mock
-    private HederaState hederaState;
+    private MerkleState merkleState;
 
     @Mock
     private ReadableKVState<FileID, File> blobs;
@@ -128,7 +120,6 @@ class ThrottleServiceManagerTest {
 
     @Test
     void initsAsExpected() {
-        given(configProvider.getConfiguration()).willReturn(new VersionedConfigImpl(DEFAULT_CONFIG, 1L));
         givenMockThrottleDefs();
         givenReadableThrottleState();
         givenThrottleMocks();
@@ -141,7 +132,7 @@ class ThrottleServiceManagerTest {
                 cryptoTransferThrottle,
                 gasThrottle);
 
-        subject.initFrom(hederaState);
+        subject.init(merkleState, MOCK_ENCODED_THROTTLE_DEFS);
 
         inOrder.verify(ingestThrottle).applyGasConfig();
         inOrder.verify(backendThrottle).applyGasConfig();
@@ -171,7 +162,7 @@ class ThrottleServiceManagerTest {
                 .willReturn(asNullTerminatedInstants(
                         MOCK_CONGESTION_LEVEL_STARTS.gasLevelStarts().getFirst()));
 
-        subject.saveThrottleSnapshotsAndCongestionLevelStartsTo(hederaState);
+        subject.saveThrottleSnapshotsAndCongestionLevelStartsTo(merkleState);
 
         verify(writableThrottleSnapshots)
                 .put(new ThrottleUsageSnapshots(List.of(MOCK_USAGE_SNAPSHOT), MOCK_USAGE_SNAPSHOT));
@@ -216,18 +207,12 @@ class ThrottleServiceManagerTest {
     }
 
     private void givenMockThrottleDefs() {
-        given(hederaState.getReadableStates(FileService.NAME)).willReturn(fileReadableStates);
-        given(fileReadableStates.<FileID, File>get(BLOBS_KEY)).willReturn(blobs);
-        given(blobs.get(FileUtilities.createFileID(
-                        DEFAULT_CONFIG.getConfigData(FilesConfig.class).throttleDefinitions(), DEFAULT_CONFIG)))
-                .willReturn(
-                        File.newBuilder().contents(MOCK_ENCODED_THROTTLE_DEFS).build());
         given(throttleParser.parse(MOCK_ENCODED_THROTTLE_DEFS))
                 .willReturn(new ThrottleParser.ValidatedThrottles(MOCK_THROTTLE_DEFS, SUCCESS));
     }
 
     private void givenReadableThrottleState() {
-        given(hederaState.getReadableStates(CongestionThrottleService.NAME)).willReturn(throttleReadableStates);
+        given(merkleState.getReadableStates(CongestionThrottleService.NAME)).willReturn(throttleReadableStates);
         given(throttleUsageSnapshots.get()).willReturn(MOCK_THROTTLE_USAGE_SNAPSHOTS);
         given(throttleReadableStates.<ThrottleUsageSnapshots>getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY))
                 .willReturn(throttleUsageSnapshots);
@@ -238,7 +223,7 @@ class ThrottleServiceManagerTest {
     }
 
     private void givenWritableThrottleState() {
-        given(hederaState.getWritableStates(CongestionThrottleService.NAME)).willReturn(writableStates);
+        given(merkleState.getWritableStates(CongestionThrottleService.NAME)).willReturn(writableStates);
         given(writableStates.<ThrottleUsageSnapshots>getSingleton(THROTTLE_USAGE_SNAPSHOTS_STATE_KEY))
                 .willReturn(writableThrottleSnapshots);
         given(writableStates.<CongestionLevelStarts>getSingleton(CONGESTION_LEVEL_STARTS_STATE_KEY))

@@ -16,6 +16,7 @@
 
 package com.hedera.node.app.service.networkadmin.impl.test.handlers;
 
+import static com.hedera.node.app.service.addressbook.AddressBookHelper.NODES_KEY;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_IMMEDIATE_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.EXEC_TELEMETRY_MARKER;
 import static com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions.NOW_FROZEN_MARKER;
@@ -34,13 +35,14 @@ import static org.mockito.Mockito.mock;
 import com.hedera.hapi.node.base.Key;
 import com.hedera.hapi.node.base.Key.Builder;
 import com.hedera.hapi.node.base.KeyList;
-import com.hedera.hapi.node.base.ServiceEndpoint;
 import com.hedera.hapi.node.base.ThresholdKey;
 import com.hedera.hapi.node.base.Timestamp;
 import com.hedera.hapi.node.state.addressbook.Node;
 import com.hedera.hapi.node.state.common.EntityNumber;
 import com.hedera.hapi.node.state.token.StakingNodeInfo;
 import com.hedera.node.app.service.addressbook.ReadableNodeStore;
+import com.hedera.node.app.service.addressbook.impl.ReadableNodeStoreImpl;
+import com.hedera.node.app.service.addressbook.impl.schemas.V053AddressBookSchema;
 import com.hedera.node.app.service.file.impl.WritableUpgradeFileStore;
 import com.hedera.node.app.service.networkadmin.impl.WritableFreezeStore;
 import com.hedera.node.app.service.networkadmin.impl.handlers.FreezeUpgradeActions;
@@ -54,7 +56,8 @@ import com.hedera.node.config.data.NetworkAdminConfig;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
 import com.swirlds.platform.state.PlatformState;
 import com.swirlds.platform.system.address.AddressBook;
-import com.swirlds.platform.test.fixtures.state.MapReadableKVState;
+import com.swirlds.state.spi.ReadableStates;
+import com.swirlds.state.test.fixtures.MapReadableKVState;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -66,7 +69,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
@@ -135,17 +137,26 @@ class ReadableFreezeUpgradeActionsTest {
     private WritableUpgradeFileStore upgradeFileStore;
 
     @Mock
-    private ReadableNodeStore nodeStore;
+    private ReadableStakingInfoStore stakingInfoStore;
 
     @Mock
-    private ReadableStakingInfoStore stakingInfoStore;
+    protected ReadableStates readableStates;
+
+    private ReadableNodeStore nodeStore;
+
+    private Executor freezeExecutor;
 
     @BeforeEach
     void setUp() throws IOException {
         noiseFileLoc = zipOutputDir.toPath().resolve("forgotten.cfg");
         noiseSubFileLoc = zipOutputDir.toPath().resolve("edargpu");
 
-        final Executor freezeExecutor = new ForkJoinPool(
+        final var readableNodeState =
+                MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY).build();
+        given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
+        nodeStore = new ReadableNodeStoreImpl(readableStates);
+
+        freezeExecutor = new ForkJoinPool(
                 1, ForkJoinPool.defaultForkJoinWorkerThreadFactory, Thread.getDefaultUncaughtExceptionHandler(), true);
         subject = new FreezeUpgradeActions(
                 adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
@@ -169,7 +180,6 @@ class ReadableFreezeUpgradeActionsTest {
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
-        given(nodeStore.keys()).willReturn(Collections.emptyIterator());
 
         final Bytes invalidArchive = Bytes.wrap("Not a valid zip archive".getBytes(StandardCharsets.UTF_8));
         subject.extractSoftwareUpgrade(invalidArchive).join();
@@ -185,7 +195,6 @@ class ReadableFreezeUpgradeActionsTest {
     @Test
     void preparesForUpgrade() throws IOException {
         setupNoiseFiles();
-        given(nodeStore.keys()).willReturn(Collections.emptyIterator());
         rmIfPresent(EXEC_IMMEDIATE_MARKER);
 
         given(adminServiceConfig.upgradeArtifactsPath()).willReturn(zipOutputDir.toString());
@@ -369,11 +378,11 @@ class ReadableFreezeUpgradeActionsTest {
         final var node1 = new Node(
                 1,
                 asAccount(3),
-                "node1description",
+                "node2",
                 List.of(
-                        new ServiceEndpoint(Bytes.wrap("127.0.0.1"), 1234, null),
-                        new ServiceEndpoint(Bytes.wrap("35.186.191.247"), 50211, null)),
-                List.of(new ServiceEndpoint(Bytes.wrap("45.186.191.247"), 50231, null)),
+                        V053AddressBookSchema.endpointFor("127.0.0.1", 1234),
+                        V053AddressBookSchema.endpointFor("35.186.191.247", 50211)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.247", 50231)),
                 Bytes.wrap(
                         "e55c559975c1c285c5262d6c94262287e5d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc1CertificateHash"),
@@ -383,11 +392,11 @@ class ReadableFreezeUpgradeActionsTest {
         final var node2 = new Node(
                 2,
                 asAccount(4),
-                "node2description",
+                "node3",
                 List.of(
-                        new ServiceEndpoint(Bytes.wrap("127.0.0.2"), 1245, null),
-                        new ServiceEndpoint(Bytes.wrap("35.186.191.245"), 50221, null)),
-                List.of(new ServiceEndpoint(Bytes.wrap("45.186.191.245"), 50225, null)),
+                        V053AddressBookSchema.endpointFor("127.0.0.2", 1245),
+                        V053AddressBookSchema.endpointFor("35.186.191.245", 50221)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.245", 50225)),
                 Bytes.wrap(
                         "e55c559975c1c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc2CertificateHash"),
@@ -397,11 +406,11 @@ class ReadableFreezeUpgradeActionsTest {
         final var node3 = new Node(
                 3,
                 asAccount(6),
-                "node3description",
+                "node4",
                 List.of(
-                        new ServiceEndpoint(Bytes.wrap("127.0.0.3"), 1245, null),
-                        new ServiceEndpoint(Bytes.wrap("35.186.191.235"), 50221, null)),
-                List.of(new ServiceEndpoint(Bytes.wrap("45.186.191.235"), 50225, null)),
+                        V053AddressBookSchema.endpointFor("127.0.0.3", 1245),
+                        V053AddressBookSchema.endpointFor("35.186.191.235", 50221)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.235", 50225)),
                 Bytes.wrap(
                         "e55c55997561c285c5262d6c94262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc3CertificateHash"),
@@ -411,29 +420,28 @@ class ReadableFreezeUpgradeActionsTest {
         final var node4 = new Node(
                 4,
                 asAccount(8),
-                "node4description",
+                "node5",
                 List.of(
-                        new ServiceEndpoint(Bytes.wrap("127.0.0.4"), 1445, null),
-                        new ServiceEndpoint(Bytes.wrap("test.domain.com"), 50225, null),
-                        new ServiceEndpoint(Bytes.wrap("35.186.191.225"), 50225, null)),
-                List.of(new ServiceEndpoint(Bytes.wrap("45.186.191.225"), 50225, null)),
+                        V053AddressBookSchema.endpointFor("127.0.0.4", 1445),
+                        V053AddressBookSchema.endpointFor("test.domain.com", 50225),
+                        V053AddressBookSchema.endpointFor("35.186.191.225", 50225)),
+                List.of(V053AddressBookSchema.endpointFor("45.186.191.225", 50225)),
                 Bytes.wrap(
                         "e55c559975c1c285c5262d6994262287e6d501c66a0c770f0c9a88f7234e0435c5643e03664eb9c8ce2d9f94de717ec"),
                 Bytes.wrap("grpc5CertificateHash"),
                 8,
                 false,
                 A_COMPLEX_KEY);
-        final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder("NODES")
+        final var readableNodeState = MapReadableKVState.<EntityNumber, Node>builder(NODES_KEY)
                 .value(new EntityNumber(4), node4)
                 .value(new EntityNumber(2), node2)
                 .value(new EntityNumber(3), node3)
                 .value(new EntityNumber(1), node1)
                 .build();
-        given(nodeStore.keys()).willReturn(readableNodeState.keys());
-        given(nodeStore.get(1)).willReturn(node1);
-        given(nodeStore.get(2)).willReturn(node2);
-        given(nodeStore.get(3)).willReturn(node3);
-        given(nodeStore.get(4)).willReturn(node4);
+        given(readableStates.<EntityNumber, Node>get(NODES_KEY)).willReturn(readableNodeState);
+        nodeStore = new ReadableNodeStoreImpl(readableStates);
+        subject = new FreezeUpgradeActions(
+                adminServiceConfig, writableFreezeStore, freezeExecutor, upgradeFileStore, nodeStore, stakingInfoStore);
         var stakingNodeInfo1 = mock(StakingNodeInfo.class);
         var stakingNodeInfo2 = mock(StakingNodeInfo.class);
         var stakingNodeInfo4 = mock(StakingNodeInfo.class);

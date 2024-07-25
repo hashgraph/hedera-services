@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.spi.fixtures.info;
 
-import static com.hedera.node.app.spi.fixtures.state.TestSchema.CURRENT_VERSION;
+import static com.swirlds.platform.test.fixtures.state.TestSchema.CURRENT_VERSION;
 
 import com.hedera.hapi.node.base.AccountID;
 import com.hedera.hapi.node.base.SemanticVersion;
@@ -146,6 +146,11 @@ public class FakeNetworkInfo implements NetworkInfo {
             public Bytes sigCertBytes() {
                 return FAKE_NODE_INFOS.get(0).sigCertBytes();
             }
+
+            @Override
+            public String selfName() {
+                return FAKE_NODE_INFOS.getFirst().selfName();
+            }
         };
     }
 
@@ -226,6 +231,11 @@ public class FakeNetworkInfo implements NetworkInfo {
             @Override
             public Bytes sigCertBytes() {
                 return sigCertBytes;
+            }
+
+            @Override
+            public String selfName() {
+                return memo;
             }
         };
     }

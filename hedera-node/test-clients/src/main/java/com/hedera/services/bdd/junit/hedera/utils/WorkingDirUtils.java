@@ -16,11 +16,12 @@
 
 package com.hedera.services.bdd.junit.hedera.utils;
 
-import static com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader.loadConfigFile;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
+import com.hedera.services.bdd.spec.props.JutilPropertySource;
+import com.swirlds.platform.config.legacy.LegacyConfigPropertiesLoader;
 import com.swirlds.platform.system.address.AddressBook;
 import com.swirlds.platform.test.fixtures.addressbook.RandomAddressBookBuilder;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -40,7 +41,6 @@ import java.util.Random;
 import java.util.stream.Stream;
 
 public class WorkingDirUtils {
-    public static final String JAR_FILE = "HederaNode.jar";
     private static final Path BASE_WORKING_LOC = Path.of("./build");
     private static final String DEFAULT_SCOPE = "hapi";
     private static final String KEYS_FOLDER = "keys";
@@ -124,6 +124,15 @@ public class WorkingDirUtils {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    /**
+     * Returns the path to the <i>application.properties</i> file used to bootstrap an embedded or subprocess network.
+     *
+     * @return the path to the <i>application.properties</i> file
+     */
+    public static JutilPropertySource hapiTestStartupProperties() {
+        return new JutilPropertySource(bootstrapAssetsLoc().resolve(APPLICATION_PROPERTIES));
     }
 
     private static Path bootstrapAssetsLoc() {
@@ -263,7 +272,14 @@ public class WorkingDirUtils {
         }
     }
 
-    private static void copyUnchecked(@NonNull final Path source, @NonNull final Path target) {
+    /**
+     * Copy a file from the source path to the target path, throwing an unchecked exception if an
+     * {@link IOException} occurs.
+     *
+     * @param source the source path
+     * @param target the target path
+     */
+    public static void copyUnchecked(@NonNull final Path source, @NonNull final Path target) {
         try {
             Files.copy(source, target);
         } catch (IOException e) {
@@ -293,7 +309,7 @@ public class WorkingDirUtils {
      */
     public static AddressBook loadAddressBook(@NonNull final Path path) {
         requireNonNull(path);
-        final var configFile = loadConfigFile(path.toAbsolutePath());
+        final var configFile = LegacyConfigPropertiesLoader.loadConfigFile(path.toAbsolutePath());
         final var randomAddressBook = RandomAddressBookBuilder.create(new Random())
                 .withSize(1)
                 .withRealKeysEnabled(true)
