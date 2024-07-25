@@ -17,6 +17,7 @@
 package com.hedera.node.app.service.file.impl.schemas;
 
 import static com.hedera.hapi.node.base.HederaFunctionality.fromString;
+import static com.swirlds.common.utility.CommonUtils.hex;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterator.DISTINCT;
@@ -57,7 +58,6 @@ import com.hedera.node.config.data.FilesConfig;
 import com.hedera.node.config.data.HederaConfig;
 import com.hedera.node.config.types.LongPair;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.common.utility.CommonUtils;
 import com.swirlds.config.api.Configuration;
 import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.Schema;
@@ -230,21 +230,12 @@ public class V0490FileSchema extends Schema {
             @NonNull final SystemContext systemContext, @NonNull final ReadableNodeStore nodeStore) {
         requireNonNull(systemContext);
         final var filesConfig = systemContext.configuration().getConfigData(FilesConfig.class);
-        final var bootstrapConfig = systemContext.configuration().getConfigData(BootstrapConfig.class);
-
-        final var masterKey = KeyList.newBuilder()
-                .keys(Key.newBuilder()
-                        .ed25519(bootstrapConfig.genesisPublicKey())
-                        .build())
-                .build();
-
         // Create the node details for file 102
         final var nodeInfoFileNum = filesConfig.nodeDetails();
         systemContext.dispatchUpdate(TransactionBody.newBuilder()
                 .fileUpdate(FileUpdateTransactionBody.newBuilder()
                         .fileID(FileID.newBuilder().fileNum(nodeInfoFileNum).build())
                         .contents(nodeStoreNodeDetails(nodeStore))
-                        .keys(masterKey)
                         .expirationTime(maxLifetimeExpiry(systemContext))
                         .build())
                 .build());
@@ -264,8 +255,8 @@ public class V0490FileSchema extends Schema {
                                 .nodeCertHash(node.grpcCertificateHash())
                                 .description(node.description())
                                 .stake(node.weight())
-                                .rsaPubKey(getRsaPubKey(getPublicKeyFromCertBytes(
-                                        node.grpcCertificateHash().toByteArray())))
+                                .rsaPubKey(readableKey(getPublicKeyFromCertBytes(
+                                        node.gossipCaCertificate().toByteArray(), node.nodeId())))
                                 .serviceEndpoint(node.serviceEndpoint())
                                 .build());
                     } catch (IOException e) {
@@ -648,25 +639,22 @@ public class V0490FileSchema extends Schema {
                 .build();
     }
 
-    private PublicKey getPublicKeyFromCertBytes(@NonNull final byte[] certBytes) throws IOException {
-        PublicKey ret = null;
-        if (certBytes.length != 0) {
-            try {
-                X509Certificate certificate = (X509Certificate) CertificateFactory.getInstance("X.509")
-                        .generateCertificate(new ByteArrayInputStream(certBytes));
-                ret = certificate.getPublicKey();
-            } catch (final CertificateException e) {
-                throw new IOException("Not able to create x509 certificate", e);
-            }
+    private PublicKey getPublicKeyFromCertBytes(@NonNull final byte[] certBytes, long nodeId) throws IOException {
+        try {
+            final var certificate = (X509Certificate)
+                    CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(certBytes));
+            return certificate.getPublicKey();
+        } catch (final CertificateException e) {
+            logger.error("Unable to extract RSA key for node{} from certificate bytes {}", nodeId, hex(certBytes), e);
         }
-        return ret;
+        return null;
     }
 
-    private String getRsaPubKey(@Nullable final PublicKey publicKey) {
+    private String readableKey(@Nullable final PublicKey publicKey) {
         if (publicKey == null) {
-            return "null"; // because CommonUtils.hex return "null"
+            return "";
         } else {
-            return CommonUtils.hex(publicKey.getEncoded());
+            return hex(publicKey.getEncoded());
         }
     }
 }

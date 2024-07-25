@@ -93,7 +93,9 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.protobuf.ByteString;
 import com.hedera.hapi.node.state.addressbook.Node;
+import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.hapi.node.state.token.Account;
+import com.hedera.node.app.spi.state.CommittableWritableStates;
 import com.hedera.services.bdd.junit.hedera.MarkerFile;
 import com.hedera.services.bdd.junit.hedera.NodeSelector;
 import com.hedera.services.bdd.junit.hedera.embedded.EmbeddedNetwork;
@@ -543,6 +545,35 @@ public class UtilVerbs {
             }
             return embeddedNetwork.embeddedHederaOrThrow().submit(transaction, nodeAccountId, syntheticVersion);
         };
+    }
+
+    /**
+     * Returns an operation that changes the state of an embedded network to appear to be handling
+     * the first transaction after an upgrade.
+     *
+     * @return the operation that simulates the first transaction after an upgrade
+     */
+    public static SpecOperation simulatePostUpgradeTransaction() {
+        return withOpContext((spec, opLog) -> {
+            if (spec.targetNetworkOrThrow() instanceof EmbeddedNetwork embeddedNetwork) {
+                final var embeddedHedera = embeddedNetwork.embeddedHederaOrThrow();
+                final var platformState = embeddedHedera.platformState();
+                // First make the freeze and last freeze times non-null and identical
+                final var aTime = spec.consensusTime();
+                platformState.setLastFrozenTime(aTime);
+                platformState.setFreezeTime(aTime);
+                // Next mark the migration records as not streamed
+                final var writableStates = embeddedHedera.state().getWritableStates("BlockRecordService");
+                final var blockInfo = writableStates.<BlockInfo>getSingleton("BLOCKS");
+                blockInfo.put(requireNonNull(blockInfo.get())
+                        .copyBuilder()
+                        .migrationRecordsStreamed(false)
+                        .build());
+                ((CommittableWritableStates) writableStates).commit();
+            } else {
+                throw new IllegalStateException("Cannot simulate post-upgrade transaction on non-embedded network");
+            }
+        });
     }
 
     public static WaitForStatusOp waitForFrozenNetwork(@NonNull final Duration timeout) {

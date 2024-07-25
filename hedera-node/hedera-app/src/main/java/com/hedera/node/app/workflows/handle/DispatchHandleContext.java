@@ -93,7 +93,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     private final ResourcePriceCalculator resourcePriceCalculator;
     private final FeeManager feeManager;
     private final StoreFactoryImpl storeFactory;
-    private final AccountID syntheticPayer;
+    private final AccountID payerId;
     private final AppKeyVerifier verifier;
     private final PlatformState platformState;
     private final HederaFunctionality topLevelFunction;
@@ -121,7 +121,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             @NonNull final ResourcePriceCalculator resourcePriceCalculator,
             @NonNull final FeeManager feeManager,
             @NonNull final StoreFactoryImpl storeFactory,
-            @NonNull final AccountID syntheticPayer,
+            @NonNull final AccountID payerId,
             @NonNull final AppKeyVerifier verifier,
             @NonNull final PlatformState platformState,
             @NonNull final HederaFunctionality topLevelFunction,
@@ -144,7 +144,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
         this.resourcePriceCalculator = requireNonNull(resourcePriceCalculator);
         this.feeManager = requireNonNull(feeManager);
         this.storeFactory = requireNonNull(storeFactory);
-        this.syntheticPayer = requireNonNull(syntheticPayer);
+        this.payerId = requireNonNull(payerId);
         this.verifier = requireNonNull(verifier);
         this.platformState = requireNonNull(platformState);
         this.topLevelFunction = requireNonNull(topLevelFunction);
@@ -177,7 +177,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
     @NonNull
     @Override
     public AccountID payer() {
-        return syntheticPayer;
+        return payerId;
     }
 
     @NonNull
@@ -285,8 +285,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
 
     @Override
     public SystemPrivilege hasPrivilegedAuthorization() {
-        return authorizer.hasPrivilegedAuthorization(
-                requireNonNull(txnInfo.payerID()), txnInfo.functionality(), txnInfo.txBody());
+        return authorizer.hasPrivilegedAuthorization(payerId, txnInfo.functionality(), txnInfo.txBody());
     }
 
     @NonNull
@@ -347,7 +346,7 @@ public class DispatchHandleContext implements HandleContext, FeeContext {
             // transaction id/ valid start as the current consensus time; ensure those will behave sensibly here
             return txBody.copyBuilder()
                     .transactionID(TransactionID.newBuilder()
-                            .accountID(syntheticPayer)
+                            .accountID(payerId)
                             .transactionValidStart(Timestamp.newBuilder()
                                     .seconds(consensusNow().getEpochSecond())
                                     .nanos(consensusNow().getNano())))

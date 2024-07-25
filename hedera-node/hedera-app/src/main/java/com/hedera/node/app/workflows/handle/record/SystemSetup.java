@@ -94,12 +94,28 @@ public class SystemSetup {
     }
 
     /**
-     * Creates the system entities within the given dispatch.
+     * Sets up genesis state for the system.
      *
-     * @param dispatch the genesis dispatch
-     * @param isFirstTransactionAfterFreezeRestart the first transaction we're handling after a freeze restart.
+     * @param dispatch the genesis transaction dispatch
      */
-    public void createSystemEntities(@NonNull final Dispatch dispatch, boolean isFirstTransactionAfterFreezeRestart) {
+    public void doGenesisSetup(@NonNull final Dispatch dispatch) {
+        final var systemContext = systemContextFor(dispatch);
+        fileService.createSystemEntities(systemContext);
+        dispatch.stack().commitFullStack();
+    }
+
+    /**
+     * Sets up post-upgrade state for the system.
+     * @param dispatch the post-upgrade transaction dispatch
+     */
+    public void doPostUpgradeSetup(@NonNull final Dispatch dispatch) {
+        final var systemContext = systemContextFor(dispatch);
+        final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
+        fileService.updateNodeDetailsAfterFreeze(systemContext, nodeStore);
+        dispatch.stack().commitFullStack();
+    }
+
+    private SystemContext systemContextFor(@NonNull final Dispatch dispatch) {
         final var config = dispatch.config();
         final var hederaConfig = config.getConfigData(HederaConfig.class);
         final var firstUserNum = config.getConfigData(HederaConfig.class).firstUserEntity();
@@ -108,13 +124,12 @@ public class SystemSetup {
                 .realmNum(hederaConfig.realm())
                 .accountNum(config.getConfigData(AccountsConfig.class).systemAdmin())
                 .build();
-        final var nodeStore = dispatch.handleContext().storeFactory().readableStore(ReadableNodeStore.class);
-        final var systemContext = new SystemContext() {
+        return new SystemContext() {
             @Override
             public void dispatchCreation(@NonNull final TransactionBody txBody, final long entityNum) {
                 requireNonNull(txBody);
                 if (entityNum >= firstUserNum) {
-                    throw new IllegalArgumentException("Cannot create user entity at genesis");
+                    throw new IllegalArgumentException("Cannot create user entity in a system context");
                 }
                 final var controlledNum = dispatch.stack()
                         .getWritableStates(EntityIdService.NAME)
@@ -125,11 +140,12 @@ public class SystemSetup {
                                 txBody, SingleTransactionRecordBuilder.class, key -> true, systemAdminId);
                 if (recordBuilder.status() != SUCCESS) {
                     log.error(
-                            "Failed to dispatch genesis transaction {} for entity {} - {}",
+                            "Failed to dispatch system create transaction {} for entity {} - {}",
                             txBody,
                             entityNum,
                             recordBuilder.status());
                 }
+                controlledNum.put(new EntityNumber(firstUserNum - 1));
             }
 
             @Override
@@ -161,18 +177,6 @@ public class SystemSetup {
                 return dispatch.consensusNow();
             }
         };
-
-        if (isFirstTransactionAfterFreezeRestart) {
-            fileService.updateNodeDetailsAfterFreeze(systemContext, nodeStore);
-        } else {
-            fileService.createSystemEntities(systemContext);
-            // Before returning, reset the next entity number to be the first user entity
-            final var controlledNum = dispatch.stack()
-                    .getWritableStates(EntityIdService.NAME)
-                    .<EntityNumber>getSingleton(ENTITY_ID_STATE_KEY);
-            controlledNum.put(new EntityNumber(firstUserNum - 1));
-        }
-        dispatch.stack().commitFullStack();
     }
 
     /**
