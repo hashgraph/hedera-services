@@ -152,7 +152,7 @@ public record UserTxn(
      * @return whether the given state indicates this transaction is the first after an upgrade
      */
     private static boolean isUpgradeBoundary(
-            @NonNull final PlatformState platformState, @NonNull final HederaState state) {
+            @NonNull final PlatformState platformState, @NonNull final MerkleState state) {
         if (platformState.getFreezeTime() == null
                 || !platformState.getFreezeTime().equals(platformState.getLastFrozenTime())) {
             return false;
