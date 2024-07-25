@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.cryptography.signaturescheme.api;
-
+package com.hedera.cryptography.pairings.signatures.api;
 /**
- * An enum to clarify which group public keys and signatures are in, for a given
- * {@link SignatureSchema SignatureSchema}
+ *  A Prototype implementation of PairingPublicKey.
+ *  This class will live in a different project once the implementation of the pairings-signature-library is completed.
+ *  The package and interface will remain constant.
  */
-public enum GroupAssignment {
-    /**
-     * The group for signatures is the first group in the pairing, and the group for public keys is the second group.
-     */
-    GROUP1_FOR_SIGNING,
-    /**
-     * The group for signatures is the second group in the pairing, and the group for public keys is the first group.
-     */
-    GROUP1_FOR_PUBLIC_KEY;
-}
+public record PairingPublicKey() {}

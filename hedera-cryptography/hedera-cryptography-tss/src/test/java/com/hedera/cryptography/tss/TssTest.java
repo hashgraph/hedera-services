@@ -20,11 +20,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.cryptography.pairings.api.Curve;
-import com.hedera.cryptography.signaturescheme.api.GroupAssignment;
-import com.hedera.cryptography.signaturescheme.api.PairingPrivateKey;
-import com.hedera.cryptography.signaturescheme.api.PairingPublicKey;
-import com.hedera.cryptography.signaturescheme.api.PairingSignature;
-import com.hedera.cryptography.signaturescheme.api.SignatureSchema;
+import com.hedera.cryptography.pairings.signatures.api.GroupAssignment;
+import com.hedera.cryptography.pairings.signatures.api.PairingPrivateKey;
+import com.hedera.cryptography.pairings.signatures.api.PairingPublicKey;
+import com.hedera.cryptography.pairings.signatures.api.PairingSignature;
+import com.hedera.cryptography.pairings.signatures.api.SignatureSchema;
 import com.hedera.cryptography.tss.api.TssMessage;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import com.hedera.cryptography.tss.api.TssPrivateShare;

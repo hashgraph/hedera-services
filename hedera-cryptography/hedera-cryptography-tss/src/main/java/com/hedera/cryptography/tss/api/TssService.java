@@ -16,10 +16,10 @@
 
 package com.hedera.cryptography.tss.api;
 
-import com.hedera.cryptography.signaturescheme.api.PairingPrivateKey;
-import com.hedera.cryptography.signaturescheme.api.PairingPublicKey;
-import com.hedera.cryptography.signaturescheme.api.PairingSignature;
-import com.hedera.cryptography.signaturescheme.api.SignatureSchema;
+import com.hedera.cryptography.pairings.signatures.api.PairingPrivateKey;
+import com.hedera.cryptography.pairings.signatures.api.PairingPublicKey;
+import com.hedera.cryptography.pairings.signatures.api.PairingSignature;
+import com.hedera.cryptography.pairings.signatures.api.SignatureSchema;
 import com.hedera.cryptography.tss.impl.TssServiceImpl;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;

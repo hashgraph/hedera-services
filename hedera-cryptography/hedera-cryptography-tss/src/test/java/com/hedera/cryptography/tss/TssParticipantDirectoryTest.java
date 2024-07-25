@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import com.hedera.cryptography.signaturescheme.api.PairingPrivateKey;
-import com.hedera.cryptography.signaturescheme.api.PairingPublicKey;
-import com.hedera.cryptography.signaturescheme.api.SignatureSchema;
+import com.hedera.cryptography.pairings.signatures.api.PairingPrivateKey;
+import com.hedera.cryptography.pairings.signatures.api.PairingPublicKey;
+import com.hedera.cryptography.pairings.signatures.api.SignatureSchema;
 import com.hedera.cryptography.tss.api.TssParticipantDirectory;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

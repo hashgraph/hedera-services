@@ -18,7 +18,7 @@ package com.hedera.cryptography.tss.api;
 
 import static java.util.Objects.requireNonNull;
 
-import com.hedera.cryptography.signaturescheme.api.PairingSignature;
+import com.hedera.cryptography.pairings.signatures.api.PairingSignature;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
