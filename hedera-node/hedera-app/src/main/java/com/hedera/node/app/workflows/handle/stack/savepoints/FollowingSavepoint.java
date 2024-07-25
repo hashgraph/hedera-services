@@ -16,7 +16,7 @@
 
 package com.hedera.node.app.workflows.handle.stack.savepoints;
 
-import com.hedera.node.app.state.WrappedHederaState;
+import com.hedera.node.app.state.WrappedMerkleState;
 import com.hedera.node.app.workflows.handle.stack.Savepoint;
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -27,7 +27,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  */
 public class FollowingSavepoint extends AbstractSavepoint {
 
-    public FollowingSavepoint(@NonNull WrappedHederaState state, @NonNull Savepoint parent) {
+    public FollowingSavepoint(@NonNull WrappedMerkleState state, @NonNull Savepoint parent) {
         super(state, parent, parent.followingCapacity());
     }
 

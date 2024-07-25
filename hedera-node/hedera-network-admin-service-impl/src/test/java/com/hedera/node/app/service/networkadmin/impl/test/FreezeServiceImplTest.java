@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeMerkleState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.service.networkadmin.FreezeService;
 import com.hedera.node.app.service.networkadmin.impl.FreezeServiceImpl;
@@ -80,7 +80,7 @@ class FreezeServiceImplTest {
     void migratesAsExpected() {
         final var subject = new FreezeServiceImpl();
         final var registry = new FakeSchemaRegistry();
-        final var state = new FakeHederaState();
+        final var state = new FakeMerkleState();
 
         subject.registerSchemas(registry);
         registry.migrate(FreezeService.NAME, state, networkInfo);
