@@ -259,8 +259,7 @@ public class NumericValidationTest {
             return zeroNegativeAndGreaterThanLong.stream()
                     .flatMap(testCase -> hapiTest(numericContract
                             .call("tokenURI", nft, testCase.amount)
-                            .gas(1_000_000L)
-                            .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
+                            .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
         }
 
         @HapiTest
@@ -269,7 +268,6 @@ public class NumericValidationTest {
             return zeroNegativeAndGreaterThanLong.stream()
                     .flatMap(testCase -> hapiTest(numericContract
                             .call("getTokenKey", nft, testCase.amount)
-                            .gas(1_000_000L)
                             .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
         }
 
@@ -279,18 +277,15 @@ public class NumericValidationTest {
             return zeroNegativeAndGreaterThanLong.stream()
                     .flatMap(testCase -> hapiTest(numericContract
                             .call("getTokenKey", fungibleToken, testCase.amount)
-                            .gas(1_000_000L)
                             .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
         }
 
         @HapiTest
         @DisplayName("when using getNonFungibleTokenInfo")
         public Stream<DynamicTest> failToGetNonFungibleTokenInfo() {
-            return zeroNegativeAndGreaterThanLong.stream()
-                    .flatMap(testCase -> hapiTest(numericContract
-                            .call("getNonFungibleTokenInfo", nft, -1L)
-                            .gas(1_000_000L)
-                            .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED))));
+            return hapiTest(numericContract
+                    .call("getNonFungibleTokenInfo", nft, -1L)
+                    .andAssert(txn -> txn.hasKnownStatus(CONTRACT_REVERT_EXECUTED)));
         }
 
         @HapiTest
@@ -299,7 +294,6 @@ public class NumericValidationTest {
             return zeroNegativeAndGreaterThanLong.stream()
                     .flatMap(testCase -> hapiTest(numericContract
                             .call("getApproved", nft, testCase.amount)
-                            .gas(1_000_000L)
                             .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
         }
 
@@ -309,7 +303,6 @@ public class NumericValidationTest {
             return zeroNegativeAndGreaterThanLong.stream()
                     .flatMap(testCase -> hapiTest(numericContract
                             .call("getApprovedERC", nft, testCase.amount)
-                            .gas(1_000_000L)
                             .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
         }
 
@@ -319,7 +312,6 @@ public class NumericValidationTest {
             return zeroNegativeAndGreaterThanLong.stream()
                     .flatMap(testCase -> hapiTest(numericContract
                             .call("ownerOf", nft, testCase.amount)
-                            .gas(1_000_000L)
                             .andAssert(txn -> txn.hasKnownStatus(testCase.status))));
         }
     }
