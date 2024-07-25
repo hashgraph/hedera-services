@@ -97,7 +97,7 @@ public class CryptoTransferValidationHelper {
             // INVALID_TRANSFER_ACCOUNT_ID. Otherwise, add the key.
             meta.requireKeyOrThrow(receiverKey, INVALID_TRANSFER_ACCOUNT_ID);
         } else if (tokenMeta.hasRoyaltyWithFallback()) {
-            // For airdrops we don't support tokens with royalties with fallback
+            // For airdrops, we don't support tokens with royalties with fallback
             if (op == null) {
                 throw new PreCheckException(INVALID_TRANSACTION);
             } else if (!receivesFungibleValue(nftTransfer.senderAccountID(), op, accountStore)) {
@@ -110,12 +110,6 @@ public class CryptoTransferValidationHelper {
                     meta.requireKeyOrThrow(receiverId, INVALID_TREASURY_ACCOUNT_FOR_TOKEN);
                 }
             }
-        }
-    }
-
-    public static void checkPayer(AccountID sender, PreHandleContext context) throws PreCheckException {
-        if (context.payer() != sender) {
-            context.requireKeyOrThrow(context.payerKey(), INVALID_ACCOUNT_ID);
         }
     }
 

@@ -20,7 +20,6 @@ import static com.hedera.hapi.node.base.ResponseCodeEnum.CUSTOM_FEE_CHARGING_EXC
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INSUFFICIENT_SENDER_ACCOUNT_BALANCE_FOR_CUSTOM_FEE;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 import static com.hedera.hapi.node.base.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static com.hedera.hapi.node.base.SubType.DEFAULT;
@@ -124,20 +123,8 @@ public class CryptoTransferHandler implements TransactionHandler {
     @Override
     public void preHandle(@NonNull final PreHandleContext context) throws PreCheckException {
         requireNonNull(context);
-        pureChecks(context.body());
-
         final var op = context.body().cryptoTransferOrThrow();
-        final var accountStore = context.createStore(ReadableAccountStore.class);
-        final var tokenStore = context.createStore(ReadableTokenStore.class);
-        for (final var transfers : op.tokenTransfers()) {
-            final var tokenMeta = tokenStore.getTokenMeta(transfers.tokenOrElse(TokenID.DEFAULT));
-            if (tokenMeta == null) throw new PreCheckException(INVALID_TOKEN_ID);
-            checkFungibleTokenTransfers(transfers.transfers(), context, accountStore, false);
-            checkNftTransfers(transfers.nftTransfers(), context, tokenMeta, op, accountStore);
-        }
-
-        final var hbarTransfers = op.transfersOrElse(TransferList.DEFAULT).accountAmounts();
-        checkFungibleTokenTransfers(hbarTransfers, context, accountStore, true);
+        executor.preHandle(context, op);
     }
 
     @Override
@@ -145,7 +132,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         requireNonNull(txn);
         final var op = txn.cryptoTransfer();
         validateTruePreCheck(op != null, INVALID_TRANSACTION_BODY);
-        validator.cryptoTransferPureChecks(op);
+        validator.pureChecks(op);
     }
 
     @Override
@@ -235,7 +222,7 @@ public class CryptoTransferHandler implements TransactionHandler {
         // create a new transfer context that is specific only for this transaction
         final var transferContext =
                 new TransferContextImpl(context, enforceMonoServiceRestrictionsOnAutoCreationCustomFeePayments);
-        final var recordBuilder = context.recordBuilders().getOrCreate(CryptoTransferRecordBuilder.class);
+        final var recordBuilder = context.savepointStack().getBaseBuilder(CryptoTransferRecordBuilder.class);
 
         executor.executeCryptoTransfer(txn, transferContext, context, validator, recordBuilder);
     }

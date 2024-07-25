@@ -184,7 +184,7 @@ public class TransactionRecordAsserts extends BaseErroringAssertsProvider<Transa
         return this;
     }
 
-    public TransactionRecordAsserts consensusTimeImpliedByNonce(final Timestamp parentTime, final int nonce) {
+    public TransactionRecordAsserts consensusTimeImpliedByOffset(final Timestamp parentTime, final int nonce) {
         this.<Timestamp>registerTypedProvider("consensusTimestamp", spec -> actualTime -> {
             try {
                 final var expectedTime = parentTime.toBuilder()

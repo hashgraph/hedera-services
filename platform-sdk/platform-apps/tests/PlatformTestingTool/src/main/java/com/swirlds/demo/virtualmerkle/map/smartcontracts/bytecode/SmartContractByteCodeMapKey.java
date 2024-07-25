@@ -21,14 +21,15 @@ import com.hedera.pbj.runtime.io.WritableSequentialData;
 import com.hedera.pbj.runtime.io.buffer.BufferedData;
 import com.swirlds.common.io.streams.SerializableDataInputStream;
 import com.swirlds.common.io.streams.SerializableDataOutputStream;
-import com.swirlds.virtualmap.VirtualLongKey;
+import com.swirlds.virtualmap.VirtualKey;
 import java.io.IOException;
 import java.util.Objects;
 
 /**
  * This class holds the key to find the bytecode for a smart contract.
  */
-public final class SmartContractByteCodeMapKey implements VirtualLongKey {
+public final class SmartContractByteCodeMapKey implements VirtualKey {
+
     private static final long CLASS_ID = 0xbc79f9cbac162595L;
 
     private static final class ClassVersion {
@@ -56,11 +57,6 @@ public final class SmartContractByteCodeMapKey implements VirtualLongKey {
 
     static int getSizeInBytes() {
         return Long.BYTES;
-    }
-
-    @Override
-    public long getKeyAsLong() {
-        return contractId;
     }
 
     /**

@@ -61,6 +61,6 @@ public class TestKeySerializer implements KeySerializer<TestKey> {
 
     @Override
     public boolean equals(final BufferedData buffer, final TestKey keyToCompare) {
-        return buffer.readLong() == keyToCompare.getKeyAsLong();
+        return buffer.readLong() == keyToCompare.getKey();
     }
 }

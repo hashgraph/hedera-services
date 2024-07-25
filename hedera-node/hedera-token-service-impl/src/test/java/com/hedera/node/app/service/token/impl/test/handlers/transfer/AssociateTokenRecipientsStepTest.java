@@ -35,7 +35,6 @@ import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.token.CryptoTransferTransactionBody;
 import com.hedera.node.app.service.token.impl.handlers.transfer.AssociateTokenRecipientsStep;
 import com.hedera.node.app.service.token.impl.handlers.transfer.TransferContextImpl;
-import com.hedera.node.app.spi.records.RecordBuilders;
 import com.hedera.node.app.spi.validation.ExpiryValidator;
 import com.hedera.node.app.spi.workflows.HandleContext;
 import com.hedera.node.app.spi.workflows.record.SingleTransactionRecordBuilder;
@@ -60,7 +59,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
     private ExpiryValidator expiryValidator;
 
     @Mock
-    private RecordBuilders recordBuilders;
+    private HandleContext.SavepointStack stack;
 
     private AssociateTokenRecipientsStep subject;
     private CryptoTransferTransactionBody txn;
@@ -100,7 +99,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
 
     @Test
     void autoAssociationsDispatchSyntheticTransaction() {
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(handleContext.savepointStack()).willReturn(stack);
         final var modifiedConfiguration = HederaTestConfigBuilder.create().getOrCreateConfig();
         given(handleContext.configuration()).willReturn(modifiedConfiguration);
         given(handleContext.storeFactory()).willReturn(storeFactory);
@@ -128,7 +127,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
         given(handleContext.configuration()).willReturn(configuration);
         given(handleContext.expiryValidator()).willReturn(expiryValidator);
         given(expiryValidator.expirationStatus(any(), anyBoolean(), anyLong())).willReturn(ResponseCodeEnum.OK);
-        given(handleContext.recordBuilders()).willReturn(recordBuilders);
+        given(handleContext.savepointStack()).willReturn(stack);
         given(handleContext.dispatchRemovablePrecedingTransaction(
                         any(), eq(SingleTransactionRecordBuilder.class), eq(null), any()))
                 .will((invocation) -> {
@@ -138,7 +137,7 @@ public class AssociateTokenRecipientsStepTest extends StepsBase {
                             new TokenRelation(nonFungibleTokenId, spenderId, 1, false, true, true, null, null);
                     writableTokenRelStore.put(relation);
                     writableTokenRelStore.put(relation1);
-                    return new SingleTransactionRecordBuilderImpl(consensusInstant);
+                    return new SingleTransactionRecordBuilderImpl().status(ResponseCodeEnum.SUCCESS);
                 });
     }
 

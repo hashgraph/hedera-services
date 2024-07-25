@@ -317,11 +317,17 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
     @Test
     void handleAirdropMultipleTokensToPendingState() {
         givenStoresAndConfig(handleContext);
-        tokenAirdropHandler = new TokenAirdropHandler(validator, executor);
-        given(recordBuilders.getOrCreate(TokenAirdropRecordBuilder.class)).willReturn(tokenAirdropRecordBuilder);
+        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, executor);
+        given(handleContext.savepointStack()).willReturn(stack);
+        given(stack.getBaseBuilder(TokenAirdropRecordBuilder.class)).willReturn(tokenAirdropRecordBuilder);
         var tokenWithNoCustomFees =
                 fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
+        var nftWithNoCustomFees = nonFungibleToken
+                .copyBuilder()
+                .customFees(Collections.emptyList())
+                .build();
         writableTokenStore.put(tokenWithNoCustomFees);
+        writableTokenStore.put(nftWithNoCustomFees);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
         givenAirdropTxn();
@@ -370,10 +376,15 @@ class TokenAirdropHandlerTest extends CryptoTransferHandlerTestBase {
         givenStoresAndConfig(handleContext);
 
         // mock record builder
-        tokenAirdropHandler = new TokenAirdropHandler(validator, executor);
+        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, executor);
         var tokenWithNoCustomFees =
                 fungibleToken.copyBuilder().customFees(Collections.emptyList()).build();
+        var nftWithNoCustomFees = nonFungibleToken
+                .copyBuilder()
+                .customFees(Collections.emptyList())
+                .build();
         writableTokenStore.put(tokenWithNoCustomFees);
+        writableTokenStore.put(nftWithNoCustomFees);
         given(storeFactory.writableStore(WritableTokenStore.class)).willReturn(writableTokenStore);
         given(storeFactory.readableStore(ReadableTokenStore.class)).willReturn(writableTokenStore);
 

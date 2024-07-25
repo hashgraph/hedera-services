@@ -70,6 +70,7 @@ public class AirdropHandlerHelper {
         List<AccountAmount> pendingFungibleAmounts = new ArrayList<>();
         final var tokenRelStore = context.storeFactory().readableStore(ReadableTokenRelationStore.class);
         final var accountStore = context.storeFactory().readableStore(ReadableAccountStore.class);
+
         for (final var aa : transfers) {
             final var accountId = aa.accountIDOrElse(AccountID.DEFAULT);
             // if not existing account, create transfer
@@ -197,9 +198,8 @@ public class AirdropHandlerHelper {
      * @param pendingAirdropValue the amount of fungible token
      * @return {@link AccountPendingAirdrop} for storing in the state
      */
-    public static AccountPendingAirdrop createAccountPendingAirdrop(
-            PendingAirdropId pendingAirdropId, PendingAirdropValue pendingAirdropValue) {
-        return createAccountPendingAirdrop(pendingAirdropId, pendingAirdropValue, null);
+    public static AccountPendingAirdrop createAccountPendingAirdrop(PendingAirdropValue pendingAirdropValue) {
+        return createAccountPendingAirdrop(pendingAirdropValue, null);
     }
 
     /**
@@ -209,9 +209,8 @@ public class AirdropHandlerHelper {
      * @return {@link AccountPendingAirdrop} for storing in the state
      */
     public static AccountPendingAirdrop createAccountPendingAirdrop(
-            PendingAirdropId pendingAirdropId, PendingAirdropValue pendingAirdropValue, PendingAirdropId next) {
+            PendingAirdropValue pendingAirdropValue, PendingAirdropId next) {
         return AccountPendingAirdrop.newBuilder()
-                // .pendingAirdropId(pendingAirdropId) TODO: fix
                 .pendingAirdropValue(pendingAirdropValue)
                 .nextAirdrop(next)
                 .build();

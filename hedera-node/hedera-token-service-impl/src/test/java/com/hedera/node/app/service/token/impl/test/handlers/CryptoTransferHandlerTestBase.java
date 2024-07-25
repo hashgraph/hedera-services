@@ -34,10 +34,13 @@ import com.hedera.node.app.service.token.impl.handlers.TokenAirdropHandler;
 import com.hedera.node.app.service.token.impl.handlers.transfer.CryptoTransferExecutor;
 import com.hedera.node.app.service.token.impl.test.handlers.transfer.StepsBase;
 import com.hedera.node.app.service.token.impl.validators.CryptoTransferValidator;
+import com.hedera.node.app.service.token.impl.validators.TokenAirdropValidator;
+import com.hedera.node.app.spi.workflows.HandleContext;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,16 +70,21 @@ class CryptoTransferHandlerTestBase extends StepsBase {
 
     protected CryptoTransferHandler subject;
     protected TokenAirdropHandler tokenAirdropHandler;
+    protected TokenAirdropValidator tokenAirdropValidator;
     protected CryptoTransferValidator validator;
     protected CryptoTransferExecutor executor;
+
+    @Mock
+    protected HandleContext.SavepointStack stack;
 
     @BeforeEach
     public void setUp() {
         super.setUp();
         executor = new CryptoTransferExecutor();
         validator = new CryptoTransferValidator();
+        tokenAirdropValidator = new TokenAirdropValidator();
         subject = new CryptoTransferHandler(validator, executor);
-        tokenAirdropHandler = new TokenAirdropHandler(validator, executor);
+        tokenAirdropHandler = new TokenAirdropHandler(tokenAirdropValidator, executor);
     }
 
     protected TransactionBody newCryptoTransfer(final AccountAmount... acctAmounts) {

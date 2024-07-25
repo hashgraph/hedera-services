@@ -522,7 +522,7 @@ public class TokenServiceApiImpl implements TokenServiceApi {
         // validate if accounts exist
         final var deletedAccount = accountStore.get(deletedId);
         validateTrue(deletedAccount != null, INVALID_ACCOUNT_ID);
-        validateTrue(deletedAccount.hasHeadPendingAirdropId(), ACCOUNT_HAS_PENDING_AIRDROPS);
+        validateFalse(deletedAccount.hasHeadPendingAirdropId(), ACCOUNT_HAS_PENDING_AIRDROPS);
         final var transferAccount = accountStore.get(obtainerId);
         validateTrue(transferAccount != null, INVALID_TRANSFER_ACCOUNT_ID);
         // if the account is treasury for any other token, it can't be deleted
