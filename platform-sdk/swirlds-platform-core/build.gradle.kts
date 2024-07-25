@@ -34,7 +34,6 @@ mainModuleInfo {
 }
 
 jmhModuleInfo {
-    requires("com.swirlds.base")
     requires("com.swirlds.common")
     requires("com.swirlds.platform.core")
     requires("com.swirlds.platform.test")
