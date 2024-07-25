@@ -127,6 +127,7 @@ module com.swirlds.platform.core {
     requires transitive com.swirlds.common;
     requires transitive com.swirlds.config.api;
     requires transitive com.swirlds.metrics.api;
+    requires transitive com.swirlds.state.api;
     requires transitive com.swirlds.wiring;
     requires transitive com.fasterxml.jackson.annotation;
     requires transitive com.fasterxml.jackson.databind;
@@ -135,8 +136,8 @@ module com.swirlds.platform.core {
     requires transitive org.apache.logging.log4j;
     requires com.swirlds.config.extensions;
     requires com.swirlds.logging;
+    requires com.swirlds.merkle;
     requires com.swirlds.merkledb;
-    requires com.swirlds.state.api;
     requires com.swirlds.virtualmap;
     requires com.fasterxml.jackson.core;
     requires com.fasterxml.jackson.dataformat.yaml;

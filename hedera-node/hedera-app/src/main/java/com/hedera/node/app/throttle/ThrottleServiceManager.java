@@ -37,7 +37,7 @@ import com.hedera.node.app.throttle.annotations.BackendThrottle;
 import com.hedera.node.app.throttle.annotations.IngestThrottle;
 import com.hedera.node.config.ConfigProvider;
 import com.hedera.pbj.runtime.io.buffer.Bytes;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import com.swirlds.state.spi.ReadableSingletonState;
 import com.swirlds.state.spi.ReadableStates;
 import com.swirlds.state.spi.WritableSingletonState;
@@ -86,7 +86,7 @@ public class ThrottleServiceManager {
      * @param state the state to use
      * @param throttleDefinitions the serialized throttle definitions
      */
-    public void init(@NonNull final HederaState state, @NonNull final Bytes throttleDefinitions) {
+    public void init(@NonNull final MerkleState state, @NonNull final Bytes throttleDefinitions) {
         requireNonNull(state);
         // Apply configuration for gas throttles
         applyGasConfig();
@@ -106,7 +106,7 @@ public class ThrottleServiceManager {
      *
      * @param state the state to save to
      */
-    public void saveThrottleSnapshotsAndCongestionLevelStartsTo(@NonNull final HederaState state) {
+    public void saveThrottleSnapshotsAndCongestionLevelStartsTo(@NonNull final MerkleState state) {
         requireNonNull(state);
         final var serviceStates = state.getWritableStates(CongestionThrottleService.NAME);
         saveThrottleSnapshotsTo(serviceStates);

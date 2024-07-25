@@ -41,7 +41,7 @@ import com.hedera.hapi.node.state.token.Token;
 import com.hedera.hapi.node.state.token.TokenRelation;
 import com.hedera.hapi.node.transaction.TransactionReceipt;
 import com.hedera.hapi.node.transaction.TransactionRecord;
-import com.hedera.node.app.fixtures.state.FakeHederaState;
+import com.hedera.node.app.fixtures.state.FakeMerkleState;
 import com.hedera.node.app.fixtures.state.FakeSchemaRegistry;
 import com.hedera.node.app.service.token.ReadableAccountStore;
 import com.hedera.node.app.service.token.ReadableTokenRelationStore;
@@ -213,12 +213,12 @@ public class NetworkAdminHandlerTestBase {
     }
 
     protected void refreshRecordCache() {
-        final var state = new FakeHederaState();
+        final var state = new FakeMerkleState();
         final var registry = new FakeSchemaRegistry();
         final var svc = new RecordCacheService();
         svc.registerSchemas(registry);
         registry.migrate(svc.getServiceName(), state, networkInfo);
-        lenient().when(wsa.getHederaState()).thenReturn(state);
+        lenient().when(wsa.getMerkleState()).thenReturn(state);
         lenient().when(props.getConfiguration()).thenReturn(versionedConfig);
         lenient().when(versionedConfig.getConfigData(HederaConfig.class)).thenReturn(hederaConfig);
         lenient().when(hederaConfig.transactionMaxValidDuration()).thenReturn(123456789999L);

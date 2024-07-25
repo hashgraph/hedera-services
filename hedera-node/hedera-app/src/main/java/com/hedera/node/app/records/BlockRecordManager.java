@@ -20,7 +20,7 @@ import com.hedera.hapi.node.state.blockrecords.BlockInfo;
 import com.hedera.node.app.spi.records.BlockRecordInfo;
 import com.hedera.node.app.state.SingleTransactionRecord;
 import com.swirlds.platform.state.PlatformState;
-import com.swirlds.state.HederaState;
+import com.swirlds.state.MerkleState;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.time.Instant;
 import java.util.stream.Stream;
@@ -74,7 +74,7 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * @return               true if a new block was created, false otherwise
      */
     boolean startUserTransaction(
-            @NonNull Instant consensusTime, @NonNull HederaState state, @NonNull PlatformState platformState);
+            @NonNull Instant consensusTime, @NonNull MerkleState state, @NonNull PlatformState platformState);
 
     /**
      * "Advances the consensus clock" by updating the latest consensus timestamp that the node has handled. This should
@@ -82,28 +82,28 @@ public interface BlockRecordManager extends BlockRecordInfo, AutoCloseable {
      * to multiple transactions.
      * @param consensusTime the most recent consensus timestamp that the node has <b>started</b> to handle
      */
-    void advanceConsensusClock(@NonNull Instant consensusTime, @NonNull HederaState state);
+    void advanceConsensusClock(@NonNull Instant consensusTime, @NonNull MerkleState state);
 
     /**
      * Add a user transaction's records to the record stream. They must be in exact consensus time order! This must only
      * be called after the user transaction has been committed to state and is 100% done. It must include the record of
      * the user transaction along with all preceding child transactions and any child or transactions after. System
      * transactions are treated as though they were user transactions, calling
-     * {@link #startUserTransaction(Instant, HederaState, PlatformState)} and this method.
+     * {@link #startUserTransaction(Instant, MerkleState, PlatformState)} and this method.
      *
      * @param recordStreamItems Stream of records produced while handling the user transaction
      * @param state             The state to read {@link BlockInfo} from
      */
-    void endUserTransaction(@NonNull Stream<SingleTransactionRecord> recordStreamItems, @NonNull HederaState state);
+    void endUserTransaction(@NonNull Stream<SingleTransactionRecord> recordStreamItems, @NonNull MerkleState state);
 
     /**
      * Called at the end of a round to make sure the running hash and block information is up-to-date in state.
      * This should be called <b>AFTER</b> the last end user transaction in that round has been passed to
-     * {@link #endUserTransaction(Stream, HederaState)}.
+     * {@link #endUserTransaction(Stream, MerkleState)}.
      *
      * @param state The state to update
      */
-    void endRound(@NonNull HederaState state);
+    void endRound(@NonNull MerkleState state);
 
     /**
      * Closes this BlockRecordManager and wait for any threads to finish.
