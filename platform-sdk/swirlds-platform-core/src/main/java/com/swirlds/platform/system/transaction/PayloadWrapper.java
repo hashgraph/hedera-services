@@ -102,7 +102,8 @@ public non-sealed class PayloadWrapper implements ConsensusTransaction {
     }
 
     /**
-     * Get the serialized size of the transaction. This method returns the same value as `getSerializedLength()`
+     * Get the serialized size of the transaction. This method returns the same value as
+     * {@code SwirldsTransaction.getSerializedLength()} and {@code StateSignatureTransaction.getSerializedLength()}.
      *
      * @return the size of the transaction in the unit of byte
      */
