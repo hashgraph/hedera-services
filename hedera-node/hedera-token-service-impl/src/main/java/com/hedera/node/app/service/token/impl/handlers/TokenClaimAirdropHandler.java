@@ -16,6 +16,8 @@
 
 package com.hedera.node.app.service.token.impl.handlers;
 
+import static com.hedera.hapi.node.base.ResponseCodeEnum.NOT_SUPPORTED;
+
 import com.hedera.hapi.node.base.HederaFunctionality;
 import com.hedera.hapi.node.transaction.TransactionBody;
 import com.hedera.node.app.spi.fees.FeeContext;
@@ -52,6 +54,7 @@ public class TokenClaimAirdropHandler implements TransactionHandler {
 
     @Override
     public Fees calculateFees(@NonNull FeeContext feeContext) {
-        return TransactionHandler.super.calculateFees(feeContext);
+        // Always throwing an unsupported exception until we merge the story that will implement the feature flag
+        throw new HandleException(NOT_SUPPORTED);
     }
 }
