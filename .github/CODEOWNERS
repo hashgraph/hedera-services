@@ -47,7 +47,7 @@
 ###############################
 ##### Hedera Cryptography #####
 ###############################
-/hedera-cryptography/                           @hashgraph/platform-hashgraph @hashgraph/platform-data @hashgraph/platform-base @hashgraph/platform-architects @hashgraph/devops-ci
+/hedera-cryptography/                           @hashgraph/platform-cryptography
 
 #########################
 ##### Platform SDK ######
