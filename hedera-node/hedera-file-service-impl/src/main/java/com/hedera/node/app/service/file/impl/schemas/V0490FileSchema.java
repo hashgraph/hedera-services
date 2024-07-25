@@ -248,7 +248,6 @@ public class V0490FileSchema extends Schema {
                 .mapToObj(nodeStore::get)
                 .filter(node -> node != null && !node.deleted())
                 .forEach(node -> {
-                    try {
                         nodeDetails.add(NodeAddress.newBuilder()
                                 .nodeId(node.nodeId())
                                 .nodeAccountId(node.accountId())
@@ -259,12 +258,6 @@ public class V0490FileSchema extends Schema {
                                         node.gossipCaCertificate().toByteArray(), node.nodeId())))
                                 .serviceEndpoint(node.serviceEndpoint())
                                 .build());
-                    } catch (IOException e) {
-                        logger.warn(
-                                "Unexpected IOException while creating NodeDetail List : {}",
-                                node.grpcCertificateHash().toByteArray());
-                        throw new RuntimeException(e);
-                    }
                 });
         return NodeAddressBook.PROTOBUF.toBytes(
                 NodeAddressBook.newBuilder().nodeAddress(nodeDetails).build());
@@ -639,7 +632,7 @@ public class V0490FileSchema extends Schema {
                 .build();
     }
 
-    private PublicKey getPublicKeyFromCertBytes(@NonNull final byte[] certBytes, long nodeId) throws IOException {
+    private PublicKey getPublicKeyFromCertBytes(@NonNull final byte[] certBytes, long nodeId) {
         try {
             final var certificate = (X509Certificate)
                     CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(certBytes));
