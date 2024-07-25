@@ -168,7 +168,7 @@ public class NaturalDispatchOrderingTest {
     @DisplayName("reversible child and removable preceding stream items are as expected")
     final Stream<DynamicTest> reversibleChildAndRemovablePrecedingItemsAsExpected(
             @NonFungibleToken(numPreMints = 2) SpecNonFungibleToken nonFungibleToken,
-            @Account(autoAssociationSlots = 1) SpecAccount beneficiary,
+            @Account(maxAutoAssociations = 1) SpecAccount beneficiary,
             @Contract(contract = "PrecompileAliasXfer", creationGas = 2_000_000) SpecContract transferContract,
             @Contract(contract = "LowLevelCall") SpecContract lowLevelCallContract) {
         final var transferFunction = new Function("transferNFTThanRevertCall(address,address,address,int64)");
@@ -225,11 +225,11 @@ public class NaturalDispatchOrderingTest {
     final Stream<DynamicTest> reversibleScheduleAndRemovablePrecedingItemsAsExpected(
             @FungibleToken SpecFungibleToken firstToken,
             @FungibleToken SpecFungibleToken secondToken,
-            @Account(autoAssociationSlots = 2) SpecAccount firstReceiver,
-            @Account(autoAssociationSlots = 2) SpecAccount secondReceiver,
-            @Account(centBalance = 100, autoAssociationSlots = UNLIMITED_AUTO_ASSOCIATION_SLOTS)
+            @Account(maxAutoAssociations = 2) SpecAccount firstReceiver,
+            @Account(maxAutoAssociations = 2) SpecAccount secondReceiver,
+            @Account(centBalance = 100, maxAutoAssociations = UNLIMITED_AUTO_ASSOCIATION_SLOTS)
                     SpecAccount solventPayer,
-            @Account(centBalance = 7, autoAssociationSlots = UNLIMITED_AUTO_ASSOCIATION_SLOTS)
+            @Account(centBalance = 7, maxAutoAssociations = UNLIMITED_AUTO_ASSOCIATION_SLOTS)
                     SpecAccount insolventPayer) {
         return hapiTest(
                 streamMustIncludeNoFailuresFrom(

@@ -493,10 +493,7 @@ public class AutoAccountCreationSuite {
                         sourcing(() -> childRecordsCheck(
                                 nftTransfer,
                                 SUCCESS,
-                                recordWith()
-                                        .status(SUCCESS)
-                                        .consensusTimeImpliedByNonce(
-                                                parentConsTime.get(), hasNodeStakeUpdate.get() ? -2 : -1))));
+                                recordWith().status(SUCCESS).consensusTimeImpliedByOffset(parentConsTime.get(), -1))));
     }
 
     @HapiTest

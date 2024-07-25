@@ -64,5 +64,5 @@ public @interface Account {
      *
      * @return the initial number of auto-association slots for the account
      */
-    int autoAssociationSlots() default 0;
+    int maxAutoAssociations() default 0;
 }

@@ -63,9 +63,9 @@ import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import com.google.protobuf.ByteString;
 import com.hedera.services.bdd.junit.HapiTest;
 import com.hedera.services.bdd.junit.HapiTestLifecycle;
-import com.hedera.services.bdd.spec.dsl.annotations.AccountSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.ContractSpec;
-import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleTokenSpec;
+import com.hedera.services.bdd.spec.dsl.annotations.Account;
+import com.hedera.services.bdd.spec.dsl.annotations.Contract;
+import com.hedera.services.bdd.spec.dsl.annotations.NonFungibleToken;
 import com.hedera.services.bdd.spec.dsl.entities.SpecAccount;
 import com.hedera.services.bdd.spec.dsl.entities.SpecContract;
 import com.hedera.services.bdd.spec.dsl.entities.SpecNonFungibleToken;
@@ -147,7 +147,7 @@ public class UnlimitedAutoAssociationSuite {
     @HapiTest
     @DisplayName("Auto-association with insufficient payer balance fails")
     final Stream<DynamicTest> autoAssociationWithInsufficientPayerBalanceFails(
-            @NonFungibleTokenSpec(numPreMints = 2) SpecNonFungibleToken token) {
+            @NonFungibleToken(numPreMints = 2) SpecNonFungibleToken token) {
         final var insufficientPayerBalance = new AtomicLong();
         return hapiTest(
                 token.getInfo(),
@@ -171,9 +171,9 @@ public class UnlimitedAutoAssociationSuite {
     @HapiTest
     @DisplayName("auto-association through HTS system contract does not charge dispatch payer")
     final Stream<DynamicTest> autoAssociationThroughSystemContractChangesGasCost(
-            @ContractSpec(contract = "HTSCalls", creationGas = 4_000_000) SpecContract htsCallsContract,
-            @NonFungibleTokenSpec(numPreMints = 1) SpecNonFungibleToken token,
-            @AccountSpec(maxAutoAssociations = 1) SpecAccount autoAssociated) {
+            @Contract(contract = "HTSCalls", creationGas = 4_000_000) SpecContract htsCallsContract,
+            @NonFungibleToken(numPreMints = 1) SpecNonFungibleToken token,
+            @Account(maxAutoAssociations = 1) SpecAccount autoAssociated) {
         return hapiTest(
                 token.treasury().authorizeContract(htsCallsContract),
                 cryptoTransfer(tinyBarsFromTo(GENESIS, htsCallsContract.name(), ONE_HUNDRED_HBARS)),
