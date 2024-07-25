@@ -5,10 +5,10 @@
 ## Summary
 
 This proposal is for the integration of a threshold signature scheme into the consensus nodes to create a
-private/public key pair for the ledger that can be used to sign blocks. The private key must be a secret that no one
-knows. The public key is known by all and functions as the ledger id. The consensus nodes must be able to aggregate
-their individual signatures on a message into a valid ledger signature that is verifiable by the ledger id. Part of our
-goal is that users could write EVM smart contracts that can verify the block signatures.
+private/public key pair for the ledger that can be used to sign blocks and other messages. The private key must be a
+secret that no one knows. The public key is known by all and functions as the ledger id. The consensus nodes must be
+able to aggregate their individual signatures on a message into a valid ledger signature that is verifiable by the
+ledger id. Part of our goal is that users could write EVM smart contracts that can verify the block signatures.
 
 |      Metadata      |                  Entities                  |
 |--------------------|--------------------------------------------|
@@ -32,8 +32,8 @@ network needs to sign a block root hash, each node uses its shares to sign the b
 signature out to the network. When a node has collected a threshold number of signatures on the same block root hash,
 it can aggregate the signatures into a ledger signature that is verifiable by the ledger id.
 
-The TSS effort has been broken down into five separate proposals: TSS-Library, TSS-Roster, TSS-Ledger-ID,
-TSS-Block-Signing, and TSS-Transplant.
+The TSS effort has been broken down into 5 separate proposals: TSS-Library, TSS-Roster, TSS-Ledger-ID,
+TSS-Block-Signing, and TSS-Ledger-ID-Updates.
 
 1. The `TSS-Library` proposal contains the cryptographic primitives and algorithms needed to implement TSS.
 2. The `TSS-Roster` proposal introduces the data structure of a consensus `Roster` to replace the platform's concept of
@@ -45,12 +45,12 @@ TSS-Block-Signing, and TSS-Transplant.
 
 This proposal, `TSS-Ledger-ID`, covers changes to the following elements:
 
-* The process of generating the ledger key pair for new networks and existing networks.
-* The process of transferring the ability of the ledger to sign a message from one set of consensus nodes to another.
-* The new state data structures needed to store TSS Key material and the ledger id.
-* The new components needed in the framework to support creating and transferring the ledger key.
-* The modified startup process to initialize the signing capability.
-* For each node, the creation of a new Elliptic Curve (EC) key called its `tssEncryptionKey` that is used in creating
+- The process of generating the ledger key pair for new networks and existing networks.
+- The process of transferring the ability of the ledger to sign a message from one set of consensus nodes to another.
+- The new state data structures needed to store TSS Key material and the ledger id.
+- The new components needed in the framework to support creating and transferring the ledger key.
+- The modified startup process to initialize the signing capability.
+- For each node, the creation of a new Elliptic Curve (EC) key called its `tssEncryptionKey` that is used in creating
   shares.
 
 ### Goals
@@ -81,45 +81,43 @@ The following are not goals of this proposal:
 
 Dependencies on the TSS-Library
 
-* At minimum, the top-level API in the TSS-Library is defined and can be mocked for initial development.
-* The complete implementation of the TSS-Library is required for the TSS-Ledger-ID proposal to be fully implemented.
-* Consensus nodes must have their `tssEncryptionKey` generated with the private key stored on disk and the public key
+- At minimum, the top-level API in the TSS-Library is defined and can be mocked for initial development.
+- The complete implementation of the TSS-Library is required for the TSS-Ledger-ID proposal to be fully implemented.
+- Consensus nodes must have their `tssEncryptionKey` generated with the private key stored on disk and the public key
   stored in the roster prior to the TSS-Ledger-ID proposal being delivered.
 
 Dependencies on the TSS-Roster
 
-* Delivery of TSS-Ledger-ID will require that the TSS-Roster proposal is delivered in a prior release.
+- Delivery of TSS-Ledger-ID will require that the TSS-Roster proposal is delivered in a prior release.
+- Development of the TSS-Ledger-ID proposal is dependent on TSS-Roster proposal in the following ways:
+  - The `Roster` data structures must be defined and stored in state.
+  - To modify the roster adoption lifecycle with TSS conditions, the TSS-Roster life-cycle must be implemented.
 
 Impacts of TSS-Ledger-ID to Services Team
 
-* The timing of submitting the candidate roster may need to be adjusted to allow enough time for the candidate
+- The timing of submitting the candidate roster may need to be adjusted to allow enough time for the candidate
   roster to have key material generated.
-* Services will need to know or detect when the candidate roster fails to be adopted due to not having enough key
+- Services will need to know or detect when the candidate roster fails to be adopted due to not having enough key
   material generated.
-* More than half and preferably all the nodes' public `tssEncryptionKeys` will need to be added to the address book.
-  * This requires modification of the HAPI transactions that manage the address book.
+- More than half and preferably all the nodes' public `tssEncryptionKeys` will need to be added to the address book.
+  - This requires modification of the HAPI transactions that manage the address book.
 
 Impacts to DevOps Team
 
-* Each consensus node will need a new `tssEncryptionKey` in addition to the existing RSA key.
-  * EC Key generation will have to happen before a node can join the network.
-* A new node added to an existing network will need to be given a state from an existing node after the network has
+- Each consensus node will need a new `tssEncryptionKey` in addition to the existing RSA key.
+  - EC Key generation will have to happen before a node can join the network.
+- A new node added to an existing network will need to be given a state from an existing node after the network has
   adopted the address book containing the new node.
-* If a node is added, removed, or updated in the address book and the candidate roster is not adopted in the next
+- If a node is added, removed, or updated in the address book and the candidate roster is not adopted in the next
   software upgrade, the change is not applied.
-  * New nodes will not be added until the candidate roster containing them is adopted.
-  * Removed nodes will will not be removed until the candidate roster containing them is adopted.
-  * Updated nodes will not have their changes applied until the candidate roster containing them is adopted.
-* config only software upgrades can be used to trigger the adoption of a candidate roster, if the candidate roster
+- config only software upgrades can be used to trigger the adoption of a candidate roster, if the candidate roster
   has received enough yes votes.
 
 Implications Of Completion
 
-* The network will have a public ledger id that can verify ledger signatures.
-* The active consensus nodes can transfer the ability to sign messages to the next set of consensus nodes.
-* TSS-Block-Signing proposal becomes unblocked for development.
-* It may be possible to replace functions of the RSA key with the `tssEncryptionKey` in the future. This includes
-  signing and verifying events, signing and verifying the state, and ISS detection.
+- The network will have a public ledger id that can verify ledger signatures.
+- The active consensus nodes can transfer the ability to sign messages to the next set of consensus nodes.
+- `TSS-Block-Signing` and `TSS-Ledger-ID-Updates` proposals becomes unblocked for development.
 
 ### Requirements
 
@@ -179,20 +177,21 @@ The Groth21 algorithm requires specific Elliptic Curve (EC)s with the ability to
 node will need its own long-term EC key pair, called an `tssEncryptionKey`, on the curve for use in the groth21 TSS
 algorithm. Each node receives some number of shares in proportion to the consensus weight assigned to it. Each share
 is an EC key pair on the same curve. All public keys of the shares are known, and aggregating a threshold number of
-share public keys will produce the ledger id. Only the node has access to the private key of its own shares. Each
+share public keys will produce the ledger id. Each node alone has access to the private key of its own shares. Each
 node must keep their private keys to themselves since a threshold number of share private keys can aggregate to
 recover the ledger private key. An aggregate number of signatures on the same message from the share private keys
 will aggregate to recover the ledger signature on the message.
 
 Transferring the ability to generate ledger signatures from one set of consensus nodes to another is done by having
 each node generate a `TssMessage` for each share that fractures the share into a number of subshares or `shares of
-shares`. Each `share of a share` is encrypted with the public key of the node in the next consensus roster that it
-belongs to so that only the intended node can use the `share of a share` to recover that node's share's private key.
-The collection of `TssMessages` generated from nodes in the previous consensus roster forms the `key material` for
-the new consensus roster. To bootstrap a network and generate the ledger private and public keys, each node creates
-a random share for themselves and generates a `TssMessage` containing `shares of shares` for the total number of shares
-needed in the consensus roster. The use of random shares at the outset creates a random ledger private key that nobody
-knows.
+shares`. Each `share of a share` is encrypted with the public `tssEncryptionKey` of the node in the next consensus
+roster that it belongs to so that only the intended node can use the `share of a share` to recover that node's
+share's private key. The collection of `TssMessages` generated from nodes in the previous consensus roster forms the
+`key material` for the new consensus roster.
+
+To bootstrap a network and generate the ledger private and public keys, each node creates a random share for
+themselves and generates a `TssMessage` containing `shares of shares` for the total number of shares needed in the
+consensus roster. The use of random shares at the outset creates a random ledger private key that nobody knows.
 
 In the context of the consensus nodes using the TSS library, the term `share index` refers to the index of the share as
 it is returned in the list of public shares from the tss library. The first share in the list has share index `0`. If
@@ -203,18 +202,20 @@ for share index `0`.
 
 ![TSS re-keying next consensus roster](./Groth21-re-keying-shares-of-shares.drawio.svg)
 
-This process of keying the candidate roster during an address book change takes an asynchronous amount of time
-through multiple rounds of consensus to complete. This requires saving incremental progress in the state to ensure
-that the process can resume from any point if a node or the network restarts. Switching to the candidate roster must
-not happen until enough nodes have voted that they have verified a threshold number of TssMessages from the active
-roster. Verification succeeds when a node is able to recover the ledger id. The first threshold number of valid
-TssMessages to come to consensus are used to recover the ledger id. A vote consists of a bit vector where each bit
-index corresponds to the `share index` and its related TssMessage. A bit at index `i` in the vote is set to 1 if the
-TssMessage of share `i` was valid and used in the recovery of the ledger id, otherwise the bit is `0`.
+This process of keying the candidate roster during an address book change asynchronous and takes an
+indeterminate amount of time through multiple rounds of consensus to complete. This requires saving incremental
+progress in the state to ensure that the process can resume from any point if a node or the network restarts.
+Switching to the candidate roster must not happen until enough nodes have voted that they have verified a threshold
+number of TssMessages from the active roster. Verification succeeds when a node is able to recover the ledger id.
+The first threshold number of valid TssMessages to come to consensus are used to recover the ledger id. A vote
+consists of a bit vector where each bit index corresponds to the order of TssMessages as they have come through
+consensus. A bit at index `i` in the vote is set to 1 if the `ith` TssMessage to come through consensus is valid
+and used in the recovery of the ledger id, otherwise the bit is `0`.
 
 ##### Elliptic Curve Decisions
 
-Our first implementation of Groth21 will use the ALT_BN128 elliptic curve which has precompiles in the EVM.
+Our first implementation of Groth21 will use the ALT_BN_128 ([BN254](https://hackmd.io/@jpw/bn254)) elliptic curve which
+has precompiles in the EVM.
 If the Ethereum ecosystem creates precompiles for BLS12_381, we may switch over to that more secure curve.
 
 ##### New Elliptic Curve Node Keys
@@ -238,15 +239,15 @@ This modeling of weight uses small integer precision.
 Given that we have a low resolution for modeling weight, the number of shares assigned to each node will be
 calculated as follows:
 
-* Let `N` be the max number of shares that any node can have.
-* Let `maxWeight` be the max weight assigned to any node.
-* Let `weight[i]` be the weight assigned to node `i`.
-* Let `numShares[i]` be the number of shares assigned to node `i`.
-* then `numShares[i] = (N * weight[i] + maxWeight - 1) / maxWeight`
+- Let `N` be the max number of shares that any node can have. (A configured value.)
+- Let `maxWeight` be the max weight assigned to any node.
+- Let `weight[i]` be the weight assigned to node `i`.
+- Let `numShares[i]` be the number of shares assigned to node `i`.
+- then `numShares[i] = (N * weight[i] + maxWeight - 1) / maxWeight`
 
 ###### Threshold for recovery of Signatures and Ledger Id.
 
-The network must be able to tolerate up to 1/3 of the stake assigned to malicious nodes. The breaking up the weight
+The network must be able to tolerate up to 1/3 of the stake assigned to malicious nodes. Breaking up the weight
 into `N + 1` values (`0`, `1`, `2`, ... `N`) introduces a potential error in the modeling of weight. To account for
 this error, we need a guaranteed safe threshold for the number of shares that must be used to recover the ledger id.
 
@@ -265,23 +266,23 @@ Required Theorems:
 
 Proof Sketch by Dr. Leemon Baird:
 
-* Assume WLOG that the weights are real numbers. Further assume WLOG that the largest weight held by any node is exactly
+- Assume WLOG that the weights are real numbers. Further assume WLOG that the largest weight held by any node is exactly
   N, and that all nodes have positive weight (none have zero).
-* For any given node, you can calculate its weight per share (wps). That's its weight divided by how many shares it
+- For any given node, you can calculate its weight per share (wps). That's its weight divided by how many shares it
   gets. It gets the shares from the ceiling of the ratio. It's easy to show that if we assume R=2N, then this guarantees
   a wps in the range [1/2, 1] inclusive, for every share. Imagine each of its shares as a card with that wps number
   written on it. In other words, that card is a single share, and it by itself constitutes that much weight. We are
   basically dividing up a given node's weight equally among all its shares.
-* Then, ignore how the shares are distributed among the nodes. Look solely at them as an arbitrary set of shares with
+- Then, ignore how the shares are distributed among the nodes. Look solely at them as an arbitrary set of shares with
   a wps value assigned to each one, without worrying about how many shares get each value, or how many shares each node
   gets. We only know they are all in the range [1/2, 1].
-* If you want to collect 1/3 weight and have as large a fraction of the shares as possible, then that happens when
+- If you want to collect 1/3 weight and have as large a fraction of the shares as possible, then that happens when
   all your shares have wps of 1/2, and all the ones you don't collect have a wps of 1. Which means you'll have 1/2 the
   shares.
-* Conversely, if you want to collect more than 2/3 the weight while holding as few shares as possible, that happens when
+- Conversely, if you want to collect more than 2/3 the weight while holding as few shares as possible, that happens when
   you collect only shares with wps of 1, and all the rest are 1/2. And again, that means you have more than 1/2 the
   shares.
-* So both theorems are proved.
+- So both theorems are proved.
 
 ##### TSS Algorithm - Alternatives Considered
 
@@ -308,7 +309,7 @@ distribution of weight between nodes.
 The hinTS algorithm is a threshold signature scheme that is able to measure double precision distributions of weight
 across nodes. The complicating factor with hinTS is that during an address book change over, a recursive proof needs
 to be constructed to prove that the new roster is a descendent of the original genesis roster. Validation of this
-recursive proof proved too expensive for EVM smart contracts.
+recursive proof proved too expensive for EVM smart contracts, even with EC curve precompiles.
 
 #### TSS Bootstrap Process
 
@@ -326,9 +327,9 @@ There will be a pre-genesis phase where the genesis roster is keyed and a random
 happen through running the platform without application transactions. After the platform keys the roster, the
 platform restarts itself with a copy of the genesis state and adding to it the TSS key material and ledger
 id. After the platform restarts, application transactions are accepted and the platform starts building a new
-hashgraph from round 0. This ensures that the first transactions handled by the network are in a block that can be
+hashgraph from round 0. This ensures that the first user transactions handled by the network are in a block that can be
 signed as soon as possible. The alternative is that blocks will go unsigned until the nodes go through TSS
-bootstrap.
+bootstrap, which may be several rounds later.
 
 While this solution does not capture the TSS bootstrap communication in the history of the hashgraph after the
 platform restarts, nodes can cryptographically verify that the setup process took place correctly through using the
@@ -342,8 +343,10 @@ platform will not accept application transactions. Once the platform has restart
 will accept application transactions when it becomes active.
 
 A node in the pre-genesis phase cannot gossip with nodes that have restarted and are out of pre-genesis. If a
-pre-genesis node connects with a post-genesis node, the pre-genesis node will need to perform a reconnect to receive
-an updated state containing the tss key material and ledger id.
+pre-genesis node connects with a post-genesis node, the post-genesis node should provide the key material to the
+pre-genesis node. After validation of the key material, the pre-genesis node can restart in post-genesis mode and
+connect with peers as normal. Part of the handshaking process when nodes first connect to each other will need to
+include exchange of information about which mode they are in.
 
 ##### For Existing Networks
 
@@ -391,8 +394,8 @@ The changes are presented in the following order:
 
 The public API changes consist of the following:
 
-* System Transactions
-* State Data Structures
+- System Transactions
+- State Data Structures
 
 #### System Transactions
 
@@ -626,14 +629,14 @@ The following startup sequence on new networks is modified from existing practic
    behavior:
    1. User transactions are not accepted from the app and events containing user transactions are ignored.
    2. A node in pre-genesis mode can only gossip with other peers in pre-genesis mode.
-   3. If a pre-genesis node encounters a peer that is post-genesis, the pre-genesis node requests the address book
-      and key material from the post-genesis node and restarts itself after successfully validating the key material.
+   3. If a pre-genesis node encounters a peer that is post-genesis, the post-genesis node sents the address book
+      and key material and the pre-genesis node restarts itself after successfully validating the key material.
    4. If the key material cannot be validated, the error is logged and the node remains in pre-genesis mode
       connecting to other peers.
    5. If all peers are in post-genesis and no peer can provide validatable key material, the node logs a critical
       error and shuts itself down.
    6. Active nodes in pre-genesis mode will initiate the tss-bootstrap process by generating a random share for
-      themselves and creating a TssMessage with shares of shares for the total number of shares needed in the
+      themselves and create a TssMessage with shares of shares for the total number of shares needed in the
       genesis roster.
    7. When a pre-genesis node has enough key-material to generate the ledger id, the node votes yes that it is ready to
       adopt the key material.
@@ -641,8 +644,8 @@ The following startup sequence on new networks is modified from existing practic
       material, the node adds the key material and ledger id to a copy of the genesis state and restarts the platform.
 5. Once a node has restarted with the key material and ledger id, the node will start accepting user transactions and
    building a new hashgraph from round 0. It is now in post-genesis mode.
-6. If any pre-genesis nodes connect to the post-genesis node, it provides the pre-genesis node a copy of the tss
-   key-material and ledger id. This is the only communication supported with pre-genesis nodes.
+6. If any pre-genesis nodes connects to the post-genesis node, the post-genesis node provides the pre-genesis node a
+   copy of the tss key-material and ledger id. This is the only communication supported with pre-genesis nodes.
 
 #### Startup for Existing Networks
 
@@ -906,6 +909,12 @@ Outputs
 
 1. Record(RosterHash, List<PairingPrivateKey>, List<PairingPublicKey>, LedgerId) (Wire)
 
+#### Transaction Resubmitter
+
+The transaction resubmitter is extended to detect which the new `TssMessageTransaction` and `TssVoteTransaction`
+system transactions have not reached consensus because the event containing them has become stale. The Transaction
+Resubmitter will resubmit these transactions to the transaction pool for reprocessing.
+
 ### Configuration
 
 The following are new configuration:
@@ -919,16 +928,15 @@ The following metrics should be added to the platform:
 1. When a candidate roster is set.
 2. The number of TSS Messages collected for a candidate roster.
 3. The number of votes collected for a candidate roster.
-4. The time it takes to generate a ledger signature.
-5. The time it takes to compute shares from the key material.
-6. The number of TSS Messages that are resubmitted.
+4. The time it takes to compute shares from the key material.
 
 ### Performance
 
-The `TSS State Manager` routes TSS related system transactions to the relevant components and updates the TSS
-related data structures in the state. The routing should be a negligible impact provided the receiving components
-receive the messages and handles them on their own thread. The state updates should be simple crud operations,
-adds and deletes to data structures. The merkle leaves with updated state will need to be rehashed.
+The `TSS State Manager` execution on the transaction handling through routes TSS related system transactions to the
+relevant components and updates the TSS related data structures in the state. The routing should be a negligible
+impact provided the receiving components receive the messages and handles them on their own thread. The state
+updates should be simple crud operations, adds and deletes to data structures. All other computation on the
+transaction handling thread should be basic bookkeeping calculations and TSS signature verifications.
 
 ---
 
@@ -938,25 +946,26 @@ adds and deletes to data structures. The merkle leaves with updated state will n
 
 Apart from the obvious unit testing of methods and classes, the following scenarios should be unit tested:
 
-* Failure Scenarios
-  * Bad TssMessages
-  * Failure to reach threshold number of votes
-* HAPI Tests
-  * A down node during pre-genesis needing to get the key material from post-genesis node.
-  * Down nodes during bootstrap and re-keying
-  * Multi-release migrations
+- Failure Scenarios
+  - Bad TssMessages
+  - Failure to reach threshold number of votes
+- HAPI Tests
+  - A down node during pre-genesis needing to get the key material from post-genesis node.
+  - Down nodes during bootstrap and re-keying
+  - Multi-release migrations
 
 ### Integration Tests
 
 Additional Integration Tests:
 
-* TSS bootstrap for New Networks
-* TSS bootstrap for Existing Networks
-  * multiple software upgrades.
+- TSS bootstrap for New Networks
+- TSS bootstrap for Existing Networks
+  - multiple software upgrades to check transfer of the ledger id.
+- Network State Transplant
 
 ### Performance Tests
 
-The following need performance profiles:
+The following needs performance profiling:
 
 1. How long does it take to generate the key material for a new candidate roster as a function of roster size?
 2. How much space is being used in the state for all TSS related data structures?
@@ -970,7 +979,7 @@ The following need performance profiles:
 1. The protobufs for the new system transactions and state data structures.
 2. The TSS Message Creator and TSS Message Validator Components (pre-wiring), dependent on (1)
 3. The TSS State Manager Component (wired to 2), dependent on (1,2), disabled by feature flag
-4. The RosterInitializer Component, dependent on (3), behavior determined by feature flag.
+4. The new startup logic, dependent on (3), behavior determined by feature flag.
 5. Any Services Implementation, dependent on (4)
 6. HAPI Tests, dependent on (5)
 7. Integration Tests, dependent on (5)
