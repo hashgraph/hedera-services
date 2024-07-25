@@ -212,6 +212,14 @@ jobs:
         id: gradle-build
         run: ./gradlew assemble --scan --no-build-cache
 
+      - name: Upload Unit Test Report Artifacts
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        if: ${{ !cancelled() && always()}}
+        with:
+          name: javadoc options
+          path: "**/build/tmp/javadoc/*.options"
+          retention-days: 7
+
       - name: Regenerate Manifest
         id: regen-manifest
         env:
