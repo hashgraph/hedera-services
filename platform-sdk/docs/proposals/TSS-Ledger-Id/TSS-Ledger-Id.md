@@ -23,7 +23,7 @@ ledger id. Part of our goal is that users could write EVM smart contracts that c
 
 The purpose of this proposal is to integrate a [BLS](https://en.wikipedia.org/wiki/BLS_digital_signature)  based
 Threshold Signature Schemes (TSS) into consensus nodes to give a network a ledger id and create a way of signing
-messages such that the signatures can be verified by the ledger id.
+messages such that the signatures can be verified using the ledger id.
 
 In this BLS based TSS, the network is assigned a durable BLS private/public key pair where the public key is the ledger
 id and the private key is a secret that no one knows. Each node in the network is given a number of shares
