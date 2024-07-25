@@ -27,9 +27,11 @@ import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class V0530TokenSchema extends StakingInfoManagementSchema {
-
+    private static final Logger logger = LogManager.getLogger(V0530TokenSchema.class);
     private static final long MAX_PENDING_AIRDROPS = 1_000_000_000L;
     public static final String AIRDROPS_KEY = "PENDING_AIRDROPS";
 
@@ -56,7 +58,7 @@ public class V0530TokenSchema extends StakingInfoManagementSchema {
     private void setMinStakeToZero(final MigrationContext ctx) {
         final var stakingInfoState = ctx.newStates().get(STAKING_INFO_KEY);
         final var addressBook = ctx.networkInfo().addressBook();
-
+        logger.info("Setting minStake to 0 for all nodes in the address book");
         for (final var node : addressBook) {
             final var nodeNumber =
                     EntityNumber.newBuilder().number(node.nodeId()).build();
@@ -64,7 +66,6 @@ public class V0530TokenSchema extends StakingInfoManagementSchema {
             if (stakingInfo != null) {
                 stakingInfoState.put(
                         nodeNumber, stakingInfo.copyBuilder().minStake(0).build());
-                System.out.printf("Updated min stake for node %d to 0%n", node.nodeId());
             }
         }
     }
