@@ -16,9 +16,14 @@
 
 package com.hedera.node.app.service.token.impl.schemas;
 
+import static com.hedera.node.app.service.token.impl.schemas.V0490TokenSchema.STAKING_INFO_KEY;
+
 import com.hedera.hapi.node.base.PendingAirdropId;
 import com.hedera.hapi.node.base.PendingAirdropValue;
 import com.hedera.hapi.node.base.SemanticVersion;
+import com.hedera.hapi.node.state.common.EntityNumber;
+import com.hedera.hapi.node.state.token.StakingNodeInfo;
+import com.swirlds.state.spi.MigrationContext;
 import com.swirlds.state.spi.StateDefinition;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Set;
@@ -41,5 +46,26 @@ public class V0530TokenSchema extends StakingInfoManagementSchema {
     public Set<StateDefinition> statesToCreate() {
         return Set.of(StateDefinition.onDisk(
                 AIRDROPS_KEY, PendingAirdropId.PROTOBUF, PendingAirdropValue.PROTOBUF, MAX_PENDING_AIRDROPS));
+    }
+
+    @Override
+    public void migrate(@NonNull final MigrationContext ctx) {
+        setMinStakeToZero(ctx);
+    }
+
+    private void setMinStakeToZero(final MigrationContext ctx) {
+        final var stakingInfoState = ctx.newStates().get(STAKING_INFO_KEY);
+        final var addressBook = ctx.networkInfo().addressBook();
+
+        for (final var node : addressBook) {
+            final var nodeNumber =
+                    EntityNumber.newBuilder().number(node.nodeId()).build();
+            final var stakingInfo = (StakingNodeInfo) stakingInfoState.get(nodeNumber);
+            if (stakingInfo != null) {
+                stakingInfoState.put(
+                        nodeNumber, stakingInfo.copyBuilder().minStake(0).build());
+                System.out.printf("Updated min stake for node %d to 0%n", node.nodeId());
+            }
+        }
     }
 }
