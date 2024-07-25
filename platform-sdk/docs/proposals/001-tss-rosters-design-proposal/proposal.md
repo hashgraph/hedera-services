@@ -11,7 +11,7 @@ components within the platform.
 | Metadata           | Entities                                      | 
 |--------------------|-----------------------------------------------|
 | Designers          | Kore, Anthony, Ed, Austin                     |
-| Functional Impacts | TSS, Genesis, Cryptography, Reconnect         |
+| Functional Impacts | TSS, Address Book, Reconnect,                 |
 | Related Proposals  | TSS-Library, TSS-Ledger-Id, TSS-Block-Signing |
 | HIPS               | N/A                                           |
 
@@ -62,14 +62,13 @@ A new method will be added to the platform state to allow the App to submit a Ca
 void setCandidateRoster(@NonNull final Roster candidateRoster);
 ```
 
-The existing `PlatformState` class is in the middle of a refactor, and in the long term, may cease to exist
+The existing `PlatformState` class is in the middle of a refactor, and in the long term, may cease to exist.
 However, its replacement will continue to have this new API to set a candidate roster.
 
 ## Data Structure
 The Hedera app is already responsible for managing the address book.
 We propose that it continues to do so, and when it receives a HAPI transaction, creates a candidate Roster object
-and set it in the state via the new API.
-The State will contain one map of rosters, keyed by roster’s hash - ```Map<Hash<Roster>, Roster>```.
+and passes it to the platform via the new API. The platform will then validate the roster and store it in the state.
 
 A Roster has a data structure as follows:
 
@@ -300,6 +299,29 @@ Note that a constructed `Roster` can be valid, but not accepted by the platform.
 For example, if a new candidate roster is set via the API, but its hash evaluates to the hash of the existing
 candidate roster, the new roster will be discarded. That is, the operation has no effect.
 
+## Data storage
+
+### State
+
+All the data related to Active and Candidate Roster will be stored in the State.
+
+Two new objects will be added to the state:
+
+1. A `RosterState` singleton object that will store the current candidate roster hash and a list of round numbers
+   and hashes of the active roster used to sign each round.
+2. A map of rosters, keyed by roster’s hash - ```Map<Hash<Roster>, Roster>```. All candidate and active rosters will be
+   stored here.
+   When a new candidate roster is received, it will be stored in this map, with the `RosterState`'s current candidate
+   roster hash updated.
+
+### On Disk
+
+There will continue to be components used in creating the Roster - such as the private EC (elliptic curve) key, the RSA
+private key and the signing X509Certificate certificate - that will be stored on disk.
+However, it is at the discretion of the Services team to manage the lifecycle of these files, and not the platform.
+
+There will not be any other separate artifacts from this proposal stored directly on disk.
+
 ## Services changes (Inversion of control)
 
 The current startup procedure will be altered as follows
@@ -322,12 +344,6 @@ the new node in it. Devops will no longer
 need `config.txt` on new nodes to existing networks.
 One of the State or Roster or both must exist for the network to start.
 
-The app will decide a startup sequence based on the following heuristics:
-
-* Keep Network Settings (Normal restart) == No Active Roster AND State provided
-* Genesis Network process == Active Roster, No State provided
-* Network Transplant process == Active Roster AND State provided
-
 ## Core Behaviors, in summary
 
 - Roster Creation: App will create a Candidate Roster from the Address Book.
@@ -341,7 +357,7 @@ The app will decide a startup sequence based on the following heuristics:
 - Roster Replacement: If a new candidate roster is submitted before the previous one is adopted, the corresponding new
   Candidate Roster will replace the previous.
 
-## Dependencies
+## Dependencies on Services, DevOps, and Release Engineering
 
 There are a few existing technical debts that the team has agreed to tackle as dependencies for this proposal.
 
@@ -350,38 +366,21 @@ There are a few existing technical debts that the team has agreed to tackle as d
    highly improbable, we’re lucky there hasn’t been a collision so far. The result would be that the software would try
    to start both nodes on the same machine.
    The resolution is that nodes should get their identity (Node Id) specified explicitly through the node.properties
-   file.
-
+   file. Services and DevOps will implement this.
 
 2. Off-by-1 problem: Node IDs are 1 less than the node name. For example, the name of the node with node id 0
    is `node1`. This is confusing. The node name is used as the alias in the cryptography and used to name the pem files
    on disk. Node id 0 gets its cryptography through “node1” alias.
-   The resolution is to get rid of node names and use Node IDs only.
-
+   The resolution is to get rid of node names and use Node IDs only. Services and DevOps will implement this.
 
 3. Inversion of Control: The `config.txt` file does not have all the information that the Hedera Address Book needs (
    proxy endpoints, and in the future, Block Nodes). It has verbose information for the platform. Its format could be
-   better,
-   and it stores the account number in the memo field. Upon the creation and adoption of rosters in the
+   better, and it stores the account number in the memo field. Upon the creation and adoption of rosters in the
    state, `config.txt` is no longer useful.
    The resolution is to offload this duty off the platform and allow Services to use whatever file format that suits
-   them as described earlier.
+   them as described earlier. Services will implement this.
 
 ### Roster changes needed for Components
-
-#### Block Proof
-
-We propose the introduction of a queue of roster hashes stored in the state, which holds the current and previous active
-rosters.
-In this proposal implementation, this queue will contain only 2 hashes, with the first hash representing
-the previous active roster, and the second hash representing the current active roster.
-At upgrade boundaries, we will pop off the previous active roster and add a new roster to the end of the queue which
-becomes the new active roster as shown below.
-![](TSS%20Roster%20Lifecycle-Roster%20and%20Rounds.drawio.svg)
-
-This approach provides the benefit of introducing the necessary data structure for full DAB (to be detailed in a future
-design proposal),
-while also providing a mechanism for tracking the active roster.
 
 #### Reconnect
 
@@ -397,16 +396,8 @@ state. Both of these will need to be updated to use rosters instead.
   signature. This will be updated to use rosters instead.
 - Miscellaneous components. Other components that reference things stored in the address book (like consensus needing
   the node weight or the crypto module verifying keys) will need to be updated to use things stored in rosters instead.
--
-
-## Data storage
-
-All of the data related to Active and Candidate Roster will be stored in the State.
-There will continue to be components used in creating the Roster - such as the private EC (elliptic curve) key, the RSA
-private key and the signing X509Certificate certificate - that will be stored on disk.
-However, it is up to Services to manage the lifecycle of these files, and not the platform.
-
-There will not be any other separate artifacts stored elsewhere (e.g., directly on disk.).
+  Some of these components include SelfEventSigner, EventHasher, HealthMonitor, SignedStateSentine, PcesSequencer,
+  StateHasher, HashLogger etc.
 
 ## Test Plan
 
@@ -428,10 +419,9 @@ introduce is the number of candidate rosters that have been set. Others may be i
 
 ## Implementation and Delivery Plan
 
-- Define Roster Data Structure and API: Design and implement the Roster class and the associated API methods.
-- Modify State Storage: Update the state to store the map of rosters and the candidateRosterHash and activeRosterHash
-  fields.
-- Implement Roster Adoption Logic: Develop the logic for the platform to adopt candidate rosters based on TSS readiness
-  and voting.
-- Update Reconnect Process: Modify the Reconnect process to use rosters instead of address books.
-- Testing and Deployment: Conduct thorough testing of the new roster implementation and deploy.
+- Define Roster Data Structure in protobuf: Design and implement the Roster class and the associated child classes.
+- Develop the API: Method added and implemented in `PlatformState` to set a candidate roster.
+- Modify State Storage: Implement specified data structures and candidate roster logic.
+- Update Components: Modify all platform components that currently use `AddressBook` to use `Rosters` instead, if any.
+- Testing: Conduct thorough testing as specified in this proposal.
+- Deployment: Work with DevOps and Release Engineering to deploy the changes.
