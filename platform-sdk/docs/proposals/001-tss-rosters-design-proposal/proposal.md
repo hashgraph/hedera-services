@@ -5,12 +5,12 @@
 ## Summary
 
 This proposal outlines the design specification of rosters to support Threshold Signature Scheme (TSS) block signing.
-It details the roster's lifecycle, data storage, API, and necessary changes to associated components within the
-platform.
+It details the roster's lifecycle, data storage, API, DevOps workflow, and changes necessary changes to associated
+components within the platform.
 
 | Metadata           | Entities                                      | 
 |--------------------|-----------------------------------------------|
-| Designers          | Kore, Anthony, Ed, Cody, Austin               |
+| Designers          | Kore, Anthony, Ed, Austin                     |
 | Functional Impacts | TSS, Genesis, Cryptography, Reconnect         |
 | Related Proposals  | TSS-Library, TSS-Ledger-Id, TSS-Block-Signing |
 | HIPS               | N/A                                           |
@@ -19,42 +19,40 @@ platform.
 
 The introduction of the Threshold Signature Scheme (TSS) requires a new mechanism for managing node participation in
 consensus and block signing.
-The Roster, an immutable subset of the address book, will provide this mechanism, ensuring efficient and secure key
-management for TSS operations.
+The Roster, an immutable subset of the address book, will provide the data structure and API for this mechanism.
 This proposal provides a specification for the behavior of rosters starting from their creation from the Address Book to
 their terminal state within the TSS specification.
 A roster reaches a terminal state when it is either adopted by the platform or replaced by a new roster.
 
-The app will maintain a version of the Address Book as a dynamic list that reflects the desired future state of the
+The Hedera app will maintain a version of the Address Book as a dynamic list that reflects the desired future state of
+the
 network's nodes. This dynamic list of Addresses will be continuously updated by HAPI transactions, such as those that
 create, update, or delete nodes.
-At some point when the app decides to adopt a new address book, it will create something called a `Roster` with
-information from the Address Book and pass it to the app.
+At some point when the app decides to adopt a new address book, it will create a `Roster` object with
+information from the Address Book and pass it to the platform.
 
-This proposal specifies that a Roster will be created from the CAB by the Hedera app and passed to the
-platform code.
 The mechanism for doing so is detailed below.
 
-### Requirements
+## Requirements
 
-- Immutability: Rosters must be immutable to protect the integrity of its computed hash.
+- Immutability: The hash of rosters will be a critical piece of data. Rosters must be immutable to protect the integrity
+  of its computed hash.
 - Efficient Storage: Roster data should be stored efficiently in the state to minimize overhead and unnecessary data
   copying.
-- Clear API: A well-defined API should be provided for the app to create and submit candidate rosters, and for the
+- Clear API: A well-defined API should be provided for the app to create and submit candidate rosters to the platform,
+  and for the
   platform to manage the lifecycle of submitted rosters.
 - Components update: Platform components that currently rely on the use of the Address book (such as Reconnect, Network,
-  Event Validation etc.) must be adapted to use rosters instead.
-- Address book paradigm discontinued within the platform codebase, only use rosters instead
+  Event Validation etc.) must be adapted to use the new `Roster` object instead.
+- Address book paradigm discontinued within the platform codebase in favor of `Roster`s
 
-### Architecture
+## Architecture
 
 ###### Roster Lifecycle
 
 ![](TSS%20Roster%20Lifecycle.drawio.svg)
 
-### Data Structure
-
-###### Roster Public API
+### Roster Public API
 
 A new method will be added to the platform state to allow the App to submit a Candidate Roster to the platform:
 
@@ -63,6 +61,11 @@ A new method will be added to the platform state to allow the App to submit a Ca
 
 void setCandidateRoster(@NonNull final Roster candidateRoster);
 ```
+
+The existing `PlatformState` class is in the middle of a refactor, and in the long term, may cease to exist
+However, its replacement will continue to have this new API to set a candidate roster.
+
+## Data Structure
 The Hedera app is already responsible for managing the address book.
 We propose that it continues to do so, and when it receives a HAPI transaction, creates a candidate Roster object
 and set it in the state via the new API.
@@ -94,8 +97,9 @@ RosterEntry "1" *-- "many" ServiceEndpoint
 
 ```
 
-###### Roster Protobuf
+### Protobuf
 
+#### Roster
 The protobuf definition for the Roster will look as follows:
 
 ```proto
@@ -115,6 +119,8 @@ message Roster {
     repeated RosterEntry rosters = 1;
 }
 ```
+
+#### RosterEntry
 
 A roster entry will look as follows:
 ```proto
@@ -188,26 +194,24 @@ message RosterEntry {
 }
 ```
 
-The map of rosters will be stored in the state as a virtual map of Key `hash` and value `Roster`.
-The `hash` will be an implementation of the `VirtualKey` interface that supports a hash value of type `byte`.
+The map of rosters will be stored in the state as a PBJ map of Key `hash` and value `Roster`.
 
 The `Roster` value is modeled as previously shown.
 
-The platform state protobuf will be updated to include the roster hashes.
+#### Roster State
+
+The `RosterState` protobuf is defined as follows.
 
 ```proto
 /**
- * The current state of platform consensus.<br/>
- * This message stores the current consensus data for the platform
- * in network state.
+ * The current state of platform rosters.<br/>
+ * This message stores a roster data for the platform in network state.
  *
- * The platform state SHALL represent the latest round's consensus.<br/>
- * This data SHALL be used to ensure consistency and provide critical data for
- * restart and reconnect.
+ * The roster state SHALL encapsulate the incoming candidate roster's hash,<br/>
+ * and a list of pairs of round number and active roster hash.<br/>
+ * This data SHALL be used to track round numbers and the rosters used in determining the consensus.<br/>
  */
-message PlatformState {
-
-    //... existing entries omitted for brevity ...
+message RosterState {
 
     /**
      * The SHA-384 hash of a candidate roster.
@@ -217,7 +221,7 @@ message PlatformState {
      * A Node SHALL NOT, ever, have more than one candidate roster
      * at the same time.
      */
-    byte candidate_roster_hash = 6;
+    byte candidate_roster_hash = 1;
 
     /**
      * The SHA-384 hash of an active roster
@@ -226,31 +230,61 @@ message PlatformState {
      * A Node SHALL NOT, ever, have more than one active roster
      * at the same time.
      */
-    byte active_roster_hash = 7;
+    repeated RoundRosterPair round_id_to_roster_pair = 2;
 }
 ```
 
+#### RoundRosterPair
+
+A `RoundRosterPair` will be defined as follows:
+
+```proto
+/**
+ * A pair of round number and active roster hash.
+ * <p>
+ * This message SHALL encapsulate the round number and the hash of the
+ * active roster used for that round.
+ */
+message RoundRosterPair {
+
+    /**
+     * The round number.
+     * <p>
+     * This value SHALL be the round number of the consensus round.
+     */
+    uint64 round_number = 1;
+
+    /**
+     * The SHA-384 hash of the active roster for the given round number.
+     * <p>
+     * This value SHALL be the hash of the active roster used for the round.
+     */
+    byte active_roster_hash = 2;
+}
+```
 It is noteworthy that the roster must be immutable to guarantee the integrity of the computed hash.
 This map of rosters will typically contain the current Active Roster, an optional previously Active Roster, and an
 optional current Candidate Roster. Insertion of rosters will be controlled by ensuring that the acceptance of a new
 Candidate Roster invalidates and removes the current candidate roster. Therefore, the map is expected to have a maximum
 size of three elements.
-There will be new fields in PlatformState - `candidateRosterHash` and `activeRosterHash` - such that at adoption time,
-the app will set the roster through the API and the platform code inserting this roster into the roster map, alongside
-setting the `candidateRosterHash` field in the PlatformState. If a `candidateRosterHash` hash entry already exist in the
-map of Rosters, it will be discarded. That is, setting a candidate roster is an idempotent operation.
-The `activeRosterHash` will be private to the platform and will not be settable or modifiable from outside the platform.
+The new `RosterState` will store the `candidateRosterHash` and a list `roundActiveRosters`
+of pairs of round numbers and the active roster that was used for that round. The `roundActiveRosters` list will be
+updated only when the active roster changes.
+In the vast majority of cases, the list will contain only one element, the current active roster.
+Immediately following the adoption of an active roster, this list will have two elements — the previous active roster
+and the current active roster.
 
-This indirection (using a Map instead of a Singleton) avoids moving data around in the merkle state which requires data
-to be copied.
-When a map is updated, only the key-value pair that changes needs to be added to the block stream.
-Another benefit of this approach is that adoption trigger becomes simple (app sets the roster) with delineated
+If a `candidateRosterHash` hash entry already exist (hash collisions) in the map of Rosters, it will be discarded. That
+is, setting a candidate roster is an idempotent operation.
+
+One benefit of this indirection (using a Map instead of a Singleton) is that it avoids moving data around in the merkle
+state.
+Another benefit is that adoption trigger becomes simple (app sets the roster) with delineated
 responsibilities between the app and the platform.
 
+### Roster Validity
 
-###### Roster Validity
-
-In simple terms, the following constitutes a valid roster:
+A Roster is considered valid if it satisfies the following conditions:
 
 1. The roster must have at least one RosterEntry.
 2. At least one RosterEntry/ies must have a non-zero weight.
@@ -261,50 +295,12 @@ In simple terms, the following constitutes a valid roster:
 7. All ServiceEndpoint/s must have a valid IP address or domain name (mutually exclusive), and port.
 8. The roster must have a unique NodeId for each RosterEntry.
 
-Note that a roster can be valid, but not accepted by the platform.
+On the submission of a new Candidate Roster, the platform will validate the roster against these conditions.
+Note that a constructed `Roster` can be valid, but not accepted by the platform.
 For example, if a new candidate roster is set via the API, but its hash evaluates to the hash of the existing
-candidate roster, the new roster will be discarded. The operation has no effect.
+candidate roster, the new roster will be discarded. That is, the operation has no effect.
 
-### Startup procedure, Services and DevOps Workflow changes
-
-#### Startup changes
-
-On startup, the presence or absence of an Active Roster in the state will be used to determine whether the platform
-should keep existing settings,
-start a genesis network process, or start the Network Transplant Process as shown.
-![](TSS%20Roster%20Startup%20Behavior.drawio.svg)
-
-The pseudocode for the startup procedure will look as follows:
-
-```java
-/**
- * Start the platform.
- * @param state an initial state. The caller either loads it from disk if the node has run before,
- *              or constructs a new empty state and stores the genesis roster in there
- *              as the current active roster.
- */
-void startPlatform(final State state) {
-    if (the State has Candidate Roster){
-        if (isSoftwareUpgrade) {
-            // This MUST be performed under `isSoftwareUpgrade` to ensure that
-            // the entire network is being restarted, and so every node adopts the Candidate Roster,
-            // and hence no ISSes happen.
-            // Modify the state and put Candidate Roster into Active Roster, effectively clearing the Candidate Roster.
-            makeCRtheAR();
-            // May make a record of the previous Active Roster if necessary (e.g. for PCES replay)
-        }
-    }
-
-    if (the State has no Active Roster){
-        // This should never happen, but we have to check this because we're given a state as an argument.
-        throwFatalErrorAndShutdown();
-    }
-
-    // At this point the Active Roster in the state is what we'll be using as a roster.
-}
-```
-
-#### Services changes (Inversion of control)
+## Services changes (Inversion of control)
 
 The current startup procedure will be altered as follows
 
@@ -312,10 +308,9 @@ The current startup procedure will be altered as follows
   will no longer be used by the platform code
 - Designating `config.txt` introduces inversion of control. It will be at the exclusive prerogative of Services (the
   app) going forward. Platform will no longer be responsible for it, and all the platform code that builds an
-  AddressBook from `config.txt` will be removed or refactored
-  and moved into the Services codebase.
+  AddressBook from `config.txt` will be removed or refactored and moved into the Services codebase.
 
-#### DevOps Workflow changes
+### DevOps Workflow changes
 (See Roster Startup Behavior diagram above)
 Current network Transplant procedure is manual.
 DevOps get given a State and `config.txt` file on disk. This is then followed by a software-only upgrade to adopt
@@ -333,17 +328,20 @@ The app will decide a startup sequence based on the following heuristics:
 * Genesis Network process == Active Roster, No State provided
 * Network Transplant process == Active Roster AND State provided
 
-### Core Behaviors, in summary
-- Roster Creation: App will create a Candidate Roster from the Candidate Address Book (CAB).
-- Roster Submission: App will trigger roster submission by setting the `candidate_roster_hash` field in the
-  PlatformState.
-- Roster Adoption: The platform will vote to adopt the last submitted Candidate Roster when it is ready, which will be
-  on software upgrade.
+## Core Behaviors, in summary
+
+- Roster Creation: App will create a Candidate Roster from the Address Book.
+- Roster Submission: App will trigger roster submission by setting the `Roster` object in the
+  `PlatformState` API.
+- Roster Validation: The submitted roster is validated and hashed, if valid
+- Roster Storage: The Roster is stored in the State as a map of Roster Hash to Roster. A reference to the candidate
+  roster's hash is also stored in the
+  `RosterState` object.
+- Roster Adoption: The adoption of the candidate roster is beyond the scope of this proposal.
 - Roster Replacement: If a new candidate roster is submitted before the previous one is adopted, the corresponding new
-  Candidate Roster will replace the old one.
+  Candidate Roster will replace the previous.
 
-
-### Dependencies
+## Dependencies
 
 There are a few existing technical debts that the team has agreed to tackle as dependencies for this proposal.
 
@@ -369,16 +367,6 @@ There are a few existing technical debts that the team has agreed to tackle as d
    The resolution is to offload this duty off the platform and allow Services to use whatever file format that suits
    them as described earlier.
 
-### Data storage
-
-All of the data related to Active and Candidate Roster will be stored in the State.
-There will continue to be components used in creating the Roster - such as the private EC (elliptic curve) key, the RSA
-private key and the signing X509Certificate certificate - that will be stored on disk.
-However, it is up to Services to manage the lifecycle of these files, and not the platform.
-
-There will not be any other separate artifacts stored elsewhere (e.g., directly on disk.).
-
-
 ### Roster changes needed for Components
 
 #### Block Proof
@@ -398,18 +386,29 @@ while also providing a mechanism for tracking the active roster.
 #### Reconnect
 
 Reconnect. Reconnect logic currently exchanges and validates the address book between the learner and teacher nodes. The
-  learner node uses the address book to select the teacher node, as well as remove all invalid signatures from the
-  state. Both of these will need to be updated to use rosters instead.
+learner node uses the address book to select the teacher node, as well as remove all invalid signatures from the
+state. Both of these will need to be updated to use rosters instead.
 
 #### Others
+
 - Networking. Most parts of the network code have been abstracted away from the address book as part of the Dynamic
   Address Book effort, so there should be minimal work left there.
 - Event Validation. The event validation logic uses the address book to determine whether a given event has a valid
   signature. This will be updated to use rosters instead.
 - Miscellaneous components. Other components that reference things stored in the address book (like consensus needing
   the node weight or the crypto module verifying keys) will need to be updated to use things stored in rosters instead.
+-
 
-### Test Plan
+## Data storage
+
+All of the data related to Active and Candidate Roster will be stored in the State.
+There will continue to be components used in creating the Roster - such as the private EC (elliptic curve) key, the RSA
+private key and the signing X509Certificate certificate - that will be stored on disk.
+However, it is up to Services to manage the lifecycle of these files, and not the platform.
+
+There will not be any other separate artifacts stored elsewhere (e.g., directly on disk.).
+
+## Test Plan
 
 Some of the obvious test cases to be covered in the plan include validating one or more of the following scenarios:
 
@@ -422,12 +421,12 @@ Some of the obvious test cases to be covered in the plan include validating one 
 6. Roster recovery? The Node receives a candidate roster, crashes. Wake up, reconnect. Verify recovery.
 7. What end-to-end testing do we need for a brand-new network that uses the TSS signature scheme to sign its blocks?
 
-### Metrics
+## Metrics
 
 We propose that some metrics be added. One useful metric we will
 introduce is the number of candidate rosters that have been set. Others may be introduced during implementation.
 
-### Implementation and Delivery Plan
+## Implementation and Delivery Plan
 
 - Define Roster Data Structure and API: Design and implement the Roster class and the associated API methods.
 - Modify State Storage: Update the state to store the map of rosters and the candidateRosterHash and activeRosterHash
