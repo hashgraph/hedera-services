@@ -56,20 +56,10 @@ public record MetricsConfig(
         @ConfigProperty(defaultValue = "metricsDoc.tsv") String metricsDocFileName,
         @ConfigProperty(defaultValue = "10") double halfLife) {
 
-    /**
-     * Returns the metrics update interval time as a {@link Duration}.
-     *
-     * @return the metrics update duration
-     */
     public Duration getMetricsUpdateDuration() {
         return Duration.ofMillis(metricsUpdatePeriodMillis);
     }
 
-    /**
-     * Returns the metrics snapshot interval time as a {@link Duration}.
-     *
-     * @return the metrics snapshot duration
-     */
     public Duration getMetricsSnapshotDuration() {
         return Duration.ofMillis(csvWriteFrequency);
     }

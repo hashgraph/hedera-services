@@ -67,7 +67,7 @@ public final class ConfigDataAnnotationProcessor extends AbstractProcessor {
         }
         configDocumentationFile.toFile().getParentFile().mkdirs();
 
-        log("Config Data Annotation Processor started...");
+        // log("Config Data Annotation Processor started...");
         try {
             annotations.stream()
                     .map(annotation -> (TypeElement) annotation)
@@ -94,7 +94,7 @@ public final class ConfigDataAnnotationProcessor extends AbstractProcessor {
                 .getPackageOf(typeElement)
                 .getQualifiedName()
                 .toString();
-        log("handling: " + fileName + " in " + packageName);
+        // log("handling: " + fileName + " in " + packageName);
         try {
             final FileObject recordSource = getSource(fileName, packageName);
             final List<ConfigDataRecordDefinition> recordDefinitions = AntlrConfigRecordParser.parse(
@@ -103,9 +103,9 @@ public final class ConfigDataAnnotationProcessor extends AbstractProcessor {
             if (!recordDefinitions.isEmpty()) {
                 final JavaFileObject constantsSourceFile =
                         getConstantSourceFile(packageName, simpleClassName, typeElement);
-                log("generating config constants file: " + constantsSourceFile.getName());
+                // log("generating config constants file: " + constantsSourceFile.getName());
                 ConstantClassFactory.doWork(recordDefinitions.getFirst(), constantsSourceFile);
-                log("generating config doc file: " + configDocumentationFile.getFileName());
+                // log("generating config doc file: " + configDocumentationFile.getFileName());
                 DocumentationFactory.doWork(recordDefinitions.getFirst(), configDocumentationFile);
             }
         } catch (final Exception e) {

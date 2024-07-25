@@ -38,11 +38,6 @@ public record CryptoConfig(
         @ConfigProperty(defaultValue = "password") String keystorePassword,
         @ConfigProperty(defaultValue = "true") boolean enableNewKeyStoreModel) {
 
-    /**
-     * Calculates the number of threads needed to achieve the CPU core ratio given by {@link #cpuDigestThreadRatio()}.
-     *
-     * @return the number of threads to be allocated
-     */
     public int computeCpuDigestThreadCount() {
         final int numberOfCores = Runtime.getRuntime().availableProcessors();
         final double interimThreadCount = Math.ceil(numberOfCores * cpuDigestThreadRatio());
